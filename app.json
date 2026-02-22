@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "faniverz-app",
+    "name": "Faniverz",
     "slug": "faniverz-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "scheme": "faniverz",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -13,7 +14,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.faniverz.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +23,19 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.faniverz.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-localization"
+    ]
   }
 }
