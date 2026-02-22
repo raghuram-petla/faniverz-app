@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useMovieDetail, useMovieCast } from '@/features/movies/hooks/useMovieDetail';
 import { useOttReleases } from '@/features/ott/hooks';
@@ -13,9 +13,11 @@ import TrailerPlayer from '@/components/movie/TrailerPlayer';
 import WatchOnPlatform from '@/components/movie/WatchOnPlatform';
 import WatchlistButton from '@/components/watchlist/WatchlistButton';
 import ShareButton from '@/components/common/ShareButton';
+import ReviewSummary from '@/components/review/ReviewSummary';
 
 export default function MovieDetailScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const movieId = Number(id);
@@ -50,6 +52,12 @@ export default function MovieDetailScreen() {
         <SynopsisSection overview={movie.overview} overviewTe={movie.overview_te} />
         <CastCarousel cast={cast} />
         <TrailerPlayer youtubeKey={movie.trailer_youtube_key} />
+        <ReviewSummary
+          averageRating={movie.vote_average ?? 0}
+          totalCount={movie.vote_count ?? 0}
+          onWriteReview={() => router.push(`/review/write/${movieId}`)}
+          onSeeAll={() => router.push(`/review/${movieId}`)}
+        />
       </ScrollView>
       <WatchlistButton userId={user?.id} movieId={movieId} />
     </SafeAreaView>

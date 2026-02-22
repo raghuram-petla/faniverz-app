@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: '1' }),
+  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
 }));
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -112,5 +113,10 @@ describe('MovieDetailScreen', () => {
   it('renders share button', () => {
     render(<MovieDetailScreen />);
     expect(screen.getByTestId('share-button')).toBeTruthy();
+  });
+
+  it('renders review summary', () => {
+    render(<MovieDetailScreen />);
+    expect(screen.getByTestId('review-summary')).toBeTruthy();
   });
 });
