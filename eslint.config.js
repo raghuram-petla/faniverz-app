@@ -25,6 +25,6 @@ module.exports = [
     },
   },
   {
-    ignores: ['node_modules/', '.expo/', 'babel.config.js', 'eslint.config.js'],
+    ignores: ['node_modules/', '.expo/', 'babel.config.js', 'eslint.config.js', 'admin/'],
   },
 ];
