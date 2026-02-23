@@ -1,4 +1,16 @@
-import { View, Text, TouchableOpacity, ScrollView, FlatList, StyleSheet } from 'react-native';
+import { useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  FlatList,
+  StyleSheet,
+  Animated,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
@@ -9,13 +21,39 @@ import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Movie, OTTPlatform } from '@/types';
 
+const HEADER_CONTENT_HEIGHT = 56;
+
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data: allMovies = [] } = useMovies();
   const { data: platforms = [] } = usePlatforms();
 
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
+
+  // YouTube-style collapsing header
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+  const headerOffset = useRef(0);
+  const totalHeaderHeight = insets.top + HEADER_CONTENT_HEIGHT;
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const currentY = e.nativeEvent.contentOffset.y;
+      const diff = currentY - lastScrollY.current;
+
+      // Only hide the content part of the header, never the safe area
+      headerOffset.current = Math.min(
+        Math.max(headerOffset.current + diff, 0),
+        HEADER_CONTENT_HEIGHT,
+      );
+
+      headerTranslateY.setValue(-headerOffset.current);
+      lastScrollY.current = currentY;
+    },
+    [headerTranslateY, totalHeaderHeight],
+  );
 
   const featuredMovies = allMovies
     .filter((m) => m.release_type === 'theatrical' || m.release_type === 'ott')
@@ -41,8 +79,20 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Fixed cover over Dynamic Island / status bar area — never moves */}
+      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+
+      {/* YouTube-style header: slides up on scroll down, reappears on scroll up */}
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top,
+            height: totalHeaderHeight,
+            transform: [{ translateY: headerTranslateY }],
+          },
+        ]}
+      >
         <Text style={styles.headerTitle}>Faniverz</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
@@ -62,9 +112,15 @@ export default function HomeScreen() {
             <Ionicons name="notifications-outline" size={20} color={colors.white} />
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingTop: totalHeaderHeight }}
+        showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         {/* Hero Carousel */}
         {featuredMovies.length > 0 && (
           <HeroCarousel movies={featuredMovies} platformMap={platformMap} />
@@ -191,6 +247,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.black,
   },
+  safeAreaCover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: colors.black,
+  },
   header: {
     position: 'absolute',
     top: 0,
@@ -198,11 +262,11 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 50,
     paddingHorizontal: 16,
-    paddingTop: 56,
-    paddingBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    paddingBottom: 12,
+    backgroundColor: colors.black,
   },
   headerTitle: {
     fontSize: 24,
