@@ -1,9 +1,644 @@
-import { View, Text } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { useWatchlist, useWatchlistMutations } from '@/features/watchlist/hooks';
+import { colors } from '@/theme/colors';
+import { WatchlistEntry } from '@/types';
 
-export default function WatchlistScreen() {
+// ─── Movie Card ───────────────────────────────────────────────────────────────
+
+interface AvailableCardProps {
+  entry: WatchlistEntry;
+  userId: string;
+}
+
+function AvailableCard({ entry, userId }: AvailableCardProps) {
+  const router = useRouter();
+  const { remove, markWatched } = useWatchlistMutations();
+  const movie = entry.movie!;
+
+  const statusLabel = movie.release_type === 'theatrical' ? 'In Theaters' : 'Streaming';
+  const statusBg = movie.release_type === 'theatrical' ? colors.red600 : colors.purple600;
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
-      <Text style={{ color: '#fff' }}>Watchlist</Text>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push(`/movie/${movie.id}`)}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={movie.title}
+    >
+      {/* Poster */}
+      <View style={styles.posterWrapper}>
+        <Image
+          source={{ uri: movie.poster_url ?? undefined }}
+          style={styles.poster}
+          contentFit="cover"
+          accessibilityLabel={`${movie.title} poster`}
+        />
+        {/* Status badge overlay */}
+        <View style={[styles.posterBadge, { backgroundColor: statusBg }]}>
+          <Text style={styles.posterBadgeText}>{statusLabel}</Text>
+        </View>
+      </View>
+
+      {/* Info */}
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {movie.title}
+        </Text>
+
+        {movie.rating > 0 && (
+          <View style={styles.metaRow}>
+            <Ionicons name="star" size={12} color={colors.yellow400} />
+            <Text style={styles.ratingText}>{movie.rating.toFixed(1)}</Text>
+          </View>
+        )}
+
+        <View style={styles.genreRow}>
+          {movie.genres.slice(0, 2).map((genre) => (
+            <Text key={genre} style={styles.genreText}>
+              {genre}
+            </Text>
+          ))}
+        </View>
+      </View>
+
+      {/* Actions */}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => remove.mutate({ userId, movieId: movie.id })}
+          accessibilityRole="button"
+          accessibilityLabel="Remove from watchlist"
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.red500} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => markWatched.mutate({ userId, movieId: movie.id })}
+          accessibilityRole="button"
+          accessibilityLabel="Mark as watched"
+        >
+          <Ionicons name="checkmark-circle-outline" size={20} color={colors.green500} />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Upcoming Card ────────────────────────────────────────────────────────────
+
+function UpcomingCard({ entry, userId }: AvailableCardProps) {
+  const router = useRouter();
+  const { remove, markWatched } = useWatchlistMutations();
+  const movie = entry.movie!;
+
+  const releaseDateFormatted = new Date(movie.release_date).toLocaleDateString('en-IN', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push(`/movie/${movie.id}`)}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={movie.title}
+    >
+      {/* Poster */}
+      <View style={styles.posterWrapper}>
+        <Image
+          source={{ uri: movie.poster_url ?? undefined }}
+          style={styles.poster}
+          contentFit="cover"
+          accessibilityLabel={`${movie.title} poster`}
+        />
+        {/* "Soon" badge */}
+        <View style={[styles.posterBadge, { backgroundColor: colors.blue600 }]}>
+          <Text style={styles.posterBadgeText}>Soon</Text>
+        </View>
+      </View>
+
+      {/* Info */}
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {movie.title}
+        </Text>
+
+        <View style={styles.metaRow}>
+          <Ionicons name="calendar-outline" size={12} color={colors.blue400} />
+          <Text style={styles.releaseDateText}>{releaseDateFormatted}</Text>
+        </View>
+
+        <View style={styles.genreRow}>
+          {movie.genres.slice(0, 2).map((genre) => (
+            <Text key={genre} style={styles.genreText}>
+              {genre}
+            </Text>
+          ))}
+        </View>
+      </View>
+
+      {/* Actions */}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => remove.mutate({ userId, movieId: movie.id })}
+          accessibilityRole="button"
+          accessibilityLabel="Remove from watchlist"
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.red500} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => markWatched.mutate({ userId, movieId: movie.id })}
+          accessibilityRole="button"
+          accessibilityLabel="Mark as watched"
+        >
+          <Ionicons name="checkmark-circle-outline" size={20} color={colors.green500} />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Watched Card ─────────────────────────────────────────────────────────────
+
+function WatchedCard({ entry, userId }: AvailableCardProps) {
+  const router = useRouter();
+  const { remove, moveBack } = useWatchlistMutations();
+  const movie = entry.movie!;
+
+  return (
+    <TouchableOpacity
+      style={[styles.card, styles.cardWatched]}
+      onPress={() => router.push(`/movie/${movie.id}`)}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={movie.title}
+    >
+      {/* Poster */}
+      <View style={styles.posterWrapper}>
+        <Image
+          source={{ uri: movie.poster_url ?? undefined }}
+          style={[styles.poster, styles.posterWatched]}
+          contentFit="cover"
+          accessibilityLabel={`${movie.title} poster`}
+        />
+      </View>
+
+      {/* Info */}
+      <View style={styles.cardInfo}>
+        <Text style={[styles.cardTitle, styles.cardTitleWatched]} numberOfLines={1}>
+          {movie.title}
+        </Text>
+
+        {movie.rating > 0 && (
+          <View style={styles.metaRow}>
+            <Ionicons name="star" size={12} color={colors.yellow400} />
+            <Text style={styles.ratingText}>{movie.rating.toFixed(1)}</Text>
+          </View>
+        )}
+
+        <View style={styles.genreRow}>
+          {movie.genres.slice(0, 2).map((genre) => (
+            <Text key={genre} style={styles.genreText}>
+              {genre}
+            </Text>
+          ))}
+        </View>
+      </View>
+
+      {/* Actions */}
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => moveBack.mutate({ userId, movieId: movie.id })}
+          accessibilityRole="button"
+          accessibilityLabel="Move back to watchlist"
+        >
+          <Ionicons name="refresh-outline" size={20} color={colors.blue500} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => remove.mutate({ userId, movieId: movie.id })}
+          accessibilityRole="button"
+          accessibilityLabel="Remove from watched"
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.red500} />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Section Header ───────────────────────────────────────────────────────────
+
+interface SectionTitleProps {
+  iconName: React.ComponentProps<typeof Ionicons>['name'];
+  iconColor: string;
+  title: string;
+}
+
+function SectionTitle({ iconName, iconColor, title }: SectionTitleProps) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Ionicons name={iconName} size={20} color={iconColor} />
+      <Text style={styles.sectionTitle}>{title}</Text>
     </View>
   );
 }
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
+export default function WatchlistScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
+
+  const { available, upcoming, watched, isLoading } = useWatchlist(userId);
+
+  const totalSaved = available.length + upcoming.length;
+  const hasContent = totalSaved > 0 || watched.length > 0;
+
+  // Guest / unauthenticated state
+  if (!user) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.stickyHeader}>
+          <View>
+            <Text style={styles.headerTitle}>My Watchlist</Text>
+          </View>
+          <View style={styles.bookmarkCircle}>
+            <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
+          </View>
+        </View>
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="bookmark-outline" size={40} color={colors.white20} />
+          </View>
+          <Text style={styles.emptyTitle}>Sign in to use Watchlist</Text>
+          <Text style={styles.emptySubtitle}>
+            Create an account or sign in to save movies and track what you watch.
+          </Text>
+          <TouchableOpacity
+            style={styles.discoverBtn}
+            onPress={() => router.push('/auth')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <Text style={styles.discoverBtnText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.stickyHeader}>
+          <View>
+            <Text style={styles.headerTitle}>My Watchlist</Text>
+          </View>
+          <View style={styles.bookmarkCircle}>
+            <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.red600} />
+        </View>
+      </View>
+    );
+  }
+
+  // Empty state
+  if (!hasContent) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.stickyHeader}>
+          <View>
+            <Text style={styles.headerTitle}>My Watchlist</Text>
+            <Text style={styles.headerSubtitle}>0 movies saved</Text>
+          </View>
+          <View style={styles.bookmarkCircle}>
+            <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
+          </View>
+        </View>
+        <View style={styles.emptyContainer}>
+          <View style={styles.emptyIconCircle}>
+            <Ionicons name="bookmark-outline" size={40} color={colors.white20} />
+          </View>
+          <Text style={styles.emptyTitle}>Your watchlist is empty</Text>
+          <Text style={styles.emptySubtitle}>
+            Start adding movies to your watchlist to keep track of what you want to watch
+          </Text>
+          <TouchableOpacity
+            style={styles.discoverBtn}
+            onPress={() => router.push('/discover')}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+          >
+            <Text style={styles.discoverBtnText}>Discover Movies</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.screen}>
+      {/* Sticky Header */}
+      <View style={styles.stickyHeader}>
+        <View>
+          <Text style={styles.headerTitle}>My Watchlist</Text>
+          <Text style={styles.headerSubtitle}>
+            {totalSaved} {totalSaved === 1 ? 'movie' : 'movies'} saved
+          </Text>
+        </View>
+        <View style={styles.bookmarkCircle}>
+          <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Available to Watch */}
+        {available.length > 0 && (
+          <View style={styles.section}>
+            <SectionTitle
+              iconName="play-circle-outline"
+              iconColor={colors.green500}
+              title="Available to Watch"
+            />
+            <View style={styles.cardList}>
+              {available.map((entry) => (
+                <AvailableCard key={entry.id} entry={entry} userId={userId} />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Upcoming Releases */}
+        {upcoming.length > 0 && (
+          <View style={styles.section}>
+            <SectionTitle
+              iconName="calendar-outline"
+              iconColor={colors.blue500}
+              title="Upcoming Releases"
+            />
+            <View style={styles.cardList}>
+              {upcoming.map((entry) => (
+                <UpcomingCard key={entry.id} entry={entry} userId={userId} />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Watched Movies */}
+        {watched.length > 0 && (
+          <View style={styles.section}>
+            <SectionTitle
+              iconName="eye-outline"
+              iconColor={colors.gray500}
+              title="Watched Movies"
+            />
+            <View style={styles.cardList}>
+              {watched.map((entry) => (
+                <WatchedCard key={entry.id} entry={entry} userId={userId} />
+              ))}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.black,
+  },
+
+  // Header
+  stickyHeader: {
+    backgroundColor: colors.black95,
+    paddingHorizontal: 16,
+    paddingTop: 56,
+    paddingBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.white10,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: colors.white60,
+    marginTop: 2,
+  },
+  bookmarkCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.red600_20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Loading
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Empty state
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    paddingBottom: 80,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.white5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.white,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: colors.white60,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  discoverBtn: {
+    backgroundColor: colors.red600,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  discoverBtnText: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Scroll
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: 24,
+    paddingBottom: 100,
+    gap: 32,
+  },
+
+  // Section
+  section: {
+    gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.white,
+  },
+  cardList: {
+    gap: 12,
+    paddingHorizontal: 16,
+  },
+
+  // Movie Card
+  card: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 12,
+    backgroundColor: colors.white5,
+    borderRadius: 12,
+  },
+  cardWatched: {
+    opacity: 0.8,
+  },
+
+  // Poster
+  posterWrapper: {
+    width: 72,
+    aspectRatio: 2 / 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  poster: {
+    width: '100%',
+    height: '100%',
+  },
+  posterWatched: {
+    opacity: 0.7,
+  },
+  posterBadge: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  posterBadgeText: {
+    color: colors.white,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+
+  // Card content
+  cardInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  cardTitleWatched: {
+    color: colors.white60,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontSize: 12,
+    color: colors.white60,
+  },
+  releaseDateText: {
+    fontSize: 12,
+    color: colors.blue400,
+    fontWeight: '600',
+  },
+  genreRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  genreText: {
+    fontSize: 11,
+    color: colors.white40,
+  },
+
+  // Action buttons
+  actions: {
+    justifyContent: 'center',
+    gap: 4,
+  },
+  actionBtn: {
+    padding: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
