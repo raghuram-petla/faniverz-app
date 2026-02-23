@@ -4,6 +4,8 @@ const mockEq = jest.fn();
 const mockSingle = jest.fn();
 const mockOr = jest.fn();
 const mockLimit = jest.fn();
+const mockGte = jest.fn();
+const mockLte = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -14,13 +16,13 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import { fetchMovies, fetchMovieById, searchMovies } from '../api';
+import { fetchMovies, fetchMovieById, searchMovies, fetchMoviesByMonth } from '../api';
 
 describe('movies api', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Default chain for fetchMovies
+    // Default chain for fetchMovies (no filters)
     mockSelect.mockReturnValue({ order: mockOrder });
     mockOrder.mockResolvedValue({ data: [], error: null });
 
@@ -41,9 +43,14 @@ describe('movies api', () => {
       expect(mockSelect).toHaveBeenCalledWith('*');
     });
 
-    it('orders by release_date descending', async () => {
+    it('orders by review_count by default (popular)', async () => {
       await fetchMovies();
-      expect(mockOrder).toHaveBeenCalledWith('release_date', { ascending: false });
+      expect(mockOrder).toHaveBeenCalledWith('review_count', { ascending: false });
+    });
+
+    it('orders by rating when sortBy is top_rated', async () => {
+      await fetchMovies({ sortBy: 'top_rated' });
+      expect(mockOrder).toHaveBeenCalledWith('rating', { ascending: false });
     });
 
     it('returns empty array when no data', async () => {
@@ -56,15 +63,38 @@ describe('movies api', () => {
       mockOrder.mockResolvedValue({ data: null, error: new Error('DB error') });
       await expect(fetchMovies()).rejects.toThrow('DB error');
     });
+
+    it('filters by releaseType when provided', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      await fetchMovies({ releaseType: 'theatrical' });
+      expect(mockEq).toHaveBeenCalledWith('release_type', 'theatrical');
+    });
   });
 
   describe('fetchMovieById', () => {
-    it('queries by id', async () => {
+    it('queries by id and fetches joins', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
-      await fetchMovieById('123');
-      expect(supabase.from).toHaveBeenCalledWith('movies');
-      expect(mockEq).toHaveBeenCalledWith('id', '123');
-      expect(mockSingle).toHaveBeenCalled();
+      mockEq.mockReturnValue({ single: mockSingle });
+      mockSingle.mockResolvedValue({ data: { id: '123', title: 'Test' }, error: null });
+
+      // Mock the cast and platform sub-queries
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movies') {
+          return { select: mockSelect };
+        }
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              order: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      });
+
+      const result = await fetchMovieById('123');
+      expect(result).toHaveProperty('cast');
+      expect(result).toHaveProperty('platforms');
     });
   });
 
@@ -79,6 +109,19 @@ describe('movies api', () => {
       mockSelect.mockReturnValue({ or: mockOr });
       await searchMovies('test');
       expect(mockLimit).toHaveBeenCalledWith(20);
+    });
+  });
+
+  describe('fetchMoviesByMonth', () => {
+    it('fetches movies for a specific month', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ lte: mockLte });
+      mockLte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: [], error: null });
+
+      await fetchMoviesByMonth(2025, 1);
+      expect(supabase.from).toHaveBeenCalledWith('movies');
+      expect(mockGte).toHaveBeenCalledWith('release_date', '2025-02-01');
     });
   });
 });

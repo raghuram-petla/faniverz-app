@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 
 interface CalendarState {
-  selectedYear: number;
-  selectedMonth: number;
+  selectedYear: number | null;
+  selectedMonth: number | null;
   selectedDay: number | null;
   showFilters: boolean;
-  setDate: (year: number, month: number, day?: number | null) => void;
+  setDate: (year: number | null, month: number | null, day?: number | null) => void;
   navigateMonth: (direction: 1 | -1) => void;
   toggleFilters: () => void;
   clearFilters: () => void;
@@ -24,8 +24,10 @@ export const useCalendarStore = create<CalendarState>((set) => ({
 
   navigateMonth: (direction) =>
     set((state) => {
-      let newMonth = state.selectedMonth + direction;
-      let newYear = state.selectedYear;
+      const currentMonth = state.selectedMonth ?? now.getMonth();
+      const currentYear = state.selectedYear ?? now.getFullYear();
+      let newMonth = currentMonth + direction;
+      let newYear = currentYear;
       if (newMonth > 11) {
         newMonth = 0;
         newYear += 1;
