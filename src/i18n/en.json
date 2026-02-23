@@ -1,0 +1,127 @@
+{
+  "common": {
+    "appName": "Faniverz",
+    "seeAll": "See All",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "retry": "Try Again",
+    "loading": "Loading...",
+    "search": "Search",
+    "clearAll": "Clear All",
+    "noResults": "No results found"
+  },
+  "tabs": {
+    "home": "Home",
+    "calendar": "Calendar",
+    "watchlist": "Watchlist",
+    "surprise": "Surprise",
+    "profile": "Profile"
+  },
+  "home": {
+    "inTheaters": "In Theaters Now",
+    "streamingNow": "Streaming Now",
+    "comingSoon": "Coming Soon",
+    "toTheaters": "To Theaters",
+    "toStreaming": "To Streaming",
+    "browseByPlatform": "Browse by Platform",
+    "watchNow": "Watch Now",
+    "moreInfo": "More Info"
+  },
+  "movie": {
+    "overview": "Overview",
+    "cast": "Cast",
+    "reviews": "Reviews",
+    "synopsis": "Synopsis",
+    "genres": "Genres",
+    "director": "Director",
+    "certification": "Certification",
+    "watchTrailer": "Watch Trailer",
+    "watchOn": "Watch On",
+    "streamNow": "Stream Now",
+    "releasingOn": "Releasing on {{date}}",
+    "addToWatchlist": "Add to Watchlist",
+    "writeReview": "Write Review",
+    "reviewTitle": "Review Title",
+    "writeYourReview": "Write your review...",
+    "containsSpoiler": "Contains Spoiler",
+    "submit": "Submit"
+  },
+  "calendar": {
+    "title": "Release Calendar",
+    "today": "TODAY",
+    "releases": "{{count}} releases",
+    "noReleases": "No releases this month"
+  },
+  "watchlist": {
+    "title": "My Watchlist",
+    "moviesSaved": "{{count}} movies saved",
+    "empty": "Your watchlist is empty",
+    "emptySubtitle": "Start adding movies to your watchlist to keep track of what you want to watch",
+    "discoverMovies": "Discover Movies",
+    "availableToWatch": "Available to Watch",
+    "upcomingReleases": "Upcoming Releases",
+    "watchedMovies": "Watched Movies"
+  },
+  "surprise": {
+    "title": "Surprise Content",
+    "subtitle": "Exclusive & Hidden Gems",
+    "all": "All",
+    "songs": "Songs",
+    "shortFilms": "Short Films",
+    "bts": "BTS",
+    "interviews": "Interviews"
+  },
+  "profile": {
+    "title": "Profile",
+    "editProfile": "Edit Profile",
+    "notifications": "Notifications",
+    "myReviews": "My Reviews",
+    "settings": "Settings",
+    "favoriteActors": "Favorite Actors",
+    "watchedMovies": "Watched Movies",
+    "logout": "Logout",
+    "loginSignUp": "Login / Sign Up",
+    "memberSince": "Member since {{date}}",
+    "version": "Faniverz v1.0.0",
+    "tagline": "Your Telugu Cinema Companion"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "createAccount": "Create Account",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "continueAsGuest": "Continue as Guest",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "or": "OR",
+    "backToSignIn": "Back to Sign In",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet",
+    "emptySubtitle": "You'll be notified about releases and updates"
+  },
+  "settings": {
+    "title": "Settings",
+    "pushNotifications": "Push Notifications",
+    "emailNotifications": "Email Notifications",
+    "changePassword": "Change Password",
+    "privacySettings": "Privacy Settings",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "language": "Language",
+    "autoDownload": "Auto-Download Posters",
+    "clearCache": "Clear Cache",
+    "downloadData": "Download Data",
+    "helpSupport": "Help & Support",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy"
+  }
+}

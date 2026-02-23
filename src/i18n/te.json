@@ -1,0 +1,127 @@
+{
+  "common": {
+    "appName": "ఫానివర్జ్",
+    "seeAll": "అన్నీ చూడండి",
+    "cancel": "రద్దు",
+    "save": "సేవ్",
+    "delete": "తొలగించు",
+    "edit": "మార్చు",
+    "retry": "మళ్ళీ ప్రయత్నించు",
+    "loading": "లోడ్ అవుతోంది...",
+    "search": "వెతుకు",
+    "clearAll": "అన్నీ తొలగించు",
+    "noResults": "ఫలితాలు కనుగొనబడలేదు"
+  },
+  "tabs": {
+    "home": "హోమ్",
+    "calendar": "క్యాలెండర్",
+    "watchlist": "వాచ్‌లిస్ట్",
+    "surprise": "ఆశ్చర్యం",
+    "profile": "ప్రొఫైల్"
+  },
+  "home": {
+    "inTheaters": "థియేటర్లలో ఇప్పుడు",
+    "streamingNow": "స్ట్రీమింగ్ ఇప్పుడు",
+    "comingSoon": "త్వరలో",
+    "toTheaters": "థియేటర్లకు",
+    "toStreaming": "స్ట్రీమింగ్‌కు",
+    "browseByPlatform": "ప్లాట్‌ఫారం ద్వారా",
+    "watchNow": "ఇప్పుడు చూడు",
+    "moreInfo": "మరిన్ని వివరాలు"
+  },
+  "movie": {
+    "overview": "సారాంశం",
+    "cast": "నటీనటులు",
+    "reviews": "సమీక్షలు",
+    "synopsis": "కథ సారాంశం",
+    "genres": "జానర్లు",
+    "director": "దర్శకుడు",
+    "certification": "సర్టిఫికేషన్",
+    "watchTrailer": "ట్రైలర్ చూడు",
+    "watchOn": "ఇక్కడ చూడండి",
+    "streamNow": "స్ట్రీమ్ చేయు",
+    "releasingOn": "{{date}} న విడుదల",
+    "addToWatchlist": "వాచ్‌లిస్ట్‌కు జోడించు",
+    "writeReview": "సమీక్ష రాయు",
+    "reviewTitle": "సమీక్ష శీర్షిక",
+    "writeYourReview": "మీ సమీక్ష రాయండి...",
+    "containsSpoiler": "స్పాయిలర్ ఉంది",
+    "submit": "సమర్పించు"
+  },
+  "calendar": {
+    "title": "రిలీజ్ క్యాలెండర్",
+    "today": "ఈ రోజు",
+    "releases": "{{count}} రిలీజ్‌లు",
+    "noReleases": "ఈ నెల రిలీజ్‌లు లేవు"
+  },
+  "watchlist": {
+    "title": "నా వాచ్‌లిస్ట్",
+    "moviesSaved": "{{count}} సినిమాలు సేవ్ చేయబడ్డాయి",
+    "empty": "మీ వాచ్‌లిస్ట్ ఖాళీగా ఉంది",
+    "emptySubtitle": "మీరు చూడాలనుకునే సినిమాలను ట్రాక్ చేయడానికి వాటిని జోడించడం ప్రారంభించండి",
+    "discoverMovies": "సినిమాలు కనుగొనండి",
+    "availableToWatch": "చూడటానికి అందుబాటులో ఉంది",
+    "upcomingReleases": "రాబోయే రిలీజ్‌లు",
+    "watchedMovies": "చూసిన సినిమాలు"
+  },
+  "surprise": {
+    "title": "ఆశ్చర్యం కంటెంట్",
+    "subtitle": "ప్రత్యేక & దాచిన రత్నాలు",
+    "all": "అన్నీ",
+    "songs": "పాటలు",
+    "shortFilms": "షార్ట్ ఫిల్మ్స్",
+    "bts": "బిటిఎస్",
+    "interviews": "ఇంటర్వ్యూలు"
+  },
+  "profile": {
+    "title": "ప్రొఫైల్",
+    "editProfile": "ప్రొఫైల్ మార్చు",
+    "notifications": "నోటిఫికేషన్లు",
+    "myReviews": "నా సమీక్షలు",
+    "settings": "సెట్టింగ్స్",
+    "favoriteActors": "ఇష్టమైన నటులు",
+    "watchedMovies": "చూసిన సినిమాలు",
+    "logout": "లాగ్‌అవుట్",
+    "loginSignUp": "లాగిన్ / సైన్ అప్",
+    "memberSince": "సభ్యత నుండి {{date}}",
+    "version": "ఫానివర్జ్ v1.0.0",
+    "tagline": "మీ తెలుగు సినిమా సహచరుడు"
+  },
+  "auth": {
+    "signIn": "సైన్ ఇన్",
+    "signUp": "సైన్ అప్",
+    "createAccount": "ఖాతా సృష్టించు",
+    "forgotPassword": "పాస్‌వర్డ్ మర్చిపోయారా?",
+    "resetPassword": "పాస్‌వర్డ్ రీసెట్",
+    "continueAsGuest": "అతిథిగా కొనసాగించు",
+    "email": "ఇమెయిల్",
+    "password": "పాస్‌వర్డ్",
+    "confirmPassword": "పాస్‌వర్డ్ నిర్ధారించు",
+    "fullName": "పూర్తి పేరు",
+    "or": "లేదా",
+    "backToSignIn": "సైన్ ఇన్‌కు తిరిగి వెళ్ళు",
+    "dontHaveAccount": "ఖాతా లేదా?",
+    "alreadyHaveAccount": "ఖాతా ఉందా?"
+  },
+  "notifications": {
+    "title": "నోటిఫికేషన్లు",
+    "markAllRead": "అన్నీ చదివినట్లు గుర్తించు",
+    "empty": "నోటిఫికేషన్లు ఇంకా లేవు",
+    "emptySubtitle": "రిలీజ్‌లు మరియు అప్‌డేట్‌ల గురించి మీకు తెలియజేయబడుతుంది"
+  },
+  "settings": {
+    "title": "సెట్టింగ్స్",
+    "pushNotifications": "పుష్ నోటిఫికేషన్లు",
+    "emailNotifications": "ఇమెయిల్ నోటిఫికేషన్లు",
+    "changePassword": "పాస్‌వర్డ్ మార్చు",
+    "privacySettings": "ప్రైవసీ సెట్టింగ్స్",
+    "twoFactorAuth": "టు-ఫ్యాక్టర్ ఆథెంటికేషన్",
+    "language": "భాష",
+    "autoDownload": "ఆటో-డౌన్‌లోడ్ పోస్టర్లు",
+    "clearCache": "కాష్ క్లియర్ చేయి",
+    "downloadData": "డేటా డౌన్‌లోడ్",
+    "helpSupport": "సహాయం & మద్దతు",
+    "termsOfService": "సేవా నిబంధనలు",
+    "privacyPolicy": "ప్రైవసీ పాలసీ"
+  }
+}
