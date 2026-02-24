@@ -12,13 +12,14 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import ScreenHeader from '@/components/common/ScreenHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 import { colors } from '@/theme/colors';
+import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 
-const PLACEHOLDER_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200';
 const BIO_LIMIT = 150;
 
 export default function EditProfileScreen() {
@@ -86,17 +87,7 @@ export default function EditProfileScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+      <ScreenHeader title="Edit Profile" />
 
       {/* Avatar Section */}
       <View style={styles.avatarSection}>
@@ -268,30 +259,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 16,
     paddingBottom: 48,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 32,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
 
   // Avatar

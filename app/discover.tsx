@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { useFilterStore } from '@/stores/useFilterStore';
@@ -276,9 +277,16 @@ export default function DiscoverScreen() {
         data={filteredMovies}
         numColumns={2}
         keyExtractor={(item) => item.id}
-        columnWrapperStyle={styles.gridRow}
+        columnWrapperStyle={filteredMovies.length > 0 ? styles.gridRow : undefined}
         contentContainerStyle={styles.gridContent}
         renderItem={renderGridItem}
+        ListEmptyComponent={
+          <EmptyState
+            icon="film-outline"
+            title="No movies found"
+            subtitle="Try adjusting your filters or search terms"
+          />
+        }
         showsVerticalScrollIndicator={false}
       />
 

@@ -7,12 +7,14 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/theme/colors';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useMovieSearch } from '@/features/movies/hooks/useMovieSearch';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { Movie } from '@/types';
+import { STORAGE_KEYS } from '@/constants/storage';
 
-const RECENT_SEARCHES_KEY = 'recent_searches';
+const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;
 
 export default function SearchScreen() {
@@ -164,6 +166,11 @@ export default function SearchScreen() {
       )}
 
       {/* Results */}
+      {hasQuery && results.length > 0 && (
+        <Text style={styles.resultsCount}>
+          {results.length} result{results.length !== 1 ? 's' : ''} found
+        </Text>
+      )}
       {hasQuery && (
         <FlashList
           data={results}
@@ -171,11 +178,11 @@ export default function SearchScreen() {
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="search" size={48} color={colors.white20} />
-              <Text style={styles.emptyTitle}>No results found</Text>
-              <Text style={styles.emptySubtitle}>Try searching for another movie</Text>
-            </View>
+            <EmptyState
+              icon="search"
+              title="No results found"
+              subtitle="Try searching for another movie"
+            />
           }
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.resultItem} onPress={() => handleMoviePress(item)}>
@@ -286,6 +293,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   recentPillText: { color: colors.white, fontSize: 14 },
+  resultsCount: {
+    fontSize: 14,
+    color: colors.white60,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
   resultsList: { paddingHorizontal: 16, paddingBottom: 100 },
   resultItem: {
     flexDirection: 'row',
@@ -313,9 +326,6 @@ const styles = StyleSheet.create({
   resultRatingText: { color: colors.white, fontSize: 13, fontWeight: '600' },
   resultDirector: { fontSize: 13, color: colors.white60 },
   resultGenres: { fontSize: 12, color: colors.white50 },
-  emptyState: { alignItems: 'center', paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.white },
-  emptySubtitle: { fontSize: 14, color: colors.white60 },
   trendingSection: { marginTop: 24 },
   trendingHeader: {
     flexDirection: 'row',

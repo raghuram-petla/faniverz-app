@@ -40,7 +40,7 @@ export default function MovieDetailScreen() {
   const { data: watchlistEntry } = useIsWatchlisted(userId, id ?? '');
   const { add: addWatchlist, remove: removeWatchlist } = useWatchlistMutations();
   const { data: reviews = [] } = useMovieReviews(id ?? '');
-  const { create: createReview } = useReviewMutations();
+  const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
 
   const [activeTab, setActiveTab] = useState<TabName>('overview');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -357,6 +357,18 @@ export default function MovieDetailScreen() {
                       <Text style={styles.spoilerBadgeText}>Contains Spoiler</Text>
                     </View>
                   )}
+                  <TouchableOpacity
+                    style={styles.helpfulButton}
+                    onPress={() => {
+                      if (userId) {
+                        helpfulMutation.mutate({ userId, reviewId: review.id });
+                      }
+                    }}
+                    accessibilityLabel={`Mark review as helpful, ${review.helpful_count} found helpful`}
+                  >
+                    <Ionicons name="thumbs-up-outline" size={14} color={colors.white40} />
+                    <Text style={styles.helpfulText}>{review.helpful_count}</Text>
+                  </TouchableOpacity>
                 </View>
               ))}
             </View>
@@ -625,6 +637,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   spoilerBadgeText: { fontSize: 12, fontWeight: '600', color: colors.orange500 },
+  helpfulButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+  },
+  helpfulText: { fontSize: 12, color: colors.white40 },
 
   // Modal
   modalOverlay: {

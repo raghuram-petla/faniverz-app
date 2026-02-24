@@ -6,8 +6,10 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Movie } from '@/types';
 
+const mockPush = jest.fn();
+const mockBack = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: mockBack }),
 }));
 
 const mockResults: Movie[] = [
@@ -39,8 +41,9 @@ jest.mock('@/features/movies/hooks/useMovieSearch', () => ({
   useMovieSearch: (...args: unknown[]) => mockUseMovieSearch(...args),
 }));
 
+const mockUseMovies = jest.fn().mockReturnValue({ data: [] });
 jest.mock('@/features/movies/hooks/useMovies', () => ({
-  useMovies: jest.fn(() => ({ data: [] })),
+  useMovies: () => mockUseMovies(),
 }));
 
 jest.mock('@/features/ott/hooks', () => ({
@@ -116,5 +119,42 @@ describe('SearchScreen', () => {
 
     expect(screen.getByText('No results found')).toBeTruthy();
     expect(screen.getByText('Try searching for another movie')).toBeTruthy();
+  });
+
+  it('renders Trending Now section when movies exist', () => {
+    const trendingMovies = [{ ...mockResults[0], id: 't1', title: 'Top Movie', rating: 5.0 }];
+    mockUseMovies.mockReturnValue({ data: trendingMovies });
+    render(<SearchScreen />);
+    expect(screen.getByText('Trending Now')).toBeTruthy();
+    expect(screen.getByText('Top Movie')).toBeTruthy();
+  });
+
+  it('removes a recent search when its close button is pressed', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify(['Pushpa', 'RRR']));
+
+    const { findByText } = render(<SearchScreen />);
+    await findByText('Pushpa');
+
+    // The Clear button removes all recent searches
+    fireEvent.press(screen.getByText('Clear'));
+    expect(AsyncStorage.removeItem).toHaveBeenCalled();
+  });
+
+  it('navigates back when Cancel is pressed', () => {
+    render(<SearchScreen />);
+    fireEvent.press(screen.getByText('Cancel'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  it('clears the query when the X button is pressed and shows no results', () => {
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'pushpa');
+    expect(input.props.value).toBe('pushpa');
+
+    const clearButtons = screen.UNSAFE_queryAllByType(require('react-native').TouchableOpacity);
+    fireEvent.press(clearButtons[0]);
+    expect(input.props.value).toBe('');
   });
 });

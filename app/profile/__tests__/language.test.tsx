@@ -3,7 +3,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
@@ -46,5 +46,23 @@ describe('LanguageScreen', () => {
     expect(englishOption).toBeTruthy();
     // Telugu native script should also be visible
     expect(screen.getByText('తెలుగు')).toBeTruthy();
+  });
+
+  it('selects Telugu when Telugu option is pressed', async () => {
+    render(<LanguageScreen />);
+    fireEvent.press(screen.getByText('Telugu'));
+    const i18n = require('@/i18n').default;
+    await waitFor(() => {
+      expect(i18n.changeLanguage).toHaveBeenCalledWith('te');
+    });
+  });
+
+  it('saves selected language to AsyncStorage', async () => {
+    render(<LanguageScreen />);
+    fireEvent.press(screen.getByText('Telugu'));
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    await waitFor(() => {
+      expect(AsyncStorage.setItem).toHaveBeenCalled();
+    });
   });
 });

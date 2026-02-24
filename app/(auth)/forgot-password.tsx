@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
+import ScreenHeader from '@/components/common/ScreenHeader';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -36,17 +37,7 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reset Password</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+      <ScreenHeader title="Reset Password" />
 
       <View style={styles.body}>
         {sent ? (
@@ -135,30 +126,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.black,
     paddingHorizontal: 16,
     paddingTop: 56,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 32,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
 
   // Body

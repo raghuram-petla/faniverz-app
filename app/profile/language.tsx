@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/theme/colors';
 import i18n from '@/i18n';
+import { STORAGE_KEYS } from '@/constants/storage';
+import ScreenHeader from '@/components/common/ScreenHeader';
 
-const LANG_STORAGE_KEY = 'preferred_lang';
+const LANG_STORAGE_KEY = STORAGE_KEYS.PREFERRED_LANG;
 
 interface Language {
   code: string;
@@ -21,7 +21,6 @@ const LANGUAGES: Language[] = [
 ];
 
 export default function LanguageScreen() {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string>(i18n.language ?? 'en');
 
@@ -34,17 +33,7 @@ export default function LanguageScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Language</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+      <ScreenHeader title="Language" />
 
       {/* Language options */}
       <View style={styles.optionsList}>
@@ -80,30 +69,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.black,
     paddingHorizontal: 16,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 32,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
 
   // Options list

@@ -186,6 +186,39 @@ export default function CalendarScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Day */}
+          <Text style={[styles.filterLabel, { marginTop: 16 }]}>Day</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dayScroll}
+          >
+            {Array.from(
+              {
+                length:
+                  selectedMonth !== null && selectedYear !== null
+                    ? new Date(selectedYear, selectedMonth + 1, 0).getDate()
+                    : 31,
+              },
+              (_, i) => i + 1,
+            ).map((d) => (
+              <TouchableOpacity
+                key={d}
+                style={[styles.dayButton, selectedDay === d && styles.monthButtonActive]}
+                onPress={() => setDate(selectedYear, selectedMonth, selectedDay === d ? null : d)}
+              >
+                <Text
+                  style={[
+                    styles.monthButtonText,
+                    selectedDay === d && styles.monthButtonTextActive,
+                  ]}
+                >
+                  {d}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       )}
 
@@ -411,6 +444,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  dayScroll: {
+    gap: 8,
+  },
+  dayButton: {
+    width: 44,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.white5,
+    alignItems: 'center',
   },
   monthButton: {
     width: '30%',

@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlist, useWatchlistMutations } from '@/features/watchlist/hooks';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/theme/colors';
 import { WatchlistEntry } from '@/types';
 
@@ -288,21 +289,13 @@ export default function WatchlistScreen() {
           </View>
         </View>
         <View style={styles.emptyContainer}>
-          <View style={styles.emptyIconCircle}>
-            <Ionicons name="bookmark-outline" size={40} color={colors.white20} />
-          </View>
-          <Text style={styles.emptyTitle}>Sign in to use Watchlist</Text>
-          <Text style={styles.emptySubtitle}>
-            Create an account or sign in to save movies and track what you watch.
-          </Text>
-          <TouchableOpacity
-            style={styles.discoverBtn}
-            onPress={() => router.push('/auth')}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-          >
-            <Text style={styles.discoverBtnText}>Sign In</Text>
-          </TouchableOpacity>
+          <EmptyState
+            icon="bookmark-outline"
+            title="Sign in to use Watchlist"
+            subtitle="Create an account or sign in to save movies and track what you watch."
+            actionLabel="Sign In"
+            onAction={() => router.push('/auth')}
+          />
         </View>
       </View>
     );
@@ -341,21 +334,13 @@ export default function WatchlistScreen() {
           </View>
         </View>
         <View style={styles.emptyContainer}>
-          <View style={styles.emptyIconCircle}>
-            <Ionicons name="bookmark-outline" size={40} color={colors.white20} />
-          </View>
-          <Text style={styles.emptyTitle}>Your watchlist is empty</Text>
-          <Text style={styles.emptySubtitle}>
-            Start adding movies to your watchlist to keep track of what you want to watch
-          </Text>
-          <TouchableOpacity
-            style={styles.discoverBtn}
-            onPress={() => router.push('/discover')}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-          >
-            <Text style={styles.discoverBtnText}>Discover Movies</Text>
-          </TouchableOpacity>
+          <EmptyState
+            icon="bookmark-outline"
+            title="Your watchlist is empty"
+            subtitle="Start adding movies to your watchlist to keep track of what you want to watch"
+            actionLabel="Discover Movies"
+            onAction={() => router.push('/discover')}
+          />
         </View>
       </View>
     );
@@ -485,40 +470,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 32,
     paddingBottom: 80,
-  },
-  emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.white5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.white,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.white60,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  discoverBtn: {
-    backgroundColor: colors.red600,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 999,
-  },
-  discoverBtnText: {
-    color: colors.white,
-    fontSize: 15,
-    fontWeight: '600',
   },
 
   // Scroll

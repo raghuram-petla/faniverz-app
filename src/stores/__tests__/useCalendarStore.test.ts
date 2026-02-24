@@ -66,4 +66,29 @@ describe('useCalendarStore', () => {
     useCalendarStore.getState().clearFilters();
     expect(useCalendarStore.getState().hasUserFiltered).toBe(false);
   });
+
+  it('setDate with null year and month falls back to current date', () => {
+    const now = new Date();
+    useCalendarStore.getState().setDate(null, null);
+    const state = useCalendarStore.getState();
+    expect(state.selectedYear).toBe(now.getFullYear());
+    expect(state.selectedMonth).toBe(now.getMonth());
+    expect(state.selectedDay).toBeNull();
+  });
+
+  it('navigateMonth forward from mid-year stays in same year', () => {
+    useCalendarStore.setState({ selectedMonth: 5, selectedYear: 2026 });
+    useCalendarStore.getState().navigateMonth(1);
+    const state = useCalendarStore.getState();
+    expect(state.selectedMonth).toBe(6);
+    expect(state.selectedYear).toBe(2026);
+    expect(state.selectedDay).toBeNull();
+  });
+
+  it('clearFilters resets showFilters to false', () => {
+    useCalendarStore.getState().toggleFilters();
+    expect(useCalendarStore.getState().showFilters).toBe(true);
+    useCalendarStore.getState().clearFilters();
+    expect(useCalendarStore.getState().showFilters).toBe(false);
+  });
 });

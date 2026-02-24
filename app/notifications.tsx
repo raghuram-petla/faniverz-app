@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
+import ScreenHeader from '@/components/common/ScreenHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import {
   useNotifications,
@@ -11,6 +13,7 @@ import {
   useNotificationMutations,
 } from '@/features/notifications/hooks';
 import { Notification } from '@/types';
+import { formatRelativeTime } from '@/utils/formatDate';
 
 type NotificationIconConfig = {
   name: React.ComponentProps<typeof Ionicons>['name'];
@@ -23,21 +26,6 @@ const TYPE_ICON: Record<string, NotificationIconConfig> = {
   trending: { name: 'trending-up', bg: colors.red600 },
   reminder: { name: 'star-outline', bg: colors.yellow400 },
 };
-
-function formatTimestamp(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 function NotificationItem({
   item,
@@ -72,22 +60,19 @@ function NotificationItem({
         <Text style={styles.itemMessage} numberOfLines={2}>
           {item.message}
         </Text>
-        <Text style={styles.itemTimestamp}>{formatTimestamp(item.created_at)}</Text>
+        {/* TODO: Add PlatformBadge here when Notification type includes platform object (name, color, logo).
+           Currently Notification only has platform_id (string | null) but no joined platform data.
+           When the API/query is updated to join the platforms table, import PlatformBadge from
+           '@/components/ui/PlatformBadge' and render it for release-type notifications:
+           {item.type === 'release' && item.platform && (
+             <PlatformBadge platform={item.platform} size={20} />
+           )} */}
+        <Text style={styles.itemTimestamp}>{formatRelativeTime(item.created_at)}</Text>
       </View>
 
       {/* Unread indicator */}
       {!item.read && <View style={styles.unreadDot} />}
     </TouchableOpacity>
-  );
-}
-
-function EmptyState() {
-  return (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="notifications-outline" size={48} color={colors.white20} />
-      <Text style={styles.emptyTitle}>No notifications yet</Text>
-      <Text style={styles.emptySubtitle}>You'll be notified about releases and updates</Text>
-    </View>
   );
 }
 
@@ -119,33 +104,29 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.screen}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          accessibilityLabel="Go back"
-        >
-          <Ionicons name="arrow-back" size={22} color={colors.white} />
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          {unreadCount > 0 && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-            </View>
-          )}
-        </View>
-
-        <TouchableOpacity
-          onPress={handleMarkAllRead}
-          disabled={unreadCount === 0}
-          accessibilityLabel="Mark all as read"
-        >
-          <Text style={[styles.markAllText, unreadCount === 0 && styles.markAllTextDisabled]}>
-            Mark all read
-          </Text>
-        </TouchableOpacity>
+      <View style={[styles.headerWrapper, { paddingTop: insets.top + 12 }]}>
+        <ScreenHeader
+          title="Notifications"
+          backIcon="arrow-back"
+          titleBadge={
+            unreadCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )
+          }
+          rightAction={
+            <TouchableOpacity
+              onPress={handleMarkAllRead}
+              disabled={unreadCount === 0}
+              accessibilityLabel="Mark all as read"
+            >
+              <Text style={[styles.markAllText, unreadCount === 0 && styles.markAllTextDisabled]}>
+                Mark all read
+              </Text>
+            </TouchableOpacity>
+          }
+        />
       </View>
 
       {/* Notification list */}
@@ -155,7 +136,13 @@ export default function NotificationsScreen() {
         renderItem={({ item }) => (
           <NotificationItem item={item} onPress={handleNotificationPress} />
         )}
-        ListEmptyComponent={<EmptyState />}
+        ListEmptyComponent={
+          <EmptyState
+            icon="notifications-outline"
+            title="No notifications yet"
+            subtitle="You'll be notified about releases and updates"
+          />
+        }
         contentContainerStyle={
           notifications.length === 0 ? styles.listEmptyContent : styles.listContent
         }
@@ -173,31 +160,9 @@ const styles = StyleSheet.create({
   },
 
   // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerWrapper: {
     paddingBottom: 16,
     paddingHorizontal: 16,
-    gap: 12,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.black50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerCenter: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
   },
   unreadBadge: {
     backgroundColor: colors.red600,
@@ -295,26 +260,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.white10,
     marginHorizontal: 16,
-  },
-
-  // Empty state
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.white,
-    marginTop: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.white40,
-    textAlign: 'center',
-    lineHeight: 20,
   },
 });

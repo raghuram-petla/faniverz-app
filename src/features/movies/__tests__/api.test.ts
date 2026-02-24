@@ -123,5 +123,44 @@ describe('movies api', () => {
       expect(supabase.from).toHaveBeenCalledWith('movies');
       expect(mockGte).toHaveBeenCalledWith('release_date', '2025-02-01');
     });
+
+    it('throws on error in fetchMoviesByMonth', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ lte: mockLte });
+      mockLte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: null, error: new Error('Month query failed') });
+
+      await expect(fetchMoviesByMonth(2025, 1)).rejects.toThrow('Month query failed');
+    });
+  });
+
+  describe('fetchMovies — additional sort variants', () => {
+    it('orders by release_date ascending when sortBy is upcoming', async () => {
+      await fetchMovies({ sortBy: 'upcoming' });
+      expect(mockOrder).toHaveBeenCalledWith('release_date', { ascending: true });
+    });
+
+    it('orders by release_date descending when sortBy is latest', async () => {
+      await fetchMovies({ sortBy: 'latest' });
+      expect(mockOrder).toHaveBeenCalledWith('release_date', { ascending: false });
+    });
+
+    it('returns data array when data is not null', async () => {
+      const mockData = [{ id: '1', title: 'Test Movie' }];
+      mockOrder.mockResolvedValue({ data: mockData, error: null });
+      const result = await fetchMovies();
+      expect(result).toEqual(mockData);
+    });
+  });
+
+  describe('searchMovies — additional', () => {
+    it('throws on error in searchMovies', async () => {
+      mockSelect.mockReturnValue({ or: mockOr });
+      mockOr.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: null, error: new Error('Search failed') });
+
+      await expect(searchMovies('test')).rejects.toThrow('Search failed');
+    });
   });
 });

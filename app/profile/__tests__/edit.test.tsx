@@ -3,7 +3,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
 // Must be hoisted before component import
 jest.mock('expo-router', () => ({
@@ -39,9 +39,10 @@ jest.mock('@/features/auth/hooks/useProfile', () => ({
   }),
 }));
 
+const mockUpdateMutate = jest.fn();
 jest.mock('@/features/auth/hooks/useUpdateProfile', () => ({
   useUpdateProfile: () => ({
-    mutate: jest.fn(),
+    mutate: mockUpdateMutate,
     isPending: false,
   }),
 }));
@@ -75,5 +76,42 @@ describe('EditProfileScreen', () => {
   it('shows Save button', () => {
     render(<EditProfileScreen />);
     expect(screen.getByText('Save Changes')).toBeTruthy();
+  });
+
+  it('renders all form fields with initial profile values', () => {
+    render(<EditProfileScreen />);
+    expect(screen.getByDisplayValue('John Doe')).toBeTruthy();
+    expect(screen.getByDisplayValue('+91 98765 43210')).toBeTruthy();
+    expect(screen.getByDisplayValue('Hyderabad, India')).toBeTruthy();
+    expect(screen.getByDisplayValue('Big fan of Telugu cinema.')).toBeTruthy();
+  });
+
+  it('calls updateProfile when Save Changes is pressed', () => {
+    render(<EditProfileScreen />);
+    fireEvent.press(screen.getByText('Save Changes'));
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        display_name: 'John Doe',
+        bio: 'Big fan of Telugu cinema.',
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('shows email field as non-editable with hint text', () => {
+    render(<EditProfileScreen />);
+    expect(screen.getByDisplayValue('test@example.com')).toBeTruthy();
+    expect(screen.getByText('Email cannot be changed here.')).toBeTruthy();
+  });
+
+  it('shows loading indicator when profile is loading', () => {
+    // Override useProfile to return isLoading: true
+    jest.spyOn(require('@/features/auth/hooks/useProfile'), 'useProfile').mockReturnValueOnce({
+      data: null,
+      isLoading: true,
+    });
+    render(<EditProfileScreen />);
+    // The loading container renders ActivityIndicator, not the form
+    expect(screen.queryByText('Edit Profile')).toBeNull();
   });
 });

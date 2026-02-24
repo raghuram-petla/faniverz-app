@@ -11,13 +11,15 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import ScreenHeader from '@/components/common/ScreenHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useUserReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { Review } from '@/types';
 import { colors } from '@/theme/colors';
-
-const PLACEHOLDER_POSTER = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { formatDate } from '@/utils/formatDate';
 
 type SortKey = 'recent' | 'rating' | 'helpful';
 
@@ -34,11 +36,6 @@ function StarRow({ rating }: { rating: number }) {
       ))}
     </View>
   );
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export default function MyReviewsScreen() {
@@ -96,17 +93,7 @@ export default function MyReviewsScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Reviews</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+      <ScreenHeader title="My Reviews" />
 
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
@@ -151,11 +138,11 @@ export default function MyReviewsScreen() {
           <ActivityIndicator size="large" color={colors.red600} />
         </View>
       ) : sorted.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="star-outline" size={48} color={colors.white20} />
-          <Text style={styles.emptyTitle}>No reviews yet</Text>
-          <Text style={styles.emptySubtitle}>Your movie reviews will appear here.</Text>
-        </View>
+        <EmptyState
+          icon="star-outline"
+          title="No reviews yet"
+          subtitle="Your movie reviews will appear here."
+        />
       ) : (
         <View style={styles.reviewList}>
           {sorted.map((review) => {
@@ -243,30 +230,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  headerPlaceholder: {
-    width: 40,
-  },
-
   // Stats
   statsGrid: {
     flexDirection: 'row',
@@ -321,23 +284,6 @@ const styles = StyleSheet.create({
   },
   sortButtonTextActive: {
     color: colors.white,
-  },
-
-  // Empty
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 64,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.white40,
-    textAlign: 'center',
   },
 
   // Review List

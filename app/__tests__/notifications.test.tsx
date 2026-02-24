@@ -3,7 +3,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
@@ -101,5 +101,25 @@ describe('NotificationsScreen', () => {
     render(<NotificationsScreen />);
     expect(screen.getByText('No notifications yet')).toBeTruthy();
     expect(screen.getByText("You'll be notified about releases and updates")).toBeTruthy();
+  });
+
+  it('calls markAllRead when "Mark all read" is pressed and there are unread notifications', () => {
+    render(<NotificationsScreen />);
+    fireEvent.press(screen.getByLabelText('Mark all as read'));
+    expect(mockMarkAllRead.mutate).toHaveBeenCalledWith('user-1');
+  });
+
+  it('calls markRead when an unread notification is pressed', () => {
+    render(<NotificationsScreen />);
+    // Press the first notification which is unread
+    fireEvent.press(screen.getByLabelText('New Release'));
+    expect(mockMarkRead.mutate).toHaveBeenCalledWith('n1');
+  });
+
+  it('does not call markRead when a read notification is pressed', () => {
+    render(<NotificationsScreen />);
+    // Press the second notification which is already read
+    fireEvent.press(screen.getByLabelText('Trending Movie'));
+    expect(mockMarkRead.mutate).not.toHaveBeenCalled();
   });
 });

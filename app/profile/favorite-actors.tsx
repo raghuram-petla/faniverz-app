@@ -10,13 +10,15 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import ScreenHeader from '@/components/common/ScreenHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useFavoriteActors, useFavoriteActorMutations } from '@/features/actors/hooks';
 import { Actor, FavoriteActor } from '@/types';
 import { colors } from '@/theme/colors';
+import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 
-const PLACEHOLDER_PHOTO = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300';
 const COLUMN_GAP = 12;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - 32 - COLUMN_GAP) / 2;
@@ -54,30 +56,25 @@ export default function FavoriteActorsScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Favorite Actors</Text>
-          {count > 0 && (
+      <ScreenHeader
+        title="Favorite Actors"
+        titleBadge={
+          count > 0 && (
             <View style={styles.countBadge}>
               <Text style={styles.countBadgeText}>{count}</Text>
             </View>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          activeOpacity={0.8}
-          onPress={() => router.push('/search')}
-        >
-          <Ionicons name="add" size={20} color={colors.white} />
-        </TouchableOpacity>
-      </View>
+          )
+        }
+        rightAction={
+          <TouchableOpacity
+            style={styles.addButton}
+            activeOpacity={0.8}
+            onPress={() => router.push('/search')}
+          >
+            <Ionicons name="add" size={20} color={colors.white} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* Content */}
       {isLoading ? (
@@ -85,23 +82,13 @@ export default function FavoriteActorsScreen() {
           <ActivityIndicator size="large" color={colors.red600} />
         </View>
       ) : actorList.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconWrapper}>
-            <Ionicons name="heart-outline" size={40} color={colors.red600} />
-          </View>
-          <Text style={styles.emptyTitle}>No favorite actors yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Add actors you love to keep track of their upcoming movies.
-          </Text>
-          <TouchableOpacity
-            style={styles.addActorsButton}
-            activeOpacity={0.85}
-            onPress={() => router.push('/search')}
-          >
-            <Ionicons name="add" size={18} color={colors.white} />
-            <Text style={styles.addActorsText}>Add Actors</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="heart-outline"
+          title="No favorite actors yet"
+          subtitle="Add actors you love to keep track of their upcoming movies."
+          actionLabel="Add Actors"
+          onAction={() => router.push('/search')}
+        />
       ) : (
         <View style={styles.grid}>
           {rows.map((row, rowIndex) => (
@@ -166,31 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
+  // Header badge & action
   countBadge: {
     backgroundColor: colors.red600,
     borderRadius: 999,
@@ -211,49 +174,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.red600,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 64,
-    gap: 12,
-    paddingHorizontal: 24,
-  },
-  emptyIconWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.red600_20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.white40,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  addActorsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.red600,
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    marginTop: 8,
-  },
-  addActorsText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.white,
   },
 
   // Grid

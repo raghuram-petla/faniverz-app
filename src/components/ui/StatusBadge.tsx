@@ -1,22 +1,16 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 import { ReleaseType } from '@/types';
-
-const statusConfig: Record<ReleaseType, { bg: string; label: string }> = {
-  theatrical: { bg: colors.red600, label: 'In Theaters' },
-  ott: { bg: colors.purple600, label: 'Streaming' },
-  upcoming: { bg: colors.blue600, label: 'Coming Soon' },
-};
+import { getReleaseTypeLabel, getReleaseTypeColor } from '@/constants/releaseType';
 
 interface StatusBadgeProps {
   type: ReleaseType;
 }
 
 export function StatusBadge({ type }: StatusBadgeProps) {
-  const config = statusConfig[type];
   return (
-    <View style={[styles.badge, { backgroundColor: config.bg }]}>
-      <Text style={styles.text}>{config.label}</Text>
+    <View style={[styles.badge, { backgroundColor: getReleaseTypeColor(type) }]}>
+      <Text style={styles.text}>{getReleaseTypeLabel(type)}</Text>
     </View>
   );
 }

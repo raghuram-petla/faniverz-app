@@ -1,10 +1,11 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { MovieCard } from '../MovieCard';
 import { Movie } from '@/types';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 const mockMovie: Movie = {
@@ -59,5 +60,23 @@ describe('MovieCard', () => {
   it('is accessible with movie title label', () => {
     const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
     expect(getByLabelText('Pushpa 2: The Rule')).toBeTruthy();
+  });
+
+  it('navigates to movie detail when card is pressed', () => {
+    const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
+    fireEvent.press(getByLabelText('Pushpa 2: The Rule'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/1');
+  });
+
+  it('does not show rating row when rating is 0', () => {
+    const noRatingMovie = { ...mockMovie, rating: 0, review_count: 0 };
+    const { queryByText } = render(<MovieCard movie={noRatingMovie} />);
+    expect(queryByText('0')).toBeNull();
+  });
+
+  it('renders without poster_url (null fallback)', () => {
+    const noPosterMovie = { ...mockMovie, poster_url: null };
+    const { getByText } = render(<MovieCard movie={noPosterMovie} />);
+    expect(getByText('Pushpa 2: The Rule')).toBeTruthy();
   });
 });

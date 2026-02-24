@@ -8,16 +8,18 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import ScreenHeader from '@/components/common/ScreenHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlist } from '@/features/watchlist/hooks';
 import { WatchlistEntry } from '@/types';
 import { colors } from '@/theme/colors';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { formatWatchTime } from '@/utils/formatDate';
 
-const PLACEHOLDER_POSTER = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200';
 const COLUMN_GAP = 12;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - 32 - COLUMN_GAP) / 2;
@@ -32,14 +34,8 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'title', label: 'Title A–Z' },
 ];
 
-function formatWatchTime(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  return `${h}h`;
-}
-
 export default function WatchedMoviesScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { user } = useAuth();
   const { watched, isLoading } = useWatchlist(user?.id ?? '');
 
@@ -85,24 +81,16 @@ export default function WatchedMoviesScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.white} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Watched Movies</Text>
-          {count > 0 && (
+      <ScreenHeader
+        title="Watched Movies"
+        titleBadge={
+          count > 0 && (
             <View style={styles.countBadge}>
               <Text style={styles.countBadgeText}>{count}</Text>
             </View>
-          )}
-        </View>
-        <View style={styles.headerPlaceholder} />
-      </View>
+          )
+        }
+      />
 
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
@@ -173,15 +161,11 @@ export default function WatchedMoviesScreen() {
           <ActivityIndicator size="large" color={colors.red600} />
         </View>
       ) : sorted.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconWrapper}>
-            <Ionicons name="eye-outline" size={40} color={colors.white30} />
-          </View>
-          <Text style={styles.emptyTitle}>No watched movies yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Mark movies as watched from your watchlist to track them here.
-          </Text>
-        </View>
+        <EmptyState
+          icon="eye-outline"
+          title="No watched movies yet"
+          subtitle="Mark movies as watched from your watchlist to track them here."
+        />
       ) : (
         <View style={styles.grid}>
           {rows.map((row, rowIndex) => (
@@ -242,31 +226,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
+  // Header badge
   countBadge: {
     backgroundColor: colors.white10,
     borderRadius: 999,
@@ -279,9 +239,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: colors.white60,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
 
   // Stats
@@ -369,34 +326,6 @@ const styles = StyleSheet.create({
   sortMenuItemTextActive: {
     color: colors.white,
     fontWeight: '600',
-  },
-
-  // Empty
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 64,
-    gap: 12,
-    paddingHorizontal: 24,
-  },
-  emptyIconWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.white5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.white40,
-    textAlign: 'center',
-    lineHeight: 20,
   },
 
   // Grid

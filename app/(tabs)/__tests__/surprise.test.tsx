@@ -11,7 +11,7 @@ jest.mock('expo-router', () => ({
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import SurpriseScreen from '../surprise';
 import { useSurpriseContent } from '@/features/surprise/hooks';
 
@@ -87,5 +87,34 @@ describe('SurpriseScreen', () => {
     render(<SurpriseScreen />);
 
     expect(screen.getByText('Did you know?')).toBeTruthy();
+  });
+
+  it('filters content when a category pill is selected', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // Select "Songs" pill
+    fireEvent.press(screen.getByText('Songs'));
+    // useSurpriseContent should be re-called with the 'song' category
+    expect(mockUseSurpriseContent).toHaveBeenCalledWith('song');
+  });
+
+  it('renders grid cards with accessibility labels', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // Grid items have accessibilityLabel "Play <title>"
+    expect(screen.getByLabelText('Play RRR Behind The Scenes')).toBeTruthy();
+    expect(screen.getByLabelText('Play Director Interview')).toBeTruthy();
+  });
+
+  it('shows loading state when data is loading', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: [], isLoading: true });
+
+    render(<SurpriseScreen />);
+
+    expect(screen.getByText('Loading...')).toBeTruthy();
   });
 });

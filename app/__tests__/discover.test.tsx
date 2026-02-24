@@ -3,7 +3,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { Movie } from '@/types';
 import { useFilterStore } from '@/stores/useFilterStore';
 
@@ -135,5 +135,61 @@ describe('DiscoverScreen', () => {
     useMovies.mockReturnValueOnce({ data: [] });
     const { getByPlaceholderText } = render(<DiscoverScreen />);
     expect(getByPlaceholderText('Search movies...')).toBeTruthy();
+  });
+
+  it('opens filter modal when Filters button is pressed', () => {
+    const { getByText } = render(<DiscoverScreen />);
+    fireEvent.press(getByText('Filters'));
+    // Modal content renders "Streaming Platforms" and "Genres" headings
+    expect(getByText('Streaming Platforms')).toBeTruthy();
+    expect(getByText('Genres')).toBeTruthy();
+  });
+
+  it('toggles sort dropdown and selects Rating sort option', () => {
+    const { getByText } = render(<DiscoverScreen />);
+    // Open sort dropdown
+    fireEvent.press(getByText('Popular'));
+    // Sort options appear
+    expect(getByText('Rating')).toBeTruthy();
+    expect(getByText('Latest')).toBeTruthy();
+    expect(getByText('Upcoming')).toBeTruthy();
+    // Select Rating
+    fireEvent.press(getByText('Rating'));
+    expect(useFilterStore.getState().sortBy).toBe('top_rated');
+  });
+
+  it('toggles genre filter in modal and shows active pill', () => {
+    const { getByText } = render(<DiscoverScreen />);
+    // Open filter modal
+    fireEvent.press(getByText('Filters'));
+    // Toggle Action genre
+    fireEvent.press(getByText('Action'));
+    // Close modal
+    fireEvent.press(getByText(/Show.*Movies/));
+    // Active pill should appear
+    expect(useFilterStore.getState().selectedGenres).toContain('Action');
+  });
+
+  it('toggles platform filter in modal', () => {
+    const { getByText, getAllByText } = render(<DiscoverScreen />);
+    // Open filter modal
+    fireEvent.press(getByText('Filters'));
+    // The modal shows Netflix as a platform option
+    const netflixOptions = getAllByText('Netflix');
+    fireEvent.press(netflixOptions[netflixOptions.length - 1]);
+    expect(useFilterStore.getState().selectedPlatforms).toContain('netflix');
+  });
+
+  it('clears all filters when Clear All is pressed', () => {
+    // Pre-populate filters
+    useFilterStore.getState().toggleGenre('Action');
+    useFilterStore.getState().togglePlatform('netflix');
+
+    const { getByText } = render(<DiscoverScreen />);
+    // Active pills and Clear All link should appear
+    fireEvent.press(getByText('Clear All'));
+    const state = useFilterStore.getState();
+    expect(state.selectedGenres).toEqual([]);
+    expect(state.selectedPlatforms).toEqual([]);
   });
 });

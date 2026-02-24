@@ -10,8 +10,8 @@ import { useWatchlist } from '@/features/watchlist/hooks';
 import { useUserReviews } from '@/features/reviews/hooks';
 import { useUnreadCount } from '@/features/notifications/hooks';
 import { colors } from '@/theme/colors';
-
-const PLACEHOLDER_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200';
+import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
+import { formatMemberSince } from '@/utils/formatDate';
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -28,12 +28,6 @@ const MENU_ITEMS: MenuItem[] = [
   { icon: 'heart-outline', label: 'Favorite Actors', route: '/profile/favorite-actors' },
   { icon: 'eye-outline', label: 'Watched Movies', route: '/profile/watched' },
 ];
-
-function formatMemberSince(dateString: string | null | undefined): string {
-  if (!dateString) return 'Unknown';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();

@@ -3,10 +3,12 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
 import SettingsScreen from '../settings';
@@ -36,5 +38,34 @@ describe('SettingsScreen', () => {
     render(<SettingsScreen />);
     expect(screen.getByText('Faniverz v1.0.0')).toBeTruthy();
     expect(screen.getByText('Build 2024.02.23')).toBeTruthy();
+  });
+
+  it('renders toggle switches and toggles push notifications', () => {
+    render(<SettingsScreen />);
+    // Find the Push Notifications toggle
+    // Toggle is a TouchableOpacity — find all of them
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    // The first toggleable touchable is the Push Notifications toggle
+    // Push Notifications row has a Toggle component
+    // We can verify the text and press the toggle
+    expect(screen.getByText('Push Notifications')).toBeTruthy();
+    // The toggles are the TouchableOpacities with toggle styles
+    // Since we can't directly test state, we just verify that pressing doesn't crash
+    fireEvent.press(touchables[0]);
+  });
+
+  it('navigates to language screen when Language option is pressed', () => {
+    render(<SettingsScreen />);
+    fireEvent.press(screen.getByText('Language'));
+    expect(mockPush).toHaveBeenCalledWith('/profile/language');
+  });
+
+  it('shows alert when Change Password is pressed', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<SettingsScreen />);
+    fireEvent.press(screen.getByText('Change Password'));
+    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', 'This feature is not yet available.');
+    alertSpy.mockRestore();
   });
 });

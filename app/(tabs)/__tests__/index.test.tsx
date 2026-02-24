@@ -11,8 +11,9 @@ jest.mock('@/features/ott/hooks', () => ({
   useMoviePlatformMap: jest.fn(),
 }));
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
 jest.mock('@/components/home/HeroCarousel', () => {
@@ -35,7 +36,7 @@ jest.mock('@/components/ui/SectionHeader', () => {
 });
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import HomeScreen from '../index';
@@ -200,5 +201,42 @@ describe('HomeScreen', () => {
     mockUsePlatforms.mockReturnValue({ data: [] });
     render(<HomeScreen />);
     expect(screen.getByText('Faniverz')).toBeTruthy();
+  });
+
+  it('navigates to discover with platform filter when a platform square is pressed', () => {
+    render(<HomeScreen />);
+    const netflixButton = screen.getByLabelText('Netflix');
+    fireEvent.press(netflixButton);
+    expect(mockPush).toHaveBeenCalledWith('/discover?platform=netflix');
+  });
+
+  it('renders "To Theaters" subsection when upcoming movies have no platforms', () => {
+    mockUseMoviePlatformMap.mockReturnValue({ data: {} });
+    render(<HomeScreen />);
+    expect(screen.getByText('To Theaters')).toBeTruthy();
+  });
+
+  it('renders "To Streaming" subsection when upcoming movies have platforms', () => {
+    mockUseMoviePlatformMap.mockReturnValue({
+      data: {
+        '3': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+      },
+    });
+    render(<HomeScreen />);
+    expect(screen.getByText('To Streaming')).toBeTruthy();
+  });
+
+  it('navigates to search when the search button is pressed', () => {
+    render(<HomeScreen />);
+    const searchButton = screen.getByLabelText('Search');
+    fireEvent.press(searchButton);
+    expect(mockPush).toHaveBeenCalledWith('/search');
+  });
+
+  it('navigates to notifications when the notifications button is pressed', () => {
+    render(<HomeScreen />);
+    const notifButton = screen.getByLabelText('Notifications');
+    fireEvent.press(notifButton);
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
 });

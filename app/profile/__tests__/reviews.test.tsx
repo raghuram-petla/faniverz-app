@@ -3,7 +3,8 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
@@ -99,5 +100,39 @@ describe('MyReviewsScreen', () => {
     render(<MyReviewsScreen />);
     expect(screen.getByText('No reviews yet')).toBeTruthy();
     expect(screen.getByText('Your movie reviews will appear here.')).toBeTruthy();
+  });
+
+  it('sorts reviews by rating when Rating sort button is pressed', () => {
+    render(<MyReviewsScreen />);
+    fireEvent.press(screen.getByText('Rating'));
+    // After sorting by rating, the 5-star review (Kalki) should come before the 4-star review (Pushpa)
+    const allMovieTitles = screen.getAllByText(/Pushpa 2|Kalki 2898 AD/);
+    // The first movie title in the sorted list should be Kalki (rating 5)
+    expect(allMovieTitles[0].props.children).toBe('Kalki 2898 AD');
+  });
+
+  it('shows delete confirmation dialog when Delete button is pressed', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<MyReviewsScreen />);
+    // Find and press the first Delete button
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.press(deleteButtons[0]);
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Delete Review',
+      'Are you sure you want to delete this review?',
+      expect.any(Array),
+    );
+    alertSpy.mockRestore();
+  });
+
+  it('sorts reviews by helpful count when Helpful sort button is pressed', () => {
+    render(<MyReviewsScreen />);
+    // Find the Helpful sort button - it's the one in the sort row
+    const helpfulButtons = screen.getAllByText('Helpful');
+    // Press the sort button (last one in the list, the sort row button)
+    fireEvent.press(helpfulButtons[helpfulButtons.length - 1]);
+    // After sorting by helpful, review-1 (helpful_count: 12) should appear before review-2 (helpful_count: 7)
+    const allMovieTitles = screen.getAllByText(/Pushpa 2|Kalki 2898 AD/);
+    expect(allMovieTitles[0].props.children).toBe('Pushpa 2');
   });
 });

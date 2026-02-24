@@ -26,12 +26,13 @@ jest.mock('@/features/notifications/hooks', () => ({
   useUnreadCount: jest.fn(() => 0),
 }));
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import ProfileScreen from '../profile';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
@@ -127,5 +128,32 @@ describe('ProfileScreen', () => {
     render(<ProfileScreen />);
 
     expect(screen.getByText('Login / Sign Up')).toBeTruthy();
+  });
+
+  it('shows guest user info when not logged in', () => {
+    setupGuest();
+
+    render(<ProfileScreen />);
+
+    expect(screen.getByText('Guest User')).toBeTruthy();
+    expect(screen.getByText('guest@example.com')).toBeTruthy();
+  });
+
+  it('navigates to Edit Profile when menu item is pressed', () => {
+    setupLoggedIn();
+
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Edit Profile'));
+    expect(mockPush).toHaveBeenCalledWith('/profile/edit');
+  });
+
+  it('calls signOut when Logout button is pressed', () => {
+    setupLoggedIn();
+
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Logout'));
+    expect(mockSignOut).toHaveBeenCalled();
   });
 });
