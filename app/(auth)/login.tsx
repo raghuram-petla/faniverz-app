@@ -28,7 +28,7 @@ export default function LoginScreen() {
     if (!email.trim() || !password) return;
     try {
       await signIn(email.trim(), password);
-      router.replace('/(tabs)');
+      router.back();
     } catch {
       // error is surfaced via the hook
     }
@@ -55,7 +55,6 @@ export default function LoginScreen() {
             <Ionicons name="film" size={32} color={colors.white} />
           </View>
           <Text style={styles.appName}>Faniverz</Text>
-          <Text style={styles.appNameTe}>ఫానివర్జ్</Text>
           <Text style={styles.tagline}>Your Telugu Cinema Companion</Text>
         </View>
 
@@ -181,11 +180,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '800',
     color: colors.white,
-  },
-  appNameTe: {
-    fontSize: 20,
-    color: colors.white60,
-    marginTop: 4,
   },
   tagline: {
     fontSize: 14,

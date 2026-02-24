@@ -17,7 +17,7 @@ interface Language {
 
 const LANGUAGES: Language[] = [
   { code: 'en', label: 'English', native: 'English' },
-  { code: 'te', label: 'Telugu', native: 'తెలుగు' },
+  { code: 'te', label: 'Telugu', native: 'Telugu' },
 ];
 
 export default function LanguageScreen() {

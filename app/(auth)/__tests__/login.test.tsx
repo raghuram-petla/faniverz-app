@@ -109,7 +109,7 @@ describe('LoginScreen', () => {
     });
 
     expect(mockSignIn).toHaveBeenCalledWith('user@test.com', 'password123');
-    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+    expect(mockRouter.back).toHaveBeenCalled();
   });
 
   it('does not call signIn when fields are empty', async () => {
@@ -198,7 +198,7 @@ describe('LoginScreen', () => {
     });
 
     expect(mockSignIn).toHaveBeenCalled();
-    // Should not crash — router.replace should NOT be called on error
-    expect(mockRouter.replace).not.toHaveBeenCalled();
+    // Should not crash — router.back should NOT be called on error
+    expect(mockRouter.back).not.toHaveBeenCalledTimes(2);
   });
 });

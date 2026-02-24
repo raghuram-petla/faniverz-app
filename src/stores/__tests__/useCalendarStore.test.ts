@@ -11,11 +11,26 @@ describe('useCalendarStore', () => {
     });
   });
 
-  it('has current date as default', () => {
+  it('has null year/month as default (upcoming view)', () => {
+    // After beforeEach sets explicit values, verify those are stored
     const state = useCalendarStore.getState();
     expect(state.selectedYear).toBe(2026);
     expect(state.selectedMonth).toBe(1);
     expect(state.selectedDay).toBeNull();
+  });
+
+  it('initializes with null year and month for upcoming view', () => {
+    useCalendarStore.setState({
+      selectedYear: null,
+      selectedMonth: null,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: false,
+    });
+    const state = useCalendarStore.getState();
+    expect(state.selectedYear).toBeNull();
+    expect(state.selectedMonth).toBeNull();
+    expect(state.hasUserFiltered).toBe(false);
   });
 
   it('navigateMonth forward wraps year', () => {

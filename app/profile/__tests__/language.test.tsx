@@ -44,8 +44,7 @@ describe('LanguageScreen', () => {
     // We rely on the text being present and the radio selection state via accessibility
     const englishOption = screen.getByText('English');
     expect(englishOption).toBeTruthy();
-    // Telugu native script should also be visible
-    expect(screen.getByText('తెలుగు')).toBeTruthy();
+    expect(screen.getByText('Telugu')).toBeTruthy();
   });
 
   it('selects Telugu when Telugu option is pressed', async () => {

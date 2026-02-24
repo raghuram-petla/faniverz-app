@@ -15,8 +15,8 @@ interface CalendarState {
 const now = new Date();
 
 export const useCalendarStore = create<CalendarState>((set) => ({
-  selectedYear: now.getFullYear(),
-  selectedMonth: now.getMonth(),
+  selectedYear: null,
+  selectedMonth: null,
   selectedDay: null,
   showFilters: false,
   hasUserFiltered: false,

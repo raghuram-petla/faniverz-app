@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
   StyleSheet,
   Modal,
   ScrollView,
@@ -15,7 +16,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useMovies } from '@/features/movies/hooks/useMovies';
+import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { useFilterStore } from '@/stores/useFilterStore';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -89,7 +90,10 @@ export default function DiscoverScreen() {
     return f;
   }, [selectedFilter, sortBy]);
 
-  const { data: allMovies = [] } = useMovies(filters);
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading } =
+    useMoviesPaginated(filters);
+
+  const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
   const { data: platforms = [] } = usePlatforms();
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
@@ -119,6 +123,12 @@ export default function DiscoverScreen() {
   }, [allMovies, searchQuery, selectedGenres, selectedPlatforms, platformMap]);
 
   const activeFilterCount = selectedGenres.length + selectedPlatforms.length;
+
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderGridItem = ({ item }: { item: Movie }) => {
     const moviePlatforms = platformMap[item.id] ?? [];
@@ -282,22 +292,37 @@ export default function DiscoverScreen() {
       )}
 
       {/* Movie Grid */}
-      <FlatList
-        data={filteredMovies}
-        numColumns={2}
-        keyExtractor={(item) => item.id}
-        columnWrapperStyle={filteredMovies.length > 0 ? styles.gridRow : undefined}
-        contentContainerStyle={styles.gridContent}
-        renderItem={renderGridItem}
-        ListEmptyComponent={
-          <EmptyState
-            icon="film-outline"
-            title="No movies found"
-            subtitle="Try adjusting your filters or search terms"
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.red600} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredMovies}
+          numColumns={2}
+          keyExtractor={(item) => item.id}
+          columnWrapperStyle={filteredMovies.length > 0 ? styles.gridRow : undefined}
+          contentContainerStyle={styles.gridContent}
+          renderItem={renderGridItem}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            <EmptyState
+              icon="film-outline"
+              title="No movies found"
+              subtitle="Try adjusting your filters or search terms"
+            />
+          }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.red600} />
+              </View>
+            ) : null
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* Filter Modal */}
       <Modal visible={showFilterModal} animationType="slide" transparent>
@@ -379,6 +404,7 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.black },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     paddingHorizontal: 16,
     paddingBottom: 12,
@@ -598,4 +624,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   showResultsText: { color: colors.white, fontSize: 16, fontWeight: '600' },
+  footerLoader: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
 });

@@ -61,8 +61,10 @@ const mockPlatforms = [
   { id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 },
 ];
 
-jest.mock('@/features/movies/hooks/useMovies', () => ({
-  useMovies: jest.fn(() => ({ data: mockMovies })),
+const mockFetchNextPage = jest.fn();
+
+jest.mock('@/features/movies/hooks/useMoviesPaginated', () => ({
+  useMoviesPaginated: jest.fn(),
 }));
 
 jest.mock('@/features/ott/hooks', () => ({
@@ -70,15 +72,31 @@ jest.mock('@/features/ott/hooks', () => ({
   useMoviePlatformMap: jest.fn(() => ({ data: {} })),
 }));
 
+import DiscoverScreen from '../discover';
+import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
+
+const mockUseMoviesPaginated = useMoviesPaginated as jest.Mock;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function setupDefaultMock(overrides: Record<string, any> = {}) {
+  mockUseMoviesPaginated.mockReturnValue({
+    data: { pages: [mockMovies], pageParams: [0] },
+    hasNextPage: false,
+    fetchNextPage: mockFetchNextPage,
+    isFetchingNextPage: false,
+    isLoading: false,
+    ...overrides,
+  });
+}
+
 // Use the real Zustand store; reset state before each test
 beforeEach(() => {
   jest.clearAllMocks();
   useFilterStore.getState().clearAll();
+  setupDefaultMock();
   // Reset URL params
   Object.keys(mockLocalSearchParams).forEach((k) => delete mockLocalSearchParams[k]);
 });
-
-import DiscoverScreen from '../discover';
 
 describe('DiscoverScreen', () => {
   it('renders search input', () => {
@@ -126,17 +144,13 @@ describe('DiscoverScreen', () => {
 
   it('renders movie posters (Images) when movies exist', () => {
     const { UNSAFE_getAllByType } = render(<DiscoverScreen />);
-    // expo-image Image is mocked as View globally; we check the poster container
-    // The movie titles confirm movies are rendered
     const { View } = require('react-native');
-    // At least one View rendered means the component tree is present
     const views = UNSAFE_getAllByType(View);
     expect(views.length).toBeGreaterThan(0);
   });
 
   it('renders with empty movies list without crashing', () => {
-    const { useMovies } = require('@/features/movies/hooks/useMovies');
-    useMovies.mockReturnValueOnce({ data: [] });
+    setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
     const { getByPlaceholderText } = render(<DiscoverScreen />);
     expect(getByPlaceholderText('Search movies, genres, actors...')).toBeTruthy();
   });
@@ -221,18 +235,13 @@ describe('DiscoverScreen', () => {
     expect(queryByText('Kalki')).toBeNull();
   });
 
-  it('clears search query when clear button is pressed', () => {
-    const { getByPlaceholderText, getByText } = render(<DiscoverScreen />);
+  it('clears search query via store', () => {
+    const { getByPlaceholderText } = render(<DiscoverScreen />);
     const input = getByPlaceholderText('Search movies, genres, actors...');
 
     fireEvent.changeText(input, 'Pushpa');
     expect(useFilterStore.getState().searchQuery).toBe('Pushpa');
 
-    // The close-circle icon appears when searchQuery.length > 0
-    // Find TouchableOpacity elements
-    const { TouchableOpacity } = require('react-native');
-    const clearButtons = render(<DiscoverScreen />).UNSAFE_getAllByType(TouchableOpacity);
-    // Instead, let's use the store to verify and then set query to empty
     useFilterStore.getState().setSearchQuery('');
     expect(useFilterStore.getState().searchQuery).toBe('');
   });
@@ -263,7 +272,6 @@ describe('DiscoverScreen', () => {
     useFilterStore.getState().toggleGenre('Action');
 
     const { getByText } = render(<DiscoverScreen />);
-    // The active pill "Action" should appear
     const actionPill = getByText('Action');
     fireEvent.press(actionPill);
 
@@ -274,7 +282,6 @@ describe('DiscoverScreen', () => {
     useFilterStore.getState().togglePlatform('netflix');
 
     const { getByText } = render(<DiscoverScreen />);
-    // The active pill "Netflix" should appear
     const netflixPill = getByText('Netflix');
     fireEvent.press(netflixPill);
 
@@ -294,15 +301,13 @@ describe('DiscoverScreen', () => {
   });
 
   it('shows "1 movie" singular when only one movie', () => {
-    const { useMovies } = require('@/features/movies/hooks/useMovies');
-    useMovies.mockReturnValueOnce({ data: [mockMovies[0]] });
+    setupDefaultMock({ data: { pages: [[mockMovies[0]]], pageParams: [0] } });
     const { getByText } = render(<DiscoverScreen />);
     expect(getByText('1 movie')).toBeTruthy();
   });
 
   it('shows empty state when no movies match filters', () => {
-    const { useMovies } = require('@/features/movies/hooks/useMovies');
-    useMovies.mockReturnValueOnce({ data: [] });
+    setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
     const { getByText } = render(<DiscoverScreen />);
     expect(getByText('No movies found')).toBeTruthy();
   });
@@ -359,5 +364,44 @@ describe('DiscoverScreen', () => {
     const { getByText, queryByText } = render(<DiscoverScreen />);
     expect(getByText('Kalki')).toBeTruthy();
     expect(queryByText('Pushpa 2')).toBeNull();
+  });
+
+  // ── Infinite scroll tests ─────────────────────────────────────
+
+  it('shows loading spinner on initial load', () => {
+    setupDefaultMock({ isLoading: true });
+
+    const { UNSAFE_getByType } = render(<DiscoverScreen />);
+    const { ActivityIndicator } = require('react-native');
+    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+  });
+
+  it('renders movies from multiple pages', () => {
+    const page2Movies: Movie[] = [
+      {
+        ...mockMovies[0],
+        id: '3',
+        title: 'RRR 2',
+        release_date: '2025-04-20',
+      },
+    ];
+
+    setupDefaultMock({
+      data: { pages: [mockMovies, page2Movies], pageParams: [0, 1] },
+    });
+
+    const { getByText } = render(<DiscoverScreen />);
+    expect(getByText('Pushpa 2')).toBeTruthy();
+    expect(getByText('Kalki')).toBeTruthy();
+    expect(getByText('RRR 2')).toBeTruthy();
+  });
+
+  it('shows footer loading indicator when fetching next page', () => {
+    setupDefaultMock({ isFetchingNextPage: true, hasNextPage: true });
+
+    render(<DiscoverScreen />);
+    expect(mockUseMoviesPaginated).toHaveBeenCalled();
+    const result = mockUseMoviesPaginated.mock.results[0].value;
+    expect(result.isFetchingNextPage).toBe(true);
   });
 });

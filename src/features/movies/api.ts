@@ -108,6 +108,77 @@ export async function searchMovies(query: string): Promise<Movie[]> {
   return data ?? [];
 }
 
+export async function fetchMoviesPaginated(
+  page: number,
+  pageSize: number = 10,
+  filters?: MovieFilters,
+): Promise<Movie[]> {
+  let query = supabase.from('movies').select('*');
+
+  if (filters?.releaseType) {
+    query = query.eq('release_type', filters.releaseType);
+  }
+
+  if (filters?.genre) {
+    query = query.contains('genres', [filters.genre]);
+  }
+
+  if (filters?.platformId) {
+    const { data: movieIds } = await supabase
+      .from('movie_platforms')
+      .select('movie_id')
+      .eq('platform_id', filters.platformId);
+    if (movieIds && movieIds.length > 0) {
+      query = query.in(
+        'id',
+        movieIds.map((m) => m.movie_id),
+      );
+    } else {
+      return [];
+    }
+  }
+
+  switch (filters?.sortBy) {
+    case 'top_rated':
+      query = query.order('rating', { ascending: false });
+      break;
+    case 'latest':
+      query = query.order('release_date', { ascending: false });
+      break;
+    case 'upcoming':
+      query = query.order('release_date', { ascending: true });
+      break;
+    case 'popular':
+    default:
+      query = query.order('review_count', { ascending: false });
+      break;
+  }
+
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+  query = query.range(from, to);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function fetchUpcomingMovies(page: number, pageSize: number = 10): Promise<Movie[]> {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error } = await supabase
+    .from('movies')
+    .select('*')
+    .gte('release_date', todayStr)
+    .order('release_date', { ascending: true })
+    .range(from, to);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function fetchMoviesByPlatform(platformId: string): Promise<Movie[]> {
   const { data: movieIds } = await supabase
     .from('movie_platforms')

@@ -5,7 +5,6 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
-import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import { useWatchlist } from '@/features/watchlist/hooks';
 import { useUserReviews } from '@/features/reviews/hooks';
 import { useUnreadCount } from '@/features/notifications/hooks';
@@ -27,6 +26,7 @@ const MENU_ITEMS: MenuItem[] = [
   { icon: 'settings-outline', label: 'Settings', route: '/profile/settings' },
   { icon: 'heart-outline', label: 'Favorite Actors', route: '/profile/favorite-actors' },
   { icon: 'eye-outline', label: 'Watched Movies', route: '/profile/watched' },
+  { icon: 'person-outline', label: 'Account Details', route: '/profile/account' },
 ];
 
 export default function ProfileScreen() {
@@ -34,12 +34,11 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile } = useProfile();
-  const { signOut, isLoading: isSigningOut } = useEmailAuth();
 
   const isLoggedIn = !!user;
 
-  const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Guest User';
-  const email = user?.email ?? 'guest@example.com';
+  const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Guest';
+  const email = user?.email ?? '';
   const avatarUrl = profile?.avatar_url ?? PLACEHOLDER_AVATAR;
   const memberSince = formatMemberSince(user?.created_at);
 
@@ -59,13 +58,32 @@ export default function ProfileScreen() {
       : item,
   );
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch {
-      // error is handled inside useEmailAuth
-    }
-  };
+  // Guest view — login/signup prompt only
+  if (!isLoggedIn) {
+    return (
+      <View style={[styles.container, styles.guestContainer, { paddingTop: insets.top + 16 }]}>
+        <View style={styles.guestContent}>
+          <Ionicons name="person-circle-outline" size={100} color={colors.white20} />
+          <Text style={styles.guestTitle}>Sign in to Faniverz</Text>
+          <Text style={styles.guestSubtitle}>
+            Create an account to track your watchlist, write reviews, and more
+          </Text>
+          <TouchableOpacity
+            style={styles.loginButton}
+            activeOpacity={0.85}
+            onPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
+          >
+            <Ionicons name="log-in-outline" size={20} color={colors.white} />
+            <Text style={styles.loginText}>Login / Sign Up</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.footer}>
+          <Text style={styles.footerVersion}>Faniverz v1.0.0</Text>
+          <Text style={styles.footerTagline}>Your Telugu Cinema Companion</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -119,7 +137,7 @@ export default function ProfileScreen() {
         <View style={styles.userInfo}>
           <Text style={styles.displayName}>{displayName}</Text>
           <Text style={styles.emailText}>{email}</Text>
-          {isLoggedIn && <Text style={styles.memberSince}>Member since {memberSince}</Text>}
+          <Text style={styles.memberSince}>Member since {memberSince}</Text>
         </View>
       </View>
 
@@ -147,33 +165,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         ))}
       </View>
-
-      {/* Auth Buttons */}
-      {isLoggedIn ? (
-        <TouchableOpacity
-          style={styles.logoutButton}
-          activeOpacity={0.8}
-          onPress={handleSignOut}
-          disabled={isSigningOut}
-        >
-          <Ionicons name="log-out-outline" size={20} color={colors.red500} />
-          <Text style={styles.logoutText}>{isSigningOut ? 'Logging out…' : 'Logout'}</Text>
-        </TouchableOpacity>
-      ) : (
-        <View style={styles.loginSection}>
-          <TouchableOpacity
-            style={styles.loginButton}
-            activeOpacity={0.85}
-            onPress={() => router.push('/auth/login' as Parameters<typeof router.push>[0])}
-          >
-            <Ionicons name="log-in-outline" size={20} color={colors.white} />
-            <Text style={styles.loginText}>Login / Sign Up</Text>
-          </TouchableOpacity>
-          <Text style={styles.loginHint}>
-            Create an account to sync your data and unlock more features
-          </Text>
-        </View>
-      )}
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -339,28 +330,33 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
 
-  // Logout
-  logoutButton: {
-    flexDirection: 'row',
+  // Guest view
+  guestContainer: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  guestContent: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: colors.red600_20,
-    borderRadius: 12,
-    paddingVertical: 16,
-    marginBottom: 16,
+    gap: 16,
+    paddingHorizontal: 32,
   },
-  logoutText: {
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.white,
+    textAlign: 'center',
+  },
+  guestSubtitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: colors.red500,
+    color: colors.white50,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 
-  // Login
-  loginSection: {
-    marginBottom: 16,
-    gap: 10,
-  },
+  // Login button
   loginButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -368,19 +364,14 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 16,
     paddingVertical: 16,
-    // Gradient fallback — LinearGradient would require expo-linear-gradient;
-    // using red600 as solid fallback consistent with the app's primary colour.
+    paddingHorizontal: 32,
     backgroundColor: colors.red600,
+    marginTop: 8,
   },
   loginText: {
     fontSize: 15,
     fontWeight: '700',
     color: colors.white,
-  },
-  loginHint: {
-    fontSize: 13,
-    color: colors.white50,
-    textAlign: 'center',
   },
 
   // Footer

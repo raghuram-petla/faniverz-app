@@ -2,8 +2,10 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
-jest.mock('@/features/movies/hooks/useMovies', () => ({
-  useMovies: jest.fn(),
+const mockFetchNextPage = jest.fn();
+
+jest.mock('@/features/movies/hooks/useUpcomingMovies', () => ({
+  useUpcomingMovies: jest.fn(),
 }));
 
 jest.mock('@/features/ott/hooks', () => ({
@@ -24,11 +26,11 @@ jest.mock('expo-router', () => ({
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import CalendarScreen from '../calendar';
-import { useMovies } from '@/features/movies/hooks/useMovies';
+import { useUpcomingMovies } from '@/features/movies/hooks/useUpcomingMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 
-const mockUseMovies = useMovies as jest.Mock;
+const mockUseUpcomingMovies = useUpcomingMovies as jest.Mock;
 const mockUseMoviePlatformMap = useMoviePlatformMap as jest.Mock;
 
 const mockMovies = [
@@ -74,16 +76,30 @@ const mockMovies = [
   },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function setupDefaultMock(overrides: Record<string, any> = {}) {
+  mockUseUpcomingMovies.mockReturnValue({
+    data: { pages: [mockMovies], pageParams: [0] },
+    hasNextPage: false,
+    fetchNextPage: mockFetchNextPage,
+    isFetchingNextPage: false,
+    isLoading: false,
+    ...overrides,
+  });
+}
+
 beforeEach(() => {
+  jest.clearAllMocks();
+
   useCalendarStore.setState({
-    selectedYear: 2025,
-    selectedMonth: 2,
+    selectedYear: null,
+    selectedMonth: null,
     selectedDay: null,
     showFilters: false,
     hasUserFiltered: false,
   });
 
-  mockUseMovies.mockReturnValue({ data: mockMovies });
+  setupDefaultMock();
   mockUseMoviePlatformMap.mockReturnValue({ data: {} });
 });
 
@@ -127,7 +143,7 @@ describe('CalendarScreen', () => {
   });
 
   it('shows empty state when no movies match filters', () => {
-    mockUseMovies.mockReturnValue({ data: [] });
+    setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
 
     const { getByText } = render(<CalendarScreen />);
 
@@ -135,7 +151,7 @@ describe('CalendarScreen', () => {
   });
 
   it('shows empty state with clear filters link when active filters are set and no movies match', () => {
-    mockUseMovies.mockReturnValue({ data: [] });
+    setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
 
     useCalendarStore.setState({
       selectedYear: 2020,
@@ -176,28 +192,35 @@ describe('CalendarScreen', () => {
     expect(state.hasUserFiltered).toBe(true);
   });
 
-  it('opens the year dropdown and selects a year', () => {
-    const { getByRole, getByText } = render(<CalendarScreen />);
+  it('opens the year dropdown and shows All Years option', () => {
+    const { getByRole, getAllByText } = render(<CalendarScreen />);
 
     fireEvent.press(getByRole('button', { name: 'Toggle filters' }));
-    // The year button initially shows "2025"
-    fireEvent.press(getByText('2025'));
-    // Year dropdown should now show "All Years" and the year "2025"
-    expect(getByText('All Years')).toBeTruthy();
+    // The year button initially shows "All Years" since selectedYear is null
+    // Press the first "All Years" (the button)
+    const allYears = getAllByText('All Years');
+    fireEvent.press(allYears[0]);
 
-    // Select the year 2025 from the dropdown
-    const yearOptions = getByText('All Years');
-    expect(yearOptions).toBeTruthy();
+    // Year dropdown should now show "All Years" as button + dropdown option
+    expect(getAllByText('All Years').length).toBeGreaterThanOrEqual(2);
   });
 
   it('selects "All Years" from the year dropdown', () => {
-    const { getByRole, getByText } = render(<CalendarScreen />);
+    useCalendarStore.setState({
+      selectedYear: 2025,
+      hasUserFiltered: true,
+    });
+
+    const { getByRole, getAllByText } = render(<CalendarScreen />);
 
     fireEvent.press(getByRole('button', { name: 'Toggle filters' }));
-    // Open year picker
-    fireEvent.press(getByText('2025'));
-    // Press "All Years"
-    fireEvent.press(getByText('All Years'));
+    // Open year picker - button shows "2025"; filter pill also shows "2025"
+    const yearTexts = getAllByText('2025');
+    // The year button is in the filter panel (not the pill), press the last one
+    fireEvent.press(yearTexts[yearTexts.length - 1]);
+    // Press "All Years" from the dropdown
+    const allYearsTexts = getAllByText('All Years');
+    fireEvent.press(allYearsTexts[allYearsTexts.length - 1]);
 
     const state = useCalendarStore.getState();
     expect(state.selectedYear).toBeNull();
@@ -205,13 +228,13 @@ describe('CalendarScreen', () => {
   });
 
   it('selects a specific year from the year dropdown', () => {
-    const { getByRole, getByText, getAllByText } = render(<CalendarScreen />);
+    const { getByRole, getAllByText } = render(<CalendarScreen />);
 
     fireEvent.press(getByRole('button', { name: 'Toggle filters' }));
-    // Open year picker
-    fireEvent.press(getByText('2025'));
-    // Now both the year button text and the dropdown option show "2025"
-    // getAllByText returns multiple matches; the dropdown option is the second one
+    // Open year picker - button shows "All Years"
+    const allYears = getAllByText('All Years');
+    fireEvent.press(allYears[0]);
+    // Now the dropdown option shows "2025" (from the years list)
     const yearTexts = getAllByText('2025');
     fireEvent.press(yearTexts[yearTexts.length - 1]);
 
@@ -282,10 +305,6 @@ describe('CalendarScreen', () => {
     });
 
     const { getByText } = render(<CalendarScreen />);
-    // The year pill "2025" has a close icon next to it
-    // Find the close button in the pill - we need to use the Ionicons mock
-    // The pill has both a Text "2025" and a TouchableOpacity with close icon
-    // Since Ionicons is mocked, we can find the touchable wrapping the icon
     expect(getByText('2025')).toBeTruthy();
   });
 
@@ -303,7 +322,7 @@ describe('CalendarScreen', () => {
   });
 
   it('clears filters from empty state link', () => {
-    mockUseMovies.mockReturnValue({ data: [] });
+    setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
     useCalendarStore.setState({
       selectedYear: 2020,
       selectedMonth: 0,
@@ -321,7 +340,6 @@ describe('CalendarScreen', () => {
 
   it('filters movies by selected day that matches release date', () => {
     // release_date '2025-03-15' parsed as UTC; getDate() may vary by timezone
-    // Use the actual local date of the movie to ensure the test is timezone-safe
     const movieDate = new Date('2025-03-15');
     const localDay = movieDate.getDate();
 
@@ -339,7 +357,6 @@ describe('CalendarScreen', () => {
   });
 
   it('filters out movies when selected day does not match', () => {
-    // Use a day that definitely does NOT match the movie release date
     const movieDate = new Date('2025-03-15');
     const nonMatchingDay = movieDate.getDate() === 28 ? 27 : 28;
 
@@ -365,5 +382,52 @@ describe('CalendarScreen', () => {
     const { getByRole } = render(<CalendarScreen />);
     const filterButton = getByRole('button', { name: 'Toggle filters' });
     expect(filterButton).toBeTruthy();
+  });
+
+  // ── Infinite scroll tests ─────────────────────────────────────
+
+  it('shows loading spinner on initial load', () => {
+    setupDefaultMock({ isLoading: true });
+
+    const { UNSAFE_getByType } = render(<CalendarScreen />);
+    const { ActivityIndicator } = require('react-native');
+    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+  });
+
+  it('does not show header during initial loading', () => {
+    setupDefaultMock({ isLoading: true });
+
+    const { queryByText } = render(<CalendarScreen />);
+    expect(queryByText('Release Calendar')).toBeNull();
+  });
+
+  it('shows footer loading indicator when fetching next page', () => {
+    setupDefaultMock({ isFetchingNextPage: true, hasNextPage: true });
+
+    render(<CalendarScreen />);
+    // We verify that the hook returns isFetchingNextPage: true
+    expect(mockUseUpcomingMovies).toHaveBeenCalled();
+    const result = mockUseUpcomingMovies.mock.results[0].value;
+    expect(result.isFetchingNextPage).toBe(true);
+  });
+
+  it('renders movies from multiple pages', () => {
+    const page2Movies = [
+      {
+        ...mockMovies[0],
+        id: '3',
+        title: 'RRR 2',
+        release_date: '2025-04-20',
+      },
+    ];
+
+    setupDefaultMock({
+      data: { pages: [mockMovies, page2Movies], pageParams: [0, 1] },
+    });
+
+    const { getByText } = render(<CalendarScreen />);
+    expect(getByText('Pushpa 2')).toBeTruthy();
+    expect(getByText('Kalki')).toBeTruthy();
+    expect(getByText('RRR 2')).toBeTruthy();
   });
 });

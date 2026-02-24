@@ -1,10 +1,17 @@
-import { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useState, useMemo, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
-import { useMovies } from '@/features/movies/hooks/useMovies';
+import { useUpcomingMovies } from '@/features/movies/hooks/useUpcomingMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { MovieListItem } from '@/components/movie/MovieListItem';
 import { Movie } from '@/types';
@@ -14,7 +21,9 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
-  const { data: allMovies = [] } = useMovies();
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading } = useUpcomingMovies();
+
+  const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
 
@@ -36,23 +45,16 @@ export default function CalendarScreen() {
     return d;
   }, []);
 
-  const sortedMovies = useMemo(
-    () =>
-      [...allMovies].sort(
-        (a, b) => new Date(a.release_date).getTime() - new Date(b.release_date).getTime(),
-      ),
-    [allMovies],
-  );
-
   const filteredMovies = useMemo(() => {
-    return sortedMovies.filter((movie) => {
+    if (!hasUserFiltered) return allMovies;
+    return allMovies.filter((movie) => {
       const d = new Date(movie.release_date);
       if (selectedYear !== null && d.getFullYear() !== selectedYear) return false;
       if (selectedMonth !== null && d.getMonth() !== selectedMonth) return false;
       if (selectedDay !== null && d.getDate() !== selectedDay) return false;
       return true;
     });
-  }, [sortedMovies, selectedYear, selectedMonth, selectedDay]);
+  }, [allMovies, hasUserFiltered, selectedYear, selectedMonth, selectedDay]);
 
   const groupedMovies = useMemo(() => {
     const groups: { date: string; movies: Movie[]; movieDate: Date }[] = [];
@@ -80,6 +82,20 @@ export default function CalendarScreen() {
   );
 
   const hasActiveFilters = hasUserFiltered;
+
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  if (isLoading) {
+    return (
+      <View style={[styles.screen, styles.centered]}>
+        <ActivityIndicator size="large" color={colors.red600} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -230,6 +246,8 @@ export default function CalendarScreen() {
         keyExtractor={(item) => item.date}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No releases found for the selected filters.</Text>
@@ -239,6 +257,13 @@ export default function CalendarScreen() {
               </TouchableOpacity>
             )}
           </View>
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={styles.footerLoader}>
+              <ActivityIndicator size="small" color={colors.red600} />
+            </View>
+          ) : null
         }
         renderItem={({ item }) => {
           const isPast = item.movieDate < today;
@@ -330,6 +355,10 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.black,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     paddingHorizontal: 16,
@@ -562,5 +591,9 @@ const styles = StyleSheet.create({
     color: colors.red500,
     marginTop: 16,
     textDecorationLine: 'underline',
+  },
+  footerLoader: {
+    paddingVertical: 24,
+    alignItems: 'center',
   },
 });
