@@ -1,3 +1,7 @@
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
+}));
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Movie } from '@/types';
@@ -35,6 +39,14 @@ jest.mock('@/features/movies/hooks/useMovieSearch', () => ({
   useMovieSearch: (...args: unknown[]) => mockUseMovieSearch(...args),
 }));
 
+jest.mock('@/features/movies/hooks/useMovies', () => ({
+  useMovies: jest.fn(() => ({ data: [] })),
+}));
+
+jest.mock('@/features/ott/hooks', () => ({
+  useMoviePlatformMap: jest.fn(() => ({ data: {} })),
+}));
+
 import SearchScreen from '../search';
 
 describe('SearchScreen', () => {
@@ -45,7 +57,7 @@ describe('SearchScreen', () => {
 
   it('renders search input with autoFocus', () => {
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies...');
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
     expect(input).toBeTruthy();
     expect(input.props.autoFocus).toBe(true);
   });
@@ -57,7 +69,7 @@ describe('SearchScreen', () => {
 
   it('clears the query when the X button is pressed', () => {
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies...');
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
 
     fireEvent.changeText(input, 'push');
     expect(input.props.value).toBe('push');
@@ -88,7 +100,7 @@ describe('SearchScreen', () => {
     mockUseMovieSearch.mockReturnValue({ data: mockResults });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies...');
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
@@ -99,7 +111,7 @@ describe('SearchScreen', () => {
     mockUseMovieSearch.mockReturnValue({ data: [] });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies...');
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
     fireEvent.changeText(input, 'zzz');
 
     expect(screen.getByText('No results found')).toBeTruthy();

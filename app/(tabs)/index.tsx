@@ -40,7 +40,17 @@ export default function HomeScreen() {
 
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const currentY = e.nativeEvent.contentOffset.y;
+      const rawY = e.nativeEvent.contentOffset.y;
+      const currentY = Math.max(0, rawY);
+
+      if (currentY <= 0) {
+        // At the top — always show header
+        headerOffset.current = 0;
+        headerTranslateY.setValue(0);
+        lastScrollY.current = 0;
+        return;
+      }
+
       const diff = currentY - lastScrollY.current;
 
       // Only hide the content part of the header, never the safe area
@@ -52,7 +62,7 @@ export default function HomeScreen() {
       headerTranslateY.setValue(-headerOffset.current);
       lastScrollY.current = currentY;
     },
-    [headerTranslateY, totalHeaderHeight],
+    [headerTranslateY],
   );
 
   const featuredMovies = allMovies

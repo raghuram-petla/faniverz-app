@@ -12,7 +12,7 @@ export interface Review {
   helpful_count: number;
   created_at: string;
   updated_at: string;
-  user?: Pick<UserProfile, 'id' | 'display_name' | 'avatar_url'>;
+  profile?: Pick<UserProfile, 'id' | 'display_name' | 'avatar_url'>;
   movie?: Pick<Movie, 'id' | 'title' | 'poster_url'>;
 }
 
@@ -22,6 +22,7 @@ export interface ReviewHelpful {
 }
 
 export interface CreateReviewInput {
+  user_id: string;
   movie_id: string;
   rating: number;
   title?: string;

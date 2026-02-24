@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '@/theme/colors';
 import i18n from '@/i18n';
@@ -21,6 +22,7 @@ const LANGUAGES: Language[] = [
 
 export default function LanguageScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string>(i18n.language ?? 'en');
 
   const handleSelect = async (code: string) => {
@@ -30,7 +32,7 @@ export default function LanguageScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -78,7 +80,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.black,
     paddingHorizontal: 16,
-    paddingTop: 56,
   },
 
   // Header

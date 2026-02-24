@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -43,6 +44,7 @@ interface Section {
 }
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -64,20 +66,53 @@ export default function SettingsScreen() {
     {
       title: 'Privacy',
       rows: [
-        { kind: 'link', icon: 'lock-closed-outline', label: 'Change Password' },
-        { kind: 'link', icon: 'shield-outline', label: 'Privacy Settings' },
+        {
+          kind: 'link',
+          icon: 'lock-closed-outline',
+          label: 'Change Password',
+          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+        },
+        {
+          kind: 'link',
+          icon: 'shield-outline',
+          label: 'Privacy Settings',
+          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+        },
       ],
     },
     {
       title: 'Preferences',
-      rows: [{ kind: 'link', icon: 'language-outline', label: 'Language', value: 'English' }],
+      rows: [
+        {
+          kind: 'link',
+          icon: 'language-outline',
+          label: 'Language',
+          value: 'English',
+          onPress: () => router.push('/profile/language'),
+        },
+      ],
     },
     {
       title: 'About',
       rows: [
-        { kind: 'link', icon: 'help-circle-outline', label: 'Help & Support' },
-        { kind: 'link', icon: 'document-text-outline', label: 'Terms of Service' },
-        { kind: 'link', icon: 'eye-outline', label: 'Privacy Policy' },
+        {
+          kind: 'link',
+          icon: 'help-circle-outline',
+          label: 'Help & Support',
+          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+        },
+        {
+          kind: 'link',
+          icon: 'document-text-outline',
+          label: 'Terms of Service',
+          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+        },
+        {
+          kind: 'link',
+          icon: 'eye-outline',
+          label: 'Privacy Policy',
+          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+        },
       ],
     },
   ];
@@ -85,7 +120,7 @@ export default function SettingsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -163,7 +198,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 48,
   },
 

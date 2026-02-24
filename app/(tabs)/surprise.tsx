@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { useSurpriseContent } from '@/features/surprise/hooks';
 import { SurpriseCategory, SurpriseContent } from '@/types';
@@ -207,6 +208,7 @@ const FUN_FACT =
   "This section features rare content you won't find on regular streaming platforms — from unreleased songs to exclusive behind-the-scenes footage!";
 
 export default function SurpriseScreen() {
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterOption>('all');
 
   const category = filter === 'all' ? undefined : filter;
@@ -218,7 +220,7 @@ export default function SurpriseScreen() {
   return (
     <View style={styles.screen}>
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerIconBadge}>
           <Ionicons name="sparkles" size={20} color={colors.white} />
         </View>
@@ -303,7 +305,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 16,
     backgroundColor: colors.black95,
   },

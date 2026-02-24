@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import {
   View,
   Text,
@@ -15,13 +16,13 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useIsWatchlisted, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { StarRating } from '@/components/ui/StarRating';
-import { OTTPlatform } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HERO_HEIGHT = 500;
@@ -29,6 +30,7 @@ const HERO_HEIGHT = 500;
 type TabName = 'overview' | 'cast' | 'reviews';
 
 export default function MovieDetailScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -68,6 +70,7 @@ export default function MovieDetailScreen() {
   const handleSubmitReview = () => {
     if (!userId || reviewRating === 0) return;
     createReview.mutate({
+      user_id: userId,
       movie_id: movie.id,
       rating: reviewRating,
       title: reviewTitle,
@@ -86,7 +89,11 @@ export default function MovieDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <StatusBar style="light" />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: insets.top }}
+      >
         {/* Hero */}
         <View style={styles.hero}>
           <Image
@@ -95,12 +102,13 @@ export default function MovieDetailScreen() {
             contentFit="cover"
           />
           <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,1)']}
+            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,1)']}
+            locations={[0, 0.2, 0.6, 1]}
             style={StyleSheet.absoluteFill}
           />
 
           {/* Header buttons */}
-          <View style={styles.heroHeader}>
+          <View style={[styles.heroHeader, { top: 8 }]}>
             <TouchableOpacity
               style={styles.heroButton}
               onPress={() => router.back()}
@@ -184,7 +192,7 @@ export default function MovieDetailScreen() {
             <Text style={styles.sectionTitle}>Watch On</Text>
             <View style={styles.watchOnRow}>
               {movie.platforms.map((mp) => {
-                const p = mp.platform as OTTPlatform | undefined;
+                const p = mp.platform;
                 if (!p) return null;
                 return (
                   <TouchableOpacity
@@ -330,8 +338,7 @@ export default function MovieDetailScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.reviewUserName}>
-                        {(review as { profile?: { display_name?: string } }).profile
-                          ?.display_name ?? 'User'}
+                        {review.profile?.display_name ?? 'User'}
                       </Text>
                       <StarRating rating={review.rating} size={12} />
                     </View>
@@ -439,7 +446,6 @@ const styles = StyleSheet.create({
   hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH },
   heroHeader: {
     position: 'absolute',
-    top: 56,
     left: 16,
     right: 16,
     flexDirection: 'row',

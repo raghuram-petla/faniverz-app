@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useFavoriteActors, useFavoriteActorMutations } from '@/features/actors/hooks';
 import { Actor, FavoriteActor } from '@/types';
@@ -26,6 +27,7 @@ interface FavoriteActorWithActor extends FavoriteActor {
 }
 
 export default function FavoriteActorsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const { data: favorites, isLoading } = useFavoriteActors(user?.id ?? '');
@@ -48,7 +50,7 @@ export default function FavoriteActorsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -68,7 +70,11 @@ export default function FavoriteActorsScreen() {
             </View>
           )}
         </View>
-        <TouchableOpacity style={styles.addButton} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.addButton}
+          activeOpacity={0.8}
+          onPress={() => router.push('/search')}
+        >
           <Ionicons name="add" size={20} color={colors.white} />
         </TouchableOpacity>
       </View>
@@ -87,7 +93,11 @@ export default function FavoriteActorsScreen() {
           <Text style={styles.emptySubtitle}>
             Add actors you love to keep track of their upcoming movies.
           </Text>
-          <TouchableOpacity style={styles.addActorsButton} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.addActorsButton}
+            activeOpacity={0.85}
+            onPress={() => router.push('/search')}
+          >
             <Ionicons name="add" size={18} color={colors.white} />
             <Text style={styles.addActorsText}>Add Actors</Text>
           </TouchableOpacity>
@@ -149,7 +159,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 48,
   },
   centered: {

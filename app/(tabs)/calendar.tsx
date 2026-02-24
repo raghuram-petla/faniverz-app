@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
@@ -12,6 +13,7 @@ import { useCalendarStore } from '@/stores/useCalendarStore';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function CalendarScreen() {
+  const insets = useSafeAreaInsets();
   const { data: allMovies = [] } = useMovies();
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
@@ -21,6 +23,7 @@ export default function CalendarScreen() {
     selectedMonth,
     selectedDay,
     showFilters,
+    hasUserFiltered,
     setDate,
     toggleFilters,
     clearFilters,
@@ -44,8 +47,8 @@ export default function CalendarScreen() {
   const filteredMovies = useMemo(() => {
     return sortedMovies.filter((movie) => {
       const d = new Date(movie.release_date);
-      if (selectedYear && d.getFullYear() !== selectedYear) return false;
-      if (selectedMonth !== null && d.getMonth() !== selectedMonth) return false;
+      if (d.getFullYear() !== selectedYear) return false;
+      if (d.getMonth() !== selectedMonth) return false;
       if (selectedDay !== null && d.getDate() !== selectedDay) return false;
       return true;
     });
@@ -76,12 +79,12 @@ export default function CalendarScreen() {
     [allMovies],
   );
 
-  const hasActiveFilters = selectedYear !== null || selectedMonth !== null || selectedDay !== null;
+  const hasActiveFilters = hasUserFiltered;
 
   return (
     <View style={styles.screen}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>Release Calendar</Text>
         <TouchableOpacity
           style={styles.filterButton}
@@ -295,7 +298,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',

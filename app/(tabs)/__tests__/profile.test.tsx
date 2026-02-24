@@ -1,3 +1,7 @@
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
+}));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(),
 }));
@@ -8,6 +12,18 @@ jest.mock('@/features/auth/hooks/useProfile', () => ({
 
 jest.mock('@/features/auth/hooks/useEmailAuth', () => ({
   useEmailAuth: jest.fn(),
+}));
+
+jest.mock('@/features/watchlist/hooks', () => ({
+  useWatchlist: jest.fn(() => ({ data: [] })),
+}));
+
+jest.mock('@/features/reviews/hooks', () => ({
+  useUserReviews: jest.fn(() => ({ data: [] })),
+}));
+
+jest.mock('@/features/notifications/hooks', () => ({
+  useUnreadCount: jest.fn(() => 0),
 }));
 
 jest.mock('expo-router', () => ({

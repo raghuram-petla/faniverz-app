@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
@@ -49,6 +50,7 @@ const FILTER_TABS = [
 ];
 
 export default function DiscoverScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ filter?: string; platform?: string }>();
 
@@ -69,15 +71,15 @@ export default function DiscoverScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
 
-  // Apply URL params on first render
-  useState(() => {
+  // Apply URL params on mount
+  useEffect(() => {
     if (params.filter) {
       setFilter(params.filter as 'all' | ReleaseType);
     }
     if (params.platform) {
       togglePlatform(params.platform);
     }
-  });
+  }, []);
 
   const filters = useMemo(() => {
     const f: { releaseType?: ReleaseType; sortBy?: typeof sortBy } = {};
@@ -160,7 +162,7 @@ export default function DiscoverScreen() {
   return (
     <View style={styles.screen}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.white} />
         </TouchableOpacity>
@@ -365,7 +367,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 12,
   },
   searchInputContainer: {

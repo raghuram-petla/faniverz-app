@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useUserReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { Review } from '@/types';
@@ -41,6 +42,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function MyReviewsScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const { data: reviews, isLoading } = useUserReviews(user?.id ?? '');
@@ -90,7 +92,7 @@ export default function MyReviewsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -200,7 +202,11 @@ export default function MyReviewsScreen() {
                     </View>
                   </View>
                   <View style={styles.reviewActions}>
-                    <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      activeOpacity={0.7}
+                      onPress={() => router.push(`/movie/${review.movie_id}`)}
+                    >
                       <Ionicons name="create-outline" size={16} color={colors.white60} />
                       <Text style={styles.actionText}>Edit</Text>
                     </TouchableOpacity>
@@ -230,7 +236,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 48,
   },
   centered: {

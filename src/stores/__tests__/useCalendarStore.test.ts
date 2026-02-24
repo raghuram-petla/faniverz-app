@@ -7,6 +7,7 @@ describe('useCalendarStore', () => {
       selectedMonth: 1,
       selectedDay: null,
       showFilters: false,
+      hasUserFiltered: false,
     });
   });
 
@@ -45,5 +46,24 @@ describe('useCalendarStore', () => {
     expect(useCalendarStore.getState().showFilters).toBe(false);
     useCalendarStore.getState().toggleFilters();
     expect(useCalendarStore.getState().showFilters).toBe(true);
+  });
+
+  it('setDate sets hasUserFiltered to true', () => {
+    expect(useCalendarStore.getState().hasUserFiltered).toBe(false);
+    useCalendarStore.getState().setDate(2025, 5);
+    expect(useCalendarStore.getState().hasUserFiltered).toBe(true);
+  });
+
+  it('navigateMonth sets hasUserFiltered to true', () => {
+    expect(useCalendarStore.getState().hasUserFiltered).toBe(false);
+    useCalendarStore.getState().navigateMonth(1);
+    expect(useCalendarStore.getState().hasUserFiltered).toBe(true);
+  });
+
+  it('clearFilters resets hasUserFiltered to false', () => {
+    useCalendarStore.getState().setDate(2025, 5);
+    expect(useCalendarStore.getState().hasUserFiltered).toBe(true);
+    useCalendarStore.getState().clearFilters();
+    expect(useCalendarStore.getState().hasUserFiltered).toBe(false);
   });
 });

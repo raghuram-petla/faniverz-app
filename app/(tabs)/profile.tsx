@@ -2,9 +2,13 @@ import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-nati
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
+import { useWatchlist } from '@/features/watchlist/hooks';
+import { useUserReviews } from '@/features/reviews/hooks';
+import { useUnreadCount } from '@/features/notifications/hooks';
 import { colors } from '@/theme/colors';
 
 const PLACEHOLDER_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200';
@@ -18,7 +22,7 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { icon: 'create-outline', label: 'Edit Profile', route: '/profile/edit' },
-  { icon: 'notifications-outline', label: 'Notifications', route: '/notifications', badge: '3' },
+  { icon: 'notifications-outline', label: 'Notifications', route: '/notifications' },
   { icon: 'star-outline', label: 'My Reviews', route: '/profile/reviews' },
   { icon: 'settings-outline', label: 'Settings', route: '/profile/settings' },
   { icon: 'heart-outline', label: 'Favorite Actors', route: '/profile/favorite-actors' },
@@ -32,6 +36,7 @@ function formatMemberSince(dateString: string | null | undefined): string {
 }
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile } = useProfile();
@@ -44,9 +49,21 @@ export default function ProfileScreen() {
   const avatarUrl = profile?.avatar_url ?? PLACEHOLDER_AVATAR;
   const memberSince = formatMemberSince(user?.created_at);
 
-  const watchlistCount = 0;
-  const reviewsCount = 0;
-  const avgRating = 0;
+  const userId = user?.id ?? '';
+  const { data: watchlistItems = [] } = useWatchlist(userId);
+  const { data: userReviews = [] } = useUserReviews(userId);
+  const unreadCount = useUnreadCount(userId);
+
+  const watchlistCount = watchlistItems.length;
+  const reviewsCount = userReviews.length;
+  const avgRating =
+    reviewsCount > 0 ? userReviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount : 0;
+
+  const menuItems = MENU_ITEMS.map((item) =>
+    item.label === 'Notifications' && unreadCount > 0
+      ? { ...item, badge: String(unreadCount) }
+      : item,
+  );
 
   const handleSignOut = async () => {
     try {
@@ -59,7 +76,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16 }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Profile Card */}
@@ -114,10 +131,10 @@ export default function ProfileScreen() {
 
       {/* Menu Items */}
       <View style={styles.menuCard}>
-        {MENU_ITEMS.map((item, index) => (
+        {menuItems.map((item, index) => (
           <TouchableOpacity
             key={item.route}
-            style={[styles.menuItem, index < MENU_ITEMS.length - 1 && styles.menuItemBorder]}
+            style={[styles.menuItem, index < menuItems.length - 1 && styles.menuItemBorder]}
             activeOpacity={0.7}
             onPress={() => router.push(item.route as Parameters<typeof router.push>[0])}
           >
@@ -180,7 +197,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 24,
     paddingBottom: 40,
   },
 

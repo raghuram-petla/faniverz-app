@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
@@ -21,6 +22,7 @@ const PLACEHOLDER_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0
 const BIO_LIMIT = 150;
 
 export default function EditProfileScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const { data: profile, isLoading } = useProfile();
@@ -79,7 +81,7 @@ export default function EditProfileScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -109,7 +111,12 @@ export default function EditProfileScreen() {
             <Ionicons name="camera" size={20} color={colors.white} />
           </View>
         </View>
-        <TouchableOpacity activeOpacity={0.7}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() =>
+            Alert.alert('Coming Soon', 'Photo upload will be available in a future update.')
+          }
+        >
           <Text style={styles.changePhotoText}>Change Photo</Text>
         </TouchableOpacity>
       </View>
@@ -260,7 +267,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 48,
   },
 

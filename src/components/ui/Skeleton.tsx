@@ -9,7 +9,7 @@ import Animated, {
 import { colors } from '@/theme/colors';
 
 interface SkeletonProps {
-  width: number | string;
+  width: number;
   height: number;
   borderRadius?: number;
   style?: ViewStyle;
@@ -32,7 +32,7 @@ export function Skeleton({ width, height, borderRadius = 8, style }: SkeletonPro
         style={[
           styles.skeleton,
           {
-            width: width as number,
+            width,
             height,
             borderRadius,
           },

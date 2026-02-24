@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 
 interface CalendarState {
-  selectedYear: number | null;
-  selectedMonth: number | null;
+  selectedYear: number;
+  selectedMonth: number;
   selectedDay: number | null;
   showFilters: boolean;
+  hasUserFiltered: boolean;
   setDate: (year: number | null, month: number | null, day?: number | null) => void;
   navigateMonth: (direction: 1 | -1) => void;
   toggleFilters: () => void;
@@ -18,16 +19,20 @@ export const useCalendarStore = create<CalendarState>((set) => ({
   selectedMonth: now.getMonth(),
   selectedDay: null,
   showFilters: false,
+  hasUserFiltered: false,
 
   setDate: (year, month, day = null) =>
-    set({ selectedYear: year, selectedMonth: month, selectedDay: day }),
+    set({
+      selectedYear: year ?? now.getFullYear(),
+      selectedMonth: month ?? now.getMonth(),
+      selectedDay: day,
+      hasUserFiltered: true,
+    }),
 
   navigateMonth: (direction) =>
     set((state) => {
-      const currentMonth = state.selectedMonth ?? now.getMonth();
-      const currentYear = state.selectedYear ?? now.getFullYear();
-      let newMonth = currentMonth + direction;
-      let newYear = currentYear;
+      let newMonth = state.selectedMonth + direction;
+      let newYear = state.selectedYear;
       if (newMonth > 11) {
         newMonth = 0;
         newYear += 1;
@@ -35,7 +40,12 @@ export const useCalendarStore = create<CalendarState>((set) => ({
         newMonth = 11;
         newYear -= 1;
       }
-      return { selectedMonth: newMonth, selectedYear: newYear, selectedDay: null };
+      return {
+        selectedMonth: newMonth,
+        selectedYear: newYear,
+        selectedDay: null,
+        hasUserFiltered: true,
+      };
     }),
 
   toggleFilters: () => set((state) => ({ showFilters: !state.showFilters })),
@@ -46,5 +56,6 @@ export const useCalendarStore = create<CalendarState>((set) => ({
       selectedMonth: now.getMonth(),
       selectedDay: null,
       showFilters: false,
+      hasUserFiltered: false,
     }),
 }));

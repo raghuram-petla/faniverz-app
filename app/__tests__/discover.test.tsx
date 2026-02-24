@@ -1,3 +1,7 @@
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
+}));
+
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { Movie } from '@/types';

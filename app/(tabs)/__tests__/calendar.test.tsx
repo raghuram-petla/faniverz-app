@@ -1,3 +1,7 @@
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
+}));
+
 jest.mock('@/features/movies/hooks/useMovies', () => ({
   useMovies: jest.fn(),
 }));
@@ -72,10 +76,11 @@ const mockMovies = [
 
 beforeEach(() => {
   useCalendarStore.setState({
-    selectedYear: null,
-    selectedMonth: null,
+    selectedYear: 2025,
+    selectedMonth: 2,
     selectedDay: null,
     showFilters: false,
+    hasUserFiltered: false,
   });
 
   mockUseMovies.mockReturnValue({ data: mockMovies });
@@ -134,9 +139,10 @@ describe('CalendarScreen', () => {
 
     useCalendarStore.setState({
       selectedYear: 2020,
-      selectedMonth: null,
+      selectedMonth: 0,
       selectedDay: null,
       showFilters: false,
+      hasUserFiltered: true,
     });
 
     const { getByText } = render(<CalendarScreen />);

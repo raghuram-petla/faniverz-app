@@ -16,4 +16,5 @@ export interface FavoriteActor {
   user_id: string;
   actor_id: string;
   created_at: string;
+  actor?: import('./movie').Actor;
 }

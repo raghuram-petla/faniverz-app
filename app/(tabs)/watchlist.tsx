@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlist, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { colors } from '@/theme/colors';
@@ -264,6 +265,7 @@ function SectionTitle({ iconName, iconColor, title }: SectionTitleProps) {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function WatchlistScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id ?? '';
@@ -277,7 +279,7 @@ export default function WatchlistScreen() {
   if (!user) {
     return (
       <View style={styles.screen}>
-        <View style={styles.stickyHeader}>
+        <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
           </View>
@@ -310,7 +312,7 @@ export default function WatchlistScreen() {
   if (isLoading) {
     return (
       <View style={styles.screen}>
-        <View style={styles.stickyHeader}>
+        <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
           </View>
@@ -329,7 +331,7 @@ export default function WatchlistScreen() {
   if (!hasContent) {
     return (
       <View style={styles.screen}>
-        <View style={styles.stickyHeader}>
+        <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
             <Text style={styles.headerSubtitle}>0 movies saved</Text>
@@ -362,7 +364,7 @@ export default function WatchlistScreen() {
   return (
     <View style={styles.screen}>
       {/* Sticky Header */}
-      <View style={styles.stickyHeader}>
+      <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
         <View>
           <Text style={styles.headerTitle}>My Watchlist</Text>
           <Text style={styles.headerSubtitle}>
@@ -443,7 +445,6 @@ const styles = StyleSheet.create({
   stickyHeader: {
     backgroundColor: colors.black95,
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
