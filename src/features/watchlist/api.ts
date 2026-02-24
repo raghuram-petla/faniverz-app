@@ -53,6 +53,25 @@ export async function moveBackToWatchlist(userId: string, movieId: string): Prom
   if (error) throw error;
 }
 
+export async function fetchWatchlistPaginated(
+  userId: string,
+  page: number,
+  pageSize: number = 10,
+): Promise<WatchlistEntry[]> {
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error } = await supabase
+    .from('watchlists')
+    .select('*, movie:movies(*)')
+    .eq('user_id', userId)
+    .order('added_at', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 export async function isMovieWatchlisted(
   userId: string,
   movieId: string,

@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native');
+  return {
+    WebView: (props: Record<string, unknown>) => <View testID="video-player" {...props} />,
+  };
+});
+
 jest.mock('@/features/surprise/hooks', () => ({
   useSurpriseContent: jest.fn(),
 }));

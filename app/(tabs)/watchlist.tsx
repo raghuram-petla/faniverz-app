@@ -1,20 +1,35 @@
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
-import { useWatchlist, useWatchlistMutations } from '@/features/watchlist/hooks';
+import { useWatchlistPaginated, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/theme/colors';
 import { WatchlistEntry } from '@/types';
+
+// ─── List item types ─────────────────────────────────────────────────────────
+
+type ListItem =
+  | {
+      type: 'section-header';
+      key: string;
+      title: string;
+      iconName: React.ComponentProps<typeof Ionicons>['name'];
+      iconColor: string;
+    }
+  | { type: 'available'; key: string; entry: WatchlistEntry }
+  | { type: 'upcoming'; key: string; entry: WatchlistEntry }
+  | { type: 'watched'; key: string; entry: WatchlistEntry };
 
 // ─── Movie Card ───────────────────────────────────────────────────────────────
 
@@ -271,10 +286,94 @@ export default function WatchlistScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
-  const { available, upcoming, watched, isLoading } = useWatchlist(userId);
+  const {
+    available,
+    upcoming,
+    watched,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useWatchlistPaginated(userId);
 
   const totalSaved = available.length + upcoming.length;
   const hasContent = totalSaved > 0 || watched.length > 0;
+
+  // Build a flat list of items with section headers
+  const listItems = useMemo<ListItem[]>(() => {
+    const items: ListItem[] = [];
+
+    if (available.length > 0) {
+      items.push({
+        type: 'section-header',
+        key: 'header-available',
+        title: 'Available to Watch',
+        iconName: 'play-circle-outline',
+        iconColor: colors.green500,
+      });
+      available.forEach((entry) => {
+        items.push({ type: 'available', key: `available-${entry.id}`, entry });
+      });
+    }
+
+    if (upcoming.length > 0) {
+      items.push({
+        type: 'section-header',
+        key: 'header-upcoming',
+        title: 'Upcoming Releases',
+        iconName: 'calendar-outline',
+        iconColor: colors.blue500,
+      });
+      upcoming.forEach((entry) => {
+        items.push({ type: 'upcoming', key: `upcoming-${entry.id}`, entry });
+      });
+    }
+
+    if (watched.length > 0) {
+      items.push({
+        type: 'section-header',
+        key: 'header-watched',
+        title: 'Watched Movies',
+        iconName: 'eye-outline',
+        iconColor: colors.gray500,
+      });
+      watched.forEach((entry) => {
+        items.push({ type: 'watched', key: `watched-${entry.id}`, entry });
+      });
+    }
+
+    return items;
+  }, [available, upcoming, watched]);
+
+  const renderItem = ({ item }: { item: ListItem }) => {
+    switch (item.type) {
+      case 'section-header':
+        return (
+          <SectionTitle iconName={item.iconName} iconColor={item.iconColor} title={item.title} />
+        );
+      case 'available':
+        return <AvailableCard entry={item.entry} userId={userId} />;
+      case 'upcoming':
+        return <UpcomingCard entry={item.entry} userId={userId} />;
+      case 'watched':
+        return <WatchedCard entry={item.entry} userId={userId} />;
+    }
+  };
+
+  const handleEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={styles.footerLoader} testID="footer-loader">
+        <ActivityIndicator size="small" color={colors.red600} />
+      </View>
+    );
+  };
 
   // Guest / unauthenticated state
   if (!user) {
@@ -361,59 +460,16 @@ export default function WatchlistScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={listItems}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.key}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-      >
-        {/* Available to Watch */}
-        {available.length > 0 && (
-          <View style={styles.section}>
-            <SectionTitle
-              iconName="play-circle-outline"
-              iconColor={colors.green500}
-              title="Available to Watch"
-            />
-            <View style={styles.cardList}>
-              {available.map((entry) => (
-                <AvailableCard key={entry.id} entry={entry} userId={userId} />
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Upcoming Releases */}
-        {upcoming.length > 0 && (
-          <View style={styles.section}>
-            <SectionTitle
-              iconName="calendar-outline"
-              iconColor={colors.blue500}
-              title="Upcoming Releases"
-            />
-            <View style={styles.cardList}>
-              {upcoming.map((entry) => (
-                <UpcomingCard key={entry.id} entry={entry} userId={userId} />
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Watched Movies */}
-        {watched.length > 0 && (
-          <View style={styles.section}>
-            <SectionTitle
-              iconName="eye-outline"
-              iconColor={colors.gray500}
-              title="Watched Movies"
-            />
-            <View style={styles.cardList}>
-              {watched.map((entry) => (
-                <WatchedCard key={entry.id} entry={entry} userId={userId} />
-              ))}
-            </View>
-          </View>
-        )}
-      </ScrollView>
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+      />
     </View>
   );
 }
@@ -472,34 +528,26 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
 
-  // Scroll
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
+  // List
+  listContent: {
     paddingTop: 24,
     paddingBottom: 100,
-    gap: 32,
+    gap: 12,
+    paddingHorizontal: 16,
   },
 
   // Section
-  section: {
-    gap: 12,
-  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
+    marginTop: 20,
+    marginBottom: 4,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.white,
-  },
-  cardList: {
-    gap: 12,
-    paddingHorizontal: 16,
   },
 
   // Movie Card
@@ -592,5 +640,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Footer loader
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });

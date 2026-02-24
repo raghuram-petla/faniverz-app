@@ -1,7 +1,12 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useWatchlist, useIsWatchlisted, useWatchlistMutations } from '../hooks';
+import {
+  useWatchlist,
+  useWatchlistPaginated,
+  useIsWatchlisted,
+  useWatchlistMutations,
+} from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
@@ -74,6 +79,54 @@ describe('useWatchlist', () => {
 
     expect(result.current.isFetching).toBe(false);
     expect(api.fetchWatchlist).not.toHaveBeenCalled();
+  });
+});
+
+describe('useWatchlistPaginated', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetches paginated watchlist for a user', async () => {
+    (api.fetchWatchlistPaginated as jest.Mock).mockResolvedValue(mockWatchlistEntries);
+
+    const { result } = renderHook(() => useWatchlistPaginated('u1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(api.fetchWatchlistPaginated).toHaveBeenCalledWith('u1', 0, 10);
+  });
+
+  it('separates entries into available, upcoming, and watched', async () => {
+    (api.fetchWatchlistPaginated as jest.Mock).mockResolvedValue(mockWatchlistEntries);
+
+    const { result } = renderHook(() => useWatchlistPaginated('u1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.available).toHaveLength(1);
+    expect(result.current.available[0].movie_id).toBe('m1');
+    expect(result.current.upcoming).toHaveLength(1);
+    expect(result.current.upcoming[0].movie_id).toBe('m2');
+    expect(result.current.watched).toHaveLength(1);
+    expect(result.current.watched[0].movie_id).toBe('m3');
+  });
+
+  it('does not fetch when userId is empty', async () => {
+    (api.fetchWatchlistPaginated as jest.Mock).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useWatchlistPaginated(''), { wrapper: createWrapper() });
+
+    expect(result.current.isFetching).toBe(false);
+    expect(api.fetchWatchlistPaginated).not.toHaveBeenCalled();
+  });
+
+  it('returns hasNextPage false when fewer items than page size', async () => {
+    // Only 3 items, less than PAGE_SIZE (10)
+    (api.fetchWatchlistPaginated as jest.Mock).mockResolvedValue(mockWatchlistEntries);
+
+    const { result } = renderHook(() => useWatchlistPaginated('u1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(false);
   });
 });
 

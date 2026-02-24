@@ -7,7 +7,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 }));
 
 jest.mock('@/features/watchlist/hooks', () => ({
-  useWatchlist: jest.fn(),
+  useWatchlistPaginated: jest.fn(),
   useWatchlistMutations: jest.fn(),
 }));
 
@@ -20,10 +20,10 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import WatchlistScreen from '../watchlist';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
-import { useWatchlist, useWatchlistMutations } from '@/features/watchlist/hooks';
+import { useWatchlistPaginated, useWatchlistMutations } from '@/features/watchlist/hooks';
 
 const mockUseAuth = useAuth as jest.Mock;
-const mockUseWatchlist = useWatchlist as jest.Mock;
+const mockUseWatchlistPaginated = useWatchlistPaginated as jest.Mock;
 const mockUseWatchlistMutations = useWatchlistMutations as jest.Mock;
 
 const mockMutations = {
@@ -65,6 +65,8 @@ const mockEntry = (id: string, status: 'watchlist' | 'watched', movieOverrides: 
   movie: mockMovie({ id: `movie-${id}`, ...movieOverrides }),
 });
 
+const mockFetchNextPage = jest.fn();
+
 function setupLoggedIn() {
   mockUseAuth.mockReturnValue({
     user: { id: 'user-1' },
@@ -76,6 +78,20 @@ function setupLoggedIn() {
   mockUseWatchlistMutations.mockReturnValue(mockMutations);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function setupWatchlistMock(overrides: Record<string, any> = {}) {
+  mockUseWatchlistPaginated.mockReturnValue({
+    available: [],
+    upcoming: [],
+    watched: [],
+    isLoading: false,
+    hasNextPage: false,
+    fetchNextPage: mockFetchNextPage,
+    isFetchingNextPage: false,
+    ...overrides,
+  });
+}
+
 describe('WatchlistScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -84,12 +100,7 @@ describe('WatchlistScreen', () => {
 
   it('renders "My Watchlist" header', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
-    });
+    setupWatchlistMock();
 
     render(<WatchlistScreen />);
 
@@ -98,12 +109,7 @@ describe('WatchlistScreen', () => {
 
   it('shows empty state when no movies', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
-    });
+    setupWatchlistMock();
 
     render(<WatchlistScreen />);
 
@@ -113,11 +119,8 @@ describe('WatchlistScreen', () => {
 
   it('renders "Available to Watch" section with movies', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
+    setupWatchlistMock({
       available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -128,11 +131,8 @@ describe('WatchlistScreen', () => {
 
   it('renders "Upcoming Releases" section', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
+    setupWatchlistMock({
       upcoming: [mockEntry('2', 'watchlist', { title: 'Kalki 2898 AD', release_type: 'upcoming' })],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -143,11 +143,8 @@ describe('WatchlistScreen', () => {
 
   it('renders "Watched Movies" section', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
-      upcoming: [],
+    setupWatchlistMock({
       watched: [mockEntry('3', 'watched', { title: 'RRR', release_type: 'ott' })],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -158,12 +155,7 @@ describe('WatchlistScreen', () => {
 
   it('shows loading state with ActivityIndicator', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
-      upcoming: [],
-      watched: [],
-      isLoading: true,
-    });
+    setupWatchlistMock({ isLoading: true });
 
     render(<WatchlistScreen />);
 
@@ -180,12 +172,7 @@ describe('WatchlistScreen', () => {
       isGuest: true,
       setIsGuest: jest.fn(),
     });
-    mockUseWatchlist.mockReturnValue({
-      available: [],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
-    });
+    setupWatchlistMock();
     mockUseWatchlistMutations.mockReturnValue(mockMutations);
 
     render(<WatchlistScreen />);
@@ -196,14 +183,12 @@ describe('WatchlistScreen', () => {
 
   it('displays movie count text for multiple movies', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
+    setupWatchlistMock({
       available: [
         mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' }),
         mockEntry('2', 'watchlist', { title: 'Salaar', release_type: 'ott' }),
       ],
       upcoming: [mockEntry('3', 'watchlist', { title: 'Kalki 2898 AD', release_type: 'upcoming' })],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -213,11 +198,8 @@ describe('WatchlistScreen', () => {
 
   it('displays "1 movie saved" for a single movie', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
+    setupWatchlistMock({
       available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -227,11 +209,8 @@ describe('WatchlistScreen', () => {
 
   it('calls remove.mutate when trash icon is pressed in Available section', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
+    setupWatchlistMock({
       available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -246,11 +225,8 @@ describe('WatchlistScreen', () => {
 
   it('calls markWatched.mutate when checkmark is pressed in Available section', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
+    setupWatchlistMock({
       available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -265,11 +241,8 @@ describe('WatchlistScreen', () => {
 
   it('navigates to movie detail when Available card is pressed', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
+    setupWatchlistMock({
       available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -280,11 +253,8 @@ describe('WatchlistScreen', () => {
 
   it('navigates to movie detail when Upcoming card is pressed', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
+    setupWatchlistMock({
       upcoming: [mockEntry('2', 'watchlist', { title: 'Kalki 2898 AD', release_type: 'upcoming' })],
-      watched: [],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -295,11 +265,8 @@ describe('WatchlistScreen', () => {
 
   it('shows moveBack and remove actions in Watched section', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
-      upcoming: [],
+    setupWatchlistMock({
       watched: [mockEntry('3', 'watched', { title: 'RRR', release_type: 'ott' })],
-      isLoading: false,
     });
 
     render(<WatchlistScreen />);
@@ -321,15 +288,34 @@ describe('WatchlistScreen', () => {
 
   it('shows "0 movies saved" in the empty state header', () => {
     setupLoggedIn();
-    mockUseWatchlist.mockReturnValue({
-      available: [],
-      upcoming: [],
-      watched: [],
-      isLoading: false,
-    });
+    setupWatchlistMock();
 
     render(<WatchlistScreen />);
 
     expect(screen.getByText('0 movies saved')).toBeTruthy();
+  });
+
+  it('shows footer loader when fetching next page', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      isFetchingNextPage: true,
+    });
+
+    render(<WatchlistScreen />);
+
+    expect(screen.getByTestId('footer-loader')).toBeTruthy();
+  });
+
+  it('does not show footer loader when not fetching', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      isFetchingNextPage: false,
+    });
+
+    render(<WatchlistScreen />);
+
+    expect(screen.queryByTestId('footer-loader')).toBeNull();
   });
 });
