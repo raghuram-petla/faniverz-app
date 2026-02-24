@@ -67,12 +67,11 @@ describe('useCalendarStore', () => {
     expect(useCalendarStore.getState().hasUserFiltered).toBe(false);
   });
 
-  it('setDate with null year and month falls back to current date', () => {
-    const now = new Date();
+  it('setDate with null year and month keeps them as null', () => {
     useCalendarStore.getState().setDate(null, null);
     const state = useCalendarStore.getState();
-    expect(state.selectedYear).toBe(now.getFullYear());
-    expect(state.selectedMonth).toBe(now.getMonth());
+    expect(state.selectedYear).toBeNull();
+    expect(state.selectedMonth).toBeNull();
     expect(state.selectedDay).toBeNull();
   });
 
@@ -83,6 +82,26 @@ describe('useCalendarStore', () => {
     expect(state.selectedMonth).toBe(6);
     expect(state.selectedYear).toBe(2026);
     expect(state.selectedDay).toBeNull();
+  });
+
+  it('clearFilters resets year and month to null', () => {
+    useCalendarStore.getState().setDate(2025, 5, 10);
+    useCalendarStore.getState().clearFilters();
+    const state = useCalendarStore.getState();
+    expect(state.selectedYear).toBeNull();
+    expect(state.selectedMonth).toBeNull();
+    expect(state.selectedDay).toBeNull();
+  });
+
+  it('navigateMonth from null month/year uses current date as base', () => {
+    const now = new Date();
+    useCalendarStore.setState({ selectedMonth: null, selectedYear: null });
+    useCalendarStore.getState().navigateMonth(1);
+    const state = useCalendarStore.getState();
+    const expectedMonth = now.getMonth() === 11 ? 0 : now.getMonth() + 1;
+    const expectedYear = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+    expect(state.selectedMonth).toBe(expectedMonth);
+    expect(state.selectedYear).toBe(expectedYear);
   });
 
   it('clearFilters resets showFilters to false', () => {

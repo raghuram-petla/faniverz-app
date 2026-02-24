@@ -172,8 +172,7 @@ describe('CalendarScreen', () => {
     fireEvent.press(getByText('Jan'));
 
     const state = useCalendarStore.getState();
-    // setDate is called with selectedMonth === i ? null : i, so null is passed
-    // The store normalizes null to now.getMonth()
+    expect(state.selectedMonth).toBeNull();
     expect(state.hasUserFiltered).toBe(true);
   });
 
@@ -201,7 +200,7 @@ describe('CalendarScreen', () => {
     fireEvent.press(getByText('All Years'));
 
     const state = useCalendarStore.getState();
-    // setDate(null, ...) maps to now.getFullYear() in the store
+    expect(state.selectedYear).toBeNull();
     expect(state.hasUserFiltered).toBe(true);
   });
 
@@ -266,6 +265,9 @@ describe('CalendarScreen', () => {
     fireEvent.press(getByText('Clear all'));
 
     const state = useCalendarStore.getState();
+    expect(state.selectedYear).toBeNull();
+    expect(state.selectedMonth).toBeNull();
+    expect(state.selectedDay).toBeNull();
     expect(state.hasUserFiltered).toBe(false);
     expect(state.showFilters).toBe(false);
   });

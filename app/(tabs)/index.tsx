@@ -67,7 +67,7 @@ export default function HomeScreen() {
 
   const featuredMovies = allMovies
     .filter((m) => m.release_type === 'theatrical' || m.release_type === 'ott')
-    .slice(0, 3);
+    .slice(0, 7);
   const theatricalMovies = allMovies.filter((m) => m.release_type === 'theatrical');
   const streamingMovies = allMovies.filter((m) => m.release_type === 'ott');
   const upcomingMovies = allMovies.filter((m) => m.release_type === 'upcoming');

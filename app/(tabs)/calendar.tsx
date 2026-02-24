@@ -47,8 +47,8 @@ export default function CalendarScreen() {
   const filteredMovies = useMemo(() => {
     return sortedMovies.filter((movie) => {
       const d = new Date(movie.release_date);
-      if (d.getFullYear() !== selectedYear) return false;
-      if (d.getMonth() !== selectedMonth) return false;
+      if (selectedYear !== null && d.getFullYear() !== selectedYear) return false;
+      if (selectedMonth !== null && d.getMonth() !== selectedMonth) return false;
       if (selectedDay !== null && d.getDate() !== selectedDay) return false;
       return true;
     });
@@ -136,7 +136,7 @@ export default function CalendarScreen() {
             <Text
               style={[styles.yearButtonText, selectedYear !== null && styles.yearButtonTextActive]}
             >
-              {selectedYear || 'All Years'}
+              {selectedYear !== null ? selectedYear : 'All Years'}
             </Text>
             <Ionicons name="chevron-down" size={16} color={colors.white60} />
           </TouchableOpacity>
@@ -199,7 +199,9 @@ export default function CalendarScreen() {
                 length:
                   selectedMonth !== null && selectedYear !== null
                     ? new Date(selectedYear, selectedMonth + 1, 0).getDate()
-                    : 31,
+                    : selectedMonth !== null
+                      ? new Date(new Date().getFullYear(), selectedMonth + 1, 0).getDate()
+                      : 31,
               },
               (_, i) => i + 1,
             ).map((d) => (
