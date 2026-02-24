@@ -172,6 +172,20 @@ describe('useWatchlistMutations', () => {
     expect(api.markAsWatched).toHaveBeenCalledWith('u1', 'm1');
   });
 
+  it('remove mutation rolls back on error', async () => {
+    (api.fetchWatchlist as jest.Mock).mockResolvedValue(mockWatchlistEntries);
+    (api.removeFromWatchlist as jest.Mock).mockRejectedValue(new Error('Remove failed'));
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useWatchlistMutations(), { wrapper });
+
+    await act(async () => {
+      result.current.remove.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
+  });
+
   it('moveBack mutation calls moveBackToWatchlist', async () => {
     (api.moveBackToWatchlist as jest.Mock).mockResolvedValue(undefined);
 

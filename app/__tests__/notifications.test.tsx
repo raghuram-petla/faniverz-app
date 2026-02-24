@@ -122,4 +122,91 @@ describe('NotificationsScreen', () => {
     fireEvent.press(screen.getByLabelText('Trending Movie'));
     expect(mockMarkRead.mutate).not.toHaveBeenCalled();
   });
+
+  it('does not navigate when notification has no movie_id', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    const noMovieNotification = [
+      {
+        id: 'n3',
+        user_id: 'user-1',
+        type: 'reminder',
+        title: 'Reminder',
+        message: 'Check your watchlist',
+        movie_id: null,
+        platform_id: null,
+        read: false,
+        scheduled_for: '2025-03-16T00:00:00Z',
+        status: 'sent',
+        created_at: '2025-03-16T10:00:00Z',
+      },
+    ];
+    useNotifications.mockReturnValue({ data: noMovieNotification });
+
+    render(<NotificationsScreen />);
+    fireEvent.press(screen.getByLabelText('Reminder'));
+    // markRead is called (notification is unread), but no navigation should happen
+    expect(mockMarkRead.mutate).toHaveBeenCalledWith('n3');
+  });
+
+  it('does not call markAllRead when unreadCount is 0', () => {
+    const { useUnreadCount } = require('@/features/notifications/hooks');
+    useUnreadCount.mockReturnValue(0);
+
+    render(<NotificationsScreen />);
+    fireEvent.press(screen.getByLabelText('Mark all as read'));
+    expect(mockMarkAllRead.mutate).not.toHaveBeenCalled();
+  });
+
+  it('shows 99+ badge when unread count exceeds 99', () => {
+    const { useUnreadCount } = require('@/features/notifications/hooks');
+    useUnreadCount.mockReturnValue(150);
+
+    render(<NotificationsScreen />);
+    expect(screen.getByText('99+')).toBeTruthy();
+  });
+
+  it('shows exact unread count when it is 99 or less', () => {
+    const { useUnreadCount } = require('@/features/notifications/hooks');
+    useUnreadCount.mockReturnValue(42);
+
+    render(<NotificationsScreen />);
+    expect(screen.getByText('42')).toBeTruthy();
+  });
+
+  it('does not show unread badge when count is 0', () => {
+    const { useUnreadCount, useNotifications } = require('@/features/notifications/hooks');
+    useUnreadCount.mockReturnValue(0);
+    useNotifications.mockReturnValue({ data: mockNotifications });
+
+    render(<NotificationsScreen />);
+    // Badge should not be rendered since unreadCount is 0
+    // The badge contains a number; with 0 unread there should be no badge number
+    expect(screen.queryByText('0')).toBeNull();
+    expect(screen.queryByText('99+')).toBeNull();
+  });
+
+  it('uses fallback icon config for unknown notification type', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    const unknownTypeNotification = [
+      {
+        id: 'n4',
+        user_id: 'user-1',
+        type: 'unknown_type',
+        title: 'Unknown Type',
+        message: 'This is an unknown notification type',
+        movie_id: 'movie-3',
+        platform_id: null,
+        read: true,
+        scheduled_for: '2025-03-17T00:00:00Z',
+        status: 'sent',
+        created_at: '2025-03-17T10:00:00Z',
+      },
+    ];
+    useNotifications.mockReturnValue({ data: unknownTypeNotification });
+
+    render(<NotificationsScreen />);
+    // Should render without crashing — the fallback to TYPE_ICON.release is used
+    expect(screen.getByText('Unknown Type')).toBeTruthy();
+    expect(screen.getByText('This is an unknown notification type')).toBeTruthy();
+  });
 });

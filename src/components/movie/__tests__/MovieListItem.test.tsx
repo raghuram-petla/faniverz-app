@@ -1,10 +1,11 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { MovieListItem } from '../MovieListItem';
 import { Movie, OTTPlatform } from '@/types';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 const mockMovie: Movie = {
@@ -68,5 +69,11 @@ describe('MovieListItem', () => {
     const upcoming = { ...mockMovie, release_type: 'upcoming' as const, rating: 0 };
     const { queryByText } = render(<MovieListItem movie={upcoming} />);
     expect(queryByText('/ 5')).toBeNull();
+  });
+
+  it('navigates to movie detail when pressed', () => {
+    const { getByRole } = render(<MovieListItem movie={mockMovie} />);
+    fireEvent.press(getByRole('button'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/1');
   });
 });

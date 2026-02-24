@@ -100,4 +100,66 @@ describe('useEmailAuth', () => {
       expect(mockAuth.resetPasswordForEmail).toHaveBeenCalledWith('test@test.com');
     });
   });
+
+  describe('non-Error thrown objects', () => {
+    it('signIn with non-Error uses default message', async () => {
+      mockAuth.signInWithPassword.mockResolvedValue({ error: 'string-error' });
+      const { result } = renderHook(() => useEmailAuth());
+
+      await act(async () => {
+        try {
+          await result.current.signIn('test@test.com', 'pass');
+        } catch {
+          // expected
+        }
+      });
+
+      expect(result.current.error).toBe('Sign in failed');
+    });
+
+    it('signUp with non-Error uses default message', async () => {
+      mockAuth.signUp.mockResolvedValue({ error: 'string-error' });
+      const { result } = renderHook(() => useEmailAuth());
+
+      await act(async () => {
+        try {
+          await result.current.signUp('test@test.com', 'pass');
+        } catch {
+          // expected
+        }
+      });
+
+      expect(result.current.error).toBe('Sign up failed');
+    });
+
+    it('signOut with non-Error uses default message', async () => {
+      mockAuth.signOut.mockResolvedValue({ error: 'string-error' });
+      const { result } = renderHook(() => useEmailAuth());
+
+      await act(async () => {
+        try {
+          await result.current.signOut();
+        } catch {
+          // expected
+        }
+      });
+
+      expect(result.current.error).toBe('Sign out failed');
+    });
+
+    it('resetPassword with non-Error uses default message', async () => {
+      mockAuth.resetPasswordForEmail.mockResolvedValue({ error: 'string-error' });
+      const { result } = renderHook(() => useEmailAuth());
+
+      await act(async () => {
+        try {
+          await result.current.resetPassword('test@test.com');
+        } catch {
+          // expected
+        }
+      });
+
+      expect(result.current.error).toBe('Password reset failed');
+    });
+  });
 });

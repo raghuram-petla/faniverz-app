@@ -13,5 +13,7 @@ module.exports = {
     'app/**/*.{ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
+    '!src/types/**',
+    '!**/index.ts',
   ],
 };

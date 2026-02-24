@@ -37,29 +37,49 @@ jest.mock('@/features/watchlist/hooks', () => ({
   })),
 }));
 
+const mockCreateReviewMutate = jest.fn();
+const mockHelpfulMutate = jest.fn();
+
 jest.mock('@/features/reviews/hooks', () => ({
   useMovieReviews: jest.fn(() => ({ data: [] })),
   useReviewMutations: jest.fn(() => ({
-    create: { mutate: jest.fn() },
+    create: { mutate: mockCreateReviewMutate },
     update: { mutate: jest.fn() },
     remove: { mutate: jest.fn() },
-    helpful: { mutate: jest.fn() },
+    helpful: { mutate: mockHelpfulMutate },
   })),
 }));
 
 jest.mock('@/components/ui/StarRating', () => {
-  const { View } = require('react-native');
+  const { View, TouchableOpacity, Text } = require('react-native');
   return {
-    StarRating: () => <View testID="star-rating" />,
+    StarRating: ({
+      interactive,
+      onRate,
+    }: {
+      interactive?: boolean;
+      onRate?: (n: number) => void;
+      rating?: number;
+      size?: number;
+    }) => (
+      <View testID="star-rating">
+        {interactive && onRate && (
+          <TouchableOpacity testID="star-rate-4" onPress={() => onRate(4)}>
+            <Text>Rate 4</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    ),
   };
 });
 
 import React from 'react';
-import { Share } from 'react-native';
+import { Share, Linking } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import MovieDetailScreen from '../[id]';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useIsWatchlisted } from '@/features/watchlist/hooks';
+import { useMovieReviews } from '@/features/reviews/hooks';
 
 const mockMovie = {
   id: 'movie-1',
@@ -227,5 +247,117 @@ describe('MovieDetailScreen', () => {
     render(<MovieDetailScreen />);
     expect(screen.getByText('Action')).toBeTruthy();
     expect(screen.getByText('Drama')).toBeTruthy();
+  });
+
+  it('opens trailer URL when Watch Trailer is pressed', () => {
+    const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Watch Trailer'));
+    expect(linkingSpy).toHaveBeenCalledWith('https://youtube.com/watch?v=abc');
+    linkingSpy.mockRestore();
+  });
+
+  it('submits a review via the modal', () => {
+    render(<MovieDetailScreen />);
+
+    // Navigate to reviews tab
+    fireEvent.press(screen.getByText('Reviews'));
+
+    // Open the review modal
+    fireEvent.press(screen.getByText('Write Review'));
+
+    // Set a rating using the mocked interactive star
+    fireEvent.press(screen.getByTestId('star-rate-4'));
+
+    // Fill in title and body
+    fireEvent.changeText(screen.getByPlaceholderText('Review Title'), 'Amazing Movie');
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Write your review...'),
+      'Loved every moment of it.',
+    );
+
+    // Submit
+    fireEvent.press(screen.getByText('Submit'));
+
+    expect(mockCreateReviewMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-1',
+        movie_id: 'movie-1',
+        rating: 4,
+        title: 'Amazing Movie',
+        body: 'Loved every moment of it.',
+      }),
+    );
+  });
+
+  it('presses helpful button on a review and calls helpfulMutation', () => {
+    const mockReviews = [
+      {
+        id: 'r1',
+        movie_id: 'movie-1',
+        user_id: 'user-2',
+        rating: 4,
+        title: 'Awesome',
+        body: 'Great movie!',
+        contains_spoiler: false,
+        helpful_count: 5,
+        created_at: '2024-03-15T10:00:00Z',
+        updated_at: '2024-03-15T10:00:00Z',
+        profile: { display_name: 'Film Buff' },
+      },
+    ];
+    (useMovieReviews as jest.Mock).mockReturnValue({ data: mockReviews });
+
+    render(<MovieDetailScreen />);
+
+    // Navigate to reviews tab
+    fireEvent.press(screen.getByText('Reviews'));
+
+    // Press the helpful button
+    fireEvent.press(screen.getByLabelText('Mark review as helpful, 5 found helpful'));
+
+    expect(mockHelpfulMutate).toHaveBeenCalledWith({
+      userId: 'user-1',
+      reviewId: 'r1',
+    });
+  });
+
+  it('shows platform button in Watch On section and opens URL on press', () => {
+    const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
+    render(<MovieDetailScreen />);
+    const platformButton = screen.getByLabelText('Watch on Netflix');
+    expect(platformButton).toBeTruthy();
+    fireEvent.press(platformButton);
+    expect(linkingSpy).toHaveBeenCalledWith('https://example.com');
+    linkingSpy.mockRestore();
+  });
+
+  it('shows "Coming Soon" status badge for upcoming movies', () => {
+    const upcomingMovie = {
+      ...mockMovie,
+      release_type: 'upcoming',
+      rating: 0,
+      review_count: 0,
+      platforms: [],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: upcomingMovie });
+    render(<MovieDetailScreen />);
+    expect(screen.getByText('Coming Soon')).toBeTruthy();
+    expect(screen.getByText('Upcoming Release')).toBeTruthy();
+  });
+
+  it('closes review modal when Cancel is pressed', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+
+    // Modal should be open with Cancel visible
+    expect(screen.getByText('Cancel')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Cancel'));
+
+    // After cancelling, the modal content should be hidden
+    // The "Write Review" button in the reviews tab should still be there
+    expect(screen.getByText('Write Review')).toBeTruthy();
   });
 });

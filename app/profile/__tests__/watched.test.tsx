@@ -170,4 +170,131 @@ describe('WatchedMoviesScreen', () => {
     expect(screen.getByText('Highest Rated')).toBeTruthy();
     expect(screen.getByText('Title A\u2013Z')).toBeTruthy();
   });
+
+  it('sorts by highest rated when option is selected', () => {
+    const watchedEntries = [
+      {
+        id: 'w1',
+        user_id: 'user-1',
+        movie_id: 'm1',
+        status: 'watched',
+        watched_at: '2025-03-01T00:00:00Z',
+        movie: {
+          id: 'm1',
+          title: 'Pushpa 2',
+          poster_url: null,
+          rating: 3.0,
+          release_type: 'theatrical',
+        },
+      },
+      {
+        id: 'w2',
+        user_id: 'user-1',
+        movie_id: 'm2',
+        status: 'watched',
+        watched_at: '2025-02-15T00:00:00Z',
+        movie: {
+          id: 'm2',
+          title: 'Salaar',
+          poster_url: null,
+          rating: 4.5,
+          release_type: 'theatrical',
+        },
+      },
+    ];
+    mockUseWatchlist.mockReturnValue({ watched: watchedEntries, isLoading: false });
+
+    render(<WatchedMoviesScreen />);
+
+    // Open sort menu
+    fireEvent.press(screen.getByText('Recently Watched'));
+    // Select Highest Rated
+    fireEvent.press(screen.getByText('Highest Rated'));
+
+    // The sort dropdown should now show "Highest Rated"
+    expect(screen.getByText('Highest Rated')).toBeTruthy();
+
+    // After sorting by rating, Salaar (4.5) should come before Pushpa 2 (3.0)
+    const allMovieTitles = screen.getAllByText(/Pushpa 2|Salaar/);
+    expect(allMovieTitles[0].props.children).toBe('Salaar');
+  });
+
+  it('sorts by title A-Z when option is selected', () => {
+    const watchedEntries = [
+      {
+        id: 'w1',
+        user_id: 'user-1',
+        movie_id: 'm1',
+        status: 'watched',
+        watched_at: '2025-03-01T00:00:00Z',
+        movie: {
+          id: 'm1',
+          title: 'Pushpa 2',
+          poster_url: null,
+          rating: 4.0,
+          release_type: 'theatrical',
+        },
+      },
+      {
+        id: 'w2',
+        user_id: 'user-1',
+        movie_id: 'm2',
+        status: 'watched',
+        watched_at: '2025-02-15T00:00:00Z',
+        movie: {
+          id: 'm2',
+          title: 'Akhanda',
+          poster_url: null,
+          rating: 3.5,
+          release_type: 'theatrical',
+        },
+      },
+    ];
+    mockUseWatchlist.mockReturnValue({ watched: watchedEntries, isLoading: false });
+
+    render(<WatchedMoviesScreen />);
+
+    // Open sort menu
+    fireEvent.press(screen.getByText('Recently Watched'));
+    // Select Title A-Z
+    fireEvent.press(screen.getByText('Title A\u2013Z'));
+
+    // After sorting by title, Akhanda should come before Pushpa 2
+    const allMovieTitles = screen.getAllByText(/Pushpa 2|Akhanda/);
+    expect(allMovieTitles[0].props.children).toBe('Akhanda');
+  });
+
+  it('shows dash for stats when no watched movies', () => {
+    mockUseWatchlist.mockReturnValue({ watched: [], isLoading: false });
+    render(<WatchedMoviesScreen />);
+
+    // When there are no movies, avgRating and watchTime should show "—"
+    const dashes = screen.getAllByText('\u2014');
+    expect(dashes.length).toBe(2);
+  });
+
+  it('shows rating badge for movies with rating > 0', () => {
+    const watchedEntries = [
+      {
+        id: 'w1',
+        user_id: 'user-1',
+        movie_id: 'm1',
+        status: 'watched',
+        watched_at: '2025-03-01T00:00:00Z',
+        movie: {
+          id: 'm1',
+          title: 'Pushpa 2',
+          poster_url: null,
+          rating: 4.5,
+          release_type: 'theatrical',
+        },
+      },
+    ];
+    mockUseWatchlist.mockReturnValue({ watched: watchedEntries, isLoading: false });
+
+    render(<WatchedMoviesScreen />);
+
+    // Rating badge should show the formatted rating (may appear in both stats and badge)
+    expect(screen.getAllByText('4.5').length).toBeGreaterThanOrEqual(1);
+  });
 });

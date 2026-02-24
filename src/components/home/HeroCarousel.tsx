@@ -1,5 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  Dimensions,
+  ViewToken,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +17,7 @@ import { Movie, OTTPlatform } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HERO_HEIGHT = 600;
+const AUTO_PLAY_INTERVAL = 5000;
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -18,133 +27,200 @@ interface HeroCarouselProps {
 export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
+  const flatListRef = useRef<FlatList<Movie>>(null);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const featured = movies[activeIndex];
-  const platforms = featured ? (platformMap?.[featured.id] ?? []) : [];
+  // Track visible item via onViewableItemsChanged
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    if (viewableItems.length > 0 && viewableItems[0].index != null) {
+      setActiveIndex(viewableItems[0].index);
+    }
+  }).current;
 
-  useEffect(() => {
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+
+  // Auto-play: advance every 5 seconds, reset on manual swipe
+  const startAutoPlay = useCallback(() => {
     if (movies.length <= 1) return;
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % movies.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    autoPlayRef.current = setInterval(() => {
+      setActiveIndex((prev) => {
+        const next = (prev + 1) % movies.length;
+        flatListRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, AUTO_PLAY_INTERVAL);
   }, [movies.length]);
 
-  const handleWatchNow = useCallback(() => {
-    if (featured) router.push(`/movie/${featured.id}`);
-  }, [featured, router]);
+  useEffect(() => {
+    startAutoPlay();
+    return () => {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    };
+  }, [startAutoPlay]);
 
-  if (!featured) return null;
+  const scrollToDot = (index: number) => {
+    flatListRef.current?.scrollToIndex({ index, animated: true });
+    setActiveIndex(index);
+    // Reset auto-play timer on manual interaction
+    startAutoPlay();
+  };
 
-  const releaseYear = new Date(featured.release_date).getFullYear();
+  const handleWatchNow = useCallback(
+    (movie: Movie) => {
+      router.push(`/movie/${movie.id}`);
+    },
+    [router],
+  );
+
+  if (movies.length === 0) return null;
+
+  const renderSlide = ({ item }: { item: Movie }) => {
+    const platforms_ = platformMap?.[item.id] ?? [];
+    const releaseYear = new Date(item.release_date).getFullYear();
+
+    return (
+      <View style={styles.slide}>
+        <Image
+          source={{ uri: item.backdrop_url ?? item.poster_url ?? undefined }}
+          style={styles.backdrop}
+          contentFit="cover"
+        />
+
+        <LinearGradient
+          colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,1)']}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <View style={styles.content}>
+          {/* Badges row */}
+          <View style={styles.badgeRow}>
+            {item.release_type === 'theatrical' && (
+              <View style={[styles.typeBadge, { backgroundColor: colors.red600 }]}>
+                <Text style={styles.typeBadgeText}>In Theaters</Text>
+              </View>
+            )}
+            {item.release_type === 'ott' && (
+              <View style={[styles.typeBadge, { backgroundColor: colors.purple600 }]}>
+                <Text style={styles.typeBadgeText}>Streaming Now</Text>
+              </View>
+            )}
+            {item.rating > 0 && (
+              <View style={styles.ratingBadge}>
+                <Ionicons name="star" size={14} color={colors.yellow400} />
+                <Text style={styles.ratingText}>{item.rating}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Title */}
+          <Text style={styles.title} numberOfLines={2}>
+            {item.title}
+          </Text>
+
+          {/* Meta info */}
+          <View style={styles.metaRow}>
+            <Text style={styles.metaText}>{releaseYear}</Text>
+            <Text style={styles.metaDot}>•</Text>
+            {item.runtime ? (
+              <>
+                <Text style={styles.metaText}>{item.runtime}m</Text>
+                <Text style={styles.metaDot}>•</Text>
+              </>
+            ) : null}
+            {item.certification && (
+              <View style={styles.certBadge}>
+                <Text style={styles.certText}>{item.certification}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* OTT Platforms */}
+          {platforms_.length > 0 && (
+            <View style={styles.platformRow}>
+              <Text style={styles.platformLabel}>Watch on:</Text>
+              {platforms_.map((p) => (
+                <View key={p.id} style={[styles.platformChip, { backgroundColor: p.color }]}>
+                  <Text style={styles.platformChipText}>{p.logo}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Buttons */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.watchButton}
+              onPress={() => handleWatchNow(item)}
+              accessibilityRole="button"
+              accessibilityLabel="Watch Now"
+            >
+              <Ionicons name="play" size={20} color={colors.black} />
+              <Text style={styles.watchButtonText}>Watch Now</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.infoButton}
+              onPress={() => handleWatchNow(item)}
+              accessibilityRole="button"
+              accessibilityLabel="More Info"
+            >
+              <Ionicons name="information-circle-outline" size={22} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri: featured.backdrop_url ?? featured.poster_url ?? undefined }}
-        style={styles.backdrop}
-        contentFit="cover"
-        transition={500}
+      <FlatList
+        ref={flatListRef}
+        data={movies}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(item) => item.id}
+        renderItem={renderSlide}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        getItemLayout={(_, index) => ({
+          length: SCREEN_WIDTH,
+          offset: SCREEN_WIDTH * index,
+          index,
+        })}
+        onScrollBeginDrag={() => {
+          // User started swiping — reset auto-play timer
+          if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+        }}
+        onScrollEndDrag={() => {
+          // User finished swiping — restart auto-play
+          startAutoPlay();
+        }}
       />
 
-      <LinearGradient
-        colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,1)']}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <View style={styles.content}>
-        {/* Badges row */}
-        <View style={styles.badgeRow}>
-          {featured.release_type === 'theatrical' && (
-            <View style={[styles.typeBadge, { backgroundColor: colors.red600 }]}>
-              <Text style={styles.typeBadgeText}>In Theaters</Text>
-            </View>
-          )}
-          {featured.release_type === 'ott' && (
-            <View style={[styles.typeBadge, { backgroundColor: colors.purple600 }]}>
-              <Text style={styles.typeBadgeText}>Streaming Now</Text>
-            </View>
-          )}
-          {featured.rating > 0 && (
-            <View style={styles.ratingBadge}>
-              <Ionicons name="star" size={14} color={colors.yellow400} />
-              <Text style={styles.ratingText}>{featured.rating}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Title */}
-        <Text style={styles.title} numberOfLines={2}>
-          {featured.title}
-        </Text>
-
-        {/* Meta info */}
-        <View style={styles.metaRow}>
-          <Text style={styles.metaText}>{releaseYear}</Text>
-          <Text style={styles.metaDot}>•</Text>
-          {featured.runtime ? (
-            <>
-              <Text style={styles.metaText}>{featured.runtime}m</Text>
-              <Text style={styles.metaDot}>•</Text>
-            </>
-          ) : null}
-          {featured.certification && (
-            <View style={styles.certBadge}>
-              <Text style={styles.certText}>{featured.certification}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* OTT Platforms */}
-        {platforms.length > 0 && (
-          <View style={styles.platformRow}>
-            <Text style={styles.platformLabel}>Watch on:</Text>
-            {platforms.map((p) => (
-              <View key={p.id} style={[styles.platformChip, { backgroundColor: p.color }]}>
-                <Text style={styles.platformChipText}>{p.logo}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Buttons */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={styles.watchButton}
-            onPress={handleWatchNow}
-            accessibilityRole="button"
-            accessibilityLabel="Watch Now"
-          >
-            <Ionicons name="play" size={20} color={colors.black} />
-            <Text style={styles.watchButtonText}>Watch Now</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.infoButton}
-            onPress={handleWatchNow}
-            accessibilityRole="button"
-            accessibilityLabel="More Info"
-          >
-            <Ionicons name="information-circle-outline" size={22} color={colors.white} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Pagination dots */}
+      {/* Pagination dots — overlaid at the bottom */}
+      {movies.length > 1 && (
         <View style={styles.dotsRow}>
           {movies.map((_, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => setActiveIndex(index)}
+              onPress={() => scrollToDot(index)}
               style={[styles.dot, index === activeIndex ? styles.dotActive : styles.dotInactive]}
             />
           ))}
         </View>
-      </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    height: HERO_HEIGHT,
+    width: SCREEN_WIDTH,
+  },
+  slide: {
     height: HERO_HEIGHT,
     width: SCREEN_WIDTH,
   },
@@ -155,7 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     paddingHorizontal: 16,
-    paddingBottom: 32,
+    paddingBottom: 56,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -265,6 +341,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dotsRow: {
+    position: 'absolute',
+    bottom: 24,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,

@@ -16,7 +16,13 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import { fetchMovies, fetchMovieById, searchMovies, fetchMoviesByMonth } from '../api';
+import {
+  fetchMovies,
+  fetchMovieById,
+  searchMovies,
+  fetchMoviesByMonth,
+  fetchMoviesByPlatform,
+} from '../api';
 
 describe('movies api', () => {
   beforeEach(() => {
@@ -161,6 +167,119 @@ describe('movies api', () => {
       mockLimit.mockResolvedValue({ data: null, error: new Error('Search failed') });
 
       await expect(searchMovies('test')).rejects.toThrow('Search failed');
+    });
+  });
+
+  describe('fetchMovies — genre and platform filters', () => {
+    const mockContains = jest.fn();
+    const mockIn = jest.fn();
+
+    it('filters by genre when provided', async () => {
+      mockSelect.mockReturnValue({ contains: mockContains });
+      mockContains.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: [], error: null });
+
+      await fetchMovies({ genre: 'Action' });
+      expect(mockContains).toHaveBeenCalledWith('genres', ['Action']);
+    });
+
+    it('filters by platformId when matching movies exist', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
+      mockSelect.mockReturnValue({ in: mockIn });
+      mockIn.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: [{ id: 'm1', title: 'Test' }], error: null });
+
+      const result = await fetchMovies({ platformId: 'netflix' });
+      expect(mockPlatformEq).toHaveBeenCalledWith('platform_id', 'netflix');
+      expect(result).toHaveLength(1);
+    });
+
+    it('returns empty array when platformId has no matching movies', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: [] });
+
+      const result = await fetchMovies({ platformId: 'nonexistent' });
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('fetchMoviesByPlatform', () => {
+    it('queries movie_platforms then fetches movies', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      const mockMoviesIn = jest.fn();
+
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }, { movie_id: 'm2' }] });
+      mockSelect.mockReturnValue({ in: mockMoviesIn });
+      mockMoviesIn.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({
+        data: [{ id: 'm1', title: 'Movie 1' }],
+        error: null,
+      });
+
+      const result = await fetchMoviesByPlatform('netflix');
+      expect(mockPlatformEq).toHaveBeenCalledWith('platform_id', 'netflix');
+      expect(result).toHaveLength(1);
+    });
+
+    it('returns empty array when no movies for platform', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: [] });
+
+      const result = await fetchMoviesByPlatform('unknown');
+      expect(result).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      const mockMoviesIn = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
+      mockSelect.mockReturnValue({ in: mockMoviesIn });
+      mockMoviesIn.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: null, error: new Error('Platform fetch failed') });
+
+      await expect(fetchMoviesByPlatform('netflix')).rejects.toThrow('Platform fetch failed');
     });
   });
 });

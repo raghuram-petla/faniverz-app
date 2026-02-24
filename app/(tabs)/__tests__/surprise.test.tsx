@@ -117,4 +117,108 @@ describe('SurpriseScreen', () => {
 
     expect(screen.getByText('Loading...')).toBeTruthy();
   });
+
+  it('renders featured video with description and duration', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // Featured video (first item) shows description
+    expect(screen.getByText('The iconic theme from Pushpa')).toBeTruthy();
+    // Duration is shown
+    expect(screen.getByText('4:32')).toBeTruthy();
+  });
+
+  it('renders short-film category content', () => {
+    const shortFilmContent = [
+      {
+        id: 'sf-1',
+        title: 'Telugu Short Film',
+        description: 'A compelling short film',
+        youtube_id: 'xyz789',
+        category: 'short-film' as const,
+        duration: '15:00',
+        views: 450_000,
+        created_at: '2024-01-04T00:00:00Z',
+      },
+    ];
+    mockUseSurpriseContent.mockReturnValue({ data: shortFilmContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    expect(screen.getByText('Telugu Short Film')).toBeTruthy();
+    expect(screen.getByText('SHORT FILM')).toBeTruthy();
+  });
+
+  it('formats views correctly for millions', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // 5,200,000 should be displayed as "5.2M views"
+    expect(screen.getByText('5.2M views')).toBeTruthy();
+  });
+
+  it('formats views correctly for thousands', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // 980,000 = "980K views", 320,000 = "320K views"
+    expect(screen.getByText('980K views')).toBeTruthy();
+    expect(screen.getByText('320K views')).toBeTruthy();
+  });
+
+  it('filters by BTS category when pill is pressed', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    fireEvent.press(screen.getByText('BTS'));
+    expect(mockUseSurpriseContent).toHaveBeenCalledWith('bts');
+  });
+
+  it('filters by Short Films category when pill is pressed', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    fireEvent.press(screen.getByText('Short Films'));
+    expect(mockUseSurpriseContent).toHaveBeenCalledWith('short-film');
+  });
+
+  it('shows "All" filter with no category when pressed', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // First press another filter
+    fireEvent.press(screen.getByText('Songs'));
+    // Then go back to All
+    fireEvent.press(screen.getByText('All'));
+    expect(mockUseSurpriseContent).toHaveBeenCalledWith(undefined);
+  });
+
+  it('renders trailer category content', () => {
+    const trailerContent = [
+      {
+        id: 'tr-1',
+        title: 'Movie Trailer',
+        description: null,
+        youtube_id: 'trailer123',
+        category: 'trailer' as const,
+        duration: '2:30',
+        views: 150,
+        created_at: '2024-01-05T00:00:00Z',
+      },
+    ];
+    mockUseSurpriseContent.mockReturnValue({ data: trailerContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    expect(screen.getByText('Movie Trailer')).toBeTruthy();
+    expect(screen.getByText('TRAILER')).toBeTruthy();
+    // 150 views < 1000, so displayed as "150 views"
+    expect(screen.getByText('150 views')).toBeTruthy();
+  });
 });

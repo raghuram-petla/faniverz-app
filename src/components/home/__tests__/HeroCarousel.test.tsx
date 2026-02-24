@@ -1,13 +1,12 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent, act } from '@testing-library/react-native';
 import { HeroCarousel } from '../HeroCarousel';
 import { Movie } from '@/types';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
-
-// expo-linear-gradient and expo-image are already mocked globally in jest.setup.js
 
 const mockMovies: Movie[] = [
   {
@@ -53,20 +52,25 @@ const mockMovies: Movie[] = [
 ];
 
 describe('HeroCarousel', () => {
-  it('renders movie title', () => {
-    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    expect(getByText('Pushpa 2')).toBeTruthy();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('renders Watch Now button', () => {
+  it('renders all movie titles in the FlatList', () => {
     const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    expect(getByText('Watch Now')).toBeTruthy();
+    expect(getByText('Pushpa 2')).toBeTruthy();
+    expect(getByText('Kalki')).toBeTruthy();
+  });
+
+  it('renders Watch Now buttons for each slide', () => {
+    const { getAllByText } = render(<HeroCarousel movies={mockMovies} />);
+    expect(getAllByText('Watch Now').length).toBe(2);
   });
 
   it('shows rating when rating > 0', () => {
     const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    // First movie has rating 4.5
     expect(getByText('4.5')).toBeTruthy();
+    expect(getByText('4')).toBeTruthy();
   });
 
   it('does not show rating when rating is 0', () => {
@@ -77,40 +81,29 @@ describe('HeroCarousel', () => {
 
   it('shows "In Theaters" badge for theatrical movies', () => {
     const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    // First movie is theatrical
     expect(getByText('In Theaters')).toBeTruthy();
   });
 
-  it('shows "Streaming Now" badge for OTT movies when active', () => {
-    const ottOnlyMovies: Movie[] = [mockMovies[1]];
-    const { getByText } = render(<HeroCarousel movies={ottOnlyMovies} />);
+  it('shows "Streaming Now" badge for OTT movies', () => {
+    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
     expect(getByText('Streaming Now')).toBeTruthy();
   });
 
-  it('does not show "In Theaters" badge for OTT movies', () => {
-    const ottOnlyMovies: Movie[] = [mockMovies[1]];
-    const { queryByText } = render(<HeroCarousel movies={ottOnlyMovies} />);
-    expect(queryByText('In Theaters')).toBeNull();
-  });
-
-  it('renders pagination dots matching movie count', () => {
-    const { getAllByRole } = render(<HeroCarousel movies={mockMovies} />);
-    // Pagination dots + Watch Now + More Info are all buttons
-    // The dots row has one TouchableOpacity per movie
-    const buttons = getAllByRole('button');
-    // Two accessible buttons (Watch Now + More Info) plus two dot TouchableOpacity elements
-    // Dots are not labeled, so we check via accessibilityRole buttons count
-    // Watch Now and More Info have explicit accessibilityRole="button"
-    expect(buttons.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('renders two pagination dots for two movies', () => {
+  it('renders pagination dots for multiple movies', () => {
     const { UNSAFE_getAllByType } = render(<HeroCarousel movies={mockMovies} />);
-    // Access TouchableOpacity elements from react-native
     const { TouchableOpacity } = require('react-native');
     const touchables = UNSAFE_getAllByType(TouchableOpacity);
-    // Expects: Watch Now button + More Info button + 2 dot buttons = 4 total
-    expect(touchables.length).toBe(4);
+    // 2 slides x (Watch Now + More Info) + 2 pagination dots = 6
+    expect(touchables.length).toBe(6);
+  });
+
+  it('does not render pagination dots for a single movie', () => {
+    const singleMovie: Movie[] = [mockMovies[0]];
+    const { UNSAFE_getAllByType } = render(<HeroCarousel movies={singleMovie} />);
+    const { TouchableOpacity } = require('react-native');
+    const touchables = UNSAFE_getAllByType(TouchableOpacity);
+    // 1 slide x (Watch Now + More Info) = 2, no dots
+    expect(touchables.length).toBe(2);
   });
 
   it('renders nothing when movies array is empty', () => {
@@ -125,5 +118,56 @@ describe('HeroCarousel', () => {
     const { getByText } = render(<HeroCarousel movies={mockMovies} platformMap={platformMap} />);
     expect(getByText('Watch on:')).toBeTruthy();
     expect(getByText('N')).toBeTruthy();
+  });
+
+  it('navigates to movie detail when Watch Now is pressed', () => {
+    const { getAllByLabelText } = render(<HeroCarousel movies={mockMovies} />);
+    fireEvent.press(getAllByLabelText('Watch Now')[0]);
+    expect(mockPush).toHaveBeenCalledWith('/movie/1');
+  });
+
+  it('navigates to movie detail when More Info is pressed', () => {
+    const { getAllByLabelText } = render(<HeroCarousel movies={mockMovies} />);
+    fireEvent.press(getAllByLabelText('More Info')[0]);
+    expect(mockPush).toHaveBeenCalledWith('/movie/1');
+  });
+
+  it('does not set up auto-play interval when there is only one movie', () => {
+    jest.useFakeTimers();
+    const singleMovie: Movie[] = [mockMovies[0]];
+    const { getByText } = render(<HeroCarousel movies={singleMovie} />);
+    expect(getByText('Pushpa 2')).toBeTruthy();
+
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(getByText('Pushpa 2')).toBeTruthy();
+
+    jest.useRealTimers();
+  });
+
+  it('sets up auto-play interval for multiple movies', () => {
+    jest.useFakeTimers();
+    render(<HeroCarousel movies={mockMovies} />);
+
+    // Advance past the auto-play interval — should not crash
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('cleans up interval on unmount', () => {
+    jest.useFakeTimers();
+    const { unmount } = render(<HeroCarousel movies={mockMovies} />);
+    unmount();
+
+    // Advancing time after unmount should not cause errors
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+
+    jest.useRealTimers();
   });
 });

@@ -107,7 +107,7 @@ export default function HomeScreen() {
         <View style={styles.headerButtons}>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() => router.push('/search')}
+            onPress={() => router.push('/discover')}
             accessibilityRole="button"
             accessibilityLabel="Search"
           >

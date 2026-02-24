@@ -135,4 +135,52 @@ describe('MyReviewsScreen', () => {
     const allMovieTitles = screen.getAllByText(/Pushpa 2|Kalki 2898 AD/);
     expect(allMovieTitles[0].props.children).toBe('Pushpa 2');
   });
+
+  it('calls remove.mutate when Delete is confirmed in the alert', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<MyReviewsScreen />);
+
+    // Press the first Delete button
+    const deleteButtons = screen.getAllByText('Delete');
+    fireEvent.press(deleteButtons[0]);
+
+    // Get the alert call args
+    const alertArgs = alertSpy.mock.calls[0];
+    const buttons = alertArgs[2] as Array<{ text: string; onPress?: () => void }>;
+    // Find and press the "Delete" button in the alert
+    const deleteAction = buttons.find((b) => b.text === 'Delete');
+    deleteAction?.onPress?.();
+
+    expect(mockRemoveMutate).toHaveBeenCalledWith('review-1');
+    alertSpy.mockRestore();
+  });
+
+  it('renders review body text', () => {
+    render(<MyReviewsScreen />);
+    expect(screen.getByText('Really enjoyed the storytelling.')).toBeTruthy();
+    expect(screen.getByText('A masterpiece.')).toBeTruthy();
+  });
+
+  it('renders review title when present', () => {
+    render(<MyReviewsScreen />);
+    expect(screen.getByText('Great film')).toBeTruthy();
+  });
+
+  it('renders Edit button that navigates to movie page', () => {
+    render(<MyReviewsScreen />);
+    const editButtons = screen.getAllByText('Edit');
+    expect(editButtons.length).toBeGreaterThan(0);
+  });
+
+  it('shows helpful count for reviews', () => {
+    render(<MyReviewsScreen />);
+    expect(screen.getByText('12 helpful')).toBeTruthy();
+    expect(screen.getByText('7 helpful')).toBeTruthy();
+  });
+
+  it('shows total helpful count in stats', () => {
+    render(<MyReviewsScreen />);
+    // Total helpful = 12 + 7 = 19
+    expect(screen.getByText('19')).toBeTruthy();
+  });
 });

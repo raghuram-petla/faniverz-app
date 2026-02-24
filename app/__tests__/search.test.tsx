@@ -3,7 +3,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { Movie } from '@/types';
 
 const mockPush = jest.fn();
@@ -156,5 +156,129 @@ describe('SearchScreen', () => {
     const clearButtons = screen.UNSAFE_queryAllByType(require('react-native').TouchableOpacity);
     fireEvent.press(clearButtons[0]);
     expect(input.props.value).toBe('');
+  });
+
+  it('saves search and navigates when a search result is pressed', () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'push');
+
+    // Press the search result item
+    fireEvent.press(screen.getByText('Pushpa 2'));
+
+    expect(mockPush).toHaveBeenCalledWith('/movie/1');
+    expect(AsyncStorage.setItem).toHaveBeenCalled();
+  });
+
+  it('navigates to movie detail when a trending movie is pressed', () => {
+    const trendingMovies = [{ ...mockResults[0], id: 't1', title: 'Top Movie', rating: 5.0 }];
+    mockUseMovies.mockReturnValue({ data: trendingMovies });
+
+    render(<SearchScreen />);
+    fireEvent.press(screen.getByText('Top Movie'));
+
+    // query is empty, so no search is saved, but navigation still happens
+    expect(mockPush).toHaveBeenCalledWith('/movie/t1');
+  });
+
+  it('removes an individual recent search when its close button is pressed', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify(['Pushpa', 'RRR']));
+
+    const { findByText } = render(<SearchScreen />);
+    await findByText('Pushpa');
+
+    // DOM structure when query is empty and recent searches are loaded:
+    // Touchables in order: Cancel(0), Clear(1), Pushpa-text(2), Pushpa-close(3), RRR-text(4), RRR-close(5)
+    const { TouchableOpacity } = require('react-native');
+    const allTouchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+
+    // Index 3 is the close button for the "Pushpa" pill (removeSearch)
+    fireEvent.press(allTouchables[3]);
+
+    await waitFor(() => {
+      expect(AsyncStorage.setItem).toHaveBeenCalled();
+    });
+  });
+
+  it('loads recent searches from AsyncStorage on mount', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify(['Kalki', 'Bahubali']));
+
+    const { findByText } = render(<SearchScreen />);
+
+    expect(await findByText('Kalki')).toBeTruthy();
+    expect(await findByText('Bahubali')).toBeTruthy();
+    expect(screen.getByText('Recent Searches')).toBeTruthy();
+  });
+
+  it('handles corrupted AsyncStorage data gracefully', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockResolvedValueOnce('not-valid-json{{{');
+
+    render(<SearchScreen />);
+
+    // Should not crash — the component still renders
+    expect(screen.getByPlaceholderText('Search movies, actors, directors...')).toBeTruthy();
+  });
+
+  it('handles null AsyncStorage data gracefully', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockResolvedValueOnce(null);
+
+    render(<SearchScreen />);
+
+    expect(screen.getByPlaceholderText('Search movies, actors, directors...')).toBeTruthy();
+    // No "Recent Searches" heading should appear with no data
+    expect(screen.queryByText('Recent Searches')).toBeNull();
+  });
+
+  it('shows results count when results are found', () => {
+    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'pu');
+
+    expect(screen.getByText('1 result found')).toBeTruthy();
+  });
+
+  it('shows plural results count for multiple results', () => {
+    const multiResults = [...mockResults, { ...mockResults[0], id: '2', title: 'Pushpa 3' }];
+    mockUseMovieSearch.mockReturnValue({ data: multiResults });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'pu');
+
+    expect(screen.getByText('2 results found')).toBeTruthy();
+  });
+
+  it('sets query from a recent search pill press', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify(['Pushpa']));
+
+    const { findByText } = render(<SearchScreen />);
+    const pushpaPill = await findByText('Pushpa');
+
+    // Press the text part of the pill to set query
+    fireEvent.press(pushpaPill);
+
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    expect(input.props.value).toBe('Pushpa');
+  });
+
+  it('renders result movie metadata including genres and badges', () => {
+    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'pu');
+
+    expect(screen.getByText('In Theaters')).toBeTruthy();
+    expect(screen.getByText('Action')).toBeTruthy();
   });
 });

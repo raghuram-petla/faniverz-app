@@ -29,9 +29,26 @@ jest.mock('@/components/movie/MovieCard', () => {
 });
 
 jest.mock('@/components/ui/SectionHeader', () => {
-  const { Text } = require('react-native');
+  const { Text, TouchableOpacity } = require('react-native');
   return {
-    SectionHeader: ({ title }: { title: string }) => <Text>{title}</Text>,
+    SectionHeader: ({
+      title,
+      actionLabel,
+      onAction,
+    }: {
+      title: string;
+      actionLabel?: string;
+      onAction?: () => void;
+    }) => (
+      <>
+        <Text>{title}</Text>
+        {actionLabel && onAction && (
+          <TouchableOpacity onPress={onAction}>
+            <Text>{actionLabel}</Text>
+          </TouchableOpacity>
+        )}
+      </>
+    ),
   };
 });
 
@@ -226,11 +243,11 @@ describe('HomeScreen', () => {
     expect(screen.getByText('To Streaming')).toBeTruthy();
   });
 
-  it('navigates to search when the search button is pressed', () => {
+  it('navigates to discover when the search button is pressed', () => {
     render(<HomeScreen />);
     const searchButton = screen.getByLabelText('Search');
     fireEvent.press(searchButton);
-    expect(mockPush).toHaveBeenCalledWith('/search');
+    expect(mockPush).toHaveBeenCalledWith('/discover');
   });
 
   it('navigates to notifications when the notifications button is pressed', () => {
@@ -238,5 +255,84 @@ describe('HomeScreen', () => {
     const notifButton = screen.getByLabelText('Notifications');
     fireEvent.press(notifButton);
     expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('handles scroll events without crashing', () => {
+    render(<HomeScreen />);
+    const { ScrollView } = require('react-native');
+    const scrollView = screen.UNSAFE_getByType(ScrollView);
+    // Scroll down
+    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 200 } } });
+    // Scroll further down
+    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
+    // Scroll back up
+    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 50 } } });
+    // Scroll to top
+    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 0 } } });
+    // Negative offset edge case
+    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: -10 } } });
+    expect(screen.getByText('Faniverz')).toBeTruthy();
+  });
+
+  it('navigates to discover with theatrical filter when In Theaters "See All" is pressed', () => {
+    render(<HomeScreen />);
+    const seeAllButtons = screen.getAllByText('See All');
+    // The first "See All" corresponds to "In Theaters"
+    fireEvent.press(seeAllButtons[0]);
+    expect(mockPush).toHaveBeenCalledWith('/discover?filter=theatrical');
+  });
+
+  it('navigates to discover with ott filter when Streaming Now "See All" is pressed', () => {
+    render(<HomeScreen />);
+    const seeAllButtons = screen.getAllByText('See All');
+    // The second "See All" corresponds to "Streaming Now"
+    fireEvent.press(seeAllButtons[1]);
+    expect(mockPush).toHaveBeenCalledWith('/discover?filter=ott');
+  });
+
+  it('navigates to discover with upcoming filter when Coming Soon "See All" is pressed', () => {
+    render(<HomeScreen />);
+    const seeAllButtons = screen.getAllByText('See All');
+    // The third "See All" corresponds to "Coming Soon"
+    fireEvent.press(seeAllButtons[2]);
+    expect(mockPush).toHaveBeenCalledWith('/discover?filter=upcoming');
+  });
+
+  it('renders FlatList separators and movie cards for theatrical movies', () => {
+    render(<HomeScreen />);
+    // Theatrical movie rendered through FlatList renderItem
+    expect(screen.getByText('Theater Movie')).toBeTruthy();
+  });
+
+  it('renders upcoming movies in both To Theaters and To Streaming subsections', () => {
+    // Add a second upcoming movie that has a platform mapping
+    const upcomingOTTMovie = {
+      id: '4',
+      title: 'Upcoming OTT Film',
+      release_type: 'upcoming' as const,
+      release_date: '2025-07-01',
+      poster_url: null,
+      backdrop_url: null,
+      rating: 0,
+      review_count: 0,
+      genres: ['Drama'],
+      certification: null,
+      runtime: null,
+      synopsis: '',
+      director: '',
+      trailer_url: null,
+    };
+    mockUseMovies.mockReturnValue({ data: [...mockMovies, upcomingOTTMovie] });
+    mockUseMoviePlatformMap.mockReturnValue({
+      data: {
+        '4': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+      },
+    });
+
+    render(<HomeScreen />);
+    expect(screen.getByText('To Theaters')).toBeTruthy();
+    expect(screen.getByText('To Streaming')).toBeTruthy();
+    expect(screen.getByText('Upcoming Movie')).toBeTruthy();
+    expect(screen.getByText('Upcoming OTT Film')).toBeTruthy();
   });
 });

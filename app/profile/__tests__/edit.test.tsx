@@ -3,6 +3,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 
 // Must be hoisted before component import
@@ -20,23 +21,22 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
   }),
 }));
 
+const stableProfile = {
+  id: 'user-1',
+  display_name: 'John Doe',
+  email: 'test@example.com',
+  phone: '+91 98765 43210',
+  location: 'Hyderabad, India',
+  bio: 'Big fan of Telugu cinema.',
+  avatar_url: null,
+  preferred_lang: 'te',
+  is_admin: false,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
+};
+
 jest.mock('@/features/auth/hooks/useProfile', () => ({
-  useProfile: () => ({
-    data: {
-      id: 'user-1',
-      display_name: 'John Doe',
-      email: 'test@example.com',
-      phone: '+91 98765 43210',
-      location: 'Hyderabad, India',
-      bio: 'Big fan of Telugu cinema.',
-      avatar_url: null,
-      preferred_lang: 'te',
-      is_admin: false,
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
-    isLoading: false,
-  }),
+  useProfile: jest.fn(),
 }));
 
 const mockUpdateMutate = jest.fn();
@@ -48,8 +48,16 @@ jest.mock('@/features/auth/hooks/useUpdateProfile', () => ({
 }));
 
 import EditProfileScreen from '../edit';
+import { useProfile } from '@/features/auth/hooks/useProfile';
+
+const mockUseProfile = useProfile as jest.Mock;
 
 describe('EditProfileScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseProfile.mockReturnValue({ data: stableProfile, isLoading: false });
+  });
+
   it('renders "Edit Profile" header', () => {
     render(<EditProfileScreen />);
     expect(screen.getByText('Edit Profile')).toBeTruthy();
@@ -105,13 +113,83 @@ describe('EditProfileScreen', () => {
   });
 
   it('shows loading indicator when profile is loading', () => {
-    // Override useProfile to return isLoading: true
-    jest.spyOn(require('@/features/auth/hooks/useProfile'), 'useProfile').mockReturnValueOnce({
-      data: null,
-      isLoading: true,
-    });
+    mockUseProfile.mockReturnValue({ data: null, isLoading: true });
     render(<EditProfileScreen />);
     // The loading container renders ActivityIndicator, not the form
     expect(screen.queryByText('Edit Profile')).toBeNull();
+  });
+
+  it('shows validation alert when bio exceeds 150 characters', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<EditProfileScreen />);
+
+    // Type a bio that's over 150 characters
+    const longBio = 'A'.repeat(151);
+    fireEvent.changeText(screen.getByDisplayValue('Big fan of Telugu cinema.'), longBio);
+
+    // Press save
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Bio too long',
+      'Please keep your bio under 150 characters.',
+    );
+    // updateProfile should NOT have been called
+    expect(mockUpdateMutate).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('updates display name and saves', () => {
+    render(<EditProfileScreen />);
+
+    fireEvent.changeText(screen.getByDisplayValue('John Doe'), 'Jane Doe');
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        display_name: 'Jane Doe',
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('updates phone field', () => {
+    render(<EditProfileScreen />);
+
+    fireEvent.changeText(screen.getByDisplayValue('+91 98765 43210'), '+91 12345 67890');
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phone: '+91 12345 67890',
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('updates location field', () => {
+    render(<EditProfileScreen />);
+
+    fireEvent.changeText(screen.getByDisplayValue('Hyderabad, India'), 'Chennai, India');
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        location: 'Chennai, India',
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('shows Change Photo button', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<EditProfileScreen />);
+
+    fireEvent.press(screen.getByText('Change Photo'));
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Coming Soon',
+      'Photo upload will be available in a future update.',
+    );
+    alertSpy.mockRestore();
   });
 });

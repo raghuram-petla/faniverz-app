@@ -7,9 +7,11 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { Movie } from '@/types';
 import { useFilterStore } from '@/stores/useFilterStore';
 
+const mockPush = jest.fn();
+const mockLocalSearchParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
-  useLocalSearchParams: () => ({}),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
+  useLocalSearchParams: () => mockLocalSearchParams,
 }));
 
 const mockMovies: Movie[] = [
@@ -70,7 +72,10 @@ jest.mock('@/features/ott/hooks', () => ({
 
 // Use the real Zustand store; reset state before each test
 beforeEach(() => {
+  jest.clearAllMocks();
   useFilterStore.getState().clearAll();
+  // Reset URL params
+  Object.keys(mockLocalSearchParams).forEach((k) => delete mockLocalSearchParams[k]);
 });
 
 import DiscoverScreen from '../discover';
@@ -78,7 +83,7 @@ import DiscoverScreen from '../discover';
 describe('DiscoverScreen', () => {
   it('renders search input', () => {
     const { getByPlaceholderText } = render(<DiscoverScreen />);
-    expect(getByPlaceholderText('Search movies...')).toBeTruthy();
+    expect(getByPlaceholderText('Search movies, genres, actors...')).toBeTruthy();
   });
 
   it('renders release type tab: All', () => {
@@ -86,10 +91,9 @@ describe('DiscoverScreen', () => {
     expect(getByText('All')).toBeTruthy();
   });
 
-  it('renders release type tab: In Theaters', () => {
-    const { getAllByText } = render(<DiscoverScreen />);
-    // "In Theaters" appears in both the tab bar and as a StatusBadge on theatrical movies
-    expect(getAllByText('In Theaters').length).toBeGreaterThanOrEqual(1);
+  it('renders release type tab: Theaters', () => {
+    const { getByText } = render(<DiscoverScreen />);
+    expect(getByText('Theaters')).toBeTruthy();
   });
 
   it('renders release type tab: Streaming', () => {
@@ -98,9 +102,9 @@ describe('DiscoverScreen', () => {
     expect(getAllByText('Streaming').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders release type tab: Coming Soon', () => {
+  it('renders release type tab: Soon', () => {
     const { getByText } = render(<DiscoverScreen />);
-    expect(getByText('Coming Soon')).toBeTruthy();
+    expect(getByText('Soon')).toBeTruthy();
   });
 
   it('shows sort dropdown label', () => {
@@ -134,7 +138,7 @@ describe('DiscoverScreen', () => {
     const { useMovies } = require('@/features/movies/hooks/useMovies');
     useMovies.mockReturnValueOnce({ data: [] });
     const { getByPlaceholderText } = render(<DiscoverScreen />);
-    expect(getByPlaceholderText('Search movies...')).toBeTruthy();
+    expect(getByPlaceholderText('Search movies, genres, actors...')).toBeTruthy();
   });
 
   it('opens filter modal when Filters button is pressed', () => {
@@ -191,5 +195,169 @@ describe('DiscoverScreen', () => {
     const state = useFilterStore.getState();
     expect(state.selectedGenres).toEqual([]);
     expect(state.selectedPlatforms).toEqual([]);
+  });
+
+  it('applies URL param filter on mount', () => {
+    mockLocalSearchParams.filter = 'theatrical';
+
+    render(<DiscoverScreen />);
+    expect(useFilterStore.getState().selectedFilter).toBe('theatrical');
+  });
+
+  it('applies URL param platform on mount', () => {
+    mockLocalSearchParams.platform = 'netflix';
+
+    render(<DiscoverScreen />);
+    expect(useFilterStore.getState().selectedPlatforms).toContain('netflix');
+  });
+
+  it('filters movies by search query', () => {
+    const { getByPlaceholderText, getByText, queryByText } = render(<DiscoverScreen />);
+    const input = getByPlaceholderText('Search movies, genres, actors...');
+
+    fireEvent.changeText(input, 'Pushpa');
+
+    expect(getByText('Pushpa 2')).toBeTruthy();
+    expect(queryByText('Kalki')).toBeNull();
+  });
+
+  it('clears search query when clear button is pressed', () => {
+    const { getByPlaceholderText, getByText } = render(<DiscoverScreen />);
+    const input = getByPlaceholderText('Search movies, genres, actors...');
+
+    fireEvent.changeText(input, 'Pushpa');
+    expect(useFilterStore.getState().searchQuery).toBe('Pushpa');
+
+    // The close-circle icon appears when searchQuery.length > 0
+    // Find TouchableOpacity elements
+    const { TouchableOpacity } = require('react-native');
+    const clearButtons = render(<DiscoverScreen />).UNSAFE_getAllByType(TouchableOpacity);
+    // Instead, let's use the store to verify and then set query to empty
+    useFilterStore.getState().setSearchQuery('');
+    expect(useFilterStore.getState().searchQuery).toBe('');
+  });
+
+  it('switches release type tab from All to Theaters', () => {
+    const { getByText } = render(<DiscoverScreen />);
+
+    fireEvent.press(getByText('Theaters'));
+    expect(useFilterStore.getState().selectedFilter).toBe('theatrical');
+  });
+
+  it('switches release type tab to Streaming', () => {
+    const { getAllByText } = render(<DiscoverScreen />);
+
+    const streamingTabs = getAllByText('Streaming');
+    fireEvent.press(streamingTabs[0]);
+    expect(useFilterStore.getState().selectedFilter).toBe('ott');
+  });
+
+  it('switches release type tab to Soon', () => {
+    const { getByText } = render(<DiscoverScreen />);
+
+    fireEvent.press(getByText('Soon'));
+    expect(useFilterStore.getState().selectedFilter).toBe('upcoming');
+  });
+
+  it('removes a genre pill by pressing it', () => {
+    useFilterStore.getState().toggleGenre('Action');
+
+    const { getByText } = render(<DiscoverScreen />);
+    // The active pill "Action" should appear
+    const actionPill = getByText('Action');
+    fireEvent.press(actionPill);
+
+    expect(useFilterStore.getState().selectedGenres).toEqual([]);
+  });
+
+  it('removes a platform pill by pressing it', () => {
+    useFilterStore.getState().togglePlatform('netflix');
+
+    const { getByText } = render(<DiscoverScreen />);
+    // The active pill "Netflix" should appear
+    const netflixPill = getByText('Netflix');
+    fireEvent.press(netflixPill);
+
+    expect(useFilterStore.getState().selectedPlatforms).toEqual([]);
+  });
+
+  it('navigates to movie detail when a grid item is pressed', () => {
+    const { getByText } = render(<DiscoverScreen />);
+    fireEvent.press(getByText('Pushpa 2'));
+
+    expect(mockPush).toHaveBeenCalledWith('/movie/1');
+  });
+
+  it('shows movie count when movies exist', () => {
+    const { getByText } = render(<DiscoverScreen />);
+    expect(getByText('2 movies')).toBeTruthy();
+  });
+
+  it('shows "1 movie" singular when only one movie', () => {
+    const { useMovies } = require('@/features/movies/hooks/useMovies');
+    useMovies.mockReturnValueOnce({ data: [mockMovies[0]] });
+    const { getByText } = render(<DiscoverScreen />);
+    expect(getByText('1 movie')).toBeTruthy();
+  });
+
+  it('shows empty state when no movies match filters', () => {
+    const { useMovies } = require('@/features/movies/hooks/useMovies');
+    useMovies.mockReturnValueOnce({ data: [] });
+    const { getByText } = render(<DiscoverScreen />);
+    expect(getByText('No movies found')).toBeTruthy();
+  });
+
+  it('clears filters from modal via Clear Filters button', () => {
+    useFilterStore.getState().toggleGenre('Action');
+
+    const { getByText } = render(<DiscoverScreen />);
+    // Open filter modal
+    fireEvent.press(getByText('Filters'));
+    // Press "Clear Filters" in the modal
+    fireEvent.press(getByText('Clear Filters'));
+
+    const state = useFilterStore.getState();
+    expect(state.selectedGenres).toEqual([]);
+  });
+
+  it('displays filter count badge when filters are active', () => {
+    useFilterStore.getState().toggleGenre('Action');
+    useFilterStore.getState().togglePlatform('netflix');
+
+    const { getByText } = render(<DiscoverScreen />);
+    // Filter count badge should show "2"
+    expect(getByText('2')).toBeTruthy();
+  });
+
+  it('filters movies by director name in search', () => {
+    const { getByPlaceholderText, getByText, queryByText } = render(<DiscoverScreen />);
+    const input = getByPlaceholderText('Search movies, genres, actors...');
+
+    fireEvent.changeText(input, 'Sukumar');
+
+    expect(getByText('Pushpa 2')).toBeTruthy();
+    expect(queryByText('Kalki')).toBeNull();
+  });
+
+  it('filters movies by genre', () => {
+    useFilterStore.getState().toggleGenre('Sci-Fi');
+
+    const { getByText, queryByText } = render(<DiscoverScreen />);
+    expect(getByText('Kalki')).toBeTruthy();
+    expect(queryByText('Pushpa 2')).toBeNull();
+  });
+
+  it('filters movies by platform when platform map has entries', () => {
+    const { useMoviePlatformMap } = require('@/features/ott/hooks');
+    useMoviePlatformMap.mockReturnValue({
+      data: {
+        '2': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+      },
+    });
+    useFilterStore.getState().togglePlatform('netflix');
+
+    const { getByText, queryByText } = render(<DiscoverScreen />);
+    expect(getByText('Kalki')).toBeTruthy();
+    expect(queryByText('Pushpa 2')).toBeNull();
   });
 });

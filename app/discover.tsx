@@ -45,9 +45,9 @@ const SORT_OPTIONS = [
 
 const FILTER_TABS = [
   { value: 'all' as const, label: 'All' },
-  { value: 'theatrical' as const, label: 'In Theaters' },
+  { value: 'theatrical' as const, label: 'Theaters' },
   { value: 'ott' as const, label: 'Streaming' },
-  { value: 'upcoming' as const, label: 'Coming Soon' },
+  { value: 'upcoming' as const, label: 'Soon' },
 ];
 
 export default function DiscoverScreen() {
@@ -164,14 +164,14 @@ export default function DiscoverScreen() {
     <View style={styles.screen}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.white} />
-        </TouchableOpacity>
+        <Text style={styles.screenTitle}>Discover</Text>
+
+        {/* Search Input */}
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={18} color={colors.white40} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search movies..."
+            placeholder="Search movies, genres, actors..."
             placeholderTextColor={colors.white40}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -206,8 +206,8 @@ export default function DiscoverScreen() {
 
       {/* Filter + Sort Bar */}
       <View style={styles.filterBar}>
-        <TouchableOpacity style={styles.filterBarButton} onPress={() => setShowFilterModal(true)}>
-          <Ionicons name="options" size={18} color={colors.white} />
+        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
+          <Ionicons name="options" size={16} color={colors.white} />
           <Text style={styles.filterBarText}>Filters</Text>
           {activeFilterCount > 0 && (
             <View style={styles.filterCountBadge}>
@@ -216,7 +216,7 @@ export default function DiscoverScreen() {
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.filterBarButton}
+          style={styles.sortButton}
           onPress={() => setShowSortDropdown(!showSortDropdown)}
         >
           <Text style={styles.filterBarText}>
@@ -269,6 +269,15 @@ export default function DiscoverScreen() {
           <TouchableOpacity onPress={clearAll}>
             <Text style={styles.clearAllLink}>Clear All</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Movie Count */}
+      {filteredMovies.length > 0 && (
+        <View style={styles.movieCountRow}>
+          <Text style={styles.movieCountText}>
+            {filteredMovies.length} {filteredMovies.length === 1 ? 'movie' : 'movies'}
+          </Text>
         </View>
       )}
 
@@ -371,20 +380,24 @@ export default function DiscoverScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.black },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
+  screenTitle: {
+    fontSize: 30,
+    fontWeight: '700',
+    color: colors.white,
+    marginBottom: 16,
+  },
   searchInputContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white10,
     borderRadius: 24,
-    paddingHorizontal: 12,
-    height: 44,
+    paddingHorizontal: 16,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.white10,
   },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 16, color: colors.white },
@@ -396,21 +409,40 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
     backgroundColor: colors.white5,
     alignItems: 'center',
   },
   tabButtonActive: { backgroundColor: colors.red600 },
-  tabButtonText: { fontSize: 13, fontWeight: '600', color: colors.white60 },
+  tabButtonText: { fontSize: 13, fontWeight: '600', color: colors.white50 },
   tabButtonTextActive: { color: colors.white },
   filterBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
+    gap: 8,
     marginBottom: 8,
   },
-  filterBarButton: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  filterButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: colors.white10,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: colors.white10,
+  },
   filterBarText: { color: colors.white, fontSize: 14, fontWeight: '500' },
   filterCountBadge: {
     backgroundColor: colors.red600,
@@ -453,6 +485,16 @@ const styles = StyleSheet.create({
   },
   activePillText: { color: colors.red400, fontSize: 13 },
   clearAllLink: { color: colors.red500, fontSize: 13, textDecorationLine: 'underline' },
+  movieCountRow: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.white5,
+  },
+  movieCountText: {
+    fontSize: 13,
+    color: colors.white40,
+  },
   gridContent: { paddingHorizontal: 16, paddingBottom: 100 },
   gridRow: { gap: 16, marginBottom: 16 },
   gridItem: { flex: 1 },

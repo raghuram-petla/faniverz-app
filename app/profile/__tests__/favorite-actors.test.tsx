@@ -19,16 +19,26 @@ jest.mock('@/components/common/ScreenHeader', () => {
   const { View, Text } = require('react-native');
   return {
     __esModule: true,
-    default: ({ title }: { title: string }) => (
+    default: ({
+      title,
+      titleBadge,
+      rightAction,
+    }: {
+      title: string;
+      titleBadge?: React.ReactNode;
+      rightAction?: React.ReactNode;
+    }) => (
       <View>
         <Text>{title}</Text>
+        {titleBadge}
+        {rightAction}
       </View>
     ),
   };
 });
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import FavoriteActorsScreen from '../favorite-actors';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useFavoriteActors, useFavoriteActorMutations } from '@/features/actors/hooks';
@@ -126,23 +136,88 @@ describe('FavoriteActorsScreen', () => {
 
     render(<FavoriteActorsScreen />);
 
-    // The remove button renders an Ionicons "close" icon — which is mocked as a View.
-    // We can find it by the touchable wrapping it. The component uses TouchableOpacity with onPress.
-    // Since Ionicons is mocked as View, we find the touchable by its remove action.
-    // There are multiple touchable elements; the remove button calls handleRemove.
-    // Let's find it by its parent structure. Since it's the only close icon button,
-    // we try pressing all touchable elements and checking which triggers the mock.
-    // Actually the screen has actor card with remove button - let's just verify the mock gets called.
-    // The remove button is at position [top-right of card].
-    // Since all icons are View mocks, we need a different approach.
-    // The favorite-actors screen has one actor with a remove button.
-    // We expect the remove.mutate to be callable.
-    expect(mockRemoveMutate).not.toHaveBeenCalled();
+    // Find all touchable elements and press each one until remove is triggered
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    for (const touchable of touchables) {
+      fireEvent.press(touchable);
+      if (mockRemoveMutate.mock.calls.length > 0) break;
+    }
+    expect(mockRemoveMutate).toHaveBeenCalledWith({
+      userId: 'user-1',
+      actorId: 'a1',
+    });
   });
 
   it('shows "Add Actors" action in empty state', () => {
     mockUseFavoriteActors.mockReturnValue({ data: [], isLoading: false });
     render(<FavoriteActorsScreen />);
     expect(screen.getByText('Add Actors')).toBeTruthy();
+  });
+
+  it('shows count badge when actors exist', () => {
+    const favorites = [
+      {
+        actor_id: 'a1',
+        user_id: 'user-1',
+        actor: {
+          id: 'a1',
+          name: 'Allu Arjun',
+          photo_url: null,
+          tmdb_person_id: null,
+          created_at: '',
+        },
+      },
+      {
+        actor_id: 'a2',
+        user_id: 'user-1',
+        actor: {
+          id: 'a2',
+          name: 'Ram Charan',
+          photo_url: null,
+          tmdb_person_id: null,
+          created_at: '',
+        },
+      },
+    ];
+    mockUseFavoriteActors.mockReturnValue({ data: favorites, isLoading: false });
+
+    render(<FavoriteActorsScreen />);
+    // The count badge should show "2"
+    expect(screen.getByText('2')).toBeTruthy();
+  });
+
+  it('does not call remove when user is null', () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: true,
+      setIsGuest: jest.fn(),
+    });
+    const favorites = [
+      {
+        actor_id: 'a1',
+        user_id: 'user-1',
+        actor: {
+          id: 'a1',
+          name: 'Allu Arjun',
+          photo_url: null,
+          tmdb_person_id: null,
+          created_at: '',
+        },
+      },
+    ];
+    mockUseFavoriteActors.mockReturnValue({ data: favorites, isLoading: false });
+
+    render(<FavoriteActorsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    for (const touchable of touchables) {
+      fireEvent.press(touchable);
+    }
+    // Should not call remove when user is null
+    expect(mockRemoveMutate).not.toHaveBeenCalled();
   });
 });
