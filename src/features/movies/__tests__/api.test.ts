@@ -7,6 +7,23 @@ const mockLimit = jest.fn();
 const mockGte = jest.fn();
 const mockLte = jest.fn();
 
+// Creates a chainable+thenable result for mockOrder.
+// Chaining: .order().order() works because each call returns { order: mockOrder }.
+// Awaitable: `await query` works because the object has a .then() method.
+function makeOrderResult(data: unknown[] | null = [], error: Error | null = null) {
+  const result = {
+    order: mockOrder,
+    limit: mockLimit,
+    then(resolve: (v: unknown) => void, reject?: (e: unknown) => void) {
+      return Promise.resolve({ data, error }).then(resolve, reject);
+    },
+    catch(reject: (e: unknown) => void) {
+      return Promise.resolve({ data, error }).catch(reject);
+    },
+  };
+  return result;
+}
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: jest.fn(() => ({
@@ -28,9 +45,10 @@ describe('movies api', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Default chain for fetchMovies (no filters)
+    // fetchMovies chains .order() twice (is_featured then sort key).
+    // makeOrderResult() is both chainable ({ order: mockOrder }) and thenable (await-able).
     mockSelect.mockReturnValue({ order: mockOrder });
-    mockOrder.mockResolvedValue({ data: [], error: null });
+    mockOrder.mockReturnValue(makeOrderResult());
 
     // Default chain for fetchMovieById
     mockEq.mockReturnValue({ single: mockSingle });
@@ -38,7 +56,6 @@ describe('movies api', () => {
 
     // Default chain for searchMovies
     mockOr.mockReturnValue({ order: mockOrder });
-    mockOrder.mockReturnValue({ limit: mockLimit });
     mockLimit.mockResolvedValue({ data: [], error: null });
   });
 
@@ -49,8 +66,9 @@ describe('movies api', () => {
       expect(mockSelect).toHaveBeenCalledWith('*');
     });
 
-    it('orders by review_count by default (popular)', async () => {
+    it('orders by is_featured first, then review_count by default (popular)', async () => {
       await fetchMovies();
+      expect(mockOrder).toHaveBeenCalledWith('is_featured', { ascending: false });
       expect(mockOrder).toHaveBeenCalledWith('review_count', { ascending: false });
     });
 
@@ -60,13 +78,13 @@ describe('movies api', () => {
     });
 
     it('returns empty array when no data', async () => {
-      mockOrder.mockResolvedValue({ data: null, error: null });
+      mockOrder.mockReturnValue(makeOrderResult(null, null));
       const result = await fetchMovies();
       expect(result).toEqual([]);
     });
 
     it('throws on error', async () => {
-      mockOrder.mockResolvedValue({ data: null, error: new Error('DB error') });
+      mockOrder.mockReturnValue(makeOrderResult(null, new Error('DB error')));
       await expect(fetchMovies()).rejects.toThrow('DB error');
     });
 
@@ -153,7 +171,7 @@ describe('movies api', () => {
 
     it('returns data array when data is not null', async () => {
       const mockData = [{ id: '1', title: 'Test Movie' }];
-      mockOrder.mockResolvedValue({ data: mockData, error: null });
+      mockOrder.mockReturnValue(makeOrderResult(mockData));
       const result = await fetchMovies();
       expect(result).toEqual(mockData);
     });
@@ -177,8 +195,6 @@ describe('movies api', () => {
     it('filters by genre when provided', async () => {
       mockSelect.mockReturnValue({ contains: mockContains });
       mockContains.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: [], error: null });
-
       await fetchMovies({ genre: 'Action' });
       expect(mockContains).toHaveBeenCalledWith('genres', ['Action']);
     });
@@ -196,7 +212,7 @@ describe('movies api', () => {
       mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
       mockSelect.mockReturnValue({ in: mockIn });
       mockIn.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: [{ id: 'm1', title: 'Test' }], error: null });
+      mockOrder.mockReturnValue(makeOrderResult([{ id: 'm1', title: 'Test' }]));
 
       const result = await fetchMovies({ platformId: 'netflix' });
       expect(mockPlatformEq).toHaveBeenCalledWith('platform_id', 'netflix');

@@ -34,6 +34,9 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
     }
   }
 
+  // Featured movies always surface first
+  query = query.order('is_featured', { ascending: false });
+
   switch (filters?.sortBy) {
     case 'top_rated':
       query = query.order('rating', { ascending: false });

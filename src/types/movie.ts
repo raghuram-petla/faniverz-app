@@ -19,6 +19,7 @@ export interface Movie {
   release_type: ReleaseType;
   rating: number;
   review_count: number;
+  is_featured: boolean;
   tmdb_last_synced_at: string | null;
   created_at: string;
   updated_at: string;

@@ -23,6 +23,7 @@ const mockResults: Movie[] = [
     backdrop_url: null,
     rating: 4.5,
     review_count: 10,
+    is_featured: false,
     genres: ['Action'],
     certification: 'UA',
     runtime: 180,

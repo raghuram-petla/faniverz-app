@@ -24,6 +24,7 @@ const mockMovie: Movie = {
   release_type: 'theatrical',
   rating: 4.7,
   review_count: 6234,
+  is_featured: false,
   tmdb_last_synced_at: null,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',

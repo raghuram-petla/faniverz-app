@@ -42,6 +42,7 @@ const mockMovie = (overrides: object = {}) => ({
   backdrop_url: null,
   rating: 4.5,
   review_count: 10,
+  is_featured: false,
   genres: ['Action', 'Drama'],
   certification: 'UA' as const,
   runtime: 180,

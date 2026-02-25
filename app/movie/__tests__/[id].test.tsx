@@ -90,6 +90,7 @@ const mockMovie = {
   backdrop_url: 'https://example.com/backdrop.jpg',
   rating: 4.5,
   review_count: 10,
+  is_featured: false,
   genres: ['Action', 'Drama'],
   certification: 'UA',
   runtime: 180,
@@ -236,6 +237,7 @@ describe('MovieDetailScreen', () => {
       release_type: 'upcoming',
       rating: 0,
       review_count: 0,
+      is_featured: false,
       platforms: [],
     };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: upcomingMovie });
@@ -338,6 +340,7 @@ describe('MovieDetailScreen', () => {
       release_type: 'upcoming',
       rating: 0,
       review_count: 0,
+      is_featured: false,
       platforms: [],
     };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: upcomingMovie });
