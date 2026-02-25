@@ -3,24 +3,45 @@ import { useState } from 'react';
 import { useAdminActors, useCreateActor, useDeleteActor } from '@/hooks/useAdminCast';
 import { Plus, Trash2, Search, Loader2, Users } from 'lucide-react';
 
+const TIER_RANK_OPTIONS = [
+  { value: 1, label: '1 — A-list superstar' },
+  { value: 2, label: '2 — Top star' },
+  { value: 3, label: '3 — Popular star' },
+  { value: 4, label: '4 — Character / supporting' },
+  { value: 5, label: '5 — Newcomer' },
+];
+
+const EMPTY_FORM = {
+  name: '',
+  photo_url: '',
+  birth_date: '',
+  person_type: 'actor' as 'actor' | 'technician',
+  tier_rank: '' as '' | number,
+};
+
 export default function CastPage() {
   const { data: actors = [], isLoading } = useAdminActors();
   const createActor = useCreateActor();
   const deleteActor = useDeleteActor();
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newPhoto, setNewPhoto] = useState('');
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const filtered = actors.filter(
     (a) => !search || a.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   async function handleAdd() {
-    if (!newName.trim()) return;
-    await createActor.mutateAsync({ name: newName, photo_url: newPhoto || null });
-    setNewName('');
-    setNewPhoto('');
+    if (!form.name.trim()) return;
+    await createActor.mutateAsync({
+      name: form.name,
+      photo_url: form.photo_url || null,
+      birth_date: form.birth_date || null,
+      person_type: form.person_type,
+      tier_rank:
+        form.person_type === 'actor' && form.tier_rank !== '' ? Number(form.tier_rank) : null,
+    });
+    setForm(EMPTY_FORM);
     setShowAdd(false);
   }
 
@@ -38,20 +59,72 @@ export default function CastPage() {
 
       {showAdd && (
         <div className="bg-zinc-900 border border-white/10 rounded-xl p-4 space-y-3">
-          <input
-            type="text"
-            placeholder="Actor Name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-          />
-          <input
-            type="url"
-            placeholder="Photo URL (optional)"
-            value={newPhoto}
-            onChange={(e) => setNewPhoto(e.target.value)}
-            className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="text"
+              placeholder="Name *"
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+            />
+            <input
+              type="url"
+              placeholder="Photo URL (optional)"
+              value={form.photo_url}
+              onChange={(e) => setForm((p) => ({ ...p, photo_url: e.target.value }))}
+              className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-white/40 mb-1">Person Type</label>
+              <select
+                value={form.person_type}
+                onChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    person_type: e.target.value as 'actor' | 'technician',
+                    tier_rank: '',
+                  }))
+                }
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              >
+                <option value="actor">Actor</option>
+                <option value="technician">Technician</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-white/40 mb-1">Date of Birth</label>
+              <input
+                type="date"
+                value={form.birth_date}
+                onChange={(e) => setForm((p) => ({ ...p, birth_date: e.target.value }))}
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              />
+            </div>
+          </div>
+          {form.person_type === 'actor' && (
+            <div>
+              <label className="block text-xs text-white/40 mb-1">Industry Tier</label>
+              <select
+                value={form.tier_rank}
+                onChange={(e) =>
+                  setForm((p) => ({
+                    ...p,
+                    tier_rank: e.target.value ? Number(e.target.value) : '',
+                  }))
+                }
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              >
+                <option value="">Select tier…</option>
+                {TIER_RANK_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               onClick={handleAdd}
@@ -61,7 +134,10 @@ export default function CastPage() {
               {createActor.isPending ? 'Adding...' : 'Add'}
             </button>
             <button
-              onClick={() => setShowAdd(false)}
+              onClick={() => {
+                setShowAdd(false);
+                setForm(EMPTY_FORM);
+              }}
               className="text-white/60 px-4 py-2 rounded-lg text-sm hover:bg-white/10"
             >
               Cancel
@@ -101,6 +177,14 @@ export default function CastPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-white truncate">{actor.name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-white/40 capitalize">{actor.person_type}</span>
+                  {actor.tier_rank != null && (
+                    <span className="text-xs bg-red-600/20 text-red-400 px-1.5 py-0.5 rounded">
+                      Tier {actor.tier_rank}
+                    </span>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => {

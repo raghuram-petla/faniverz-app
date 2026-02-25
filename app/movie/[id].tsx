@@ -311,9 +311,11 @@ export default function MovieDetailScreen() {
                       <View style={styles.castInfo}>
                         <Text style={styles.castName}>{cm.actor?.name}</Text>
                         {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
-                        {cm.tier_rank != null && cm.tier_rank <= 3 && (
+                        {cm.actor?.tier_rank != null && cm.actor.tier_rank <= 3 && (
                           <View style={styles.tierChip}>
-                            <Text style={styles.tierChipText}>{TIER_LABELS[cm.tier_rank]}</Text>
+                            <Text style={styles.tierChipText}>
+                              {TIER_LABELS[cm.actor.tier_rank]}
+                            </Text>
                           </View>
                         )}
                       </View>

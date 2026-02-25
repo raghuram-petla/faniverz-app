@@ -32,6 +32,7 @@ export interface Actor {
   photo_url: string | null;
   birth_date: string | null;
   person_type: 'actor' | 'technician';
+  tier_rank: number | null;
   created_at: string;
 }
 
@@ -42,7 +43,6 @@ export interface CastMember {
   role_name: string | null;
   display_order: number;
   credit_type: 'cast' | 'crew';
-  tier_rank: number | null;
   role_order: number | null;
   actor?: Actor;
 }

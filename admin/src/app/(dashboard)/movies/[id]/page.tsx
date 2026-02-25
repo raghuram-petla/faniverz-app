@@ -21,15 +21,6 @@ const genres = [
   'Historical',
 ];
 
-const TIER_OPTIONS = [
-  { value: 1, label: '1 — Lead Actor / Hero' },
-  { value: 2, label: '2 — Lead Actress / Heroine' },
-  { value: 3, label: '3 — Main Villain / Antagonist' },
-  { value: 4, label: '4 — Supporting Lead' },
-  { value: 5, label: '5 — Supporting Cast' },
-  { value: 6, label: '6 — Cameo / Special Appearance' },
-];
-
 const ROLE_ORDER_OPTIONS = [
   { value: 1, label: '1 — Director' },
   { value: 2, label: '2 — Producer' },
@@ -46,7 +37,6 @@ const EMPTY_CAST_FORM = {
   actor_id: '',
   credit_type: 'cast' as 'cast' | 'crew',
   role_name: '',
-  tier_rank: '',
   role_order: '',
 };
 
@@ -140,8 +130,6 @@ export default function EditMoviePage() {
       actor_id: castForm.actor_id,
       credit_type: castForm.credit_type,
       role_name: castForm.role_name || null,
-      tier_rank:
-        castForm.credit_type === 'cast' && castForm.tier_rank ? Number(castForm.tier_rank) : null,
       role_order:
         castForm.credit_type === 'crew' && castForm.role_order ? Number(castForm.role_order) : null,
       display_order: castData.length,
@@ -322,9 +310,9 @@ export default function EditMoviePage() {
                 {entry.role_name && (
                   <span className="text-white/60 text-sm">{entry.role_name}</span>
                 )}
-                {entry.tier_rank != null && (
+                {entry.actor?.tier_rank != null && (
                   <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded">
-                    Tier {entry.tier_rank}
+                    Tier {entry.actor.tier_rank}
                   </span>
                 )}
                 {entry.role_order != null && (
@@ -356,7 +344,6 @@ export default function EditMoviePage() {
                   setCastForm((p) => ({
                     ...p,
                     credit_type: e.target.value as 'cast' | 'crew',
-                    tier_rank: '',
                     role_order: '',
                   }))
                 }
@@ -396,23 +383,7 @@ export default function EditMoviePage() {
                 className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
-            {castForm.credit_type === 'cast' ? (
-              <div>
-                <label className="block text-xs text-white/40 mb-1">Tier Rank</label>
-                <select
-                  value={castForm.tier_rank}
-                  onChange={(e) => setCastForm((p) => ({ ...p, tier_rank: e.target.value }))}
-                  className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                >
-                  <option value="">Select tier…</option>
-                  {TIER_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
+            {castForm.credit_type === 'crew' && (
               <div>
                 <label className="block text-xs text-white/40 mb-1">Role Order</label>
                 <select

@@ -105,7 +105,6 @@ const mockMovie = {
       role_name: 'Pushpa Raj',
       display_order: 1,
       credit_type: 'cast',
-      tier_rank: 1,
       role_order: null,
       actor: {
         id: 'a1',
@@ -113,6 +112,7 @@ const mockMovie = {
         photo_url: null,
         birth_date: '1982-04-08',
         person_type: 'actor',
+        tier_rank: 1,
         tmdb_person_id: null,
         created_at: '',
       },
@@ -126,7 +126,6 @@ const mockMovie = {
       role_name: 'Director',
       display_order: 0,
       credit_type: 'crew',
-      tier_rank: null,
       role_order: 1,
       actor: {
         id: 'crew-a1',
@@ -246,8 +245,7 @@ describe('MovieDetailScreen', () => {
         {
           ...mockMovie.cast[0],
           id: 'c2',
-          tier_rank: 5,
-          actor: { ...mockMovie.cast[0].actor, name: 'Supporting Actor' },
+          actor: { ...mockMovie.cast[0].actor, name: 'Supporting Actor', tier_rank: 5 },
         },
       ],
     };

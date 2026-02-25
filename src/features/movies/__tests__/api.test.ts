@@ -147,8 +147,8 @@ describe('movies api', () => {
 
     it('separates cast entries from crew entries', async () => {
       mockFromForById([
-        { id: 'c1', credit_type: 'cast', tier_rank: 1, role_order: null, actor: null },
-        { id: 'c2', credit_type: 'crew', tier_rank: null, role_order: 1, actor: null },
+        { id: 'c1', credit_type: 'cast', role_order: null, actor: { tier_rank: 1 } },
+        { id: 'c2', credit_type: 'crew', role_order: 1, actor: null },
       ]);
       const result = await fetchMovieById('123');
       expect(result!.cast).toHaveLength(1);
@@ -162,23 +162,20 @@ describe('movies api', () => {
         {
           id: 'villain',
           credit_type: 'cast',
-          tier_rank: 3,
           role_order: null,
-          actor: { birth_date: null },
+          actor: { tier_rank: 3, birth_date: null },
         },
         {
           id: 'lead',
           credit_type: 'cast',
-          tier_rank: 1,
           role_order: null,
-          actor: { birth_date: null },
+          actor: { tier_rank: 1, birth_date: null },
         },
         {
           id: 'support',
           credit_type: 'cast',
-          tier_rank: 5,
           role_order: null,
-          actor: { birth_date: null },
+          actor: { tier_rank: 5, birth_date: null },
         },
       ]);
       const result = await fetchMovieById('123');
@@ -190,16 +187,14 @@ describe('movies api', () => {
         {
           id: 'younger',
           credit_type: 'cast',
-          tier_rank: 1,
           role_order: null,
-          actor: { birth_date: '1990-01-01' },
+          actor: { tier_rank: 1, birth_date: '1990-01-01' },
         },
         {
           id: 'older',
           credit_type: 'cast',
-          tier_rank: 1,
           role_order: null,
-          actor: { birth_date: '1975-06-15' },
+          actor: { tier_rank: 1, birth_date: '1975-06-15' },
         },
       ]);
       const result = await fetchMovieById('123');
@@ -208,9 +203,9 @@ describe('movies api', () => {
 
     it('sorts crew by role_order ascending', async () => {
       mockFromForById([
-        { id: 'music', credit_type: 'crew', tier_rank: null, role_order: 3, actor: null },
-        { id: 'director', credit_type: 'crew', tier_rank: null, role_order: 1, actor: null },
-        { id: 'editor', credit_type: 'crew', tier_rank: null, role_order: 5, actor: null },
+        { id: 'music', credit_type: 'crew', role_order: 3, actor: null },
+        { id: 'director', credit_type: 'crew', role_order: 1, actor: null },
+        { id: 'editor', credit_type: 'crew', role_order: 5, actor: null },
       ]);
       const result = await fetchMovieById('123');
       expect(result!.crew.map((c) => c.id)).toEqual(['director', 'music', 'editor']);
@@ -218,8 +213,8 @@ describe('movies api', () => {
 
     it('places null role_order crew at end', async () => {
       mockFromForById([
-        { id: 'unknown', credit_type: 'crew', tier_rank: null, role_order: null, actor: null },
-        { id: 'director', credit_type: 'crew', tier_rank: null, role_order: 1, actor: null },
+        { id: 'unknown', credit_type: 'crew', role_order: null, actor: null },
+        { id: 'director', credit_type: 'crew', role_order: 1, actor: null },
       ]);
       const result = await fetchMovieById('123');
       expect(result!.crew[0].id).toBe('director');
