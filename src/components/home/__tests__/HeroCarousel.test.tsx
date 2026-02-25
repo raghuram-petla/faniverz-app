@@ -88,9 +88,9 @@ describe('HeroCarousel', () => {
     expect(getByText('In Theaters')).toBeTruthy();
   });
 
-  it('shows "Streaming Now" badge for OTT movies', () => {
+  it('shows "Streaming" badge for OTT movies', () => {
     const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    expect(getByText('Streaming Now')).toBeTruthy();
+    expect(getByText('Streaming')).toBeTruthy();
   });
 
   it('renders pagination dots for multiple movies', () => {

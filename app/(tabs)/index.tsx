@@ -21,17 +21,23 @@ import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { HeroCarousel } from '@/components/home/HeroCarousel';
 import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { getPlatformLogo } from '@/constants/platformLogos';
-import { Movie, OTTPlatform } from '@/types';
+import { PlatformSquare } from '@/components/ui/PlatformSquare';
+import { Movie } from '@/types';
 
 const HEADER_CONTENT_HEIGHT = 56;
+const FEATURED_MOVIE_LIMIT = 7;
+const PLATFORM_TILE_COUNT = 8;
+const PLATFORM_GRID_H_PADDING = 32;
+const PLATFORM_GRID_GAP_TOTAL = 36;
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   // 16px padding each side + 3 gaps of 12px between 4 tiles
-  const tileSize = Math.floor((screenWidth - 32 - 36) / 4);
+  const tileSize = Math.floor(
+    (screenWidth - PLATFORM_GRID_H_PADDING - PLATFORM_GRID_GAP_TOTAL) / 4,
+  );
   const { data: allMovies = [] } = useMovies();
   const { data: platforms = [] } = usePlatforms();
 
@@ -74,7 +80,7 @@ export default function HomeScreen() {
   const featuredMovies = allMovies
     .filter((m) => m.release_type === 'theatrical' || m.release_type === 'ott')
     .sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
-    .slice(0, 7);
+    .slice(0, FEATURED_MOVIE_LIMIT);
   const theatricalMovies = allMovies.filter((m) => m.release_type === 'theatrical');
   const streamingMovies = allMovies.filter((m) => m.release_type === 'ott');
   const upcomingMovies = allMovies.filter((m) => m.release_type === 'upcoming');
@@ -238,7 +244,7 @@ export default function HomeScreen() {
             <View>
               <SectionHeader title="Browse by Platform" />
               <View style={styles.platformGrid}>
-                {platforms.slice(0, 8).map((platform) => (
+                {platforms.slice(0, PLATFORM_TILE_COUNT).map((platform) => (
                   <PlatformSquare
                     key={platform.id}
                     platform={platform}
@@ -252,55 +258,6 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </View>
-  );
-}
-
-function isDark(hex: string) {
-  const c = hex.replace('#', '');
-  const r = parseInt(c.substring(0, 2), 16);
-  const g = parseInt(c.substring(2, 4), 16);
-  const b = parseInt(c.substring(4, 6), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 < 40;
-}
-
-function PlatformSquare({
-  platform,
-  size,
-  onPress,
-}: {
-  platform: OTTPlatform;
-  size: number;
-  onPress: () => void;
-}) {
-  const logo = getPlatformLogo(platform.id);
-  const dark = isDark(platform.color);
-
-  return (
-    <TouchableOpacity
-      style={[
-        styles.platformSquare,
-        {
-          backgroundColor: platform.color,
-          width: size,
-          height: size,
-          borderWidth: dark ? 1.5 : 0,
-          borderColor: 'rgba(255,255,255,0.35)',
-        },
-      ]}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={platform.name}
-    >
-      {logo ? (
-        <Image
-          source={logo}
-          style={{ width: size * 0.88, height: size * 0.88, borderRadius: 8 }}
-          contentFit="contain"
-        />
-      ) : (
-        <Text style={styles.platformSquareLogo}>{platform.logo}</Text>
-      )}
-    </TouchableOpacity>
   );
 }
 
@@ -384,16 +341,5 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: 16,
     gap: 12,
-  },
-  platformSquare: {
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  platformSquareImage: {},
-  platformSquareLogo: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
   },
 });

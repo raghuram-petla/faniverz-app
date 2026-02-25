@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
+import { getReleaseTypeLabel, getReleaseTypeColor } from '@/constants/releaseType';
 import { Movie, OTTPlatform } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -95,14 +96,14 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
         <View style={styles.content}>
           {/* Badges row */}
           <View style={styles.badgeRow}>
-            {item.release_type === 'theatrical' && (
-              <View style={[styles.typeBadge, { backgroundColor: colors.red600 }]}>
-                <Text style={styles.typeBadgeText}>In Theaters</Text>
-              </View>
-            )}
-            {item.release_type === 'ott' && (
-              <View style={[styles.typeBadge, { backgroundColor: colors.purple600 }]}>
-                <Text style={styles.typeBadgeText}>Streaming Now</Text>
+            {(item.release_type === 'theatrical' || item.release_type === 'ott') && (
+              <View
+                style={[
+                  styles.typeBadge,
+                  { backgroundColor: getReleaseTypeColor(item.release_type) },
+                ]}
+              >
+                <Text style={styles.typeBadgeText}>{getReleaseTypeLabel(item.release_type)}</Text>
               </View>
             )}
             {item.rating > 0 && (

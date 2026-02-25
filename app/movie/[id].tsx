@@ -24,6 +24,8 @@ import { useIsWatchlisted, useWatchlistMutations } from '@/features/watchlist/ho
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { StarRating } from '@/components/ui/StarRating';
 import { getPlatformLogo } from '@/constants/platformLogos';
+import { getReleaseTypeLabel } from '@/constants/releaseType';
+import { formatDate } from '@/utils/formatDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HERO_HEIGHT = 500;
@@ -150,11 +152,7 @@ export default function MovieDetailScreen() {
               <View style={styles.heroInfoText}>
                 <View style={styles.statusBadge}>
                   <Text style={styles.statusBadgeText}>
-                    {movie.release_type === 'theatrical'
-                      ? 'In Theaters'
-                      : movie.release_type === 'ott'
-                        ? 'Streaming'
-                        : 'Coming Soon'}
+                    {getReleaseTypeLabel(movie.release_type)}
                   </Text>
                 </View>
                 <Text style={styles.heroTitle} numberOfLines={2}>
@@ -195,6 +193,7 @@ export default function MovieDetailScreen() {
               {movie.platforms.map((mp) => {
                 const p = mp.platform;
                 if (!p) return null;
+                const logo = getPlatformLogo(p.id);
                 return (
                   <TouchableOpacity
                     key={p.id}
@@ -202,12 +201,8 @@ export default function MovieDetailScreen() {
                     onPress={() => Linking.openURL('https://example.com')}
                     accessibilityLabel={`Watch on ${p.name}`}
                   >
-                    {getPlatformLogo(p.id) ? (
-                      <Image
-                        source={getPlatformLogo(p.id)}
-                        style={styles.watchOnLogo}
-                        contentFit="contain"
-                      />
+                    {logo ? (
+                      <Image source={logo} style={styles.watchOnLogo} contentFit="contain" />
                     ) : (
                       <Text style={styles.watchOnLogoText}>{p.logo}</Text>
                     )}
@@ -235,12 +230,7 @@ export default function MovieDetailScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.releaseAlertTitle}>Upcoming Release</Text>
               <Text style={styles.releaseAlertDate}>
-                Releasing on{' '}
-                {new Date(movie.release_date).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                Releasing on {formatDate(movie.release_date)}
               </Text>
             </View>
           </View>
@@ -351,9 +341,7 @@ export default function MovieDetailScreen() {
                       </Text>
                       <StarRating rating={review.rating} size={12} />
                     </View>
-                    <Text style={styles.reviewDate}>
-                      {new Date(review.created_at).toLocaleDateString()}
-                    </Text>
+                    <Text style={styles.reviewDate}>{formatDate(review.created_at)}</Text>
                   </View>
                   {review.title && <Text style={styles.reviewTitle}>{review.title}</Text>}
                   {review.body && (
