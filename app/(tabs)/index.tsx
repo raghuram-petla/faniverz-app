@@ -288,9 +288,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
   },
   logoWordmark: {
     fontFamily: 'Exo2_800ExtraBold_Italic',
