@@ -295,8 +295,10 @@ const styles = StyleSheet.create({
   logoWordmark: {
     fontFamily: 'Exo2_800ExtraBold_Italic',
     fontSize: 26,
+    lineHeight: 38,
     color: colors.white,
     letterSpacing: 0.5,
+    includeFontPadding: false,
   },
   headerButtons: {
     flexDirection: 'row',
