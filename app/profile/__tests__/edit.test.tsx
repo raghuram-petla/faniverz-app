@@ -192,4 +192,70 @@ describe('EditProfileScreen', () => {
     );
     alertSpy.mockRestore();
   });
+
+  it('shows Saved alert and navigates back on successful save', () => {
+    const mockBack = jest.fn();
+    const useRouterSpy = jest
+      .spyOn(require('expo-router'), 'useRouter')
+      .mockReturnValue({ back: mockBack, push: jest.fn() });
+    const alertSpy = jest.spyOn(Alert, 'alert');
+
+    render(<EditProfileScreen />);
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    const [, callbacks] = mockUpdateMutate.mock.calls[0];
+    callbacks.onSuccess();
+
+    expect(alertSpy).toHaveBeenCalledWith('Saved', 'Your profile has been updated.');
+    expect(mockBack).toHaveBeenCalled();
+
+    alertSpy.mockRestore();
+    useRouterSpy.mockRestore();
+  });
+
+  it('shows Error alert on failed save', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+
+    render(<EditProfileScreen />);
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    const [, callbacks] = mockUpdateMutate.mock.calls[0];
+    callbacks.onError();
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Error',
+      'Failed to save your profile. Please try again.',
+    );
+    alertSpy.mockRestore();
+  });
+
+  it('shows ActivityIndicator on save button when isSaving is true', () => {
+    const mockModule = jest.requireMock('@/features/auth/hooks/useUpdateProfile');
+    const origImpl = mockModule.useUpdateProfile;
+    mockModule.useUpdateProfile = () => ({ mutate: mockUpdateMutate, isPending: true });
+
+    const { UNSAFE_getByType } = render(<EditProfileScreen />);
+    const { ActivityIndicator } = require('react-native');
+    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+
+    mockModule.useUpdateProfile = origImpl;
+  });
+
+  it('initializes form with empty strings when profile fields are null', () => {
+    const nullFieldProfile = {
+      ...stableProfile,
+      display_name: null,
+      phone: null,
+      location: null,
+      bio: null,
+    };
+    mockUseProfile.mockReturnValueOnce({ data: nullFieldProfile, isLoading: false });
+
+    render(<EditProfileScreen />);
+
+    // All fields should default to empty string (not "null")
+    expect(screen.queryByDisplayValue('null')).toBeNull();
+    // Save button should still be present
+    expect(screen.getByText('Save Changes')).toBeTruthy();
+  });
 });

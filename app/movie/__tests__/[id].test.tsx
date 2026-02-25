@@ -363,4 +363,70 @@ describe('MovieDetailScreen', () => {
     // The "Write Review" button in the reviews tab should still be there
     expect(screen.getByText('Write Review')).toBeTruthy();
   });
+
+  it('does not call createReview when userId is empty', () => {
+    jest
+      .spyOn(require('@/features/auth/providers/AuthProvider'), 'useAuth')
+      .mockReturnValue({ user: null });
+
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+    // Rating is 0, so submit is disabled — mutate should not be called
+    fireEvent.press(screen.getByText('Submit'));
+    expect(mockCreateReviewMutate).not.toHaveBeenCalled();
+  });
+
+  it('toggles the spoiler toggle in the review modal', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+    // Press the Contains Spoiler toggle
+    fireEvent.press(screen.getByText('Contains Spoiler'));
+    // Should not crash — just verify it renders
+    expect(screen.getByText('Contains Spoiler')).toBeTruthy();
+  });
+
+  it('shows spoiler badge on reviews that contain spoilers', () => {
+    const spoilerReviews = [
+      {
+        id: 'r2',
+        movie_id: 'movie-1',
+        user_id: 'user-3',
+        rating: 3,
+        title: 'Spoiler Review',
+        body: 'The ending was...',
+        contains_spoiler: true,
+        helpful_count: 0,
+        created_at: '2024-04-01T00:00:00Z',
+        updated_at: '2024-04-01T00:00:00Z',
+        profile: { display_name: 'Spoiler User' },
+      },
+    ];
+    (useMovieReviews as jest.Mock).mockReturnValue({ data: spoilerReviews });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    expect(screen.getByText('Contains Spoiler')).toBeTruthy();
+  });
+
+  it('renders movie without director without crashing', () => {
+    const noDirectorMovie = { ...mockMovie, director: null };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: noDirectorMovie });
+    render(<MovieDetailScreen />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders movie with no trailer without showing Watch Trailer button', () => {
+    const noTrailerMovie = { ...mockMovie, trailer_url: null };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: noTrailerMovie });
+    render(<MovieDetailScreen />);
+    expect(screen.queryByText('Watch Trailer')).toBeNull();
+  });
+
+  it('renders streaming status badge for ott movies', () => {
+    const ottMovie = { ...mockMovie, release_type: 'ott' };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: ottMovie });
+    render(<MovieDetailScreen />);
+    expect(screen.getByText('Streaming')).toBeTruthy();
+  });
 });

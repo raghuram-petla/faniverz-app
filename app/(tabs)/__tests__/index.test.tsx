@@ -335,4 +335,32 @@ describe('HomeScreen', () => {
     expect(screen.getByText('Upcoming Movie')).toBeTruthy();
     expect(screen.getByText('Upcoming OTT Film')).toBeTruthy();
   });
+
+  it('renders FlatList item separators when multiple items exist in each section', () => {
+    // 2 theatrical, 2 OTT, 2 upcoming theatrical, 2 upcoming OTT → triggers ItemSeparatorComponent
+    const multiMovies = [
+      { ...mockMovies[0], id: '1', title: 'Theater 1', release_type: 'theatrical' as const },
+      { ...mockMovies[0], id: '2', title: 'Theater 2', release_type: 'theatrical' as const },
+      { ...mockMovies[1], id: '3', title: 'OTT 1', release_type: 'ott' as const },
+      { ...mockMovies[1], id: '4', title: 'OTT 2', release_type: 'ott' as const },
+      { ...mockMovies[2], id: '5', title: 'Upcoming Theater 1', release_type: 'upcoming' as const },
+      { ...mockMovies[2], id: '6', title: 'Upcoming Theater 2', release_type: 'upcoming' as const },
+      { ...mockMovies[2], id: '7', title: 'Upcoming OTT 1', release_type: 'upcoming' as const },
+      { ...mockMovies[2], id: '8', title: 'Upcoming OTT 2', release_type: 'upcoming' as const },
+    ];
+    mockUseMovies.mockReturnValue({ data: multiMovies });
+    mockUseMoviePlatformMap.mockReturnValue({
+      data: {
+        '7': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+        '8': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+      },
+    });
+
+    render(<HomeScreen />);
+
+    expect(screen.getByText('Theater 1')).toBeTruthy();
+    expect(screen.getByText('Theater 2')).toBeTruthy();
+    expect(screen.getByText('OTT 1')).toBeTruthy();
+    expect(screen.getByText('OTT 2')).toBeTruthy();
+  });
 });

@@ -297,4 +297,44 @@ describe('WatchedMoviesScreen', () => {
     // Rating badge should show the formatted rating (may appear in both stats and badge)
     expect(screen.getAllByText('4.5').length).toBeGreaterThanOrEqual(1);
   });
+
+  it('handles entries with null watched_at when sorting by recent', () => {
+    const watchedEntries = [
+      {
+        id: 'w1',
+        user_id: 'user-1',
+        movie_id: 'm1',
+        status: 'watched',
+        watched_at: null,
+        movie: {
+          id: 'm1',
+          title: 'Pushpa 2',
+          poster_url: null,
+          rating: 4.0,
+          release_type: 'theatrical',
+        },
+      },
+      {
+        id: 'w2',
+        user_id: 'user-1',
+        movie_id: 'm2',
+        status: 'watched',
+        watched_at: '2025-02-15T00:00:00Z',
+        movie: {
+          id: 'm2',
+          title: 'Salaar',
+          poster_url: null,
+          rating: 3.8,
+          release_type: 'theatrical',
+        },
+      },
+    ];
+    mockUseWatchlist.mockReturnValue({ watched: watchedEntries, isLoading: false });
+
+    render(<WatchedMoviesScreen />);
+
+    // Should render both without crashing (null watched_at treated as 0)
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByText('Salaar')).toBeTruthy();
+  });
 });

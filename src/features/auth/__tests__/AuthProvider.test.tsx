@@ -161,4 +161,24 @@ describe('AuthProvider', () => {
     expect(result.current).toHaveProperty('setIsGuest');
     expect(typeof result.current.setIsGuest).toBe('function');
   });
+
+  it('clears session and user on SIGNED_OUT event', async () => {
+    const mockSession = {
+      access_token: 'token',
+      user: { id: 'user-1', email: 'test@test.com' },
+    };
+    mockAuth.getSession.mockResolvedValue({ data: { session: mockSession } });
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.user).toEqual(mockSession.user);
+
+    act(() => {
+      __fireAuthStateChange('SIGNED_OUT', null);
+    });
+
+    expect(result.current.session).toBeNull();
+    expect(result.current.user).toBeNull();
+  });
 });

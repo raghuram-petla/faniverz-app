@@ -183,4 +183,38 @@ describe('MyReviewsScreen', () => {
     // Total helpful = 12 + 7 = 19
     expect(screen.getByText('19')).toBeTruthy();
   });
+
+  it('shows loading indicator when reviews are loading', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockUseUserReviews.mockReturnValueOnce({ data: undefined as any, isLoading: true });
+    const { UNSAFE_getByType } = render(<MyReviewsScreen />);
+    const { ActivityIndicator } = require('react-native');
+    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+  });
+
+  it('does not render body text when review body is null', () => {
+    const reviewWithNoBody = [
+      {
+        id: 'review-3',
+        movie_id: 'movie-3',
+        user_id: 'user-1',
+        rating: 3,
+        title: 'Decent film',
+        body: null,
+        contains_spoiler: false,
+        helpful_count: 0,
+        created_at: '2024-04-01T00:00:00Z',
+        updated_at: '2024-04-01T00:00:00Z',
+        movie: { id: 'movie-3', title: 'Some Movie', poster_url: null },
+      },
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockUseUserReviews.mockReturnValueOnce({ data: reviewWithNoBody as any, isLoading: false });
+
+    render(<MyReviewsScreen />);
+
+    expect(screen.getByText('Decent film')).toBeTruthy();
+    // Body section should not exist (review.body is null)
+    expect(screen.queryByText('null')).toBeNull();
+  });
 });

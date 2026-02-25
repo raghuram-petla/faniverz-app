@@ -6,14 +6,16 @@ const mockOr = jest.fn();
 const mockLimit = jest.fn();
 const mockGte = jest.fn();
 const mockLte = jest.fn();
+const mockRange = jest.fn();
 
 // Creates a chainable+thenable result for mockOrder.
-// Chaining: .order().order() works because each call returns { order: mockOrder }.
+// Chaining: .order().order() / .order().range() works.
 // Awaitable: `await query` works because the object has a .then() method.
 function makeOrderResult(data: unknown[] | null = [], error: Error | null = null) {
   const result = {
     order: mockOrder,
     limit: mockLimit,
+    range: mockRange,
     then(resolve: (v: unknown) => void, reject?: (e: unknown) => void) {
       return Promise.resolve({ data, error }).then(resolve, reject);
     },
@@ -22,6 +24,17 @@ function makeOrderResult(data: unknown[] | null = [], error: Error | null = null
     },
   };
   return result;
+}
+
+function makeRangeResult(data: unknown[] | null = [], error: Error | null = null) {
+  return {
+    then(resolve: (v: unknown) => void, reject?: (e: unknown) => void) {
+      return Promise.resolve({ data, error }).then(resolve, reject);
+    },
+    catch(reject: (e: unknown) => void) {
+      return Promise.resolve({ data, error }).catch(reject);
+    },
+  };
 }
 
 jest.mock('@/lib/supabase', () => ({
@@ -39,6 +52,8 @@ import {
   searchMovies,
   fetchMoviesByMonth,
   fetchMoviesByPlatform,
+  fetchMoviesPaginated,
+  fetchUpcomingMovies,
 } from '../api';
 
 describe('movies api', () => {
@@ -296,6 +311,200 @@ describe('movies api', () => {
       mockOrder.mockResolvedValue({ data: null, error: new Error('Platform fetch failed') });
 
       await expect(fetchMoviesByPlatform('netflix')).rejects.toThrow('Platform fetch failed');
+    });
+  });
+
+  describe('fetchMoviesPaginated', () => {
+    beforeEach(() => {
+      mockRange.mockReturnValue(makeRangeResult());
+      mockOrder.mockReturnValue(makeOrderResult());
+      mockSelect.mockReturnValue({ order: mockOrder });
+    });
+
+    it('queries movies table and calls range(0, 9) for page 0', async () => {
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchMoviesPaginated(0);
+      expect(supabase.from).toHaveBeenCalledWith('movies');
+      expect(mockRange).toHaveBeenCalledWith(0, 9);
+    });
+
+    it('calls range(10, 19) for page 1', async () => {
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchMoviesPaginated(1);
+      expect(mockRange).toHaveBeenCalledWith(10, 19);
+    });
+
+    it('returns data array on success', async () => {
+      const mockData = [{ id: '1', title: 'Movie' }];
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult(mockData));
+
+      const result = await fetchMoviesPaginated(0);
+      expect(result).toEqual(mockData);
+    });
+
+    it('returns empty array when data is null', async () => {
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult(null));
+
+      const result = await fetchMoviesPaginated(0);
+      expect(result).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult(null, new Error('Paginated fetch failed')));
+
+      await expect(fetchMoviesPaginated(0)).rejects.toThrow('Paginated fetch failed');
+    });
+
+    it('filters by releaseType when provided', async () => {
+      const mockEq2 = jest.fn();
+      mockSelect.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchMoviesPaginated(0, 10, { releaseType: 'theatrical' });
+      expect(mockEq2).toHaveBeenCalledWith('release_type', 'theatrical');
+    });
+
+    it('filters by genre when provided', async () => {
+      const mockContains = jest.fn();
+      mockSelect.mockReturnValue({ contains: mockContains });
+      mockContains.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchMoviesPaginated(0, 10, { genre: 'Action' });
+      expect(mockContains).toHaveBeenCalledWith('genres', ['Action']);
+    });
+
+    it('filters by platformId when matching movies exist', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      const mockIn = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') return { select: mockPlatformSelect };
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
+      mockSelect.mockReturnValue({ in: mockIn });
+      mockIn.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([{ id: 'm1' }]));
+
+      const result = await fetchMoviesPaginated(0, 10, { platformId: 'netflix' });
+      expect(result).toHaveLength(1);
+    });
+
+    it('returns empty array when platformId has no matching movies', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') return { select: mockPlatformSelect };
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: [] });
+
+      const result = await fetchMoviesPaginated(0, 10, { platformId: 'none' });
+      expect(result).toEqual([]);
+    });
+
+    it('orders by top_rated sortBy', async () => {
+      mockSelect.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchMoviesPaginated(0, 10, { sortBy: 'top_rated' });
+      expect(mockOrder).toHaveBeenCalledWith('rating', { ascending: false });
+    });
+
+    it('orders by latest sortBy', async () => {
+      mockSelect.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchMoviesPaginated(0, 10, { sortBy: 'latest' });
+      expect(mockOrder).toHaveBeenCalledWith('release_date', { ascending: false });
+    });
+
+    it('orders by upcoming sortBy', async () => {
+      mockSelect.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchMoviesPaginated(0, 10, { sortBy: 'upcoming' });
+      expect(mockOrder).toHaveBeenCalledWith('release_date', { ascending: true });
+    });
+  });
+
+  describe('fetchUpcomingMovies', () => {
+    it('queries movies with gte release_date filter', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchUpcomingMovies(0);
+      expect(supabase.from).toHaveBeenCalledWith('movies');
+      expect(mockGte).toHaveBeenCalledWith('release_date', expect.any(String));
+    });
+
+    it('calls range(0, 9) for page 0', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchUpcomingMovies(0);
+      expect(mockRange).toHaveBeenCalledWith(0, 9);
+    });
+
+    it('calls range(10, 19) for page 1', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult([]));
+
+      await fetchUpcomingMovies(1);
+      expect(mockRange).toHaveBeenCalledWith(10, 19);
+    });
+
+    it('returns data array on success', async () => {
+      const mockData = [{ id: '1', title: 'Upcoming' }];
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult(mockData));
+
+      const result = await fetchUpcomingMovies(0);
+      expect(result).toEqual(mockData);
+    });
+
+    it('returns empty array when data is null', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult(null));
+
+      const result = await fetchUpcomingMovies(0);
+      expect(result).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockReturnValue(makeRangeResult(null, new Error('Upcoming fetch failed')));
+
+      await expect(fetchUpcomingMovies(0)).rejects.toThrow('Upcoming fetch failed');
     });
   });
 });

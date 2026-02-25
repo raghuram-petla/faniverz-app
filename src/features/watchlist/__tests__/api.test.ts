@@ -1,6 +1,7 @@
 const mockSelect = jest.fn();
 const mockEq = jest.fn();
 const mockOrder = jest.fn();
+const mockRange = jest.fn();
 const mockSingle = jest.fn();
 const mockMaybeSingle = jest.fn();
 const mockInsert = jest.fn();
@@ -26,6 +27,7 @@ import {
   markAsWatched,
   moveBackToWatchlist,
   isMovieWatchlisted,
+  fetchWatchlistPaginated,
 } from '../api';
 
 describe('watchlist api', () => {
@@ -195,6 +197,62 @@ describe('watchlist api', () => {
 
       const result = await isMovieWatchlisted('u1', 'm1');
       expect(result).toBeNull();
+    });
+  });
+
+  describe('fetchWatchlistPaginated', () => {
+    it('queries watchlists with movie join, ordered, with correct range for page 0', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: [], error: null });
+
+      await fetchWatchlistPaginated('user-1', 0);
+      expect(supabase.from).toHaveBeenCalledWith('watchlists');
+      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(*)');
+      expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
+      expect(mockOrder).toHaveBeenCalledWith('added_at', { ascending: false });
+      expect(mockRange).toHaveBeenCalledWith(0, 9);
+    });
+
+    it('calls range(10, 19) for page 1', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: [], error: null });
+
+      await fetchWatchlistPaginated('user-1', 1);
+      expect(mockRange).toHaveBeenCalledWith(10, 19);
+    });
+
+    it('returns data array on success', async () => {
+      const mockData = [{ id: '1', movie_id: 'm1' }];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: mockData, error: null });
+
+      const result = await fetchWatchlistPaginated('user-1', 0);
+      expect(result).toEqual(mockData);
+    });
+
+    it('returns empty array when data is null', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchWatchlistPaginated('user-1', 0);
+      expect(result).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: null, error: new Error('Paginated failed') });
+
+      await expect(fetchWatchlistPaginated('user-1', 0)).rejects.toThrow('Paginated failed');
     });
   });
 });

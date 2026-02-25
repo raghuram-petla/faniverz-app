@@ -180,4 +180,39 @@ describe('HeroCarousel', () => {
 
     jest.useRealTimers();
   });
+
+  it('pressing a pagination dot does not throw and covers scrollToDot', () => {
+    const { UNSAFE_getAllByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { TouchableOpacity } = require('react-native');
+    const touchables = UNSAFE_getAllByType(TouchableOpacity);
+    // Last 2 touchables are the pagination dots
+    const secondDot = touchables[touchables.length - 1];
+    expect(() => fireEvent.press(secondDot)).not.toThrow();
+  });
+
+  it('does not render cert badge when certification is null', () => {
+    const noCertMovies = [{ ...mockMovies[0], certification: null }];
+    const { queryByText } = render(<HeroCarousel movies={noCertMovies} />);
+    expect(queryByText('UA')).toBeNull();
+  });
+
+  it('does not render runtime when runtime is null', () => {
+    const noRuntimeMovies = [{ ...mockMovies[0], runtime: null }];
+    const { queryByText } = render(<HeroCarousel movies={noRuntimeMovies} />);
+    expect(queryByText('180m')).toBeNull();
+  });
+
+  it('calls onScrollBeginDrag handler without throwing', () => {
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+    expect(() => flatList.props.onScrollBeginDrag?.()).not.toThrow();
+  });
+
+  it('calls onScrollEndDrag handler without throwing', () => {
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+    expect(() => flatList.props.onScrollEndDrag?.()).not.toThrow();
+  });
 });

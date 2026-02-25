@@ -228,4 +228,59 @@ describe('SurpriseScreen', () => {
     // 150 views < 1000, so displayed as "150 views"
     expect(screen.getByText('150 views')).toBeTruthy();
   });
+
+  it('shows BTS label when bts item is the featured video', () => {
+    const btsContent = [
+      {
+        id: 'bts-1',
+        title: 'Pushpa BTS',
+        description: 'Behind the scenes footage',
+        youtube_id: 'bts123',
+        category: 'bts' as const,
+        duration: '8:45',
+        views: 1_200_000,
+        created_at: '2024-01-01T00:00:00Z',
+      },
+    ];
+    mockUseSurpriseContent.mockReturnValue({ data: btsContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // FeaturedVideo shows "BTS" badge for bts category (covers getCategoryLabel('bts'))
+    // "BTS" appears in both category pills and the featured badge
+    expect(screen.getAllByText('BTS').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('activates video player when Play video button is pressed on featured video', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // Press the "Play video" accessibility button to activate the WebView
+    fireEvent.press(screen.getByLabelText('Play video'));
+
+    // After activation, the WebView should be shown (testID="video-player")
+    expect(screen.getByTestId('video-player')).toBeTruthy();
+  });
+
+  it('shows Interview label when interview item is the featured video', () => {
+    const interviewContent = [
+      {
+        id: 'int-1',
+        title: 'Director Speaks',
+        description: null,
+        youtube_id: 'int123',
+        category: 'interview' as const,
+        duration: '20:00',
+        views: 500_000,
+        created_at: '2024-01-01T00:00:00Z',
+      },
+    ];
+    mockUseSurpriseContent.mockReturnValue({ data: interviewContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // FeaturedVideo shows "INTERVIEW" badge (covers getCategoryLabel('interview'))
+    expect(screen.getByText('INTERVIEW')).toBeTruthy();
+  });
 });

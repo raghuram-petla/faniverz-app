@@ -282,4 +282,46 @@ describe('SearchScreen', () => {
     expect(screen.getByText('In Theaters')).toBeTruthy();
     expect(screen.getByText('Action')).toBeTruthy();
   });
+
+  it('shows Streaming badge for ott movie in results', () => {
+    const ottResult = { ...mockResults[0], id: 'ott-1', release_type: 'ott' as const };
+    mockUseMovieSearch.mockReturnValue({ data: [ottResult] });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'pu');
+
+    expect(screen.getByText('Streaming')).toBeTruthy();
+  });
+
+  it('shows Upcoming badge for upcoming movie in results', () => {
+    const upcomingResult = {
+      ...mockResults[0],
+      id: 'up-1',
+      release_type: 'upcoming' as const,
+    };
+    mockUseMovieSearch.mockReturnValue({ data: [upcomingResult] });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'pu');
+
+    expect(screen.getByText('Upcoming')).toBeTruthy();
+  });
+
+  it('shows platform badge overlay when result has a platform in platformMap', () => {
+    const mockOttHooks = require('@/features/ott/hooks');
+    mockOttHooks.useMoviePlatformMap.mockReturnValue({
+      data: {
+        '1': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+      },
+    });
+    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    fireEvent.changeText(input, 'pu');
+
+    expect(screen.getByText('N')).toBeTruthy();
+  });
 });

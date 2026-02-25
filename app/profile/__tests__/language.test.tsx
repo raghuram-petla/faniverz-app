@@ -64,4 +64,16 @@ describe('LanguageScreen', () => {
       expect(AsyncStorage.setItem).toHaveBeenCalled();
     });
   });
+
+  it('defaults to "en" when i18n.language is null', () => {
+    const i18nMock = jest.requireMock('@/i18n').default;
+    const origLanguage = i18nMock.language;
+    i18nMock.language = null;
+
+    render(<LanguageScreen />);
+    // Should render without crashing — covers `i18n.language ?? 'en'` null branch
+    expect(screen.getByText('Language')).toBeTruthy();
+
+    i18nMock.language = origLanguage;
+  });
 });
