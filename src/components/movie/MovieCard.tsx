@@ -11,10 +11,17 @@ interface MovieCardProps {
   movie: Movie;
   platforms?: OTTPlatform[];
   showReleaseDate?: boolean;
+  showTypeBadge?: boolean;
   testID?: string;
 }
 
-export function MovieCard({ movie, platforms, showReleaseDate, testID }: MovieCardProps) {
+export function MovieCard({
+  movie,
+  platforms,
+  showReleaseDate,
+  showTypeBadge = true,
+  testID,
+}: MovieCardProps) {
   const router = useRouter();
 
   const handlePress = () => {
@@ -42,8 +49,8 @@ export function MovieCard({ movie, platforms, showReleaseDate, testID }: MovieCa
           transition={200}
         />
 
-        {/* Status badge — top-left */}
-        {movie.release_type === 'theatrical' && (
+        {/* Status badge — top-left (hidden when section header already conveys the type) */}
+        {showTypeBadge && movie.release_type === 'theatrical' && (
           <View style={styles.badgeTopLeft}>
             <StatusBadge type="theatrical" />
           </View>

@@ -80,12 +80,13 @@ export default function HomeScreen() {
     (m) => platformMap[m.id] && platformMap[m.id].length > 0,
   );
 
-  const renderMovieCard = (movie: Movie, showDate = false) => (
+  const renderMovieCard = (movie: Movie, showDate = false, showTypeBadge = true) => (
     <MovieCard
       key={movie.id}
       movie={movie}
       platforms={platformMap[movie.id]}
       showReleaseDate={showDate}
+      showTypeBadge={showTypeBadge}
     />
   );
 
@@ -156,7 +157,7 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => renderMovieCard(item)}
+                renderItem={({ item }) => renderMovieCard(item, false, false)}
                 ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
               />
             </View>
@@ -176,7 +177,7 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalList}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => renderMovieCard(item)}
+                renderItem={({ item }) => renderMovieCard(item, false, false)}
                 ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
               />
             </View>
