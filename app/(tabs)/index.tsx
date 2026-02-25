@@ -103,15 +103,7 @@ export default function HomeScreen() {
           },
         ]}
       >
-        <View style={styles.headerLogo}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoBadgeText}>F</Text>
-          </View>
-          <Text style={styles.logoWordmark}>
-            <Text style={styles.logoWordmarkBold}>ani</Text>
-            <Text style={styles.logoWordmarkThin}>verz</Text>
-          </Text>
-        </View>
+        <Text style={styles.logoWordmark}>Faniverz</Text>
         <View style={styles.headerButtons}>
           <TouchableOpacity
             style={styles.headerButton}
@@ -286,37 +278,11 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: colors.black,
   },
-  headerLogo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  logoBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#DC2626',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoBadgeText: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: colors.white,
-  },
   logoWordmark: {
-    fontSize: 22,
+    fontFamily: 'Exo2_800ExtraBold_Italic',
+    fontSize: 26,
     color: colors.white,
-  },
-  logoWordmarkBold: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.white,
-  },
-  logoWordmarkThin: {
-    fontSize: 22,
-    fontWeight: '300',
-    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 0.5,
   },
   headerButtons: {
     flexDirection: 'row',

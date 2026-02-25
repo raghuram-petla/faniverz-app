@@ -108,3 +108,9 @@ jest.mock('react-native-reanimated', () => ({
   runOnJS: jest.fn((fn) => fn),
   interpolate: jest.fn(),
 }));
+
+// Mock expo-google-fonts (fonts always "loaded" in tests)
+jest.mock('@expo-google-fonts/exo-2', () => ({
+  useFonts: jest.fn(() => [true]),
+  Exo2_800ExtraBold_Italic: 'Exo2_800ExtraBold_Italic',
+}));
