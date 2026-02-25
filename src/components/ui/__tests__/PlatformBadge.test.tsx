@@ -18,10 +18,25 @@ const mockPlatform: OTTPlatform = {
   display_order: 1,
 };
 
+// Platform with no logo asset (unknown id → falls back to text)
+const unknownPlatform: OTTPlatform = {
+  id: 'custom',
+  name: 'Custom',
+  logo: 'C',
+  color: '#333333',
+  display_order: 99,
+};
+
 describe('PlatformBadge', () => {
-  it('renders platform logo text', () => {
-    const { getByText } = render(<PlatformBadge platform={mockPlatform} />);
-    expect(getByText('N')).toBeTruthy();
+  it('renders platform logo image for known platforms', () => {
+    // netflix has a real logo asset, so Image is rendered (no text)
+    const { queryByText } = render(<PlatformBadge platform={mockPlatform} />);
+    expect(queryByText('N')).toBeNull();
+  });
+
+  it('renders text fallback for unknown platforms', () => {
+    const { getByText } = render(<PlatformBadge platform={unknownPlatform} />);
+    expect(getByText('C')).toBeTruthy();
   });
 
   it('applies platform background color', () => {
@@ -47,9 +62,9 @@ describe('PlatformBadge', () => {
     expect(style.height).toBe(48);
   });
 
-  it('scales font size to half of badge size', () => {
-    const { getByText } = render(<PlatformBadge platform={mockPlatform} size={40} />);
-    const logo = getByText('N');
+  it('scales font size to half of badge size for text fallback', () => {
+    const { getByText } = render(<PlatformBadge platform={unknownPlatform} size={40} />);
+    const logo = getByText('C');
     const style = flattenStyle(logo.props.style);
     expect(style.fontSize).toBe(20);
   });
@@ -61,7 +76,7 @@ describe('PlatformBadge', () => {
     expect(style.borderRadius).toBe(4);
   });
 
-  it('renders different platform logos', () => {
+  it('renders image for aha platform', () => {
     const ahaPlatform: OTTPlatform = {
       id: 'aha',
       name: 'Aha',
@@ -69,11 +84,12 @@ describe('PlatformBadge', () => {
       color: '#FF6B00',
       display_order: 2,
     };
-    const { getByText } = render(<PlatformBadge platform={ahaPlatform} />);
-    expect(getByText('A')).toBeTruthy();
+    // aha has a real logo asset, so Image is rendered (no text)
+    const { queryByText } = render(<PlatformBadge platform={ahaPlatform} />);
+    expect(queryByText('A')).toBeNull();
   });
 
-  it('handles platform with emoji logo', () => {
+  it('handles platform with emoji logo via text fallback', () => {
     const emojiPlatform: OTTPlatform = {
       id: 'custom',
       name: 'Custom',

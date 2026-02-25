@@ -23,6 +23,7 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useIsWatchlisted, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { StarRating } from '@/components/ui/StarRating';
+import { getPlatformLogo } from '@/constants/platformLogos';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HERO_HEIGHT = 500;
@@ -201,7 +202,15 @@ export default function MovieDetailScreen() {
                     onPress={() => Linking.openURL('https://example.com')}
                     accessibilityLabel={`Watch on ${p.name}`}
                   >
-                    <Text style={styles.watchOnLogo}>{p.logo}</Text>
+                    {getPlatformLogo(p.id) ? (
+                      <Image
+                        source={getPlatformLogo(p.id)}
+                        style={styles.watchOnLogo}
+                        contentFit="contain"
+                      />
+                    ) : (
+                      <Text style={styles.watchOnLogoText}>{p.logo}</Text>
+                    )}
                     <View>
                       <Text style={styles.watchOnName}>{p.name}</Text>
                       <Text style={styles.watchOnStream}>Stream Now</Text>
@@ -517,7 +526,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
   },
-  watchOnLogo: { fontSize: 20, fontWeight: '700', color: colors.white },
+  watchOnLogo: { width: 40, height: 40, borderRadius: 8 },
+  watchOnLogoText: { fontSize: 20, fontWeight: '700', color: colors.white },
   watchOnName: { fontSize: 14, fontWeight: '600', color: colors.white },
   watchOnStream: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
 

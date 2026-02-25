@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { OTTPlatform } from '@/types';
+import { getPlatformLogo } from '@/constants/platformLogos';
 
 interface PlatformBadgeProps {
   platform: OTTPlatform;
@@ -7,6 +9,8 @@ interface PlatformBadgeProps {
 }
 
 export function PlatformBadge({ platform, size = 24 }: PlatformBadgeProps) {
+  const logo = getPlatformLogo(platform.id);
+
   return (
     <View
       style={[
@@ -19,7 +23,15 @@ export function PlatformBadge({ platform, size = 24 }: PlatformBadgeProps) {
         },
       ]}
     >
-      <Text style={[styles.logo, { fontSize: size * 0.5 }]}>{platform.logo}</Text>
+      {logo ? (
+        <Image
+          source={logo}
+          style={{ width: size * 0.8, height: size * 0.8 }}
+          contentFit="contain"
+        />
+      ) : (
+        <Text style={[styles.logo, { fontSize: size * 0.5 }]}>{platform.logo}</Text>
+      )}
     </View>
   );
 }

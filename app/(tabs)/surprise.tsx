@@ -1,14 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Modal,
-  type GestureResponderEvent,
-} from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,9 +8,9 @@ import { colors } from '@/theme/colors';
 import { useSurpriseContent } from '@/features/surprise/hooks';
 import { SurpriseCategory, SurpriseContent } from '@/types';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 16 * 2 - 16) / 2;
-const VIDEO_WIDTH = SCREEN_WIDTH - 32; // 16px margin each side
+const VIDEO_WIDTH = SCREEN_WIDTH - 32;
 const VIDEO_HEIGHT = Math.round((VIDEO_WIDTH * 9) / 16);
 
 type FilterOption = 'all' | SurpriseCategory;
@@ -116,160 +107,27 @@ interface FeaturedVideoProps {
 
 const FEATURED_VIDEO_ID = 'roYRXbhxhlM';
 const THUMBNAIL_URL = `https://img.youtube.com/vi/${FEATURED_VIDEO_ID}/hqdefault.jpg`;
-const CONTROLS_HEIGHT = 36;
 
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-// YouTube IFrame API — controls=0 hides YouTube UI, we draw our own controls in RN
+// Wrapping the iframe in HTML avoids YouTube's error 153 which triggers
+// when a WebView navigates directly to an embed URL without a proper origin.
 const VIDEO_HTML = `<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>*{margin:0;padding:0}body{background:#000;overflow:hidden}
-#player,#player iframe{width:100%!important;height:100%!important;position:absolute;top:0;left:0}
-#overlay{position:absolute;top:0;left:0;width:100%;height:100%;z-index:999}</style>
+iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}</style>
 </head><body>
-<div id="player"></div><div id="overlay"></div>
-<script>
-var tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';
-document.head.appendChild(tag);var player;
-function onYouTubeIframeAPIReady(){
-  player=new YT.Player('player',{
-    videoId:'${FEATURED_VIDEO_ID}',
-    playerVars:{autoplay:1,playsinline:1,controls:0,rel:0,modestbranding:1,iv_load_policy:3,fs:1,disablekb:1,showinfo:0},
-    events:{
-      onReady:function(e){
-        e.target.playVideo();
-        var iframe=e.target.getIframe();
-        iframe.setAttribute('allowfullscreen','');
-        iframe.setAttribute('webkitallowfullscreen','');
-      },
-      onStateChange:function(e){window.ReactNativeWebView.postMessage(JSON.stringify({type:'state',state:e.data}))}
-    }
-  });
-  setInterval(function(){
-    if(player&&player.getCurrentTime&&player.getDuration){
-      var c=player.getCurrentTime(),d=player.getDuration();
-      if(d>0)window.ReactNativeWebView.postMessage(JSON.stringify({type:'time',current:c,duration:d}));
-    }
-  },500);
-}
-function seekTo(t){if(player)player.seekTo(t,true);}
-</script></body></html>`;
-
-function getFullscreenHtml(startAt: number): string {
-  return VIDEO_HTML.replace('showinfo:0}', `showinfo:0,start:${Math.floor(startAt)}}`);
-}
+<iframe src="https://www.youtube.com/embed/${FEATURED_VIDEO_ID}?autoplay=1&playsinline=1&rel=0"
+  allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>
+</body></html>`;
 
 function FeaturedVideo({ item }: FeaturedVideoProps) {
   const catColor = getCategoryColor(item.category);
   const catLabel = getCategoryLabel(item.category);
   const iconName = getCategoryIconName(item.category);
   const [activated, setActivated] = useState(false);
-  const [playing, setPlaying] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenHtml, setFullscreenHtml] = useState('');
-  const webViewRef = useRef<WebView>(null);
-  const fullscreenWebViewRef = useRef<WebView>(null);
-  const isFullscreenRef = useRef(false);
-  const isSeekingRef = useRef(false);
-  const seekTimeRef = useRef(0);
-  const seekBarWidthRef = useRef(0);
-  const progressRef = useRef(0);
 
   const handlePlay = useCallback(() => {
     setActivated(true);
   }, []);
-
-  const togglePlayPause = useCallback(() => {
-    const ref = isFullscreenRef.current ? fullscreenWebViewRef : webViewRef;
-    ref.current?.injectJavaScript(
-      `if(player){var s=player.getPlayerState();if(s===1)player.pauseVideo();else player.playVideo();}true;`,
-    );
-  }, []);
-
-  const onMessage = useCallback((event: { nativeEvent: { data: string } }) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === 'state') {
-        setPlaying(msg.state === 1 || msg.state === 3);
-      } else if (msg.type === 'time' && !isSeekingRef.current) {
-        progressRef.current = msg.current;
-        setProgress(msg.current);
-        setDuration(msg.duration);
-      }
-    } catch {
-      /* ignore non-JSON messages */
-    }
-  }, []);
-
-  const onFullscreenMessage = useCallback((event: { nativeEvent: { data: string } }) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === 'state') {
-        setPlaying(msg.state === 1 || msg.state === 3);
-      } else if (msg.type === 'time' && !isSeekingRef.current) {
-        progressRef.current = msg.current;
-        setProgress(msg.current);
-        setDuration(msg.duration);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const handleSeekLayout = useCallback((e: { nativeEvent: { layout: { width: number } } }) => {
-    seekBarWidthRef.current = e.nativeEvent.layout.width;
-  }, []);
-
-  const handleSeekStart = useCallback(
-    (e: GestureResponderEvent) => {
-      isSeekingRef.current = true;
-      const w = seekBarWidthRef.current || 1;
-      const ratio = Math.max(0, Math.min(1, e.nativeEvent.locationX / w));
-      seekTimeRef.current = ratio * duration;
-      setProgress(seekTimeRef.current);
-    },
-    [duration],
-  );
-
-  const handleSeekMove = useCallback(
-    (e: GestureResponderEvent) => {
-      const w = seekBarWidthRef.current || 1;
-      const ratio = Math.max(0, Math.min(1, e.nativeEvent.locationX / w));
-      seekTimeRef.current = ratio * duration;
-      setProgress(seekTimeRef.current);
-    },
-    [duration],
-  );
-
-  const handleSeekEnd = useCallback(() => {
-    const ref = isFullscreenRef.current ? fullscreenWebViewRef : webViewRef;
-    ref.current?.injectJavaScript(`seekTo(${seekTimeRef.current});true;`);
-    isSeekingRef.current = false;
-  }, []);
-
-  const enterFullscreen = useCallback(() => {
-    webViewRef.current?.injectJavaScript(`if(player)player.pauseVideo();true;`);
-    setFullscreenHtml(getFullscreenHtml(progressRef.current));
-    isFullscreenRef.current = true;
-    setIsFullscreen(true);
-  }, []);
-
-  const exitFullscreen = useCallback(() => {
-    const t = progressRef.current;
-    isFullscreenRef.current = false;
-    setIsFullscreen(false);
-    setTimeout(() => {
-      webViewRef.current?.injectJavaScript(`seekTo(${t});if(player)player.playVideo();true;`);
-    }, 500);
-  }, []);
-
-  const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
 
   return (
     <View style={styles.featuredContainer}>
@@ -294,7 +152,6 @@ function FeaturedVideo({ item }: FeaturedVideoProps) {
         ) : (
           <View style={styles.videoPlayer}>
             <WebView
-              ref={webViewRef}
               source={{ html: VIDEO_HTML, baseUrl: 'https://example.com' }}
               style={StyleSheet.absoluteFill}
               allowsInlineMediaPlayback
@@ -304,114 +161,10 @@ function FeaturedVideo({ item }: FeaturedVideoProps) {
               scrollEnabled={false}
               bounces={false}
               javaScriptEnabled
-              onMessage={onMessage}
             />
-            {/* Tap area for play/pause — stops above controls bar */}
-            <TouchableOpacity
-              style={styles.playerTapOverlay}
-              onPress={togglePlayPause}
-              activeOpacity={1}
-            />
-            {/* Controls bar */}
-            <View style={styles.controlsBar}>
-              <TouchableOpacity
-                onPress={togglePlayPause}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name={playing ? 'pause' : 'play'} size={18} color={colors.white} />
-              </TouchableOpacity>
-              <Text style={styles.timeText}>{formatTime(progress)}</Text>
-              {/* Seekable progress bar */}
-              <View
-                style={styles.seekBarContainer}
-                onLayout={handleSeekLayout}
-                onStartShouldSetResponder={() => true}
-                onMoveShouldSetResponder={() => true}
-                onResponderGrant={handleSeekStart}
-                onResponderMove={handleSeekMove}
-                onResponderRelease={handleSeekEnd}
-                onResponderTerminate={handleSeekEnd}
-              >
-                <View style={styles.seekBarTrack}>
-                  <View style={[styles.seekBarFill, { width: `${progressPct}%` }]} />
-                  <View style={[styles.seekBarThumb, { left: `${progressPct}%` }]} />
-                </View>
-              </View>
-              <Text style={styles.timeText}>{formatTime(duration)}</Text>
-              <TouchableOpacity
-                onPress={enterFullscreen}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="expand" size={18} color={colors.white} />
-              </TouchableOpacity>
-            </View>
           </View>
         )}
       </View>
-
-      {/* Fullscreen Modal */}
-      <Modal
-        visible={isFullscreen}
-        animationType="fade"
-        supportedOrientations={['portrait', 'landscape']}
-        statusBarTranslucent
-      >
-        <View style={styles.fullscreenContainer}>
-          <View style={styles.fullscreenRotated}>
-            <WebView
-              ref={fullscreenWebViewRef}
-              source={{ html: fullscreenHtml, baseUrl: 'https://example.com' }}
-              style={StyleSheet.absoluteFill}
-              allowsInlineMediaPlayback
-              allowsFullscreenVideo
-              mediaPlaybackRequiresUserAction={false}
-              originWhitelist={['*']}
-              scrollEnabled={false}
-              bounces={false}
-              javaScriptEnabled
-              onMessage={onFullscreenMessage}
-            />
-            {/* Tap to play/pause in fullscreen */}
-            <TouchableOpacity
-              style={styles.fullscreenTapArea}
-              onPress={togglePlayPause}
-              activeOpacity={1}
-            />
-            {/* Fullscreen controls */}
-            <View style={styles.fullscreenControlsBar}>
-              <TouchableOpacity
-                onPress={togglePlayPause}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name={playing ? 'pause' : 'play'} size={20} color={colors.white} />
-              </TouchableOpacity>
-              <Text style={styles.timeText}>{formatTime(progress)}</Text>
-              <View
-                style={styles.seekBarContainer}
-                onLayout={handleSeekLayout}
-                onStartShouldSetResponder={() => true}
-                onMoveShouldSetResponder={() => true}
-                onResponderGrant={handleSeekStart}
-                onResponderMove={handleSeekMove}
-                onResponderRelease={handleSeekEnd}
-                onResponderTerminate={handleSeekEnd}
-              >
-                <View style={styles.seekBarTrack}>
-                  <View style={[styles.seekBarFill, { width: `${progressPct}%` }]} />
-                  <View style={[styles.seekBarThumb, { left: `${progressPct}%` }]} />
-                </View>
-              </View>
-              <Text style={styles.timeText}>{formatTime(duration)}</Text>
-              <TouchableOpacity
-                onPress={exitFullscreen}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="contract" size={20} color={colors.white} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       {/* Meta */}
       <View style={styles.featuredMeta}>
@@ -719,101 +472,6 @@ const styles = StyleSheet.create({
   videoPlayer: {
     width: VIDEO_WIDTH,
     height: VIDEO_HEIGHT,
-  },
-  playerTapOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: CONTROLS_HEIGHT,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  overlayPlayBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  controlsBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: CONTROLS_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    gap: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    zIndex: 3,
-  },
-  timeText: {
-    fontSize: 11,
-    color: colors.white,
-    fontVariant: ['tabular-nums'],
-    minWidth: 32,
-  },
-  seekBarContainer: {
-    flex: 1,
-    height: 30,
-    justifyContent: 'center',
-  },
-  seekBarTrack: {
-    height: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 1.5,
-  },
-  seekBarFill: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    height: 3,
-    backgroundColor: colors.red600,
-    borderRadius: 1.5,
-  },
-  seekBarThumb: {
-    position: 'absolute',
-    top: -5,
-    width: 13,
-    height: 13,
-    borderRadius: 6.5,
-    backgroundColor: colors.red600,
-    marginLeft: -6.5,
-  },
-  fullscreenContainer: {
-    flex: 1,
-    backgroundColor: colors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fullscreenRotated: {
-    width: SCREEN_HEIGHT,
-    height: SCREEN_WIDTH,
-    transform: [{ rotate: '90deg' }],
-  },
-  fullscreenTapArea: {
-    ...StyleSheet.absoluteFillObject,
-    bottom: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  fullscreenControlsBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    zIndex: 3,
   },
   featuredMeta: {
     padding: 14,

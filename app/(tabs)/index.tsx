@@ -2,7 +2,6 @@ import { useRef, useCallback } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ScrollView,
   FlatList,
@@ -10,7 +9,9 @@ import {
   Animated,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -20,6 +21,7 @@ import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { HeroCarousel } from '@/components/home/HeroCarousel';
 import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { getPlatformLogo } from '@/constants/platformLogos';
 import { Movie, OTTPlatform } from '@/types';
 
 const HEADER_CONTENT_HEIGHT = 56;
@@ -27,6 +29,9 @@ const HEADER_CONTENT_HEIGHT = 56;
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+  // 16px padding each side + 3 gaps of 12px between 4 tiles
+  const tileSize = Math.floor((screenWidth - 32 - 36) / 4);
   const { data: allMovies = [] } = useMovies();
   const { data: platforms = [] } = usePlatforms();
 
@@ -107,7 +112,11 @@ export default function HomeScreen() {
         ]}
       >
         <View style={styles.logoRow}>
-          <Image source={require('../../assets/icon.png')} style={styles.logoIcon} />
+          <Image
+            source={require('../../assets/logo-header.png')}
+            style={styles.logoIcon}
+            contentFit="contain"
+          />
           <Text style={styles.logoWordmark}>Faniverz</Text>
         </View>
         <View style={styles.headerButtons}>
@@ -233,6 +242,7 @@ export default function HomeScreen() {
                   <PlatformSquare
                     key={platform.id}
                     platform={platform}
+                    size={tileSize}
                     onPress={() => router.push(`/discover?platform=${platform.id}`)}
                   />
                 ))}
@@ -245,15 +255,51 @@ export default function HomeScreen() {
   );
 }
 
-function PlatformSquare({ platform, onPress }: { platform: OTTPlatform; onPress: () => void }) {
+function isDark(hex: string) {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 < 40;
+}
+
+function PlatformSquare({
+  platform,
+  size,
+  onPress,
+}: {
+  platform: OTTPlatform;
+  size: number;
+  onPress: () => void;
+}) {
+  const logo = getPlatformLogo(platform.id);
+  const dark = isDark(platform.color);
+
   return (
     <TouchableOpacity
-      style={[styles.platformSquare, { backgroundColor: platform.color }]}
+      style={[
+        styles.platformSquare,
+        {
+          backgroundColor: platform.color,
+          width: size,
+          height: size,
+          borderWidth: dark ? 1.5 : 0,
+          borderColor: 'rgba(255,255,255,0.35)',
+        },
+      ]}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={platform.name}
     >
-      <Text style={styles.platformSquareLogo}>{platform.logo}</Text>
+      {logo ? (
+        <Image
+          source={logo}
+          style={{ width: size * 0.88, height: size * 0.88, borderRadius: 8 }}
+          contentFit="contain"
+        />
+      ) : (
+        <Text style={styles.platformSquareLogo}>{platform.logo}</Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -287,18 +333,15 @@ const styles = StyleSheet.create({
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   logoIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    overflow: 'hidden',
+    width: 44,
+    height: 44,
   },
   logoWordmark: {
     fontFamily: 'Exo2_800ExtraBold_Italic',
-    fontSize: 26,
-    lineHeight: 34,
+    fontSize: 22,
     color: colors.white,
     letterSpacing: 0.5,
     includeFontPadding: false,
@@ -343,12 +386,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   platformSquare: {
-    width: '22%',
-    aspectRatio: 1,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  platformSquareImage: {},
   platformSquareLogo: {
     fontSize: 24,
     fontWeight: '700',
