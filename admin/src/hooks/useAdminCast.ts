@@ -33,10 +33,24 @@ export function useMovieCast(movieId: string) {
       const { data, error } = await supabase
         .from('movie_cast')
         .select('*, actor:actors(*)')
-        .eq('movie_id', movieId)
-        .order('display_order');
+        .eq('movie_id', movieId);
       if (error) throw error;
-      return data as MovieCast[];
+      const all = (data ?? []) as MovieCast[];
+      // Cast: sort by tier_rank ASC, then birth_date ASC (older first within same tier)
+      const cast = all
+        .filter((c) => c.credit_type === 'cast')
+        .sort((a, b) => {
+          const tierDiff = (a.tier_rank ?? 99) - (b.tier_rank ?? 99);
+          if (tierDiff !== 0) return tierDiff;
+          const dateA = a.actor?.birth_date ? new Date(a.actor.birth_date).getTime() : Infinity;
+          const dateB = b.actor?.birth_date ? new Date(b.actor.birth_date).getTime() : Infinity;
+          return dateA - dateB;
+        });
+      // Crew: sort by role_order ASC
+      const crew = all
+        .filter((c) => c.credit_type === 'crew')
+        .sort((a, b) => (a.role_order ?? 99) - (b.role_order ?? 99));
+      return [...cast, ...crew];
     },
     enabled: !!movieId,
   });

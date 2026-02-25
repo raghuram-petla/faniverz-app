@@ -30,6 +30,8 @@ export interface Actor {
   tmdb_person_id: number | null;
   name: string;
   photo_url: string | null;
+  birth_date: string | null;
+  person_type: 'actor' | 'technician';
   created_at: string;
 }
 
@@ -39,11 +41,15 @@ export interface CastMember {
   actor_id: string;
   role_name: string | null;
   display_order: number;
+  credit_type: 'cast' | 'crew';
+  tier_rank: number | null;
+  role_order: number | null;
   actor?: Actor;
 }
 
 export interface MovieWithDetails extends Movie {
   cast: CastMember[];
+  crew: CastMember[];
   platforms: MoviePlatform[];
 }
 

@@ -64,12 +64,31 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
   if (error) throw error;
   if (!movie) return null;
 
-  // Fetch cast
+  // Fetch cast & crew
   const { data: castData } = await supabase
     .from('movie_cast')
-    .select('*, actor:actors(*)')
-    .eq('movie_id', id)
-    .order('display_order', { ascending: true });
+    .select(
+      '*, actor:actors(id, name, photo_url, birth_date, person_type, tmdb_person_id, created_at)',
+    )
+    .eq('movie_id', id);
+
+  const allCredits = castData ?? [];
+
+  // Actors: tier_rank ASC, then birth_date ASC (older actor shown first within same tier)
+  const cast = allCredits
+    .filter((c) => c.credit_type === 'cast')
+    .sort((a, b) => {
+      const tierDiff = (a.tier_rank ?? 99) - (b.tier_rank ?? 99);
+      if (tierDiff !== 0) return tierDiff;
+      const dateA = a.actor?.birth_date ? new Date(a.actor.birth_date).getTime() : Infinity;
+      const dateB = b.actor?.birth_date ? new Date(b.actor.birth_date).getTime() : Infinity;
+      return dateA - dateB;
+    });
+
+  // Crew: role_order ASC (Director first, then Producer, Music Director, DOP, …)
+  const crew = allCredits
+    .filter((c) => c.credit_type === 'crew')
+    .sort((a, b) => (a.role_order ?? 99) - (b.role_order ?? 99));
 
   // Fetch platforms
   const { data: platformData } = await supabase
@@ -79,7 +98,8 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
 
   return {
     ...movie,
-    cast: castData ?? [],
+    cast,
+    crew,
     platforms: platformData ?? [],
   };
 }

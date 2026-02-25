@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
-import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
+import { useMovieCast, useAdminActors, useAddCast, useRemoveCast } from '@/hooks/useAdminCast';
+import { ArrowLeft, Loader2, Trash2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 const genres = [
@@ -20,12 +21,46 @@ const genres = [
   'Historical',
 ];
 
+const TIER_OPTIONS = [
+  { value: 1, label: '1 — Lead Actor / Hero' },
+  { value: 2, label: '2 — Lead Actress / Heroine' },
+  { value: 3, label: '3 — Main Villain / Antagonist' },
+  { value: 4, label: '4 — Supporting Lead' },
+  { value: 5, label: '5 — Supporting Cast' },
+  { value: 6, label: '6 — Cameo / Special Appearance' },
+];
+
+const ROLE_ORDER_OPTIONS = [
+  { value: 1, label: '1 — Director' },
+  { value: 2, label: '2 — Producer' },
+  { value: 3, label: '3 — Music Director' },
+  { value: 4, label: '4 — Director of Photography' },
+  { value: 5, label: '5 — Editor' },
+  { value: 6, label: '6 — Art Director' },
+  { value: 7, label: '7 — Stunt Choreographer' },
+  { value: 8, label: '8 — Choreographer' },
+  { value: 9, label: '9 — Lyricist' },
+];
+
+const EMPTY_CAST_FORM = {
+  actor_id: '',
+  credit_type: 'cast' as 'cast' | 'crew',
+  role_name: '',
+  tier_rank: '',
+  role_order: '',
+};
+
 export default function EditMoviePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: movie, isLoading } = useAdminMovie(id);
   const updateMovie = useUpdateMovie();
   const deleteMovie = useDeleteMovie();
+  const { data: castData = [] } = useMovieCast(id);
+  const { data: actors = [] } = useAdminActors();
+  const addCast = useAddCast();
+  const removeCast = useRemoveCast();
+  const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
   const [form, setForm] = useState({
     title: '',
     poster_url: '',
@@ -95,6 +130,23 @@ export default function EditMoviePage() {
       await deleteMovie.mutateAsync(id);
       router.push('/movies');
     }
+  }
+
+  async function handleAddCast(e: React.FormEvent) {
+    e.preventDefault();
+    if (!castForm.actor_id) return;
+    await addCast.mutateAsync({
+      movie_id: id,
+      actor_id: castForm.actor_id,
+      credit_type: castForm.credit_type,
+      role_name: castForm.role_name || null,
+      tier_rank:
+        castForm.credit_type === 'cast' && castForm.tier_rank ? Number(castForm.tier_rank) : null,
+      role_order:
+        castForm.credit_type === 'crew' && castForm.role_order ? Number(castForm.role_order) : null,
+      display_order: castData.length,
+    });
+    setCastForm(EMPTY_CAST_FORM);
   }
 
   if (isLoading)
@@ -248,6 +300,150 @@ export default function EditMoviePage() {
           {updateMovie.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}
         </button>
       </form>
+
+      {/* Cast & Crew Management */}
+      <div className="space-y-4 mt-8">
+        <h2 className="text-lg font-bold text-white">Cast &amp; Crew</h2>
+
+        {/* Current entries */}
+        {castData.length > 0 && (
+          <div className="space-y-2">
+            {castData.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+              >
+                <span className="text-xs font-bold uppercase text-white/40 w-10">
+                  {entry.credit_type === 'cast' ? 'Cast' : 'Crew'}
+                </span>
+                <span className="text-white font-medium flex-1">
+                  {entry.actor?.name ?? entry.actor_id}
+                </span>
+                {entry.role_name && (
+                  <span className="text-white/60 text-sm">{entry.role_name}</span>
+                )}
+                {entry.tier_rank != null && (
+                  <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded">
+                    Tier {entry.tier_rank}
+                  </span>
+                )}
+                {entry.role_order != null && (
+                  <span className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded">
+                    #{entry.role_order}
+                  </span>
+                )}
+                <button
+                  onClick={() => removeCast.mutate({ id: entry.id, movieId: id })}
+                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                  aria-label={`Remove ${entry.actor?.name}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add entry form */}
+        <form onSubmit={handleAddCast} className="bg-white/5 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-white/60">Add Cast / Crew</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-white/40 mb-1">Type</label>
+              <select
+                value={castForm.credit_type}
+                onChange={(e) =>
+                  setCastForm((p) => ({
+                    ...p,
+                    credit_type: e.target.value as 'cast' | 'crew',
+                    tier_rank: '',
+                    role_order: '',
+                  }))
+                }
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              >
+                <option value="cast">Cast (Actor)</option>
+                <option value="crew">Crew (Technician)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-white/40 mb-1">Person *</label>
+              <select
+                required
+                value={castForm.actor_id}
+                onChange={(e) => setCastForm((p) => ({ ...p, actor_id: e.target.value }))}
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              >
+                <option value="">Select person…</option>
+                {actors.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-white/40 mb-1">
+                {castForm.credit_type === 'cast' ? 'Character Name' : 'Role Title'}
+              </label>
+              <input
+                type="text"
+                placeholder={castForm.credit_type === 'cast' ? 'e.g. Arjun' : 'e.g. Director'}
+                value={castForm.role_name}
+                onChange={(e) => setCastForm((p) => ({ ...p, role_name: e.target.value }))}
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              />
+            </div>
+            {castForm.credit_type === 'cast' ? (
+              <div>
+                <label className="block text-xs text-white/40 mb-1">Tier Rank</label>
+                <select
+                  value={castForm.tier_rank}
+                  onChange={(e) => setCastForm((p) => ({ ...p, tier_rank: e.target.value }))}
+                  className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="">Select tier…</option>
+                  {TIER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs text-white/40 mb-1">Role Order</label>
+                <select
+                  value={castForm.role_order}
+                  onChange={(e) => setCastForm((p) => ({ ...p, role_order: e.target.value }))}
+                  className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="">Select role…</option>
+                  {ROLE_ORDER_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={addCast.isPending || !castForm.actor_id}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+          >
+            {addCast.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Add Entry
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

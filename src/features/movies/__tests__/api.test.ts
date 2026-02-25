@@ -112,28 +112,118 @@ describe('movies api', () => {
   });
 
   describe('fetchMovieById', () => {
-    it('queries by id and fetches joins', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ single: mockSingle });
-      mockSingle.mockResolvedValue({ data: { id: '123', title: 'Test' }, error: null });
-
-      // Mock the cast and platform sub-queries
+    function mockFromForById(castEntries: object[] = [], platforms: object[] = []) {
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'movies') {
-          return { select: mockSelect };
+        if (table === 'movies') return { select: mockSelect };
+        if (table === 'movie_cast') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ data: castEntries, error: null }),
+            }),
+          };
         }
+        // movie_platforms
         return {
           select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              order: jest.fn().mockResolvedValue({ data: [], error: null }),
-            }),
+            eq: jest.fn().mockResolvedValue({ data: platforms, error: null }),
           }),
         };
       });
+    }
 
+    beforeEach(() => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ single: mockSingle });
+      mockSingle.mockResolvedValue({ data: { id: '123', title: 'Test' }, error: null });
+    });
+
+    it('returns cast and crew arrays and platforms', async () => {
+      mockFromForById();
       const result = await fetchMovieById('123');
       expect(result).toHaveProperty('cast');
+      expect(result).toHaveProperty('crew');
       expect(result).toHaveProperty('platforms');
+    });
+
+    it('separates cast entries from crew entries', async () => {
+      mockFromForById([
+        { id: 'c1', credit_type: 'cast', tier_rank: 1, role_order: null, actor: null },
+        { id: 'c2', credit_type: 'crew', tier_rank: null, role_order: 1, actor: null },
+      ]);
+      const result = await fetchMovieById('123');
+      expect(result!.cast).toHaveLength(1);
+      expect(result!.cast[0].id).toBe('c1');
+      expect(result!.crew).toHaveLength(1);
+      expect(result!.crew[0].id).toBe('c2');
+    });
+
+    it('sorts cast by tier_rank ascending', async () => {
+      mockFromForById([
+        {
+          id: 'villain',
+          credit_type: 'cast',
+          tier_rank: 3,
+          role_order: null,
+          actor: { birth_date: null },
+        },
+        {
+          id: 'lead',
+          credit_type: 'cast',
+          tier_rank: 1,
+          role_order: null,
+          actor: { birth_date: null },
+        },
+        {
+          id: 'support',
+          credit_type: 'cast',
+          tier_rank: 5,
+          role_order: null,
+          actor: { birth_date: null },
+        },
+      ]);
+      const result = await fetchMovieById('123');
+      expect(result!.cast.map((c) => c.id)).toEqual(['lead', 'villain', 'support']);
+    });
+
+    it('sorts cast with same tier_rank by birth_date ascending (older first)', async () => {
+      mockFromForById([
+        {
+          id: 'younger',
+          credit_type: 'cast',
+          tier_rank: 1,
+          role_order: null,
+          actor: { birth_date: '1990-01-01' },
+        },
+        {
+          id: 'older',
+          credit_type: 'cast',
+          tier_rank: 1,
+          role_order: null,
+          actor: { birth_date: '1975-06-15' },
+        },
+      ]);
+      const result = await fetchMovieById('123');
+      expect(result!.cast.map((c) => c.id)).toEqual(['older', 'younger']);
+    });
+
+    it('sorts crew by role_order ascending', async () => {
+      mockFromForById([
+        { id: 'music', credit_type: 'crew', tier_rank: null, role_order: 3, actor: null },
+        { id: 'director', credit_type: 'crew', tier_rank: null, role_order: 1, actor: null },
+        { id: 'editor', credit_type: 'crew', tier_rank: null, role_order: 5, actor: null },
+      ]);
+      const result = await fetchMovieById('123');
+      expect(result!.crew.map((c) => c.id)).toEqual(['director', 'music', 'editor']);
+    });
+
+    it('places null role_order crew at end', async () => {
+      mockFromForById([
+        { id: 'unknown', credit_type: 'crew', tier_rank: null, role_order: null, actor: null },
+        { id: 'director', credit_type: 'crew', tier_rank: null, role_order: 1, actor: null },
+      ]);
+      const result = await fetchMovieById('123');
+      expect(result!.crew[0].id).toBe('director');
+      expect(result!.crew[1].id).toBe('unknown');
     });
   });
 

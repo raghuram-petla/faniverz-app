@@ -32,6 +32,8 @@ const HERO_HEIGHT = 500;
 
 type TabName = 'overview' | 'cast' | 'reviews';
 
+const TIER_LABELS: Record<number, string> = { 1: 'Lead', 2: 'Lead', 3: 'Villain' };
+
 export default function MovieDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -295,19 +297,47 @@ export default function MovieDetailScreen() {
 
           {activeTab === 'cast' && (
             <View style={styles.castTab}>
-              {movie.cast.map((cm) => (
-                <View key={cm.id} style={styles.castItem}>
-                  <Image
-                    source={{ uri: cm.actor?.photo_url ?? undefined }}
-                    style={styles.castPhoto}
-                    contentFit="cover"
-                  />
-                  <View>
-                    <Text style={styles.castName}>{cm.actor?.name}</Text>
-                    {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
-                  </View>
-                </View>
-              ))}
+              {/* Cast section */}
+              {movie.cast.length > 0 && (
+                <>
+                  <Text style={styles.castSectionLabel}>Cast</Text>
+                  {movie.cast.map((cm) => (
+                    <View key={cm.id} style={styles.castItem}>
+                      <Image
+                        source={{ uri: cm.actor?.photo_url ?? undefined }}
+                        style={styles.castPhoto}
+                        contentFit="cover"
+                      />
+                      <View style={styles.castInfo}>
+                        <Text style={styles.castName}>{cm.actor?.name}</Text>
+                        {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
+                        {cm.tier_rank != null && cm.tier_rank <= 3 && (
+                          <View style={styles.tierChip}>
+                            <Text style={styles.tierChipText}>{TIER_LABELS[cm.tier_rank]}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {/* Crew section */}
+              {movie.crew.length > 0 && (
+                <>
+                  <Text style={styles.castSectionLabel}>Crew</Text>
+                  {movie.crew.map((cm) => (
+                    <View key={cm.id} style={styles.crewItem}>
+                      <Text style={styles.crewRole}>{cm.role_name}</Text>
+                      <Text style={styles.crewName}>{cm.actor?.name}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {movie.cast.length === 0 && movie.crew.length === 0 && (
+                <Text style={styles.emptyText}>No cast information available.</Text>
+              )}
             </View>
           )}
 
@@ -581,10 +611,40 @@ const styles = StyleSheet.create({
   trailerButtonText: { color: colors.red400, fontSize: 16, fontWeight: '600' },
 
   castTab: { gap: 16 },
+  castSectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white40,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    marginTop: 4,
+  },
   castItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   castPhoto: { width: 64, height: 64, borderRadius: 32 },
+  castInfo: { flex: 1, gap: 2 },
   castName: { fontSize: 16, fontWeight: '600', color: colors.white },
   castRole: { fontSize: 14, color: colors.white60 },
+  tierChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.red600 + '33',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 2,
+  },
+  tierChipText: { fontSize: 10, color: colors.red400, fontWeight: '700' },
+  crewItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.white5,
+    gap: 12,
+  },
+  crewRole: { fontSize: 13, color: colors.white60, width: 140 },
+  crewName: { fontSize: 15, color: colors.white, fontWeight: '600', flex: 1 },
+  emptyText: { color: colors.white40, fontSize: 14, textAlign: 'center', paddingVertical: 24 },
 
   reviewsTab: { gap: 16 },
   ratingSummary: {

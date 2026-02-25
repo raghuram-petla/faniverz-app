@@ -104,10 +104,36 @@ const mockMovie = {
       actor_id: 'a1',
       role_name: 'Pushpa Raj',
       display_order: 1,
+      credit_type: 'cast',
+      tier_rank: 1,
+      role_order: null,
       actor: {
         id: 'a1',
         name: 'Allu Arjun',
         photo_url: null,
+        birth_date: '1982-04-08',
+        person_type: 'actor',
+        tmdb_person_id: null,
+        created_at: '',
+      },
+    },
+  ],
+  crew: [
+    {
+      id: 'crew1',
+      movie_id: 'movie-1',
+      actor_id: 'crew-a1',
+      role_name: 'Director',
+      display_order: 0,
+      credit_type: 'crew',
+      tier_rank: null,
+      role_order: 1,
+      actor: {
+        id: 'crew-a1',
+        name: 'Sukumar',
+        photo_url: null,
+        birth_date: '1975-01-01',
+        person_type: 'technician',
         tmdb_person_id: null,
         created_at: '',
       },
@@ -185,6 +211,59 @@ describe('MovieDetailScreen', () => {
     fireEvent.press(screen.getByText('Cast'));
     expect(screen.getByText('Allu Arjun')).toBeTruthy();
     expect(screen.getByText('as Pushpa Raj')).toBeTruthy();
+  });
+
+  it('shows "Cast" section label when cast entries exist', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Cast'));
+    // After pressing the Cast tab, "Cast" appears twice: tab button + section label
+    expect(screen.getAllByText('Cast').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows "Crew" section label when crew entries exist', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Cast'));
+    expect(screen.getByText('Crew')).toBeTruthy();
+  });
+
+  it('shows crew member name and role in Crew section', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Cast'));
+    expect(screen.getByText('Sukumar')).toBeTruthy();
+    expect(screen.getByText('Director')).toBeTruthy();
+  });
+
+  it('shows tier chip for tier 1-3 actors', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Cast'));
+    expect(screen.getByText('Lead')).toBeTruthy();
+  });
+
+  it('does not show tier chip for tier 4+ actors', () => {
+    const movieWithSupportingActor = {
+      ...mockMovie,
+      cast: [
+        {
+          ...mockMovie.cast[0],
+          id: 'c2',
+          tier_rank: 5,
+          actor: { ...mockMovie.cast[0].actor, name: 'Supporting Actor' },
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithSupportingActor });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Cast'));
+    expect(screen.queryByText('Lead')).toBeNull();
+    expect(screen.queryByText('Villain')).toBeNull();
+  });
+
+  it('shows empty state when both cast and crew are empty', () => {
+    const movieNoCast = { ...mockMovie, cast: [], crew: [] };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieNoCast });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Cast'));
+    expect(screen.getByText('No cast information available.')).toBeTruthy();
   });
 
   it('shows movie metadata in the hero section', () => {
