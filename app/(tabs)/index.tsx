@@ -2,7 +2,6 @@ import { useRef, useCallback } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ScrollView,
   FlatList,
@@ -105,7 +104,9 @@ export default function HomeScreen() {
         ]}
       >
         <View style={styles.logoRow}>
-          <Image source={require('../../assets/icon.png')} style={styles.logoIcon} />
+          <View style={styles.logoIcon}>
+            <Ionicons name="film" size={20} color={colors.white} />
+          </View>
           <Text style={styles.logoWordmark}>Faniverz</Text>
         </View>
         <View style={styles.headerButtons}>
@@ -288,14 +289,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logoIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoWordmark: {
     fontFamily: 'Exo2_800ExtraBold_Italic',
     fontSize: 26,
-    lineHeight: 38,
+    lineHeight: 34,
     color: colors.white,
     letterSpacing: 0.5,
     includeFontPadding: false,
