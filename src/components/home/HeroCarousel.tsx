@@ -153,10 +153,16 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
               style={styles.watchButton}
               onPress={() => handleWatchNow(item)}
               accessibilityRole="button"
-              accessibilityLabel="Watch Now"
+              accessibilityLabel={item.release_type === 'theatrical' ? 'Get Tickets' : 'Watch Now'}
             >
-              <Ionicons name="play" size={20} color={colors.black} />
-              <Text style={styles.watchButtonText}>Watch Now</Text>
+              <Ionicons
+                name={item.release_type === 'theatrical' ? 'ticket-outline' : 'play'}
+                size={20}
+                color={colors.black}
+              />
+              <Text style={styles.watchButtonText}>
+                {item.release_type === 'theatrical' ? 'Get Tickets' : 'Watch Now'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.infoButton}

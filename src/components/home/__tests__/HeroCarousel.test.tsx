@@ -64,9 +64,11 @@ describe('HeroCarousel', () => {
     expect(getByText('Kalki')).toBeTruthy();
   });
 
-  it('renders Watch Now buttons for each slide', () => {
-    const { getAllByText } = render(<HeroCarousel movies={mockMovies} />);
-    expect(getAllByText('Watch Now').length).toBe(2);
+  it('renders context-aware CTA buttons per release type', () => {
+    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
+    // theatrical → Get Tickets, ott → Watch Now
+    expect(getByText('Get Tickets')).toBeTruthy();
+    expect(getByText('Watch Now')).toBeTruthy();
   });
 
   it('shows rating when rating > 0', () => {
@@ -122,10 +124,16 @@ describe('HeroCarousel', () => {
     expect(getByText('N')).toBeTruthy();
   });
 
-  it('navigates to movie detail when Watch Now is pressed', () => {
-    const { getAllByLabelText } = render(<HeroCarousel movies={mockMovies} />);
-    fireEvent.press(getAllByLabelText('Watch Now')[0]);
+  it('navigates to movie detail when Get Tickets is pressed (theatrical)', () => {
+    const { getByLabelText } = render(<HeroCarousel movies={mockMovies} />);
+    fireEvent.press(getByLabelText('Get Tickets'));
     expect(mockPush).toHaveBeenCalledWith('/movie/1');
+  });
+
+  it('navigates to movie detail when Watch Now is pressed (ott)', () => {
+    const { getByLabelText } = render(<HeroCarousel movies={mockMovies} />);
+    fireEvent.press(getByLabelText('Watch Now'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/2');
   });
 
   it('navigates to movie detail when More Info is pressed', () => {
