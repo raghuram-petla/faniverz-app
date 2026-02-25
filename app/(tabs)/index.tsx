@@ -2,6 +2,7 @@ import { useRef, useCallback } from 'react';
 import {
   View,
   Text,
+  Image,
   TouchableOpacity,
   ScrollView,
   FlatList,
@@ -103,7 +104,10 @@ export default function HomeScreen() {
           },
         ]}
       >
-        <Text style={styles.logoWordmark}>Faniverz</Text>
+        <View style={styles.logoRow}>
+          <Image source={require('../../assets/icon.png')} style={styles.logoIcon} />
+          <Text style={styles.logoWordmark}>Faniverz</Text>
+        </View>
         <View style={styles.headerButtons}>
           <TouchableOpacity
             style={styles.headerButton}
@@ -277,6 +281,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingBottom: 12,
     backgroundColor: colors.black,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
   },
   logoWordmark: {
     fontFamily: 'Exo2_800ExtraBold_Italic',
