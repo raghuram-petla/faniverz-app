@@ -427,7 +427,7 @@ INSERT INTO movies (
  '2023-06-16', 143, ARRAY['Historical','Action','Fantasy'], 'UA',
  NULL,
  'The epic tale of Lord Ram''s battle against the demon king Ravana is retold with modern visual effects and a mythological grandeur.',
- 'Om Raut', 'ott', 1.5, 310, false),
+ 'Om Raut', 'upcoming', 1.5, 310, false),
 
 ('Baby',
  'https://picsum.photos/seed/a7b5bdb8cc/500/750',
