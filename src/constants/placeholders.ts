@@ -1,8 +1,9 @@
-export const PLACEHOLDER_AVATAR =
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200';
+// Inline gray PNG placeholders — no external CDN dependency, works offline.
+// 1×1 medium-gray pixel; components scale it to fill the image container.
 
-export const PLACEHOLDER_POSTER =
-  'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=200';
+const GRAY_PNG =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNoAAAAggCBd81ytgAAAABJRU5ErkJggg==';
 
-export const PLACEHOLDER_PHOTO =
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300';
+export const PLACEHOLDER_AVATAR = GRAY_PNG;
+export const PLACEHOLDER_POSTER = GRAY_PNG;
+export const PLACEHOLDER_PHOTO = GRAY_PNG;

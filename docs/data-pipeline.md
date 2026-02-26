@@ -81,15 +81,20 @@ For each matched movie:
 GET /movie/{tmdb_id}?append_to_response=credits,videos
 ```
 
-Extract:
+Extract and store images in **Cloudflare R2** (not hotlinked from TMDB):
 
-- `poster_url`, `backdrop_url` (via `https://image.tmdb.org/t/p/w500{path}`)
-- `trailer_url` (YouTube official trailer)
+- Fetch `poster_path` → download → upload to `faniverz-movie-posters/{id}.jpg` → store R2 URL
+- Fetch `backdrop_path` → download → upload to `faniverz-movie-backdrops/{id}.jpg` → store R2 URL
+- For each actor: fetch `profile_path` → upload to `faniverz-actor-photos/{actor_id}.jpg`
+- `trailer_url` (YouTube official trailer — stored as YouTube URL, not proxied)
 - `synopsis`, `genres`, `runtime`
-- Cast: top 15 actors (name, photo, character)
+- Cast: top 15 actors (name, character)
 - Crew: Director, Producer, Music Director, DOP, Editor
 
-**Output of Step 3**: fully enriched movie row + actor/crew rows
+Image upload is handled by `scripts/lib/storage.ts` → `uploadImageFromUrl()`.
+If R2 credentials are absent (local dev), the TMDB URL is stored as-is.
+
+**Output of Step 3**: fully enriched movie row + actor/crew rows, all images on R2
 
 ---
 
