@@ -43,21 +43,32 @@ const BUCKET_PUBLIC_URL: Record<string, string> = {
   'faniverz-actor-photos': ACTORS_URL,
 };
 
-function isOldUrl(url: string | null): boolean {
-  return !!url && url.includes('.r2.cloudflarestorage.com');
+/**
+ * Returns true for any R2-hosted URL that isn't already pointing at the
+ * target public base URLs — handles both migration rounds:
+ *   Round 1: *.r2.cloudflarestorage.com  → pub-xxxx.r2.dev
+ *   Round 2: pub-xxxx.r2.dev             → custom domain (future)
+ */
+function isOldUrl(url: string | null, targetBase: string): boolean {
+  if (!url) return false;
+  return !url.startsWith(targetBase.replace(/\/$/, ''));
 }
 
 /**
- * Converts:  https://ACCOUNT.r2.cloudflarestorage.com/faniverz-movie-posters/uuid.jpg
- * To:        https://pub-xxx.r2.dev/uuid.jpg
+ * Extracts just the object key from any R2 URL format:
+ *   https://ACCOUNT.r2.cloudflarestorage.com/BUCKET/uuid.jpg  → uuid.jpg
+ *   https://pub-xxx.r2.dev/uuid.jpg                           → uuid.jpg
  */
-function fixUrl(url: string): string {
-  // Path is: /BUCKET_NAME/KEY.jpg
-  const match = url.match(/\.r2\.cloudflarestorage\.com\/([^/]+)\/(.+)$/);
+function extractKey(url: string): string {
+  const match =
+    url.match(/\.r2\.cloudflarestorage\.com\/[^/]+\/(.+)$/) || url.match(/\.r2\.dev\/(.+)$/);
   if (!match) throw new Error(`Unrecognised R2 URL format: ${url}`);
-  const [, bucketName, key] = match;
-  const publicBase = BUCKET_PUBLIC_URL[bucketName];
-  if (!publicBase) throw new Error(`No public URL configured for bucket: ${bucketName}`);
+  return match[1];
+}
+
+function buildUrl(key: string, bucket: string): string {
+  const publicBase = BUCKET_PUBLIC_URL[bucket];
+  if (!publicBase) throw new Error(`No public URL configured for bucket: ${bucket}`);
   return `${publicBase.replace(/\/$/, '')}/${key}`;
 }
 
@@ -81,9 +92,9 @@ async function fixMovies() {
   for (const movie of movies ?? []) {
     const updates: Record<string, string> = {};
 
-    if (isOldUrl(movie.poster_url)) {
+    if (isOldUrl(movie.poster_url, POSTERS_URL)) {
       try {
-        updates.poster_url = fixUrl(movie.poster_url!);
+        updates.poster_url = buildUrl(extractKey(movie.poster_url!), 'faniverz-movie-posters');
         fixed++;
       } catch (e) {
         console.error(`  poster failed [${movie.id}]: ${(e as Error).message}`);
@@ -93,9 +104,12 @@ async function fixMovies() {
       skipped++;
     }
 
-    if (isOldUrl(movie.backdrop_url)) {
+    if (isOldUrl(movie.backdrop_url, BACKDROPS_URL)) {
       try {
-        updates.backdrop_url = fixUrl(movie.backdrop_url!);
+        updates.backdrop_url = buildUrl(
+          extractKey(movie.backdrop_url!),
+          'faniverz-movie-backdrops',
+        );
         fixed++;
       } catch (e) {
         console.error(`  backdrop failed [${movie.id}]: ${(e as Error).message}`);
@@ -129,12 +143,12 @@ async function fixActors() {
   console.log(`\nActors to fix: ${actors?.length ?? 0}`);
 
   for (const actor of actors ?? []) {
-    if (!isOldUrl(actor.photo_url)) {
+    if (!isOldUrl(actor.photo_url, ACTORS_URL)) {
       skipped++;
       continue;
     }
     try {
-      const newUrl = fixUrl(actor.photo_url!);
+      const newUrl = buildUrl(extractKey(actor.photo_url!), 'faniverz-actor-photos');
       const { error: upErr } = await supabase
         .from('actors')
         .update({ photo_url: newUrl })
