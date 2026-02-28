@@ -1,14 +1,18 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-// Single R2 bucket with folder prefixes — avoids needing 3 separate public URLs.
-// Objects are stored as e.g. "posters/uuid.jpg" inside "faniverz-images".
-const R2_BUCKET_NAME = 'faniverz-images';
-
+// Three separate R2 buckets, each with their own public URL env var.
 export const R2_BUCKETS = {
-  moviePosters: 'posters',
-  movieBackdrops: 'backdrops',
-  actorPhotos: 'actors',
+  moviePosters: 'faniverz-movie-posters',
+  movieBackdrops: 'faniverz-movie-backdrops',
+  actorPhotos: 'faniverz-actor-photos',
 } as const;
+
+// Each bucket has its own pub-xxxx.r2.dev domain when public access is enabled.
+const R2_PUBLIC_URLS: Record<string, string | undefined> = {
+  'faniverz-movie-posters': process.env.R2_PUBLIC_BASE_URL_POSTERS,
+  'faniverz-movie-backdrops': process.env.R2_PUBLIC_BASE_URL_BACKDROPS,
+  'faniverz-actor-photos': process.env.R2_PUBLIC_BASE_URL_ACTORS,
+};
 
 /** Returns null when R2 credentials are absent (local dev without creds). */
 function getR2Client(): S3Client | null {
@@ -48,17 +52,16 @@ export async function uploadImageFromUrl(
   }
   const buffer = await response.arrayBuffer();
 
-  const fullKey = `${bucket}/${key}`; // e.g. "posters/uuid.jpg"
-
   await r2.send(
     new PutObjectCommand({
-      Bucket: R2_BUCKET_NAME,
-      Key: fullKey,
+      Bucket: bucket,
+      Key: key,
       Body: Buffer.from(buffer),
       ContentType: 'image/jpeg',
     }),
   );
 
-  const base = process.env.R2_PUBLIC_BASE_URL!.replace(/\/$/, '');
-  return `${base}/${fullKey}`;
+  const base = R2_PUBLIC_URLS[bucket];
+  if (!base) throw new Error(`No public URL configured for R2 bucket: ${bucket}`);
+  return `${base.replace(/\/$/, '')}/${key}`;
 }
