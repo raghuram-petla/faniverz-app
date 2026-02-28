@@ -1,12 +1,14 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const R2_BUCKETS = {
-  moviePosters: 'faniverz-movie-posters',
-  movieBackdrops: 'faniverz-movie-backdrops',
-  actorPhotos: 'faniverz-actor-photos',
-} as const;
+// Single R2 bucket with folder prefixes — avoids needing 3 separate public URLs.
+// Objects are stored as e.g. "posters/uuid.jpg" inside "faniverz-images".
+const R2_BUCKET_NAME = 'faniverz-images';
 
-export { R2_BUCKETS };
+export const R2_BUCKETS = {
+  moviePosters: 'posters',
+  movieBackdrops: 'backdrops',
+  actorPhotos: 'actors',
+} as const;
 
 /** Returns null when R2 credentials are absent (local dev without creds). */
 function getR2Client(): S3Client | null {
@@ -46,15 +48,17 @@ export async function uploadImageFromUrl(
   }
   const buffer = await response.arrayBuffer();
 
+  const fullKey = `${bucket}/${key}`; // e.g. "posters/uuid.jpg"
+
   await r2.send(
     new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
+      Bucket: R2_BUCKET_NAME,
+      Key: fullKey,
       Body: Buffer.from(buffer),
       ContentType: 'image/jpeg',
     }),
   );
 
   const base = process.env.R2_PUBLIC_BASE_URL!.replace(/\/$/, '');
-  return `${base}/${bucket}/${key}`;
+  return `${base}/${fullKey}`;
 }
