@@ -155,8 +155,8 @@ describe('movies api', () => {
 
     it('separates cast entries from crew entries', async () => {
       mockFromForById([
-        { id: 'c1', credit_type: 'cast', role_order: null, actor: { tier_rank: 1 } },
-        { id: 'c2', credit_type: 'crew', role_order: 1, actor: null },
+        { id: 'c1', credit_type: 'cast', display_order: 0, role_order: null, actor: {} },
+        { id: 'c2', credit_type: 'crew', display_order: 0, role_order: 1, actor: null },
       ]);
       const result = await fetchMovieById('123');
       expect(result!.cast).toHaveLength(1);
@@ -165,48 +165,14 @@ describe('movies api', () => {
       expect(result!.crew[0].id).toBe('c2');
     });
 
-    it('sorts cast by tier_rank ascending', async () => {
+    it('sorts cast by display_order ascending', async () => {
       mockFromForById([
-        {
-          id: 'villain',
-          credit_type: 'cast',
-          role_order: null,
-          actor: { tier_rank: 3, birth_date: null },
-        },
-        {
-          id: 'lead',
-          credit_type: 'cast',
-          role_order: null,
-          actor: { tier_rank: 1, birth_date: null },
-        },
-        {
-          id: 'support',
-          credit_type: 'cast',
-          role_order: null,
-          actor: { tier_rank: 5, birth_date: null },
-        },
+        { id: 'third', credit_type: 'cast', display_order: 5, role_order: null, actor: {} },
+        { id: 'first', credit_type: 'cast', display_order: 0, role_order: null, actor: {} },
+        { id: 'second', credit_type: 'cast', display_order: 2, role_order: null, actor: {} },
       ]);
       const result = await fetchMovieById('123');
-      expect(result!.cast.map((c) => c.id)).toEqual(['lead', 'villain', 'support']);
-    });
-
-    it('sorts cast with same tier_rank by birth_date ascending (older first)', async () => {
-      mockFromForById([
-        {
-          id: 'younger',
-          credit_type: 'cast',
-          role_order: null,
-          actor: { tier_rank: 1, birth_date: '1990-01-01' },
-        },
-        {
-          id: 'older',
-          credit_type: 'cast',
-          role_order: null,
-          actor: { tier_rank: 1, birth_date: '1975-06-15' },
-        },
-      ]);
-      const result = await fetchMovieById('123');
-      expect(result!.cast.map((c) => c.id)).toEqual(['older', 'younger']);
+      expect(result!.cast.map((c) => c.id)).toEqual(['first', 'second', 'third']);
     });
 
     it('sorts crew by role_order ascending', async () => {

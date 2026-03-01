@@ -222,7 +222,6 @@ async function processMovie(tmdbId: number, releaseDate: string): Promise<void> 
             person_type: 'actor',
             gender: castMember.gender ?? null,
             // birth_date intentionally omitted — filled by separate backfill pass
-            // tier_rank intentionally omitted — always manual
           },
           { onConflict: 'tmdb_person_id', ignoreDuplicates: false },
         )

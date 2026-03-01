@@ -7,21 +7,21 @@ We need accurate release dates, posters, actors, crew, and OTT platform assignme
 
 No single source has everything. The best approach is a **multi-source pipeline**:
 
-| Source                   | Strengths                                                                                              | Used for                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| **Wikipedia / Wikidata** | Comprehensive yearly lists of Telugu films, accurate Indian release dates, box office, production info | Movie discovery + release dates                             |
-| **TMDB API**             | Posters, backdrops, actor photos, crew credits, trailers                                               | Media assets + cast/crew                                    |
-| **Admin panel**          | Full manual control                                                                                    | Tier ranks, certifications, featured flags, OTT assignments |
+| Source                   | Strengths                                                                                              | Used for                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| **Wikipedia / Wikidata** | Comprehensive yearly lists of Telugu films, accurate Indian release dates, box office, production info | Movie discovery + release dates                 |
+| **TMDB API**             | Posters, backdrops, actor photos, crew credits, trailers                                               | Media assets + cast/crew                        |
+| **Admin panel**          | Full manual control                                                                                    | Certifications, featured flags, OTT assignments |
 
 ---
 
 ## Three-Track Strategy
 
-| Track              | What                                                      | When                                     |
-| ------------------ | --------------------------------------------------------- | ---------------------------------------- |
-| **seed.sql**       | `supabase db reset` — 120 curated movies, 8 platforms     | Dev / CI only                            |
-| **Sync pipeline**  | Edge functions + enrichment scripts auto-import data      | Production initial load + weekly updates |
-| **Admin curation** | Manual CRUD for tier ranks, certifications, featured, OTT | Ongoing                                  |
+| Track              | What                                                  | When                                     |
+| ------------------ | ----------------------------------------------------- | ---------------------------------------- |
+| **seed.sql**       | `supabase db reset` — 120 curated movies, 8 platforms | Dev / CI only                            |
+| **Sync pipeline**  | Edge functions + enrichment scripts auto-import data  | Production initial load + weekly updates |
+| **Admin curation** | Manual CRUD for certifications, featured, OTT         | Ongoing                                  |
 
 ---
 
@@ -103,7 +103,7 @@ If R2 credentials are absent (local dev), the TMDB URL is stored as-is.
 For each enriched movie:
 
 1. Upsert `movies` — use `tmdb_id` as conflict key; fallback to title+release_date if no TMDB match
-2. Upsert `actors` — keyed on `tmdb_person_id`; `tier_rank` left null, `person_type` inferred
+2. Upsert `actors` — keyed on `tmdb_person_id`; `person_type` inferred
 3. Upsert `movie_cast` — keyed on `(movie_id, actor_id)`
 4. Log to `sync_logs`
 
@@ -124,7 +124,6 @@ For each enriched movie:
 | `is_featured`                           | —                          | Toggle in admin  |
 | Actor `name`, `photo_url`, `birth_date` | TMDB                       | —                |
 | Actor `person_type`                     | Inferred from TMDB dept    | —                |
-| Actor `tier_rank`                       | —                          | Always manual    |
 | `movie_platforms` (OTT links)           | —                          | Admin movie edit |
 
 ---
@@ -211,7 +210,7 @@ All crew → `person_type='technician'`
 
 ### Cast → `credit_type='cast'`
 
-- `person_type='actor'`, `tier_rank=null` (manual)
+- `person_type='actor'`
 - `role_name` = character name from TMDB
 - top 15 by TMDB `order` field
 
@@ -222,7 +221,6 @@ All crew → `person_type='technician'`
 1. **Start with the Node.js script** (Option B) — easier to test locally, see output, debug TMDB/Wikidata responses
 2. Once it works, **port to the Edge Function** (Option A) for scheduled/admin-triggered runs
 3. **Run actor birthday enrichment** after initial seed
-4. **Manually set tier ranks** for top stars via admin Cast page
 
 ---
 
@@ -232,4 +230,3 @@ All crew → `person_type='technician'`
 2. Open Movies list in admin → Telugu films appear with posters + release dates
 3. Open a movie's Cast tab in the app → actors and crew listed
 4. Compare release dates to Wikipedia page — should match
-5. Manually set tier ranks for 5-10 stars → reopen movie Cast tab → correct ordering

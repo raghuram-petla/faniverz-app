@@ -36,16 +36,10 @@ export function useMovieCast(movieId: string) {
         .eq('movie_id', movieId);
       if (error) throw error;
       const all = (data ?? []) as MovieCast[];
-      // Cast: sort by actor's industry tier_rank ASC, then birth_date ASC (older first within same tier)
+      // Cast: sort by display_order ASC (per-movie billing from TMDB)
       const cast = all
         .filter((c) => c.credit_type === 'cast')
-        .sort((a, b) => {
-          const tierDiff = (a.actor?.tier_rank ?? 99) - (b.actor?.tier_rank ?? 99);
-          if (tierDiff !== 0) return tierDiff;
-          const dateA = a.actor?.birth_date ? new Date(a.actor.birth_date).getTime() : Infinity;
-          const dateB = b.actor?.birth_date ? new Date(b.actor.birth_date).getTime() : Infinity;
-          return dateA - dateB;
-        });
+        .sort((a, b) => a.display_order - b.display_order);
       // Crew: sort by role_order ASC
       const crew = all
         .filter((c) => c.credit_type === 'crew')

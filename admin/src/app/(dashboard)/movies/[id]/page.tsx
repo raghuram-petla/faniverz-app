@@ -390,11 +390,6 @@ export default function EditMoviePage() {
                 {entry.role_name && (
                   <span className="text-white/60 text-sm">{entry.role_name}</span>
                 )}
-                {entry.actor?.tier_rank != null && (
-                  <span className="text-xs bg-red-600/20 text-red-400 px-2 py-0.5 rounded">
-                    Tier {entry.actor.tier_rank}
-                  </span>
-                )}
                 {entry.role_order != null && (
                   <span className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded">
                     #{entry.role_order}
