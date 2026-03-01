@@ -9,15 +9,12 @@ import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { ActorDetailPreview } from '@/components/preview/ActorDetailPreview';
 
-type Tab = 'edit' | 'preview';
-
 export default function EditActorPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: actor, isLoading } = useAdminActor(id);
   const updateActor = useUpdateActor();
   const deleteActor = useDeleteActor();
-  const [activeTab, setActiveTab] = useState<Tab>('edit');
   const [device, setDevice] = useState(DEVICES[1]);
 
   const [form, setForm] = useState({
@@ -81,7 +78,7 @@ export default function EditActorPage() {
     );
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/cast" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
@@ -97,50 +94,9 @@ export default function EditActorPage() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setActiveTab('edit')}
-          className={
-            activeTab === 'edit'
-              ? 'bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium'
-              : 'bg-white/10 text-white/60 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20'
-          }
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => setActiveTab('preview')}
-          className={
-            activeTab === 'preview'
-              ? 'bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium'
-              : 'bg-white/10 text-white/60 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20'
-          }
-        >
-          Preview
-        </button>
-      </div>
-
-      {activeTab === 'preview' ? (
-        <div className="space-y-4">
-          <DeviceSelector selected={device} onChange={setDevice} />
-          <div className="flex justify-center">
-            <DeviceFrame device={device}>
-              <ActorDetailPreview
-                name={form.name}
-                photoUrl={form.photo_url}
-                personType={form.person_type}
-                gender={Number(form.gender)}
-                birthDate={form.birth_date}
-                placeOfBirth={form.place_of_birth}
-                heightCm={form.height_cm ? Number(form.height_cm) : null}
-                biography={form.biography}
-              />
-            </DeviceFrame>
-          </div>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex gap-8">
+        {/* Left column — Edit form */}
+        <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
           <div className="bg-zinc-900 border border-white/10 rounded-xl p-6 space-y-4">
             <div>
               <label className="block text-xs text-white/40 mb-1">Name *</label>
@@ -249,7 +205,26 @@ export default function EditActorPage() {
             Save Changes
           </button>
         </form>
-      )}
+
+        {/* Right column — Live preview */}
+        <div className="w-[340px] shrink-0 sticky top-6 self-start space-y-4">
+          <DeviceSelector selected={device} onChange={setDevice} />
+          <div className="flex justify-center">
+            <DeviceFrame device={device}>
+              <ActorDetailPreview
+                name={form.name}
+                photoUrl={form.photo_url}
+                personType={form.person_type}
+                gender={Number(form.gender)}
+                birthDate={form.birth_date}
+                placeOfBirth={form.place_of_birth}
+                heightCm={form.height_cm ? Number(form.height_cm) : null}
+                biography={form.biography}
+              />
+            </DeviceFrame>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

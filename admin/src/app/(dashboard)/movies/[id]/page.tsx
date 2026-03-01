@@ -64,7 +64,7 @@ export default function EditMoviePage() {
   const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);
   const addTheatricalRun = useAddTheatricalRun();
   const removeTheatricalRun = useRemoveTheatricalRun();
-  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
   const [device, setDevice] = useState(DEVICES[1]);
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
   const [runForm, setRunForm] = useState({ release_date: '', label: '' });
@@ -134,27 +134,32 @@ export default function EditMoviePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await updateMovie.mutateAsync({
-      id,
-      title: form.title,
-      poster_url: form.poster_url || null,
-      backdrop_url: form.backdrop_url || null,
-      release_date: form.release_date,
-      runtime: form.runtime ? Number(form.runtime) : null,
-      genres: form.genres,
-      certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
-      synopsis: form.synopsis || null,
-      director: form.director || null,
-      trailer_url: form.trailer_url || null,
-      release_type: form.release_type as 'theatrical' | 'ott' | 'upcoming' | 'ended',
-      backdrop_focus_x: form.backdrop_focus_x,
-      backdrop_focus_y: form.backdrop_focus_y,
-      spotlight_focus_x: form.spotlight_focus_x,
-      spotlight_focus_y: form.spotlight_focus_y,
-      detail_focus_x: form.detail_focus_x,
-      detail_focus_y: form.detail_focus_y,
-    });
-    router.push('/movies');
+    try {
+      await updateMovie.mutateAsync({
+        id,
+        title: form.title,
+        poster_url: form.poster_url || null,
+        backdrop_url: form.backdrop_url || null,
+        release_date: form.release_date,
+        runtime: form.runtime ? Number(form.runtime) : null,
+        genres: form.genres,
+        certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
+        synopsis: form.synopsis || null,
+        director: form.director || null,
+        trailer_url: form.trailer_url || null,
+        release_type: form.release_type as 'theatrical' | 'ott' | 'upcoming' | 'ended',
+        backdrop_focus_x: form.backdrop_focus_x,
+        backdrop_focus_y: form.backdrop_focus_y,
+        spotlight_focus_x: form.spotlight_focus_x,
+        spotlight_focus_y: form.spotlight_focus_y,
+        detail_focus_x: form.detail_focus_x,
+        detail_focus_y: form.detail_focus_y,
+      });
+      router.push('/movies');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      alert(`Save failed: ${msg}`);
+    }
   }
 
   async function handleDelete() {
@@ -197,9 +202,19 @@ export default function EditMoviePage() {
       </div>
     );
 
+  const focusX =
+    previewMode === 'spotlight'
+      ? (form.spotlight_focus_x ?? form.backdrop_focus_x)
+      : (form.detail_focus_x ?? form.backdrop_focus_x);
+  const focusY =
+    previewMode === 'spotlight'
+      ? (form.spotlight_focus_y ?? form.backdrop_focus_y)
+      : (form.detail_focus_y ?? form.backdrop_focus_y);
+  const contextFocusX = previewMode === 'spotlight' ? form.spotlight_focus_x : form.detail_focus_x;
+
   return (
-    <div className={`${activeTab === 'preview' ? 'max-w-5xl' : 'max-w-2xl'} space-y-6`}>
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Link href="/movies" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
             <ArrowLeft className="w-4 h-4 text-white" />
@@ -214,134 +229,9 @@ export default function EditMoviePage() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setActiveTab('edit')}
-          className={
-            activeTab === 'edit'
-              ? 'bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium'
-              : 'bg-white/10 text-white/60 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20'
-          }
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => setActiveTab('preview')}
-          className={
-            activeTab === 'preview'
-              ? 'bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium'
-              : 'bg-white/10 text-white/60 px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20'
-          }
-        >
-          Preview
-        </button>
-      </div>
-
-      {activeTab === 'preview' ? (
-        <div className="space-y-6">
-          <DeviceSelector selected={device} onChange={setDevice} />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Spotlight Preview */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white/60">Spotlight</h3>
-                {form.spotlight_focus_x != null && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/40">
-                      Focus: ({Math.round(form.spotlight_focus_x * 100)}%,{' '}
-                      {Math.round((form.spotlight_focus_y ?? 0) * 100)}%)
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((p) => ({ ...p, spotlight_focus_x: null, spotlight_focus_y: null }))
-                      }
-                      className="text-xs text-red-400 hover:text-red-300"
-                    >
-                      Use Default
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-center">
-                <DeviceFrame device={device}>
-                  <SpotlightPreview
-                    title={form.title || 'Movie Title'}
-                    backdropUrl={form.backdrop_url}
-                    releaseType={(form.release_type || 'upcoming') as ReleaseType}
-                    rating={0}
-                    runtime={form.runtime ? Number(form.runtime) : null}
-                    certification={form.certification || null}
-                    releaseDate={form.release_date || new Date().toISOString()}
-                    focusX={form.spotlight_focus_x ?? form.backdrop_focus_x}
-                    focusY={form.spotlight_focus_y ?? form.backdrop_focus_y}
-                    onFocusClick={(x, y) =>
-                      setForm((p) => ({ ...p, spotlight_focus_x: x, spotlight_focus_y: y }))
-                    }
-                  />
-                </DeviceFrame>
-              </div>
-            </div>
-
-            {/* Detail Preview */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-white/60">Detail Page</h3>
-                {form.detail_focus_x != null && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/40">
-                      Focus: ({Math.round(form.detail_focus_x * 100)}%,{' '}
-                      {Math.round((form.detail_focus_y ?? 0) * 100)}%)
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((p) => ({ ...p, detail_focus_x: null, detail_focus_y: null }))
-                      }
-                      className="text-xs text-red-400 hover:text-red-300"
-                    >
-                      Use Default
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-center">
-                <DeviceFrame device={device}>
-                  <MovieDetailPreview
-                    title={form.title || 'Movie Title'}
-                    backdropUrl={form.backdrop_url}
-                    posterUrl={form.poster_url}
-                    releaseType={(form.release_type || 'upcoming') as ReleaseType}
-                    rating={0}
-                    reviewCount={0}
-                    runtime={form.runtime ? Number(form.runtime) : null}
-                    certification={form.certification || null}
-                    releaseDate={form.release_date || new Date().toISOString()}
-                    focusX={form.detail_focus_x ?? form.backdrop_focus_x}
-                    focusY={form.detail_focus_y ?? form.backdrop_focus_y}
-                    onFocusClick={(x, y) =>
-                      setForm((p) => ({ ...p, detail_focus_x: x, detail_focus_y: y }))
-                    }
-                  />
-                </DeviceFrame>
-              </div>
-            </div>
-          </div>
-
-          {/* Save button in preview mode too */}
-          <button
-            type="button"
-            onClick={(e) => handleSubmit(e as unknown as React.FormEvent)}
-            disabled={updateMovie.isPending}
-            className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-red-700 disabled:opacity-50"
-          >
-            {updateMovie.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}
-          </button>
-        </div>
-      ) : (
-        <>
+      <div className="flex gap-8">
+        {/* Left column — Edit form */}
+        <div className="flex-1 min-w-0 space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm text-white/60 mb-1">Title *</label>
@@ -524,7 +414,6 @@ export default function EditMoviePage() {
           <div className="space-y-4 mt-8">
             <h2 className="text-lg font-bold text-white">Cast &amp; Crew</h2>
 
-            {/* Current entries */}
             {castData.length > 0 && (
               <div className="space-y-2">
                 {castData.map((entry) => (
@@ -558,7 +447,6 @@ export default function EditMoviePage() {
               </div>
             )}
 
-            {/* Add entry form */}
             <form onSubmit={handleAddCast} className="bg-white/5 rounded-xl p-4 space-y-3">
               <p className="text-sm font-semibold text-white/60">Add Cast / Crew</p>
               <div className="grid grid-cols-2 gap-3">
@@ -719,8 +607,101 @@ export default function EditMoviePage() {
               </button>
             </form>
           </div>
-        </>
-      )}
+        </div>
+
+        {/* Right column — Preview */}
+        <div className="w-[340px] shrink-0 sticky top-6 self-start space-y-3">
+          <DeviceSelector selected={device} onChange={setDevice} />
+
+          {/* Spotlight / Detail toggle */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPreviewMode('spotlight')}
+              className={
+                previewMode === 'spotlight'
+                  ? 'bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium'
+                  : 'bg-white/10 text-white/60 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-white/20'
+              }
+            >
+              Spotlight
+            </button>
+            <button
+              onClick={() => setPreviewMode('detail')}
+              className={
+                previewMode === 'detail'
+                  ? 'bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium'
+                  : 'bg-white/10 text-white/60 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-white/20'
+              }
+            >
+              Detail
+            </button>
+          </div>
+
+          <DeviceFrame device={device} maxWidth={340}>
+            {previewMode === 'spotlight' ? (
+              <SpotlightPreview
+                title={form.title || 'Movie Title'}
+                backdropUrl={form.backdrop_url}
+                releaseType={(form.release_type || 'upcoming') as ReleaseType}
+                rating={0}
+                runtime={form.runtime ? Number(form.runtime) : null}
+                certification={form.certification || null}
+                releaseDate={form.release_date || new Date().toISOString()}
+                focusX={focusX}
+                focusY={focusY}
+                onFocusClick={(x, y) =>
+                  setForm((p) => ({ ...p, spotlight_focus_x: x, spotlight_focus_y: y }))
+                }
+              />
+            ) : (
+              <MovieDetailPreview
+                title={form.title || 'Movie Title'}
+                backdropUrl={form.backdrop_url}
+                posterUrl={form.poster_url}
+                releaseType={(form.release_type || 'upcoming') as ReleaseType}
+                rating={0}
+                reviewCount={0}
+                runtime={form.runtime ? Number(form.runtime) : null}
+                certification={form.certification || null}
+                releaseDate={form.release_date || new Date().toISOString()}
+                focusX={focusX}
+                focusY={focusY}
+                onFocusClick={(x, y) =>
+                  setForm((p) => ({ ...p, detail_focus_x: x, detail_focus_y: y }))
+                }
+              />
+            )}
+          </DeviceFrame>
+
+          {contextFocusX != null && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-white/40">
+                Focus: ({Math.round(contextFocusX * 100)}%,{' '}
+                {Math.round(
+                  ((previewMode === 'spotlight' ? form.spotlight_focus_y : form.detail_focus_y) ??
+                    0) * 100,
+                )}
+                %)
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  previewMode === 'spotlight'
+                    ? setForm((p) => ({
+                        ...p,
+                        spotlight_focus_x: null,
+                        spotlight_focus_y: null,
+                      }))
+                    : setForm((p) => ({ ...p, detail_focus_x: null, detail_focus_y: null }))
+                }
+                className="text-xs text-red-400 hover:text-red-300"
+              >
+                Use Default
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

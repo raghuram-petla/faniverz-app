@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -30,11 +31,14 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-zinc-900 border-r border-white/10 min-h-screen p-4">
-      <div className="flex items-center gap-2 px-2 mb-8">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-purple-600 flex items-center justify-center">
-          <Film className="w-4 h-4 text-white" />
-        </div>
-        <span className="text-lg font-bold text-white">Faniverz</span>
+      <div className="flex items-center gap-1 px-2 mb-8">
+        <Image src="/logo-header.png" alt="Faniverz" width={40} height={40} />
+        <span
+          className="text-xl text-white tracking-wide"
+          style={{ fontFamily: 'var(--font-exo2)' }}
+        >
+          Faniverz
+        </span>
       </div>
 
       <nav className="space-y-1">

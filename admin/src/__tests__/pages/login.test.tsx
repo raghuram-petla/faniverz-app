@@ -46,8 +46,8 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
   });
 
-  it('has "Faniverz Admin" heading', () => {
+  it('has "Faniverz" heading', () => {
     render(<LoginPage />);
-    expect(screen.getByText('Faniverz Admin')).toBeInTheDocument();
+    expect(screen.getByText('Faniverz')).toBeInTheDocument();
   });
 });

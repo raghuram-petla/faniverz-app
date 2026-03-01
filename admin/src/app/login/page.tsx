@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { Film, Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,11 +30,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600 to-purple-600 flex items-center justify-center">
-            <Film className="w-6 h-6 text-white" />
+        <div className="flex items-center justify-center gap-1 mb-8">
+          <Image src="/logo-header.png" alt="Faniverz" width={52} height={52} />
+          <div>
+            <h1
+              className="text-3xl text-white tracking-wide"
+              style={{ fontFamily: 'var(--font-exo2)' }}
+            >
+              Faniverz
+            </h1>
+            <p className="text-xs text-white/40 tracking-widest uppercase">Admin</p>
           </div>
-          <h1 className="text-3xl font-bold text-white">Faniverz Admin</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
