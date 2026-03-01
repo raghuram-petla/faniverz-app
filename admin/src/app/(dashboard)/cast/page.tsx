@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useAdminActors, useCreateActor, useDeleteActor } from '@/hooks/useAdminCast';
-import { Plus, Trash2, Search, Loader2, Users } from 'lucide-react';
+import { Plus, Trash2, Search, Loader2, Users, Pencil } from 'lucide-react';
+import Link from 'next/link';
 
 const EMPTY_FORM = {
   name: '',
@@ -148,19 +149,27 @@ export default function CastPage() {
               key={actor.id}
               className="bg-zinc-900 border border-white/10 rounded-xl p-4 flex items-center gap-4"
             >
-              <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                {actor.photo_url ? (
-                  <img src={actor.photo_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <Users className="w-6 h-6 text-white/40" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white truncate">{actor.name}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-white/40 capitalize">{actor.person_type}</span>
+              <Link href={'/cast/' + actor.id} className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                  {actor.photo_url ? (
+                    <img src={actor.photo_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Users className="w-6 h-6 text-white/40" />
+                  )}
                 </div>
-              </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-white truncate">{actor.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-white/40 capitalize">{actor.person_type}</span>
+                  </div>
+                </div>
+              </Link>
+              <Link
+                href={'/cast/' + actor.id}
+                className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10"
+              >
+                <Pencil className="w-4 h-4" />
+              </Link>
               <button
                 onClick={() => {
                   if (confirm('Delete this actor?')) deleteActor.mutate(actor.id);

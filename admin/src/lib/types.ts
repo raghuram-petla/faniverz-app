@@ -1,49 +1,18 @@
-// Movie types matching the Supabase schema
-export interface Movie {
-  id: string;
-  tmdb_id: number | null;
-  title: string;
-  poster_url: string | null;
-  backdrop_url: string | null;
-  release_date: string;
-  runtime: number | null;
-  genres: string[];
-  certification: 'U' | 'UA' | 'A' | null;
-  trailer_url: string | null;
-  synopsis: string | null;
-  director: string | null;
-  release_type: 'theatrical' | 'ott' | 'upcoming' | 'ended';
-  original_language: string | null;
-  backdrop_focus_x: number | null;
-  backdrop_focus_y: number | null;
-  rating: number;
-  review_count: number;
-  tmdb_last_synced_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Re-export shared types — single source of truth in shared/types.ts
+export type {
+  ReleaseType,
+  Certification,
+  Movie,
+  MovieTheatricalRun,
+  Actor,
+  CastMember,
+  ActorCredit,
+  OTTPlatform,
+  MoviePlatform,
+  WatchlistEntry,
+} from '@shared/types';
 
-export interface MovieTheatricalRun {
-  id: string;
-  movie_id: string;
-  release_date: string;
-  label: string | null;
-  created_at: string;
-}
-
-export interface Actor {
-  id: string;
-  tmdb_person_id: number | null;
-  name: string;
-  photo_url: string | null;
-  birth_date: string | null;
-  person_type: 'actor' | 'technician';
-  gender: number | null; // 0=not set, 1=female, 2=male, 3=non-binary (TMDB encoding)
-  biography: string | null;
-  place_of_birth: string | null;
-  height_cm: number | null;
-  created_at: string;
-}
+// Admin-only types (not used by mobile)
 
 export interface MovieCast {
   id: string;
@@ -53,24 +22,8 @@ export interface MovieCast {
   display_order: number;
   credit_type: 'cast' | 'crew';
   role_order: number | null;
-  actor?: Actor;
-  movie?: Movie;
-}
-
-export interface OTTPlatform {
-  id: string;
-  name: string;
-  logo: string;
-  color: string;
-  display_order: number;
-}
-
-export interface MoviePlatform {
-  movie_id: string;
-  platform_id: string;
-  available_from: string | null;
-  movie?: Movie;
-  platform?: OTTPlatform;
+  actor?: import('@shared/types').Actor;
+  movie?: import('@shared/types').Movie;
 }
 
 export interface SurpriseContent {
@@ -96,7 +49,7 @@ export interface Notification {
   scheduled_for: string;
   status: 'pending' | 'sent' | 'failed' | 'cancelled';
   created_at: string;
-  movie?: Movie;
+  movie?: import('@shared/types').Movie;
 }
 
 export interface AuditLogEntry {

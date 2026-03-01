@@ -29,6 +29,10 @@ const mockMovies: Movie[] = [
     original_language: null,
     backdrop_focus_x: null,
     backdrop_focus_y: null,
+    spotlight_focus_x: null,
+    spotlight_focus_y: null,
+    detail_focus_x: null,
+    detail_focus_y: null,
     tmdb_last_synced_at: null,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -53,6 +57,10 @@ const mockMovies: Movie[] = [
     original_language: null,
     backdrop_focus_x: null,
     backdrop_focus_y: null,
+    spotlight_focus_x: null,
+    spotlight_focus_y: null,
+    detail_focus_x: null,
+    detail_focus_y: null,
     tmdb_last_synced_at: null,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
@@ -220,5 +228,45 @@ describe('HeroCarousel', () => {
     const { FlatList } = require('react-native');
     const flatList = UNSAFE_getByType(FlatList);
     expect(() => flatList.props.onScrollEndDrag?.()).not.toThrow();
+  });
+
+  it('uses spotlight_focus_x/y when available', () => {
+    const moviesWithSpotlightFocus: Movie[] = [
+      {
+        ...mockMovies[0],
+        backdrop_url: 'https://example.com/backdrop.jpg',
+        backdrop_focus_x: 0.1,
+        backdrop_focus_y: 0.2,
+        spotlight_focus_x: 0.8,
+        spotlight_focus_y: 0.9,
+      },
+    ];
+    const { UNSAFE_getAllByType } = render(<HeroCarousel movies={moviesWithSpotlightFocus} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    const imageWithPosition = images.find(
+      (img: { props: { contentPosition?: unknown } }) => img.props.contentPosition,
+    );
+    expect(imageWithPosition?.props.contentPosition).toEqual({ left: '80%', top: '90%' });
+  });
+
+  it('falls back to backdrop_focus_x/y when spotlight values are null', () => {
+    const moviesWithBackdropOnly: Movie[] = [
+      {
+        ...mockMovies[0],
+        backdrop_url: 'https://example.com/backdrop.jpg',
+        backdrop_focus_x: 0.3,
+        backdrop_focus_y: 0.7,
+        spotlight_focus_x: null,
+        spotlight_focus_y: null,
+      },
+    ];
+    const { UNSAFE_getAllByType } = render(<HeroCarousel movies={moviesWithBackdropOnly} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    const imageWithPosition = images.find(
+      (img: { props: { contentPosition?: unknown } }) => img.props.contentPosition,
+    );
+    expect(imageWithPosition?.props.contentPosition).toEqual({ left: '30%', top: '70%' });
   });
 });

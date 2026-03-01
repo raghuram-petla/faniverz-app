@@ -87,10 +87,11 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
           style={styles.backdrop}
           contentFit="cover"
           contentPosition={
-            item.backdrop_focus_x != null && item.backdrop_focus_y != null
+            (item.spotlight_focus_x ?? item.backdrop_focus_x) != null &&
+            (item.spotlight_focus_y ?? item.backdrop_focus_y) != null
               ? {
-                  left: `${Math.round(item.backdrop_focus_x * 100)}%`,
-                  top: `${Math.round(item.backdrop_focus_y * 100)}%`,
+                  left: `${Math.round(((item.spotlight_focus_x ?? item.backdrop_focus_x) as number) * 100)}%`,
+                  top: `${Math.round(((item.spotlight_focus_y ?? item.backdrop_focus_y) as number) * 100)}%`,
                 }
               : undefined
           }

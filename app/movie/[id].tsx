@@ -109,10 +109,11 @@ export default function MovieDetailScreen() {
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             contentPosition={
-              movie.backdrop_focus_x != null && movie.backdrop_focus_y != null
+              (movie.detail_focus_x ?? movie.backdrop_focus_x) != null &&
+              (movie.detail_focus_y ?? movie.backdrop_focus_y) != null
                 ? {
-                    left: `${Math.round(movie.backdrop_focus_x * 100)}%`,
-                    top: `${Math.round(movie.backdrop_focus_y * 100)}%`,
+                    left: `${Math.round(((movie.detail_focus_x ?? movie.backdrop_focus_x) as number) * 100)}%`,
+                    top: `${Math.round(((movie.detail_focus_y ?? movie.backdrop_focus_y) as number) * 100)}%`,
                   }
                 : undefined
             }

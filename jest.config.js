@@ -6,6 +6,7 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@shared/(.*)$': '<rootDir>/shared/$1',
   },
   modulePathIgnorePatterns: ['<rootDir>/figma-design/', '<rootDir>/admin/'],
   collectCoverageFrom: [
