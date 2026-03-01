@@ -118,37 +118,6 @@ export default function MovieDetailScreen() {
             style={StyleSheet.absoluteFill}
           />
 
-          {/* Header buttons */}
-          <View style={[styles.heroHeader, { top: insets.top + 8 }]}>
-            <TouchableOpacity
-              style={styles.heroButton}
-              onPress={() => router.back()}
-              accessibilityLabel="Go back"
-            >
-              <Ionicons name="arrow-back" size={22} color={colors.white} />
-            </TouchableOpacity>
-            <View style={styles.heroHeaderRight}>
-              <TouchableOpacity
-                style={styles.heroButton}
-                onPress={handleShare}
-                accessibilityLabel="Share"
-              >
-                <Ionicons name="share-outline" size={22} color={colors.white} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.heroButton, isWatchlisted && styles.heroButtonActive]}
-                onPress={handleToggleWatchlist}
-                accessibilityLabel={isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
-              >
-                <Ionicons
-                  name={isWatchlisted ? 'bookmark' : 'bookmark-outline'}
-                  size={22}
-                  color={colors.white}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Movie info overlay */}
           <View style={styles.heroInfo}>
             <View style={styles.heroInfoRow}>
@@ -407,6 +376,37 @@ export default function MovieDetailScreen() {
         </View>
       </ScrollView>
 
+      {/* Fixed header — outside ScrollView so it never scrolls away, paddingTop pushes below status bar */}
+      <View style={[styles.heroHeader, { paddingTop: insets.top + 8 }]}>
+        <TouchableOpacity
+          style={styles.heroButton}
+          onPress={() => router.back()}
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={22} color={colors.white} />
+        </TouchableOpacity>
+        <View style={styles.heroHeaderRight}>
+          <TouchableOpacity
+            style={styles.heroButton}
+            onPress={handleShare}
+            accessibilityLabel="Share"
+          >
+            <Ionicons name="share-outline" size={22} color={colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.heroButton, isWatchlisted && styles.heroButtonActive]}
+            onPress={handleToggleWatchlist}
+            accessibilityLabel={isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
+          >
+            <Ionicons
+              name={isWatchlisted ? 'bookmark' : 'bookmark-outline'}
+              size={22}
+              color={colors.white}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Write Review Modal */}
       <Modal visible={showReviewModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -489,8 +489,10 @@ const styles = StyleSheet.create({
   hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH },
   heroHeader: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     zIndex: 50,
