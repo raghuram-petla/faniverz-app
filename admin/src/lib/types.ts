@@ -14,6 +14,8 @@ export interface Movie {
   director: string | null;
   release_type: 'theatrical' | 'ott' | 'upcoming' | 'ended';
   original_language: string | null;
+  backdrop_focus_x: number | null;
+  backdrop_focus_y: number | null;
   rating: number;
   review_count: number;
   tmdb_last_synced_at: string | null;

@@ -72,6 +72,8 @@ export default function EditMoviePage() {
     director: '',
     trailer_url: '',
     release_type: 'upcoming' as string,
+    backdrop_focus_x: null as number | null,
+    backdrop_focus_y: null as number | null,
   });
 
   useEffect(() => {
@@ -88,12 +90,21 @@ export default function EditMoviePage() {
         director: movie.director ?? '',
         trailer_url: movie.trailer_url ?? '',
         release_type: movie.release_type,
+        backdrop_focus_x: movie.backdrop_focus_x ?? null,
+        backdrop_focus_y: movie.backdrop_focus_y ?? null,
       });
     }
   }, [movie]);
 
   function updateField(field: string, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    setForm((prev) => ({ ...prev, backdrop_focus_x: x, backdrop_focus_y: y }));
   }
 
   function toggleGenre(genre: string) {
@@ -120,6 +131,8 @@ export default function EditMoviePage() {
       director: form.director || null,
       trailer_url: form.trailer_url || null,
       release_type: form.release_type as 'theatrical' | 'ott' | 'upcoming' | 'ended',
+      backdrop_focus_x: form.backdrop_focus_x,
+      backdrop_focus_y: form.backdrop_focus_y,
     });
     router.push('/movies');
   }
@@ -268,6 +281,52 @@ export default function EditMoviePage() {
             className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
           />
         </div>
+        {form.backdrop_url && (
+          <div>
+            <label className="block text-sm text-white/60 mb-1">
+              Backdrop Focal Point{' '}
+              <span className="text-white/30 font-normal">— click image to set</span>
+            </label>
+            <div
+              className="relative w-full overflow-hidden rounded-xl cursor-crosshair"
+              style={{ aspectRatio: '16/9' }}
+              onClick={handleBackdropClick}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.backdrop_url}
+                alt="Backdrop preview"
+                className="w-full h-full object-cover pointer-events-none select-none"
+              />
+              {form.backdrop_focus_x != null && form.backdrop_focus_y != null && (
+                <div
+                  className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 border-white bg-red-500/60 pointer-events-none"
+                  style={{
+                    left: `${form.backdrop_focus_x * 100}%`,
+                    top: `${form.backdrop_focus_y * 100}%`,
+                  }}
+                />
+              )}
+            </div>
+            {form.backdrop_focus_x != null && form.backdrop_focus_y != null && (
+              <div className="flex items-center gap-4 mt-1.5">
+                <span className="text-xs text-white/40">
+                  Focus: ({Math.round(form.backdrop_focus_x * 100)}%,{' '}
+                  {Math.round(form.backdrop_focus_y * 100)}%)
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((p) => ({ ...p, backdrop_focus_x: null, backdrop_focus_y: null }))
+                  }
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         <div>
           <label className="block text-sm text-white/60 mb-1">Trailer URL</label>
           <input

@@ -106,6 +106,14 @@ export default function MovieDetailScreen() {
             source={{ uri: movie.backdrop_url ?? movie.poster_url ?? undefined }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
+            contentPosition={
+              movie.backdrop_focus_x != null && movie.backdrop_focus_y != null
+                ? {
+                    left: `${Math.round(movie.backdrop_focus_x * 100)}%`,
+                    top: `${Math.round(movie.backdrop_focus_y * 100)}%`,
+                  }
+                : undefined
+            }
           />
           <LinearGradient
             colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,1)']}
