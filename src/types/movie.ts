@@ -42,6 +42,7 @@ export interface Actor {
   birth_date: string | null;
   person_type: 'actor' | 'technician';
   tier_rank: number | null;
+  gender: number | null; // 0=not set, 1=female, 2=male, 3=non-binary (TMDB encoding)
   created_at: string;
 }
 

@@ -220,6 +220,7 @@ async function processMovie(tmdbId: number, releaseDate: string): Promise<void> 
             name: castMember.name,
             photo_url: photoUrl,
             person_type: 'actor',
+            gender: castMember.gender ?? null,
             // birth_date intentionally omitted — filled by separate backfill pass
             // tier_rank intentionally omitted — always manual
           },
@@ -263,6 +264,7 @@ async function processMovie(tmdbId: number, releaseDate: string): Promise<void> 
             name: crewMember.name,
             photo_url: photoUrl,
             person_type: 'technician',
+            gender: crewMember.gender ?? null,
           },
           { onConflict: 'tmdb_person_id', ignoreDuplicates: false },
         )

@@ -303,11 +303,27 @@ export default function MovieDetailScreen() {
                   <Text style={styles.castSectionLabel}>Cast</Text>
                   {movie.cast.map((cm) => (
                     <View key={cm.id} style={styles.castItem}>
-                      <Image
-                        source={{ uri: cm.actor?.photo_url ?? undefined }}
-                        style={styles.castPhoto}
-                        contentFit="cover"
-                      />
+                      {cm.actor?.photo_url ? (
+                        <Image
+                          source={{ uri: cm.actor.photo_url }}
+                          style={styles.castPhoto}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.castPhoto, styles.castPhotoPlaceholder]}>
+                          <Ionicons
+                            name={
+                              cm.actor?.gender === 1
+                                ? 'woman-outline'
+                                : cm.actor?.gender === 2
+                                  ? 'man-outline'
+                                  : 'person-outline'
+                            }
+                            size={32}
+                            color={colors.white40}
+                          />
+                        </View>
+                      )}
                       <View style={styles.castInfo}>
                         <Text style={styles.castName}>{cm.actor?.name}</Text>
                         {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
@@ -624,6 +640,11 @@ const styles = StyleSheet.create({
   },
   castItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   castPhoto: { width: 64, height: 64, borderRadius: 32 },
+  castPhotoPlaceholder: {
+    backgroundColor: colors.zinc900,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   castInfo: { flex: 1, gap: 2 },
   castName: { fontSize: 16, fontWeight: '600', color: colors.white },
   castRole: { fontSize: 14, color: colors.white60 },

@@ -26,6 +26,7 @@ export interface TmdbCastMember {
   character: string;
   order: number;
   profile_path: string | null;
+  gender: number; // 0=not set, 1=female, 2=male, 3=non-binary
 }
 
 export interface TmdbCrewMember {
@@ -34,6 +35,7 @@ export interface TmdbCrewMember {
   job: string;
   department: string;
   profile_path: string | null;
+  gender: number; // 0=not set, 1=female, 2=male, 3=non-binary
 }
 
 export interface TmdbVideo {
