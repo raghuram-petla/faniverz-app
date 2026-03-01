@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { resetPassword, isLoading, error } = useEmailAuth();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
@@ -33,7 +35,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { paddingTop: insets.top + 12 }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Header */}
@@ -125,7 +127,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.black,
     paddingHorizontal: 16,
-    paddingTop: 56,
   },
 
   // Body

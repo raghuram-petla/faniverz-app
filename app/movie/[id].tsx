@@ -96,10 +96,7 @@ export default function MovieDetailScreen() {
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top }}
-      >
+      <ScrollView showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.hero}>
           <Image
@@ -122,7 +119,7 @@ export default function MovieDetailScreen() {
           />
 
           {/* Header buttons */}
-          <View style={[styles.heroHeader, { top: 8 }]}>
+          <View style={[styles.heroHeader, { top: insets.top + 8 }]}>
             <TouchableOpacity
               style={styles.heroButton}
               onPress={() => router.back()}
