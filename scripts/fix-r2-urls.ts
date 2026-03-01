@@ -84,7 +84,10 @@ async function fixMovies() {
   const { data: movies, error } = await supabase
     .from('movies')
     .select('id, poster_url, backdrop_url')
-    .or('poster_url.like.%cloudflarestorage.com%,backdrop_url.like.%cloudflarestorage.com%');
+    .or(
+      'poster_url.like.%cloudflarestorage.com%,backdrop_url.like.%cloudflarestorage.com%,' +
+        'poster_url.like.%r2.dev%,backdrop_url.like.%r2.dev%',
+    );
 
   if (error) throw error;
   console.log(`\nMovies to fix: ${movies?.length ?? 0}`);
@@ -137,7 +140,7 @@ async function fixActors() {
   const { data: actors, error } = await supabase
     .from('actors')
     .select('id, photo_url')
-    .like('photo_url', '%cloudflarestorage.com%');
+    .or('photo_url.like.%cloudflarestorage.com%,photo_url.like.%r2.dev%');
 
   if (error) throw error;
   console.log(`\nActors to fix: ${actors?.length ?? 0}`);
