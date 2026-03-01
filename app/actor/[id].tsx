@@ -11,9 +11,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ScreenHeader from '@/components/common/ScreenHeader';
 import { ActorAvatar } from '@/components/common/ActorAvatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useActorDetail } from '@/features/actors/hooks';
@@ -30,14 +29,24 @@ export default function ActorDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
+  const navIndex = navigation.getState()?.index ?? 0;
   const { actor, filmography, isLoading } = useActorDetail(id ?? '');
   const [showPhoto, setShowPhoto] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
 
   if (isLoading) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top + 12 }]}>
-        <ScreenHeader title="" />
+      <View style={[styles.screen, { paddingTop: insets.top + 12, paddingHorizontal: 16 }]}>
+        <View style={styles.navRow}>
+          <TouchableOpacity
+            style={styles.navButton}
+            onPress={() => router.back()}
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.white} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.red600} testID="loading-indicator" />
         </View>
@@ -57,24 +66,46 @@ export default function ActorDetailScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
     >
-      <ScreenHeader title={actor.name} />
-
-      {/* Avatar — tappable when photo exists */}
-      <View style={styles.avatarContainer}>
-        {actor.photo_url ? (
+      {/* Navigation buttons — absolute left, avatar centered */}
+      <View style={styles.headerSection}>
+        <View style={styles.navRow}>
           <TouchableOpacity
-            onPress={() => setShowPhoto(true)}
-            activeOpacity={0.8}
-            testID="avatar-tap"
+            style={styles.navButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+            accessibilityLabel="Go back"
           >
-            <ActorAvatar actor={actor} size={120} />
+            <Ionicons name="chevron-back" size={24} color={colors.white} />
           </TouchableOpacity>
-        ) : (
-          <ActorAvatar actor={actor} size={120} />
-        )}
+          {navIndex >= 2 && (
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={() => router.dismissAll()}
+              activeOpacity={0.7}
+              accessibilityLabel="Go to home"
+              testID="home-button"
+            >
+              <Ionicons name="home-outline" size={22} color={colors.white} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <View style={styles.avatarCenter}>
+          {actor.photo_url ? (
+            <TouchableOpacity
+              onPress={() => setShowPhoto(true)}
+              activeOpacity={0.8}
+              testID="avatar-tap"
+            >
+              <ActorAvatar actor={actor} size={120} />
+            </TouchableOpacity>
+          ) : (
+            <ActorAvatar actor={actor} size={120} />
+          )}
+        </View>
       </View>
 
-      {/* Type badge */}
+      <Text style={styles.actorName}>{actor.name}</Text>
       <View style={styles.badgeRow}>
         <View style={styles.typeBadge}>
           <Text style={styles.typeBadgeText}>{personTypeLabel}</Text>
@@ -224,7 +255,38 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingBottom: 48 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  avatarContainer: { alignItems: 'center', marginBottom: 12 },
+  headerSection: {
+    marginBottom: 16,
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    zIndex: 1,
+  },
+  navButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.white10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarCenter: {
+    alignItems: 'center',
+    paddingTop: 4,
+  },
+
+  actorName: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.white,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
   badgeRow: {
     flexDirection: 'row',
     justifyContent: 'center',
