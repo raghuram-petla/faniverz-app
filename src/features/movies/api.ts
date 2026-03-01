@@ -9,7 +9,8 @@ export interface MovieFilters {
 }
 
 export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
-  let query = supabase.from('movies').select('*');
+  // Exclude 'ended' movies from all home-screen listings; they remain accessible via search/detail
+  let query = supabase.from('movies').select('*').neq('release_type', 'ended');
 
   if (filters?.releaseType) {
     query = query.eq('release_type', filters.releaseType);
@@ -137,7 +138,7 @@ export async function fetchMoviesPaginated(
   pageSize: number = 10,
   filters?: MovieFilters,
 ): Promise<Movie[]> {
-  let query = supabase.from('movies').select('*');
+  let query = supabase.from('movies').select('*').neq('release_type', 'ended');
 
   if (filters?.releaseType) {
     query = query.eq('release_type', filters.releaseType);
@@ -214,6 +215,7 @@ export async function fetchMoviesByPlatform(platformId: string): Promise<Movie[]
   const { data, error } = await supabase
     .from('movies')
     .select('*')
+    .neq('release_type', 'ended')
     .in(
       'id',
       movieIds.map((m) => m.movie_id),

@@ -3,6 +3,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
 import { useMovieCast, useAdminActors, useAddCast, useRemoveCast } from '@/hooks/useAdminCast';
+import {
+  useMovieTheatricalRuns,
+  useAddTheatricalRun,
+  useRemoveTheatricalRun,
+} from '@/hooks/useAdminTheatricalRuns';
 import { ArrowLeft, Loader2, Trash2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -50,7 +55,11 @@ export default function EditMoviePage() {
   const { data: actors = [] } = useAdminActors();
   const addCast = useAddCast();
   const removeCast = useRemoveCast();
+  const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);
+  const addTheatricalRun = useAddTheatricalRun();
+  const removeTheatricalRun = useRemoveTheatricalRun();
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
+  const [runForm, setRunForm] = useState({ release_date: '', label: '' });
   const [form, setForm] = useState({
     title: '',
     poster_url: '',
@@ -110,7 +119,7 @@ export default function EditMoviePage() {
       synopsis: form.synopsis || null,
       director: form.director || null,
       trailer_url: form.trailer_url || null,
-      release_type: form.release_type as 'theatrical' | 'ott' | 'upcoming',
+      release_type: form.release_type as 'theatrical' | 'ott' | 'upcoming' | 'ended',
     });
     router.push('/movies');
   }
@@ -120,6 +129,17 @@ export default function EditMoviePage() {
       await deleteMovie.mutateAsync(id);
       router.push('/movies');
     }
+  }
+
+  async function handleAddTheatricalRun(e: React.FormEvent) {
+    e.preventDefault();
+    if (!runForm.release_date) return;
+    await addTheatricalRun.mutateAsync({
+      movie_id: id,
+      release_date: runForm.release_date,
+      label: runForm.label || null,
+    });
+    setRunForm({ release_date: '', label: '' });
   }
 
   async function handleAddCast(e: React.FormEvent) {
@@ -193,6 +213,7 @@ export default function EditMoviePage() {
               <option value="upcoming">Upcoming</option>
               <option value="theatrical">Theatrical</option>
               <option value="ott">OTT</option>
+              <option value="ended">Ended (No Longer in Theaters)</option>
             </select>
           </div>
         </div>
@@ -412,6 +433,81 @@ export default function EditMoviePage() {
               <Plus className="w-4 h-4" />
             )}
             Add Entry
+          </button>
+        </form>
+      </div>
+
+      {/* Theatrical Runs */}
+      <div className="space-y-4 mt-8">
+        <h2 className="text-lg font-bold text-white">Theatrical Runs</h2>
+        <p className="text-sm text-white/40">
+          Track original release and any re-releases. Use this to record when a movie returns to
+          theaters.
+        </p>
+
+        {theatricalRuns.length > 0 && (
+          <div className="space-y-2">
+            {theatricalRuns.map((run) => (
+              <div key={run.id} className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3">
+                <span className="text-white font-medium flex-1">{run.release_date}</span>
+                {run.label ? (
+                  <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">
+                    {run.label}
+                  </span>
+                ) : (
+                  <span className="text-xs bg-white/10 text-white/40 px-2 py-0.5 rounded">
+                    Original
+                  </span>
+                )}
+                <button
+                  onClick={() => removeTheatricalRun.mutate({ id: run.id, movieId: id })}
+                  className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                  aria-label={`Remove run ${run.release_date}`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={handleAddTheatricalRun} className="bg-white/5 rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-white/60">Add Theatrical Run</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-white/40 mb-1">Release Date *</label>
+              <input
+                type="date"
+                required
+                value={runForm.release_date}
+                onChange={(e) => setRunForm((p) => ({ ...p, release_date: e.target.value }))}
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-white/40 mb-1">
+                Label <span className="text-white/20 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Re-release, Director's Cut"
+                value={runForm.label}
+                onChange={(e) => setRunForm((p) => ({ ...p, label: e.target.value }))}
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={addTheatricalRun.isPending || !runForm.release_date}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+          >
+            {addTheatricalRun.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
+            Add Run
           </button>
         </form>
       </div>

@@ -9,5 +9,6 @@ export interface OTTPlatform {
 export interface MoviePlatform {
   movie_id: string;
   platform_id: string;
+  available_from: string | null;
   platform?: OTTPlatform;
 }

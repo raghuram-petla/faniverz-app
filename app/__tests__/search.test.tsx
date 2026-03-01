@@ -30,6 +30,7 @@ const mockResults: Movie[] = [
     synopsis: null,
     director: 'Sukumar',
     trailer_url: null,
+    original_language: null,
     tmdb_last_synced_at: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',

@@ -16,12 +16,17 @@ export default function NewOttReleasePage() {
 
   const [movieId, setMovieId] = useState('');
   const [platformId, setPlatformId] = useState('');
+  const [availableFrom, setAvailableFrom] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!movieId || !platformId) return;
     createRelease.mutate(
-      { movie_id: movieId, platform_id: platformId },
+      {
+        movie_id: movieId,
+        platform_id: platformId,
+        available_from: availableFrom || null,
+      },
       { onSuccess: () => router.push('/ott') },
     );
   };
@@ -89,6 +94,22 @@ export default function NewOttReleasePage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="available_from" className="block text-sm font-medium text-white/60">
+              Available From{' '}
+              <span className="text-white/40 font-normal">
+                (optional — leave blank if live now)
+              </span>
+            </label>
+            <input
+              id="available_from"
+              type="date"
+              value={availableFrom}
+              onChange={(e) => setAvailableFrom(e.target.value)}
+              className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            />
           </div>
 
           {createRelease.isError && (

@@ -46,6 +46,9 @@ export default function OttReleasesPage() {
               <tr className="border-b border-white/10">
                 <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Movie</th>
                 <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Platform</th>
+                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">
+                  Available From
+                </th>
                 <th className="text-right text-sm font-medium text-white/60 px-6 py-4">Actions</th>
               </tr>
             </thead>
@@ -75,6 +78,13 @@ export default function OttReleasesPage() {
                       </div>
                     ) : (
                       <span className="text-white/40">{release.platform_id}</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    {release.available_from ? (
+                      <span className="text-blue-400 text-sm">{release.available_from}</span>
+                    ) : (
+                      <span className="text-green-400 text-sm">Live now</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">

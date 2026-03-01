@@ -182,6 +182,7 @@ async function processMovie(tmdbId: number, releaseDate: string): Promise<void> 
           trailer_url: trailerUrl,
           director,
           release_type: releaseType,
+          original_language: 'te',
           tmdb_last_synced_at: new Date().toISOString(),
           // certification and is_featured intentionally omitted (manual fields)
         },

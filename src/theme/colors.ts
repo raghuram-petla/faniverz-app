@@ -48,6 +48,7 @@ export const colors = {
     theatrical: '#DC2626', // red-600
     ott: '#9333EA', // purple-600
     upcoming: '#2563EB', // blue-600
+    ended: '#6B7280', // gray-500
   },
 
   // OTT Platform colors

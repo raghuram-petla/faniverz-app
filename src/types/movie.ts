@@ -1,6 +1,6 @@
 import { OTTPlatform, MoviePlatform } from './ott';
 
-export type ReleaseType = 'theatrical' | 'ott' | 'upcoming';
+export type ReleaseType = 'theatrical' | 'ott' | 'upcoming' | 'ended';
 export type Certification = 'U' | 'UA' | 'A';
 
 export interface Movie {
@@ -17,12 +17,21 @@ export interface Movie {
   synopsis: string | null;
   director: string | null;
   release_type: ReleaseType;
+  original_language: string | null;
   rating: number;
   review_count: number;
   is_featured: boolean;
   tmdb_last_synced_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MovieTheatricalRun {
+  id: string;
+  movie_id: string;
+  release_date: string;
+  label: string | null;
+  created_at: string;
 }
 
 export interface Actor {

@@ -12,12 +12,21 @@ export interface Movie {
   trailer_url: string | null;
   synopsis: string | null;
   director: string | null;
-  release_type: 'theatrical' | 'ott' | 'upcoming';
+  release_type: 'theatrical' | 'ott' | 'upcoming' | 'ended';
+  original_language: string | null;
   rating: number;
   review_count: number;
   tmdb_last_synced_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MovieTheatricalRun {
+  id: string;
+  movie_id: string;
+  release_date: string;
+  label: string | null;
+  created_at: string;
 }
 
 export interface Actor {
@@ -54,6 +63,7 @@ export interface OTTPlatform {
 export interface MoviePlatform {
   movie_id: string;
   platform_id: string;
+  available_from: string | null;
   movie?: Movie;
   platform?: OTTPlatform;
 }

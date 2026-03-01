@@ -20,7 +20,11 @@ export function useAdminOttReleases() {
 export function useCreateOttRelease() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (release: { movie_id: string; platform_id: string }) => {
+    mutationFn: async (release: {
+      movie_id: string;
+      platform_id: string;
+      available_from?: string | null;
+    }) => {
       const { data, error } = await supabase
         .from('movie_platforms')
         .insert(release)
