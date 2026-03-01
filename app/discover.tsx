@@ -172,6 +172,7 @@ export default function DiscoverScreen() {
 
   return (
     <View style={styles.screen}>
+      <View style={[styles.safeAreaCover, { height: insets.top }]} />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.screenTitle}>Discover</Text>
@@ -404,6 +405,14 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.black },
+  safeAreaCover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: colors.black,
+  },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     paddingHorizontal: 16,

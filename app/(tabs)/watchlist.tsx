@@ -379,6 +379,7 @@ export default function WatchlistScreen() {
   if (!user) {
     return (
       <View style={styles.screen}>
+        <View style={[styles.safeAreaCover, { height: insets.top }]} />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
@@ -404,6 +405,7 @@ export default function WatchlistScreen() {
   if (isLoading) {
     return (
       <View style={styles.screen}>
+        <View style={[styles.safeAreaCover, { height: insets.top }]} />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
@@ -423,6 +425,7 @@ export default function WatchlistScreen() {
   if (!hasContent) {
     return (
       <View style={styles.screen}>
+        <View style={[styles.safeAreaCover, { height: insets.top }]} />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
@@ -447,6 +450,7 @@ export default function WatchlistScreen() {
 
   return (
     <View style={styles.screen}>
+      <View style={[styles.safeAreaCover, { height: insets.top }]} />
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
         <View>
@@ -479,6 +483,14 @@ export default function WatchlistScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: colors.black,
+  },
+  safeAreaCover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
     backgroundColor: colors.black,
   },
 

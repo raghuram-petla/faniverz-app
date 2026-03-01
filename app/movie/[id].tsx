@@ -33,8 +33,6 @@ const HERO_HEIGHT = 500;
 
 type TabName = 'overview' | 'cast' | 'reviews';
 
-const TIER_LABELS: Record<number, string> = { 1: 'Lead', 2: 'Lead', 3: 'Villain' };
-
 export default function MovieDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -96,7 +94,12 @@ export default function MovieDetailScreen() {
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      {/* Fixed black cover over status bar — prevents scroll content entering safe area zone */}
+      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: insets.top }}
+      >
         {/* Hero */}
         <View style={styles.hero}>
           <Image
@@ -282,13 +285,6 @@ export default function MovieDetailScreen() {
                       <View style={styles.castInfo}>
                         <Text style={styles.castName}>{cm.actor?.name}</Text>
                         {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
-                        {cm.actor?.tier_rank != null && cm.actor.tier_rank <= 3 && (
-                          <View style={styles.tierChip}>
-                            <Text style={styles.tierChipText}>
-                              {TIER_LABELS[cm.actor.tier_rank]}
-                            </Text>
-                          </View>
-                        )}
                       </View>
                     </View>
                   ))}
@@ -300,9 +296,12 @@ export default function MovieDetailScreen() {
                 <>
                   <Text style={styles.castSectionLabel}>Crew</Text>
                   {movie.crew.map((cm) => (
-                    <View key={cm.id} style={styles.crewItem}>
-                      <Text style={styles.crewRole}>{cm.role_name}</Text>
-                      <Text style={styles.crewName}>{cm.actor?.name}</Text>
+                    <View key={cm.id} style={styles.castItem}>
+                      <ActorAvatar actor={cm.actor} size={64} />
+                      <View style={styles.castInfo}>
+                        <Text style={styles.castName}>{cm.actor?.name}</Text>
+                        {cm.role_name && <Text style={styles.castRole}>{cm.role_name}</Text>}
+                      </View>
                     </View>
                   ))}
                 </>
@@ -487,6 +486,14 @@ export default function MovieDetailScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.black },
   hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH },
+  safeAreaCover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    backgroundColor: colors.black,
+  },
   heroHeader: {
     position: 'absolute',
     top: 0,
@@ -627,29 +634,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   castItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  castPhoto: { width: 64, height: 64, borderRadius: 32 },
   castInfo: { flex: 1, gap: 2 },
   castName: { fontSize: 16, fontWeight: '600', color: colors.white },
   castRole: { fontSize: 14, color: colors.white60 },
-  tierChip: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.red600 + '33',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginTop: 2,
-  },
-  tierChipText: { fontSize: 10, color: colors.red400, fontWeight: '700' },
-  crewItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.white5,
-    gap: 12,
-  },
-  crewRole: { fontSize: 13, color: colors.white60, width: 140 },
-  crewName: { fontSize: 15, color: colors.white, fontWeight: '600', flex: 1 },
   emptyText: { color: colors.white40, fontSize: 14, textAlign: 'center', paddingVertical: 24 },
 
   reviewsTab: { gap: 16 },

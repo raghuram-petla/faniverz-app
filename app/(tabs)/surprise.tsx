@@ -268,6 +268,7 @@ export default function SurpriseScreen() {
 
   return (
     <View style={styles.screen}>
+      <View style={[styles.safeAreaCover, { height: insets.top }]} />
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerIconBadge}>
@@ -345,6 +346,14 @@ export default function SurpriseScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: colors.black,
+  },
+  safeAreaCover: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
     backgroundColor: colors.black,
   },
 
