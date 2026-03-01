@@ -72,6 +72,8 @@ export interface TmdbPerson {
   name: string;
   birthday: string | null; // "YYYY-MM-DD"
   profile_path: string | null;
+  biography: string | null;
+  place_of_birth: string | null;
 }
 
 // ── Crew role mapping ─────────────────────────────────────────────────────────

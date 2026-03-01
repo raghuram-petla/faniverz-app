@@ -5,6 +5,7 @@ const mockInsert = jest.fn();
 const mockDelete = jest.fn();
 const mockIlike = jest.fn();
 const mockLimit = jest.fn();
+const mockSingle = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -17,7 +18,14 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import { fetchFavoriteActors, addFavoriteActor, removeFavoriteActor, searchActors } from '../api';
+import {
+  fetchFavoriteActors,
+  addFavoriteActor,
+  removeFavoriteActor,
+  searchActors,
+  fetchActorById,
+  fetchActorFilmography,
+} from '../api';
 
 describe('actors api', () => {
   beforeEach(() => {
@@ -142,6 +150,79 @@ describe('actors api', () => {
       mockLimit.mockResolvedValue({ data: null, error: new Error('DB error') });
 
       await expect(searchActors('test')).rejects.toThrow('DB error');
+    });
+  });
+
+  describe('fetchActorById', () => {
+    it('fetches a single actor by id', async () => {
+      const actor = { id: 'a1', name: 'Nagarjuna' };
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ single: mockSingle });
+      mockSingle.mockResolvedValue({ data: actor, error: null });
+
+      const result = await fetchActorById('a1');
+      expect(supabase.from).toHaveBeenCalledWith('actors');
+      expect(mockSelect).toHaveBeenCalledWith('*');
+      expect(mockEq).toHaveBeenCalledWith('id', 'a1');
+      expect(result).toEqual(actor);
+    });
+
+    it('throws on error', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ single: mockSingle });
+      mockSingle.mockResolvedValue({ data: null, error: new Error('Not found') });
+
+      await expect(fetchActorById('bad-id')).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('fetchActorFilmography', () => {
+    it('fetches credits with movie join for an actor', async () => {
+      const credits = [
+        {
+          id: 'c1',
+          actor_id: 'a1',
+          movie_id: 'm1',
+          credit_type: 'cast',
+          role_name: 'Hero',
+          display_order: 0,
+          movie: { id: 'm1', title: 'Movie A', release_date: '2024-01-01', rating: 4.2 },
+        },
+        {
+          id: 'c2',
+          actor_id: 'a1',
+          movie_id: 'm2',
+          credit_type: 'cast',
+          role_name: 'Villain',
+          display_order: 1,
+          movie: { id: 'm2', title: 'Movie B', release_date: '2025-06-15', rating: 3.8 },
+        },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockResolvedValue({ data: credits, error: null });
+
+      const result = await fetchActorFilmography('a1');
+      expect(supabase.from).toHaveBeenCalledWith('movie_cast');
+      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(*)');
+      expect(mockEq).toHaveBeenCalledWith('actor_id', 'a1');
+      // Should be sorted by release_date descending (newest first)
+      expect(result[0].movie?.title).toBe('Movie B');
+      expect(result[1].movie?.title).toBe('Movie A');
+    });
+
+    it('returns empty array when no credits', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchActorFilmography('a1');
+      expect(result).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockResolvedValue({ data: null, error: new Error('DB error') });
+
+      await expect(fetchActorFilmography('a1')).rejects.toThrow('DB error');
     });
   });
 });

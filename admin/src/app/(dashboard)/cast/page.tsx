@@ -3,20 +3,12 @@ import { useState } from 'react';
 import { useAdminActors, useCreateActor, useDeleteActor } from '@/hooks/useAdminCast';
 import { Plus, Trash2, Search, Loader2, Users } from 'lucide-react';
 
-const TIER_RANK_OPTIONS = [
-  { value: 1, label: '1 — A-list superstar' },
-  { value: 2, label: '2 — Top star' },
-  { value: 3, label: '3 — Popular star' },
-  { value: 4, label: '4 — Character / supporting' },
-  { value: 5, label: '5 — Newcomer' },
-];
-
 const EMPTY_FORM = {
   name: '',
   photo_url: '',
   birth_date: '',
   person_type: 'actor' as 'actor' | 'technician',
-  tier_rank: '' as '' | number,
+  height_cm: '',
 };
 
 export default function CastPage() {
@@ -38,8 +30,7 @@ export default function CastPage() {
       photo_url: form.photo_url || null,
       birth_date: form.birth_date || null,
       person_type: form.person_type,
-      tier_rank:
-        form.person_type === 'actor' && form.tier_rank !== '' ? Number(form.tier_rank) : null,
+      height_cm: form.height_cm ? Number(form.height_cm) : null,
     });
     setForm(EMPTY_FORM);
     setShowAdd(false);
@@ -84,7 +75,6 @@ export default function CastPage() {
                   setForm((p) => ({
                     ...p,
                     person_type: e.target.value as 'actor' | 'technician',
-                    tier_rank: '',
                   }))
                 }
                 className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
@@ -103,28 +93,18 @@ export default function CastPage() {
               />
             </div>
           </div>
-          {form.person_type === 'actor' && (
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-white/40 mb-1">Industry Tier</label>
-              <select
-                value={form.tier_rank}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    tier_rank: e.target.value ? Number(e.target.value) : '',
-                  }))
-                }
+              <label className="block text-xs text-white/40 mb-1">Height (cm)</label>
+              <input
+                type="number"
+                placeholder="e.g. 178"
+                value={form.height_cm}
+                onChange={(e) => setForm((p) => ({ ...p, height_cm: e.target.value }))}
                 className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-              >
-                <option value="">Select tier…</option>
-                {TIER_RANK_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
-          )}
+          </div>
           <div className="flex gap-2">
             <button
               onClick={handleAdd}
@@ -179,11 +159,6 @@ export default function CastPage() {
                 <p className="font-semibold text-white truncate">{actor.name}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-white/40 capitalize">{actor.person_type}</span>
-                  {actor.tier_rank != null && (
-                    <span className="text-xs bg-red-600/20 text-red-400 px-1.5 py-0.5 rounded">
-                      Tier {actor.tier_rank}
-                    </span>
-                  )}
                 </div>
               </div>
               <button

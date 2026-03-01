@@ -5,6 +5,7 @@ jest.mock('react-native-safe-area-context', () => ({
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
+  useNavigation: () => ({ getState: () => ({ index: 0 }) }),
 }));
 
 const mockSignOut = jest.fn();

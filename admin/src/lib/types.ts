@@ -38,8 +38,10 @@ export interface Actor {
   photo_url: string | null;
   birth_date: string | null;
   person_type: 'actor' | 'technician';
-  tier_rank: number | null;
   gender: number | null; // 0=not set, 1=female, 2=male, 3=non-binary (TMDB encoding)
+  biography: string | null;
+  place_of_birth: string | null;
+  height_cm: number | null;
   created_at: string;
 }
 

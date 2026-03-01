@@ -13,8 +13,10 @@ const base: Actor = {
   photo_url: null,
   birth_date: null,
   person_type: 'actor',
-  tier_rank: null,
   gender: null,
+  biography: null,
+  place_of_birth: null,
+  height_cm: null,
   created_at: '',
 };
 

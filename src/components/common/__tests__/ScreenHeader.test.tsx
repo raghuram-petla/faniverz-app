@@ -4,13 +4,21 @@ import { render, fireEvent } from '@testing-library/react-native';
 import ScreenHeader from '../ScreenHeader';
 
 const mockBack = jest.fn();
+const mockDismissAll = jest.fn();
+
+// Mutable state returned by useNavigation().getState()
+const mockState = { index: 1 };
+
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: mockBack }),
+  useRouter: () => ({ back: mockBack, dismissAll: mockDismissAll }),
+  useNavigation: () => ({ getState: () => mockState }),
 }));
 
 describe('ScreenHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: 1 screen pushed (index 1 = tabs at 0, movie at 1)
+    mockState.index = 1;
   });
 
   it('renders title text', () => {
@@ -38,8 +46,6 @@ describe('ScreenHeader', () => {
   });
 
   it('custom backIcon renders correctly', () => {
-    // With the global Ionicons mock (View), we cannot directly verify the icon name,
-    // but we can verify it renders without crashing with a different backIcon prop
     const { getByLabelText } = render(<ScreenHeader title="Test" backIcon="arrow-back" />);
     expect(getByLabelText('Go back')).toBeTruthy();
   });
@@ -59,8 +65,25 @@ describe('ScreenHeader', () => {
 
   it('placeholder shown when no rightAction', () => {
     const { toJSON } = render(<ScreenHeader title="Test" />);
-    // The placeholder View should be rendered (it has width: 40 style)
-    // We verify the component renders without error and the tree is non-null
     expect(toJSON()).toBeTruthy();
+  });
+
+  it('does not show home button when stack index < 2', () => {
+    mockState.index = 1;
+    const { queryByTestId } = render(<ScreenHeader title="Test" />);
+    expect(queryByTestId('home-button')).toBeNull();
+  });
+
+  it('shows home button when stack index >= 2', () => {
+    mockState.index = 2;
+    const { getByTestId } = render(<ScreenHeader title="Test" />);
+    expect(getByTestId('home-button')).toBeTruthy();
+  });
+
+  it('home button calls router.dismissAll()', () => {
+    mockState.index = 3;
+    const { getByTestId } = render(<ScreenHeader title="Test" />);
+    fireEvent.press(getByTestId('home-button'));
+    expect(mockDismissAll).toHaveBeenCalledTimes(1);
   });
 });

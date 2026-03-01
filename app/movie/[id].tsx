@@ -15,7 +15,7 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
@@ -29,7 +29,7 @@ import { getReleaseTypeLabel } from '@/constants/releaseType';
 import { formatDate } from '@/utils/formatDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HERO_HEIGHT = 500;
+const HERO_HEIGHT = 600;
 
 type TabName = 'overview' | 'cast' | 'reviews';
 
@@ -37,6 +37,8 @@ export default function MovieDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
+  const navIndex = navigation.getState()?.index ?? 0;
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
@@ -280,13 +282,18 @@ export default function MovieDetailScreen() {
                 <>
                   <Text style={styles.castSectionLabel}>Cast</Text>
                   {movie.cast.map((cm) => (
-                    <View key={cm.id} style={styles.castItem}>
+                    <TouchableOpacity
+                      key={cm.id}
+                      style={styles.castItem}
+                      onPress={() => cm.actor?.id && router.push(`/actor/${cm.actor.id}`)}
+                      activeOpacity={0.7}
+                    >
                       <ActorAvatar actor={cm.actor} size={64} />
                       <View style={styles.castInfo}>
                         <Text style={styles.castName}>{cm.actor?.name}</Text>
                         {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </>
               )}
@@ -296,13 +303,18 @@ export default function MovieDetailScreen() {
                 <>
                   <Text style={styles.castSectionLabel}>Crew</Text>
                   {movie.crew.map((cm) => (
-                    <View key={cm.id} style={styles.castItem}>
+                    <TouchableOpacity
+                      key={cm.id}
+                      style={styles.castItem}
+                      onPress={() => cm.actor?.id && router.push(`/actor/${cm.actor.id}`)}
+                      activeOpacity={0.7}
+                    >
                       <ActorAvatar actor={cm.actor} size={64} />
                       <View style={styles.castInfo}>
                         <Text style={styles.castName}>{cm.actor?.name}</Text>
                         {cm.role_name && <Text style={styles.castRole}>{cm.role_name}</Text>}
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </>
               )}
@@ -377,13 +389,25 @@ export default function MovieDetailScreen() {
 
       {/* Fixed header — outside ScrollView so it never scrolls away, paddingTop pushes below status bar */}
       <View style={[styles.heroHeader, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          style={styles.heroButton}
-          onPress={() => router.back()}
-          accessibilityLabel="Go back"
-        >
-          <Ionicons name="arrow-back" size={22} color={colors.white} />
-        </TouchableOpacity>
+        <View style={styles.heroHeaderLeft}>
+          <TouchableOpacity
+            style={styles.heroButton}
+            onPress={() => router.back()}
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="arrow-back" size={22} color={colors.white} />
+          </TouchableOpacity>
+          {navIndex >= 2 && (
+            <TouchableOpacity
+              style={styles.heroButton}
+              onPress={() => router.dismissAll()}
+              accessibilityLabel="Go to home"
+              testID="home-button"
+            >
+              <Ionicons name="home-outline" size={22} color={colors.white} />
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.heroHeaderRight}>
           <TouchableOpacity
             style={styles.heroButton}
@@ -504,6 +528,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     zIndex: 50,
   },
+  heroHeaderLeft: { flexDirection: 'row', gap: 8 },
   heroHeaderRight: { flexDirection: 'row', gap: 8 },
   heroButton: {
     width: 40,

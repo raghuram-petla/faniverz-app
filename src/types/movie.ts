@@ -43,8 +43,10 @@ export interface Actor {
   photo_url: string | null;
   birth_date: string | null;
   person_type: 'actor' | 'technician';
-  tier_rank: number | null;
   gender: number | null; // 0=not set, 1=female, 2=male, 3=non-binary (TMDB encoding)
+  biography: string | null;
+  place_of_birth: string | null;
+  height_cm: number | null;
   created_at: string;
 }
 
@@ -57,6 +59,17 @@ export interface CastMember {
   credit_type: 'cast' | 'crew';
   role_order: number | null;
   actor?: Actor;
+}
+
+export interface ActorCredit {
+  id: string;
+  movie_id: string;
+  actor_id: string;
+  role_name: string | null;
+  display_order: number;
+  credit_type: 'cast' | 'crew';
+  role_order: number | null;
+  movie?: Movie;
 }
 
 export interface MovieWithDetails extends Movie {

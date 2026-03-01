@@ -7,6 +7,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react-nativ
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
+  useNavigation: () => ({ getState: () => ({ index: 0 }) }),
 }));
 
 // Mock expo-localization used inside @/i18n

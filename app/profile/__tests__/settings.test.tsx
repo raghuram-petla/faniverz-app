@@ -9,6 +9,7 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
+  useNavigation: () => ({ getState: () => ({ index: 0 }) }),
 }));
 
 import SettingsScreen from '../settings';

@@ -6,8 +6,9 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const mockBack = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: mockBack }),
+  useRouter: () => ({ push: jest.fn(), back: mockBack, dismissAll: jest.fn() }),
   useLocalSearchParams: () => ({ id: 'movie-1' }),
+  useNavigation: () => ({ getState: () => ({ index: 0 }) }),
 }));
 
 jest.mock('@/features/movies/hooks/useMovieDetail', () => ({
@@ -112,7 +113,6 @@ const mockMovie = {
         photo_url: null,
         birth_date: '1982-04-08',
         person_type: 'actor',
-        tier_rank: 1,
         gender: 2,
         tmdb_person_id: null,
         created_at: '',
@@ -232,30 +232,6 @@ describe('MovieDetailScreen', () => {
     fireEvent.press(screen.getByText('Cast'));
     expect(screen.getByText('Sukumar')).toBeTruthy();
     expect(screen.getByText('Director')).toBeTruthy();
-  });
-
-  it('shows tier chip for tier 1-3 actors', () => {
-    render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Cast'));
-    expect(screen.getByText('Lead')).toBeTruthy();
-  });
-
-  it('does not show tier chip for tier 4+ actors', () => {
-    const movieWithSupportingActor = {
-      ...mockMovie,
-      cast: [
-        {
-          ...mockMovie.cast[0],
-          id: 'c2',
-          actor: { ...mockMovie.cast[0].actor, name: 'Supporting Actor', tier_rank: 5 },
-        },
-      ],
-    };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithSupportingActor });
-    render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Cast'));
-    expect(screen.queryByText('Lead')).toBeNull();
-    expect(screen.queryByText('Villain')).toBeNull();
   });
 
   it('shows empty state when both cast and crew are empty', () => {

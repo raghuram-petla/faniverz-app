@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchFavoriteActors, addFavoriteActor, removeFavoriteActor, searchActors } from './api';
+import {
+  fetchFavoriteActors,
+  addFavoriteActor,
+  removeFavoriteActor,
+  searchActors,
+  fetchActorById,
+  fetchActorFilmography,
+} from './api';
 
 export function useFavoriteActors(userId: string) {
   return useQuery({
@@ -17,6 +24,28 @@ export function useSearchActors(query: string) {
     enabled: query.length >= 2,
     staleTime: 5 * 60 * 1000,
   });
+}
+
+export function useActorDetail(id: string) {
+  const actorQuery = useQuery({
+    queryKey: ['actor', id],
+    queryFn: () => fetchActorById(id),
+    staleTime: 10 * 60 * 1000,
+    enabled: !!id,
+  });
+
+  const filmographyQuery = useQuery({
+    queryKey: ['actor', id, 'filmography'],
+    queryFn: () => fetchActorFilmography(id),
+    staleTime: 10 * 60 * 1000,
+    enabled: !!id,
+  });
+
+  return {
+    actor: actorQuery.data ?? null,
+    filmography: filmographyQuery.data ?? [],
+    isLoading: actorQuery.isLoading || filmographyQuery.isLoading,
+  };
 }
 
 export function useFavoriteActorMutations() {

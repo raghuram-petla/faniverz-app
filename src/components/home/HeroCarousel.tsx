@@ -86,6 +86,14 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
           source={{ uri: item.backdrop_url ?? item.poster_url ?? undefined }}
           style={styles.backdrop}
           contentFit="cover"
+          contentPosition={
+            item.backdrop_focus_x != null && item.backdrop_focus_y != null
+              ? {
+                  left: `${Math.round(item.backdrop_focus_x * 100)}%`,
+                  top: `${Math.round(item.backdrop_focus_y * 100)}%`,
+                }
+              : undefined
+          }
         />
 
         <LinearGradient

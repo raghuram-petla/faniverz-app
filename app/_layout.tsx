@@ -35,6 +35,7 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="movie/[id]" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="actor/[id]" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="discover" options={{ animation: 'slide_from_right' }} />
             <Stack.Screen name="search" options={{ animation: 'fade' }} />
             <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />

@@ -9,6 +9,7 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 // Must be hoisted before component import
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
+  useNavigation: () => ({ getState: () => ({ index: 0 }) }),
 }));
 
 jest.mock('@/features/auth/providers/AuthProvider', () => ({

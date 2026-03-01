@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Actor, FavoriteActor } from '@/types';
+import { Actor, ActorCredit, FavoriteActor } from '@/types';
 
 export async function fetchFavoriteActors(userId: string): Promise<FavoriteActor[]> {
   const { data, error } = await supabase
@@ -39,4 +39,27 @@ export async function searchActors(query: string): Promise<Actor[]> {
 
   if (error) throw error;
   return data ?? [];
+}
+
+export async function fetchActorById(id: string): Promise<Actor | null> {
+  const { data, error } = await supabase.from('actors').select('*').eq('id', id).single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchActorFilmography(actorId: string): Promise<ActorCredit[]> {
+  const { data, error } = await supabase
+    .from('movie_cast')
+    .select('*, movie:movies(*)')
+    .eq('actor_id', actorId);
+
+  if (error) throw error;
+
+  // Sort by movie release_date descending (newest first)
+  return (data ?? []).sort((a, b) => {
+    const dateA = (a as ActorCredit).movie?.release_date ?? '';
+    const dateB = (b as ActorCredit).movie?.release_date ?? '';
+    return dateB.localeCompare(dateA);
+  }) as ActorCredit[];
 }
