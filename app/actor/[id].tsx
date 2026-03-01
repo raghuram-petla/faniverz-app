@@ -57,7 +57,10 @@ export default function ActorDetailScreen() {
   if (!actor) return null;
 
   const genderLabel = actor.gender ? GENDER_LABELS[actor.gender] : null;
-  const personTypeLabel = actor.person_type === 'technician' ? 'Technician' : 'Actor';
+  const personTypeLabel =
+    actor.person_type === 'technician'
+      ? (filmography.find((c) => c.credit_type === 'crew')?.role_name ?? 'Technician')
+      : 'Actor';
   const hasBioInfo = actor.birth_date || actor.place_of_birth || actor.height_cm;
 
   return (
@@ -379,7 +382,7 @@ const styles = StyleSheet.create({
   // Photo modal
   photoOverlay: {
     flex: 1,
-    backgroundColor: colors.black95,
+    backgroundColor: colors.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
