@@ -1,9 +1,9 @@
 'use client';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { LogOut, User } from 'lucide-react';
 
 export function Header() {
-  const { user, signOut } = useAdminAuth();
+  const { user, signOut } = useAuth();
 
   return (
     <header className="h-16 bg-zinc-900 border-b border-white/10 flex items-center justify-between px-6">

@@ -1,9 +1,27 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 import type { UserProfile } from '@/lib/types';
 
-export function useAdminAuth() {
+interface AuthContextValue {
+  user: UserProfile | null;
+  isLoading: boolean;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue>({
+  user: null,
+  isLoading: true,
+  signInWithGoogle: async () => {},
+  signOut: async () => {},
+});
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,15 +61,22 @@ export function useAdminAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const signInWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/` },
+    });
     if (error) throw error;
-  }
+  }, []);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
-  }
+  }, []);
 
-  return { user, isLoading, signIn, signOut };
+  return (
+    <AuthContext.Provider value={{ user, isLoading, signInWithGoogle, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }

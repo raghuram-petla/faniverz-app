@@ -49,24 +49,34 @@ export default function EditActorPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await updateActor.mutateAsync({
-      id,
-      name: form.name,
-      photo_url: form.photo_url || null,
-      person_type: form.person_type,
-      birth_date: form.birth_date || null,
-      gender: Number(form.gender),
-      biography: form.biography || null,
-      place_of_birth: form.place_of_birth || null,
-      height_cm: form.height_cm ? Number(form.height_cm) : null,
-    });
-    router.push('/cast');
+    try {
+      await updateActor.mutateAsync({
+        id,
+        name: form.name,
+        photo_url: form.photo_url || null,
+        person_type: form.person_type,
+        birth_date: form.birth_date || null,
+        gender: Number(form.gender),
+        biography: form.biography || null,
+        place_of_birth: form.place_of_birth || null,
+        height_cm: form.height_cm ? Number(form.height_cm) : null,
+      });
+      router.push('/cast');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      alert(`Save failed: ${msg}`);
+    }
   }
 
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
-      await deleteActor.mutateAsync(id);
-      router.push('/cast');
+      try {
+        await deleteActor.mutateAsync(id);
+        router.push('/cast');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : JSON.stringify(err);
+        alert(`Delete failed: ${msg}`);
+      }
     }
   }
 

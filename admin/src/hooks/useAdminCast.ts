@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { logAudit } from '@/lib/audit-client';
 import type { Actor, MovieCast } from '@/lib/types';
 
 export function useAdminActors() {
@@ -58,7 +59,10 @@ export function useCreateActor() {
       if (error) throw error;
       return data as Actor;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'actors'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      logAudit('create', 'actor', data.id, { name: data.name });
+    },
   });
 }
 
@@ -75,7 +79,11 @@ export function useUpdateActor() {
       if (error) throw error;
       return data as Actor;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'actors'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actor', data.id] });
+      logAudit('update', 'actor', data.id, { name: data.name });
+    },
   });
 }
 
@@ -85,8 +93,13 @@ export function useDeleteActor() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('actors').delete().eq('id', id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'actors'] }),
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actor', id] });
+      logAudit('delete', 'actor', id);
+    },
   });
 }
 
@@ -98,8 +111,13 @@ export function useAddCast() {
       if (error) throw error;
       return data as MovieCast;
     },
-    onSuccess: (_data, variables) =>
-      qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] }),
+    onSuccess: (data, variables) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] });
+      logAudit('create', 'movie_cast', data.id, {
+        movie_id: data.movie_id,
+        actor_id: data.actor_id,
+      });
+    },
   });
 }
 
@@ -111,7 +129,9 @@ export function useRemoveCast() {
       if (error) throw error;
       return movieId;
     },
-    onSuccess: (_data, variables) =>
-      qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movieId] }),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movieId] });
+      logAudit('delete', 'movie_cast', variables.id, { movie_id: variables.movieId });
+    },
   });
 }

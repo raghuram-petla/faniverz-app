@@ -150,7 +150,7 @@ export function SpotlightPreview({
         {/* Meta */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>{year}</span>
-          {runtime && (
+          {runtime != null && (
             <>
               <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>•</span>
               <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>{runtime}m</span>

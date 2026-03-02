@@ -164,35 +164,52 @@ export default function EditMoviePage() {
 
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
-      await deleteMovie.mutateAsync(id);
-      router.push('/movies');
+      try {
+        await deleteMovie.mutateAsync(id);
+        router.push('/movies');
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : JSON.stringify(err);
+        alert(`Delete failed: ${msg}`);
+      }
     }
   }
 
   async function handleAddTheatricalRun(e: React.FormEvent) {
     e.preventDefault();
     if (!runForm.release_date) return;
-    await addTheatricalRun.mutateAsync({
-      movie_id: id,
-      release_date: runForm.release_date,
-      label: runForm.label || null,
-    });
-    setRunForm({ release_date: '', label: '' });
+    try {
+      await addTheatricalRun.mutateAsync({
+        movie_id: id,
+        release_date: runForm.release_date,
+        label: runForm.label || null,
+      });
+      setRunForm({ release_date: '', label: '' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      alert(`Failed to add theatrical run: ${msg}`);
+    }
   }
 
   async function handleAddCast(e: React.FormEvent) {
     e.preventDefault();
     if (!castForm.actor_id) return;
-    await addCast.mutateAsync({
-      movie_id: id,
-      actor_id: castForm.actor_id,
-      credit_type: castForm.credit_type,
-      role_name: castForm.role_name || null,
-      role_order:
-        castForm.credit_type === 'crew' && castForm.role_order ? Number(castForm.role_order) : null,
-      display_order: castData.length,
-    });
-    setCastForm(EMPTY_CAST_FORM);
+    try {
+      await addCast.mutateAsync({
+        movie_id: id,
+        actor_id: castForm.actor_id,
+        credit_type: castForm.credit_type,
+        role_name: castForm.role_name || null,
+        role_order:
+          castForm.credit_type === 'crew' && castForm.role_order
+            ? Number(castForm.role_order)
+            : null,
+        display_order: castData.length,
+      });
+      setCastForm(EMPTY_CAST_FORM);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      alert(`Failed to add cast: ${msg}`);
+    }
   }
 
   if (isLoading)

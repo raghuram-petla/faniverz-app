@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { logAudit } from '@/lib/audit-client';
 import type { Movie } from '@/lib/types';
 
 export function useAdminMovies() {
@@ -37,7 +38,10 @@ export function useCreateMovie() {
       if (error) throw error;
       return data as Movie;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'movies'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      logAudit('create', 'movie', data.id, { title: data.title });
+    },
   });
 }
 
@@ -54,7 +58,11 @@ export function useUpdateMovie() {
       if (error) throw error;
       return data as Movie;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'movies'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie', data.id] });
+      logAudit('update', 'movie', data.id, { title: data.title });
+    },
   });
 }
 
@@ -64,7 +72,12 @@ export function useDeleteMovie() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('movies').delete().eq('id', id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'movies'] }),
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie', id] });
+      logAudit('delete', 'movie', id);
+    },
   });
 }

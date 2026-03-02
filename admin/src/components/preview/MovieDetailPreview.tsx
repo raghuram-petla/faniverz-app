@@ -256,7 +256,7 @@ export function MovieDetailPreview({
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{year}</span>
-              {runtime && (
+              {runtime != null && (
                 <>
                   <span style={{ color: 'rgba(255,255,255,0.6)' }}>|</span>
                   <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{runtime}m</span>

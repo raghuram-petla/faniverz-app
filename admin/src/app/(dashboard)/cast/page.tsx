@@ -26,15 +26,20 @@ export default function CastPage() {
 
   async function handleAdd() {
     if (!form.name.trim()) return;
-    await createActor.mutateAsync({
-      name: form.name,
-      photo_url: form.photo_url || null,
-      birth_date: form.birth_date || null,
-      person_type: form.person_type,
-      height_cm: form.height_cm ? Number(form.height_cm) : null,
-    });
-    setForm(EMPTY_FORM);
-    setShowAdd(false);
+    try {
+      await createActor.mutateAsync({
+        name: form.name,
+        photo_url: form.photo_url || null,
+        birth_date: form.birth_date || null,
+        person_type: form.person_type,
+        height_cm: form.height_cm ? Number(form.height_cm) : null,
+      });
+      setForm(EMPTY_FORM);
+      setShowAdd(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      alert(`Failed to add actor: ${msg}`);
+    }
   }
 
   return (

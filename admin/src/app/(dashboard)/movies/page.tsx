@@ -49,6 +49,7 @@ export default function MoviesPage() {
           <option value="theatrical">Theatrical</option>
           <option value="ott">OTT</option>
           <option value="upcoming">Upcoming</option>
+          <option value="ended">Ended</option>
         </select>
       </div>
 
@@ -100,7 +101,9 @@ export default function MoviesPage() {
                           ? 'bg-red-600/20 text-red-400'
                           : movie.release_type === 'ott'
                             ? 'bg-purple-600/20 text-purple-400'
-                            : 'bg-blue-600/20 text-blue-400'
+                            : movie.release_type === 'ended'
+                              ? 'bg-gray-600/20 text-gray-400'
+                              : 'bg-blue-600/20 text-blue-400'
                       }`}
                     >
                       {movie.release_type}

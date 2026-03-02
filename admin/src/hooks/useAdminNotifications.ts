@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { logAudit } from '@/lib/audit-client';
 import type { Notification } from '@/lib/types';
 
 export function useAdminNotifications(filters?: { status?: string; type?: string }) {
@@ -33,7 +34,10 @@ export function useCreateNotification() {
       if (error) throw error;
       return data as Notification;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+      logAudit('create', 'notification', data.id, { title: data.title });
+    },
   });
 }
 
@@ -46,8 +50,12 @@ export function useCancelNotification() {
         .update({ status: 'cancelled' })
         .eq('id', id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+      logAudit('update', 'notification', id, { status: 'cancelled' });
+    },
   });
 }
 
@@ -60,8 +68,12 @@ export function useRetryNotification() {
         .update({ status: 'pending' })
         .eq('id', id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+      logAudit('update', 'notification', id, { status: 'pending', action: 'retry' });
+    },
   });
 }
 
@@ -75,7 +87,10 @@ export function useBulkRetryFailed() {
         .eq('status', 'failed');
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+      logAudit('update', 'notification', 'bulk', { action: 'bulk_retry_failed' });
+    },
   });
 }
 
@@ -89,6 +104,9 @@ export function useBulkCancelPending() {
         .eq('status', 'pending');
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'notifications'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+      logAudit('update', 'notification', 'bulk', { action: 'bulk_cancel_pending' });
+    },
   });
 }

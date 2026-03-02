@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Exo_2 } from 'next/font/google';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 import './globals.css';
 
 const exo2 = Exo_2({
@@ -17,7 +18,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`dark ${exo2.variable}`}>
-      <body className="bg-zinc-950 text-white antialiased">{children}</body>
+      <body className="bg-zinc-950 text-white antialiased">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

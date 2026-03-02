@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { logAudit } from '@/lib/audit-client';
 import type { SurpriseContent } from '@/lib/types';
 
 export function useAdminSurprise() {
@@ -45,7 +46,10 @@ export function useCreateSurprise() {
       if (error) throw error;
       return data as SurpriseContent;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'surprise'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'surprise'] });
+      logAudit('create', 'surprise', data.id, { title: data.title });
+    },
   });
 }
 
@@ -62,7 +66,10 @@ export function useUpdateSurprise() {
       if (error) throw error;
       return data as SurpriseContent;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'surprise'] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'surprise'] });
+      logAudit('update', 'surprise', data.id, { title: data.title });
+    },
   });
 }
 
@@ -72,7 +79,11 @@ export function useDeleteSurprise() {
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('surprise_content').delete().eq('id', id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'surprise'] }),
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'surprise'] });
+      logAudit('delete', 'surprise', id);
+    },
   });
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useAdminAuditLog } from '@/hooks/useAdminAudit';
 import { formatDateTime } from '@/lib/utils';
 import { Shield, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
@@ -103,9 +103,8 @@ export default function AuditLogPage() {
                 const action = actionStyles[entry.action] ?? actionStyles.update;
                 const isExpanded = expandedRows.has(entry.id);
                 return (
-                  <>
+                  <Fragment key={entry.id}>
                     <tr
-                      key={entry.id}
                       className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
                       onClick={() => toggleRow(entry.id)}
                     >
@@ -152,7 +151,7 @@ export default function AuditLogPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>

@@ -52,20 +52,25 @@ export default function NewMoviePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await createMovie.mutateAsync({
-      title: form.title,
-      poster_url: form.poster_url || null,
-      backdrop_url: form.backdrop_url || null,
-      release_date: form.release_date,
-      runtime: form.runtime ? Number(form.runtime) : null,
-      genres: form.genres,
-      certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
-      synopsis: form.synopsis || null,
-      director: form.director || null,
-      trailer_url: form.trailer_url || null,
-      release_type: form.release_type,
-    });
-    router.push('/movies');
+    try {
+      await createMovie.mutateAsync({
+        title: form.title,
+        poster_url: form.poster_url || null,
+        backdrop_url: form.backdrop_url || null,
+        release_date: form.release_date,
+        runtime: form.runtime ? Number(form.runtime) : null,
+        genres: form.genres,
+        certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
+        synopsis: form.synopsis || null,
+        director: form.director || null,
+        trailer_url: form.trailer_url || null,
+        release_type: form.release_type,
+      });
+      router.push('/movies');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      alert(`Failed to create movie: ${msg}`);
+    }
   }
 
   return (
@@ -110,6 +115,7 @@ export default function NewMoviePage() {
               <option value="upcoming">Upcoming</option>
               <option value="theatrical">Theatrical</option>
               <option value="ott">OTT</option>
+              <option value="ended">Ended</option>
             </select>
           </div>
         </div>
