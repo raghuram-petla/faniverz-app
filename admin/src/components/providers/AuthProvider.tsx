@@ -27,18 +27,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function getSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        if (data?.is_admin) setUser(data);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          if (data?.is_admin) setUser(data);
+        }
+      } catch (err) {
+        console.error('Auth session check failed:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
     getSession();
 
@@ -46,13 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        if (data?.is_admin) setUser(data);
-        else setUser(null);
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          if (data?.is_admin) setUser(data);
+          else setUser(null);
+        } catch {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
