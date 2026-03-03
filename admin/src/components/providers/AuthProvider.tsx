@@ -26,50 +26,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let initialised = false;
-    const timeout = setTimeout(() => {
-      if (!initialised) {
-        console.warn('Auth session check timed out');
-        setIsLoading(false);
-      }
-    }, 5000);
-
-    async function handleSession(
-      session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'],
-    ) {
-      if (session) {
-        try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          if (data?.is_admin) setUser(data);
-          else setUser(null);
-        } catch {
-          setUser(null);
-        }
-      } else {
+    async function fetchProfile(userId: string) {
+      try {
+        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        if (data?.is_admin) setUser(data);
+        else setUser(null);
+      } catch {
         setUser(null);
       }
     }
 
+    // 1. Initial load — getSession reads from local storage
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (session) {
+          fetchProfile(session.user.id).finally(() => setIsLoading(false));
+        } else {
+          setIsLoading(false);
+        }
+      })
+      .catch(() => {
+        setIsLoading(false);
+      });
+
+    // 2. Subsequent changes — sign in, sign out, token refresh
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      await handleSession(session);
-      // INITIAL_SESSION fires once on load — use it to stop the spinner
-      if (!initialised) {
-        initialised = true;
-        clearTimeout(timeout);
-        setIsLoading(false);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'INITIAL_SESSION') return; // already handled above
+      if (session) {
+        await fetchProfile(session.user.id);
+      } else {
+        setUser(null);
       }
     });
 
-    return () => {
-      clearTimeout(timeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
