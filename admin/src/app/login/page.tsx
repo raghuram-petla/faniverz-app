@@ -22,8 +22,8 @@ export default function LoginPage() {
           <Image
             src="/logo-full.png"
             alt="Faniverz"
-            width={200}
-            height={72}
+            width={340}
+            height={122}
             className="object-contain"
           />
           <p className="text-xs text-white/40 tracking-widest uppercase mt-1">Admin</p>
