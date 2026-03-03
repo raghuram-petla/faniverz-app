@@ -99,8 +99,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    // Clear UI and stored session immediately (don't wait for Supabase client
+    // which may be blocked by the Web Lock during initialization)
     setUser(null);
+    try {
+      const ref = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0];
+      localStorage.removeItem(`sb-${ref}-auth-token`);
+    } catch {
+      // ignore
+    }
+    // Also tell the Supabase client to clean up (fire-and-forget)
+    supabase.auth.signOut().catch(() => {});
   }, []);
 
   return (
