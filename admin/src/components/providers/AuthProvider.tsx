@@ -26,30 +26,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function getSession() {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          if (data?.is_admin) setUser(data);
-        }
-      } catch (err) {
-        console.error('Auth session check failed:', err);
-      } finally {
+    let initialised = false;
+    const timeout = setTimeout(() => {
+      if (!initialised) {
+        console.warn('Auth session check timed out');
         setIsLoading(false);
       }
-    }
-    getSession();
+    }, 5000);
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    async function handleSession(
+      session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'],
+    ) {
       if (session) {
         try {
           const { data } = await supabase
@@ -65,9 +52,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
       }
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      await handleSession(session);
+      // INITIAL_SESSION fires once on load — use it to stop the spinner
+      if (!initialised) {
+        initialised = true;
+        clearTimeout(timeout);
+        setIsLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
