@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateMovie } from '@/hooks/useAdminMovies';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 
 const genres = [
@@ -23,6 +23,10 @@ const genres = [
 export default function NewMoviePage() {
   const router = useRouter();
   const createMovie = useCreateMovie();
+  const [uploadingPoster, setUploadingPoster] = useState(false);
+  const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
+  const posterInputRef = useRef<HTMLInputElement>(null);
+  const backdropInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     title: '',
     poster_url: '',
@@ -48,6 +52,31 @@ export default function NewMoviePage() {
         ? prev.genres.filter((g) => g !== genre)
         : [...prev.genres, genre],
     }));
+  }
+
+  async function handleImageUpload(
+    file: File,
+    endpoint: string,
+    field: 'poster_url' | 'backdrop_url',
+    setUploading: (v: boolean) => void,
+  ) {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File too large. Maximum size is 5 MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch(endpoint, { method: 'POST', body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
+      setForm((prev) => ({ ...prev, [field]: data.url }));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -156,23 +185,141 @@ export default function NewMoviePage() {
         </div>
 
         <div>
-          <label className="block text-sm text-white/60 mb-1">Poster URL</label>
+          <label className="block text-sm text-white/60 mb-1">Poster</label>
           <input
-            type="url"
-            value={form.poster_url}
-            onChange={(e) => updateField('poster_url', e.target.value)}
-            className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+            ref={posterInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file)
+                handleImageUpload(
+                  file,
+                  '/api/upload/movie-poster',
+                  'poster_url',
+                  setUploadingPoster,
+                );
+              e.target.value = '';
+            }}
           />
+          {form.poster_url ? (
+            <div className="flex items-center gap-4">
+              <img
+                src={form.poster_url}
+                alt="Poster preview"
+                className="w-20 h-28 rounded-lg object-cover border border-white/10"
+              />
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  disabled={uploadingPoster}
+                  onClick={() => posterInputRef.current?.click()}
+                  className="flex items-center gap-2 text-sm text-white/60 hover:text-white px-3 py-1.5 bg-white/10 rounded-lg disabled:opacity-50"
+                >
+                  {uploadingPoster ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5" />
+                  )}
+                  Change
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField('poster_url', '')}
+                  className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-white/5 rounded-lg"
+                >
+                  <X className="w-3.5 h-3.5" /> Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploadingPoster}
+              onClick={() => posterInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 bg-white/10 rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-50"
+            >
+              {uploadingPoster ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {uploadingPoster ? 'Uploading...' : 'Upload Poster'}
+            </button>
+          )}
+          {form.poster_url && (
+            <p className="mt-2 text-xs text-white/20 truncate">{form.poster_url}</p>
+          )}
         </div>
 
         <div>
-          <label className="block text-sm text-white/60 mb-1">Backdrop URL</label>
+          <label className="block text-sm text-white/60 mb-1">Backdrop</label>
           <input
-            type="url"
-            value={form.backdrop_url}
-            onChange={(e) => updateField('backdrop_url', e.target.value)}
-            className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+            ref={backdropInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file)
+                handleImageUpload(
+                  file,
+                  '/api/upload/movie-backdrop',
+                  'backdrop_url',
+                  setUploadingBackdrop,
+                );
+              e.target.value = '';
+            }}
           />
+          {form.backdrop_url ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-4">
+                <img
+                  src={form.backdrop_url}
+                  alt="Backdrop preview"
+                  className="w-40 h-[90px] rounded-lg object-cover border border-white/10"
+                />
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={uploadingBackdrop}
+                    onClick={() => backdropInputRef.current?.click()}
+                    className="flex items-center gap-2 text-sm text-white/60 hover:text-white px-3 py-1.5 bg-white/10 rounded-lg disabled:opacity-50"
+                  >
+                    {uploadingBackdrop ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="w-3.5 h-3.5" />
+                    )}
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateField('backdrop_url', '')}
+                    className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-white/5 rounded-lg"
+                  >
+                    <X className="w-3.5 h-3.5" /> Remove
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-white/20 truncate">{form.backdrop_url}</p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploadingBackdrop}
+              onClick={() => backdropInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 bg-white/10 rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-50"
+            >
+              {uploadingBackdrop ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {uploadingBackdrop ? 'Uploading...' : 'Upload Backdrop'}
+            </button>
+          )}
         </div>
 
         <div>
