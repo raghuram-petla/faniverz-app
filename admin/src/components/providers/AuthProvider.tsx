@@ -28,46 +28,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let initialLoadDone = false;
 
-    const timeout = setTimeout(() => {
+    function finish() {
       if (!initialLoadDone) {
-        console.error('[Auth] Timed out — forcing load complete');
         initialLoadDone = true;
         setIsLoading(false);
       }
-    }, 5000);
-
-    async function fetchProfile(userId: string) {
-      try {
-        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-        if (data?.is_admin) setUser(data);
-        else setUser(null);
-      } catch {
-        setUser(null);
-      }
     }
 
-    // Use onAuthStateChange as the single source of truth.
-    // It fires SIGNED_IN (or INITIAL_SESSION) on load if a session exists.
+    // Restore session directly from localStorage + REST API.
+    // The Supabase client's _initialize() can deadlock on token refresh,
+    // blocking getSession(), onAuthStateChange, and all data queries.
+    async function restoreSession() {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const ref = new URL(supabaseUrl).hostname.split('.')[0];
+        const stored = localStorage.getItem(`sb-${ref}-auth-token`);
+        if (!stored) return;
+
+        const { user: storedUser, access_token } = JSON.parse(stored);
+        if (!storedUser?.id || !access_token) return;
+
+        const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${storedUser.id}&select=*`, {
+          headers: { apikey: anonKey, Authorization: `Bearer ${access_token}` },
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          if (rows[0]?.is_admin) setUser(rows[0]);
+        }
+      } catch {
+        // Session expired or invalid — user will see login page
+      } finally {
+        finish();
+      }
+    }
+    restoreSession();
+
+    // Handle subsequent auth changes (sign in, sign out, token refresh).
+    // These fire after the Supabase client eventually finishes initializing.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        await fetchProfile(session.user.id);
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          if (data?.is_admin) setUser(data);
+          else setUser(null);
+        } catch {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
-      // Stop the spinner after the first event (initial load)
-      if (!initialLoadDone) {
-        initialLoadDone = true;
-        clearTimeout(timeout);
-        setIsLoading(false);
-      }
+      finish();
     });
 
-    return () => {
-      clearTimeout(timeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
