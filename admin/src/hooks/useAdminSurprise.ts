@@ -11,7 +11,8 @@ export function useAdminSurprise() {
       const { data, error } = await supabase
         .from('surprise_content')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5000);
       if (error) throw error;
       return data as SurpriseContent[];
     },

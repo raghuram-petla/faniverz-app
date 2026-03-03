@@ -11,7 +11,8 @@ export function useAdminMovies() {
       const { data, error } = await supabase
         .from('movies')
         .select('*')
-        .order('release_date', { ascending: false });
+        .order('release_date', { ascending: false })
+        .limit(5000);
       if (error) throw error;
       return data as Movie[];
     },

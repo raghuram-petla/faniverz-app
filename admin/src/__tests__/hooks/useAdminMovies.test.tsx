@@ -30,7 +30,9 @@ describe('useAdminMovies', () => {
   it('uses the correct query key ["admin", "movies"]', async () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
       }),
     });
 
@@ -60,7 +62,9 @@ describe('useAdminMovies', () => {
 
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: mockMovies, error: null }),
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: mockMovies, error: null }),
+        }),
       }),
     });
 
@@ -87,7 +91,9 @@ describe('useCreateMovie', () => {
     mockFrom.mockReturnValue({
       insert: mockInsert,
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
       }),
     });
 
@@ -117,7 +123,9 @@ describe('useDeleteMovie', () => {
     mockFrom.mockReturnValue({
       delete: mockDelete,
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
       }),
     });
 

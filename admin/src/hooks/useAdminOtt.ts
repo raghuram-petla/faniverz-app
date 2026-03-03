@@ -11,7 +11,8 @@ export function useAdminOttReleases() {
       const { data, error } = await supabase
         .from('movie_platforms')
         .select('*, movie:movies(id, title, poster_url), platform:platforms(*)')
-        .order('movie_id');
+        .order('movie_id')
+        .limit(5000);
       if (error) throw error;
       return data as MoviePlatform[];
     },

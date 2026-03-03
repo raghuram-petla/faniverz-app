@@ -8,7 +8,7 @@ export function useAdminActors() {
   return useQuery({
     queryKey: ['admin', 'actors'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('actors').select('*').order('name');
+      const { data, error } = await supabase.from('actors').select('*').order('name').limit(5000);
       if (error) throw error;
       return data as Actor[];
     },
