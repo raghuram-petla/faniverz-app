@@ -31,12 +31,12 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-zinc-900 border-r border-white/10 min-h-screen p-4">
-      <div className="px-2 mb-8">
+      <div className="flex justify-center mb-8">
         <Image
           src="/logo-full.png"
           alt="Faniverz"
-          width={160}
-          height={58}
+          width={220}
+          height={79}
           className="object-contain"
         />
       </div>
