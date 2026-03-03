@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminActors, useCreateActor, useDeleteActor } from '@/hooks/useAdminCast';
 import { Plus, Trash2, Search, Loader2, Users, Pencil } from 'lucide-react';
 import Link from 'next/link';
@@ -13,16 +13,18 @@ const EMPTY_FORM = {
 };
 
 export default function CastPage() {
-  const { data: actors = [], isLoading } = useAdminActors();
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { data: actors = [], isLoading, isFetching } = useAdminActors(debouncedSearch);
   const createActor = useCreateActor();
   const deleteActor = useDeleteActor();
-  const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const filtered = actors.filter(
-    (a) => !search || a.name.toLowerCase().includes(search.toLowerCase()),
-  );
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
   async function handleAdd() {
     if (!form.name.trim()) return;
@@ -132,15 +134,29 @@ export default function CastPage() {
         </div>
       )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-        <input
-          type="text"
-          placeholder="Search actors..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-red-600"
-        />
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <input
+            type="text"
+            placeholder="Search actors..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-red-600"
+          />
+          {isFetching && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 animate-spin" />
+          )}
+        </div>
+        {search.length === 1 && (
+          <p className="text-xs text-white/40">Type at least 2 characters to search</p>
+        )}
+        {!isLoading && actors.length > 0 && (
+          <p className="text-xs text-white/40">
+            Showing {actors.length} actor{actors.length !== 1 ? 's' : ''}
+            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
+          </p>
+        )}
       </div>
 
       {isLoading ? (
@@ -149,7 +165,7 @@ export default function CastPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((actor) => (
+          {actors.map((actor) => (
             <div
               key={actor.id}
               className="bg-zinc-900 border border-white/10 rounded-xl p-4 flex items-center gap-4"
@@ -185,7 +201,7 @@ export default function CastPage() {
               </button>
             </div>
           ))}
-          {filtered.length === 0 && (
+          {actors.length === 0 && (
             <p className="text-white/40 col-span-full text-center py-10">No actors found</p>
           )}
         </div>

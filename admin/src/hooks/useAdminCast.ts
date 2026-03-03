@@ -4,14 +4,19 @@ import { supabase } from '@/lib/supabase-browser';
 import { logAudit } from '@/lib/audit-client';
 import type { Actor, MovieCast } from '@/lib/types';
 
-export function useAdminActors() {
+export function useAdminActors(search = '') {
   return useQuery({
-    queryKey: ['admin', 'actors'],
+    queryKey: ['admin', 'actors', search],
     queryFn: async () => {
-      const { data, error } = await supabase.from('actors').select('*').order('name').limit(5000);
+      let query = supabase.from('actors').select('*').order('name').limit(50);
+      if (search) {
+        query = query.ilike('name', `%${search}%`);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as Actor[];
     },
+    enabled: search.length >= 2 || search === '',
   });
 }
 
