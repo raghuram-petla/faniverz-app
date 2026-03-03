@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAdminActors, useCreateActor, useDeleteActor } from '@/hooks/useAdminCast';
-import { Plus, Trash2, Search, Loader2, Users, Pencil } from 'lucide-react';
+import { Plus, Trash2, Search, Loader2, Users, Pencil, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 
 const EMPTY_FORM = {
@@ -22,6 +22,28 @@ export default function CastPage() {
   const deleteActor = useDeleteActor();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handlePhotoUpload(file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File too large. Maximum size is 5 MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/upload/actor-photo', { method: 'POST', body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
+      setForm((p) => ({ ...p, photo_url: data.url }));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -68,13 +90,50 @@ export default function CastPage() {
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
             />
-            <input
-              type="url"
-              placeholder="Photo URL (optional)"
-              value={form.photo_url}
-              onChange={(e) => setForm((p) => ({ ...p, photo_url: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePhotoUpload(file);
+                  e.target.value = '';
+                }}
+              />
+              {form.photo_url ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <img
+                    src={form.photo_url}
+                    alt=""
+                    className="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0"
+                  />
+                  <span className="text-xs text-white/40 truncate flex-1">Photo uploaded</span>
+                  <button
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, photo_url: '' }))}
+                    className="p-1 text-red-400 hover:text-red-300"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm text-white/60 hover:bg-white/15 disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {uploading ? 'Uploading...' : 'Photo (optional)'}
+                </button>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
