@@ -26,64 +26,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let done = false;
+    let initialLoadDone = false;
+
     const timeout = setTimeout(() => {
-      if (!done) {
-        console.error('[Auth] Timed out waiting for session — forcing load complete');
-        done = true;
+      if (!initialLoadDone) {
+        console.error('[Auth] Timed out — forcing load complete');
+        initialLoadDone = true;
         setIsLoading(false);
       }
     }, 5000);
 
-    function finish() {
-      if (!done) {
-        done = true;
-        clearTimeout(timeout);
-        setIsLoading(false);
-      }
-    }
-
-    async function fetchProfile(userId: string): Promise<boolean> {
+    async function fetchProfile(userId: string) {
       try {
         const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-        if (data?.is_admin) {
-          setUser(data);
-          return true;
-        }
-        setUser(null);
-        return false;
+        if (data?.is_admin) setUser(data);
+        else setUser(null);
       } catch {
         setUser(null);
-        return false;
       }
     }
 
-    // 1. Initial load — getSession reads session from local storage
-    console.warn('[Auth] Checking session...');
-    supabase.auth
-      .getSession()
-      .then(async ({ data: { session } }) => {
-        console.warn('[Auth] getSession result:', session ? 'has session' : 'no session');
-        if (session) {
-          await fetchProfile(session.user.id);
-        }
-        finish();
-      })
-      .catch((err) => {
-        console.error('[Auth] getSession failed:', err);
-        finish();
-      });
-
-    // 2. Subsequent changes — sign in, sign out, token refresh
+    // Use onAuthStateChange as the single source of truth.
+    // It fires SIGNED_IN (or INITIAL_SESSION) on load if a session exists.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.warn('[Auth] onAuthStateChange:', event);
-      if (event === 'INITIAL_SESSION') return; // already handled above
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         await fetchProfile(session.user.id);
       } else {
         setUser(null);
+      }
+      // Stop the spinner after the first event (initial load)
+      if (!initialLoadDone) {
+        initialLoadDone = true;
+        clearTimeout(timeout);
+        setIsLoading(false);
       }
     });
 
