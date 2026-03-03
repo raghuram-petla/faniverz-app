@@ -44,11 +44,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    async function fetchProfile(userId: string) {
+    async function fetchProfile(userId: string, accessToken: string) {
+      // Use direct fetch() instead of supabase.from().select() to avoid
+      // _getAccessToken() → getSession() → _acquireLock() deadlock when
+      // this is called from onAuthStateChange during _initialize().
       try {
-        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-        if (data?.is_admin) setUser(data);
-        else setUser(null);
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+          headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          if (rows[0]?.is_admin) setUser(rows[0]);
+          else setUser(null);
+        } else {
+          setUser(null);
+        }
       } catch {
         setUser(null);
       }
@@ -95,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        await fetchProfile(session.user.id);
+        await fetchProfile(session.user.id, session.access_token);
       } else {
         setUser(null);
       }
