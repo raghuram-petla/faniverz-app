@@ -21,5 +21,12 @@ const fetchWithTimeout: typeof fetch = (input, init) => {
 };
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Disable auto-refresh to prevent _recoverAndRefresh() from deadlocking
+    // the Web Lock during initialization. Without this, a hung token refresh
+    // blocks getSession(), signOut(), onAuthStateChange, and ALL data queries.
+    // Trade-off: admin must re-login after the JWT expires (1 hour).
+    autoRefreshToken: false,
+  },
   global: { fetch: fetchWithTimeout },
 });

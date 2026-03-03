@@ -28,66 +28,84 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let initialLoadDone = false;
 
-    function finish() {
+    // Safety timeout: if nothing resolves auth state within 3s, show login
+    const timeout = setTimeout(() => {
       if (!initialLoadDone) {
         initialLoadDone = true;
         setIsLoading(false);
       }
+    }, 3000);
+
+    function finish() {
+      if (!initialLoadDone) {
+        initialLoadDone = true;
+        clearTimeout(timeout);
+        setIsLoading(false);
+      }
     }
 
-    // Restore session directly from localStorage + REST API.
-    // The Supabase client's _initialize() can deadlock on token refresh,
-    // blocking getSession(), onAuthStateChange, and all data queries.
-    async function restoreSession() {
+    async function fetchProfile(userId: string) {
+      try {
+        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+        if (data?.is_admin) setUser(data);
+        else setUser(null);
+      } catch {
+        setUser(null);
+      }
+    }
+
+    // Fast path: restore session directly from localStorage + REST API.
+    // This bypasses the Supabase client entirely for the initial load.
+    async function restoreSession(): Promise<boolean> {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
         const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
         const ref = new URL(supabaseUrl).hostname.split('.')[0];
         const stored = localStorage.getItem(`sb-${ref}-auth-token`);
-        if (!stored) return;
+        if (!stored) return false;
 
         const { user: storedUser, access_token } = JSON.parse(stored);
-        if (!storedUser?.id || !access_token) return;
+        if (!storedUser?.id || !access_token) return false;
 
         const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${storedUser.id}&select=*`, {
           headers: { apikey: anonKey, Authorization: `Bearer ${access_token}` },
         });
         if (res.ok) {
           const rows = await res.json();
-          if (rows[0]?.is_admin) setUser(rows[0]);
+          if (rows[0]?.is_admin) {
+            setUser(rows[0]);
+            return true;
+          }
         }
       } catch {
-        // Session expired or invalid — user will see login page
-      } finally {
-        finish();
+        // Session expired or invalid
       }
+      return false;
     }
-    restoreSession();
 
-    // Handle subsequent auth changes (sign in, sign out, token refresh).
-    // These fire after the Supabase client eventually finishes initializing.
+    restoreSession().then((restored) => {
+      // If we restored from localStorage, stop loading immediately.
+      // If not (first login / OAuth callback), wait for onAuthStateChange.
+      if (restored) finish();
+    });
+
+    // Handle auth state changes: initial session, sign in, sign out.
+    // With autoRefreshToken=false, the client initializes without deadlocking.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          if (data?.is_admin) setUser(data);
-          else setUser(null);
-        } catch {
-          setUser(null);
-        }
+        await fetchProfile(session.user.id);
       } else {
         setUser(null);
       }
       finish();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
