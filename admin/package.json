@@ -23,6 +23,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.2",
     "recharts": "^3.7.0",
+    "sharp": "^0.34.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -33,9 +34,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sharp": "^0.31.1",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
     "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.39.3",
     "eslint-plugin-react": "^7.37.5",
     "jsdom": "^28.1.0",

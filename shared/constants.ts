@@ -1,20 +1,34 @@
 // Shared constants — single source of truth for mobile + admin
-// Layout dimensions, release type config, device configs for previews.
+// Layout dimensions, movie status config, device configs for previews.
 
-import type { ReleaseType } from './types';
+import type { MovieStatus, VideoType } from './types';
 
 // Layout dimensions (used by both mobile components and admin preview replicas)
 export const HERO_HEIGHT = 600;
 export const ACTOR_AVATAR_SIZE = 120;
 export const POSTER_ASPECT_RATIO = 2 / 3;
 
-// Release type configuration
-export const RELEASE_TYPE_CONFIG: Record<ReleaseType, { label: string; color: string }> = {
-  theatrical: { label: 'In Theaters', color: '#DC2626' },
-  ott: { label: 'Streaming', color: '#9333EA' },
+// Movie status configuration (derived, not stored)
+export const MOVIE_STATUS_CONFIG: Record<MovieStatus, { label: string; color: string }> = {
   upcoming: { label: 'Coming Soon', color: '#2563EB' },
-  ended: { label: 'No Longer in Theaters', color: '#6B7280' },
+  in_theaters: { label: 'In Theaters', color: '#DC2626' },
+  streaming: { label: 'Streaming', color: '#9333EA' },
+  released: { label: 'Released', color: '#6B7280' },
 };
+
+// Video type labels
+export const VIDEO_TYPES: { value: VideoType; label: string }[] = [
+  { value: 'teaser', label: 'Teaser' },
+  { value: 'trailer', label: 'Trailer' },
+  { value: 'glimpse', label: 'Glimpse' },
+  { value: 'song', label: 'Song' },
+  { value: 'interview', label: 'Interview' },
+  { value: 'bts', label: 'Behind the Scenes' },
+  { value: 'event', label: 'Event' },
+  { value: 'promo', label: 'Promo' },
+  { value: 'making', label: 'Making' },
+  { value: 'other', label: 'Other' },
+];
 
 // Gender labels (TMDB encoding)
 export const GENDER_LABELS: Record<number, string> = {

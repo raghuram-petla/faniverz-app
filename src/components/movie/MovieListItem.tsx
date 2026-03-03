@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { Movie, OTTPlatform } from '@/types';
+import { deriveMovieStatus } from '@shared/movieStatus';
 
 interface MovieListItemProps {
   movie: Movie;
@@ -14,6 +15,7 @@ interface MovieListItemProps {
 
 export function MovieListItem({ movie, platforms, isPast, testID }: MovieListItemProps) {
   const router = useRouter();
+  const status = deriveMovieStatus(movie, platforms?.length ?? 0);
 
   const handlePress = () => {
     router.push(`/movie/${movie.id}`);
@@ -36,14 +38,14 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
           contentFit="cover"
           transition={200}
         />
-        {movie.release_type === 'theatrical' && (
+        {status === 'in_theaters' && (
           <View style={styles.posterBadgeLeft}>
             <View style={styles.theaterBadge}>
               <Text style={styles.theaterBadgeText}>Theater</Text>
             </View>
           </View>
         )}
-        {movie.release_type === 'ott' && platforms && platforms.length > 0 && (
+        {status === 'streaming' && platforms && platforms.length > 0 && (
           <View style={styles.posterBadgeRight}>
             <View style={[styles.platformIcon, { backgroundColor: platforms[0].color }]}>
               <Text style={styles.platformIconText}>{platforms[0].logo}</Text>
@@ -88,14 +90,13 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
         )}
 
         {/* Rating */}
-        {(movie.release_type === 'theatrical' || movie.release_type === 'ott') &&
-          movie.rating > 0 && (
-            <View style={[styles.ratingRow, isPast && styles.ratingRowPast]}>
-              <Ionicons name="star" size={14} color={colors.yellow400} />
-              <Text style={styles.ratingValue}>{movie.rating}</Text>
-              <Text style={styles.ratingMax}>/ 5</Text>
-            </View>
-          )}
+        {(status === 'in_theaters' || status === 'streaming') && movie.rating > 0 && (
+          <View style={[styles.ratingRow, isPast && styles.ratingRowPast]}>
+            <Ionicons name="star" size={14} color={colors.yellow400} />
+            <Text style={styles.ratingValue}>{movie.rating}</Text>
+            <Text style={styles.ratingMax}>/ 5</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );

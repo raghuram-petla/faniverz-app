@@ -1,19 +1,42 @@
 import { supabase } from '@/lib/supabase';
-import { Movie, MovieWithDetails, ReleaseType } from '@/types';
+import { Movie, MovieWithDetails, MovieStatus } from '@/types';
 
 export interface MovieFilters {
-  releaseType?: ReleaseType;
+  movieStatus?: MovieStatus;
   genre?: string;
   platformId?: string;
   sortBy?: 'popular' | 'top_rated' | 'latest' | 'upcoming';
 }
 
 export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
-  // Exclude 'ended' movies from all home-screen listings; they remain accessible via search/detail
-  let query = supabase.from('movies').select('*').neq('release_type', 'ended');
+  let query = supabase.from('movies').select('*');
 
-  if (filters?.releaseType) {
-    query = query.eq('release_type', filters.releaseType);
+  if (filters?.movieStatus) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    switch (filters.movieStatus) {
+      case 'upcoming':
+        query = query.gt('release_date', todayStr);
+        break;
+      case 'in_theaters':
+        query = query.eq('in_theaters', true);
+        break;
+      case 'streaming': {
+        // Movies that have at least one platform entry
+        const { data: streamingIds } = await supabase.from('movie_platforms').select('movie_id');
+        if (streamingIds && streamingIds.length > 0) {
+          query = query.in(
+            'id',
+            streamingIds.map((m) => m.movie_id),
+          );
+        } else {
+          return [];
+        }
+        break;
+      }
+      case 'released':
+        query = query.lte('release_date', todayStr).eq('in_theaters', false);
+        break;
+    }
   }
 
   if (filters?.genre) {
@@ -65,15 +88,25 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
   if (error) throw error;
   if (!movie) return null;
 
-  // Fetch cast & crew
-  const { data: castData } = await supabase
-    .from('movie_cast')
-    .select(
-      '*, actor:actors(id, name, photo_url, birth_date, person_type, tmdb_person_id, created_at)',
-    )
-    .eq('movie_id', id);
+  // Fetch all related data in parallel
+  const [castResult, platformResult, postersResult, videosResult, productionHousesResult] =
+    await Promise.all([
+      supabase
+        .from('movie_cast')
+        .select(
+          '*, actor:actors(id, name, photo_url, birth_date, person_type, tmdb_person_id, created_at)',
+        )
+        .eq('movie_id', id),
+      supabase.from('movie_platforms').select('*, platform:platforms(*)').eq('movie_id', id),
+      supabase.from('movie_posters').select('*').eq('movie_id', id).order('display_order'),
+      supabase.from('movie_videos').select('*').eq('movie_id', id).order('display_order'),
+      supabase
+        .from('movie_production_houses')
+        .select('*, production_house:production_houses(*)')
+        .eq('movie_id', id),
+    ]);
 
-  const allCredits = castData ?? [];
+  const allCredits = castResult.data ?? [];
 
   // Actors: sorted by display_order ASC (per-movie billing from TMDB)
   const cast = allCredits
@@ -85,17 +118,19 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
     .filter((c) => c.credit_type === 'crew')
     .sort((a, b) => (a.role_order ?? 99) - (b.role_order ?? 99));
 
-  // Fetch platforms
-  const { data: platformData } = await supabase
-    .from('movie_platforms')
-    .select('*, platform:platforms(*)')
-    .eq('movie_id', id);
+  // Extract production houses from junction table
+  const productionHouses = (productionHousesResult.data ?? [])
+    .map((mph) => mph.production_house)
+    .filter(Boolean);
 
   return {
     ...movie,
     cast,
     crew,
-    platforms: platformData ?? [],
+    platforms: platformResult.data ?? [],
+    posters: postersResult.data ?? [],
+    videos: videosResult.data ?? [],
+    productionHouses,
   };
 }
 
@@ -131,10 +166,33 @@ export async function fetchMoviesPaginated(
   pageSize: number = 10,
   filters?: MovieFilters,
 ): Promise<Movie[]> {
-  let query = supabase.from('movies').select('*').neq('release_type', 'ended');
+  let query = supabase.from('movies').select('*');
 
-  if (filters?.releaseType) {
-    query = query.eq('release_type', filters.releaseType);
+  if (filters?.movieStatus) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    switch (filters.movieStatus) {
+      case 'upcoming':
+        query = query.gt('release_date', todayStr);
+        break;
+      case 'in_theaters':
+        query = query.eq('in_theaters', true);
+        break;
+      case 'streaming': {
+        const { data: streamingIds } = await supabase.from('movie_platforms').select('movie_id');
+        if (streamingIds && streamingIds.length > 0) {
+          query = query.in(
+            'id',
+            streamingIds.map((m) => m.movie_id),
+          );
+        } else {
+          return [];
+        }
+        break;
+      }
+      case 'released':
+        query = query.lte('release_date', todayStr).eq('in_theaters', false);
+        break;
+    }
   }
 
   if (filters?.genre) {
@@ -208,7 +266,6 @@ export async function fetchMoviesByPlatform(platformId: string): Promise<Movie[]
   const { data, error } = await supabase
     .from('movies')
     .select('*')
-    .neq('release_type', 'ended')
     .in(
       'id',
       movieIds.map((m) => m.movie_id),

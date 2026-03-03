@@ -1,6 +1,6 @@
 // Re-export shared types — single source of truth in shared/types.ts
 export type {
-  ReleaseType,
+  MovieStatus,
   Certification,
   Movie,
   MovieTheatricalRun,
@@ -10,6 +10,10 @@ export type {
   OTTPlatform,
   MoviePlatform,
   WatchlistEntry,
+  VideoType,
+  MoviePoster,
+  MovieVideo,
+  ProductionHouse,
 } from '@shared/types';
 
 // Admin-only types (not used by mobile)

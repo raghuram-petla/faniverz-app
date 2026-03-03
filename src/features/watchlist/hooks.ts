@@ -9,6 +9,7 @@ import {
   isMovieWatchlisted,
 } from './api';
 import { WatchlistEntry } from '@/types';
+import { deriveMovieStatus } from '@shared/movieStatus';
 
 const PAGE_SIZE = 10;
 
@@ -21,15 +22,16 @@ export function useWatchlist(userId: string) {
   });
 
   const entries = query.data ?? [];
-  const available = entries.filter(
-    (e) =>
-      e.status === 'watchlist' &&
-      e.movie &&
-      (e.movie.release_type === 'theatrical' || e.movie.release_type === 'ott'),
-  );
-  const upcoming = entries.filter(
-    (e) => e.status === 'watchlist' && e.movie && e.movie.release_type === 'upcoming',
-  );
+  const available = entries.filter((e) => {
+    if (e.status !== 'watchlist' || !e.movie) return false;
+    const movieStatus = deriveMovieStatus(e.movie, 0);
+    return movieStatus === 'in_theaters' || movieStatus === 'streaming';
+  });
+  const upcoming = entries.filter((e) => {
+    if (e.status !== 'watchlist' || !e.movie) return false;
+    const movieStatus = deriveMovieStatus(e.movie, 0);
+    return movieStatus === 'upcoming';
+  });
   const watched = entries.filter((e) => e.status === 'watched');
 
   return { ...query, available, upcoming, watched };
@@ -47,15 +49,16 @@ export function useWatchlistPaginated(userId: string) {
   });
 
   const entries = query.data?.pages.flat() ?? [];
-  const available = entries.filter(
-    (e) =>
-      e.status === 'watchlist' &&
-      e.movie &&
-      (e.movie.release_type === 'theatrical' || e.movie.release_type === 'ott'),
-  );
-  const upcoming = entries.filter(
-    (e) => e.status === 'watchlist' && e.movie && e.movie.release_type === 'upcoming',
-  );
+  const available = entries.filter((e) => {
+    if (e.status !== 'watchlist' || !e.movie) return false;
+    const movieStatus = deriveMovieStatus(e.movie, 0);
+    return movieStatus === 'in_theaters' || movieStatus === 'streaming';
+  });
+  const upcoming = entries.filter((e) => {
+    if (e.status !== 'watchlist' || !e.movie) return false;
+    const movieStatus = deriveMovieStatus(e.movie, 0);
+    return movieStatus === 'upcoming';
+  });
   const watched = entries.filter((e) => e.status === 'watched');
 
   return { ...query, available, upcoming, watched };

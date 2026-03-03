@@ -1,12 +1,12 @@
 'use client';
-import { HERO_HEIGHT, RELEASE_TYPE_CONFIG, SPOTLIGHT_GRADIENT } from '@shared/constants';
+import { HERO_HEIGHT, MOVIE_STATUS_CONFIG, SPOTLIGHT_GRADIENT } from '@shared/constants';
 import { colors } from '@shared/colors';
-import type { ReleaseType } from '@shared/types';
+import type { MovieStatus } from '@shared/types';
 
 interface SpotlightPreviewProps {
   title: string;
   backdropUrl: string;
-  releaseType: ReleaseType;
+  movieStatus: MovieStatus;
   rating: number;
   runtime: number | null;
   certification: string | null;
@@ -19,7 +19,7 @@ interface SpotlightPreviewProps {
 export function SpotlightPreview({
   title,
   backdropUrl,
-  releaseType,
+  movieStatus,
   rating,
   runtime,
   certification,
@@ -29,7 +29,7 @@ export function SpotlightPreview({
   onFocusClick,
 }: SpotlightPreviewProps) {
   const year = new Date(releaseDate).getFullYear();
-  const config = RELEASE_TYPE_CONFIG[releaseType];
+  const config = MOVIE_STATUS_CONFIG[movieStatus];
   const gradientCss = `linear-gradient(to bottom, ${SPOTLIGHT_GRADIENT.join(', ')})`;
   const objectPosition =
     focusX != null && focusY != null
@@ -189,7 +189,7 @@ export function SpotlightPreview({
             }}
           >
             <span style={{ fontSize: 16, fontWeight: 600, color: colors.black }}>
-              {releaseType === 'theatrical' ? '🎫 Get Tickets' : '▶ Watch Now'}
+              {movieStatus === 'in_theaters' ? '🎫 Get Tickets' : '▶ Watch Now'}
             </span>
           </div>
           <div

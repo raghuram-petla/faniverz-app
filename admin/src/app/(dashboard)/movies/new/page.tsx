@@ -38,7 +38,7 @@ export default function NewMoviePage() {
     synopsis: '',
     director: '',
     trailer_url: '',
-    release_type: 'upcoming' as const,
+    in_theaters: false,
   });
 
   function updateField(field: string, value: string | string[]) {
@@ -93,7 +93,7 @@ export default function NewMoviePage() {
         synopsis: form.synopsis || null,
         director: form.director || null,
         trailer_url: form.trailer_url || null,
-        release_type: form.release_type,
+        in_theaters: form.in_theaters,
       });
       router.push('/movies');
     } catch (err: unknown) {
@@ -135,17 +135,18 @@ export default function NewMoviePage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-white/60 mb-1">Release Type *</label>
-            <select
-              value={form.release_type}
-              onChange={(e) => updateField('release_type', e.target.value)}
-              className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
-            >
-              <option value="upcoming">Upcoming</option>
-              <option value="theatrical">Theatrical</option>
-              <option value="ott">OTT</option>
-              <option value="ended">Ended</option>
-            </select>
+            <label className="block text-sm text-white/60 mb-1">Currently In Theaters</label>
+            <label className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.in_theaters}
+                onChange={(e) => setForm((prev) => ({ ...prev, in_theaters: e.target.checked }))}
+                className="w-5 h-5 rounded accent-red-600"
+              />
+              <span className="text-white text-sm">
+                {form.in_theaters ? 'Yes — In Theaters' : 'No'}
+              </span>
+            </label>
           </div>
         </div>
 

@@ -27,7 +27,7 @@ function createWrapper() {
 }
 
 describe('useAdminMovies', () => {
-  it('uses the correct query key ["admin", "movies", search, typeFilter]', async () => {
+  it('uses the correct query key ["admin", "movies", search, statusFilter]', async () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         order: vi.fn().mockReturnValue({
@@ -97,7 +97,7 @@ describe('useAdminMovies', () => {
     expect(mockIlike).toHaveBeenCalledWith('title', '%test%');
   });
 
-  it('applies type filter via eq', async () => {
+  it('applies in_theaters status filter via eq', async () => {
     const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
     const mockRange = vi.fn().mockReturnValue({ eq: mockEq });
 
@@ -109,13 +109,13 @@ describe('useAdminMovies', () => {
       }),
     });
 
-    const { result } = renderHook(() => useAdminMovies('', 'theatrical'), {
+    const { result } = renderHook(() => useAdminMovies('', 'in_theaters'), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockEq).toHaveBeenCalledWith('release_type', 'theatrical');
+    expect(mockEq).toHaveBeenCalledWith('in_theaters', true);
   });
 });
 

@@ -36,7 +36,7 @@ const mockMutations = {
 const mockMovie = (overrides: object = {}) => ({
   id: 'movie-1',
   title: 'Pushpa 2',
-  release_type: 'theatrical' as const,
+  in_theaters: true,
   release_date: '2025-03-15',
   poster_url: null,
   backdrop_url: null,
@@ -121,7 +121,7 @@ describe('WatchlistScreen', () => {
   it('renders "Available to Watch" section with movies', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true })],
     });
 
     render(<WatchlistScreen />);
@@ -133,7 +133,13 @@ describe('WatchlistScreen', () => {
   it('renders "Upcoming Releases" section', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      upcoming: [mockEntry('2', 'watchlist', { title: 'Kalki 2898 AD', release_type: 'upcoming' })],
+      upcoming: [
+        mockEntry('2', 'watchlist', {
+          title: 'Kalki 2898 AD',
+          in_theaters: false,
+          release_date: '2099-01-01',
+        }),
+      ],
     });
 
     render(<WatchlistScreen />);
@@ -145,7 +151,7 @@ describe('WatchlistScreen', () => {
   it('renders "Watched Movies" section', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      watched: [mockEntry('3', 'watched', { title: 'RRR', release_type: 'ott' })],
+      watched: [mockEntry('3', 'watched', { title: 'RRR', in_theaters: false })],
     });
 
     render(<WatchlistScreen />);
@@ -186,10 +192,16 @@ describe('WatchlistScreen', () => {
     setupLoggedIn();
     setupWatchlistMock({
       available: [
-        mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' }),
-        mockEntry('2', 'watchlist', { title: 'Salaar', release_type: 'ott' }),
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true }),
+        mockEntry('2', 'watchlist', { title: 'Salaar', in_theaters: false }),
       ],
-      upcoming: [mockEntry('3', 'watchlist', { title: 'Kalki 2898 AD', release_type: 'upcoming' })],
+      upcoming: [
+        mockEntry('3', 'watchlist', {
+          title: 'Kalki 2898 AD',
+          in_theaters: false,
+          release_date: '2099-01-01',
+        }),
+      ],
     });
 
     render(<WatchlistScreen />);
@@ -200,7 +212,7 @@ describe('WatchlistScreen', () => {
   it('displays "1 movie saved" for a single movie', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true })],
     });
 
     render(<WatchlistScreen />);
@@ -211,7 +223,7 @@ describe('WatchlistScreen', () => {
   it('calls remove.mutate when trash icon is pressed in Available section', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true })],
     });
 
     render(<WatchlistScreen />);
@@ -227,7 +239,7 @@ describe('WatchlistScreen', () => {
   it('calls markWatched.mutate when checkmark is pressed in Available section', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true })],
     });
 
     render(<WatchlistScreen />);
@@ -243,7 +255,7 @@ describe('WatchlistScreen', () => {
   it('navigates to movie detail when Available card is pressed', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true })],
     });
 
     render(<WatchlistScreen />);
@@ -255,7 +267,13 @@ describe('WatchlistScreen', () => {
   it('navigates to movie detail when Upcoming card is pressed', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      upcoming: [mockEntry('2', 'watchlist', { title: 'Kalki 2898 AD', release_type: 'upcoming' })],
+      upcoming: [
+        mockEntry('2', 'watchlist', {
+          title: 'Kalki 2898 AD',
+          in_theaters: false,
+          release_date: '2099-01-01',
+        }),
+      ],
     });
 
     render(<WatchlistScreen />);
@@ -267,7 +285,7 @@ describe('WatchlistScreen', () => {
   it('shows moveBack and remove actions in Watched section', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      watched: [mockEntry('3', 'watched', { title: 'RRR', release_type: 'ott' })],
+      watched: [mockEntry('3', 'watched', { title: 'RRR', in_theaters: false })],
     });
 
     render(<WatchlistScreen />);
@@ -299,7 +317,7 @@ describe('WatchlistScreen', () => {
   it('shows footer loader when fetching next page', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true })],
       isFetchingNextPage: true,
     });
 
@@ -311,7 +329,7 @@ describe('WatchlistScreen', () => {
   it('does not show footer loader when not fetching', () => {
     setupLoggedIn();
     setupWatchlistMock({
-      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', release_type: 'theatrical' })],
+      available: [mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true })],
       isFetchingNextPage: false,
     });
 

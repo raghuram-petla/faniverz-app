@@ -81,7 +81,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Pushpa 2',
           poster_url: 'https://example.com/poster.jpg',
           rating: 4.5,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
       {
@@ -95,7 +95,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Salaar',
           poster_url: 'https://example.com/poster2.jpg',
           rating: 3.8,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
     ];
@@ -119,7 +119,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Pushpa 2',
           poster_url: null,
           rating: 4.0,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
       {
@@ -133,7 +133,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Salaar',
           poster_url: null,
           rating: 3.0,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
     ];
@@ -184,7 +184,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Pushpa 2',
           poster_url: null,
           rating: 3.0,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
       {
@@ -198,7 +198,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Salaar',
           poster_url: null,
           rating: 4.5,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
     ];
@@ -232,7 +232,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Pushpa 2',
           poster_url: null,
           rating: 4.0,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
       {
@@ -246,7 +246,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Akhanda',
           poster_url: null,
           rating: 3.5,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
     ];
@@ -286,7 +286,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Pushpa 2',
           poster_url: null,
           rating: 4.5,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
     ];
@@ -311,7 +311,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Pushpa 2',
           poster_url: null,
           rating: 4.0,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
       {
@@ -325,7 +325,7 @@ describe('WatchedMoviesScreen', () => {
           title: 'Salaar',
           poster_url: null,
           rating: 3.8,
-          release_type: 'theatrical',
+          in_theaters: true,
         },
       },
     ];

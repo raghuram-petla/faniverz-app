@@ -26,7 +26,7 @@ describe('useFilterStore', () => {
   });
 
   it('clearAll resets everything', () => {
-    useFilterStore.getState().setFilter('theatrical');
+    useFilterStore.getState().setFilter('in_theaters');
     useFilterStore.getState().toggleGenre('Action');
     useFilterStore.getState().setSortBy('top_rated');
     useFilterStore.getState().setSearchQuery('test');
@@ -51,7 +51,7 @@ describe('useFilterStore', () => {
     useFilterStore.getState().togglePlatform('netflix');
     useFilterStore.getState().togglePlatform('aha');
     useFilterStore.getState().toggleGenre('Action');
-    useFilterStore.getState().setFilter('ott');
+    useFilterStore.getState().setFilter('streaming');
     useFilterStore.getState().setSortBy('latest');
     useFilterStore.getState().setSearchQuery('query');
 

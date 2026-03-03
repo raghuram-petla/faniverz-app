@@ -1,13 +1,13 @@
 'use client';
-import { HERO_HEIGHT, RELEASE_TYPE_CONFIG, DETAIL_GRADIENT } from '@shared/constants';
+import { HERO_HEIGHT, MOVIE_STATUS_CONFIG, DETAIL_GRADIENT } from '@shared/constants';
 import { colors } from '@shared/colors';
-import type { ReleaseType } from '@shared/types';
+import type { MovieStatus } from '@shared/types';
 
 interface MovieDetailPreviewProps {
   title: string;
   backdropUrl: string;
   posterUrl: string;
-  releaseType: ReleaseType;
+  movieStatus: MovieStatus;
   rating: number;
   reviewCount: number;
   runtime: number | null;
@@ -22,7 +22,7 @@ export function MovieDetailPreview({
   title,
   backdropUrl,
   posterUrl,
-  releaseType,
+  movieStatus,
   rating,
   reviewCount,
   runtime,
@@ -33,7 +33,7 @@ export function MovieDetailPreview({
   onFocusClick,
 }: MovieDetailPreviewProps) {
   const year = new Date(releaseDate).getFullYear();
-  const config = RELEASE_TYPE_CONFIG[releaseType];
+  const config = MOVIE_STATUS_CONFIG[movieStatus];
 
   // Build CSS gradient matching mobile's 4-stop gradient with locations
   const { colors: gc, locations: gl } = DETAIL_GRADIENT;

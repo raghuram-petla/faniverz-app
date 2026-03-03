@@ -1,14 +1,14 @@
-import { RELEASE_TYPE_CONFIG } from '@shared/constants';
+import { MOVIE_STATUS_CONFIG } from '@shared/constants';
 import { colors } from '@shared/colors';
-import type { ReleaseType } from '@shared/types';
+import type { MovieStatus } from '@shared/types';
 
 // Re-export the shared config
-export { RELEASE_TYPE_CONFIG };
+export { MOVIE_STATUS_CONFIG };
 
-export function getReleaseTypeLabel(type: ReleaseType): string {
-  return RELEASE_TYPE_CONFIG[type]?.label ?? type;
+export function getMovieStatusLabel(status: MovieStatus): string {
+  return MOVIE_STATUS_CONFIG[status]?.label ?? status;
 }
 
-export function getReleaseTypeColor(type: ReleaseType): string {
-  return RELEASE_TYPE_CONFIG[type]?.color ?? colors.white40;
+export function getMovieStatusColor(status: MovieStatus): string {
+  return MOVIE_STATUS_CONFIG[status]?.color ?? colors.white40;
 }

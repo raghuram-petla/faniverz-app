@@ -20,7 +20,8 @@ import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { useFilterStore } from '@/stores/useFilterStore';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Movie, ReleaseType } from '@/types';
+import { Movie, MovieStatus } from '@/types';
+import { deriveMovieStatus } from '@shared/movieStatus';
 
 const GENRES = [
   'Action',
@@ -46,8 +47,8 @@ const SORT_OPTIONS = [
 
 const FILTER_TABS = [
   { value: 'all' as const, label: 'All' },
-  { value: 'theatrical' as const, label: 'Theaters' },
-  { value: 'ott' as const, label: 'Streaming' },
+  { value: 'in_theaters' as const, label: 'Theaters' },
+  { value: 'streaming' as const, label: 'Streaming' },
   { value: 'upcoming' as const, label: 'Soon' },
 ];
 
@@ -76,7 +77,7 @@ export default function DiscoverScreen() {
   // Apply URL params on mount
   useEffect(() => {
     if (params.filter) {
-      setFilter(params.filter as 'all' | ReleaseType);
+      setFilter(params.filter as 'all' | MovieStatus);
     }
     if (params.platform) {
       togglePlatform(params.platform);
@@ -84,8 +85,8 @@ export default function DiscoverScreen() {
   }, []);
 
   const filters = useMemo(() => {
-    const f: { releaseType?: ReleaseType; sortBy?: typeof sortBy } = {};
-    if (selectedFilter !== 'all') f.releaseType = selectedFilter;
+    const f: { movieStatus?: MovieStatus; sortBy?: typeof sortBy } = {};
+    if (selectedFilter !== 'all') f.movieStatus = selectedFilter;
     f.sortBy = sortBy;
     return f;
   }, [selectedFilter, sortBy]);
@@ -132,6 +133,7 @@ export default function DiscoverScreen() {
 
   const renderGridItem = ({ item }: { item: Movie }) => {
     const moviePlatforms = platformMap[item.id] ?? [];
+    const status = deriveMovieStatus(item, moviePlatforms.length);
     return (
       <TouchableOpacity
         style={styles.gridItem}
@@ -145,7 +147,7 @@ export default function DiscoverScreen() {
             contentFit="cover"
           />
           <View style={styles.gridBadgeLeft}>
-            <StatusBadge type={item.release_type} />
+            <StatusBadge type={status} />
           </View>
           {moviePlatforms.length > 0 && (
             <View style={styles.gridBadgeRight}>

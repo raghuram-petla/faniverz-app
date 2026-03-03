@@ -1,5 +1,4 @@
 const mockSelect = jest.fn();
-const mockNeq = jest.fn();
 const mockOrder = jest.fn();
 const mockEq = jest.fn();
 const mockSingle = jest.fn();
@@ -8,6 +7,8 @@ const mockLimit = jest.fn();
 const mockGte = jest.fn();
 const mockLte = jest.fn();
 const mockRange = jest.fn();
+const mockIn = jest.fn();
+const mockContains = jest.fn();
 
 // Creates a chainable+thenable result for mockOrder.
 // Chaining: .order().order() / .order().range() works.
@@ -61,10 +62,9 @@ describe('movies api', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // fetchMovies chains .select('*').neq(...).order() twice (is_featured then sort key).
+    // fetchMovies chains .select('*').order() twice (is_featured then sort key).
     // makeOrderResult() is both chainable ({ order: mockOrder }) and thenable (await-able).
-    mockSelect.mockReturnValue({ neq: mockNeq });
-    mockNeq.mockReturnValue({ order: mockOrder });
+    mockSelect.mockReturnValue({ order: mockOrder });
     mockOrder.mockReturnValue(makeOrderResult());
 
     // Default chain for fetchMovieById
@@ -105,28 +105,45 @@ describe('movies api', () => {
       await expect(fetchMovies()).rejects.toThrow('DB error');
     });
 
-    it('excludes ended movies by default', async () => {
-      await fetchMovies();
-      expect(mockNeq).toHaveBeenCalledWith('release_type', 'ended');
-    });
-
-    it('filters by releaseType when provided', async () => {
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ eq: mockEq });
+    it('filters by movieStatus in_theaters using eq(in_theaters, true)', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      await fetchMovies({ releaseType: 'theatrical' });
-      expect(mockEq).toHaveBeenCalledWith('release_type', 'theatrical');
+      await fetchMovies({ movieStatus: 'in_theaters' });
+      expect(mockEq).toHaveBeenCalledWith('in_theaters', true);
     });
   });
 
   describe('fetchMovieById', () => {
-    function mockFromForById(castEntries: object[] = [], platforms: object[] = []) {
+    function mockFromForById(
+      castEntries: object[] = [],
+      platforms: object[] = [],
+      posters: object[] = [],
+      videos: object[] = [],
+      productionHouses: object[] = [],
+    ) {
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'movies') return { select: mockSelect };
         if (table === 'movie_cast') {
           return {
             select: jest.fn().mockReturnValue({
               eq: jest.fn().mockResolvedValue({ data: castEntries, error: null }),
+            }),
+          };
+        }
+        if (table === 'movie_posters' || table === 'movie_videos') {
+          const data = table === 'movie_posters' ? posters : videos;
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({ data, error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'movie_production_houses') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({ data: productionHouses, error: null }),
             }),
           };
         }
@@ -145,12 +162,15 @@ describe('movies api', () => {
       mockSingle.mockResolvedValue({ data: { id: '123', title: 'Test' }, error: null });
     });
 
-    it('returns cast and crew arrays and platforms', async () => {
+    it('returns cast, crew, platforms, posters, videos, and productionHouses', async () => {
       mockFromForById();
       const result = await fetchMovieById('123');
       expect(result).toHaveProperty('cast');
       expect(result).toHaveProperty('crew');
       expect(result).toHaveProperty('platforms');
+      expect(result).toHaveProperty('posters');
+      expect(result).toHaveProperty('videos');
+      expect(result).toHaveProperty('productionHouses');
     });
 
     it('separates cast entries from crew entries', async () => {
@@ -263,12 +283,8 @@ describe('movies api', () => {
   });
 
   describe('fetchMovies — genre and platform filters', () => {
-    const mockContains = jest.fn();
-    const mockIn = jest.fn();
-
     it('filters by genre when provided', async () => {
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ contains: mockContains });
+      mockSelect.mockReturnValue({ contains: mockContains });
       mockContains.mockReturnValue({ order: mockOrder });
       await fetchMovies({ genre: 'Action' });
       expect(mockContains).toHaveBeenCalledWith('genres', ['Action']);
@@ -285,8 +301,7 @@ describe('movies api', () => {
       });
       mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
       mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ in: mockIn });
+      mockSelect.mockReturnValue({ in: mockIn });
       mockIn.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue(makeOrderResult([{ id: 'm1', title: 'Test' }]));
 
@@ -327,8 +342,7 @@ describe('movies api', () => {
 
       mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
       mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }, { movie_id: 'm2' }] });
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ in: mockMoviesIn });
+      mockSelect.mockReturnValue({ in: mockMoviesIn });
       mockMoviesIn.mockReturnValue({ order: mockOrder });
       mockOrder.mockResolvedValue({
         data: [{ id: 'm1', title: 'Movie 1' }],
@@ -368,8 +382,7 @@ describe('movies api', () => {
       });
       mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
       mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ in: mockMoviesIn });
+      mockSelect.mockReturnValue({ in: mockMoviesIn });
       mockMoviesIn.mockReturnValue({ order: mockOrder });
       mockOrder.mockResolvedValue({ data: null, error: new Error('Platform fetch failed') });
 
@@ -381,8 +394,7 @@ describe('movies api', () => {
     beforeEach(() => {
       mockRange.mockReturnValue(makeRangeResult());
       mockOrder.mockReturnValue(makeOrderResult());
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ order: mockOrder });
+      mockSelect.mockReturnValue({ order: mockOrder });
     });
 
     it('queries movies table and calls range(0, 9) for page 0', async () => {
@@ -426,22 +438,19 @@ describe('movies api', () => {
       await expect(fetchMoviesPaginated(0)).rejects.toThrow('Paginated fetch failed');
     });
 
-    it('filters by releaseType when provided', async () => {
+    it('filters by movieStatus in_theaters when provided', async () => {
       const mockEq2 = jest.fn();
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ eq: mockEq2 });
+      mockSelect.mockReturnValue({ eq: mockEq2 });
       mockEq2.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
-      await fetchMoviesPaginated(0, 10, { releaseType: 'theatrical' });
-      expect(mockEq2).toHaveBeenCalledWith('release_type', 'theatrical');
+      await fetchMoviesPaginated(0, 10, { movieStatus: 'in_theaters' });
+      expect(mockEq2).toHaveBeenCalledWith('in_theaters', true);
     });
 
     it('filters by genre when provided', async () => {
-      const mockContains = jest.fn();
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ contains: mockContains });
+      mockSelect.mockReturnValue({ contains: mockContains });
       mockContains.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
@@ -453,15 +462,13 @@ describe('movies api', () => {
     it('filters by platformId when matching movies exist', async () => {
       const mockPlatformSelect = jest.fn();
       const mockPlatformEq = jest.fn();
-      const mockIn = jest.fn();
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'movie_platforms') return { select: mockPlatformSelect };
         return { select: mockSelect };
       });
       mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
       mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ in: mockIn });
+      mockSelect.mockReturnValue({ in: mockIn });
       mockIn.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([{ id: 'm1' }]));
@@ -485,8 +492,7 @@ describe('movies api', () => {
     });
 
     it('orders by top_rated sortBy', async () => {
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ order: mockOrder });
+      mockSelect.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
@@ -495,8 +501,7 @@ describe('movies api', () => {
     });
 
     it('orders by latest sortBy', async () => {
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ order: mockOrder });
+      mockSelect.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
@@ -505,8 +510,7 @@ describe('movies api', () => {
     });
 
     it('orders by upcoming sortBy', async () => {
-      mockSelect.mockReturnValue({ neq: mockNeq });
-      mockNeq.mockReturnValue({ order: mockOrder });
+      mockSelect.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 

@@ -102,8 +102,10 @@ async function pLimit<T>(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function computeReleaseType(releaseDate: string): 'upcoming' | 'theatrical' {
-  return new Date(releaseDate) > new Date() ? 'upcoming' : 'theatrical';
+function computeInTheaters(_releaseDate: string): boolean {
+  // New movies default to not in theaters; upcoming ones definitely not,
+  // and past releases can be toggled manually via admin.
+  return false;
 }
 
 function sleep(ms: number) {
@@ -136,7 +138,7 @@ async function processMovie(tmdbId: number, releaseDate: string): Promise<void> 
 
     const detail = await getMovieDetails(tmdbId, TMDB_API_KEY!);
 
-    const releaseType = computeReleaseType(releaseDate);
+    const inTheaters = computeInTheaters(releaseDate);
     const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
 
     // Upload / compute image URLs
@@ -181,7 +183,7 @@ async function processMovie(tmdbId: number, releaseDate: string): Promise<void> 
           backdrop_url: backdropUrl,
           trailer_url: trailerUrl,
           director,
-          release_type: releaseType,
+          in_theaters: inTheaters,
           original_language: 'te',
           tmdb_last_synced_at: new Date().toISOString(),
           // certification and is_featured intentionally omitted (manual fields)

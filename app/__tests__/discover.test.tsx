@@ -19,7 +19,7 @@ const mockMovies: Movie[] = [
     id: '1',
     tmdb_id: null,
     title: 'Pushpa 2',
-    release_type: 'theatrical',
+    in_theaters: true,
     release_date: '2025-03-01',
     poster_url: 'https://example.com/pushpa.jpg',
     backdrop_url: null,
@@ -47,7 +47,7 @@ const mockMovies: Movie[] = [
     id: '2',
     tmdb_id: null,
     title: 'Kalki',
-    release_type: 'ott',
+    in_theaters: false,
     release_date: '2025-02-01',
     poster_url: 'https://example.com/kalki.jpg',
     backdrop_url: null,
@@ -120,23 +120,23 @@ describe('DiscoverScreen', () => {
     expect(getByPlaceholderText('Search movies, genres, actors...')).toBeTruthy();
   });
 
-  it('renders release type tab: All', () => {
+  it('renders movie status tab: All', () => {
     const { getByText } = render(<DiscoverScreen />);
     expect(getByText('All')).toBeTruthy();
   });
 
-  it('renders release type tab: Theaters', () => {
+  it('renders movie status tab: Theaters', () => {
     const { getByText } = render(<DiscoverScreen />);
     expect(getByText('Theaters')).toBeTruthy();
   });
 
-  it('renders release type tab: Streaming', () => {
+  it('renders movie status tab: Streaming', () => {
     const { getAllByText } = render(<DiscoverScreen />);
     // "Streaming" appears in both the tab bar and as a StatusBadge on OTT movies
     expect(getAllByText('Streaming').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('renders release type tab: Soon', () => {
+  it('renders movie status tab: Soon', () => {
     const { getByText } = render(<DiscoverScreen />);
     expect(getByText('Soon')).toBeTruthy();
   });
@@ -228,10 +228,10 @@ describe('DiscoverScreen', () => {
   });
 
   it('applies URL param filter on mount', () => {
-    mockLocalSearchParams.filter = 'theatrical';
+    mockLocalSearchParams.filter = 'in_theaters';
 
     render(<DiscoverScreen />);
-    expect(useFilterStore.getState().selectedFilter).toBe('theatrical');
+    expect(useFilterStore.getState().selectedFilter).toBe('in_theaters');
   });
 
   it('applies URL param platform on mount', () => {
@@ -262,22 +262,22 @@ describe('DiscoverScreen', () => {
     expect(useFilterStore.getState().searchQuery).toBe('');
   });
 
-  it('switches release type tab from All to Theaters', () => {
+  it('switches movie status tab from All to Theaters', () => {
     const { getByText } = render(<DiscoverScreen />);
 
     fireEvent.press(getByText('Theaters'));
-    expect(useFilterStore.getState().selectedFilter).toBe('theatrical');
+    expect(useFilterStore.getState().selectedFilter).toBe('in_theaters');
   });
 
-  it('switches release type tab to Streaming', () => {
+  it('switches movie status tab to Streaming', () => {
     const { getAllByText } = render(<DiscoverScreen />);
 
     const streamingTabs = getAllByText('Streaming');
     fireEvent.press(streamingTabs[0]);
-    expect(useFilterStore.getState().selectedFilter).toBe('ott');
+    expect(useFilterStore.getState().selectedFilter).toBe('streaming');
   });
 
-  it('switches release type tab to Soon', () => {
+  it('switches movie status tab to Soon', () => {
     const { getByText } = render(<DiscoverScreen />);
 
     fireEvent.press(getByText('Soon'));

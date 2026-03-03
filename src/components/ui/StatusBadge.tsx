@@ -1,16 +1,16 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
-import { ReleaseType } from '@/types';
-import { getReleaseTypeLabel, getReleaseTypeColor } from '@/constants/releaseType';
+import { MovieStatus } from '@/types';
+import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 
 interface StatusBadgeProps {
-  type: ReleaseType;
+  type: MovieStatus;
 }
 
 export function StatusBadge({ type }: StatusBadgeProps) {
   return (
-    <View style={[styles.badge, { backgroundColor: getReleaseTypeColor(type) }]}>
-      <Text style={styles.text}>{getReleaseTypeLabel(type)}</Text>
+    <View style={[styles.badge, { backgroundColor: getMovieStatusColor(type) }]}>
+      <Text style={styles.text}>{getMovieStatusLabel(type)}</Text>
     </View>
   );
 }

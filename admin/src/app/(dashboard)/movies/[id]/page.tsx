@@ -8,14 +8,40 @@ import {
   useAddTheatricalRun,
   useRemoveTheatricalRun,
 } from '@/hooks/useAdminTheatricalRuns';
-import { ArrowLeft, Loader2, Trash2, Plus, X, Upload } from 'lucide-react';
+import { useMovieVideos, useAddVideo, useRemoveVideo } from '@/hooks/useAdminVideos';
+import {
+  useMoviePosters,
+  useAddPoster,
+  useRemovePoster,
+  useSetMainPoster,
+} from '@/hooks/useAdminPosters';
+import {
+  useMovieProductionHouses,
+  useAddMovieProductionHouse,
+  useRemoveMovieProductionHouse,
+} from '@/hooks/useMovieProductionHouses';
+import { useAdminProductionHouses } from '@/hooks/useAdminProductionHouses';
+import {
+  ArrowLeft,
+  Loader2,
+  Trash2,
+  Plus,
+  X,
+  Upload,
+  Star,
+  Play,
+  Film,
+  Building2,
+} from 'lucide-react';
 import Link from 'next/link';
-import { DEVICES } from '@shared/constants';
+import { DEVICES, VIDEO_TYPES } from '@shared/constants';
+import type { VideoType } from '@/lib/types';
+import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { SpotlightPreview } from '@/components/preview/SpotlightPreview';
 import { MovieDetailPreview } from '@/components/preview/MovieDetailPreview';
-import type { ReleaseType } from '@shared/types';
+import { deriveMovieStatus } from '@shared/movieStatus';
 
 const genres = [
   'Action',
@@ -51,6 +77,22 @@ const EMPTY_CAST_FORM = {
   role_order: '',
 };
 
+const EMPTY_VIDEO_FORM = {
+  youtube_input: '',
+  title: '',
+  video_type: 'trailer' as VideoType,
+  description: '',
+  video_date: '',
+  duration: '',
+};
+
+const EMPTY_POSTER_FORM = {
+  title: '',
+  description: '',
+  poster_date: '',
+  is_main: false,
+};
+
 export default function EditMoviePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -65,6 +107,18 @@ export default function EditMoviePage() {
   const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);
   const addTheatricalRun = useAddTheatricalRun();
   const removeTheatricalRun = useRemoveTheatricalRun();
+  const { data: videosData = [] } = useMovieVideos(id);
+  const addVideo = useAddVideo();
+  const removeVideo = useRemoveVideo();
+  const { data: postersData = [] } = useMoviePosters(id);
+  const addPoster = useAddPoster();
+  const removePoster = useRemovePoster();
+  const setMainPoster = useSetMainPoster();
+  const { data: movieProductionHouses = [] } = useMovieProductionHouses(id);
+  const addMovieProductionHouse = useAddMovieProductionHouse();
+  const removeMovieProductionHouse = useRemoveMovieProductionHouse();
+  const { data: allProductionHousesData } = useAdminProductionHouses();
+  const allProductionHouses = allProductionHousesData?.pages.flat() ?? [];
   const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
   const [device, setDevice] = useState(DEVICES[1]);
   const [uploadingPoster, setUploadingPoster] = useState(false);
@@ -73,6 +127,11 @@ export default function EditMoviePage() {
   const backdropInputRef = useRef<HTMLInputElement>(null);
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
   const [runForm, setRunForm] = useState({ release_date: '', label: '' });
+  const [videoForm, setVideoForm] = useState(EMPTY_VIDEO_FORM);
+  const [posterForm, setPosterForm] = useState(EMPTY_POSTER_FORM);
+  const [uploadingGalleryPoster, setUploadingGalleryPoster] = useState(false);
+  const galleryPosterInputRef = useRef<HTMLInputElement>(null);
+  const [selectedProductionHouseId, setSelectedProductionHouseId] = useState('');
   const [form, setForm] = useState({
     title: '',
     poster_url: '',
@@ -84,7 +143,7 @@ export default function EditMoviePage() {
     synopsis: '',
     director: '',
     trailer_url: '',
-    release_type: 'upcoming' as string,
+    in_theaters: false,
     backdrop_focus_x: null as number | null,
     backdrop_focus_y: null as number | null,
     spotlight_focus_x: null as number | null,
@@ -106,7 +165,7 @@ export default function EditMoviePage() {
         synopsis: movie.synopsis ?? '',
         director: movie.director ?? '',
         trailer_url: movie.trailer_url ?? '',
-        release_type: movie.release_type,
+        in_theaters: movie.in_theaters,
         backdrop_focus_x: movie.backdrop_focus_x ?? null,
         backdrop_focus_y: movie.backdrop_focus_y ?? null,
         spotlight_focus_x: movie.spotlight_focus_x ?? null,
@@ -162,6 +221,61 @@ export default function EditMoviePage() {
     }));
   }
 
+  async function handleAddVideo(e: React.FormEvent) {
+    e.preventDefault();
+    const youtubeId = extractYouTubeId(videoForm.youtube_input);
+    if (!youtubeId) {
+      alert('Invalid YouTube URL or ID. Please enter a valid YouTube video link.');
+      return;
+    }
+    try {
+      await addVideo.mutateAsync({
+        movie_id: id,
+        youtube_id: youtubeId,
+        title: videoForm.title,
+        video_type: videoForm.video_type,
+        description: videoForm.description || null,
+        video_date: videoForm.video_date || null,
+        duration: videoForm.duration || null,
+        display_order: videosData.length,
+      });
+      setVideoForm(EMPTY_VIDEO_FORM);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      alert(`Failed to add video: ${msg}`);
+    }
+  }
+
+  async function handleAddPoster(file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File too large. Maximum size is 5 MB.');
+      return;
+    }
+    setUploadingGalleryPoster(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/upload/movie-poster', { method: 'POST', body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
+
+      await addPoster.mutateAsync({
+        movie_id: id,
+        image_url: data.url,
+        title: posterForm.title || 'Poster',
+        description: posterForm.description || null,
+        poster_date: posterForm.poster_date || null,
+        is_main: posterForm.is_main,
+        display_order: postersData.length,
+      });
+      setPosterForm(EMPTY_POSTER_FORM);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingGalleryPoster(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -177,7 +291,7 @@ export default function EditMoviePage() {
         synopsis: form.synopsis || null,
         director: form.director || null,
         trailer_url: form.trailer_url || null,
-        release_type: form.release_type as 'theatrical' | 'ott' | 'upcoming' | 'ended',
+        in_theaters: form.in_theaters,
         backdrop_focus_x: form.backdrop_focus_x,
         backdrop_focus_y: form.backdrop_focus_y,
         spotlight_focus_x: form.spotlight_focus_x,
@@ -302,17 +416,20 @@ export default function EditMoviePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/60 mb-1">Release Type *</label>
-                <select
-                  value={form.release_type}
-                  onChange={(e) => updateField('release_type', e.target.value)}
-                  className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
-                >
-                  <option value="upcoming">Upcoming</option>
-                  <option value="theatrical">Theatrical</option>
-                  <option value="ott">OTT</option>
-                  <option value="ended">Ended (No Longer in Theaters)</option>
-                </select>
+                <label className="block text-sm text-white/60 mb-1">Currently In Theaters</label>
+                <label className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.in_theaters}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, in_theaters: e.target.checked }))
+                    }
+                    className="w-5 h-5 rounded accent-red-600"
+                  />
+                  <span className="text-white text-sm">
+                    {form.in_theaters ? 'Yes — In Theaters' : 'No'}
+                  </span>
+                </label>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -575,6 +692,335 @@ export default function EditMoviePage() {
             </button>
           </form>
 
+          {/* Videos Management */}
+          <div className="space-y-4 mt-8">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Play className="w-5 h-5" /> Videos
+            </h2>
+
+            {videosData.length > 0 && (
+              <div className="space-y-2">
+                {videosData.map((video) => (
+                  <div
+                    key={video.id}
+                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+                  >
+                    <img
+                      src={getYouTubeThumbnail(video.youtube_id)}
+                      alt={video.title}
+                      className="w-24 h-[54px] rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium text-sm truncate">{video.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs bg-purple-600/20 text-purple-400 px-2 py-0.5 rounded">
+                          {VIDEO_TYPES.find((t) => t.value === video.video_type)?.label ??
+                            video.video_type}
+                        </span>
+                        {video.duration && (
+                          <span className="text-xs text-white/40">{video.duration}</span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeVideo.mutate({ id: video.id, movieId: id })}
+                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                      aria-label={`Remove ${video.title}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <form onSubmit={handleAddVideo} className="bg-white/5 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-white/60">Add Video</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">YouTube URL or ID *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://youtube.com/watch?v=... or dQw4w9WgXcQ"
+                    value={videoForm.youtube_input}
+                    onChange={(e) => setVideoForm((p) => ({ ...p, youtube_input: e.target.value }))}
+                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Type *</label>
+                  <select
+                    value={videoForm.video_type}
+                    onChange={(e) =>
+                      setVideoForm((p) => ({ ...p, video_type: e.target.value as VideoType }))
+                    }
+                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                  >
+                    {VIDEO_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-white/40 mb-1">Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Official Trailer"
+                  value={videoForm.title}
+                  onChange={(e) => setVideoForm((p) => ({ ...p, title: e.target.value }))}
+                  className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Duration</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2:34"
+                    value={videoForm.duration}
+                    onChange={(e) => setVideoForm((p) => ({ ...p, duration: e.target.value }))}
+                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={videoForm.video_date}
+                    onChange={(e) => setVideoForm((p) => ({ ...p, video_date: e.target.value }))}
+                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+              </div>
+              {/* YouTube embed preview */}
+              {extractYouTubeId(videoForm.youtube_input) && (
+                <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${extractYouTubeId(videoForm.youtube_input)}`}
+                    className="w-full h-full"
+                    allowFullScreen
+                    title="YouTube preview"
+                  />
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={addVideo.isPending || !videoForm.youtube_input || !videoForm.title}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+              >
+                {addVideo.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                Add Video
+              </button>
+            </form>
+          </div>
+
+          {/* Posters Gallery */}
+          <div className="space-y-4 mt-8">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Film className="w-5 h-5" /> Poster Gallery
+            </h2>
+
+            {postersData.length > 0 && (
+              <div className="grid grid-cols-3 gap-3">
+                {postersData.map((poster) => (
+                  <div
+                    key={poster.id}
+                    className="relative group bg-white/5 rounded-xl overflow-hidden"
+                  >
+                    <img
+                      src={poster.image_url}
+                      alt={poster.title}
+                      className="w-full aspect-[2/3] object-cover"
+                    />
+                    {poster.is_main && (
+                      <div className="absolute top-2 left-2 flex items-center gap-1 bg-yellow-500 text-black px-2 py-0.5 rounded text-xs font-bold">
+                        <Star className="w-3 h-3" /> Main
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                      <p className="text-white text-xs font-medium px-2 text-center truncate w-full">
+                        {poster.title}
+                      </p>
+                      {!poster.is_main && (
+                        <button
+                          onClick={() => setMainPoster.mutate({ id: poster.id, movieId: id })}
+                          className="text-xs bg-yellow-500 text-black px-3 py-1 rounded font-semibold hover:bg-yellow-400"
+                        >
+                          Set as Main
+                        </button>
+                      )}
+                      <button
+                        onClick={() => removePoster.mutate({ id: poster.id, movieId: id })}
+                        className="text-xs bg-red-600 text-white px-3 py-1 rounded font-semibold hover:bg-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-white/5 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-white/60">Add Poster</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Title *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. First Look, Hero Birthday Poster"
+                    value={posterForm.title}
+                    onChange={(e) => setPosterForm((p) => ({ ...p, title: e.target.value }))}
+                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-white/40 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={posterForm.poster_date}
+                    onChange={(e) => setPosterForm((p) => ({ ...p, poster_date: e.target.value }))}
+                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                  />
+                </div>
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={posterForm.is_main}
+                  onChange={(e) => setPosterForm((p) => ({ ...p, is_main: e.target.checked }))}
+                  className="w-4 h-4 rounded accent-red-600"
+                />
+                <span className="text-sm text-white/60">Set as main poster</span>
+              </label>
+              <input
+                ref={galleryPosterInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleAddPoster(file);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                disabled={uploadingGalleryPoster || !posterForm.title}
+                onClick={() => galleryPosterInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+              >
+                {uploadingGalleryPoster ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {uploadingGalleryPoster ? 'Uploading...' : 'Upload & Add Poster'}
+              </button>
+            </div>
+          </div>
+
+          {/* Production Houses */}
+          <div className="space-y-4 mt-8">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Building2 className="w-5 h-5" /> Production Houses
+            </h2>
+
+            {movieProductionHouses.length > 0 && (
+              <div className="space-y-2">
+                {movieProductionHouses.map((mph) => (
+                  <div
+                    key={mph.production_house_id}
+                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                      {mph.production_house?.logo_url ? (
+                        <img
+                          src={mph.production_house.logo_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Building2 className="w-5 h-5 text-white/40" />
+                      )}
+                    </div>
+                    <span className="text-white font-medium flex-1">
+                      {mph.production_house?.name ?? mph.production_house_id}
+                    </span>
+                    <button
+                      onClick={() =>
+                        removeMovieProductionHouse.mutate({
+                          movieId: id,
+                          productionHouseId: mph.production_house_id,
+                        })
+                      }
+                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                      aria-label={`Remove ${mph.production_house?.name}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-white/5 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-white/60">Add Production House</p>
+              <div className="flex gap-3">
+                <select
+                  value={selectedProductionHouseId}
+                  onChange={(e) => setSelectedProductionHouseId(e.target.value)}
+                  className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="">Select production house…</option>
+                  {allProductionHouses
+                    .filter(
+                      (ph) =>
+                        !movieProductionHouses.some((mph) => mph.production_house_id === ph.id),
+                    )
+                    .map((ph) => (
+                      <option key={ph.id} value={ph.id}>
+                        {ph.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={addMovieProductionHouse.isPending || !selectedProductionHouseId}
+                  onClick={async () => {
+                    try {
+                      await addMovieProductionHouse.mutateAsync({
+                        movieId: id,
+                        productionHouseId: selectedProductionHouseId,
+                      });
+                      setSelectedProductionHouseId('');
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+                      alert(`Failed to add: ${msg}`);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+                >
+                  {addMovieProductionHouse.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Cast & Crew Management */}
           <div className="space-y-4 mt-8">
             <h2 className="text-lg font-bold text-white">Cast &amp; Crew</h2>
@@ -807,7 +1253,13 @@ export default function EditMoviePage() {
               <SpotlightPreview
                 title={form.title || 'Movie Title'}
                 backdropUrl={form.backdrop_url}
-                releaseType={(form.release_type || 'upcoming') as ReleaseType}
+                movieStatus={deriveMovieStatus(
+                  {
+                    release_date: form.release_date || new Date().toISOString(),
+                    in_theaters: form.in_theaters,
+                  },
+                  0,
+                )}
                 rating={0}
                 runtime={form.runtime ? Number(form.runtime) : null}
                 certification={form.certification || null}
@@ -823,7 +1275,13 @@ export default function EditMoviePage() {
                 title={form.title || 'Movie Title'}
                 backdropUrl={form.backdrop_url}
                 posterUrl={form.poster_url}
-                releaseType={(form.release_type || 'upcoming') as ReleaseType}
+                movieStatus={deriveMovieStatus(
+                  {
+                    release_date: form.release_date || new Date().toISOString(),
+                    in_theaters: form.in_theaters,
+                  },
+                  0,
+                )}
                 rating={0}
                 reviewCount={0}
                 runtime={form.runtime ? Number(form.runtime) : null}

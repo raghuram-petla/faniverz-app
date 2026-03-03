@@ -7,8 +7,8 @@ import * as api from '../../api';
 jest.mock('../../api');
 
 const mockMovies = [
-  { id: '1', title: 'Movie 1', release_type: 'theatrical' },
-  { id: '2', title: 'Movie 2', release_type: 'ott' },
+  { id: '1', title: 'Movie 1', in_theaters: true },
+  { id: '2', title: 'Movie 2', in_theaters: false },
 ];
 
 function createWrapper() {
@@ -37,7 +37,7 @@ describe('useMovies', () => {
   it('passes filters to fetch function', async () => {
     (api.fetchMovies as jest.Mock).mockResolvedValue([mockMovies[0]]);
 
-    const filters = { releaseType: 'theatrical' as const };
+    const filters = { movieStatus: 'in_theaters' as const };
     renderHook(() => useMovies(filters), { wrapper: createWrapper() });
 
     await waitFor(() => expect(api.fetchMovies).toHaveBeenCalledWith(filters));
@@ -45,7 +45,7 @@ describe('useMovies', () => {
 
   it('uses correct query key with filters', async () => {
     (api.fetchMovies as jest.Mock).mockResolvedValue([]);
-    const filters = { releaseType: 'ott' as const };
+    const filters = { movieStatus: 'streaming' as const };
 
     const { result } = renderHook(() => useMovies(filters), {
       wrapper: createWrapper(),

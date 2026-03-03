@@ -6,9 +6,9 @@ import type { Movie } from '@/lib/types';
 
 const PAGE_SIZE = 50;
 
-export function useAdminMovies(search = '', typeFilter = '') {
+export function useAdminMovies(search = '', statusFilter = '') {
   return useInfiniteQuery({
-    queryKey: ['admin', 'movies', search, typeFilter],
+    queryKey: ['admin', 'movies', search, statusFilter],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -20,8 +20,10 @@ export function useAdminMovies(search = '', typeFilter = '') {
       if (search) {
         query = query.ilike('title', `%${search}%`);
       }
-      if (typeFilter) {
-        query = query.eq('release_type', typeFilter);
+      if (statusFilter === 'upcoming') {
+        query = query.gt('release_date', new Date().toISOString().split('T')[0]);
+      } else if (statusFilter === 'in_theaters') {
+        query = query.eq('in_theaters', true);
       }
       const { data, error } = await query;
       if (error) throw error;

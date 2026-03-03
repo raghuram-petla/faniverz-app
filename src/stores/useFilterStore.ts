@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { ReleaseType } from '@/types';
+import { MovieStatus } from '@/types';
 
-type FilterType = 'all' | ReleaseType;
+type FilterType = 'all' | MovieStatus;
 type SortBy = 'popular' | 'top_rated' | 'latest' | 'upcoming';
 
 interface FilterState {

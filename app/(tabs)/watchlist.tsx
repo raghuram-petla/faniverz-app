@@ -16,6 +16,8 @@ import { useWatchlistPaginated, useWatchlistMutations } from '@/features/watchli
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/theme/colors';
 import { WatchlistEntry } from '@/types';
+import { deriveMovieStatus } from '@shared/movieStatus';
+import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 
 // ─── List item types ─────────────────────────────────────────────────────────
 
@@ -43,8 +45,9 @@ function AvailableCard({ entry, userId }: AvailableCardProps) {
   const { remove, markWatched } = useWatchlistMutations();
   const movie = entry.movie!;
 
-  const statusLabel = movie.release_type === 'theatrical' ? 'In Theaters' : 'Streaming';
-  const statusBg = movie.release_type === 'theatrical' ? colors.red600 : colors.purple600;
+  const status = deriveMovieStatus(movie, 0);
+  const statusLabel = getMovieStatusLabel(status);
+  const statusBg = getMovieStatusColor(status);
 
   return (
     <TouchableOpacity

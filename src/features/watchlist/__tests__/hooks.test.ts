@@ -17,21 +17,21 @@ const mockWatchlistEntries = [
     user_id: 'u1',
     movie_id: 'm1',
     status: 'watchlist',
-    movie: { id: 'm1', title: 'Movie 1', release_type: 'theatrical' },
+    movie: { id: 'm1', title: 'Movie 1', in_theaters: true },
   },
   {
     id: 'w2',
     user_id: 'u1',
     movie_id: 'm2',
     status: 'watchlist',
-    movie: { id: 'm2', title: 'Movie 2', release_type: 'upcoming' },
+    movie: { id: 'm2', title: 'Movie 2', in_theaters: false, release_date: '2099-01-01' },
   },
   {
     id: 'w3',
     user_id: 'u1',
     movie_id: 'm3',
     status: 'watched',
-    movie: { id: 'm3', title: 'Movie 3', release_type: 'theatrical' },
+    movie: { id: 'm3', title: 'Movie 3', in_theaters: true },
   },
 ];
 

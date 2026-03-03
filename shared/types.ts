@@ -1,9 +1,21 @@
 // Shared type definitions — single source of truth for mobile + admin
 // Only Supabase-backed types go here; app-specific types stay in their respective projects.
 
-export type ReleaseType = 'theatrical' | 'ott' | 'upcoming' | 'ended';
+export type MovieStatus = 'upcoming' | 'in_theaters' | 'streaming' | 'released';
 export type Certification = 'U' | 'UA' | 'A';
 export type WatchlistStatus = 'watchlist' | 'watched';
+
+export type VideoType =
+  | 'teaser'
+  | 'trailer'
+  | 'glimpse'
+  | 'song'
+  | 'interview'
+  | 'bts'
+  | 'event'
+  | 'promo'
+  | 'making'
+  | 'other';
 
 export interface Movie {
   id: string;
@@ -18,7 +30,7 @@ export interface Movie {
   trailer_url: string | null;
   synopsis: string | null;
   director: string | null;
-  release_type: ReleaseType;
+  in_theaters: boolean;
   original_language: string | null;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;
@@ -102,4 +114,37 @@ export interface WatchlistEntry {
   added_at: string;
   watched_at: string | null;
   movie?: Movie;
+}
+
+export interface MoviePoster {
+  id: string;
+  movie_id: string;
+  image_url: string;
+  title: string;
+  description: string | null;
+  poster_date: string | null;
+  is_main: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+export interface MovieVideo {
+  id: string;
+  movie_id: string;
+  youtube_id: string;
+  title: string;
+  description: string | null;
+  video_type: VideoType;
+  video_date: string | null;
+  duration: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface ProductionHouse {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  description: string | null;
+  created_at: string;
 }

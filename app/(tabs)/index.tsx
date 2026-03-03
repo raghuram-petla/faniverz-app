@@ -23,6 +23,7 @@ import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
 import { Movie } from '@/types';
+import { deriveMovieStatus } from '@shared/movieStatus';
 
 const HEADER_CONTENT_HEIGHT = 52;
 const FEATURED_MOVIE_LIMIT = 7;
@@ -77,13 +78,24 @@ export default function HomeScreen() {
     [headerTranslateY],
   );
 
-  const featuredMovies = allMovies
-    .filter((m) => m.release_type === 'theatrical' || m.release_type === 'ott')
-    .sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0))
+  const moviesWithStatus = allMovies.map((m) => ({
+    movie: m,
+    status: deriveMovieStatus(m, (platformMap[m.id] ?? []).length),
+  }));
+  const featuredMovies = moviesWithStatus
+    .filter((ms) => ms.status === 'in_theaters' || ms.status === 'streaming')
+    .sort((a, b) => (b.movie.is_featured ? 1 : 0) - (a.movie.is_featured ? 1 : 0))
+    .map((ms) => ms.movie)
     .slice(0, FEATURED_MOVIE_LIMIT);
-  const theatricalMovies = allMovies.filter((m) => m.release_type === 'theatrical');
-  const streamingMovies = allMovies.filter((m) => m.release_type === 'ott');
-  const upcomingMovies = allMovies.filter((m) => m.release_type === 'upcoming');
+  const theatricalMovies = moviesWithStatus
+    .filter((ms) => ms.status === 'in_theaters')
+    .map((ms) => ms.movie);
+  const streamingMovies = moviesWithStatus
+    .filter((ms) => ms.status === 'streaming')
+    .map((ms) => ms.movie);
+  const upcomingMovies = moviesWithStatus
+    .filter((ms) => ms.status === 'upcoming')
+    .map((ms) => ms.movie);
   const upcomingTheatrical = upcomingMovies.filter(
     (m) => !platformMap[m.id] || platformMap[m.id].length === 0,
   );
@@ -162,7 +174,7 @@ export default function HomeScreen() {
               <SectionHeader
                 title="In Theaters"
                 actionLabel="See All"
-                onAction={() => router.push('/discover?filter=theatrical')}
+                onAction={() => router.push('/discover?filter=in_theaters')}
               />
               <FlatList
                 data={theatricalMovies}
@@ -182,7 +194,7 @@ export default function HomeScreen() {
               <SectionHeader
                 title="Streaming Now"
                 actionLabel="See All"
-                onAction={() => router.push('/discover?filter=ott')}
+                onAction={() => router.push('/discover?filter=streaming')}
               />
               <FlatList
                 data={streamingMovies}

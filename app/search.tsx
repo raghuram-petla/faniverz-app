@@ -13,6 +13,8 @@ import { useMovies } from '@/features/movies/hooks/useMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { deriveMovieStatus } from '@shared/movieStatus';
+import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;
@@ -185,67 +187,52 @@ export default function SearchScreen() {
               subtitle="Try searching for another movie"
             />
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.resultItem} onPress={() => handleMoviePress(item)}>
-              <View>
-                <Image
-                  source={{ uri: item.poster_url ?? undefined }}
-                  style={styles.resultPoster}
-                  contentFit="cover"
-                />
-                {platformMap[item.id]?.length > 0 && (
-                  <View
-                    style={[
-                      styles.platformBadge,
-                      { backgroundColor: platformMap[item.id][0].color },
-                    ]}
-                  >
-                    <Text style={styles.platformBadgeText}>{platformMap[item.id][0].logo}</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.resultInfo}>
-                <Text style={styles.resultTitle} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <View style={styles.resultMeta}>
-                  <View
-                    style={[
-                      styles.resultBadge,
-                      {
-                        backgroundColor:
-                          item.release_type === 'theatrical'
-                            ? colors.red600
-                            : item.release_type === 'ott'
-                              ? colors.purple600
-                              : colors.blue600,
-                      },
-                    ]}
-                  >
-                    <Text style={styles.resultBadgeText}>
-                      {item.release_type === 'theatrical'
-                        ? 'In Theaters'
-                        : item.release_type === 'ott'
-                          ? 'Streaming'
-                          : 'Upcoming'}
-                    </Text>
-                  </View>
-                  {item.rating > 0 && (
-                    <View style={styles.resultRating}>
-                      <Ionicons name="star" size={12} color={colors.yellow400} />
-                      <Text style={styles.resultRatingText}>{item.rating}</Text>
+          renderItem={({ item }) => {
+            const itemPlatforms = platformMap[item.id] ?? [];
+            const status = deriveMovieStatus(item, itemPlatforms.length);
+            return (
+              <TouchableOpacity style={styles.resultItem} onPress={() => handleMoviePress(item)}>
+                <View>
+                  <Image
+                    source={{ uri: item.poster_url ?? undefined }}
+                    style={styles.resultPoster}
+                    contentFit="cover"
+                  />
+                  {itemPlatforms.length > 0 && (
+                    <View
+                      style={[styles.platformBadge, { backgroundColor: itemPlatforms[0].color }]}
+                    >
+                      <Text style={styles.platformBadgeText}>{itemPlatforms[0].logo}</Text>
                     </View>
                   )}
                 </View>
-                {item.director && <Text style={styles.resultDirector}>{item.director}</Text>}
-                {item.genres.length > 0 && (
-                  <Text style={styles.resultGenres} numberOfLines={1}>
-                    {item.genres.join(' • ')}
+                <View style={styles.resultInfo}>
+                  <Text style={styles.resultTitle} numberOfLines={1}>
+                    {item.title}
                   </Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
+                  <View style={styles.resultMeta}>
+                    <View
+                      style={[styles.resultBadge, { backgroundColor: getMovieStatusColor(status) }]}
+                    >
+                      <Text style={styles.resultBadgeText}>{getMovieStatusLabel(status)}</Text>
+                    </View>
+                    {item.rating > 0 && (
+                      <View style={styles.resultRating}>
+                        <Ionicons name="star" size={12} color={colors.yellow400} />
+                        <Text style={styles.resultRatingText}>{item.rating}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {item.director && <Text style={styles.resultDirector}>{item.director}</Text>}
+                  {item.genres.length > 0 && (
+                    <Text style={styles.resultGenres} numberOfLines={1}>
+                      {item.genres.join(' • ')}
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
     </View>

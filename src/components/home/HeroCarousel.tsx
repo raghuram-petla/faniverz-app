@@ -13,7 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
-import { getReleaseTypeLabel, getReleaseTypeColor } from '@/constants/releaseType';
+import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
+import { deriveMovieStatus } from '@shared/movieStatus';
 import { Movie, OTTPlatform } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -79,6 +80,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   const renderSlide = ({ item }: { item: Movie }) => {
     const platforms_ = platformMap?.[item.id] ?? [];
     const releaseYear = new Date(item.release_date).getFullYear();
+    const status = deriveMovieStatus(item, platforms_.length);
 
     return (
       <View style={styles.slide}>
@@ -105,14 +107,9 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
         <View style={styles.content}>
           {/* Badges row */}
           <View style={styles.badgeRow}>
-            {(item.release_type === 'theatrical' || item.release_type === 'ott') && (
-              <View
-                style={[
-                  styles.typeBadge,
-                  { backgroundColor: getReleaseTypeColor(item.release_type) },
-                ]}
-              >
-                <Text style={styles.typeBadgeText}>{getReleaseTypeLabel(item.release_type)}</Text>
+            {(status === 'in_theaters' || status === 'streaming') && (
+              <View style={[styles.typeBadge, { backgroundColor: getMovieStatusColor(status) }]}>
+                <Text style={styles.typeBadgeText}>{getMovieStatusLabel(status)}</Text>
               </View>
             )}
             {item.rating > 0 && (
@@ -163,15 +160,15 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
               style={styles.watchButton}
               onPress={() => handleWatchNow(item)}
               accessibilityRole="button"
-              accessibilityLabel={item.release_type === 'theatrical' ? 'Get Tickets' : 'Watch Now'}
+              accessibilityLabel={status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
             >
               <Ionicons
-                name={item.release_type === 'theatrical' ? 'ticket-outline' : 'play'}
+                name={status === 'in_theaters' ? 'ticket-outline' : 'play'}
                 size={20}
                 color={colors.black}
               />
               <Text style={styles.watchButtonText}>
-                {item.release_type === 'theatrical' ? 'Get Tickets' : 'Watch Now'}
+                {status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity

@@ -17,7 +17,7 @@ const mockResults: Movie[] = [
     id: '1',
     tmdb_id: null,
     title: 'Pushpa 2',
-    release_type: 'theatrical',
+    in_theaters: true,
     release_date: '2024-12-05',
     poster_url: null,
     backdrop_url: null,
@@ -291,8 +291,16 @@ describe('SearchScreen', () => {
   });
 
   it('shows Streaming badge for ott movie in results', () => {
-    const ottResult = { ...mockResults[0], id: 'ott-1', release_type: 'ott' as const };
+    const ottResult = { ...mockResults[0], id: 'ott-1', in_theaters: false };
     mockUseMovieSearch.mockReturnValue({ data: [ottResult] });
+    const ottHooks = require('@/features/ott/hooks');
+    ottHooks.useMoviePlatformMap.mockReturnValue({
+      data: {
+        'ott-1': [
+          { id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 0 },
+        ],
+      },
+    });
 
     render(<SearchScreen />);
     const input = screen.getByPlaceholderText('Search movies, actors, directors...');
@@ -301,11 +309,12 @@ describe('SearchScreen', () => {
     expect(screen.getByText('Streaming')).toBeTruthy();
   });
 
-  it('shows Upcoming badge for upcoming movie in results', () => {
+  it('shows Coming Soon badge for upcoming movie in results', () => {
     const upcomingResult = {
       ...mockResults[0],
       id: 'up-1',
-      release_type: 'upcoming' as const,
+      in_theaters: false,
+      release_date: '2099-01-01',
     };
     mockUseMovieSearch.mockReturnValue({ data: [upcomingResult] });
 
@@ -313,7 +322,7 @@ describe('SearchScreen', () => {
     const input = screen.getByPlaceholderText('Search movies, actors, directors...');
     fireEvent.changeText(input, 'pu');
 
-    expect(screen.getByText('Upcoming')).toBeTruthy();
+    expect(screen.getByText('Coming Soon')).toBeTruthy();
   });
 
   it('shows platform badge overlay when result has a platform in platformMap', () => {

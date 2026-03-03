@@ -6,6 +6,7 @@ import { colors } from '@/theme/colors';
 import { Movie, OTTPlatform } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
+import { deriveMovieStatus } from '@shared/movieStatus';
 
 interface MovieCardProps {
   movie: Movie;
@@ -23,6 +24,7 @@ export function MovieCard({
   testID,
 }: MovieCardProps) {
   const router = useRouter();
+  const status = deriveMovieStatus(movie, platforms?.length ?? 0);
 
   const handlePress = () => {
     router.push(`/movie/${movie.id}`);
@@ -50,14 +52,14 @@ export function MovieCard({
         />
 
         {/* Status badge — top-left (hidden when section header already conveys the type) */}
-        {showTypeBadge && movie.release_type === 'theatrical' && (
+        {showTypeBadge && status === 'in_theaters' && (
           <View style={styles.badgeTopLeft}>
-            <StatusBadge type="theatrical" />
+            <StatusBadge type="in_theaters" />
           </View>
         )}
 
         {/* Release date badge — top-left for upcoming */}
-        {showReleaseDate && movie.release_type === 'upcoming' && (
+        {showReleaseDate && status === 'upcoming' && (
           <View style={styles.badgeTopLeft}>
             <View style={[styles.dateBadge, { backgroundColor: colors.red600 }]}>
               <Text style={styles.dateBadgeMonth}>{monthAbbr}</Text>
@@ -66,10 +68,10 @@ export function MovieCard({
           </View>
         )}
 
-        {/* Release date badge — purple for upcoming OTT */}
-        {showReleaseDate && movie.release_type !== 'upcoming' && movie.release_type === 'ott' && (
+        {/* Status badge — purple for streaming */}
+        {showReleaseDate && status !== 'upcoming' && status === 'streaming' && (
           <View style={styles.badgeTopLeft}>
-            <StatusBadge type="ott" />
+            <StatusBadge type="streaming" />
           </View>
         )}
 

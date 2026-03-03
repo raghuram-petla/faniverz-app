@@ -62,7 +62,7 @@ const mockMovies = [
   {
     id: '1',
     title: 'Theater Movie',
-    release_type: 'theatrical',
+    in_theaters: true,
     release_date: '2025-03-01',
     poster_url: null,
     backdrop_url: null,
@@ -78,7 +78,7 @@ const mockMovies = [
   {
     id: '2',
     title: 'OTT Movie',
-    release_type: 'ott',
+    in_theaters: false,
     release_date: '2025-02-01',
     poster_url: null,
     backdrop_url: null,
@@ -94,8 +94,8 @@ const mockMovies = [
   {
     id: '3',
     title: 'Upcoming Movie',
-    release_type: 'upcoming',
-    release_date: '2025-06-01',
+    in_theaters: false,
+    release_date: '2099-06-01',
     poster_url: null,
     backdrop_url: null,
     rating: 0,
@@ -121,7 +121,11 @@ const mockUseMoviePlatformMap = useMoviePlatformMap as jest.Mock;
 function setupDefaultMocks() {
   mockUseMovies.mockReturnValue({ data: mockMovies });
   mockUsePlatforms.mockReturnValue({ data: mockPlatforms });
-  mockUseMoviePlatformMap.mockReturnValue({ data: {} });
+  mockUseMoviePlatformMap.mockReturnValue({
+    data: {
+      '2': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+    },
+  });
 }
 
 describe('HomeScreen', () => {
@@ -187,22 +191,23 @@ describe('HomeScreen', () => {
   });
 
   it('does not render "In Theaters" section when no theatrical movies', () => {
-    const ottAndUpcomingOnly = mockMovies.filter((m) => m.release_type !== 'theatrical');
-    mockUseMovies.mockReturnValue({ data: ottAndUpcomingOnly });
+    const nonTheatrical = mockMovies.filter((m) => !m.in_theaters);
+    mockUseMovies.mockReturnValue({ data: nonTheatrical });
     render(<HomeScreen />);
     expect(screen.queryByText('In Theaters')).toBeNull();
   });
 
   it('does not render "Streaming Now" section when no OTT movies', () => {
-    const theatricalAndUpcomingOnly = mockMovies.filter((m) => m.release_type !== 'ott');
-    mockUseMovies.mockReturnValue({ data: theatricalAndUpcomingOnly });
+    const nonStreaming = mockMovies.filter((m) => m.in_theaters || m.release_date === '2099-06-01');
+    mockUseMovies.mockReturnValue({ data: nonStreaming });
+    mockUseMoviePlatformMap.mockReturnValue({ data: {} });
     render(<HomeScreen />);
     expect(screen.queryByText('Streaming Now')).toBeNull();
   });
 
   it('does not render "Coming Soon" section when no upcoming movies', () => {
-    const releasedOnly = mockMovies.filter((m) => m.release_type !== 'upcoming');
-    mockUseMovies.mockReturnValue({ data: releasedOnly });
+    const nonUpcoming = mockMovies.filter((m) => m.release_date !== '2099-06-01');
+    mockUseMovies.mockReturnValue({ data: nonUpcoming });
     render(<HomeScreen />);
     expect(screen.queryByText('Coming Soon')).toBeNull();
   });
@@ -279,15 +284,15 @@ describe('HomeScreen', () => {
     const seeAllButtons = screen.getAllByText('See All');
     // The first "See All" corresponds to "In Theaters"
     fireEvent.press(seeAllButtons[0]);
-    expect(mockPush).toHaveBeenCalledWith('/discover?filter=theatrical');
+    expect(mockPush).toHaveBeenCalledWith('/discover?filter=in_theaters');
   });
 
-  it('navigates to discover with ott filter when Streaming Now "See All" is pressed', () => {
+  it('navigates to discover with streaming filter when Streaming Now "See All" is pressed', () => {
     render(<HomeScreen />);
     const seeAllButtons = screen.getAllByText('See All');
     // The second "See All" corresponds to "Streaming Now"
     fireEvent.press(seeAllButtons[1]);
-    expect(mockPush).toHaveBeenCalledWith('/discover?filter=ott');
+    expect(mockPush).toHaveBeenCalledWith('/discover?filter=streaming');
   });
 
   it('navigates to discover with upcoming filter when Coming Soon "See All" is pressed', () => {
@@ -309,8 +314,8 @@ describe('HomeScreen', () => {
     const upcomingOTTMovie = {
       id: '4',
       title: 'Upcoming OTT Film',
-      release_type: 'upcoming' as const,
-      release_date: '2025-07-01',
+      in_theaters: false,
+      release_date: '2099-07-01',
       poster_url: null,
       backdrop_url: null,
       rating: 0,
@@ -339,18 +344,44 @@ describe('HomeScreen', () => {
   it('renders FlatList item separators when multiple items exist in each section', () => {
     // 2 theatrical, 2 OTT, 2 upcoming theatrical, 2 upcoming OTT → triggers ItemSeparatorComponent
     const multiMovies = [
-      { ...mockMovies[0], id: '1', title: 'Theater 1', release_type: 'theatrical' as const },
-      { ...mockMovies[0], id: '2', title: 'Theater 2', release_type: 'theatrical' as const },
-      { ...mockMovies[1], id: '3', title: 'OTT 1', release_type: 'ott' as const },
-      { ...mockMovies[1], id: '4', title: 'OTT 2', release_type: 'ott' as const },
-      { ...mockMovies[2], id: '5', title: 'Upcoming Theater 1', release_type: 'upcoming' as const },
-      { ...mockMovies[2], id: '6', title: 'Upcoming Theater 2', release_type: 'upcoming' as const },
-      { ...mockMovies[2], id: '7', title: 'Upcoming OTT 1', release_type: 'upcoming' as const },
-      { ...mockMovies[2], id: '8', title: 'Upcoming OTT 2', release_type: 'upcoming' as const },
+      { ...mockMovies[0], id: '1', title: 'Theater 1', in_theaters: true },
+      { ...mockMovies[0], id: '2', title: 'Theater 2', in_theaters: true },
+      { ...mockMovies[1], id: '3', title: 'OTT 1', in_theaters: false },
+      { ...mockMovies[1], id: '4', title: 'OTT 2', in_theaters: false },
+      {
+        ...mockMovies[2],
+        id: '5',
+        title: 'Upcoming Theater 1',
+        in_theaters: false,
+        release_date: '2099-06-01',
+      },
+      {
+        ...mockMovies[2],
+        id: '6',
+        title: 'Upcoming Theater 2',
+        in_theaters: false,
+        release_date: '2099-06-01',
+      },
+      {
+        ...mockMovies[2],
+        id: '7',
+        title: 'Upcoming OTT 1',
+        in_theaters: false,
+        release_date: '2099-06-01',
+      },
+      {
+        ...mockMovies[2],
+        id: '8',
+        title: 'Upcoming OTT 2',
+        in_theaters: false,
+        release_date: '2099-06-01',
+      },
     ];
     mockUseMovies.mockReturnValue({ data: multiMovies });
     mockUseMoviePlatformMap.mockReturnValue({
       data: {
+        '3': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+        '4': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
         '7': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
         '8': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
       },

@@ -21,7 +21,7 @@ const mockMovie: Movie = {
   trailer_url: null,
   synopsis: null,
   director: 'Sukumar',
-  release_type: 'theatrical',
+  in_theaters: true,
   rating: 4.5,
   review_count: 100,
   is_featured: false,
@@ -49,7 +49,12 @@ describe('MovieCard', () => {
   });
 
   it('shows release date when showReleaseDate is true', () => {
-    const upcomingMovie = { ...mockMovie, release_type: 'upcoming' as const, rating: 0 };
+    const upcomingMovie = {
+      ...mockMovie,
+      in_theaters: false,
+      release_date: '2099-01-01',
+      rating: 0,
+    };
     const { getByText } = render(<MovieCard movie={upcomingMovie} showReleaseDate />);
     // Date parsing may vary by timezone; just check a month abbreviation appears
     expect(getByText(/Dec/)).toBeTruthy();
@@ -59,7 +64,7 @@ describe('MovieCard', () => {
     const platforms = [
       { id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 },
     ];
-    const ottMovie = { ...mockMovie, release_type: 'ott' as const };
+    const ottMovie = { ...mockMovie, in_theaters: false };
     const { UNSAFE_queryAllByType } = render(<MovieCard movie={ottMovie} platforms={platforms} />);
     // PlatformBadge renders inside the card
     expect(UNSAFE_queryAllByType).toBeTruthy();

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
+import { generateVariants, PHOTO_VARIANTS } from '@/lib/image-resize';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -47,17 +48,32 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-    const key = `${randomUUID()}.${ext}`;
+    const id = randomUUID();
+    const key = `${id}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    await r2.send(
-      new PutObjectCommand({
-        Bucket: BUCKET,
-        Key: key,
-        Body: buffer,
-        ContentType: file.type,
-      }),
-    );
+    const variants = await generateVariants(buffer, file.type, PHOTO_VARIANTS);
+
+    await Promise.all([
+      r2.send(
+        new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: key,
+          Body: buffer,
+          ContentType: file.type,
+        }),
+      ),
+      ...variants.map((v) =>
+        r2.send(
+          new PutObjectCommand({
+            Bucket: BUCKET,
+            Key: `${id}${v.suffix}.${ext}`,
+            Body: v.buffer,
+            ContentType: v.contentType,
+          }),
+        ),
+      ),
+    ]);
 
     const baseUrl = process.env.R2_PUBLIC_BASE_URL_ACTORS;
     if (!baseUrl) {

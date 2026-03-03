@@ -37,7 +37,7 @@ const mockMovies = [
   {
     id: '1',
     title: 'Pushpa 2',
-    release_type: 'theatrical',
+    in_theaters: true,
     release_date: '2025-03-15',
     poster_url: null,
     backdrop_url: null,
@@ -58,7 +58,7 @@ const mockMovies = [
   {
     id: '2',
     title: 'Kalki',
-    release_type: 'ott',
+    in_theaters: false,
     release_date: '2025-03-15',
     poster_url: null,
     backdrop_url: null,

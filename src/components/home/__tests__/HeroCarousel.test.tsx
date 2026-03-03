@@ -8,12 +8,19 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
+const mockPlatformMap: Record<
+  string,
+  { id: string; name: string; logo: string; color: string; display_order: number }[]
+> = {
+  '2': [{ id: 'netflix', name: 'Netflix', logo: '', color: '#E50914', display_order: 0 }],
+};
+
 const mockMovies: Movie[] = [
   {
     id: '1',
     tmdb_id: null,
     title: 'Pushpa 2',
-    release_type: 'theatrical',
+    in_theaters: true,
     release_date: '2025-03-01',
     poster_url: null,
     backdrop_url: null,
@@ -41,7 +48,7 @@ const mockMovies: Movie[] = [
     id: '2',
     tmdb_id: null,
     title: 'Kalki',
-    release_type: 'ott',
+    in_theaters: false,
     release_date: '2025-02-01',
     poster_url: null,
     backdrop_url: null,
@@ -78,9 +85,11 @@ describe('HeroCarousel', () => {
     expect(getByText('Kalki')).toBeTruthy();
   });
 
-  it('renders context-aware CTA buttons per release type', () => {
-    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    // theatrical → Get Tickets, ott → Watch Now
+  it('renders context-aware CTA buttons per movie status', () => {
+    const { getByText } = render(
+      <HeroCarousel movies={mockMovies} platformMap={mockPlatformMap} />,
+    );
+    // in_theaters → Get Tickets, streaming → Watch Now
     expect(getByText('Get Tickets')).toBeTruthy();
     expect(getByText('Watch Now')).toBeTruthy();
   });
@@ -103,7 +112,9 @@ describe('HeroCarousel', () => {
   });
 
   it('shows "Streaming" badge for OTT movies', () => {
-    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
+    const { getByText } = render(
+      <HeroCarousel movies={mockMovies} platformMap={mockPlatformMap} />,
+    );
     expect(getByText('Streaming')).toBeTruthy();
   });
 

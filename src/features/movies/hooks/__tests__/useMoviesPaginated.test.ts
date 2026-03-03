@@ -37,7 +37,7 @@ describe('useMoviesPaginated', () => {
 
   it('passes filters to fetchMoviesPaginated', async () => {
     mockFetch.mockResolvedValue([]);
-    const filters = { releaseType: 'theatrical' as const };
+    const filters = { movieStatus: 'in_theaters' as const };
 
     const { result } = renderHook(() => useMoviesPaginated(filters), {
       wrapper: createWrapper(),

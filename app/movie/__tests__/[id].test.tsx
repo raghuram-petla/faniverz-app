@@ -85,7 +85,7 @@ import { useMovieReviews } from '@/features/reviews/hooks';
 const mockMovie = {
   id: 'movie-1',
   title: 'Pushpa 2',
-  release_type: 'theatrical',
+  in_theaters: true,
   release_date: '2025-03-15',
   poster_url: 'https://example.com/poster.jpg',
   backdrop_url: 'https://example.com/backdrop.jpg',
@@ -153,6 +153,9 @@ const mockMovie = {
       },
     },
   ],
+  videos: [],
+  posters: [],
+  productionHouses: [],
 };
 
 describe('MovieDetailScreen', () => {
@@ -289,7 +292,8 @@ describe('MovieDetailScreen', () => {
   it('shows release alert for upcoming movies', () => {
     const upcomingMovie = {
       ...mockMovie,
-      release_type: 'upcoming',
+      in_theaters: false,
+      release_date: '2099-01-01',
       rating: 0,
       review_count: 0,
       is_featured: false,
@@ -392,7 +396,8 @@ describe('MovieDetailScreen', () => {
   it('shows "Coming Soon" status badge for upcoming movies', () => {
     const upcomingMovie = {
       ...mockMovie,
-      release_type: 'upcoming',
+      in_theaters: false,
+      release_date: '2099-01-01',
       rating: 0,
       review_count: 0,
       is_featured: false,
@@ -479,9 +484,178 @@ describe('MovieDetailScreen', () => {
   });
 
   it('renders streaming status badge for ott movies', () => {
-    const ottMovie = { ...mockMovie, release_type: 'ott' };
+    const ottMovie = { ...mockMovie, in_theaters: false };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: ottMovie });
     render(<MovieDetailScreen />);
     expect(screen.getByText('Streaming')).toBeTruthy();
+  });
+
+  it('does not show Media tab when no videos or posters', () => {
+    render(<MovieDetailScreen />);
+    expect(screen.queryByText('Media')).toBeNull();
+  });
+
+  it('shows Media tab when movie has videos', () => {
+    const movieWithVideos = {
+      ...mockMovie,
+      videos: [
+        {
+          id: 'v1',
+          movie_id: 'movie-1',
+          youtube_id: 'dQw4w9WgXcQ',
+          title: 'Official Trailer',
+          video_type: 'trailer',
+          description: null,
+          video_date: null,
+          duration: '3:20',
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+    render(<MovieDetailScreen />);
+    expect(screen.getByText('Media')).toBeTruthy();
+  });
+
+  it('switches to Media tab and shows video title', () => {
+    const movieWithVideos = {
+      ...mockMovie,
+      videos: [
+        {
+          id: 'v1',
+          movie_id: 'movie-1',
+          youtube_id: 'dQw4w9WgXcQ',
+          title: 'Official Trailer',
+          video_type: 'trailer',
+          description: null,
+          video_date: null,
+          duration: '3:20',
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Media'));
+    expect(screen.getByText('Official Trailer')).toBeTruthy();
+  });
+
+  it('shows Media tab when movie has posters', () => {
+    const movieWithPosters = {
+      ...mockMovie,
+      posters: [
+        {
+          id: 'p1',
+          movie_id: 'movie-1',
+          image_url: 'https://r2.dev/poster.jpg',
+          title: 'First Look',
+          description: null,
+          poster_date: null,
+          is_main: true,
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithPosters });
+    render(<MovieDetailScreen />);
+    expect(screen.getByText('Media')).toBeTruthy();
+  });
+
+  it('shows poster title and main badge in Media tab', () => {
+    const movieWithPosters = {
+      ...mockMovie,
+      posters: [
+        {
+          id: 'p1',
+          movie_id: 'movie-1',
+          image_url: 'https://r2.dev/poster.jpg',
+          title: 'First Look',
+          description: null,
+          poster_date: null,
+          is_main: true,
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithPosters });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Media'));
+    expect(screen.getByText('Posters')).toBeTruthy();
+    expect(screen.getByText('First Look')).toBeTruthy();
+    expect(screen.getByText('Main')).toBeTruthy();
+  });
+
+  it('shows production houses in overview tab', () => {
+    const movieWithPH = {
+      ...mockMovie,
+      productionHouses: [
+        {
+          id: 'ph1',
+          name: 'Mythri Movie Makers',
+          logo_url: null,
+          description: null,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithPH });
+    render(<MovieDetailScreen />);
+    expect(screen.getByText('Production')).toBeTruthy();
+    expect(screen.getByText('Mythri Movie Makers')).toBeTruthy();
+  });
+
+  it('shows video duration badge', () => {
+    const movieWithVideos = {
+      ...mockMovie,
+      videos: [
+        {
+          id: 'v1',
+          movie_id: 'movie-1',
+          youtube_id: 'dQw4w9WgXcQ',
+          title: 'Official Trailer',
+          video_type: 'trailer',
+          description: null,
+          video_date: null,
+          duration: '3:20',
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Media'));
+    expect(screen.getByText('3:20')).toBeTruthy();
+  });
+
+  it('opens YouTube URL when video card is pressed', () => {
+    const movieWithVideos = {
+      ...mockMovie,
+      videos: [
+        {
+          id: 'v1',
+          movie_id: 'movie-1',
+          youtube_id: 'dQw4w9WgXcQ',
+          title: 'Official Trailer',
+          video_type: 'trailer',
+          description: null,
+          video_date: null,
+          duration: '3:20',
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Media'));
+    fireEvent.press(screen.getByLabelText('Official Trailer'));
+    expect(linkingSpy).toHaveBeenCalledWith('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    linkingSpy.mockRestore();
   });
 });

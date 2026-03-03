@@ -25,13 +25,16 @@ import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { StarRating } from '@/components/ui/StarRating';
 import { ActorAvatar } from '@/components/common/ActorAvatar';
 import { getPlatformLogo } from '@/constants/platformLogos';
-import { getReleaseTypeLabel } from '@/constants/releaseType';
+import { getMovieStatusLabel } from '@/constants';
+import { deriveMovieStatus } from '@shared/movieStatus';
 import { formatDate } from '@/utils/formatDate';
+import { VIDEO_TYPES } from '@shared/constants';
+import type { MovieVideo, MoviePoster } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HERO_HEIGHT = 600;
 
-type TabName = 'overview' | 'cast' | 'reviews';
+type TabName = 'overview' | 'media' | 'cast' | 'reviews';
 
 export default function MovieDetailScreen() {
   const insets = useSafeAreaInsets();
@@ -90,8 +93,21 @@ export default function MovieDetailScreen() {
     setContainsSpoiler(false);
   };
 
+  const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
   const releaseYear = new Date(movie.release_date).getFullYear();
-  const tabs: TabName[] = ['overview', 'cast', 'reviews'];
+  const hasMedia = movie.videos.length > 0 || movie.posters.length > 0;
+  const tabs: TabName[] = hasMedia
+    ? ['overview', 'media', 'cast', 'reviews']
+    : ['overview', 'cast', 'reviews'];
+
+  // Group videos by type for Media tab
+  const videosByType = hasMedia
+    ? VIDEO_TYPES.reduce<{ label: string; videos: MovieVideo[] }[]>((acc, vt) => {
+        const matches = movie.videos.filter((v) => v.video_type === vt.value);
+        if (matches.length > 0) acc.push({ label: vt.label, videos: matches });
+        return acc;
+      }, [])
+    : [];
 
   return (
     <View style={styles.screen}>
@@ -134,9 +150,7 @@ export default function MovieDetailScreen() {
               />
               <View style={styles.heroInfoText}>
                 <View style={styles.statusBadge}>
-                  <Text style={styles.statusBadgeText}>
-                    {getReleaseTypeLabel(movie.release_type)}
-                  </Text>
+                  <Text style={styles.statusBadgeText}>{getMovieStatusLabel(movieStatus)}</Text>
                 </View>
                 <Text style={styles.heroTitle} numberOfLines={2}>
                   {movie.title}
@@ -207,7 +221,7 @@ export default function MovieDetailScreen() {
         )}
 
         {/* Release Alert for upcoming */}
-        {movie.release_type === 'upcoming' && (
+        {movieStatus === 'upcoming' && (
           <View style={styles.releaseAlert}>
             <Ionicons name="alert-circle" size={24} color={colors.blue400} />
             <View style={{ flex: 1 }}>
@@ -264,6 +278,27 @@ export default function MovieDetailScreen() {
                   </View>
                 )}
               </View>
+              {/* Production Houses */}
+              {movie.productionHouses.length > 0 && (
+                <View style={styles.productionHousesRow}>
+                  <Text style={styles.productionHousesLabel}>Production</Text>
+                  <View style={styles.productionHousesList}>
+                    {movie.productionHouses.map((ph) => (
+                      <View key={ph.id} style={styles.productionHouseChip}>
+                        {ph.logo_url && (
+                          <Image
+                            source={{ uri: ph.logo_url }}
+                            style={styles.productionHouseLogo}
+                            contentFit="cover"
+                          />
+                        )}
+                        <Text style={styles.productionHouseName}>{ph.name}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               {movie.trailer_url && (
                 <TouchableOpacity
                   style={styles.trailerButton}
@@ -272,6 +307,79 @@ export default function MovieDetailScreen() {
                   <Ionicons name="play" size={20} color={colors.red400} />
                   <Text style={styles.trailerButtonText}>Watch Trailer</Text>
                 </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {activeTab === 'media' && (
+            <View style={styles.mediaTab}>
+              {/* Videos by type */}
+              {videosByType.map((group) => (
+                <View key={group.label} style={styles.mediaSection}>
+                  <Text style={styles.mediaSectionTitle}>{group.label}s</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.videoRow}>
+                      {group.videos.map((video: MovieVideo) => (
+                        <TouchableOpacity
+                          key={video.id}
+                          style={styles.videoCard}
+                          onPress={() =>
+                            Linking.openURL(`https://www.youtube.com/watch?v=${video.youtube_id}`)
+                          }
+                          accessibilityLabel={video.title}
+                        >
+                          <View style={styles.videoThumbnailWrapper}>
+                            <Image
+                              source={{
+                                uri: `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`,
+                              }}
+                              style={styles.videoThumbnail}
+                              contentFit="cover"
+                            />
+                            <View style={styles.playOverlay}>
+                              <Ionicons name="play-circle" size={36} color={colors.white} />
+                            </View>
+                            {video.duration && (
+                              <View style={styles.durationBadge}>
+                                <Text style={styles.durationText}>{video.duration}</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={styles.videoTitle} numberOfLines={2}>
+                            {video.title}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </View>
+              ))}
+
+              {/* Poster Gallery */}
+              {movie.posters.length > 0 && (
+                <View style={styles.mediaSection}>
+                  <Text style={styles.mediaSectionTitle}>Posters</Text>
+                  <View style={styles.posterGrid}>
+                    {movie.posters.map((poster: MoviePoster) => (
+                      <View key={poster.id} style={styles.posterCard}>
+                        <Image
+                          source={{ uri: poster.image_url }}
+                          style={styles.posterImage}
+                          contentFit="cover"
+                        />
+                        {poster.is_main && (
+                          <View style={styles.mainPosterBadge}>
+                            <Ionicons name="star" size={10} color={colors.yellow400} />
+                            <Text style={styles.mainPosterText}>Main</Text>
+                          </View>
+                        )}
+                        <Text style={styles.posterTitle} numberOfLines={1}>
+                          {poster.title}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
               )}
             </View>
           )}
@@ -648,6 +756,84 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   trailerButtonText: { color: colors.red400, fontSize: 16, fontWeight: '600' },
+
+  // Production Houses
+  productionHousesRow: { gap: 8 },
+  productionHousesLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white40,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  productionHousesList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  productionHouseChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.white10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  productionHouseLogo: { width: 24, height: 24, borderRadius: 12 },
+  productionHouseName: { fontSize: 13, fontWeight: '600', color: colors.white },
+
+  // Media Tab
+  mediaTab: { gap: 24 },
+  mediaSection: { gap: 12 },
+  mediaSectionTitle: { fontSize: 16, fontWeight: '700', color: colors.white },
+  videoRow: { flexDirection: 'row', gap: 12, paddingRight: 16 },
+  videoCard: { width: 220 },
+  videoThumbnailWrapper: {
+    width: 220,
+    height: 124,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.white5,
+  },
+  videoThumbnail: { width: '100%', height: '100%' },
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  durationBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  durationText: { fontSize: 11, fontWeight: '600', color: colors.white },
+  videoTitle: { fontSize: 13, fontWeight: '500', color: colors.white, marginTop: 6 },
+
+  // Poster Gallery
+  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  posterCard: { width: (SCREEN_WIDTH - 32 - 12) / 2 },
+  posterImage: {
+    width: '100%',
+    aspectRatio: 2 / 3,
+    borderRadius: 12,
+    backgroundColor: colors.white5,
+  },
+  mainPosterBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  mainPosterText: { fontSize: 10, fontWeight: '700', color: colors.yellow400 },
+  posterTitle: { fontSize: 12, fontWeight: '500', color: colors.white60, marginTop: 4 },
 
   castTab: { gap: 16 },
   castSectionLabel: {

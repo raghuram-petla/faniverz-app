@@ -4,7 +4,7 @@ import { SpotlightPreview } from '@/components/preview/SpotlightPreview';
 const defaultProps = {
   title: 'Pushpa 2',
   backdropUrl: 'https://example.com/backdrop.jpg',
-  releaseType: 'theatrical' as const,
+  movieStatus: 'in_theaters' as const,
   rating: 8.5,
   runtime: 148,
   certification: 'UA',
@@ -24,13 +24,13 @@ describe('SpotlightPreview', () => {
     expect(screen.getByText('In Theaters')).toBeInTheDocument();
   });
 
-  it('shows Get Tickets for theatrical release', () => {
-    render(<SpotlightPreview {...defaultProps} releaseType="theatrical" />);
+  it('shows Get Tickets for in_theaters status', () => {
+    render(<SpotlightPreview {...defaultProps} movieStatus="in_theaters" />);
     expect(screen.getByText(/Get Tickets/)).toBeInTheDocument();
   });
 
-  it('shows Watch Now for OTT release', () => {
-    render(<SpotlightPreview {...defaultProps} releaseType="ott" />);
+  it('shows Watch Now for streaming status', () => {
+    render(<SpotlightPreview {...defaultProps} movieStatus="streaming" />);
     expect(screen.getByText(/Watch Now/)).toBeInTheDocument();
   });
 
