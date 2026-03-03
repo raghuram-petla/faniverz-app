@@ -132,7 +132,7 @@ describe('HomeScreen', () => {
 
   it('renders the Faniverz logo', () => {
     render(<HomeScreen />);
-    expect(screen.getByText('Faniverz')).toBeTruthy();
+    expect(screen.getByLabelText('Faniverz')).toBeTruthy();
   });
 
   it('renders the Search header button', () => {
@@ -217,7 +217,7 @@ describe('HomeScreen', () => {
     mockUseMovies.mockReturnValue({ data: [] });
     mockUsePlatforms.mockReturnValue({ data: [] });
     render(<HomeScreen />);
-    expect(screen.getByText('Faniverz')).toBeTruthy();
+    expect(screen.getByLabelText('Faniverz')).toBeTruthy();
   });
 
   it('navigates to discover with platform filter when a platform square is pressed', () => {
@@ -271,7 +271,7 @@ describe('HomeScreen', () => {
     fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 0 } } });
     // Negative offset edge case
     fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: -10 } } });
-    expect(screen.getByText('Faniverz')).toBeTruthy();
+    expect(screen.getByLabelText('Faniverz')).toBeTruthy();
   });
 
   it('navigates to discover with theatrical filter when In Theaters "See All" is pressed', () => {

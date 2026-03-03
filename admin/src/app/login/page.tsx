@@ -18,17 +18,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-1 mb-8">
-          <Image src="/logo-header.png" alt="Faniverz" width={52} height={52} />
-          <div>
-            <h1
-              className="text-3xl text-white tracking-wide"
-              style={{ fontFamily: 'var(--font-exo2)' }}
-            >
-              Faniverz
-            </h1>
-            <p className="text-xs text-white/40 tracking-widest uppercase">Admin</p>
-          </div>
+        <div className="flex flex-col items-center mb-8">
+          <Image
+            src="/logo-full.png"
+            alt="Faniverz"
+            width={200}
+            height={72}
+            className="object-contain"
+          />
+          <p className="text-xs text-white/40 tracking-widest uppercase mt-1">Admin</p>
         </div>
 
         {error && (

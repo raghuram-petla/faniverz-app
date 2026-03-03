@@ -67,8 +67,8 @@ describe('Sidebar', () => {
     }
   });
 
-  it('has the Faniverz branding text', () => {
+  it('has the Faniverz branding logo', () => {
     render(<Sidebar />);
-    expect(screen.getByText('Faniverz')).toBeInTheDocument();
+    expect(screen.getByAltText('Faniverz')).toBeInTheDocument();
   });
 });

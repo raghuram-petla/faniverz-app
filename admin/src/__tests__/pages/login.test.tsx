@@ -17,9 +17,9 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('LoginPage', () => {
-  it('has "Faniverz" heading', () => {
+  it('has Faniverz logo', () => {
     render(<LoginPage />);
-    expect(screen.getByText('Faniverz')).toBeInTheDocument();
+    expect(screen.getByAltText('Faniverz')).toBeInTheDocument();
   });
 
   it('renders "Sign in with Google" button', () => {

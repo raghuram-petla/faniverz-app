@@ -117,14 +117,12 @@ export default function HomeScreen() {
           },
         ]}
       >
-        <View style={styles.logoRow}>
-          <Image
-            source={require('../../assets/logo-header.png')}
-            style={styles.logoIcon}
-            contentFit="contain"
-          />
-          <Text style={styles.logoWordmark}>Faniverz</Text>
-        </View>
+        <Image
+          source={require('../../assets/logo-full.png')}
+          style={styles.logoFull}
+          contentFit="contain"
+          accessibilityLabel="Faniverz"
+        />
         <View style={styles.headerButtons}>
           <TouchableOpacity
             style={styles.headerButton}
@@ -287,21 +285,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: colors.black,
   },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  logoIcon: {
-    width: 44,
-    height: 44,
-  },
-  logoWordmark: {
-    fontFamily: 'Exo2_800ExtraBold_Italic',
-    fontSize: 22,
-    color: colors.white,
-    letterSpacing: 0.5,
-    includeFontPadding: false,
+  logoFull: {
+    height: 36,
+    width: 100,
   },
   headerButtons: {
     flexDirection: 'row',

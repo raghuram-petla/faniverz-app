@@ -31,14 +31,14 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-zinc-900 border-r border-white/10 min-h-screen p-4">
-      <div className="flex items-center gap-1 px-2 mb-8">
-        <Image src="/logo-header.png" alt="Faniverz" width={40} height={40} />
-        <span
-          className="text-xl text-white tracking-wide"
-          style={{ fontFamily: 'var(--font-exo2)' }}
-        >
-          Faniverz
-        </span>
+      <div className="px-2 mb-8">
+        <Image
+          src="/logo-full.png"
+          alt="Faniverz"
+          width={160}
+          height={58}
+          className="object-contain"
+        />
       </div>
 
       <nav className="space-y-1">

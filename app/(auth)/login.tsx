@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
@@ -51,10 +52,12 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <View style={styles.logoBox}>
-            <Ionicons name="film" size={32} color={colors.white} />
-          </View>
-          <Text style={styles.appName}>Faniverz</Text>
+          <Image
+            source={require('../../assets/logo-full.png')}
+            style={styles.logoFull}
+            contentFit="contain"
+            accessibilityLabel="Faniverz"
+          />
           <Text style={styles.tagline}>Your Telugu Cinema Companion</Text>
         </View>
 
@@ -167,19 +170,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logoBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: colors.red600,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoFull: {
+    height: 60,
+    width: 167,
     marginBottom: 16,
-  },
-  appName: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: colors.white,
   },
   tagline: {
     fontSize: 14,

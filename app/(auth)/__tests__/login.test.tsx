@@ -71,7 +71,7 @@ describe('LoginScreen', () => {
 
   it('renders app branding', () => {
     render(<LoginScreen />);
-    expect(screen.getByText('Faniverz')).toBeTruthy();
+    expect(screen.getByLabelText('Faniverz')).toBeTruthy();
     expect(screen.getByText('Your Telugu Cinema Companion')).toBeTruthy();
   });
 
