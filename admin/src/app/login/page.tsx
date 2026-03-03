@@ -26,7 +26,7 @@ export default function LoginPage() {
             height={122}
             className="object-contain"
           />
-          <p className="text-xs text-white/40 tracking-widest uppercase mt-1">Admin</p>
+          <p className="text-sm text-white/40 tracking-widest uppercase mt-1 select-none">Admin</p>
         </div>
 
         {error && (

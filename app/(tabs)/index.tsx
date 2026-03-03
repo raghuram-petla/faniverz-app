@@ -286,8 +286,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.black,
   },
   logoFull: {
-    height: 36,
-    width: 100,
+    height: 44,
+    width: 124,
   },
   headerButtons: {
     flexDirection: 'row',
