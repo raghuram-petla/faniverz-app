@@ -58,7 +58,8 @@ export default function EditMoviePage() {
   const updateMovie = useUpdateMovie();
   const deleteMovie = useDeleteMovie();
   const { data: castData = [] } = useMovieCast(id);
-  const { data: actors = [] } = useAdminActors();
+  const { data: actorsData } = useAdminActors();
+  const actors = actorsData?.pages.flat() ?? [];
   const addCast = useAddCast();
   const removeCast = useRemoveCast();
   const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);

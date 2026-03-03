@@ -15,7 +15,9 @@ const EMPTY_FORM = {
 export default function CastPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const { data: actors = [], isLoading, isFetching } = useAdminActors(debouncedSearch);
+  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useAdminActors(debouncedSearch);
+  const actors = data?.pages.flat() ?? [];
   const createActor = useCreateActor();
   const deleteActor = useDeleteActor();
   const [showAdd, setShowAdd] = useState(false);
@@ -204,6 +206,23 @@ export default function CastPage() {
           {actors.length === 0 && (
             <p className="text-white/40 col-span-full text-center py-10">No actors found</p>
           )}
+        </div>
+      )}
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+              </>
+            ) : (
+              'Load More'
+            )}
+          </button>
         </div>
       )}
     </div>

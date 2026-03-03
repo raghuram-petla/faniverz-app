@@ -1,14 +1,18 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { logAudit } from '@/lib/audit-client';
 import type { Actor, MovieCast } from '@/lib/types';
 
+const PAGE_SIZE = 50;
+
 export function useAdminActors(search = '') {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['admin', 'actors', search],
-    queryFn: async () => {
-      let query = supabase.from('actors').select('*').order('name').limit(50);
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabase.from('actors').select('*').order('name').range(from, to);
       if (search) {
         query = query.ilike('name', `%${search}%`);
       }
@@ -16,6 +20,9 @@ export function useAdminActors(search = '') {
       if (error) throw error;
       return data as Actor[];
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
     enabled: search.length >= 2 || search === '',
   });
 }
