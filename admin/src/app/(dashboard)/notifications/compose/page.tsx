@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotification } from '@/hooks/useAdminNotifications';
-import { useAdminMovies } from '@/hooks/useAdminMovies';
+import { useAllMovies } from '@/hooks/useAdminMovies';
 import { Bell, ArrowLeft, Loader2, Search } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,7 +11,7 @@ const notificationTypes = ['release', 'watchlist', 'trending', 'reminder'] as co
 
 export default function ComposeNotificationPage() {
   const router = useRouter();
-  const { data: movies } = useAdminMovies();
+  const { data: movies } = useAllMovies();
   const createNotification = useCreateNotification();
 
   const [type, setType] = useState<string>('');

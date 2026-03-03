@@ -1,21 +1,23 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAdminMovies, useDeleteMovie } from '@/hooks/useAdminMovies';
 import { formatDate } from '@/lib/utils';
 import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
 
 export default function MoviesPage() {
-  const { data: movies = [], isLoading } = useAdminMovies();
-  const deleteMovie = useDeleteMovie();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
+  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useAdminMovies(debouncedSearch, typeFilter);
+  const movies = data?.pages.flat() ?? [];
+  const deleteMovie = useDeleteMovie();
 
-  const filtered = movies.filter((m) => {
-    if (search && !m.title.toLowerCase().includes(search.toLowerCase())) return false;
-    if (typeFilter && m.release_type !== typeFilter) return false;
-    return true;
-  });
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
   return (
     <div className="space-y-6">
@@ -29,28 +31,43 @@ export default function MoviesPage() {
         </Link>
       </div>
 
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-          <input
-            type="text"
-            placeholder="Search movies..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-red-600"
-          />
+      <div className="space-y-2">
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input
+              type="text"
+              placeholder="Search movies..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-red-600"
+            />
+            {isFetching && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 animate-spin" />
+            )}
+          </div>
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="bg-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-red-600"
+          >
+            <option value="">All Types</option>
+            <option value="theatrical">Theatrical</option>
+            <option value="ott">OTT</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="ended">Ended</option>
+          </select>
         </div>
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="bg-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-red-600"
-        >
-          <option value="">All Types</option>
-          <option value="theatrical">Theatrical</option>
-          <option value="ott">OTT</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="ended">Ended</option>
-        </select>
+        {search.length === 1 && (
+          <p className="text-xs text-white/40">Type at least 2 characters to search</p>
+        )}
+        {!isLoading && movies.length > 0 && (
+          <p className="text-xs text-white/40">
+            Showing {movies.length} movie{movies.length !== 1 ? 's' : ''}
+            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
+            {typeFilter ? ` (${typeFilter})` : ''}
+          </p>
+        )}
       </div>
 
       {isLoading ? (
@@ -80,7 +97,7 @@ export default function MoviesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filtered.map((movie) => (
+              {movies.map((movie) => (
                 <tr key={movie.id} className="hover:bg-white/5">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
@@ -135,7 +152,7 @@ export default function MoviesPage() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {movies.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center py-10 text-white/40">
                     No movies found
@@ -144,6 +161,23 @@ export default function MoviesPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+              </>
+            ) : (
+              'Load More'
+            )}
+          </button>
         </div>
       )}
     </div>

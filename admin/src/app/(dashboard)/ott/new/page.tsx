@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAdminMovies } from '@/hooks/useAdminMovies';
+import { useAllMovies } from '@/hooks/useAdminMovies';
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import { useCreateOttRelease } from '@/hooks/useAdminOtt';
 import { Tv, ArrowLeft, Loader2 } from 'lucide-react';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 export default function NewOttReleasePage() {
   const router = useRouter();
-  const { data: movies, isLoading: moviesLoading } = useAdminMovies();
+  const { data: movies, isLoading: moviesLoading } = useAllMovies();
   const { data: platforms, isLoading: platformsLoading } = useAdminPlatforms();
   const createRelease = useCreateOttRelease();
 

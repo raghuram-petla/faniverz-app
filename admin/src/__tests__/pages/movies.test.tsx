@@ -11,9 +11,11 @@ vi.mock('@/lib/supabase-browser', () => ({
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
       limit: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
       gte: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockResolvedValue({ data: [], error: null }),
     })),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),

@@ -27,11 +27,11 @@ function createWrapper() {
 }
 
 describe('useAdminMovies', () => {
-  it('uses the correct query key ["admin", "movies"]', async () => {
+  it('uses the correct query key ["admin", "movies", search, typeFilter]', async () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         order: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          range: vi.fn().mockResolvedValue({ data: [], error: null }),
         }),
       }),
     });
@@ -48,13 +48,11 @@ describe('useAdminMovies', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    // Verify the cache has data under the correct key
-    const cachedData = queryClient.getQueryData(['admin', 'movies']);
+    const cachedData = queryClient.getQueryData(['admin', 'movies', '', '']);
     expect(cachedData).toBeDefined();
-    expect(cachedData).toEqual([]);
   });
 
-  it('calls supabase.from("movies") and returns data', async () => {
+  it('calls supabase.from("movies") and returns paginated data', async () => {
     const mockMovies = [
       { id: '1', title: 'Movie A', release_date: '2025-01-01' },
       { id: '2', title: 'Movie B', release_date: '2025-02-01' },
@@ -63,7 +61,7 @@ describe('useAdminMovies', () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         order: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue({ data: mockMovies, error: null }),
+          range: vi.fn().mockResolvedValue({ data: mockMovies, error: null }),
         }),
       }),
     });
@@ -75,7 +73,49 @@ describe('useAdminMovies', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(mockFrom).toHaveBeenCalledWith('movies');
-    expect(result.current.data).toEqual(mockMovies);
+    expect(result.current.data?.pages.flat()).toEqual(mockMovies);
+  });
+
+  it('applies search filter via ilike', async () => {
+    const mockIlike = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ ilike: mockIlike });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies('test'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockIlike).toHaveBeenCalledWith('title', '%test%');
+  });
+
+  it('applies type filter via eq', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', 'theatrical'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockEq).toHaveBeenCalledWith('release_type', 'theatrical');
   });
 });
 
@@ -92,7 +132,7 @@ describe('useCreateMovie', () => {
       insert: mockInsert,
       select: vi.fn().mockReturnValue({
         order: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          range: vi.fn().mockResolvedValue({ data: [], error: null }),
         }),
       }),
     });
@@ -124,7 +164,7 @@ describe('useDeleteMovie', () => {
       delete: mockDelete,
       select: vi.fn().mockReturnValue({
         order: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          range: vi.fn().mockResolvedValue({ data: [], error: null }),
         }),
       }),
     });
