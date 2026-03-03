@@ -7,7 +7,9 @@ export function Header() {
 
   return (
     <header className="h-16 bg-zinc-900 border-b border-white/10 flex items-center justify-between px-6">
-      <h2 className="text-lg font-semibold text-white">Admin Panel</h2>
+      <h2 className="text-lg font-semibold text-white/40 tracking-widest uppercase select-none">
+        Admin
+      </h2>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">

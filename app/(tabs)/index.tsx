@@ -24,7 +24,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
 import { Movie } from '@/types';
 
-const HEADER_CONTENT_HEIGHT = 56;
+const HEADER_CONTENT_HEIGHT = 52;
 const FEATURED_MOVIE_LIMIT = 7;
 const PLATFORM_TILE_COUNT = 8;
 const PLATFORM_GRID_H_PADDING = 32;
@@ -278,16 +278,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 50,
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingBottom: 12,
+    alignItems: 'center',
+    paddingBottom: 4,
     backgroundColor: colors.black,
   },
   logoFull: {
-    height: 44,
-    width: 124,
+    height: 52,
+    width: 146,
   },
   headerButtons: {
     flexDirection: 'row',

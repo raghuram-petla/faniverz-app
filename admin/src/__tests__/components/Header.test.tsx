@@ -17,9 +17,9 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('Header', () => {
-  it('renders "Admin Panel" heading', () => {
+  it('renders "ADMIN" heading', () => {
     render(<Header />);
-    expect(screen.getByText('Admin Panel')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /admin/i })).toBeInTheDocument();
   });
 
   it('renders sign out button', () => {
