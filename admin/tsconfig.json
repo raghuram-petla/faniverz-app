@@ -32,6 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"],
-  "extends": "expo/tsconfig.base"
+  "exclude": ["node_modules"]
 }
