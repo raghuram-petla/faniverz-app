@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { useSurpriseContent } from '@/features/surprise/hooks';
 import { SurpriseCategory, SurpriseContent } from '@/types';
 import {
@@ -13,7 +13,7 @@ import {
   formatViews,
 } from '@/constants/surpriseHelpers';
 import { FeaturedVideoCard } from '@/components/surprise/FeaturedVideoCard';
-import { styles } from './surprise.styles';
+import { createStyles } from './surprise.styles';
 
 type FilterOption = 'all' | SurpriseCategory;
 
@@ -23,6 +23,8 @@ interface ContentCardProps {
 }
 
 function ContentCard({ item, index }: ContentCardProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const catColor = getCategoryColor(item.category);
   const iconName = getCategoryIconName(item.category);
   const bgColor = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
@@ -70,6 +72,8 @@ interface FunFactBoxProps {
 }
 
 function FunFactBox({ fact }: FunFactBoxProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.funFact}>
       <Ionicons name="sparkles" size={20} color={colors.white} style={styles.funFactIcon} />
@@ -85,6 +89,8 @@ const FUN_FACT =
   "This section features rare content you won't find on regular streaming platforms — from unreleased songs to exclusive behind-the-scenes footage!";
 
 export default function SurpriseScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterOption>('all');
 

@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { getPlatformLogo } from '@/constants/platformLogos';
 import { formatDate } from '@/utils/formatDate';
 import type { MoviePlatform, MovieStatus } from '@/types';
-import { styles } from '../[id].styles';
+import { createStyles } from '../[id].styles';
 
 interface WatchOnSectionProps {
   platforms: MoviePlatform[];
@@ -14,6 +14,8 @@ interface WatchOnSectionProps {
 }
 
 export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnSectionProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <>
       {platforms.length > 0 && (

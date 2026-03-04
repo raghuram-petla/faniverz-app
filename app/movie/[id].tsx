@@ -19,11 +19,14 @@ import { ReviewsTab } from './components/ReviewsTab';
 import { ReviewModal } from './components/ReviewModal';
 import { PosterModal } from './components/PosterModal';
 import { MovieDetailHeader } from './components/MovieDetailHeader';
-import { styles } from './[id].styles';
+import { createStyles } from './[id].styles';
+import { useTheme } from '@/theme';
 
 type TabName = 'overview' | 'media' | 'cast' | 'reviews';
 
 export default function MovieDetailScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

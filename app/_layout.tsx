@@ -7,8 +7,36 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Exo2_800ExtraBold_Italic } from '@expo-google-fonts/exo-2';
 import { queryClient } from '@/lib/queryClient';
 import { AuthProvider } from '@/features/auth/providers/AuthProvider';
+import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+
+function ThemedStack() {
+  const { theme, isDark } = useTheme();
+
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.background },
+          animation: 'fade',
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="movie/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="actor/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="discover" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="search" options={{ animation: 'fade' }} />
+        <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="profile" />
+      </Stack>
+    </>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Exo2_800ExtraBold_Italic });
@@ -21,28 +49,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: '#000' },
-              animation: 'fade',
-            }}
-          >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="movie/[id]" options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="actor/[id]" options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="discover" options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="search" options={{ animation: 'fade' }} />
-            <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
-            <Stack.Screen name="profile" />
-          </Stack>
-        </AuthProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <ThemedStack />
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

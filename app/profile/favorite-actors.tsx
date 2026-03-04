@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,7 +17,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useFavoriteActors, useFavoriteActorMutations } from '@/features/actors/hooks';
 import { Actor, FavoriteActor } from '@/types';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import type { SemanticTheme } from '@shared/themes';
 import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 
 const COLUMN_GAP = 12;
@@ -34,6 +37,8 @@ export default function FavoriteActorsScreen() {
   const { user } = useAuth();
   const { data: favorites, isLoading } = useFavoriteActors(user?.id ?? '');
   const { remove } = useFavoriteActorMutations();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const actorList = (favorites ?? []) as FavoriteActorWithActor[];
   const count = actorList.length;
@@ -71,7 +76,7 @@ export default function FavoriteActorsScreen() {
             activeOpacity={0.8}
             onPress={() => router.push('/search')}
           >
-            <Ionicons name="add" size={20} color={colors.white} />
+            <Ionicons name="add" size={20} color={palette.white} />
           </TouchableOpacity>
         }
       />
@@ -79,7 +84,7 @@ export default function FavoriteActorsScreen() {
       {/* Content */}
       {isLoading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.red600} />
+          <ActivityIndicator size="large" color={palette.red600} />
         </View>
       ) : actorList.length === 0 ? (
         <EmptyState
@@ -115,7 +120,7 @@ export default function FavoriteActorsScreen() {
                       </View>
                       {/* Heart badge */}
                       <View style={styles.heartBadge}>
-                        <Ionicons name="heart" size={12} color={colors.red500} />
+                        <Ionicons name="heart" size={12} color={palette.red500} />
                       </View>
                       {/* Remove button */}
                       <TouchableOpacity
@@ -123,7 +128,7 @@ export default function FavoriteActorsScreen() {
                         activeOpacity={0.8}
                         onPress={() => handleRemove(fav.actor_id)}
                       >
-                        <Ionicons name="close" size={14} color={colors.white} />
+                        <Ionicons name="close" size={14} color={palette.white} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -139,103 +144,104 @@ export default function FavoriteActorsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.black,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 48,
-  },
-  centered: {
-    paddingVertical: 64,
-    alignItems: 'center',
-  },
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
+    contentContainer: {
+      paddingHorizontal: 16,
+      paddingBottom: 48,
+    },
+    centered: {
+      paddingVertical: 64,
+      alignItems: 'center',
+    },
 
-  // Header badge & action
-  countBadge: {
-    backgroundColor: colors.red600,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 24,
-    alignItems: 'center',
-  },
-  countBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.red600,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    // Header badge & action
+    countBadge: {
+      backgroundColor: palette.red600,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      minWidth: 24,
+      alignItems: 'center',
+    },
+    countBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: palette.white,
+    },
+    addButton: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: palette.red600,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  // Grid
-  grid: {
-    gap: COLUMN_GAP,
-  },
-  gridRow: {
-    flexDirection: 'row',
-    gap: COLUMN_GAP,
-  },
-  actorCard: {
-    width: CARD_WIDTH,
-  },
-  actorCardEmpty: {
-    // invisible spacer to keep grid alignment
-  },
+    // Grid
+    grid: {
+      gap: COLUMN_GAP,
+    },
+    gridRow: {
+      flexDirection: 'row',
+      gap: COLUMN_GAP,
+    },
+    actorCard: {
+      width: CARD_WIDTH,
+    },
+    actorCardEmpty: {
+      // invisible spacer to keep grid alignment
+    },
 
-  // Poster
-  posterWrapper: {
-    position: 'relative',
-    borderRadius: 16,
-    overflow: 'hidden',
-    aspectRatio: 3 / 4,
-  },
-  actorPhoto: {
-    width: '100%',
-    height: '100%',
-  },
-  nameOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.black80,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  actorName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  heartBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.black80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.black80,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+    // Poster
+    posterWrapper: {
+      position: 'relative',
+      borderRadius: 16,
+      overflow: 'hidden',
+      aspectRatio: 3 / 4,
+    },
+    actorPhoto: {
+      width: '100%',
+      height: '100%',
+    },
+    nameOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: t.overlayHeavy,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+    },
+    actorName: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: palette.white,
+    },
+    heartBadge: {
+      position: 'absolute',
+      top: 8,
+      left: 8,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: t.overlayHeavy,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    removeButton: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: t.overlayHeavy,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });

@@ -71,7 +71,7 @@ export default function CastPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Cast / Actors</h1>
+        <h1 className="text-2xl font-bold text-on-surface">Cast / Actors</h1>
         <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700"
@@ -81,14 +81,14 @@ export default function CastPage() {
       </div>
 
       {showAdd && (
-        <div className="bg-zinc-900 border border-white/10 rounded-xl p-4 space-y-3">
+        <div className="bg-surface-card border border-outline rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
               placeholder="Name *"
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+              className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
             />
             <div className="flex items-center gap-2">
               <input
@@ -107,9 +107,11 @@ export default function CastPage() {
                   <img
                     src={form.photo_url}
                     alt=""
-                    className="w-9 h-9 rounded-full object-cover border border-white/10 shrink-0"
+                    className="w-9 h-9 rounded-full object-cover border border-outline shrink-0"
                   />
-                  <span className="text-xs text-white/40 truncate flex-1">Photo uploaded</span>
+                  <span className="text-xs text-on-surface-subtle truncate flex-1">
+                    Photo uploaded
+                  </span>
                   <button
                     type="button"
                     onClick={() => setForm((p) => ({ ...p, photo_url: '' }))}
@@ -123,7 +125,7 @@ export default function CastPage() {
                   type="button"
                   disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm text-white/60 hover:bg-white/15 disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-input rounded-lg px-4 py-2 text-sm text-on-surface-muted hover:bg-input-hover disabled:opacity-50"
                 >
                   {uploading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -137,7 +139,7 @@ export default function CastPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-white/40 mb-1">Person Type</label>
+              <label className="block text-xs text-on-surface-subtle mb-1">Person Type</label>
               <select
                 value={form.person_type}
                 onChange={(e) =>
@@ -146,31 +148,31 @@ export default function CastPage() {
                     person_type: e.target.value as 'actor' | 'technician',
                   }))
                 }
-                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
               >
                 <option value="actor">Actor</option>
                 <option value="technician">Technician</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs text-white/40 mb-1">Date of Birth</label>
+              <label className="block text-xs text-on-surface-subtle mb-1">Date of Birth</label>
               <input
                 type="date"
                 value={form.birth_date}
                 onChange={(e) => setForm((p) => ({ ...p, birth_date: e.target.value }))}
-                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-white/40 mb-1">Height (cm)</label>
+              <label className="block text-xs text-on-surface-subtle mb-1">Height (cm)</label>
               <input
                 type="number"
                 placeholder="e.g. 178"
                 value={form.height_cm}
                 onChange={(e) => setForm((p) => ({ ...p, height_cm: e.target.value }))}
-                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
               />
             </div>
           </div>
@@ -187,7 +189,7 @@ export default function CastPage() {
                 setShowAdd(false);
                 setForm(EMPTY_FORM);
               }}
-              className="text-white/60 px-4 py-2 rounded-lg text-sm hover:bg-white/10"
+              className="text-on-surface-muted px-4 py-2 rounded-lg text-sm hover:bg-input"
             >
               Cancel
             </button>
@@ -197,23 +199,23 @@ export default function CastPage() {
 
       <div className="space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
           <input
             type="text"
             placeholder="Search actors..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-red-600"
+            className="w-full bg-input rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
           />
           {isFetching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 animate-spin" />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
           )}
         </div>
         {search.length === 1 && (
-          <p className="text-xs text-white/40">Type at least 2 characters to search</p>
+          <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
         )}
         {!isLoading && actors.length > 0 && (
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-on-surface-subtle">
             Showing {actors.length} actor{actors.length !== 1 ? 's' : ''}
             {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
           </p>
@@ -229,26 +231,28 @@ export default function CastPage() {
           {actors.map((actor) => (
             <div
               key={actor.id}
-              className="bg-zinc-900 border border-white/10 rounded-xl p-4 flex items-center gap-4"
+              className="bg-surface-card border border-outline rounded-xl p-4 flex items-center gap-4"
             >
               <Link href={'/cast/' + actor.id} className="flex items-center gap-4 flex-1 min-w-0">
-                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-14 h-14 rounded-full bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {actor.photo_url ? (
                     <img src={actor.photo_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <Users className="w-6 h-6 text-white/40" />
+                    <Users className="w-6 h-6 text-on-surface-subtle" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white truncate">{actor.name}</p>
+                  <p className="font-semibold text-on-surface truncate">{actor.name}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-white/40 capitalize">{actor.person_type}</span>
+                    <span className="text-xs text-on-surface-subtle capitalize">
+                      {actor.person_type}
+                    </span>
                   </div>
                 </div>
               </Link>
               <Link
                 href={'/cast/' + actor.id}
-                className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10"
+                className="p-2 rounded-lg text-on-surface-subtle hover:text-on-surface hover:bg-input"
               >
                 <Pencil className="w-4 h-4" />
               </Link>
@@ -256,14 +260,16 @@ export default function CastPage() {
                 onClick={() => {
                   if (confirm('Delete this actor?')) deleteActor.mutate(actor.id);
                 }}
-                className="p-2 rounded-lg text-white/40 hover:text-red-500 hover:bg-red-600/10"
+                className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           ))}
           {actors.length === 0 && (
-            <p className="text-white/40 col-span-full text-center py-10">No actors found</p>
+            <p className="text-on-surface-subtle col-span-full text-center py-10">
+              No actors found
+            </p>
           )}
         </div>
       )}
@@ -272,7 +278,7 @@ export default function CastPage() {
           <button
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-input hover:bg-input-hover text-on-surface px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {isFetchingNextPage ? (
               <>

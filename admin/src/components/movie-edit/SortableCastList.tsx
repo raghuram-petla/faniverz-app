@@ -34,17 +34,17 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+      className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3"
     >
       <button
         type="button"
-        className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 shrink-0"
+        className="cursor-grab active:cursor-grabbing text-on-surface-subtle hover:text-on-surface-muted shrink-0"
         {...attributes}
         {...listeners}
       >
         <GripVertical className="w-4 h-4" />
       </button>
-      <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden shrink-0 flex items-center justify-center">
+      <div className="w-8 h-8 rounded-full bg-input overflow-hidden shrink-0 flex items-center justify-center">
         {entry.actor?.photo_url ? (
           <img
             src={entry.actor.photo_url}
@@ -52,23 +52,25 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
             className="w-full h-full object-cover"
           />
         ) : (
-          <User className="w-4 h-4 text-white/40" />
+          <User className="w-4 h-4 text-on-surface-subtle" />
         )}
       </div>
-      <span className="text-white font-medium flex-1 truncate">
+      <span className="text-on-surface font-medium flex-1 truncate">
         {entry.actor?.name ?? entry.actor_id}
       </span>
       {entry.role_name && (
-        <span className="text-white/60 text-sm truncate max-w-[120px]">{entry.role_name}</span>
+        <span className="text-on-surface-muted text-sm truncate max-w-[120px]">
+          {entry.role_name}
+        </span>
       )}
       {entry.role_order != null && (
-        <span className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded">
+        <span className="text-xs bg-input text-on-surface-muted px-2 py-0.5 rounded">
           #{entry.role_order}
         </span>
       )}
       <button
         onClick={onRemove}
-        className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+        className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
         aria-label={`Remove ${entry.actor?.name}`}
       >
         <X className="w-4 h-4" />

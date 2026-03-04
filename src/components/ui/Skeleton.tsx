@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -6,7 +6,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import type { SemanticTheme } from '@shared/themes';
 
 interface SkeletonProps {
   width: number;
@@ -16,6 +17,8 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width, height, borderRadius = 8, style }: SkeletonProps) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const opacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -43,8 +46,9 @@ export function Skeleton({ width, height, borderRadius = 8, style }: SkeletonPro
   );
 }
 
-const styles = StyleSheet.create({
-  skeleton: {
-    backgroundColor: colors.white10,
-  },
-});
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    skeleton: {
+      backgroundColor: t.input,
+    },
+  });

@@ -89,7 +89,7 @@ interface SectionNavProps {
 
 export function SectionNav({ activeSection, onScrollTo }: SectionNavProps) {
   return (
-    <div className="sticky top-[52px] z-20 backdrop-blur bg-zinc-950/95 border-b border-white/10 -mx-4 px-4 py-2">
+    <div className="sticky top-[52px] z-20 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-2">
       <div className="flex gap-1.5 overflow-x-auto">
         {MOVIE_SECTIONS.map((section) => {
           const Icon = section.icon;
@@ -101,7 +101,7 @@ export function SectionNav({ activeSection, onScrollTo }: SectionNavProps) {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
                 isActive
                   ? 'bg-red-600 text-white'
-                  : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                  : 'bg-surface-elevated text-on-surface-muted hover:bg-input hover:text-on-surface-muted'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />

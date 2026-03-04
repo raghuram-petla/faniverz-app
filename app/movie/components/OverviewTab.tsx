@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import type { MovieWithDetails } from '@/types/movie';
-import { styles } from '../[id].styles';
+import { createStyles } from '../[id].styles';
 
 interface OverviewTabProps {
   movie: MovieWithDetails;
@@ -12,6 +12,8 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ movie, hasMedia, onSwitchToMedia }: OverviewTabProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.overviewTab}>
       {movie.synopsis && <Text style={styles.synopsis}>{movie.synopsis}</Text>}
@@ -27,14 +29,14 @@ export function OverviewTab({ movie, hasMedia, onSwitchToMedia }: OverviewTabPro
       <View style={styles.infoGrid}>
         {movie.director && (
           <View style={styles.infoCard}>
-            <Ionicons name="videocam" size={20} color={colors.white60} />
+            <Ionicons name="videocam" size={20} color={theme.textSecondary} />
             <Text style={styles.infoLabel}>Director</Text>
             <Text style={styles.infoValue}>{movie.director}</Text>
           </View>
         )}
         {movie.certification && (
           <View style={styles.infoCard}>
-            <Ionicons name="shield-checkmark" size={20} color={colors.white60} />
+            <Ionicons name="shield-checkmark" size={20} color={theme.textSecondary} />
             <Text style={styles.infoLabel}>Certification</Text>
             <Text style={styles.infoValue}>{movie.certification}</Text>
           </View>

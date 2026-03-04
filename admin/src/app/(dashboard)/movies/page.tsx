@@ -41,7 +41,7 @@ export default function MoviesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Movies</h1>
+        <h1 className="text-2xl font-bold text-on-surface">Movies</h1>
         <Link
           href="/movies/new"
           className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700"
@@ -53,22 +53,22 @@ export default function MoviesPage() {
       <div className="space-y-2">
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
             <input
               type="text"
               placeholder="Search movies..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
             />
             {isFetching && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 animate-spin" />
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
             )}
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-red-600"
+            className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="">All Status</option>
             <option value="upcoming">Upcoming</option>
@@ -76,10 +76,10 @@ export default function MoviesPage() {
           </select>
         </div>
         {search.length === 1 && (
-          <p className="text-xs text-white/40">Type at least 2 characters to search</p>
+          <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
         )}
         {!isLoading && movies.length > 0 && (
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-on-surface-subtle">
             Showing {movies.length} movie{movies.length !== 1 ? 's' : ''}
             {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
             {statusFilter ? ` (${statusFilter})` : ''}
@@ -92,30 +92,30 @@ export default function MoviesPage() {
           <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left text-xs font-medium text-white/40 uppercase tracking-wider px-4 py-3">
+              <tr className="border-b border-outline">
+                <th className="text-left text-xs font-medium text-on-surface-subtle uppercase tracking-wider px-4 py-3">
                   Movie
                 </th>
-                <th className="text-left text-xs font-medium text-white/40 uppercase tracking-wider px-4 py-3">
+                <th className="text-left text-xs font-medium text-on-surface-subtle uppercase tracking-wider px-4 py-3">
                   Type
                 </th>
-                <th className="text-left text-xs font-medium text-white/40 uppercase tracking-wider px-4 py-3">
+                <th className="text-left text-xs font-medium text-on-surface-subtle uppercase tracking-wider px-4 py-3">
                   Release Date
                 </th>
-                <th className="text-left text-xs font-medium text-white/40 uppercase tracking-wider px-4 py-3">
+                <th className="text-left text-xs font-medium text-on-surface-subtle uppercase tracking-wider px-4 py-3">
                   Rating
                 </th>
-                <th className="text-right text-xs font-medium text-white/40 uppercase tracking-wider px-4 py-3">
+                <th className="text-right text-xs font-medium text-on-surface-subtle uppercase tracking-wider px-4 py-3">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-outline-subtle">
               {movies.map((movie) => (
-                <tr key={movie.id} className="hover:bg-white/5">
+                <tr key={movie.id} className="hover:bg-surface-elevated">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {movie.poster_url && (
@@ -125,7 +125,7 @@ export default function MoviesPage() {
                           className="w-10 h-14 rounded object-cover"
                         />
                       )}
-                      <span className="font-medium text-white">{movie.title}</span>
+                      <span className="font-medium text-on-surface">{movie.title}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -140,7 +140,7 @@ export default function MoviesPage() {
                       );
                     })()}
                   </td>
-                  <td className="px-4 py-3 text-sm text-white/60">
+                  <td className="px-4 py-3 text-sm text-on-surface-muted">
                     {formatDate(movie.release_date)}
                   </td>
                   <td className="px-4 py-3 text-sm text-yellow-400">
@@ -150,7 +150,7 @@ export default function MoviesPage() {
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/movies/${movie.id}`}
-                        className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10"
+                        className="p-2 rounded-lg text-on-surface-subtle hover:text-on-surface hover:bg-input"
                       >
                         <Edit className="w-4 h-4" />
                       </Link>
@@ -158,7 +158,7 @@ export default function MoviesPage() {
                         onClick={() => {
                           if (confirm('Delete this movie?')) deleteMovie.mutate(movie.id);
                         }}
-                        className="p-2 rounded-lg text-white/40 hover:text-red-500 hover:bg-red-600/10"
+                        className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -168,7 +168,7 @@ export default function MoviesPage() {
               ))}
               {movies.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center py-10 text-white/40">
+                  <td colSpan={5} className="text-center py-10 text-on-surface-subtle">
                     No movies found
                   </td>
                 </tr>
@@ -182,7 +182,7 @@ export default function MoviesPage() {
           <button
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-input hover:bg-input-hover text-on-surface px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {isFetchingNextPage ? (
               <>

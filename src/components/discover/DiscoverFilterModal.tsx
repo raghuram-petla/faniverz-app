@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import type { OTTPlatform, ProductionHouse } from '@/types';
 
 interface DiscoverFilterModalProps {
@@ -64,6 +64,7 @@ export function DiscoverFilterModal({
   onClose,
   styles,
 }: DiscoverFilterModalProps) {
+  const { theme, colors } = useTheme();
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
@@ -71,7 +72,7 @@ export function DiscoverFilterModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Filters</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color={colors.white} />
+              <Ionicons name="close" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -85,7 +86,7 @@ export function DiscoverFilterModal({
                     key={p.id}
                     style={[
                       styles.platformButton,
-                      { backgroundColor: isSelected ? p.color : colors.white5 },
+                      { backgroundColor: isSelected ? p.color : theme.surfaceElevated },
                     ]}
                     onPress={() => onTogglePlatform(p.id)}
                   >

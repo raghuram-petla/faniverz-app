@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,14 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import type { SemanticTheme } from '@shared/themes';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
 export default function ForgotPasswordScreen() {
+  const { theme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { resetPassword, isLoading, error } = useEmailAuth();
@@ -73,13 +76,13 @@ export default function ForgotPasswordScreen() {
               <Ionicons
                 name="mail-outline"
                 size={18}
-                color={colors.white40}
+                color={theme.textTertiary}
                 style={styles.inputIcon}
               />
               <TextInput
                 style={styles.input}
                 placeholder="Email address"
-                placeholderTextColor={colors.white40}
+                placeholderTextColor={theme.textTertiary}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -101,7 +104,7 @@ export default function ForgotPasswordScreen() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <ActivityIndicator size="small" color={theme.textPrimary} />
               ) : (
                 <Text style={styles.sendButtonText}>Send Reset Link</Text>
               )}
@@ -122,110 +125,111 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.black,
-    paddingHorizontal: 16,
-  },
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+      paddingHorizontal: 16,
+    },
 
-  // Body
-  body: {
-    flex: 1,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.white60,
-    lineHeight: 22,
-    marginBottom: 28,
-  },
+    // Body
+    body: {
+      flex: 1,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: t.textSecondary,
+      lineHeight: 22,
+      marginBottom: 28,
+    },
 
-  // Input
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.white10,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-    height: 52,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.white,
-  },
+    // Input
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: t.surfaceElevated,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.border,
+      paddingHorizontal: 14,
+      marginBottom: 12,
+      height: 52,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    input: {
+      flex: 1,
+      fontSize: 15,
+      color: t.textPrimary,
+    },
 
-  // Error
-  errorText: {
-    fontSize: 13,
-    color: colors.red500,
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
+    // Error
+    errorText: {
+      fontSize: 13,
+      color: '#EF4444',
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
 
-  // Send button
-  sendButton: {
-    height: 52,
-    backgroundColor: colors.red600,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  sendButtonDisabled: {
-    opacity: 0.6,
-  },
-  sendButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.white,
-  },
+    // Send button
+    sendButton: {
+      height: 52,
+      backgroundColor: '#DC2626',
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    sendButtonDisabled: {
+      opacity: 0.6,
+    },
+    sendButtonText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: t.textPrimary,
+    },
 
-  // Back link
-  backToSignIn: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  backToSignInText: {
-    fontSize: 14,
-    color: colors.white60,
-    fontWeight: '500',
-  },
+    // Back link
+    backToSignIn: {
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    backToSignInText: {
+      fontSize: 14,
+      color: t.textSecondary,
+      fontWeight: '500',
+    },
 
-  // Success card
-  successCard: {
-    alignItems: 'center',
-    paddingTop: 32,
-    gap: 12,
-  },
-  successIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.red600_20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  successTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  successSubtitle: {
-    fontSize: 15,
-    color: colors.white60,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  successEmail: {
-    color: colors.white,
-    fontWeight: '600',
-  },
-});
+    // Success card
+    successCard: {
+      alignItems: 'center',
+      paddingTop: 32,
+      gap: 12,
+    },
+    successIcon: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: 'rgba(220, 38, 38, 0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    successTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: t.textPrimary,
+    },
+    successSubtitle: {
+      fontSize: 15,
+      color: t.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    successEmail: {
+      color: t.textPrimary,
+      fontWeight: '600',
+    },
+  });

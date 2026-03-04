@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import type { MoviePoster } from '@/types';
-import { styles } from '../[id].styles';
+import { createStyles } from '../[id].styles';
 
 interface PosterModalProps {
   poster: MoviePoster | null;
@@ -11,6 +11,8 @@ interface PosterModalProps {
 }
 
 export function PosterModal({ poster, onClose }: PosterModalProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <Modal visible={!!poster} animationType="fade" transparent>
       <View style={styles.posterModalOverlay}>

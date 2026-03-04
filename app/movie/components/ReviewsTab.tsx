@@ -1,10 +1,10 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { StarRating } from '@/components/ui/StarRating';
 import { formatDate } from '@/utils/formatDate';
 import type { Review } from '@/types/review';
-import { styles } from '../[id].styles';
+import { createStyles } from '../[id].styles';
 
 interface ReviewsTabProps {
   rating: number;
@@ -23,6 +23,8 @@ export function ReviewsTab({
   onWriteReview,
   onHelpful,
 }: ReviewsTabProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.reviewsTab}>
       <View style={styles.ratingSummary}>
@@ -41,7 +43,7 @@ export function ReviewsTab({
         <View key={review.id} style={styles.reviewCard}>
           <View style={styles.reviewHeader}>
             <View style={styles.reviewAvatar}>
-              <Ionicons name="person" size={16} color={colors.white60} />
+              <Ionicons name="person" size={16} color={theme.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.reviewUserName}>{review.profile?.display_name ?? 'User'}</Text>
@@ -67,7 +69,7 @@ export function ReviewsTab({
             }}
             accessibilityLabel={`Mark review as helpful, ${review.helpful_count} found helpful`}
           >
-            <Ionicons name="thumbs-up-outline" size={14} color={colors.white40} />
+            <Ionicons name="thumbs-up-outline" size={14} color={theme.textTertiary} />
             <Text style={styles.helpfulText}>{review.helpful_count}</Text>
           </TouchableOpacity>
         </View>

@@ -14,7 +14,7 @@ import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { HeroCarousel } from '@/components/home/HeroCarousel';
@@ -23,7 +23,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
 import { Movie } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
-import { styles } from './index.styles';
+import { createStyles } from './index.styles';
 
 const HEADER_CONTENT_HEIGHT = 52;
 const FEATURED_MOVIE_LIMIT = 7;
@@ -32,6 +32,8 @@ const PLATFORM_GRID_H_PADDING = 32;
 const PLATFORM_GRID_GAP_TOTAL = 36;
 
 export default function HomeScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
@@ -142,7 +144,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Search"
           >
-            <Ionicons name="search" size={20} color={colors.white} />
+            <Ionicons name="search" size={20} color={theme.textPrimary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerButton}
@@ -150,7 +152,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Notifications"
           >
-            <Ionicons name="notifications-outline" size={20} color={colors.white} />
+            <Ionicons name="notifications-outline" size={20} color={theme.textPrimary} />
           </TouchableOpacity>
         </View>
       </Animated.View>

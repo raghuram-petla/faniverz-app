@@ -114,10 +114,10 @@ export default function EditActorPage() {
     <div className="max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/cast" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
-            <ArrowLeft className="w-4 h-4 text-white" />
+          <Link href="/cast" className="p-2 rounded-lg bg-input hover:bg-input-active">
+            <ArrowLeft className="w-4 h-4 text-on-surface" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Edit Actor</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Edit Actor</h1>
         </div>
         <button
           onClick={handleDelete}

@@ -16,13 +16,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
-import { styles } from './edit.styles';
+import { createStyles } from './edit.styles';
 
 const BIO_LIMIT = 150;
 
 export default function EditProfileScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -99,7 +101,7 @@ export default function EditProfileScreen() {
             transition={200}
           />
           <View style={styles.avatarOverlay}>
-            <Ionicons name="camera" size={20} color={colors.white} />
+            <Ionicons name="camera" size={20} color={theme.textPrimary} />
           </View>
         </View>
         <TouchableOpacity
@@ -121,7 +123,7 @@ export default function EditProfileScreen() {
             <Ionicons
               name="person-outline"
               size={18}
-              color={colors.white40}
+              color={theme.textTertiary}
               style={styles.inputIcon}
             />
             <TextInput
@@ -129,7 +131,7 @@ export default function EditProfileScreen() {
               value={displayName}
               onChangeText={setDisplayName}
               placeholder="Your full name"
-              placeholderTextColor={colors.white30}
+              placeholderTextColor={theme.textTertiary}
               autoCapitalize="words"
               returnKeyType="next"
             />
@@ -143,7 +145,7 @@ export default function EditProfileScreen() {
             <Ionicons
               name="mail-outline"
               size={18}
-              color={colors.white20}
+              color={theme.textDisabled}
               style={styles.inputIcon}
             />
             <TextInput
@@ -151,9 +153,9 @@ export default function EditProfileScreen() {
               value={email}
               editable={false}
               selectTextOnFocus={false}
-              placeholderTextColor={colors.white20}
+              placeholderTextColor={theme.textDisabled}
             />
-            <Ionicons name="lock-closed-outline" size={14} color={colors.white20} />
+            <Ionicons name="lock-closed-outline" size={14} color={theme.textDisabled} />
           </View>
           <Text style={styles.fieldHint}>Email cannot be changed here.</Text>
         </View>
@@ -165,7 +167,7 @@ export default function EditProfileScreen() {
             <Ionicons
               name="call-outline"
               size={18}
-              color={colors.white40}
+              color={theme.textTertiary}
               style={styles.inputIcon}
             />
             <TextInput
@@ -173,7 +175,7 @@ export default function EditProfileScreen() {
               value={phone}
               onChangeText={setPhone}
               placeholder="+91 98765 43210"
-              placeholderTextColor={colors.white30}
+              placeholderTextColor={theme.textTertiary}
               keyboardType="phone-pad"
               returnKeyType="next"
             />
@@ -187,7 +189,7 @@ export default function EditProfileScreen() {
             <Ionicons
               name="location-outline"
               size={18}
-              color={colors.white40}
+              color={theme.textTertiary}
               style={styles.inputIcon}
             />
             <TextInput
@@ -195,7 +197,7 @@ export default function EditProfileScreen() {
               value={location}
               onChangeText={setLocation}
               placeholder="City, Country"
-              placeholderTextColor={colors.white30}
+              placeholderTextColor={theme.textTertiary}
               returnKeyType="next"
             />
           </View>
@@ -215,7 +217,7 @@ export default function EditProfileScreen() {
               value={bio}
               onChangeText={setBio}
               placeholder="Tell us a bit about yourself…"
-              placeholderTextColor={colors.white30}
+              placeholderTextColor={theme.textTertiary}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -233,10 +235,10 @@ export default function EditProfileScreen() {
         disabled={isSaving}
       >
         {isSaving ? (
-          <ActivityIndicator size="small" color={colors.white} />
+          <ActivityIndicator size="small" color={theme.textPrimary} />
         ) : (
           <>
-            <Ionicons name="checkmark" size={20} color={colors.white} />
+            <Ionicons name="checkmark" size={20} color={theme.textPrimary} />
             <Text style={styles.saveButtonText}>Save Changes</Text>
           </>
         )}

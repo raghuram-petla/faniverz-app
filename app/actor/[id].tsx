@@ -15,9 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActorAvatar } from '@/components/common/ActorAvatar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useActorDetail } from '@/features/actors/hooks';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/formatDate';
-import { styles } from './[id].styles';
+import { createStyles } from './[id].styles';
 
 const GENDER_LABELS: Record<number, string> = {
   1: 'Female',
@@ -26,6 +26,8 @@ const GENDER_LABELS: Record<number, string> = {
 };
 
 export default function ActorDetailScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -44,7 +46,7 @@ export default function ActorDetailScreen() {
             onPress={() => router.back()}
             accessibilityLabel="Go back"
           >
-            <Ionicons name="chevron-back" size={24} color={colors.white} />
+            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         </View>
         <View style={styles.centered}>
@@ -78,7 +80,7 @@ export default function ActorDetailScreen() {
             activeOpacity={0.7}
             accessibilityLabel="Go back"
           >
-            <Ionicons name="chevron-back" size={24} color={colors.white} />
+            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
           {navIndex >= 2 && (
             <TouchableOpacity
@@ -88,7 +90,7 @@ export default function ActorDetailScreen() {
               accessibilityLabel="Go to home"
               testID="home-button"
             >
-              <Ionicons name="home-outline" size={22} color={colors.white} />
+              <Ionicons name="home-outline" size={22} color={theme.textPrimary} />
             </TouchableOpacity>
           )}
         </View>
@@ -125,14 +127,14 @@ export default function ActorDetailScreen() {
         <View style={styles.bioCard}>
           {actor.birth_date && (
             <View style={styles.bioRow}>
-              <Ionicons name="calendar-outline" size={16} color={colors.white40} />
+              <Ionicons name="calendar-outline" size={16} color={theme.textTertiary} />
               <Text style={styles.bioLabel}>Born</Text>
               <Text style={styles.bioValue}>{formatDate(actor.birth_date)}</Text>
             </View>
           )}
           {actor.place_of_birth && (
             <View style={styles.bioRow}>
-              <Ionicons name="location-outline" size={16} color={colors.white40} />
+              <Ionicons name="location-outline" size={16} color={theme.textTertiary} />
               <Text style={styles.bioLabel}>From</Text>
               <Text style={styles.bioValue} numberOfLines={2}>
                 {actor.place_of_birth}
@@ -141,7 +143,7 @@ export default function ActorDetailScreen() {
           )}
           {actor.height_cm != null && (
             <View style={styles.bioRow}>
-              <Ionicons name="resize-outline" size={16} color={colors.white40} />
+              <Ionicons name="resize-outline" size={16} color={theme.textTertiary} />
               <Text style={styles.bioLabel}>Height</Text>
               <Text style={styles.bioValue}>{actor.height_cm} cm</Text>
             </View>
@@ -238,7 +240,7 @@ export default function ActorDetailScreen() {
             accessibilityLabel="Close photo"
             testID="photo-close"
           >
-            <Ionicons name="close" size={28} color={colors.white} />
+            <Ionicons name="close" size={28} color={theme.textPrimary} />
           </TouchableOpacity>
           <Pressable onPress={(e) => e.stopPropagation()}>
             <Image

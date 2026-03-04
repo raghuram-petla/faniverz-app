@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import { ReviewsTab } from '../ReviewsTab';
 
 jest.mock('../../[id].styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
+  createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
 jest.mock('@/components/ui/StarRating', () => {

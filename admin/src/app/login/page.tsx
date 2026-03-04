@@ -16,7 +16,7 @@ export default function LoginPage() {
   }, [authLoading, user, router]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
           <Image
@@ -26,7 +26,9 @@ export default function LoginPage() {
             height={122}
             className="object-contain"
           />
-          <p className="text-3xl text-white/40 tracking-widest uppercase mt-3 select-none">Admin</p>
+          <p className="text-3xl text-on-surface-subtle tracking-widest uppercase mt-3 select-none">
+            Admin
+          </p>
         </div>
 
         {error && (
@@ -44,7 +46,7 @@ export default function LoginPage() {
               setError(err instanceof Error ? err.message : 'Google sign-in failed');
             }
           }}
-          className="w-full bg-white/10 hover:bg-white/15 rounded-xl py-3 text-white font-medium flex items-center justify-center gap-3 transition-colors"
+          className="w-full bg-input hover:bg-input-hover rounded-xl py-3 text-on-surface font-medium flex items-center justify-center gap-3 transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

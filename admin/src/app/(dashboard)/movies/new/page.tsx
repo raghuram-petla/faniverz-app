@@ -35,10 +35,10 @@ export default function NewMoviePage() {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/movies" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
-          <ArrowLeft className="w-4 h-4 text-white" />
+        <Link href="/movies" className="p-2 rounded-lg bg-input hover:bg-input-active">
+          <ArrowLeft className="w-4 h-4 text-on-surface" />
         </Link>
-        <h1 className="text-2xl font-bold text-white">Add Movie</h1>
+        <h1 className="text-2xl font-bold text-on-surface">Add Movie</h1>
       </div>
 
       <NewMovieForm isPending={createMovie.isPending} onSubmit={handleCreate} />

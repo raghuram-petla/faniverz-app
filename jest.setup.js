@@ -114,3 +114,19 @@ jest.mock('@expo-google-fonts/exo-2', () => ({
   useFonts: jest.fn(() => [true]),
   Exo2_800ExtraBold_Italic: 'Exo2_800ExtraBold_Italic',
 }));
+
+// Mock theme context — always dark in tests
+jest.mock('@/theme/ThemeContext', () => {
+  const { colors } = require('@shared/colors');
+  const { darkTheme } = require('@shared/themes');
+  return {
+    ThemeProvider: ({ children }) => children,
+    useTheme: () => ({
+      theme: darkTheme,
+      colors,
+      isDark: true,
+      mode: 'system',
+      setMode: jest.fn(),
+    }),
+  };
+});

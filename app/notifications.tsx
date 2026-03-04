@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import type { SemanticTheme } from '@shared/themes';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
@@ -21,10 +24,10 @@ type NotificationIconConfig = {
 };
 
 const TYPE_ICON: Record<string, NotificationIconConfig> = {
-  release: { name: 'film-outline', bg: colors.purple600 },
-  watchlist: { name: 'calendar-outline', bg: colors.blue600 },
-  trending: { name: 'trending-up', bg: colors.red600 },
-  reminder: { name: 'star-outline', bg: colors.yellow400 },
+  release: { name: 'film-outline', bg: palette.purple600 },
+  watchlist: { name: 'calendar-outline', bg: palette.blue600 },
+  trending: { name: 'trending-up', bg: palette.red600 },
+  reminder: { name: 'star-outline', bg: palette.yellow400 },
 };
 
 function NotificationItem({
@@ -34,6 +37,8 @@ function NotificationItem({
   item: Notification;
   onPress: (notification: Notification) => void;
 }) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const iconConfig = TYPE_ICON[item.type] ?? TYPE_ICON.release;
 
   return (
@@ -50,7 +55,7 @@ function NotificationItem({
           contentFit="cover"
         />
         <View style={[styles.typeIconBadge, { backgroundColor: iconConfig.bg }]}>
-          <Ionicons name={iconConfig.name} size={12} color={colors.white} />
+          <Ionicons name={iconConfig.name} size={12} color={theme.textPrimary} />
         </View>
       </View>
 
@@ -77,6 +82,8 @@ function NotificationItem({
 }
 
 export default function NotificationsScreen() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -153,112 +160,113 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.black,
-  },
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
 
-  // Header
-  headerWrapper: {
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  unreadBadge: {
-    backgroundColor: colors.red600,
-    borderRadius: 12,
-    minWidth: 24,
-    height: 24,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unreadBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  markAllText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.red500,
-  },
-  markAllTextDisabled: {
-    color: colors.white40,
-  },
+    // Header
+    headerWrapper: {
+      paddingBottom: 16,
+      paddingHorizontal: 16,
+    },
+    unreadBadge: {
+      backgroundColor: palette.red600,
+      borderRadius: 12,
+      minWidth: 24,
+      height: 24,
+      paddingHorizontal: 6,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    unreadBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: palette.white,
+    },
+    markAllText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: palette.red500,
+    },
+    markAllTextDisabled: {
+      color: t.textTertiary,
+    },
 
-  // List
-  listContent: {
-    paddingBottom: 40,
-  },
-  listEmptyContent: {
-    flex: 1,
-  },
+    // List
+    listContent: {
+      paddingBottom: 40,
+    },
+    listEmptyContent: {
+      flex: 1,
+    },
 
-  // Notification item
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  itemUnread: {
-    backgroundColor: colors.white5,
-  },
-  posterContainer: {
-    position: 'relative',
-  },
-  poster: {
-    width: 64,
-    height: 96,
-    borderRadius: 12,
-    backgroundColor: colors.white10,
-  },
-  typeIconBadge: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.black,
-  },
-  itemContent: {
-    flex: 1,
-    gap: 4,
-  },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.white,
-  },
-  itemMessage: {
-    fontSize: 13,
-    color: colors.white60,
-    lineHeight: 18,
-  },
-  itemTimestamp: {
-    fontSize: 12,
-    color: colors.white40,
-    marginTop: 2,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.red500,
-    alignSelf: 'center',
-    flexShrink: 0,
-  },
+    // Notification item
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+    },
+    itemUnread: {
+      backgroundColor: t.surfaceElevated,
+    },
+    posterContainer: {
+      position: 'relative',
+    },
+    poster: {
+      width: 64,
+      height: 96,
+      borderRadius: 12,
+      backgroundColor: t.input,
+    },
+    typeIconBadge: {
+      position: 'absolute',
+      bottom: -4,
+      right: -4,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: t.background,
+    },
+    itemContent: {
+      flex: 1,
+      gap: 4,
+    },
+    itemTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: t.textPrimary,
+    },
+    itemMessage: {
+      fontSize: 13,
+      color: t.textSecondary,
+      lineHeight: 18,
+    },
+    itemTimestamp: {
+      fontSize: 12,
+      color: t.textTertiary,
+      marginTop: 2,
+    },
+    unreadDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: palette.red500,
+      alignSelf: 'center',
+      flexShrink: 0,
+    },
 
-  // Separator
-  separator: {
-    height: 1,
-    backgroundColor: colors.white10,
-    marginHorizontal: 16,
-  },
-});
+    // Separator
+    separator: {
+      height: 1,
+      backgroundColor: t.border,
+      marginHorizontal: 16,
+    },
+  });

@@ -1,5 +1,4 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
 import { MovieStatus } from '@/types';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 
@@ -22,7 +21,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   text: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',

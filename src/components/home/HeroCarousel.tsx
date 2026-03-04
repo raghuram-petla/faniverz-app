@@ -4,11 +4,11 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { Movie, OTTPlatform } from '@/types';
-import { styles, SCREEN_WIDTH } from './HeroCarousel.styles';
+import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
 
 const AUTO_PLAY_INTERVAL = 5000;
 
@@ -18,6 +18,8 @@ interface HeroCarouselProps {
 }
 
 export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<Movie>>(null);
@@ -156,7 +158,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
               <Ionicons
                 name={status === 'in_theaters' ? 'ticket-outline' : 'play'}
                 size={20}
-                color={colors.black}
+                color="#000000"
               />
               <Text style={styles.watchButtonText}>
                 {status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
@@ -168,7 +170,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
               accessibilityRole="button"
               accessibilityLabel="More Info"
             >
-              <Ionicons name="information-circle-outline" size={22} color={colors.white} />
+              <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>

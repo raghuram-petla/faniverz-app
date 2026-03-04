@@ -3,18 +3,20 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { useUpcomingMovies } from '@/features/movies/hooks/useUpcomingMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { MovieListItem } from '@/components/movie/MovieListItem';
 import { Movie } from '@/types';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { CalendarFilterPanel } from '@/components/calendar/CalendarFilterPanel';
-import { styles } from './calendar.styles';
+import { createStyles } from './calendar.styles';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function CalendarScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading } = useUpcomingMovies();
 
@@ -104,7 +106,7 @@ export default function CalendarScreen() {
           accessibilityRole="button"
           accessibilityLabel="Toggle filters"
         >
-          <Ionicons name="options-outline" size={20} color={colors.white} />
+          <Ionicons name="options-outline" size={20} color={theme.textPrimary} />
           {hasActiveFilters && <View style={styles.filterDot} />}
         </TouchableOpacity>
       </View>
@@ -195,13 +197,19 @@ export default function CalendarScreen() {
                     style={[
                       styles.dateBoxMonth,
                       isToday && { color: colors.white },
-                      isPast && { color: colors.white40 },
+                      isPast && { color: theme.textTertiary },
                       !isToday && !isPast && { color: '#A78BFA' },
                     ]}
                   >
                     {item.movieDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
                   </Text>
-                  <Text style={[styles.dateBoxDay, isPast && { color: colors.white40 }]}>
+                  <Text
+                    style={[
+                      styles.dateBoxDay,
+                      isToday && { color: colors.white },
+                      isPast && { color: theme.textTertiary },
+                    ]}
+                  >
                     {item.movieDate.getDate()}
                   </Text>
                 </View>
@@ -210,12 +218,12 @@ export default function CalendarScreen() {
                     style={[
                       styles.dateWeekday,
                       isToday && { color: colors.red500 },
-                      isPast && { color: colors.white40 },
+                      isPast && { color: theme.textTertiary },
                     ]}
                   >
                     {item.movieDate.toLocaleDateString('en-US', { weekday: 'long' })}
                   </Text>
-                  <Text style={[styles.dateFull, isPast && { color: colors.white30 }]}>
+                  <Text style={[styles.dateFull, isPast && { color: theme.textDisabled }]}>
                     {item.movieDate.toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',
@@ -228,7 +236,7 @@ export default function CalendarScreen() {
                     </View>
                   )}
                 </View>
-                <Text style={[styles.releaseCount, isPast && { color: colors.white30 }]}>
+                <Text style={[styles.releaseCount, isPast && { color: theme.textDisabled }]}>
                   {item.movies.length} {item.movies.length === 1 ? 'release' : 'releases'}
                 </Text>
               </View>
@@ -251,6 +259,8 @@ export default function CalendarScreen() {
 }
 
 function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.pill}>
       <Text style={styles.pillText}>{label}</Text>

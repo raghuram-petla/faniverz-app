@@ -37,23 +37,26 @@ export default function NewSurpriseContentPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/surprise" className="p-2 text-white/40 hover:text-white transition-colors">
+        <Link
+          href="/surprise"
+          className="p-2 text-on-surface-subtle hover:text-on-surface transition-colors"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-yellow-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Add Surprise Content</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Add Surprise Content</h1>
         </div>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-zinc-900 border border-white/10 rounded-xl p-6 space-y-6"
+        className="bg-surface-card border border-outline rounded-xl p-6 space-y-6"
       >
         <div className="space-y-2">
-          <label htmlFor="title" className="block text-sm font-medium text-white/60">
+          <label htmlFor="title" className="block text-sm font-medium text-on-surface-muted">
             Title
           </label>
           <input
@@ -63,12 +66,12 @@ export default function NewSurpriseContentPage() {
             onChange={(e) => setTitle(e.target.value)}
             required
             placeholder="Enter title"
-            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="description" className="block text-sm font-medium text-white/60">
+          <label htmlFor="description" className="block text-sm font-medium text-on-surface-muted">
             Description
           </label>
           <textarea
@@ -77,12 +80,12 @@ export default function NewSurpriseContentPage() {
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Optional description"
-            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
+            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
           />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="youtube_id" className="block text-sm font-medium text-white/60">
+          <label htmlFor="youtube_id" className="block text-sm font-medium text-on-surface-muted">
             YouTube ID
           </label>
           <input
@@ -92,12 +95,12 @@ export default function NewSurpriseContentPage() {
             onChange={(e) => setYoutubeId(e.target.value)}
             required
             placeholder="e.g. dQw4w9WgXcQ"
-            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="category" className="block text-sm font-medium text-white/60">
+          <label htmlFor="category" className="block text-sm font-medium text-on-surface-muted">
             Category
           </label>
           <select
@@ -105,7 +108,7 @@ export default function NewSurpriseContentPage() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           >
             <option value="">Select category...</option>
             {categories.map((cat) => (
@@ -118,7 +121,7 @@ export default function NewSurpriseContentPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label htmlFor="duration" className="block text-sm font-medium text-white/60">
+            <label htmlFor="duration" className="block text-sm font-medium text-on-surface-muted">
               Duration
             </label>
             <input
@@ -127,12 +130,12 @@ export default function NewSurpriseContentPage() {
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
               placeholder="e.g. 3:45"
-              className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="views" className="block text-sm font-medium text-white/60">
+            <label htmlFor="views" className="block text-sm font-medium text-on-surface-muted">
               Views
             </label>
             <input
@@ -141,7 +144,7 @@ export default function NewSurpriseContentPage() {
               value={views}
               onChange={(e) => setViews(Number(e.target.value))}
               min={0}
-              className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
         </div>
@@ -165,7 +168,7 @@ export default function NewSurpriseContentPage() {
           </button>
           <Link
             href="/surprise"
-            className="px-6 py-2.5 text-white/60 hover:text-white transition-colors"
+            className="px-6 py-2.5 text-on-surface-muted hover:text-on-surface transition-colors"
           >
             Cancel
           </Link>

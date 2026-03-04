@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import type { MovieVideo, MoviePoster } from '@/types';
-import { styles } from '../[id].styles';
+import { createStyles } from '../[id].styles';
 
 interface VideoGroup {
   label: string;
@@ -17,6 +17,8 @@ interface MediaTabProps {
 }
 
 export function MediaTab({ videosByType, posters, onSelectPoster }: MediaTabProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.mediaTab}>
       {videosByType.map((group) => (

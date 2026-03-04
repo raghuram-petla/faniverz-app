@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,15 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import type { SemanticTheme } from '@shared/themes';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 
 export default function LoginScreen() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { signIn, isLoading, error } = useEmailAuth();
   const { setIsGuest } = useAuth();
@@ -63,11 +67,16 @@ export default function LoginScreen() {
 
         {/* Email input */}
         <View style={styles.inputWrapper}>
-          <Ionicons name="mail-outline" size={18} color={colors.white40} style={styles.inputIcon} />
+          <Ionicons
+            name="mail-outline"
+            size={18}
+            color={theme.textTertiary}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -81,13 +90,13 @@ export default function LoginScreen() {
           <Ionicons
             name="lock-closed-outline"
             size={18}
-            color={colors.white40}
+            color={theme.textTertiary}
             style={styles.inputIcon}
           />
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -98,7 +107,7 @@ export default function LoginScreen() {
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color={colors.white40}
+              color={theme.textTertiary}
             />
           </TouchableOpacity>
         </View>
@@ -114,7 +123,7 @@ export default function LoginScreen() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator size="small" color={colors.white} />
+            <ActivityIndicator size="small" color={theme.textPrimary} />
           ) : (
             <Text style={styles.signInButtonText}>Sign In</Text>
           )}
@@ -153,135 +162,136 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.black,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 40,
-  },
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 80,
+      paddingBottom: 40,
+    },
 
-  // Logo
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logoFull: {
-    height: 60,
-    width: 167,
-    marginBottom: 16,
-  },
-  tagline: {
-    fontSize: 14,
-    color: colors.white40,
-    marginTop: 8,
-  },
+    // Logo
+    logoContainer: {
+      alignItems: 'center',
+      marginBottom: 40,
+    },
+    logoFull: {
+      height: 60,
+      width: 167,
+      marginBottom: 16,
+    },
+    tagline: {
+      fontSize: 14,
+      color: t.textTertiary,
+      marginTop: 8,
+    },
 
-  // Inputs
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white10,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-    height: 52,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.white,
-  },
+    // Inputs
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: t.input,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      marginBottom: 12,
+      height: 52,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    input: {
+      flex: 1,
+      fontSize: 15,
+      color: t.textPrimary,
+    },
 
-  // Error
-  errorText: {
-    fontSize: 13,
-    color: colors.red500,
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
+    // Error
+    errorText: {
+      fontSize: 13,
+      color: palette.red500,
+      marginBottom: 8,
+      paddingHorizontal: 4,
+    },
 
-  // Sign In
-  signInButton: {
-    height: 52,
-    backgroundColor: colors.red600,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  signInButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.white,
-  },
+    // Sign In
+    signInButton: {
+      height: 52,
+      backgroundColor: palette.red600,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    signInButtonText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: t.textPrimary,
+    },
 
-  // Forgot
-  forgotButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  forgotText: {
-    fontSize: 14,
-    color: colors.white60,
-  },
+    // Forgot
+    forgotButton: {
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    forgotText: {
+      fontSize: 14,
+      color: t.textSecondary,
+    },
 
-  // Divider
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.white20,
-  },
-  dividerText: {
-    fontSize: 12,
-    color: colors.white40,
-    marginHorizontal: 16,
-    fontWeight: '600',
-  },
+    // Divider
+    divider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 16,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: t.textDisabled,
+    },
+    dividerText: {
+      fontSize: 12,
+      color: t.textTertiary,
+      marginHorizontal: 16,
+      fontWeight: '600',
+    },
 
-  // Guest
-  guestButton: {
-    height: 52,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.white20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guestButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.white,
-  },
+    // Guest
+    guestButton: {
+      height: 52,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.textDisabled,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    guestButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: t.textPrimary,
+    },
 
-  // Sign Up
-  signUpRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  signUpLabel: {
-    fontSize: 14,
-    color: colors.white60,
-  },
-  signUpLink: {
-    fontSize: 14,
-    color: colors.red500,
-    fontWeight: '600',
-  },
-});
+    // Sign Up
+    signUpRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 24,
+    },
+    signUpLabel: {
+      fontSize: 14,
+      color: t.textSecondary,
+    },
+    signUpLink: {
+      fontSize: 14,
+      color: palette.red500,
+      fontWeight: '600',
+    },
+  });

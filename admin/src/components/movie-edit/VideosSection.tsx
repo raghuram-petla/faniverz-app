@@ -66,7 +66,9 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
             <p className="text-sm text-blue-400 font-medium">
               This movie has a trailer URL but no videos.
             </p>
-            <p className="text-xs text-white/40 mt-1">Import it as the first video entry?</p>
+            <p className="text-xs text-on-surface-subtle mt-1">
+              Import it as the first video entry?
+            </p>
           </div>
           <button
             type="button"
@@ -96,27 +98,30 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
       {visibleVideos.length > 0 && (
         <div className="space-y-2">
           {visibleVideos.map((video) => (
-            <div key={video.id} className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3">
+            <div
+              key={video.id}
+              className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3"
+            >
               <img
                 src={getYouTubeThumbnail(video.youtube_id)}
                 alt={video.title}
                 className="w-24 h-[54px] rounded-lg object-cover flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-white font-medium text-sm truncate">{video.title}</p>
+                <p className="text-on-surface font-medium text-sm truncate">{video.title}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-xs bg-purple-600/20 text-purple-400 px-2 py-0.5 rounded">
                     {VIDEO_TYPES.find((t) => t.value === video.video_type)?.label ??
                       video.video_type}
                   </span>
                   {video.duration && (
-                    <span className="text-xs text-white/40">{video.duration}</span>
+                    <span className="text-xs text-on-surface-subtle">{video.duration}</span>
                   )}
                 </div>
               </div>
               <button
                 onClick={() => onRemove(video.id, video.id.startsWith('pending-video-'))}
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
                 aria-label={`Remove ${video.title}`}
               >
                 <X className="w-4 h-4" />
@@ -126,28 +131,28 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white/5 rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-white/60">Add Video</p>
+      <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-on-surface-muted">Add Video</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-white/40 mb-1">YouTube URL or ID *</label>
+            <label className="block text-xs text-on-surface-subtle mb-1">YouTube URL or ID *</label>
             <input
               type="text"
               required
               placeholder="https://youtube.com/watch?v=... or dQw4w9WgXcQ"
               value={videoForm.youtube_input}
               onChange={(e) => setVideoForm((p) => ({ ...p, youtube_input: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             />
           </div>
           <div>
-            <label className="block text-xs text-white/40 mb-1">Type *</label>
+            <label className="block text-xs text-on-surface-subtle mb-1">Type *</label>
             <select
               value={videoForm.video_type}
               onChange={(e) =>
                 setVideoForm((p) => ({ ...p, video_type: e.target.value as VideoType }))
               }
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             >
               {VIDEO_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -158,34 +163,34 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
           </div>
         </div>
         <div>
-          <label className="block text-xs text-white/40 mb-1">Title *</label>
+          <label className="block text-xs text-on-surface-subtle mb-1">Title *</label>
           <input
             type="text"
             required
             placeholder="e.g. Official Trailer"
             value={videoForm.title}
             onChange={(e) => setVideoForm((p) => ({ ...p, title: e.target.value }))}
-            className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+            className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-white/40 mb-1">Duration</label>
+            <label className="block text-xs text-on-surface-subtle mb-1">Duration</label>
             <input
               type="text"
               placeholder="e.g. 2:34"
               value={videoForm.duration}
               onChange={(e) => setVideoForm((p) => ({ ...p, duration: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             />
           </div>
           <div>
-            <label className="block text-xs text-white/40 mb-1">Date</label>
+            <label className="block text-xs text-on-surface-subtle mb-1">Date</label>
             <input
               type="date"
               value={videoForm.video_date}
               onChange={(e) => setVideoForm((p) => ({ ...p, video_date: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             />
           </div>
         </div>

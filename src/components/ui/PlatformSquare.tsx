@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { OTTPlatform } from '@/types';
 import { getPlatformLogo } from '@/constants/platformLogos';
 import { isDark } from '@/utils/colorUtils';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 
 interface PlatformSquareProps {
   platform: OTTPlatform;
@@ -12,6 +12,7 @@ interface PlatformSquareProps {
 }
 
 export function PlatformSquare({ platform, size, onPress }: PlatformSquareProps) {
+  const { theme } = useTheme();
   const logo = getPlatformLogo(platform.id);
   const dark = isDark(platform.color);
 
@@ -24,7 +25,7 @@ export function PlatformSquare({ platform, size, onPress }: PlatformSquareProps)
           width: size,
           height: size,
           borderWidth: dark ? 1.5 : 0,
-          borderColor: 'rgba(255,255,255,0.35)',
+          borderColor: theme.border,
         },
       ]}
       onPress={onPress}
@@ -53,6 +54,6 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 24,
     fontWeight: '700',
-    color: colors.white,
+    color: '#FFFFFF',
   },
 });

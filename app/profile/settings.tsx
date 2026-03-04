@@ -1,27 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import type { SemanticTheme } from '@shared/themes';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
-// ── Toggle Component ────────────────────────────────────────────────────────
-function Toggle({ value, onToggle }: { value: boolean; onToggle: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={onToggle}
-      activeOpacity={0.8}
-      style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff]}
-    >
-      <View style={[styles.toggleThumb, value ? styles.toggleThumbOn : styles.toggleThumbOff]} />
-    </TouchableOpacity>
-  );
-}
-
-// ── Row types ───────────────────────────────────────────────────────────────
 interface ToggleRow {
   kind: 'toggle';
   icon: IconName;
@@ -47,6 +35,8 @@ interface Section {
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
@@ -140,11 +130,22 @@ export default function SettingsScreen() {
                   <View key={row.label} style={[styles.row, !isLast && styles.rowBorder]}>
                     <View style={styles.rowLeft}>
                       <View style={styles.iconWrapper}>
-                        <Ionicons name={row.icon} size={18} color={colors.white60} />
+                        <Ionicons name={row.icon} size={18} color={theme.textSecondary} />
                       </View>
                       <Text style={styles.rowLabel}>{row.label}</Text>
                     </View>
-                    <Toggle value={toggle.value} onToggle={toggle.setter} />
+                    <TouchableOpacity
+                      onPress={toggle.setter}
+                      activeOpacity={0.8}
+                      style={[styles.toggle, toggle.value ? styles.toggleOn : styles.toggleOff]}
+                    >
+                      <View
+                        style={[
+                          styles.toggleThumb,
+                          toggle.value ? styles.toggleThumbOn : styles.toggleThumbOff,
+                        ]}
+                      />
+                    </TouchableOpacity>
                   </View>
                 );
               }
@@ -158,13 +159,13 @@ export default function SettingsScreen() {
                 >
                   <View style={styles.rowLeft}>
                     <View style={styles.iconWrapper}>
-                      <Ionicons name={row.icon} size={18} color={colors.white60} />
+                      <Ionicons name={row.icon} size={18} color={theme.textSecondary} />
                     </View>
                     <Text style={styles.rowLabel}>{row.label}</Text>
                   </View>
                   <View style={styles.rowRight}>
                     {row.value ? <Text style={styles.rowValue}>{row.value}</Text> : null}
-                    <Ionicons name="chevron-forward" size={16} color={colors.white30} />
+                    <Ionicons name="chevron-forward" size={16} color={theme.textDisabled} />
                   </View>
                 </TouchableOpacity>
               );
@@ -182,116 +183,117 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.black,
-  },
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 48,
-  },
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
+    contentContainer: {
+      paddingHorizontal: 16,
+      paddingBottom: 48,
+    },
 
-  // Sections
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.white40,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
-  sectionCard: {
-    backgroundColor: colors.white5,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.white10,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-  },
-  rowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.white5,
-  },
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  iconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: colors.white,
-  },
-  rowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  rowValue: {
-    fontSize: 14,
-    color: colors.white40,
-  },
+    // Sections
+    section: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: t.textTertiary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      marginBottom: 8,
+      paddingHorizontal: 4,
+    },
+    sectionCard: {
+      backgroundColor: t.surfaceElevated,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: t.border,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 15,
+    },
+    rowBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: t.surfaceElevated,
+    },
+    rowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      flex: 1,
+    },
+    iconWrapper: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowLabel: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: t.textPrimary,
+    },
+    rowRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    rowValue: {
+      fontSize: 14,
+      color: t.textTertiary,
+    },
 
-  // Toggle
-  toggle: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    padding: 3,
-    justifyContent: 'center',
-  },
-  toggleOn: {
-    backgroundColor: colors.red600,
-  },
-  toggleOff: {
-    backgroundColor: colors.white20,
-  },
-  toggleThumb: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.white,
-  },
-  toggleThumbOn: {
-    alignSelf: 'flex-end',
-  },
-  toggleThumbOff: {
-    alignSelf: 'flex-start',
-  },
+    // Toggle
+    toggle: {
+      width: 48,
+      height: 28,
+      borderRadius: 14,
+      padding: 3,
+      justifyContent: 'center',
+    },
+    toggleOn: {
+      backgroundColor: palette.red600,
+    },
+    toggleOff: {
+      backgroundColor: t.textDisabled,
+    },
+    toggleThumb: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: palette.white,
+    },
+    toggleThumbOn: {
+      alignSelf: 'flex-end',
+    },
+    toggleThumbOff: {
+      alignSelf: 'flex-start',
+    },
 
-  // Footer
-  footer: {
-    alignItems: 'center',
-    marginTop: 8,
-    gap: 4,
-  },
-  footerVersion: {
-    fontSize: 13,
-    color: colors.white40,
-    fontWeight: '600',
-  },
-  footerBuild: {
-    fontSize: 12,
-    color: colors.white20,
-  },
-});
+    // Footer
+    footer: {
+      alignItems: 'center',
+      marginTop: 8,
+      gap: 4,
+    },
+    footerVersion: {
+      fontSize: 13,
+      color: t.textTertiary,
+      fontWeight: '600',
+    },
+    footerBuild: {
+      fontSize: 12,
+      color: t.textDisabled,
+    },
+  });

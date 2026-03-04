@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -26,6 +26,7 @@ export function CalendarFilterPanel({
   onSetDate,
   styles,
 }: CalendarFilterPanelProps) {
+  const { theme } = useTheme();
   const daysInMonth =
     selectedMonth !== null && selectedYear !== null
       ? new Date(selectedYear, selectedMonth + 1, 0).getDate()
@@ -43,7 +44,11 @@ export function CalendarFilterPanel({
         <Text style={[styles.yearButtonText, selectedYear !== null && styles.yearButtonTextActive]}>
           {selectedYear !== null ? selectedYear : 'All Years'}
         </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.white60} />
+        <Ionicons
+          name="chevron-down"
+          size={16}
+          color={selectedYear !== null ? '#FFFFFF' : theme.textSecondary}
+        />
       </TouchableOpacity>
       {showYearPicker && (
         <ScrollView style={styles.yearDropdown} nestedScrollEnabled>
@@ -54,7 +59,11 @@ export function CalendarFilterPanel({
               onToggleYearPicker();
             }}
           >
-            <Text style={styles.yearOptionText}>All Years</Text>
+            <Text
+              style={[styles.yearOptionText, selectedYear === null && styles.yearOptionTextActive]}
+            >
+              All Years
+            </Text>
           </TouchableOpacity>
           {years.map((y) => (
             <TouchableOpacity
@@ -65,7 +74,11 @@ export function CalendarFilterPanel({
                 onToggleYearPicker();
               }}
             >
-              <Text style={styles.yearOptionText}>{y}</Text>
+              <Text
+                style={[styles.yearOptionText, selectedYear === y && styles.yearOptionTextActive]}
+              >
+                {y}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>

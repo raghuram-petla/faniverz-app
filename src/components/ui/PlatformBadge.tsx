@@ -2,7 +2,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { OTTPlatform } from '@/types';
 import { getPlatformLogo } from '@/constants/platformLogos';
-import { colors } from '@/theme/colors';
 
 interface PlatformBadgeProps {
   platform: OTTPlatform;
@@ -43,7 +42,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
 });

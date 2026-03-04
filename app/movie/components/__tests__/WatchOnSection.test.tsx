@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react-native';
 import { WatchOnSection } from '../WatchOnSection';
 
 jest.mock('../../[id].styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
+  createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
 jest.mock('@/constants/platformLogos', () => ({

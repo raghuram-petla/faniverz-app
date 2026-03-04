@@ -26,7 +26,7 @@ export default function SyncPage() {
           <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
             <RefreshCw className="w-5 h-5 text-blue-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Sync Management</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Sync Management</h1>
         </div>
       </div>
 
@@ -35,7 +35,7 @@ export default function SyncPage() {
         <button
           onClick={() => handleSync('sync-tmdb')}
           disabled={triggerSync.isPending}
-          className="flex items-center gap-2 bg-zinc-900 border border-white/10 hover:bg-white/10 text-white px-5 py-3 rounded-xl transition-colors font-medium disabled:opacity-50"
+          className="flex items-center gap-2 bg-surface-card border border-outline hover:bg-input text-on-surface px-5 py-3 rounded-xl transition-colors font-medium disabled:opacity-50"
         >
           {triggerSync.isPending ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -48,7 +48,7 @@ export default function SyncPage() {
         <button
           onClick={() => handleSync('sync-ott-providers')}
           disabled={triggerSync.isPending}
-          className="flex items-center gap-2 bg-zinc-900 border border-white/10 hover:bg-white/10 text-white px-5 py-3 rounded-xl transition-colors font-medium disabled:opacity-50"
+          className="flex items-center gap-2 bg-surface-card border border-outline hover:bg-input text-on-surface px-5 py-3 rounded-xl transition-colors font-medium disabled:opacity-50"
         >
           {triggerSync.isPending ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -74,23 +74,35 @@ export default function SyncPage() {
       {/* Sync Logs Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+          <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : !logs?.length ? (
-        <div className="text-center py-20 text-white/40">
+        <div className="text-center py-20 text-on-surface-subtle">
           No sync logs found. Run a sync to get started.
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Function</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Status</th>
-                <th className="text-right text-sm font-medium text-white/60 px-6 py-4">Added</th>
-                <th className="text-right text-sm font-medium text-white/60 px-6 py-4">Updated</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Started</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Completed</th>
+              <tr className="border-b border-outline">
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Function
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Status
+                </th>
+                <th className="text-right text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Added
+                </th>
+                <th className="text-right text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Updated
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Started
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Completed
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -99,10 +111,10 @@ export default function SyncPage() {
                 return (
                   <tr
                     key={log.id}
-                    className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                    className="border-b border-outline-subtle hover:bg-surface-elevated transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <span className="text-white font-medium font-mono text-sm">
+                      <span className="text-on-surface font-medium font-mono text-sm">
                         {log.function_name}
                       </span>
                     </td>
@@ -114,16 +126,16 @@ export default function SyncPage() {
                         {log.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right text-white/60 text-sm">
+                    <td className="px-6 py-4 text-right text-on-surface-muted text-sm">
                       {log.movies_added}
                     </td>
-                    <td className="px-6 py-4 text-right text-white/60 text-sm">
+                    <td className="px-6 py-4 text-right text-on-surface-muted text-sm">
                       {log.movies_updated}
                     </td>
-                    <td className="px-6 py-4 text-white/60 text-sm">
+                    <td className="px-6 py-4 text-on-surface-muted text-sm">
                       {formatDateTime(log.started_at)}
                     </td>
-                    <td className="px-6 py-4 text-white/60 text-sm">
+                    <td className="px-6 py-4 text-on-surface-muted text-sm">
                       {log.completed_at ? formatDateTime(log.completed_at) : '--'}
                     </td>
                   </tr>

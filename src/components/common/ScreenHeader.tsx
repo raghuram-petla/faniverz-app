@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import type { SemanticTheme } from '@shared/themes';
 
 interface ScreenHeaderProps {
   title: string;
@@ -19,6 +20,8 @@ export default function ScreenHeader({
   titleBadge,
   rightAction,
 }: ScreenHeaderProps) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const navigation = useNavigation();
   const state = navigation.getState();
@@ -35,7 +38,7 @@ export default function ScreenHeader({
       accessibilityLabel="Go to home"
       testID="home-button"
     >
-      <Ionicons name="home-outline" size={22} color={colors.white} />
+      <Ionicons name="home-outline" size={22} color={theme.textPrimary} />
     </TouchableOpacity>
   ) : null;
 
@@ -48,7 +51,7 @@ export default function ScreenHeader({
           activeOpacity={0.7}
           accessibilityLabel="Go back"
         >
-          <Ionicons name={backIcon} size={24} color={colors.white} />
+          <Ionicons name={backIcon} size={24} color={theme.textPrimary} />
         </TouchableOpacity>
         {homeButton}
       </View>
@@ -63,46 +66,47 @@ export default function ScreenHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  leftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    minWidth: 40,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  homeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  placeholder: {
-    width: 40,
-  },
-});
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 24,
+    },
+    leftGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      minWidth: 40,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    homeButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: t.textPrimary,
+    },
+    placeholder: {
+      width: 40,
+    },
+  });

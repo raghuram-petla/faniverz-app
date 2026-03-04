@@ -28,7 +28,7 @@ export default function SurpriseContentPage() {
           <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-yellow-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Surprise Content</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Surprise Content</h1>
         </div>
         <Link
           href="/surprise/new"
@@ -41,37 +41,47 @@ export default function SurpriseContentPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+          <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : !items?.length ? (
-        <div className="text-center py-20 text-white/40">
+        <div className="text-center py-20 text-on-surface-subtle">
           No surprise content found. Add one to get started.
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Title</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Category</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Duration</th>
-                <th className="text-right text-sm font-medium text-white/60 px-6 py-4">Views</th>
-                <th className="text-right text-sm font-medium text-white/60 px-6 py-4">Actions</th>
+              <tr className="border-b border-outline">
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Title
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Category
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Duration
+                </th>
+                <th className="text-right text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Views
+                </th>
+                <th className="text-right text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => {
                 const cat = categoryColors[item.category] ?? {
-                  bg: 'bg-white/10',
-                  text: 'text-white/60',
+                  bg: 'bg-input',
+                  text: 'text-on-surface-muted',
                 };
                 return (
                   <tr
                     key={item.id}
-                    className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                    className="border-b border-outline-subtle hover:bg-surface-elevated transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <span className="text-white font-medium">{item.title}</span>
+                      <span className="text-on-surface font-medium">{item.title}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -80,15 +90,17 @@ export default function SurpriseContentPage() {
                         {item.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-white/60 text-sm">{item.duration ?? '--'}</td>
-                    <td className="px-6 py-4 text-right text-white/60 text-sm">
+                    <td className="px-6 py-4 text-on-surface-muted text-sm">
+                      {item.duration ?? '--'}
+                    </td>
+                    <td className="px-6 py-4 text-right text-on-surface-muted text-sm">
                       {item.views.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Link
                           href={`/surprise/${item.id}`}
-                          className="p-2 text-white/40 hover:text-blue-400 transition-colors"
+                          className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
@@ -96,7 +108,7 @@ export default function SurpriseContentPage() {
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={deleteItem.isPending}
-                          className="p-2 text-white/40 hover:text-red-500 transition-colors disabled:opacity-50"
+                          className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />

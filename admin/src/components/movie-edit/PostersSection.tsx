@@ -72,7 +72,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
             <p className="text-sm text-blue-400 font-medium">
               This movie has a poster but no gallery entries.
             </p>
-            <p className="text-xs text-white/40 mt-1">Import it as the main poster?</p>
+            <p className="text-xs text-on-surface-subtle mt-1">Import it as the main poster?</p>
           </div>
           <button
             type="button"
@@ -86,7 +86,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
                 display_order: 0,
               });
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-on-surface text-sm font-semibold hover:bg-blue-700 shrink-0"
           >
             <Plus className="w-4 h-4" /> Import
           </button>
@@ -96,7 +96,10 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
       {visiblePosters.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {visiblePosters.map((poster) => (
-            <div key={poster.id} className="relative group bg-white/5 rounded-xl overflow-hidden">
+            <div
+              key={poster.id}
+              className="relative group bg-surface-elevated rounded-xl overflow-hidden"
+            >
               <img
                 src={poster.image_url}
                 alt={poster.title}
@@ -108,7 +111,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
                 </div>
               )}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                <p className="text-white text-xs font-medium px-2 text-center truncate w-full">
+                <p className="text-on-surface text-xs font-medium px-2 text-center truncate w-full">
                   {poster.title}
                 </p>
                 {!poster.is_main && (
@@ -131,26 +134,26 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
         </div>
       )}
 
-      <div className="bg-white/5 rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-white/60">Add Poster</p>
+      <div className="bg-surface-elevated rounded-xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-on-surface-muted">Add Poster</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-white/40 mb-1">Title *</label>
+            <label className="block text-xs text-on-surface-subtle mb-1">Title *</label>
             <input
               type="text"
               placeholder="e.g. First Look, Hero Birthday Poster"
               value={posterForm.title}
               onChange={(e) => setPosterForm((p) => ({ ...p, title: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             />
           </div>
           <div>
-            <label className="block text-xs text-white/40 mb-1">Date</label>
+            <label className="block text-xs text-on-surface-subtle mb-1">Date</label>
             <input
               type="date"
               value={posterForm.poster_date}
               onChange={(e) => setPosterForm((p) => ({ ...p, poster_date: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             />
           </div>
         </div>
@@ -161,7 +164,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
             onChange={(e) => setPosterForm((p) => ({ ...p, is_main: e.target.checked }))}
             className="w-4 h-4 rounded accent-red-600"
           />
-          <span className="text-sm text-white/60">Set as main poster</span>
+          <span className="text-sm text-on-surface-muted">Set as main poster</span>
         </label>
         <input
           ref={fileInputRef}
@@ -178,7 +181,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
           type="button"
           disabled={uploading || !posterForm.title}
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
         >
           {uploading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

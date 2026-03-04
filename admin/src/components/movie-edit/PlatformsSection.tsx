@@ -36,7 +36,7 @@ export function PlatformsSection({
           {visiblePlatforms.map((mp) => (
             <div
               key={mp.platform_id}
-              className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+              className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3"
             >
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
@@ -45,15 +45,17 @@ export function PlatformsSection({
                 {mp.platform?.logo ? (
                   <img src={mp.platform.logo} alt="" className="w-6 h-6 object-contain" />
                 ) : (
-                  <Film className="w-5 h-5 text-white/60" />
+                  <Film className="w-5 h-5 text-on-surface-muted" />
                 )}
               </div>
               <div className="flex-1">
-                <span className="text-white font-medium">
+                <span className="text-on-surface font-medium">
                   {mp.platform?.name ?? mp.platform_id}
                 </span>
                 {mp.available_from && (
-                  <span className="text-white/40 text-sm ml-2">from {mp.available_from}</span>
+                  <span className="text-on-surface-subtle text-sm ml-2">
+                    from {mp.available_from}
+                  </span>
                 )}
               </div>
               <button
@@ -63,7 +65,7 @@ export function PlatformsSection({
                   );
                   onRemove(mp.platform_id, isPending);
                 }}
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
                 aria-label={`Remove ${mp.platform?.name}`}
               >
                 <X className="w-4 h-4" />
@@ -73,13 +75,13 @@ export function PlatformsSection({
         </div>
       )}
 
-      <div className="bg-white/5 rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-white/60">Add OTT Platform</p>
+      <div className="bg-surface-elevated rounded-xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-on-surface-muted">Add OTT Platform</p>
         <div className="flex gap-3">
           <select
             value={selectedPlatformId}
             onChange={(e) => setSelectedPlatformId(e.target.value)}
-            className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+            className="flex-1 bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="">Select platform…</option>
             {allPlatforms
@@ -95,7 +97,7 @@ export function PlatformsSection({
             value={availableFrom}
             onChange={(e) => setAvailableFrom(e.target.value)}
             placeholder="Available from"
-            className="bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+            className="bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
           />
           <button
             type="button"
@@ -110,7 +112,7 @@ export function PlatformsSection({
               setSelectedPlatformId('');
               setAvailableFrom('');
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             Add

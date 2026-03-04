@@ -8,10 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlist } from '@/features/watchlist/hooks';
 import { WatchlistEntry } from '@/types';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatWatchTime } from '@/utils/formatDate';
-import { styles } from './watched.styles';
+import { createStyles } from './watched.styles';
 
 // Avg runtime assumption for watch time estimate (90 min)
 const AVG_RUNTIME_MINUTES = 90;
@@ -25,6 +25,8 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 ];
 
 export default function WatchedMoviesScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { watched, isLoading } = useWatchlist(user?.id ?? '');
@@ -108,12 +110,12 @@ export default function WatchedMoviesScreen() {
           activeOpacity={0.8}
           onPress={() => setSortMenuOpen((v) => !v)}
         >
-          <Ionicons name="swap-vertical-outline" size={16} color={colors.white60} />
+          <Ionicons name="swap-vertical-outline" size={16} color={theme.textSecondary} />
           <Text style={styles.sortDropdownText}>{activeSortLabel}</Text>
           <Ionicons
             name={sortMenuOpen ? 'chevron-up' : 'chevron-down'}
             size={14}
-            color={colors.white40}
+            color={theme.textTertiary}
           />
         </TouchableOpacity>
         {sortMenuOpen && (
@@ -176,7 +178,7 @@ export default function WatchedMoviesScreen() {
                       />
                       {/* Green check badge */}
                       <View style={styles.checkBadge}>
-                        <Ionicons name="checkmark" size={12} color={colors.white} />
+                        <Ionicons name="checkmark" size={12} color={theme.textPrimary} />
                       </View>
                       {/* Rating badge */}
                       {rating > 0 && (

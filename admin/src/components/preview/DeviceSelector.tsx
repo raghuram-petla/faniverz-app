@@ -14,7 +14,7 @@ export function DeviceSelector({ selected, onChange }: DeviceSelectorProps) {
         const device = DEVICES.find((d) => d.name === e.target.value);
         if (device) onChange(device);
       }}
-      className="bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+      className="bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
     >
       {DEVICES.map((d) => (
         <option key={d.name} value={d.name}>

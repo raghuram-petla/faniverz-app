@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { styles } from './discover.styles';
+import { createStyles } from './discover.styles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
@@ -22,6 +22,8 @@ import {
 import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
 
 export default function DiscoverScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ filter?: string; platform?: string }>();
 
@@ -121,17 +123,17 @@ export default function DiscoverScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.screenTitle}>Discover</Text>
         <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={18} color={colors.white40} style={styles.searchIcon} />
+          <Ionicons name="search" size={18} color={theme.textTertiary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search movies, genres, actors..."
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.white40} />
+              <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -158,7 +160,7 @@ export default function DiscoverScreen() {
 
       <View style={styles.filterBar}>
         <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-          <Ionicons name="options" size={16} color={colors.white} />
+          <Ionicons name="options" size={16} color={theme.textPrimary} />
           <Text style={styles.filterBarText}>Filters</Text>
           {activeFilterCount > 0 && (
             <View style={styles.filterCountBadge}>
@@ -173,7 +175,7 @@ export default function DiscoverScreen() {
           <Text style={styles.filterBarText}>
             {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
           </Text>
-          <Ionicons name="chevron-down" size={16} color={colors.white60} />
+          <Ionicons name="chevron-down" size={16} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
 

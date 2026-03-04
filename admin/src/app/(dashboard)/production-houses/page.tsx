@@ -71,7 +71,7 @@ export default function ProductionHousesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Production Houses</h1>
+        <h1 className="text-2xl font-bold text-on-surface">Production Houses</h1>
         <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700"
@@ -81,14 +81,14 @@ export default function ProductionHousesPage() {
       </div>
 
       {showAdd && (
-        <div className="bg-zinc-900 border border-white/10 rounded-xl p-4 space-y-3">
+        <div className="bg-surface-card border border-outline rounded-xl p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
               placeholder="Name *"
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+              className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
             />
             <div className="flex items-center gap-2">
               <input
@@ -107,9 +107,11 @@ export default function ProductionHousesPage() {
                   <img
                     src={form.logo_url}
                     alt=""
-                    className="w-9 h-9 rounded object-cover border border-white/10 shrink-0"
+                    className="w-9 h-9 rounded object-cover border border-outline shrink-0"
                   />
-                  <span className="text-xs text-white/40 truncate flex-1">Logo uploaded</span>
+                  <span className="text-xs text-on-surface-subtle truncate flex-1">
+                    Logo uploaded
+                  </span>
                   <button
                     type="button"
                     onClick={() => setForm((p) => ({ ...p, logo_url: '' }))}
@@ -123,7 +125,7 @@ export default function ProductionHousesPage() {
                   type="button"
                   disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-2 bg-white/10 rounded-lg px-4 py-2 text-sm text-white/60 hover:bg-white/15 disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-input rounded-lg px-4 py-2 text-sm text-on-surface-muted hover:bg-input-hover disabled:opacity-50"
                 >
                   {uploading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -141,7 +143,7 @@ export default function ProductionHousesPage() {
               rows={2}
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm resize-none"
+              className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm resize-none"
             />
           </div>
           <div className="flex gap-2">
@@ -157,7 +159,7 @@ export default function ProductionHousesPage() {
                 setShowAdd(false);
                 setForm(EMPTY_FORM);
               }}
-              className="text-white/60 px-4 py-2 rounded-lg text-sm hover:bg-white/10"
+              className="text-on-surface-muted px-4 py-2 rounded-lg text-sm hover:bg-input"
             >
               Cancel
             </button>
@@ -167,23 +169,23 @@ export default function ProductionHousesPage() {
 
       <div className="space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
           <input
             type="text"
             placeholder="Search production houses..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-red-600"
+            className="w-full bg-input rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
           />
           {isFetching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 animate-spin" />
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
           )}
         </div>
         {search.length === 1 && (
-          <p className="text-xs text-white/40">Type at least 2 characters to search</p>
+          <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
         )}
         {!isLoading && houses.length > 0 && (
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-on-surface-subtle">
             Showing {houses.length} production house{houses.length !== 1 ? 's' : ''}
             {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
           </p>
@@ -199,29 +201,31 @@ export default function ProductionHousesPage() {
           {houses.map((house) => (
             <div
               key={house.id}
-              className="bg-zinc-900 border border-white/10 rounded-xl p-4 flex items-center gap-4"
+              className="bg-surface-card border border-outline rounded-xl p-4 flex items-center gap-4"
             >
               <Link
                 href={'/production-houses/' + house.id}
                 className="flex items-center gap-4 flex-1 min-w-0"
               >
-                <div className="w-14 h-14 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="w-14 h-14 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {house.logo_url ? (
                     <img src={house.logo_url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <Building2 className="w-6 h-6 text-white/40" />
+                    <Building2 className="w-6 h-6 text-on-surface-subtle" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-white truncate">{house.name}</p>
+                  <p className="font-semibold text-on-surface truncate">{house.name}</p>
                   {house.description && (
-                    <p className="text-xs text-white/40 truncate mt-0.5">{house.description}</p>
+                    <p className="text-xs text-on-surface-subtle truncate mt-0.5">
+                      {house.description}
+                    </p>
                   )}
                 </div>
               </Link>
               <Link
                 href={'/production-houses/' + house.id}
-                className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/10"
+                className="p-2 rounded-lg text-on-surface-subtle hover:text-on-surface hover:bg-input"
               >
                 <Pencil className="w-4 h-4" />
               </Link>
@@ -229,14 +233,14 @@ export default function ProductionHousesPage() {
                 onClick={() => {
                   if (confirm('Delete this production house?')) deleteHouse.mutate(house.id);
                 }}
-                className="p-2 rounded-lg text-white/40 hover:text-red-500 hover:bg-red-600/10"
+                className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
           ))}
           {houses.length === 0 && (
-            <p className="text-white/40 col-span-full text-center py-10">
+            <p className="text-on-surface-subtle col-span-full text-center py-10">
               No production houses found
             </p>
           )}
@@ -247,7 +251,7 @@ export default function ProductionHousesPage() {
           <button
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-input hover:bg-input-hover text-on-surface px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
             {isFetchingNextPage ? (
               <>

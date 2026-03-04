@@ -2,11 +2,11 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { getMovieStatusLabel } from '@/constants';
 import type { MovieStatus } from '@/types';
 import type { MovieWithDetails } from '@/types/movie';
-import { styles } from '../[id].styles';
+import { createStyles } from '../[id].styles';
 
 interface MovieHeroSectionProps {
   movie: MovieWithDetails;
@@ -15,6 +15,8 @@ interface MovieHeroSectionProps {
 }
 
 export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroSectionProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.hero}>
       <Image

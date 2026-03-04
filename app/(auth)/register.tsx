@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import type { SemanticTheme } from '@shared/themes';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 
 export default function RegisterScreen() {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const { signUp, isLoading, error } = useEmailAuth();
   const [fullName, setFullName] = useState('');
@@ -68,7 +71,7 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.white} />
+            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -80,13 +83,13 @@ export default function RegisterScreen() {
           <Ionicons
             name="person-outline"
             size={18}
-            color={colors.white40}
+            color={theme.textTertiary}
             style={styles.inputIcon}
           />
           <TextInput
             style={styles.input}
             placeholder="Full Name"
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={fullName}
             onChangeText={setFullName}
             autoCapitalize="words"
@@ -95,11 +98,16 @@ export default function RegisterScreen() {
 
         {/* Email */}
         <View style={styles.inputWrapper}>
-          <Ionicons name="mail-outline" size={18} color={colors.white40} style={styles.inputIcon} />
+          <Ionicons
+            name="mail-outline"
+            size={18}
+            color={theme.textTertiary}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -113,13 +121,13 @@ export default function RegisterScreen() {
           <Ionicons
             name="lock-closed-outline"
             size={18}
-            color={colors.white40}
+            color={theme.textTertiary}
             style={styles.inputIcon}
           />
           <TextInput
             style={styles.input}
             placeholder="Password"
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -128,7 +136,7 @@ export default function RegisterScreen() {
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color={colors.white40}
+              color={theme.textTertiary}
             />
           </TouchableOpacity>
         </View>
@@ -138,13 +146,13 @@ export default function RegisterScreen() {
           <Ionicons
             name="lock-closed-outline"
             size={18}
-            color={colors.white40}
+            color={theme.textTertiary}
             style={styles.inputIcon}
           />
           <TextInput
             style={styles.input}
             placeholder="Confirm Password"
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showPassword}
@@ -164,7 +172,7 @@ export default function RegisterScreen() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator size="small" color={colors.white} />
+            <ActivityIndicator size="small" color={theme.textPrimary} />
           ) : (
             <Text style={styles.createButtonText}>Create Account</Text>
           )}
@@ -182,101 +190,102 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.black,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 56,
-    paddingBottom: 40,
-  },
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 24,
+      paddingTop: 56,
+      paddingBottom: 40,
+    },
 
-  // Header
-  header: {
-    marginBottom: 24,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    // Header
+    header: {
+      marginBottom: 24,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.white,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.white60,
-    marginBottom: 32,
-  },
+    title: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: t.textPrimary,
+      marginBottom: 8,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: t.textSecondary,
+      marginBottom: 32,
+    },
 
-  // Inputs
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white10,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    marginBottom: 12,
-    height: 52,
-  },
-  inputIcon: {
-    marginRight: 10,
-  },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.white,
-  },
+    // Inputs
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: t.input,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      marginBottom: 12,
+      height: 52,
+    },
+    inputIcon: {
+      marginRight: 10,
+    },
+    input: {
+      flex: 1,
+      fontSize: 15,
+      color: t.textPrimary,
+    },
 
-  // Error
-  errorText: {
-    fontSize: 13,
-    color: colors.red500,
-    marginBottom: 8,
-    paddingHorizontal: 4,
-  },
+    // Error
+    errorText: {
+      fontSize: 13,
+      color: '#EF4444',
+      marginBottom: 8,
+      paddingHorizontal: 4,
+    },
 
-  // Create
-  createButton: {
-    height: 52,
-    backgroundColor: colors.red600,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  createButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.white,
-  },
+    // Create
+    createButton: {
+      height: 52,
+      backgroundColor: '#DC2626',
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 8,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    createButtonText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: t.textPrimary,
+    },
 
-  // Sign In
-  signInRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  signInLabel: {
-    fontSize: 14,
-    color: colors.white60,
-  },
-  signInLink: {
-    fontSize: 14,
-    color: colors.red500,
-    fontWeight: '600',
-  },
-});
+    // Sign In
+    signInRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 24,
+    },
+    signInLabel: {
+      fontSize: 14,
+      color: t.textSecondary,
+    },
+    signInLink: {
+      fontSize: 14,
+      color: '#EF4444',
+      fontWeight: '600',
+    },
+  });

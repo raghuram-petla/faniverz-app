@@ -32,7 +32,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-zinc-900 border-r border-white/10 min-h-screen p-4">
+    <aside className="w-64 bg-surface-card border-r border-outline min-h-screen p-4">
       <div className="flex justify-center mb-8">
         <Image
           src="/logo-full.png"
@@ -55,7 +55,7 @@ export function Sidebar() {
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-red-600 text-white'
-                  : 'text-white/60 hover:bg-white/5 hover:text-white'
+                  : 'text-on-surface-muted hover:bg-surface-elevated hover:text-on-surface'
               }`}
             >
               <Icon className="w-5 h-5" />

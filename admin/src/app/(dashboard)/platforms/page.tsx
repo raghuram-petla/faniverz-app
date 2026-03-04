@@ -75,7 +75,7 @@ export default function PlatformsPage() {
           <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
             <Monitor className="w-5 h-5 text-blue-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Platforms</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Platforms</h1>
         </div>
         <button
           onClick={openAdd}
@@ -88,10 +88,10 @@ export default function PlatformsPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+          <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : !platforms?.length ? (
-        <div className="text-center py-20 text-white/40">
+        <div className="text-center py-20 text-on-surface-subtle">
           No platforms found. Add one to get started.
         </div>
       ) : (
@@ -99,25 +99,25 @@ export default function PlatformsPage() {
           {platforms.map((platform) => (
             <div
               key={platform.id}
-              className="bg-zinc-900 border border-white/10 rounded-xl p-5 space-y-4"
+              className="bg-surface-card border border-outline rounded-xl p-5 space-y-4"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <span
-                    className="w-12 h-12 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+                    className="w-12 h-12 rounded-lg flex items-center justify-center text-sm font-bold text-on-surface"
                     style={{ backgroundColor: platform.color }}
                   >
                     {platform.logo}
                   </span>
                   <div>
-                    <h3 className="text-white font-semibold text-lg">{platform.name}</h3>
-                    <p className="text-white/40 text-sm font-mono">{platform.color}</p>
+                    <h3 className="text-on-surface font-semibold text-lg">{platform.name}</h3>
+                    <p className="text-on-surface-subtle text-sm font-mono">{platform.color}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEdit(platform)}
-                    className="p-2 text-white/40 hover:text-blue-400 transition-colors"
+                    className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
                     title="Edit platform"
                   >
                     <Pencil className="w-4 h-4" />
@@ -125,7 +125,7 @@ export default function PlatformsPage() {
                   <button
                     onClick={() => handleDelete(platform.id)}
                     disabled={deletePlatform.isPending}
-                    className="p-2 text-white/40 hover:text-red-500 transition-colors disabled:opacity-50"
+                    className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
                     title="Delete platform"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -133,8 +133,8 @@ export default function PlatformsPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-white/40">Display Order</span>
-                <span className="text-white font-medium">{platform.display_order}</span>
+                <span className="text-on-surface-subtle">Display Order</span>
+                <span className="text-on-surface font-medium">{platform.display_order}</span>
               </div>
             </div>
           ))}
@@ -144,14 +144,14 @@ export default function PlatformsPage() {
       {/* Dialog overlay */}
       {showDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-white/10 rounded-xl p-6 w-full max-w-md mx-4 space-y-6">
+          <div className="bg-surface-card border border-outline rounded-xl p-6 w-full max-w-md mx-4 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-white">
+              <h2 className="text-lg font-bold text-on-surface">
                 {editingId ? 'Edit Platform' : 'Add Platform'}
               </h2>
               <button
                 onClick={handleClose}
-                className="p-1 text-white/40 hover:text-white transition-colors"
+                className="p-1 text-on-surface-subtle hover:text-on-surface transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -159,7 +159,7 @@ export default function PlatformsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="name" className="block text-sm font-medium text-white/60">
+                <label htmlFor="name" className="block text-sm font-medium text-on-surface-muted">
                   Name
                 </label>
                 <input
@@ -169,12 +169,12 @@ export default function PlatformsPage() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
                   placeholder="e.g. Netflix"
-                  className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="logo" className="block text-sm font-medium text-white/60">
+                <label htmlFor="logo" className="block text-sm font-medium text-on-surface-muted">
                   Logo Text
                 </label>
                 <input
@@ -184,12 +184,12 @@ export default function PlatformsPage() {
                   onChange={(e) => setForm({ ...form, logo: e.target.value })}
                   required
                   placeholder="e.g. N"
-                  className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 />
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="color" className="block text-sm font-medium text-white/60">
+                <label htmlFor="color" className="block text-sm font-medium text-on-surface-muted">
                   Brand Color
                 </label>
                 <div className="flex items-center gap-3">
@@ -197,7 +197,7 @@ export default function PlatformsPage() {
                     type="color"
                     value={form.color}
                     onChange={(e) => setForm({ ...form, color: e.target.value })}
-                    className="w-10 h-10 rounded border border-white/10 bg-transparent cursor-pointer"
+                    className="w-10 h-10 rounded border border-outline bg-transparent cursor-pointer"
                   />
                   <input
                     id="color"
@@ -206,13 +206,16 @@ export default function PlatformsPage() {
                     onChange={(e) => setForm({ ...form, color: e.target.value })}
                     required
                     placeholder="#e50914"
-                    className="flex-1 bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white font-mono placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                    className="flex-1 bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface font-mono placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="display_order" className="block text-sm font-medium text-white/60">
+                <label
+                  htmlFor="display_order"
+                  className="block text-sm font-medium text-on-surface-muted"
+                >
                   Display Order
                 </label>
                 <input
@@ -222,16 +225,16 @@ export default function PlatformsPage() {
                   onChange={(e) => setForm({ ...form, display_order: Number(e.target.value) })}
                   required
                   min={0}
-                  className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 />
               </div>
 
               {/* Preview */}
               <div className="pt-2">
-                <p className="text-sm text-white/40 mb-2">Preview</p>
+                <p className="text-sm text-on-surface-subtle mb-2">Preview</p>
                 <div className="flex items-center gap-3">
                   <span
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold text-white"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold text-on-surface"
                     style={{ backgroundColor: form.color || '#333' }}
                   >
                     {form.logo || '?'}
@@ -258,7 +261,7 @@ export default function PlatformsPage() {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="px-6 py-2.5 text-white/60 hover:text-white transition-colors"
+                  className="px-6 py-2.5 text-on-surface-muted hover:text-on-surface transition-colors"
                 >
                   Cancel
                 </button>

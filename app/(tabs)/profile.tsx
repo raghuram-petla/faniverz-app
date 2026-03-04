@@ -8,10 +8,10 @@ import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useWatchlist } from '@/features/watchlist/hooks';
 import { useUserReviews } from '@/features/reviews/hooks';
 import { useUnreadCount } from '@/features/notifications/hooks';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { formatMemberSince } from '@/utils/formatDate';
-import { styles } from './profile.styles';
+import { createStyles } from './profile.styles';
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -30,7 +30,21 @@ const MENU_ITEMS: MenuItem[] = [
   { icon: 'person-outline', label: 'Account Details', route: '/profile/account' },
 ];
 
+const THEME_MODE_LABELS: Record<string, string> = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+};
+
+function nextThemeMode(current: string): 'system' | 'light' | 'dark' {
+  if (current === 'system') return 'light';
+  if (current === 'light') return 'dark';
+  return 'system';
+}
+
 export default function ProfileScreen() {
+  const { theme, colors, mode, setMode } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -64,7 +78,7 @@ export default function ProfileScreen() {
     return (
       <View style={[styles.container, styles.guestContainer, { paddingTop: insets.top + 16 }]}>
         <View style={styles.guestContent}>
-          <Ionicons name="person-circle-outline" size={100} color={colors.white20} />
+          <Ionicons name="person-circle-outline" size={100} color={theme.textDisabled} />
           <Text style={styles.guestTitle}>Sign in to Faniverz</Text>
           <Text style={styles.guestSubtitle}>
             Create an account to track your watchlist, write reviews, and more
@@ -78,6 +92,23 @@ export default function ProfileScreen() {
             <Text style={styles.loginText}>Login / Sign Up</Text>
           </TouchableOpacity>
         </View>
+        {/* Theme Toggle */}
+        <View style={styles.menuCard}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            activeOpacity={0.7}
+            onPress={() => setMode(nextThemeMode(mode))}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="sunny-outline" size={20} color={theme.textSecondary} />
+              <Text style={styles.menuItemLabel}>Theme</Text>
+            </View>
+            <View style={styles.menuItemRight}>
+              <Text style={styles.themeLabel}>{THEME_MODE_LABELS[mode]}</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.footer}>
           <Text style={styles.footerVersion}>Faniverz v1.0.0</Text>
           <Text style={styles.footerTagline}>Your Telugu Cinema Companion</Text>
@@ -144,15 +175,15 @@ export default function ProfileScreen() {
 
       {/* Menu Items */}
       <View style={styles.menuCard}>
-        {menuItems.map((item, index) => (
+        {menuItems.map((item) => (
           <TouchableOpacity
             key={item.route}
-            style={[styles.menuItem, index < menuItems.length - 1 && styles.menuItemBorder]}
+            style={[styles.menuItem, styles.menuItemBorder]}
             activeOpacity={0.7}
             onPress={() => router.push(item.route as Parameters<typeof router.push>[0])}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name={item.icon} size={20} color={colors.white60} />
+              <Ionicons name={item.icon} size={20} color={theme.textSecondary} />
               <Text style={styles.menuItemLabel}>{item.label}</Text>
             </View>
             <View style={styles.menuItemRight}>
@@ -161,10 +192,25 @@ export default function ProfileScreen() {
                   <Text style={styles.badgeText}>{item.badge}</Text>
                 </View>
               ) : null}
-              <Ionicons name="chevron-forward" size={18} color={colors.white40} />
+              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
             </View>
           </TouchableOpacity>
         ))}
+
+        {/* Theme Toggle */}
+        <TouchableOpacity
+          style={styles.menuItem}
+          activeOpacity={0.7}
+          onPress={() => setMode(nextThemeMode(mode))}
+        >
+          <View style={styles.menuItemLeft}>
+            <Ionicons name="sunny-outline" size={20} color={theme.textSecondary} />
+            <Text style={styles.menuItemLabel}>Theme</Text>
+          </View>
+          <View style={styles.menuItemRight}>
+            <Text style={styles.themeLabel}>{THEME_MODE_LABELS[mode]}</Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       {/* Footer */}

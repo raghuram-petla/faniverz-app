@@ -54,36 +54,36 @@ export function BasicInfoSection({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm text-white/60 mb-1">Title *</label>
+        <label className="block text-sm text-on-surface-muted mb-1">Title *</label>
         <input
           type="text"
           required
           value={form.title}
           onChange={(e) => updateField('title', e.target.value)}
-          className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-white/60 mb-1">Release Date *</label>
+          <label className="block text-sm text-on-surface-muted mb-1">Release Date *</label>
           <input
             type="date"
             required
             value={form.release_date}
             onChange={(e) => updateField('release_date', e.target.value)}
-            className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           />
         </div>
         <div>
-          <label className="block text-sm text-white/60 mb-1">Currently In Theaters</label>
-          <label className="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3 cursor-pointer">
+          <label className="block text-sm text-on-surface-muted mb-1">Currently In Theaters</label>
+          <label className="flex items-center gap-3 bg-input rounded-xl px-4 py-3 cursor-pointer">
             <input
               type="checkbox"
               checked={form.in_theaters}
               onChange={(e) => setForm((prev) => ({ ...prev, in_theaters: e.target.checked }))}
               className="w-5 h-5 rounded accent-red-600"
             />
-            <span className="text-white text-sm">
+            <span className="text-on-surface text-sm">
               {form.in_theaters ? 'Yes — In Theaters' : 'No'}
             </span>
           </label>
@@ -91,20 +91,20 @@ export function BasicInfoSection({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-white/60 mb-1">Runtime (min)</label>
+          <label className="block text-sm text-on-surface-muted mb-1">Runtime (min)</label>
           <input
             type="number"
             value={form.runtime}
             onChange={(e) => updateField('runtime', e.target.value)}
-            className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           />
         </div>
         <div>
-          <label className="block text-sm text-white/60 mb-1">Certification</label>
+          <label className="block text-sm text-on-surface-muted mb-1">Certification</label>
           <select
             value={form.certification}
             onChange={(e) => updateField('certification', e.target.value)}
-            className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="">None</option>
             <option value="U">U</option>
@@ -114,12 +114,12 @@ export function BasicInfoSection({
         </div>
       </div>
       <div>
-        <label className="block text-sm text-white/60 mb-1">Director</label>
+        <label className="block text-sm text-on-surface-muted mb-1">Director</label>
         <input
           type="text"
           value={form.director}
           onChange={(e) => updateField('director', e.target.value)}
-          className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
         />
       </div>
 
@@ -151,12 +151,14 @@ export function BasicInfoSection({
         }
         onRemove={() => updateField('backdrop_url', '')}
       />
-      {form.backdrop_url && <p className="text-xs text-white/20 truncate">{form.backdrop_url}</p>}
+      {form.backdrop_url && (
+        <p className="text-xs text-on-surface-disabled truncate">{form.backdrop_url}</p>
+      )}
 
       {/* Backdrop Focal Point */}
       {form.backdrop_url && (
         <div>
-          <label className="block text-sm text-white/60 mb-1">
+          <label className="block text-sm text-on-surface-muted mb-1">
             Backdrop Focal Point{' '}
             <span className="text-white/30 font-normal">— click image to set</span>
           </label>
@@ -182,7 +184,7 @@ export function BasicInfoSection({
           </div>
           {form.backdrop_focus_x != null && form.backdrop_focus_y != null && (
             <div className="flex items-center gap-4 mt-1.5">
-              <span className="text-xs text-white/40">
+              <span className="text-xs text-on-surface-subtle">
                 Focus: ({Math.round(form.backdrop_focus_x * 100)}%,{' '}
                 {Math.round(form.backdrop_focus_y * 100)}%)
               </span>
@@ -202,36 +204,36 @@ export function BasicInfoSection({
 
       {/* Trailer URL */}
       <div>
-        <label className="block text-sm text-white/60 mb-1">Trailer URL</label>
+        <label className="block text-sm text-on-surface-muted mb-1">Trailer URL</label>
         <input
           type="url"
           value={form.trailer_url}
           onChange={(e) => updateField('trailer_url', e.target.value)}
-          className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
         />
       </div>
 
       {/* Synopsis */}
       <div>
-        <label className="block text-sm text-white/60 mb-1">Synopsis</label>
+        <label className="block text-sm text-on-surface-muted mb-1">Synopsis</label>
         <textarea
           rows={4}
           value={form.synopsis}
           onChange={(e) => updateField('synopsis', e.target.value)}
-          className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600 resize-none"
+          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600 resize-none"
         />
       </div>
 
       {/* Genres */}
       <div>
-        <label className="block text-sm text-white/60 mb-2">Genres</label>
+        <label className="block text-sm text-on-surface-muted mb-2">Genres</label>
         <div className="flex flex-wrap gap-2">
           {genres.map((genre) => (
             <button
               key={genre}
               type="button"
               onClick={() => toggleGenre(genre)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${form.genres.includes(genre) ? 'bg-red-600 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${form.genres.includes(genre) ? 'bg-red-600 text-white' : 'bg-input text-on-surface-muted hover:bg-input-active'}`}
             >
               {genre}
             </button>

@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { ActorAvatar } from '@/components/common/ActorAvatar';
 import type { CastMember } from '@/types';
-import { styles } from '../[id].styles';
+import { useTheme } from '@/theme';
+import { createStyles } from '../[id].styles';
 
 interface CastTabProps {
   cast: CastMember[];
@@ -10,6 +11,8 @@ interface CastTabProps {
 }
 
 export function CastTab({ cast, crew, onActorPress }: CastTabProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.castTab}>
       {cast.length > 0 && (

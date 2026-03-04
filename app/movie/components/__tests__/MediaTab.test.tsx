@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import { MediaTab } from '../MediaTab';
 
 jest.mock('../../[id].styles', () => ({
-  styles: new Proxy({}, { get: () => ({}) }),
+  createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
 jest.mock('@/theme/colors', () => ({

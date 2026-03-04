@@ -1,19 +1,65 @@
 @import "tailwindcss";
 
+/* Light theme (default) */
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --surface: #FFFFFF;
+  --surface-card: #F4F4F5;
+  --surface-elevated: rgba(0, 0, 0, 0.03);
+  --surface-muted: rgba(0, 0, 0, 0.02);
+  --input: rgba(0, 0, 0, 0.06);
+  --input-hover: rgba(0, 0, 0, 0.08);
+  --input-active: rgba(0, 0, 0, 0.12);
+  --on-surface: #18181B;
+  --on-surface-muted: rgba(0, 0, 0, 0.6);
+  --on-surface-subtle: rgba(0, 0, 0, 0.4);
+  --on-surface-disabled: rgba(0, 0, 0, 0.2);
+  --outline: rgba(0, 0, 0, 0.1);
+  --outline-subtle: rgba(0, 0, 0, 0.06);
+  --overlay: rgba(0, 0, 0, 0.5);
+  --overlay-heavy: rgba(0, 0, 0, 0.8);
+}
+
+/* Dark theme */
+.dark {
+  --surface: #000000;
+  --surface-card: #18181B;
+  --surface-elevated: rgba(255, 255, 255, 0.05);
+  --surface-muted: rgba(255, 255, 255, 0.03);
+  --input: rgba(255, 255, 255, 0.1);
+  --input-hover: rgba(255, 255, 255, 0.15);
+  --input-active: rgba(255, 255, 255, 0.2);
+  --on-surface: #FFFFFF;
+  --on-surface-muted: rgba(255, 255, 255, 0.6);
+  --on-surface-subtle: rgba(255, 255, 255, 0.4);
+  --on-surface-disabled: rgba(255, 255, 255, 0.2);
+  --outline: rgba(255, 255, 255, 0.1);
+  --outline-subtle: rgba(255, 255, 255, 0.06);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-card: var(--surface-card);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-muted: var(--surface-muted);
+  --color-input: var(--input);
+  --color-input-hover: var(--input-hover);
+  --color-input-active: var(--input-active);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-muted: var(--on-surface-muted);
+  --color-on-surface-subtle: var(--on-surface-subtle);
+  --color-on-surface-disabled: var(--on-surface-disabled);
+  --color-outline: var(--outline);
+  --color-outline-subtle: var(--outline-subtle);
+  --color-overlay: var(--overlay);
+  --color-overlay-heavy: var(--overlay-heavy);
+  --color-background: var(--surface);
+  --color-foreground: var(--on-surface);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--surface);
+  color: var(--on-surface);
   font-family: Arial, Helvetica, sans-serif;
 }

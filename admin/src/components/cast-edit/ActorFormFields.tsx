@@ -29,22 +29,22 @@ export function ActorFormFields({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="bg-zinc-900 border border-white/10 rounded-xl p-6 space-y-4">
+    <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-4">
       {/* Name */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">Name *</label>
+        <label className="block text-xs text-on-surface-subtle mb-1">Name *</label>
         <input
           type="text"
           required
           value={form.name}
           onChange={(e) => onFieldChange('name', e.target.value)}
-          className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+          className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
         />
       </div>
 
       {/* Photo */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">Photo</label>
+        <label className="block text-xs text-on-surface-subtle mb-1">Photo</label>
         <input
           ref={fileInputRef}
           type="file"
@@ -61,14 +61,14 @@ export function ActorFormFields({
             <img
               src={form.photo_url}
               alt="Photo preview"
-              className="w-20 h-20 rounded-full object-cover border border-white/10"
+              className="w-20 h-20 rounded-full object-cover border border-outline"
             />
             <div className="flex flex-col gap-2">
               <button
                 type="button"
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 text-sm text-white/60 hover:text-white px-3 py-1.5 bg-white/10 rounded-lg disabled:opacity-50"
+                className="flex items-center gap-2 text-sm text-on-surface-muted hover:text-on-surface px-3 py-1.5 bg-input rounded-lg disabled:opacity-50"
               >
                 {uploading ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -80,7 +80,7 @@ export function ActorFormFields({
               <button
                 type="button"
                 onClick={() => onFieldChange('photo_url', '')}
-                className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-white/5 rounded-lg"
+                className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-surface-elevated rounded-lg"
               >
                 <X className="w-3.5 h-3.5" /> Remove
               </button>
@@ -91,7 +91,7 @@ export function ActorFormFields({
             type="button"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-2 bg-white/10 rounded-lg px-4 py-3 text-sm text-white/60 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-input rounded-lg px-4 py-3 text-sm text-on-surface-muted hover:bg-input-hover hover:text-on-surface transition-colors disabled:opacity-50"
           >
             {uploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -101,29 +101,31 @@ export function ActorFormFields({
             {uploading ? 'Uploading...' : 'Upload Photo'}
           </button>
         )}
-        {form.photo_url && <p className="mt-2 text-xs text-white/20 truncate">{form.photo_url}</p>}
+        {form.photo_url && (
+          <p className="mt-2 text-xs text-on-surface-disabled truncate">{form.photo_url}</p>
+        )}
       </div>
 
       {/* Person Type + DOB */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-white/40 mb-1">Person Type</label>
+          <label className="block text-xs text-on-surface-subtle mb-1">Person Type</label>
           <select
             value={form.person_type}
             onChange={(e) => onFieldChange('person_type', e.target.value)}
-            className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+            className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
           >
             <option value="actor">Actor</option>
             <option value="technician">Technician</option>
           </select>
         </div>
         <div>
-          <label className="block text-xs text-white/40 mb-1">Date of Birth</label>
+          <label className="block text-xs text-on-surface-subtle mb-1">Date of Birth</label>
           <input
             type="date"
             value={form.birth_date}
             onChange={(e) => onFieldChange('birth_date', e.target.value)}
-            className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+            className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
           />
         </div>
       </div>
@@ -131,11 +133,11 @@ export function ActorFormFields({
       {/* Gender + Height */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-white/40 mb-1">Gender</label>
+          <label className="block text-xs text-on-surface-subtle mb-1">Gender</label>
           <select
             value={form.gender}
             onChange={(e) => onFieldChange('gender', e.target.value)}
-            className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+            className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
           >
             <option value="0">Not set</option>
             <option value="1">Female</option>
@@ -144,35 +146,35 @@ export function ActorFormFields({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-white/40 mb-1">Height (cm)</label>
+          <label className="block text-xs text-on-surface-subtle mb-1">Height (cm)</label>
           <input
             type="number"
             value={form.height_cm}
             onChange={(e) => onFieldChange('height_cm', e.target.value)}
-            className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+            className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
           />
         </div>
       </div>
 
       {/* Place of Birth */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">Place of Birth</label>
+        <label className="block text-xs text-on-surface-subtle mb-1">Place of Birth</label>
         <input
           type="text"
           value={form.place_of_birth}
           onChange={(e) => onFieldChange('place_of_birth', e.target.value)}
-          className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
+          className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
         />
       </div>
 
       {/* Biography */}
       <div>
-        <label className="block text-xs text-white/40 mb-1">Biography</label>
+        <label className="block text-xs text-on-surface-subtle mb-1">Biography</label>
         <textarea
           rows={4}
           value={form.biography}
           onChange={(e) => onFieldChange('biography', e.target.value)}
-          className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm resize-none"
+          className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm resize-none"
         />
       </div>
     </div>

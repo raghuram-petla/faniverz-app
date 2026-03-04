@@ -31,22 +31,22 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-on-surface">Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, i) => {
           const Icon = card.icon;
           return (
-            <div key={card.label} className="bg-zinc-900 border border-white/10 rounded-xl p-6">
+            <div key={card.label} className="bg-surface-card border border-outline rounded-xl p-6">
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className={`w-10 h-10 rounded-lg ${card.bgColor} flex items-center justify-center`}
                 >
                   <Icon className={`w-5 h-5 ${card.color}`} />
                 </div>
-                <span className="text-sm text-white/60">{card.label}</span>
+                <span className="text-sm text-on-surface-muted">{card.label}</span>
               </div>
-              <p className="text-3xl font-bold text-white">{values[i]}</p>
+              <p className="text-3xl font-bold text-on-surface">{values[i]}</p>
             </div>
           );
         })}
@@ -55,30 +55,30 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           href="/movies/new"
-          className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-xl p-4 hover:bg-white/5 transition-colors"
+          className="flex items-center gap-3 bg-surface-card border border-outline rounded-xl p-4 hover:bg-surface-elevated transition-colors"
         >
           <div className="w-10 h-10 rounded-lg bg-red-600/20 flex items-center justify-center">
             <Plus className="w-5 h-5 text-red-500" />
           </div>
-          <span className="font-medium text-white">Add Movie</span>
+          <span className="font-medium text-on-surface">Add Movie</span>
         </Link>
         <Link
           href="/ott/new"
-          className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-xl p-4 hover:bg-white/5 transition-colors"
+          className="flex items-center gap-3 bg-surface-card border border-outline rounded-xl p-4 hover:bg-surface-elevated transition-colors"
         >
           <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center">
             <Tv className="w-5 h-5 text-purple-500" />
           </div>
-          <span className="font-medium text-white">Add OTT Release</span>
+          <span className="font-medium text-on-surface">Add OTT Release</span>
         </Link>
         <Link
           href="/sync"
-          className="flex items-center gap-3 bg-zinc-900 border border-white/10 rounded-xl p-4 hover:bg-white/5 transition-colors"
+          className="flex items-center gap-3 bg-surface-card border border-outline rounded-xl p-4 hover:bg-surface-elevated transition-colors"
         >
           <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
             <RefreshCw className="w-5 h-5 text-blue-500" />
           </div>
-          <span className="font-medium text-white">Trigger Sync</span>
+          <span className="font-medium text-on-surface">Trigger Sync</span>
         </Link>
       </div>
     </div>

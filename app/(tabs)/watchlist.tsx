@@ -6,10 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlistPaginated } from '@/features/watchlist/hooks';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { WatchlistEntry } from '@/types';
 import { AvailableCard, UpcomingCard, WatchedCard } from '@/components/watchlist/WatchlistCards';
-import { styles } from './watchlist.styles';
+import { createStyles } from './watchlist.styles';
 
 type ListItem =
   | {
@@ -32,6 +32,8 @@ function SectionTitle({
   iconColor: string;
   title: string;
 }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={styles.sectionHeader}>
       <Ionicons name={iconName} size={20} color={iconColor} />
@@ -41,6 +43,8 @@ function SectionTitle({
 }
 
 export default function WatchlistScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();

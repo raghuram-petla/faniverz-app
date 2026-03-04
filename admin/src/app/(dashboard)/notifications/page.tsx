@@ -16,7 +16,7 @@ const statusStyles: Record<string, { bg: string; text: string }> = {
   pending: { bg: 'bg-yellow-600/20', text: 'text-yellow-400' },
   sent: { bg: 'bg-green-600/20', text: 'text-green-400' },
   failed: { bg: 'bg-red-600/20', text: 'text-red-400' },
-  cancelled: { bg: 'bg-white/10', text: 'text-white/40' },
+  cancelled: { bg: 'bg-input', text: 'text-on-surface-subtle' },
 };
 
 const typeStyles: Record<string, { bg: string; text: string }> = {
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
           <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
             <Bell className="w-5 h-5 text-yellow-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Notifications</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Notifications</h1>
         </div>
         <Link
           href="/notifications/compose"
@@ -84,7 +84,7 @@ export default function NotificationsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-600"
+          className="bg-zinc-800 border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
         >
           <option value="">All Statuses</option>
           <option value="pending">Pending</option>
@@ -96,7 +96,7 @@ export default function NotificationsPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-600"
+          className="bg-zinc-800 border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
         >
           <option value="">All Types</option>
           <option value="release">Release</option>
@@ -110,7 +110,7 @@ export default function NotificationsPage() {
         <button
           onClick={handleBulkRetry}
           disabled={bulkRetry.isPending}
-          className="flex items-center gap-2 bg-zinc-800 border border-white/10 hover:bg-white/10 text-white/80 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-zinc-800 border border-outline hover:bg-input text-white/80 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
         >
           {bulkRetry.isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -123,7 +123,7 @@ export default function NotificationsPage() {
         <button
           onClick={handleBulkCancel}
           disabled={bulkCancel.isPending}
-          className="flex items-center gap-2 bg-zinc-800 border border-white/10 hover:bg-white/10 text-white/80 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-zinc-800 border border-outline hover:bg-input text-white/80 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
         >
           {bulkCancel.isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -136,22 +136,30 @@ export default function NotificationsPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+          <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : !notifications?.length ? (
-        <div className="text-center py-20 text-white/40">No notifications found.</div>
+        <div className="text-center py-20 text-on-surface-subtle">No notifications found.</div>
       ) : (
-        <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Type</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Title</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">Status</th>
-                <th className="text-left text-sm font-medium text-white/60 px-6 py-4">
+              <tr className="border-b border-outline">
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Type
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Title
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Status
+                </th>
+                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
                   Scheduled For
                 </th>
-                <th className="text-right text-sm font-medium text-white/60 px-6 py-4">Actions</th>
+                <th className="text-right text-sm font-medium text-on-surface-muted px-6 py-4">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -161,7 +169,7 @@ export default function NotificationsPage() {
                 return (
                   <tr
                     key={notification.id}
-                    className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                    className="border-b border-outline-subtle hover:bg-surface-elevated transition-colors"
                   >
                     <td className="px-6 py-4">
                       <span
@@ -171,7 +179,7 @@ export default function NotificationsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-white font-medium">{notification.title}</span>
+                      <span className="text-on-surface font-medium">{notification.title}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span
@@ -180,7 +188,7 @@ export default function NotificationsPage() {
                         {notification.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-white/60 text-sm">
+                    <td className="px-6 py-4 text-on-surface-muted text-sm">
                       {formatDateTime(notification.scheduled_for)}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -189,7 +197,7 @@ export default function NotificationsPage() {
                           <button
                             onClick={() => handleCancel(notification.id)}
                             disabled={cancelNotification.isPending}
-                            className="p-2 text-white/40 hover:text-red-500 transition-colors disabled:opacity-50"
+                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
                             title="Cancel"
                           >
                             <XCircle className="w-4 h-4" />
@@ -199,7 +207,7 @@ export default function NotificationsPage() {
                           <button
                             onClick={() => handleRetry(notification.id)}
                             disabled={retryNotification.isPending}
-                            className="p-2 text-white/40 hover:text-green-400 transition-colors disabled:opacity-50"
+                            className="p-2 text-on-surface-subtle hover:text-green-400 transition-colors disabled:opacity-50"
                             title="Retry"
                           >
                             <RotateCcw className="w-4 h-4" />

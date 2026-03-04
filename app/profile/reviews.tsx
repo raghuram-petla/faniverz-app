@@ -9,14 +9,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useUserReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { Review } from '@/types';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
-import { styles } from './reviews.styles';
+import { createStyles } from './reviews.styles';
 
 type SortKey = 'recent' | 'rating' | 'helpful';
 
-function StarRow({ rating }: { rating: number }) {
+function StarRow({ rating, styles }: { rating: number; styles: ReturnType<typeof createStyles> }) {
+  const { colors } = useTheme();
   return (
     <View style={styles.starRow}>
       {[1, 2, 3, 4, 5].map((star) => (
@@ -32,6 +33,8 @@ function StarRow({ rating }: { rating: number }) {
 }
 
 export default function MyReviewsScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -156,7 +159,7 @@ export default function MyReviewsScreen() {
                     <Text style={styles.movieTitle} numberOfLines={2}>
                       {movieTitle}
                     </Text>
-                    <StarRow rating={review.rating} />
+                    <StarRow rating={review.rating} styles={styles} />
                     {review.title ? (
                       <Text style={styles.reviewTitle} numberOfLines={1}>
                         {review.title}
@@ -177,7 +180,7 @@ export default function MyReviewsScreen() {
                   <View style={styles.reviewMeta}>
                     <Text style={styles.reviewDate}>{formatDate(review.created_at)}</Text>
                     <View style={styles.helpfulBadge}>
-                      <Ionicons name="thumbs-up-outline" size={12} color={colors.white40} />
+                      <Ionicons name="thumbs-up-outline" size={12} color={theme.textTertiary} />
                       <Text style={styles.helpfulText}>{review.helpful_count} helpful</Text>
                     </View>
                   </View>
@@ -187,7 +190,7 @@ export default function MyReviewsScreen() {
                       activeOpacity={0.7}
                       onPress={() => router.push(`/movie/${review.movie_id}`)}
                     >
-                      <Ionicons name="create-outline" size={16} color={colors.white60} />
+                      <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
                       <Text style={styles.actionText}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity

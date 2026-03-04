@@ -1,7 +1,7 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
-import { styles } from '../[id].styles';
+import { useTheme } from '@/theme';
+import { createStyles } from '../[id].styles';
 
 interface MovieDetailHeaderProps {
   insetsTop: number;
@@ -22,6 +22,8 @@ export function MovieDetailHeader({
   onShare,
   onToggleWatchlist,
 }: MovieDetailHeaderProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={[styles.heroHeader, { paddingTop: insetsTop + 8 }]}>
       <View style={styles.heroHeaderLeft}>

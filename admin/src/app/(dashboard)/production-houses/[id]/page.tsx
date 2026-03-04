@@ -92,10 +92,10 @@ export default function EditProductionHousePage() {
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/production-houses" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
-            <ArrowLeft className="w-4 h-4 text-white" />
+          <Link href="/production-houses" className="p-2 rounded-lg bg-input hover:bg-input-active">
+            <ArrowLeft className="w-4 h-4 text-on-surface" />
           </Link>
-          <h1 className="text-2xl font-bold text-white">Edit Production House</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Edit Production House</h1>
         </div>
         <button
           onClick={handleDelete}
@@ -107,18 +107,18 @@ export default function EditProductionHousePage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-white/60 mb-1">Name *</label>
+          <label className="block text-sm text-on-surface-muted mb-1">Name *</label>
           <input
             type="text"
             required
             value={form.name}
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600"
+            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-white/60 mb-1">Logo</label>
+          <label className="block text-sm text-on-surface-muted mb-1">Logo</label>
           <input
             ref={fileInputRef}
             type="file"
@@ -135,14 +135,14 @@ export default function EditProductionHousePage() {
               <img
                 src={form.logo_url}
                 alt="Logo preview"
-                className="w-20 h-20 rounded-lg object-cover border border-white/10"
+                className="w-20 h-20 rounded-lg object-cover border border-outline"
               />
               <div className="flex flex-col gap-2">
                 <button
                   type="button"
                   disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 text-sm text-white/60 hover:text-white px-3 py-1.5 bg-white/10 rounded-lg disabled:opacity-50"
+                  className="flex items-center gap-2 text-sm text-on-surface-muted hover:text-on-surface px-3 py-1.5 bg-input rounded-lg disabled:opacity-50"
                 >
                   {uploading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -154,7 +154,7 @@ export default function EditProductionHousePage() {
                 <button
                   type="button"
                   onClick={() => setForm((p) => ({ ...p, logo_url: '' }))}
-                  className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-white/5 rounded-lg"
+                  className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-surface-elevated rounded-lg"
                 >
                   <X className="w-3.5 h-3.5" /> Remove
                 </button>
@@ -165,7 +165,7 @@ export default function EditProductionHousePage() {
               type="button"
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 bg-white/10 rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-input rounded-xl px-4 py-3 text-sm text-on-surface-muted hover:bg-input-hover hover:text-on-surface transition-colors disabled:opacity-50"
             >
               {uploading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -178,12 +178,12 @@ export default function EditProductionHousePage() {
         </div>
 
         <div>
-          <label className="block text-sm text-white/60 mb-1">Description</label>
+          <label className="block text-sm text-on-surface-muted mb-1">Description</label>
           <textarea
             rows={3}
             value={form.description}
             onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-            className="w-full bg-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-red-600 resize-none"
+            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600 resize-none"
           />
         </div>
 

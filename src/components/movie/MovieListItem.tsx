@@ -1,8 +1,11 @@
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import type { SemanticTheme } from '@shared/themes';
 import { Movie, OTTPlatform } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 
@@ -14,6 +17,8 @@ interface MovieListItemProps {
 }
 
 export function MovieListItem({ movie, platforms, isPast, testID }: MovieListItemProps) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const status = deriveMovieStatus(movie, platforms?.length ?? 0);
 
@@ -92,7 +97,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
         {/* Rating */}
         {(status === 'in_theaters' || status === 'streaming') && movie.rating > 0 && (
           <View style={[styles.ratingRow, isPast && styles.ratingRowPast]}>
-            <Ionicons name="star" size={14} color={colors.yellow400} />
+            <Ionicons name="star" size={14} color={palette.yellow400} />
             <Text style={styles.ratingValue}>{movie.rating}</Text>
             <Text style={styles.ratingMax}>/ 5</Text>
           </View>
@@ -102,138 +107,139 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    backgroundColor: colors.zinc900,
-    borderColor: colors.white10,
-  },
-  containerPast: {
-    backgroundColor: 'rgba(24, 24, 27, 0.5)',
-    borderColor: colors.white5,
-  },
-  posterContainer: {
-    width: 96,
-    aspectRatio: 2 / 3,
-    borderRadius: 8,
-    overflow: 'hidden',
-    flexShrink: 0,
-  },
-  poster: {
-    width: '100%',
-    height: '100%',
-  },
-  posterPast: {
-    opacity: 0.7,
-  },
-  posterBadgeLeft: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-  },
-  posterBadgeRight: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-  },
-  theaterBadge: {
-    backgroundColor: colors.red600,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  theaterBadgeText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  platformIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  platformIconText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  info: {
-    flex: 1,
-    minWidth: 0,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.white,
-    marginBottom: 8,
-  },
-  titlePast: {
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  genreRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
-  },
-  genrePill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  genrePillPast: {
-    backgroundColor: colors.white10,
-  },
-  genreText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  genreTextPast: {
-    color: colors.white50,
-  },
-  platformRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
-  },
-  platformPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  platformPillPast: {
-    opacity: 0.6,
-  },
-  platformName: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-  ratingRowPast: {
-    opacity: 0.6,
-  },
-  ratingValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  ratingMax: {
-    fontSize: 12,
-    color: colors.white50,
-  },
-});
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      gap: 12,
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      backgroundColor: t.surface,
+      borderColor: t.border,
+    },
+    containerPast: {
+      backgroundColor: t.surfaceMuted,
+      borderColor: t.borderSubtle,
+    },
+    posterContainer: {
+      width: 96,
+      aspectRatio: 2 / 3,
+      borderRadius: 8,
+      overflow: 'hidden',
+      flexShrink: 0,
+    },
+    poster: {
+      width: '100%',
+      height: '100%',
+    },
+    posterPast: {
+      opacity: 0.7,
+    },
+    posterBadgeLeft: {
+      position: 'absolute',
+      top: 6,
+      left: 6,
+    },
+    posterBadgeRight: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+    },
+    theaterBadge: {
+      backgroundColor: palette.red600,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+    },
+    theaterBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    platformIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    platformIconText: {
+      color: '#FFFFFF',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    info: {
+      flex: 1,
+      minWidth: 0,
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: t.textPrimary,
+      marginBottom: 8,
+    },
+    titlePast: {
+      color: t.textSecondary,
+    },
+    genreRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginBottom: 8,
+    },
+    genrePill: {
+      backgroundColor: t.inputHover,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 6,
+    },
+    genrePillPast: {
+      backgroundColor: t.input,
+    },
+    genreText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: t.textSecondary,
+    },
+    genreTextPast: {
+      color: t.textTertiary,
+    },
+    platformRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginBottom: 8,
+    },
+    platformPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 6,
+    },
+    platformPillPast: {
+      opacity: 0.6,
+    },
+    platformName: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    ratingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 4,
+    },
+    ratingRowPast: {
+      opacity: 0.6,
+    },
+    ratingValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: t.textSecondary,
+    },
+    ratingMax: {
+      fontSize: 12,
+      color: t.textTertiary,
+    },
+  });

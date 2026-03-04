@@ -50,7 +50,7 @@ export default function ComposeNotificationPage() {
       <div className="flex items-center gap-3">
         <Link
           href="/notifications"
-          className="p-2 text-white/40 hover:text-white transition-colors"
+          className="p-2 text-on-surface-subtle hover:text-on-surface transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
@@ -58,16 +58,16 @@ export default function ComposeNotificationPage() {
           <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
             <Bell className="w-5 h-5 text-yellow-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Compose Notification</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Compose Notification</h1>
         </div>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-zinc-900 border border-white/10 rounded-xl p-6 space-y-6"
+        className="bg-surface-card border border-outline rounded-xl p-6 space-y-6"
       >
         <div className="space-y-2">
-          <label htmlFor="type" className="block text-sm font-medium text-white/60">
+          <label htmlFor="type" className="block text-sm font-medium text-on-surface-muted">
             Type
           </label>
           <select
@@ -75,7 +75,7 @@ export default function ComposeNotificationPage() {
             value={type}
             onChange={(e) => setType(e.target.value)}
             required
-            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           >
             <option value="">Select type...</option>
             {notificationTypes.map((t) => (
@@ -87,7 +87,7 @@ export default function ComposeNotificationPage() {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="title" className="block text-sm font-medium text-white/60">
+          <label htmlFor="title" className="block text-sm font-medium text-on-surface-muted">
             Title
           </label>
           <input
@@ -97,12 +97,12 @@ export default function ComposeNotificationPage() {
             onChange={(e) => setTitle(e.target.value)}
             required
             placeholder="Notification title"
-            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           />
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="message" className="block text-sm font-medium text-white/60">
+          <label htmlFor="message" className="block text-sm font-medium text-on-surface-muted">
             Message
           </label>
           <textarea
@@ -112,13 +112,15 @@ export default function ComposeNotificationPage() {
             required
             rows={3}
             placeholder="Notification message body"
-            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
+            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
           />
         </div>
 
         {/* Movie search (optional) */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-white/60">Movie (optional)</label>
+          <label className="block text-sm font-medium text-on-surface-muted">
+            Movie (optional)
+          </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
             <input
@@ -129,11 +131,11 @@ export default function ComposeNotificationPage() {
                 if (!e.target.value) setMovieId('');
               }}
               placeholder="Search movies..."
-              className="w-full bg-zinc-800 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-outline rounded-lg pl-10 pr-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
           {movieSearch && filteredMovies && filteredMovies.length > 0 && !movieId && (
-            <div className="bg-zinc-800 border border-white/10 rounded-lg max-h-40 overflow-y-auto">
+            <div className="bg-zinc-800 border border-outline rounded-lg max-h-40 overflow-y-auto">
               {filteredMovies.slice(0, 10).map((movie) => (
                 <button
                   key={movie.id}
@@ -142,7 +144,7 @@ export default function ComposeNotificationPage() {
                     setMovieId(movie.id);
                     setMovieSearch(movie.title);
                   }}
-                  className="w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+                  className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-input transition-colors"
                 >
                   {movie.title}
                 </button>
@@ -158,7 +160,7 @@ export default function ComposeNotificationPage() {
                   setMovieId('');
                   setMovieSearch('');
                 }}
-                className="text-sm text-white/40 hover:text-white transition-colors"
+                className="text-sm text-on-surface-subtle hover:text-on-surface transition-colors"
               >
                 Clear
               </button>
@@ -168,7 +170,7 @@ export default function ComposeNotificationPage() {
 
         {/* Schedule */}
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-white/60">Schedule</label>
+          <label className="block text-sm font-medium text-on-surface-muted">Schedule</label>
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -178,7 +180,7 @@ export default function ComposeNotificationPage() {
                 onChange={() => setScheduleMode('immediate')}
                 className="accent-red-600"
               />
-              <span className="text-sm text-white">Send immediately</span>
+              <span className="text-sm text-on-surface">Send immediately</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -188,7 +190,7 @@ export default function ComposeNotificationPage() {
                 onChange={() => setScheduleMode('scheduled')}
                 className="accent-red-600"
               />
-              <span className="text-sm text-white">Schedule for later</span>
+              <span className="text-sm text-on-surface">Schedule for later</span>
             </label>
           </div>
           {scheduleMode === 'scheduled' && (
@@ -197,7 +199,7 @@ export default function ComposeNotificationPage() {
               value={scheduledFor}
               onChange={(e) => setScheduledFor(e.target.value)}
               required
-              className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           )}
         </div>
@@ -221,7 +223,7 @@ export default function ComposeNotificationPage() {
           </button>
           <Link
             href="/notifications"
-            className="px-6 py-2.5 text-white/60 hover:text-white transition-colors"
+            className="px-6 py-2.5 text-on-surface-muted hover:text-on-surface transition-colors"
           >
             Cancel
           </Link>

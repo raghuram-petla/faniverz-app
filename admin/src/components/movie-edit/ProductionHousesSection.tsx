@@ -38,9 +38,9 @@ export function ProductionHousesSection({
           {visibleProductionHouses.map((mph) => (
             <div
               key={mph.production_house_id}
-              className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+              className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3"
             >
-              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                 {mph.production_house?.logo_url ? (
                   <img
                     src={mph.production_house.logo_url}
@@ -48,10 +48,10 @@ export function ProductionHousesSection({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Building2 className="w-5 h-5 text-white/40" />
+                  <Building2 className="w-5 h-5 text-on-surface-subtle" />
                 )}
               </div>
-              <span className="text-white font-medium flex-1">
+              <span className="text-on-surface font-medium flex-1">
                 {mph.production_house?.name ?? mph.production_house_id}
               </span>
               <button
@@ -61,7 +61,7 @@ export function ProductionHousesSection({
                   );
                   onRemove(mph.production_house_id, isPending);
                 }}
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
                 aria-label={`Remove ${mph.production_house?.name}`}
               >
                 <X className="w-4 h-4" />
@@ -71,13 +71,13 @@ export function ProductionHousesSection({
         </div>
       )}
 
-      <div className="bg-white/5 rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-white/60">Add Production House</p>
+      <div className="bg-surface-elevated rounded-xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-on-surface-muted">Add Production House</p>
         <div className="flex gap-3">
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+            className="flex-1 bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="">Select production house…</option>
             {allProductionHouses
@@ -98,7 +98,7 @@ export function ProductionHousesSection({
               onAdd({ production_house_id: selectedId, _ph: ph });
               setSelectedId('');
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
           >
             <Plus className="w-4 h-4" />
             Add

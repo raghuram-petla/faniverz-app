@@ -92,13 +92,13 @@ export default function EditMoviePage() {
   return (
     <div className="max-w-6xl">
       {/* ─── Sticky Header ─── */}
-      <div className="sticky top-0 z-30 backdrop-blur bg-zinc-950/95 border-b border-white/10 -mx-4 px-4 py-3 mb-6">
+      <div className="sticky top-0 z-30 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-3 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/movies" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
-              <ArrowLeft className="w-4 h-4 text-white" />
+            <Link href="/movies" className="p-2 rounded-lg bg-input hover:bg-input-active">
+              <ArrowLeft className="w-4 h-4 text-on-surface" />
             </Link>
-            <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
+            <h1 className="text-2xl font-bold text-on-surface">Edit Movie</h1>
             {saveStatus === 'success' && (
               <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2.5 py-0.5 rounded-full font-medium">
                 <Check className="w-3 h-3" /> Saved successfully
@@ -117,7 +117,7 @@ export default function EditMoviePage() {
               className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all ${
                 isDirty && !isSaving
                   ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/25'
-                  : 'bg-white/5 text-white/20 cursor-not-allowed'
+                  : 'bg-surface-elevated text-on-surface-disabled cursor-not-allowed'
               }`}
             >
               {isSaving ? (
@@ -147,9 +147,9 @@ export default function EditMoviePage() {
         <div className="flex-1 min-w-0 space-y-6">
           <div
             id="basic-info"
-            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
           >
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <FileText className="w-5 h-5" /> Basic Info
             </h2>
             <BasicInfoSection
@@ -171,9 +171,9 @@ export default function EditMoviePage() {
 
           <div
             id="videos"
-            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
           >
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <Play className="w-5 h-5" /> Videos
             </h2>
             <VideosSection
@@ -187,9 +187,9 @@ export default function EditMoviePage() {
 
           <div
             id="posters"
-            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
           >
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <Film className="w-5 h-5" /> Poster Gallery
             </h2>
             <PostersSection
@@ -203,9 +203,9 @@ export default function EditMoviePage() {
 
           <div
             id="platforms"
-            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
           >
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <Tv className="w-5 h-5" /> OTT Platforms
             </h2>
             <PlatformsSection
@@ -219,9 +219,9 @@ export default function EditMoviePage() {
 
           <div
             id="production-houses"
-            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
           >
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <Building2 className="w-5 h-5" /> Production Houses
             </h2>
             <ProductionHousesSection
@@ -235,9 +235,9 @@ export default function EditMoviePage() {
 
           <div
             id="cast-crew"
-            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
           >
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <Users className="w-5 h-5" /> Cast & Crew
             </h2>
             <CastSection
@@ -253,9 +253,9 @@ export default function EditMoviePage() {
 
           <div
             id="theatrical-runs"
-            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
           >
-            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5" /> Theatrical Runs
             </h2>
             <TheatricalRunsSection

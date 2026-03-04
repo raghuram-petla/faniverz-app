@@ -36,28 +36,31 @@ export default function NewOttReleasePage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/ott" className="p-2 text-white/40 hover:text-white transition-colors">
+        <Link
+          href="/ott"
+          className="p-2 text-on-surface-subtle hover:text-on-surface transition-colors"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center">
             <Tv className="w-5 h-5 text-purple-500" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Add OTT Release</h1>
+          <h1 className="text-2xl font-bold text-on-surface">Add OTT Release</h1>
         </div>
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 text-white/40 animate-spin" />
+          <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : (
         <form
           onSubmit={handleSubmit}
-          className="bg-zinc-900 border border-white/10 rounded-xl p-6 space-y-6"
+          className="bg-surface-card border border-outline rounded-xl p-6 space-y-6"
         >
           <div className="space-y-2">
-            <label htmlFor="movie" className="block text-sm font-medium text-white/60">
+            <label htmlFor="movie" className="block text-sm font-medium text-on-surface-muted">
               Movie
             </label>
             <select
@@ -65,7 +68,7 @@ export default function NewOttReleasePage() {
               value={movieId}
               onChange={(e) => setMovieId(e.target.value)}
               required
-              className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             >
               <option value="">Select a movie...</option>
               {movies?.map((movie) => (
@@ -77,7 +80,7 @@ export default function NewOttReleasePage() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="platform" className="block text-sm font-medium text-white/60">
+            <label htmlFor="platform" className="block text-sm font-medium text-on-surface-muted">
               Platform
             </label>
             <select
@@ -85,7 +88,7 @@ export default function NewOttReleasePage() {
               value={platformId}
               onChange={(e) => setPlatformId(e.target.value)}
               required
-              className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             >
               <option value="">Select a platform...</option>
               {platforms?.map((platform) => (
@@ -97,9 +100,12 @@ export default function NewOttReleasePage() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="available_from" className="block text-sm font-medium text-white/60">
+            <label
+              htmlFor="available_from"
+              className="block text-sm font-medium text-on-surface-muted"
+            >
               Available From{' '}
-              <span className="text-white/40 font-normal">
+              <span className="text-on-surface-subtle font-normal">
                 (optional — leave blank if live now)
               </span>
             </label>
@@ -108,7 +114,7 @@ export default function NewOttReleasePage() {
               type="date"
               value={availableFrom}
               onChange={(e) => setAvailableFrom(e.target.value)}
-              className="w-full bg-zinc-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
 
@@ -131,7 +137,7 @@ export default function NewOttReleasePage() {
             </button>
             <Link
               href="/ott"
-              className="px-6 py-2.5 text-white/60 hover:text-white transition-colors"
+              className="px-6 py-2.5 text-on-surface-muted hover:text-on-surface transition-colors"
             >
               Cancel
             </Link>

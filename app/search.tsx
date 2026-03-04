@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useMovieSearch } from '@/features/movies/hooks/useMovieSearch';
 import { useMovies } from '@/features/movies/hooks/useMovies';
@@ -15,12 +15,14 @@ import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
-import { styles } from './search.styles';
+import { createStyles } from './search.styles';
 
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;
 
 export default function SearchScreen() {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -80,18 +82,18 @@ export default function SearchScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={18} color={colors.white40} />
+          <Ionicons name="search" size={18} color={theme.textTertiary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search movies, actors, directors..."
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={query}
             onChangeText={setQuery}
             autoFocus
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.white40} />
+              <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -118,11 +120,11 @@ export default function SearchScreen() {
                       onPress={() => setQuery(term)}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                     >
-                      <Ionicons name="time-outline" size={14} color={colors.white40} />
+                      <Ionicons name="time-outline" size={14} color={theme.textTertiary} />
                       <Text style={styles.recentPillText}>{term}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => removeSearch(term)}>
-                      <Ionicons name="close" size={14} color={colors.white40} />
+                      <Ionicons name="close" size={14} color={theme.textTertiary} />
                     </TouchableOpacity>
                   </View>
                 ))}

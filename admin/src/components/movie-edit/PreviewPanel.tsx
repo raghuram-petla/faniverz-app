@@ -38,7 +38,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
           className={
             previewMode === 'spotlight'
               ? 'bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium'
-              : 'bg-white/10 text-white/60 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-white/20'
+              : 'bg-input text-on-surface-muted px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-input-active'
           }
         >
           Spotlight
@@ -48,7 +48,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
           className={
             previewMode === 'detail'
               ? 'bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium'
-              : 'bg-white/10 text-white/60 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-white/20'
+              : 'bg-input text-on-surface-muted px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-input-active'
           }
         >
           Detail
@@ -105,7 +105,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
 
       {contextFocusX != null && (
         <div className="flex items-center justify-between">
-          <span className="text-xs text-white/40">
+          <span className="text-xs text-on-surface-subtle">
             Focus: ({Math.round(contextFocusX * 100)}%,{' '}
             {Math.round(
               ((previewMode === 'spotlight' ? form.spotlight_focus_y : form.detail_focus_y) ?? 0) *

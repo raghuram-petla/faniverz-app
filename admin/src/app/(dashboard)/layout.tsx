@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
       </div>
     );
@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex min-h-screen bg-zinc-950">
+      <div className="flex min-h-screen bg-surface">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Header />

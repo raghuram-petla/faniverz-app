@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { StarRating } from '@/components/ui/StarRating';
-import { styles } from '../[id].styles';
+import { createStyles } from '../[id].styles';
 
 interface ReviewModalProps {
   visible: boolean;
@@ -40,6 +40,8 @@ export function ReviewModal({
   onSubmit,
   onClose,
 }: ReviewModalProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
@@ -72,7 +74,7 @@ export function ReviewModal({
           <TextInput
             style={styles.modalInput}
             placeholder="Review Title"
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             value={reviewTitle}
             onChangeText={onTitleChange}
           />
@@ -80,7 +82,7 @@ export function ReviewModal({
           <TextInput
             style={[styles.modalInput, styles.modalTextArea]}
             placeholder="Write your review..."
-            placeholderTextColor={colors.white40}
+            placeholderTextColor={theme.textTertiary}
             multiline
             numberOfLines={6}
             textAlignVertical="top"

@@ -1,6 +1,6 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 
 interface StarRatingProps {
   rating: number;
@@ -17,6 +17,7 @@ export function StarRating({
   interactive = false,
   onRate,
 }: StarRatingProps) {
+  const { theme, colors } = useTheme();
   const stars = Array.from({ length: maxStars }, (_, i) => i + 1);
 
   return (
@@ -34,7 +35,7 @@ export function StarRating({
             <Ionicons
               name={filled ? 'star' : 'star-outline'}
               size={size}
-              color={filled ? colors.yellow400 : colors.white20}
+              color={filled ? colors.yellow400 : theme.textDisabled}
             />
           </StarWrapper>
         );

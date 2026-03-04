@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import type { SemanticTheme } from '@shared/themes';
 
 interface ToggleProps {
   value: boolean;
@@ -7,6 +10,9 @@ interface ToggleProps {
 }
 
 export function Toggle({ value, onValueChange }: ToggleProps) {
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+
   return (
     <TouchableOpacity
       style={[styles.track, value ? styles.trackActive : styles.trackInactive]}
@@ -19,29 +25,30 @@ export function Toggle({ value, onValueChange }: ToggleProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  track: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-  },
-  trackActive: {
-    backgroundColor: colors.red600,
-  },
-  trackInactive: {
-    backgroundColor: colors.white20,
-  },
-  thumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.white,
-  },
-  thumbActive: {
-    transform: [{ translateX: 24 }],
-  },
-  thumbInactive: {
-    transform: [{ translateX: 4 }],
-  },
-});
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    track: {
+      width: 48,
+      height: 28,
+      borderRadius: 14,
+      justifyContent: 'center',
+    },
+    trackActive: {
+      backgroundColor: palette.red600,
+    },
+    trackInactive: {
+      backgroundColor: t.textDisabled,
+    },
+    thumb: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: t.textPrimary,
+    },
+    thumbActive: {
+      transform: [{ translateX: 24 }],
+    },
+    thumbInactive: {
+      transform: [{ translateX: 4 }],
+    },
+  });

@@ -38,7 +38,7 @@ export function ImageUploadField({
 
   return (
     <div>
-      <label className="block text-sm text-white/60 mb-1">{label}</label>
+      <label className="block text-sm text-on-surface-muted mb-1">{label}</label>
       <input
         ref={inputRef}
         type="file"
@@ -51,14 +51,14 @@ export function ImageUploadField({
           <img
             src={url}
             alt={previewAlt}
-            className={`rounded-lg object-cover border border-white/10 ${previewClassName}`}
+            className={`rounded-lg object-cover border border-outline ${previewClassName}`}
           />
           <div className="flex flex-col gap-2">
             <button
               type="button"
               disabled={uploading}
               onClick={() => inputRef.current?.click()}
-              className="flex items-center gap-2 text-sm text-white/60 hover:text-white px-3 py-1.5 bg-white/10 rounded-lg disabled:opacity-50"
+              className="flex items-center gap-2 text-sm text-on-surface-muted hover:text-on-surface px-3 py-1.5 bg-input rounded-lg disabled:opacity-50"
             >
               {uploading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -70,7 +70,7 @@ export function ImageUploadField({
             <button
               type="button"
               onClick={onRemove}
-              className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-white/5 rounded-lg"
+              className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-surface-elevated rounded-lg"
             >
               <X className="w-3.5 h-3.5" /> Remove
             </button>
@@ -81,7 +81,7 @@ export function ImageUploadField({
           type="button"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 bg-white/10 rounded-xl px-4 py-3 text-sm text-white/60 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 bg-input rounded-xl px-4 py-3 text-sm text-on-surface-muted hover:bg-input-hover hover:text-on-surface transition-colors disabled:opacity-50"
         >
           {uploading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -91,7 +91,9 @@ export function ImageUploadField({
           {uploading ? 'Uploading...' : `Upload ${label}`}
         </button>
       )}
-      {showUrlCaption && url && <p className="mt-2 text-xs text-white/20 truncate">{url}</p>}
+      {showUrlCaption && url && (
+        <p className="mt-2 text-xs text-on-surface-disabled truncate">{url}</p>
+      )}
     </div>
   );
 }

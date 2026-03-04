@@ -130,11 +130,11 @@ export function CastSection({
       </div>
 
       {/* ─── Add Form ─── */}
-      <form onSubmit={handleSubmit} className="bg-white/5 rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-white/60">Add Cast / Crew</p>
+      <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
+        <p className="text-sm font-semibold text-on-surface-muted">Add Cast / Crew</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-white/40 mb-1">Type</label>
+            <label className="block text-xs text-on-surface-subtle mb-1">Type</label>
             <select
               value={castForm.credit_type}
               onChange={(e) =>
@@ -144,7 +144,7 @@ export function CastSection({
                   role_order: '',
                 }))
               }
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             >
               <option value="cast">Cast (Actor)</option>
               <option value="crew">Crew (Technician)</option>
@@ -166,7 +166,7 @@ export function CastSection({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-white/40 mb-1">
+            <label className="block text-xs text-on-surface-subtle mb-1">
               {castForm.credit_type === 'cast' ? 'Character Name' : 'Role Title'}
             </label>
             <input
@@ -174,16 +174,16 @@ export function CastSection({
               placeholder={castForm.credit_type === 'cast' ? 'e.g. Arjun' : 'e.g. Director'}
               value={castForm.role_name}
               onChange={(e) => setCastForm((p) => ({ ...p, role_name: e.target.value }))}
-              className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
             />
           </div>
           {castForm.credit_type === 'crew' && (
             <div>
-              <label className="block text-xs text-white/40 mb-1">Role Order</label>
+              <label className="block text-xs text-on-surface-subtle mb-1">Role Order</label>
               <select
                 value={castForm.role_order}
                 onChange={(e) => setCastForm((p) => ({ ...p, role_order: e.target.value }))}
-                className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
               >
                 <option value="">Select role…</option>
                 {ROLE_ORDER_OPTIONS.map((o) => (
@@ -198,7 +198,7 @@ export function CastSection({
         <button
           type="submit"
           disabled={!castForm.actor_id}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
         >
           <Plus className="w-4 h-4" />
           Add Entry
