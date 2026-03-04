@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { GripVertical, Plus, User, X } from 'lucide-react';
 import {
   DndContext,
@@ -76,9 +76,6 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
           <User className="w-4 h-4 text-white/40" />
         )}
       </div>
-      <span className="text-xs font-bold uppercase text-white/40 w-10">
-        {entry.credit_type === 'cast' ? 'Cast' : 'Crew'}
-      </span>
       <span className="text-white font-medium flex-1 truncate">
         {entry.actor?.name ?? entry.actor_id}
       </span>
@@ -98,6 +95,39 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
         <X className="w-4 h-4" />
       </button>
     </div>
+  );
+}
+
+function SortableList({
+  items,
+  onDragEnd,
+  onRemove,
+}: {
+  items: MovieCast[];
+  onDragEnd: (event: DragEndEvent) => void;
+  onRemove: (id: string, isPending: boolean) => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  if (items.length === 0) return null;
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <SortableContext items={items.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2">
+          {items.map((entry) => (
+            <SortableCastItem
+              key={entry.id}
+              entry={entry}
+              onRemove={() => onRemove(entry.id, entry.id.startsWith('pending-cast-'))}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
   );
 }
 
@@ -132,19 +162,33 @@ export function CastSection({
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  const castItems = useMemo(
+    () => visibleCast.filter((c) => c.credit_type === 'cast'),
+    [visibleCast],
+  );
+  const crewItems = useMemo(
+    () => visibleCast.filter((c) => c.credit_type === 'crew'),
+    [visibleCast],
   );
 
-  function handleDragEnd(event: DragEndEvent) {
+  function handleCastDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = visibleCast.findIndex((c) => c.id === active.id);
-    const newIndex = visibleCast.findIndex((c) => c.id === over.id);
+    const oldIndex = castItems.findIndex((c) => c.id === active.id);
+    const newIndex = castItems.findIndex((c) => c.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = arrayMove(visibleCast, oldIndex, newIndex);
-    onReorder(reordered.map((item) => item.id));
+    const reordered = arrayMove(castItems, oldIndex, newIndex);
+    onReorder([...reordered.map((c) => c.id), ...crewItems.map((c) => c.id)]);
+  }
+
+  function handleCrewDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = crewItems.findIndex((c) => c.id === active.id);
+    const newIndex = crewItems.findIndex((c) => c.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(crewItems, oldIndex, newIndex);
+    onReorder([...castItems.map((c) => c.id), ...reordered.map((c) => c.id)]);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -170,28 +214,28 @@ export function CastSection({
   }
 
   return (
-    <div className="space-y-4 mt-8">
-      <h2 className="text-lg font-bold text-white">Cast &amp; Crew</h2>
+    <div className="space-y-6 mt-8">
+      {/* ─── Cast Section ─── */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-bold text-white">Cast</h2>
+        {castItems.length > 0 ? (
+          <SortableList items={castItems} onDragEnd={handleCastDragEnd} onRemove={onRemove} />
+        ) : (
+          <p className="text-sm text-white/30">No cast members added yet.</p>
+        )}
+      </div>
 
-      {visibleCast.length > 0 && (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={visibleCast.map((c) => c.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-2">
-              {visibleCast.map((entry) => (
-                <SortableCastItem
-                  key={entry.id}
-                  entry={entry}
-                  onRemove={() => onRemove(entry.id, entry.id.startsWith('pending-cast-'))}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+      {/* ─── Crew Section ─── */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-bold text-white">Crew</h2>
+        {crewItems.length > 0 ? (
+          <SortableList items={crewItems} onDragEnd={handleCrewDragEnd} onRemove={onRemove} />
+        ) : (
+          <p className="text-sm text-white/30">No crew members added yet.</p>
+        )}
+      </div>
 
+      {/* ─── Add Form ─── */}
       <form onSubmit={handleSubmit} className="bg-white/5 rounded-xl p-4 space-y-3">
         <p className="text-sm font-semibold text-white/60">Add Cast / Crew</p>
         <div className="grid grid-cols-2 gap-3">
@@ -227,7 +271,7 @@ export function CastSection({
               className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
             />
             {dropdownOpen && castSearchQuery.length >= 2 && !castForm.actor_id && (
-              <div className="absolute z-30 top-full mt-1 left-0 right-0 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute z-40 top-full mt-1 left-0 right-0 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                 {actors.length > 0 ? (
                   actors.map((a) => (
                     <button

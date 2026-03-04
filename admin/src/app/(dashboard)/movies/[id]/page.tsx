@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
 import {
@@ -33,7 +33,7 @@ import {
   useRemoveMoviePlatform,
 } from '@/hooks/useAdminOtt';
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
-import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, Trash2, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import { DEVICES } from '@shared/constants';
 import type { VideoType } from '@/lib/types';
@@ -448,8 +448,31 @@ export default function EditMoviePage() {
     }
   }
 
+  // ─── Warn on unsaved navigation ───
+  const beforeUnloadHandler = useCallback(
+    (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    },
+    [isDirty],
+  );
+
+  useEffect(() => {
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    return () => window.removeEventListener('beforeunload', beforeUnloadHandler);
+  }, [beforeUnloadHandler]);
+
   // ─── Save & Delete ───
   const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
+
+  useEffect(() => {
+    if (saveStatus === 'success') {
+      const timer = setTimeout(() => setSaveStatus('idle'), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveStatus]);
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
@@ -478,18 +501,28 @@ export default function EditMoviePage() {
         }),
       ];
 
-      // Cast: reorder
+      // Cast: reorder — use full localCastOrder index so pending items get correct position
       if (localCastOrder) {
-        const updates = localCastOrder
-          .filter((cid) => !cid.startsWith('pending-'))
-          .map((castId, idx) => ({ id: castId, display_order: idx }));
+        const updates: { id: string; display_order: number }[] = [];
+        for (let idx = 0; idx < localCastOrder.length; idx++) {
+          const cid = localCastOrder[idx];
+          if (!cid.startsWith('pending-')) {
+            updates.push({ id: cid, display_order: idx });
+          }
+        }
         if (updates.length > 0) {
           promises.push(updateCastOrder.mutateAsync({ movieId: id, items: updates }));
         }
       }
-      // Cast: adds
-      for (const { _actor, ...c } of pendingCastAdds) {
-        promises.push(addCast.mutateAsync({ movie_id: id, ...c }));
+      // Cast: adds — derive display_order from localCastOrder position if reordered
+      for (let i = 0; i < pendingCastAdds.length; i++) {
+        const { _actor, ...c } = pendingCastAdds[i];
+        let displayOrder = c.display_order;
+        if (localCastOrder) {
+          const pos = localCastOrder.indexOf(`pending-cast-${i}`);
+          if (pos !== -1) displayOrder = pos;
+        }
+        promises.push(addCast.mutateAsync({ movie_id: id, ...c, display_order: displayOrder }));
       }
       // Cast: removes
       for (const castId of pendingCastRemoveIds) {
@@ -560,7 +593,9 @@ export default function EditMoviePage() {
       }
 
       await Promise.all(promises);
-      router.push('/movies');
+      resetPendingState();
+      setInitialForm({ ...form });
+      setSaveStatus('success');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       alert(`Save failed: ${msg}`);
@@ -608,6 +643,11 @@ export default function EditMoviePage() {
               <ArrowLeft className="w-4 h-4 text-white" />
             </Link>
             <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
+            {saveStatus === 'success' && (
+              <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2.5 py-0.5 rounded-full font-medium">
+                <Check className="w-3 h-3" /> Saved successfully
+              </span>
+            )}
             {isDirty && (
               <span className="text-xs bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-medium">
                 Unsaved changes
