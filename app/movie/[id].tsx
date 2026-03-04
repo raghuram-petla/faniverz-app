@@ -1,38 +1,25 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-  Share,
-  Linking,
-  Modal,
-  TextInput,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TouchableOpacity, ScrollView, Share } from 'react-native';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '@/theme/colors';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useIsWatchlisted, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
-import { StarRating } from '@/components/ui/StarRating';
-import { ActorAvatar } from '@/components/common/ActorAvatar';
-import { getPlatformLogo } from '@/constants/platformLogos';
-import { getMovieStatusLabel } from '@/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
-import { formatDate } from '@/utils/formatDate';
 import { VIDEO_TYPES } from '@shared/constants';
 import type { MovieVideo, MoviePoster } from '@/types';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HERO_HEIGHT = 600;
+import { MovieHeroSection } from './components/MovieHeroSection';
+import { WatchOnSection } from './components/WatchOnSection';
+import { OverviewTab } from './components/OverviewTab';
+import { MediaTab } from './components/MediaTab';
+import { CastTab } from './components/CastTab';
+import { ReviewsTab } from './components/ReviewsTab';
+import { ReviewModal } from './components/ReviewModal';
+import { PosterModal } from './components/PosterModal';
+import { MovieDetailHeader } from './components/MovieDetailHeader';
+import { styles } from './[id].styles';
 
 type TabName = 'overview' | 'media' | 'cast' | 'reviews';
 
@@ -101,7 +88,6 @@ export default function MovieDetailScreen() {
     ? ['overview', 'media', 'cast', 'reviews']
     : ['overview', 'cast', 'reviews'];
 
-  // Group videos by type for Media tab
   const videosByType = hasMedia
     ? VIDEO_TYPES.reduce<{ label: string; videos: MovieVideo[] }[]>((acc, vt) => {
         const matches = movie.videos.filter((v) => v.video_type === vt.value);
@@ -113,126 +99,18 @@ export default function MovieDetailScreen() {
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
-      {/* Fixed black cover over status bar — prevents scroll content entering safe area zone */}
       <View style={[styles.safeAreaCover, { height: insets.top }]} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top }}
       >
-        {/* Hero */}
-        <View style={styles.hero}>
-          <Image
-            source={{ uri: movie.backdrop_url ?? movie.poster_url ?? undefined }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            contentPosition={
-              (movie.detail_focus_x ?? movie.backdrop_focus_x) != null &&
-              (movie.detail_focus_y ?? movie.backdrop_focus_y) != null
-                ? {
-                    left: `${Math.round(((movie.detail_focus_x ?? movie.backdrop_focus_x) as number) * 100)}%`,
-                    top: `${Math.round(((movie.detail_focus_y ?? movie.backdrop_focus_y) as number) * 100)}%`,
-                  }
-                : undefined
-            }
-          />
-          <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,1)']}
-            locations={[0, 0.2, 0.6, 1]}
-            style={StyleSheet.absoluteFill}
-          />
+        <MovieHeroSection movie={movie} movieStatus={movieStatus} releaseYear={releaseYear} />
 
-          {/* Movie info overlay */}
-          <View style={styles.heroInfo}>
-            <View style={styles.heroInfoRow}>
-              <Image
-                source={{ uri: movie.poster_url ?? undefined }}
-                style={styles.heroPoster}
-                contentFit="cover"
-              />
-              <View style={styles.heroInfoText}>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusBadgeText}>{getMovieStatusLabel(movieStatus)}</Text>
-                </View>
-                <Text style={styles.heroTitle} numberOfLines={2}>
-                  {movie.title}
-                </Text>
-                {movie.rating > 0 && (
-                  <View style={styles.heroRatingRow}>
-                    <Ionicons name="star" size={20} color={colors.yellow400} />
-                    <Text style={styles.heroRatingValue}>{movie.rating}</Text>
-                    <Text style={styles.heroReviewCount}>({movie.review_count} reviews)</Text>
-                  </View>
-                )}
-                <View style={styles.heroMetaRow}>
-                  <Text style={styles.heroMeta}>{releaseYear}</Text>
-                  {movie.runtime ? (
-                    <>
-                      <Text style={styles.heroMetaDot}>|</Text>
-                      <Text style={styles.heroMeta}>{movie.runtime}m</Text>
-                    </>
-                  ) : null}
-                  {movie.certification && (
-                    <>
-                      <Text style={styles.heroMetaDot}>|</Text>
-                      <Text style={styles.heroMeta}>{movie.certification}</Text>
-                    </>
-                  )}
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Watch On */}
-        {movie.platforms.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Watch On</Text>
-            <View style={styles.watchOnRow}>
-              {movie.platforms.map((mp) => {
-                const p = mp.platform;
-                if (!p) return null;
-                const logo = getPlatformLogo(p.id);
-                return (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[styles.watchOnButton, { backgroundColor: p.color }]}
-                    onPress={() => Linking.openURL('https://example.com')}
-                    accessibilityLabel={`Watch on ${p.name}`}
-                  >
-                    {logo ? (
-                      <Image source={logo} style={styles.watchOnLogo} contentFit="contain" />
-                    ) : (
-                      <Text style={styles.watchOnLogoText}>{p.logo}</Text>
-                    )}
-                    <View>
-                      <Text style={styles.watchOnName}>{p.name}</Text>
-                      <Text style={styles.watchOnStream}>Stream Now</Text>
-                    </View>
-                    <Ionicons
-                      name="open-outline"
-                      size={16}
-                      color={colors.white}
-                      style={{ marginLeft: 'auto' }}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* Release Alert for upcoming */}
-        {movieStatus === 'upcoming' && (
-          <View style={styles.releaseAlert}>
-            <Ionicons name="alert-circle" size={24} color={colors.blue400} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.releaseAlertTitle}>Upcoming Release</Text>
-              <Text style={styles.releaseAlertDate}>
-                Releasing on {formatDate(movie.release_date)}
-              </Text>
-            </View>
-          </View>
-        )}
+        <WatchOnSection
+          platforms={movie.platforms}
+          movieStatus={movieStatus}
+          releaseDate={movie.release_date}
+        />
 
         {/* Tabs */}
         <View style={styles.tabBar}>
@@ -252,865 +130,68 @@ export default function MovieDetailScreen() {
         {/* Tab Content */}
         <View style={styles.tabContent}>
           {activeTab === 'overview' && (
-            <View style={styles.overviewTab}>
-              {movie.synopsis && <Text style={styles.synopsis}>{movie.synopsis}</Text>}
-              {movie.genres.length > 0 && (
-                <View style={styles.genreRow}>
-                  {movie.genres.map((g) => (
-                    <View key={g} style={styles.genrePill}>
-                      <Text style={styles.genrePillText}>{g}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-              <View style={styles.infoGrid}>
-                {movie.director && (
-                  <View style={styles.infoCard}>
-                    <Ionicons name="videocam" size={20} color={colors.white60} />
-                    <Text style={styles.infoLabel}>Director</Text>
-                    <Text style={styles.infoValue}>{movie.director}</Text>
-                  </View>
-                )}
-                {movie.certification && (
-                  <View style={styles.infoCard}>
-                    <Ionicons name="shield-checkmark" size={20} color={colors.white60} />
-                    <Text style={styles.infoLabel}>Certification</Text>
-                    <Text style={styles.infoValue}>{movie.certification}</Text>
-                  </View>
-                )}
-              </View>
-              {/* Production Houses */}
-              {movie.productionHouses.length > 0 && (
-                <View style={styles.productionHousesRow}>
-                  <Text style={styles.productionHousesLabel}>Production</Text>
-                  <View style={styles.productionHousesList}>
-                    {movie.productionHouses.map((ph) => (
-                      <View key={ph.id} style={styles.productionHouseChip}>
-                        {ph.logo_url && (
-                          <Image
-                            source={{ uri: ph.logo_url }}
-                            style={styles.productionHouseLogo}
-                            contentFit="cover"
-                          />
-                        )}
-                        <Text style={styles.productionHouseName}>{ph.name}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {/* First video preview (trailer/teaser) — tap switches to Media tab */}
-              {hasMedia && movie.videos.length > 0 ? (
-                (() => {
-                  const firstVideo =
-                    movie.videos.find((v) => v.video_type === 'trailer') ??
-                    movie.videos.find((v) => v.video_type === 'teaser') ??
-                    movie.videos[0];
-                  return (
-                    <TouchableOpacity
-                      style={styles.videoPreviewCard}
-                      onPress={() => setActiveTab('media')}
-                      accessibilityLabel={`${firstVideo.title} — tap for more videos`}
-                    >
-                      <View style={styles.videoPreviewThumb}>
-                        <Image
-                          source={{
-                            uri: `https://img.youtube.com/vi/${firstVideo.youtube_id}/mqdefault.jpg`,
-                          }}
-                          style={styles.videoPreviewImage}
-                          contentFit="cover"
-                        />
-                        <View style={styles.videoPreviewPlay}>
-                          <Ionicons name="play-circle" size={40} color={colors.white} />
-                        </View>
-                      </View>
-                      <View style={styles.videoPreviewInfo}>
-                        <Text style={styles.videoPreviewTitle} numberOfLines={1}>
-                          {firstVideo.title}
-                        </Text>
-                        <Text style={styles.videoPreviewSubtitle}>
-                          {movie.videos.length} video{movie.videos.length !== 1 ? 's' : ''} — Tap
-                          for all
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })()
-              ) : movie.trailer_url ? (
-                <TouchableOpacity
-                  style={styles.trailerButton}
-                  onPress={() => Linking.openURL(movie.trailer_url!)}
-                >
-                  <Ionicons name="play" size={20} color={colors.red400} />
-                  <Text style={styles.trailerButtonText}>Watch Trailer</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
+            <OverviewTab
+              movie={movie}
+              hasMedia={hasMedia}
+              onSwitchToMedia={() => setActiveTab('media')}
+            />
           )}
-
           {activeTab === 'media' && (
-            <View style={styles.mediaTab}>
-              {/* Videos by type */}
-              {videosByType.map((group) => (
-                <View key={group.label} style={styles.mediaSection}>
-                  <Text style={styles.mediaSectionTitle}>{group.label}s</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.videoRow}>
-                      {group.videos.map((video: MovieVideo) => (
-                        <TouchableOpacity
-                          key={video.id}
-                          style={styles.videoCard}
-                          onPress={() =>
-                            Linking.openURL(`https://www.youtube.com/watch?v=${video.youtube_id}`)
-                          }
-                          accessibilityLabel={video.title}
-                        >
-                          <View style={styles.videoThumbnailWrapper}>
-                            <Image
-                              source={{
-                                uri: `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`,
-                              }}
-                              style={styles.videoThumbnail}
-                              contentFit="cover"
-                            />
-                            <View style={styles.playOverlay}>
-                              <Ionicons name="play-circle" size={36} color={colors.white} />
-                            </View>
-                            {video.duration && (
-                              <View style={styles.durationBadge}>
-                                <Text style={styles.durationText}>{video.duration}</Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text style={styles.videoTitle} numberOfLines={2}>
-                            {video.title}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
-              ))}
-
-              {/* Poster Gallery */}
-              {movie.posters.length > 0 && (
-                <View style={styles.mediaSection}>
-                  <Text style={styles.mediaSectionTitle}>Posters</Text>
-                  <View style={styles.posterGrid}>
-                    {movie.posters.map((poster: MoviePoster) => (
-                      <TouchableOpacity
-                        key={poster.id}
-                        style={styles.posterCard}
-                        onPress={() => setSelectedPoster(poster)}
-                        activeOpacity={0.8}
-                        accessibilityLabel={`View ${poster.title}`}
-                      >
-                        <Image
-                          source={{ uri: poster.image_url }}
-                          style={styles.posterImage}
-                          contentFit="cover"
-                        />
-                        {poster.is_main && (
-                          <View style={styles.mainPosterBadge}>
-                            <Ionicons name="star" size={10} color={colors.yellow400} />
-                            <Text style={styles.mainPosterText}>Main</Text>
-                          </View>
-                        )}
-                        <Text style={styles.posterTitle} numberOfLines={1}>
-                          {poster.title}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </View>
+            <MediaTab
+              videosByType={videosByType}
+              posters={movie.posters}
+              onSelectPoster={setSelectedPoster}
+            />
           )}
-
           {activeTab === 'cast' && (
-            <View style={styles.castTab}>
-              {/* Cast section */}
-              {movie.cast.length > 0 && (
-                <>
-                  <Text style={styles.castSectionLabel}>Cast</Text>
-                  {movie.cast.map((cm) => (
-                    <TouchableOpacity
-                      key={cm.id}
-                      style={styles.castItem}
-                      onPress={() => cm.actor?.id && router.push(`/actor/${cm.actor.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <ActorAvatar actor={cm.actor} size={64} />
-                      <View style={styles.castInfo}>
-                        <Text style={styles.castName}>{cm.actor?.name}</Text>
-                        {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </>
-              )}
-
-              {/* Crew section */}
-              {movie.crew.length > 0 && (
-                <>
-                  <Text style={styles.castSectionLabel}>Crew</Text>
-                  {movie.crew.map((cm) => (
-                    <TouchableOpacity
-                      key={cm.id}
-                      style={styles.castItem}
-                      onPress={() => cm.actor?.id && router.push(`/actor/${cm.actor.id}`)}
-                      activeOpacity={0.7}
-                    >
-                      <ActorAvatar actor={cm.actor} size={64} />
-                      <View style={styles.castInfo}>
-                        <Text style={styles.castName}>{cm.actor?.name}</Text>
-                        {cm.role_name && <Text style={styles.castRole}>{cm.role_name}</Text>}
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </>
-              )}
-
-              {movie.cast.length === 0 && movie.crew.length === 0 && (
-                <Text style={styles.emptyText}>No cast information available.</Text>
-              )}
-            </View>
+            <CastTab
+              cast={movie.cast}
+              crew={movie.crew}
+              onActorPress={(actorId) => router.push(`/actor/${actorId}`)}
+            />
           )}
-
           {activeTab === 'reviews' && (
-            <View style={styles.reviewsTab}>
-              {/* Rating Summary */}
-              <View style={styles.ratingSummary}>
-                <Ionicons name="star" size={32} color={colors.yellow400} />
-                <Text style={styles.ratingSummaryValue}>{movie.rating}</Text>
-                <Text style={styles.ratingSummaryMax}>/5</Text>
-                <Text style={styles.ratingSummaryCount}>({movie.review_count} reviews)</Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.writeReviewButton}
-                onPress={() => setShowReviewModal(true)}
-              >
-                <Ionicons name="create" size={20} color={colors.white} />
-                <Text style={styles.writeReviewText}>Write Review</Text>
-              </TouchableOpacity>
-
-              {reviews.map((review) => (
-                <View key={review.id} style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewAvatar}>
-                      <Ionicons name="person" size={16} color={colors.white60} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.reviewUserName}>
-                        {review.profile?.display_name ?? 'User'}
-                      </Text>
-                      <StarRating rating={review.rating} size={12} />
-                    </View>
-                    <Text style={styles.reviewDate}>{formatDate(review.created_at)}</Text>
-                  </View>
-                  {review.title && <Text style={styles.reviewTitle}>{review.title}</Text>}
-                  {review.body && (
-                    <Text style={styles.reviewBody} numberOfLines={4}>
-                      {review.body}
-                    </Text>
-                  )}
-                  {review.contains_spoiler && (
-                    <View style={styles.spoilerBadge}>
-                      <Text style={styles.spoilerBadgeText}>Contains Spoiler</Text>
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    style={styles.helpfulButton}
-                    onPress={() => {
-                      if (userId) {
-                        helpfulMutation.mutate({ userId, reviewId: review.id });
-                      }
-                    }}
-                    accessibilityLabel={`Mark review as helpful, ${review.helpful_count} found helpful`}
-                  >
-                    <Ionicons name="thumbs-up-outline" size={14} color={colors.white40} />
-                    <Text style={styles.helpfulText}>{review.helpful_count}</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
+            <ReviewsTab
+              rating={movie.rating}
+              reviewCount={movie.review_count}
+              reviews={reviews}
+              userId={userId}
+              onWriteReview={() => setShowReviewModal(true)}
+              onHelpful={(reviewId) => helpfulMutation.mutate({ userId, reviewId })}
+            />
           )}
         </View>
       </ScrollView>
 
-      {/* Fixed header — outside ScrollView so it never scrolls away, paddingTop pushes below status bar */}
-      <View style={[styles.heroHeader, { paddingTop: insets.top + 8 }]}>
-        <View style={styles.heroHeaderLeft}>
-          <TouchableOpacity
-            style={styles.heroButton}
-            onPress={() => router.back()}
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="arrow-back" size={22} color={colors.white} />
-          </TouchableOpacity>
-          {navIndex >= 2 && (
-            <TouchableOpacity
-              style={styles.heroButton}
-              onPress={() => router.dismissAll()}
-              accessibilityLabel="Go to home"
-              testID="home-button"
-            >
-              <Ionicons name="home-outline" size={22} color={colors.white} />
-            </TouchableOpacity>
-          )}
-        </View>
-        <View style={styles.heroHeaderRight}>
-          <TouchableOpacity
-            style={styles.heroButton}
-            onPress={handleShare}
-            accessibilityLabel="Share"
-          >
-            <Ionicons name="share-outline" size={22} color={colors.white} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.heroButton, isWatchlisted && styles.heroButtonActive]}
-            onPress={handleToggleWatchlist}
-            accessibilityLabel={isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
-          >
-            <Ionicons
-              name={isWatchlisted ? 'bookmark' : 'bookmark-outline'}
-              size={22}
-              color={colors.white}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <MovieDetailHeader
+        insetsTop={insets.top}
+        navIndex={navIndex}
+        isWatchlisted={isWatchlisted}
+        onBack={() => router.back()}
+        onHome={() => router.dismissAll()}
+        onShare={handleShare}
+        onToggleWatchlist={handleToggleWatchlist}
+      />
 
-      {/* Write Review Modal */}
-      <Modal visible={showReviewModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Write Review</Text>
-              <TouchableOpacity onPress={() => setShowReviewModal(false)}>
-                <Ionicons name="close" size={24} color={colors.white} />
-              </TouchableOpacity>
-            </View>
+      <ReviewModal
+        visible={showReviewModal}
+        movieTitle={movie.title}
+        posterUrl={movie.poster_url}
+        releaseYear={releaseYear}
+        director={movie.director}
+        reviewRating={reviewRating}
+        reviewTitle={reviewTitle}
+        reviewBody={reviewBody}
+        containsSpoiler={containsSpoiler}
+        onRatingChange={setReviewRating}
+        onTitleChange={setReviewTitle}
+        onBodyChange={setReviewBody}
+        onSpoilerToggle={() => setContainsSpoiler(!containsSpoiler)}
+        onSubmit={handleSubmitReview}
+        onClose={() => setShowReviewModal(false)}
+      />
 
-            <View style={styles.modalMovieInfo}>
-              <Image
-                source={{ uri: movie.poster_url ?? undefined }}
-                style={styles.modalPoster}
-                contentFit="cover"
-              />
-              <View>
-                <Text style={styles.modalMovieTitle}>{movie.title}</Text>
-                <Text style={styles.modalMovieMeta}>
-                  {releaseYear} • {movie.director}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.modalStars}>
-              <StarRating rating={reviewRating} size={40} interactive onRate={setReviewRating} />
-            </View>
-
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Review Title"
-              placeholderTextColor={colors.white40}
-              value={reviewTitle}
-              onChangeText={setReviewTitle}
-            />
-
-            <TextInput
-              style={[styles.modalInput, styles.modalTextArea]}
-              placeholder="Write your review..."
-              placeholderTextColor={colors.white40}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-              value={reviewBody}
-              onChangeText={setReviewBody}
-            />
-
-            <TouchableOpacity
-              style={styles.spoilerToggle}
-              onPress={() => setContainsSpoiler(!containsSpoiler)}
-            >
-              <View style={[styles.toggleTrack, containsSpoiler && styles.toggleTrackActive]}>
-                <View style={[styles.toggleThumb, containsSpoiler && styles.toggleThumbActive]} />
-              </View>
-              <Text style={styles.spoilerToggleText}>Contains Spoiler</Text>
-            </TouchableOpacity>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity onPress={() => setShowReviewModal(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalSubmitButton, reviewRating === 0 && { opacity: 0.5 }]}
-                onPress={handleSubmitReview}
-                disabled={reviewRating === 0}
-              >
-                <Text style={styles.modalSubmitText}>Submit</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Poster Modal — fullscreen viewer */}
-      <Modal visible={!!selectedPoster} animationType="fade" transparent>
-        <View style={styles.posterModalOverlay}>
-          <TouchableOpacity
-            style={styles.posterModalClose}
-            onPress={() => setSelectedPoster(null)}
-            accessibilityLabel="Close poster"
-          >
-            <Ionicons name="close" size={28} color={colors.white} />
-          </TouchableOpacity>
-          {selectedPoster && (
-            <View style={styles.posterModalContent}>
-              <Image
-                source={{ uri: selectedPoster.image_url }}
-                style={styles.posterModalImage}
-                contentFit="contain"
-              />
-              <View style={styles.posterModalInfo}>
-                <Text style={styles.posterModalTitle}>{selectedPoster.title}</Text>
-                {selectedPoster.description && (
-                  <Text style={styles.posterModalDescription}>{selectedPoster.description}</Text>
-                )}
-              </View>
-            </View>
-          )}
-        </View>
-      </Modal>
+      <PosterModal poster={selectedPoster} onClose={() => setSelectedPoster(null)} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.black },
-  hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH },
-  safeAreaCover: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    backgroundColor: colors.black,
-  },
-  heroHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 50,
-  },
-  heroHeaderLeft: { flexDirection: 'row', gap: 8 },
-  heroHeaderRight: { flexDirection: 'row', gap: 8 },
-  heroButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.black50,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroButtonActive: { backgroundColor: colors.red600 },
-  heroInfo: {
-    position: 'absolute',
-    bottom: 0,
-    left: 16,
-    right: 16,
-    paddingBottom: 16,
-  },
-  heroInfoRow: { flexDirection: 'row', gap: 16 },
-  heroPoster: { width: 112, aspectRatio: 2 / 3, borderRadius: 12 },
-  heroInfoText: { flex: 1, justifyContent: 'flex-end' },
-  statusBadge: {
-    backgroundColor: colors.red600,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  statusBadgeText: {
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  heroTitle: { fontSize: 28, fontWeight: '800', color: colors.white, marginBottom: 8 },
-  heroRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  heroRatingValue: { fontSize: 20, fontWeight: '700', color: colors.white },
-  heroReviewCount: { fontSize: 14, color: colors.white60 },
-  heroMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  heroMeta: { fontSize: 14, color: colors.white60 },
-  heroMetaDot: { fontSize: 14, color: colors.white40 },
-
-  section: { paddingHorizontal: 16, marginTop: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.white, marginBottom: 12 },
-  watchOnRow: { gap: 8 },
-  watchOnButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  watchOnLogo: { width: 40, height: 40, borderRadius: 8 },
-  watchOnLogoText: { fontSize: 20, fontWeight: '700', color: colors.white },
-  watchOnName: { fontSize: 14, fontWeight: '600', color: colors.white },
-  watchOnStream: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-
-  releaseAlert: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: 16,
-    marginTop: 24,
-    padding: 16,
-    backgroundColor: colors.blue600_20,
-    borderWidth: 1,
-    borderColor: colors.blue600_30,
-    borderRadius: 12,
-  },
-  releaseAlertTitle: { fontSize: 14, fontWeight: '600', color: colors.white },
-  releaseAlertDate: { fontSize: 14, color: colors.blue400 },
-
-  tabBar: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 24,
-    backgroundColor: colors.white5,
-    borderRadius: 12,
-    padding: 4,
-  },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-  tabActive: { backgroundColor: colors.red600 },
-  tabText: { fontSize: 14, fontWeight: '600', color: colors.white60 },
-  tabTextActive: { color: colors.white },
-
-  tabContent: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 120 },
-
-  overviewTab: { gap: 20 },
-  synopsis: { fontSize: 15, color: 'rgba(255,255,255,0.8)', lineHeight: 24 },
-  genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  genrePill: {
-    backgroundColor: colors.white10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  genrePillText: { color: colors.white, fontSize: 14 },
-  infoGrid: { flexDirection: 'row', gap: 12 },
-  infoCard: {
-    flex: 1,
-    backgroundColor: colors.white5,
-    borderRadius: 12,
-    padding: 16,
-    gap: 4,
-  },
-  infoLabel: { fontSize: 12, color: colors.white60 },
-  infoValue: { fontSize: 14, fontWeight: '600', color: colors.white },
-  trailerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: colors.red600_20,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  trailerButtonText: { color: colors.red400, fontSize: 16, fontWeight: '600' },
-
-  // Production Houses
-  productionHousesRow: { gap: 8 },
-  productionHousesLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.white40,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  productionHousesList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  productionHouseChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.white10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  productionHouseLogo: { width: 24, height: 24, borderRadius: 12 },
-  productionHouseName: { fontSize: 13, fontWeight: '600', color: colors.white },
-
-  // Media Tab
-  mediaTab: { gap: 24 },
-  mediaSection: { gap: 12 },
-  mediaSectionTitle: { fontSize: 16, fontWeight: '700', color: colors.white },
-  videoRow: { flexDirection: 'row', gap: 12, paddingRight: 16 },
-  videoCard: { width: 220 },
-  videoThumbnailWrapper: {
-    width: 220,
-    height: 124,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: colors.white5,
-  },
-  videoThumbnail: { width: '100%', height: '100%' },
-  playOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  durationBadge: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  durationText: { fontSize: 11, fontWeight: '600', color: colors.white },
-  videoTitle: { fontSize: 13, fontWeight: '500', color: colors.white, marginTop: 6 },
-
-  // Poster Gallery
-  posterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  posterCard: { width: (SCREEN_WIDTH - 32 - 12) / 2 },
-  posterImage: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: 12,
-    backgroundColor: colors.white5,
-  },
-  mainPosterBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  mainPosterText: { fontSize: 10, fontWeight: '700', color: colors.yellow400 },
-  posterTitle: { fontSize: 12, fontWeight: '500', color: colors.white60, marginTop: 4 },
-
-  // Video Preview Card (overview tab)
-  videoPreviewCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.white5,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  videoPreviewThumb: {
-    width: 140,
-    height: 80,
-    backgroundColor: colors.white10,
-  },
-  videoPreviewImage: { width: '100%', height: '100%' },
-  videoPreviewPlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  videoPreviewInfo: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'center',
-    gap: 4,
-  },
-  videoPreviewTitle: { fontSize: 14, fontWeight: '600', color: colors.white },
-  videoPreviewSubtitle: { fontSize: 12, color: colors.white40 },
-
-  // Poster Modal
-  posterModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  posterModalClose: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  posterModalContent: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 100,
-    paddingBottom: 80,
-  },
-  posterModalImage: {
-    width: SCREEN_WIDTH - 32,
-    flex: 1,
-    borderRadius: 12,
-  },
-  posterModalInfo: {
-    paddingTop: 16,
-    alignItems: 'center',
-    gap: 4,
-  },
-  posterModalTitle: { fontSize: 16, fontWeight: '600', color: colors.white },
-  posterModalDescription: { fontSize: 14, color: colors.white60, textAlign: 'center' },
-
-  castTab: { gap: 16 },
-  castSectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.white40,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-    marginTop: 4,
-  },
-  castItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  castInfo: { flex: 1, gap: 2 },
-  castName: { fontSize: 16, fontWeight: '600', color: colors.white },
-  castRole: { fontSize: 14, color: colors.white60 },
-  emptyText: { color: colors.white40, fontSize: 14, textAlign: 'center', paddingVertical: 24 },
-
-  reviewsTab: { gap: 16 },
-  ratingSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 24,
-    backgroundColor: colors.white5,
-    borderRadius: 12,
-  },
-  ratingSummaryValue: { fontSize: 36, fontWeight: '700', color: colors.white },
-  ratingSummaryMax: { fontSize: 20, color: colors.white60, marginTop: 8 },
-  ratingSummaryCount: { fontSize: 14, color: colors.white60, marginTop: 8, marginLeft: 4 },
-  writeReviewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: colors.red600,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  writeReviewText: { color: colors.white, fontSize: 16, fontWeight: '600' },
-  reviewCard: {
-    padding: 16,
-    backgroundColor: colors.white5,
-    borderRadius: 12,
-    gap: 8,
-  },
-  reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reviewAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reviewUserName: { fontSize: 14, fontWeight: '600', color: colors.white },
-  reviewDate: { fontSize: 12, color: colors.white40 },
-  reviewTitle: { fontSize: 16, fontWeight: '600', color: colors.white },
-  reviewBody: { fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 20 },
-  spoilerBadge: {
-    backgroundColor: colors.orange600_20,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  spoilerBadgeText: { fontSize: 12, fontWeight: '600', color: colors.orange500 },
-  helpfulButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-  },
-  helpfulText: { fontSize: 12, color: colors.white40 },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: colors.black95,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.zinc900,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    gap: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: colors.white },
-  modalMovieInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  modalPoster: { width: 56, height: 84, borderRadius: 8 },
-  modalMovieTitle: { fontSize: 16, fontWeight: '600', color: colors.white },
-  modalMovieMeta: { fontSize: 14, color: colors.white60 },
-  modalStars: { alignItems: 'center' },
-  modalInput: {
-    backgroundColor: colors.white5,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: colors.white,
-  },
-  modalTextArea: { height: 120 },
-  spoilerToggle: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  toggleTrack: {
-    width: 48,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.white20,
-    justifyContent: 'center',
-    padding: 2,
-  },
-  toggleTrackActive: { backgroundColor: colors.red600 },
-  toggleThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-  },
-  toggleThumbActive: { alignSelf: 'flex-end' },
-  spoilerToggleText: { fontSize: 16, color: colors.white },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  modalCancelText: { color: colors.white60, fontSize: 16 },
-  modalSubmitButton: {
-    backgroundColor: colors.red600,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  modalSubmitText: { color: colors.white, fontSize: 16, fontWeight: '600' },
-});

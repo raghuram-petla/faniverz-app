@@ -1,13 +1,15 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminActor, useUpdateActor, useDeleteActor } from '@/hooks/useAdminCast';
-import { ArrowLeft, Loader2, Trash2, Save, Upload, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
 import { DEVICES } from '@shared/constants';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { ActorDetailPreview } from '@/components/preview/ActorDetailPreview';
+import { ActorFormFields } from '@/components/cast-edit/ActorFormFields';
+import type { ActorFormState } from '@/components/cast-edit/ActorFormFields';
 
 export default function EditActorPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,12 +19,11 @@ export default function EditActorPage() {
   const deleteActor = useDeleteActor();
   const [device, setDevice] = useState(DEVICES[1]);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ActorFormState>({
     name: '',
     photo_url: '',
-    person_type: 'actor' as 'actor' | 'technician',
+    person_type: 'actor',
     birth_date: '',
     gender: '0',
     biography: '',
@@ -129,144 +130,12 @@ export default function EditActorPage() {
       <div className="flex gap-8">
         {/* Left column — Edit form */}
         <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
-          <div className="bg-zinc-900 border border-white/10 rounded-xl p-6 space-y-4">
-            <div>
-              <label className="block text-xs text-white/40 mb-1">Name *</label>
-              <input
-                type="text"
-                required
-                value={form.name}
-                onChange={(e) => updateField('name', e.target.value)}
-                className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-white/40 mb-1">Photo</label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handlePhotoUpload(file);
-                  e.target.value = '';
-                }}
-              />
-              {form.photo_url ? (
-                <div className="flex items-center gap-4">
-                  <img
-                    src={form.photo_url}
-                    alt="Photo preview"
-                    className="w-20 h-20 rounded-full object-cover border border-white/10"
-                  />
-                  <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      disabled={uploading}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 text-sm text-white/60 hover:text-white px-3 py-1.5 bg-white/10 rounded-lg disabled:opacity-50"
-                    >
-                      {uploading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Upload className="w-3.5 h-3.5" />
-                      )}
-                      Change
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateField('photo_url', '')}
-                      className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-white/5 rounded-lg"
-                    >
-                      <X className="w-3.5 h-3.5" /> Remove
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 bg-white/10 rounded-lg px-4 py-3 text-sm text-white/60 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Upload className="w-4 h-4" />
-                  )}
-                  {uploading ? 'Uploading...' : 'Upload Photo'}
-                </button>
-              )}
-              {form.photo_url && (
-                <p className="mt-2 text-xs text-white/20 truncate">{form.photo_url}</p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-white/40 mb-1">Person Type</label>
-                <select
-                  value={form.person_type}
-                  onChange={(e) => updateField('person_type', e.target.value)}
-                  className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-                >
-                  <option value="actor">Actor</option>
-                  <option value="technician">Technician</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-white/40 mb-1">Date of Birth</label>
-                <input
-                  type="date"
-                  value={form.birth_date}
-                  onChange={(e) => updateField('birth_date', e.target.value)}
-                  className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs text-white/40 mb-1">Gender</label>
-                <select
-                  value={form.gender}
-                  onChange={(e) => updateField('gender', e.target.value)}
-                  className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-                >
-                  <option value="0">Not set</option>
-                  <option value="1">Female</option>
-                  <option value="2">Male</option>
-                  <option value="3">Non-binary</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-white/40 mb-1">Height (cm)</label>
-                <input
-                  type="number"
-                  value={form.height_cm}
-                  onChange={(e) => updateField('height_cm', e.target.value)}
-                  className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs text-white/40 mb-1">Place of Birth</label>
-              <input
-                type="text"
-                value={form.place_of_birth}
-                onChange={(e) => updateField('place_of_birth', e.target.value)}
-                className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-white/40 mb-1">Biography</label>
-              <textarea
-                rows={4}
-                value={form.biography}
-                onChange={(e) => updateField('biography', e.target.value)}
-                className="w-full bg-white/10 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-red-600 text-sm resize-none"
-              />
-            </div>
-          </div>
+          <ActorFormFields
+            form={form}
+            uploading={uploading}
+            onFieldChange={updateField}
+            onPhotoUpload={handlePhotoUpload}
+          />
 
           <button
             type="submit"

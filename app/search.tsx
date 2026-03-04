@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
+import { styles } from './search.styles';
 
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;
@@ -238,129 +239,3 @@ export default function SearchScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.black },
-  safeAreaCover: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    backgroundColor: colors.black,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white10,
-    borderRadius: 24,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 8,
-  },
-  searchInput: { flex: 1, fontSize: 16, color: colors.white },
-  cancelText: { color: colors.white60, fontSize: 16 },
-  noQuery: { paddingHorizontal: 16, paddingTop: 16 },
-  recentSection: { marginBottom: 32 },
-  recentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  recentTitle: { fontSize: 16, fontWeight: '600', color: colors.white },
-  clearText: { color: colors.red500, fontSize: 14 },
-  recentPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  recentPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.white5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  recentPillText: { color: colors.white, fontSize: 14 },
-  resultsCount: {
-    fontSize: 14,
-    color: colors.white60,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-  },
-  resultsList: { paddingHorizontal: 16, paddingBottom: 100 },
-  resultItem: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.white5,
-  },
-  resultPoster: { width: 64, height: 96, borderRadius: 8 },
-  resultInfo: { flex: 1, justifyContent: 'center', gap: 4 },
-  resultTitle: { fontSize: 16, fontWeight: '600', color: colors.white },
-  resultMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  resultBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  resultBadgeText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  resultRating: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  resultRatingText: { color: colors.white, fontSize: 13, fontWeight: '600' },
-  resultDirector: { fontSize: 13, color: colors.white60 },
-  resultGenres: { fontSize: 12, color: colors.white50 },
-  trendingSection: { marginTop: 24 },
-  trendingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  trendingTitle: { fontSize: 16, fontWeight: '600', color: colors.white },
-  trendingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
-  },
-  trendingRank: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(239,68,68,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trendingRankText: { fontSize: 13, fontWeight: '700', color: colors.red500 },
-  trendingPoster: { width: 48, height: 72, borderRadius: 8 },
-  trendingInfo: { flex: 1, gap: 4 },
-  trendingMovieTitle: { fontSize: 15, fontWeight: '600', color: colors.white },
-  trendingMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trendingRating: { fontSize: 12, color: colors.white60 },
-  trendingDot: { fontSize: 12, color: colors.white40 },
-  trendingReviews: { fontSize: 12, color: colors.white60 },
-  platformBadge: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  platformBadgeText: { fontSize: 10, fontWeight: '700', color: colors.white },
-});

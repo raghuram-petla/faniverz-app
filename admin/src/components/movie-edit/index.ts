@@ -1,8 +1,13 @@
+export { ImageUploadField } from './ImageUploadField';
 export { VideosSection } from './VideosSection';
 export { PostersSection } from './PostersSection';
 export { PlatformsSection } from './PlatformsSection';
 export { ProductionHousesSection } from './ProductionHousesSection';
 export { CastSection } from './CastSection';
 export { TheatricalRunsSection } from './TheatricalRunsSection';
+export { BasicInfoSection } from './BasicInfoSection';
+export { PreviewPanel } from './PreviewPanel';
+export { NewMovieForm } from './NewMovieForm';
 export type { PendingCastAdd } from './CastSection';
 export type { PendingRun } from './TheatricalRunsSection';
+export type { NewMovieFormState } from './NewMovieForm';
