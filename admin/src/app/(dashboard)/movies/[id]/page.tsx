@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
 import {
@@ -37,6 +37,7 @@ import { ArrowLeft, Check, Loader2, Trash2, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import { DEVICES } from '@shared/constants';
 import type { VideoType } from '@/lib/types';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { SpotlightPreview } from '@/components/preview/SpotlightPreview';
@@ -449,19 +450,7 @@ export default function EditMoviePage() {
   }
 
   // ─── Warn on unsaved navigation ───
-  const beforeUnloadHandler = useCallback(
-    (e: BeforeUnloadEvent) => {
-      if (isDirty) {
-        e.preventDefault();
-      }
-    },
-    [isDirty],
-  );
-
-  useEffect(() => {
-    window.addEventListener('beforeunload', beforeUnloadHandler);
-    return () => window.removeEventListener('beforeunload', beforeUnloadHandler);
-  }, [beforeUnloadHandler]);
+  useUnsavedChangesWarning(isDirty);
 
   // ─── Save & Delete ───
   const [isSaving, setIsSaving] = useState(false);
