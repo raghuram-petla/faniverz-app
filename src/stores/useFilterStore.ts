@@ -8,11 +8,13 @@ interface FilterState {
   selectedFilter: FilterType;
   selectedGenres: string[];
   selectedPlatforms: string[];
+  selectedProductionHouses: string[];
   sortBy: SortBy;
   searchQuery: string;
   setFilter: (filter: FilterType) => void;
   toggleGenre: (genre: string) => void;
   togglePlatform: (platformId: string) => void;
+  toggleProductionHouse: (id: string) => void;
   setSortBy: (sortBy: SortBy) => void;
   setSearchQuery: (query: string) => void;
   clearAll: () => void;
@@ -22,6 +24,7 @@ export const useFilterStore = create<FilterState>((set) => ({
   selectedFilter: 'all',
   selectedGenres: [],
   selectedPlatforms: [],
+  selectedProductionHouses: [],
   sortBy: 'popular',
   searchQuery: '',
 
@@ -41,6 +44,13 @@ export const useFilterStore = create<FilterState>((set) => ({
         : [...state.selectedPlatforms, platformId],
     })),
 
+  toggleProductionHouse: (id) =>
+    set((state) => ({
+      selectedProductionHouses: state.selectedProductionHouses.includes(id)
+        ? state.selectedProductionHouses.filter((p) => p !== id)
+        : [...state.selectedProductionHouses, id],
+    })),
+
   setSortBy: (sortBy) => set({ sortBy }),
 
   setSearchQuery: (query) => set({ searchQuery: query }),
@@ -50,6 +60,7 @@ export const useFilterStore = create<FilterState>((set) => ({
       selectedFilter: 'all',
       selectedGenres: [],
       selectedPlatforms: [],
+      selectedProductionHouses: [],
       sortBy: 'popular',
       searchQuery: '',
     }),

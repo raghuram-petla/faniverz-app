@@ -2,7 +2,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
-import { useMovieCast, useAdminActors, useAddCast, useRemoveCast } from '@/hooks/useAdminCast';
+import {
+  useMovieCast,
+  useAdminActors,
+  useAddCast,
+  useRemoveCast,
+  useUpdateCastOrder,
+} from '@/hooks/useAdminCast';
 import {
   useMovieTheatricalRuns,
   useAddTheatricalRun,
@@ -32,7 +38,26 @@ import {
   Play,
   Film,
   Building2,
+  GripVertical,
+  User,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
 import { DEVICES, VIDEO_TYPES } from '@shared/constants';
 import type { VideoType } from '@/lib/types';
@@ -93,6 +118,75 @@ const EMPTY_POSTER_FORM = {
   is_main: false,
 };
 
+function SortableCastItem({
+  entry,
+  onRemove,
+}: {
+  entry: import('@/lib/types').MovieCast;
+  movieId: string;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: entry.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+    >
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 shrink-0"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden shrink-0 flex items-center justify-center">
+        {entry.actor?.photo_url ? (
+          <img
+            src={entry.actor.photo_url}
+            alt={entry.actor.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <User className="w-4 h-4 text-white/40" />
+        )}
+      </div>
+      <span className="text-xs font-bold uppercase text-white/40 w-10">
+        {entry.credit_type === 'cast' ? 'Cast' : 'Crew'}
+      </span>
+      <span className="text-white font-medium flex-1 truncate">
+        {entry.actor?.name ?? entry.actor_id}
+      </span>
+      {entry.role_name && (
+        <span className="text-white/60 text-sm truncate max-w-[120px]">{entry.role_name}</span>
+      )}
+      {entry.role_order != null && (
+        <span className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded">
+          #{entry.role_order}
+        </span>
+      )}
+      <button
+        onClick={onRemove}
+        className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+        aria-label={`Remove ${entry.actor?.name}`}
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
 export default function EditMoviePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -104,6 +198,11 @@ export default function EditMoviePage() {
   const actors = actorsData?.pages.flat() ?? [];
   const addCast = useAddCast();
   const removeCast = useRemoveCast();
+  const updateCastOrder = useUpdateCastOrder();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);
   const addTheatricalRun = useAddTheatricalRun();
   const removeTheatricalRun = useRemoveTheatricalRun();
@@ -276,8 +375,8 @@ export default function EditMoviePage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     try {
       await updateMovie.mutateAsync({
         id,
@@ -354,6 +453,19 @@ export default function EditMoviePage() {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       alert(`Failed to add cast: ${msg}`);
     }
+  }
+
+  function handleCastDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = castData.findIndex((c) => c.id === active.id);
+    const newIndex = castData.findIndex((c) => c.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(castData, oldIndex, newIndex);
+    const updates = reordered.map((item, idx) => ({ id: item.id, display_order: idx }));
+    updateCastOrder.mutate({ movieId: id, items: updates });
   }
 
   if (isLoading)
@@ -679,17 +791,6 @@ export default function EditMoviePage() {
                 ))}
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={updateMovie.isPending}
-              className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-red-700 disabled:opacity-50"
-            >
-              {updateMovie.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                'Save Changes'
-              )}
-            </button>
           </form>
 
           {/* Videos Management */}
@@ -697,6 +798,43 @@ export default function EditMoviePage() {
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Play className="w-5 h-5" /> Videos
             </h2>
+
+            {/* Backward compat: import trailer_url as a video */}
+            {form.trailer_url && videosData.length === 0 && (
+              <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm text-blue-400 font-medium">
+                    This movie has a trailer URL but no videos.
+                  </p>
+                  <p className="text-xs text-white/40 mt-1">Import it as the first video entry?</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const youtubeId = extractYouTubeId(form.trailer_url);
+                    if (!youtubeId) {
+                      alert('Could not extract a YouTube ID from the trailer URL.');
+                      return;
+                    }
+                    try {
+                      await addVideo.mutateAsync({
+                        movie_id: id,
+                        youtube_id: youtubeId,
+                        title: `${form.title} - Official Trailer`,
+                        video_type: 'trailer',
+                        display_order: 0,
+                      });
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+                      alert(`Import failed: ${msg}`);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Import
+                </button>
+              </div>
+            )}
 
             {videosData.length > 0 && (
               <div className="space-y-2">
@@ -828,6 +966,38 @@ export default function EditMoviePage() {
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Film className="w-5 h-5" /> Poster Gallery
             </h2>
+
+            {/* Backward compat: import poster_url to gallery */}
+            {form.poster_url && postersData.length === 0 && (
+              <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm text-blue-400 font-medium">
+                    This movie has a poster but no gallery entries.
+                  </p>
+                  <p className="text-xs text-white/40 mt-1">Import it as the main poster?</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await addPoster.mutateAsync({
+                        movie_id: id,
+                        image_url: form.poster_url,
+                        title: 'Official Poster',
+                        is_main: true,
+                        display_order: 0,
+                      });
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+                      alert(`Import failed: ${msg}`);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Import
+                </button>
+              </div>
+            )}
 
             {postersData.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
@@ -1026,36 +1196,27 @@ export default function EditMoviePage() {
             <h2 className="text-lg font-bold text-white">Cast &amp; Crew</h2>
 
             {castData.length > 0 && (
-              <div className="space-y-2">
-                {castData.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
-                  >
-                    <span className="text-xs font-bold uppercase text-white/40 w-10">
-                      {entry.credit_type === 'cast' ? 'Cast' : 'Crew'}
-                    </span>
-                    <span className="text-white font-medium flex-1">
-                      {entry.actor?.name ?? entry.actor_id}
-                    </span>
-                    {entry.role_name && (
-                      <span className="text-white/60 text-sm">{entry.role_name}</span>
-                    )}
-                    {entry.role_order != null && (
-                      <span className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded">
-                        #{entry.role_order}
-                      </span>
-                    )}
-                    <button
-                      onClick={() => removeCast.mutate({ id: entry.id, movieId: id })}
-                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
-                      aria-label={`Remove ${entry.actor?.name}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleCastDragEnd}
+              >
+                <SortableContext
+                  items={castData.map((c) => c.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {castData.map((entry) => (
+                      <SortableCastItem
+                        key={entry.id}
+                        entry={entry}
+                        movieId={id}
+                        onRemove={() => removeCast.mutate({ id: entry.id, movieId: id })}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
 
             <form onSubmit={handleAddCast} className="bg-white/5 rounded-xl p-4 space-y-3">
@@ -1323,6 +1484,26 @@ export default function EditMoviePage() {
               </button>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Sticky Save Bar */}
+      <div className="sticky bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-white/10 py-3 px-4 -mx-4 mt-8 flex items-center justify-between gap-4 z-20">
+        <span className="text-white font-medium truncate">{form.title || 'Untitled Movie'}</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={handleDelete}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
+          >
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={updateMovie.isPending}
+            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50 text-sm"
+          >
+            {updateMovie.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+          </button>
         </div>
       </div>
     </div>

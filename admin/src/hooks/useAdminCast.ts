@@ -147,3 +147,32 @@ export function useRemoveCast() {
     },
   });
 }
+
+export function useUpdateCastOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      movieId,
+      items,
+    }: {
+      movieId: string;
+      items: { id: string; display_order: number }[];
+    }) => {
+      const results = await Promise.all(
+        items.map((item) =>
+          supabase
+            .from('movie_cast')
+            .update({ display_order: item.display_order })
+            .eq('id', item.id),
+        ),
+      );
+      const firstError = results.find((r) => r.error);
+      if (firstError?.error) throw firstError.error;
+      return movieId;
+    },
+    onSuccess: (movieId) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'cast', movieId] });
+      logAudit('update', 'movie_cast', movieId, { action: 'reorder' });
+    },
+  });
+}

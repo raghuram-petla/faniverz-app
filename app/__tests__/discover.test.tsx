@@ -88,6 +88,11 @@ jest.mock('@/features/ott/hooks', () => ({
   useMoviePlatformMap: jest.fn(() => ({ data: {} })),
 }));
 
+jest.mock('@/features/productionHouses/hooks', () => ({
+  useProductionHouses: jest.fn(() => ({ data: [] })),
+  useMovieIdsByProductionHouse: jest.fn(() => ({ data: [] })),
+}));
+
 import DiscoverScreen from '../discover';
 import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
 

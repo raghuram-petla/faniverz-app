@@ -22,6 +22,10 @@ import { useFilterStore } from '@/stores/useFilterStore';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Movie, MovieStatus } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
+import {
+  useProductionHouses,
+  useMovieIdsByProductionHouse,
+} from '@/features/productionHouses/hooks';
 
 const GENRES = [
   'Action',
@@ -61,11 +65,13 @@ export default function DiscoverScreen() {
     selectedFilter,
     selectedGenres,
     selectedPlatforms,
+    selectedProductionHouses,
     sortBy,
     searchQuery,
     setFilter,
     toggleGenre,
     togglePlatform,
+    toggleProductionHouse,
     setSortBy,
     setSearchQuery,
     clearAll,
@@ -96,8 +102,10 @@ export default function DiscoverScreen() {
 
   const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
   const { data: platforms = [] } = usePlatforms();
+  const { data: productionHouses = [] } = useProductionHouses();
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
+  const { data: phMovieIds = [] } = useMovieIdsByProductionHouse(selectedProductionHouses);
 
   const filteredMovies = useMemo(() => {
     let movies = allMovies;
@@ -120,10 +128,23 @@ export default function DiscoverScreen() {
       });
     }
 
-    return movies;
-  }, [allMovies, searchQuery, selectedGenres, selectedPlatforms, platformMap]);
+    if (selectedProductionHouses.length > 0) {
+      movies = movies.filter((m) => phMovieIds.includes(m.id));
+    }
 
-  const activeFilterCount = selectedGenres.length + selectedPlatforms.length;
+    return movies;
+  }, [
+    allMovies,
+    searchQuery,
+    selectedGenres,
+    selectedPlatforms,
+    platformMap,
+    selectedProductionHouses,
+    phMovieIds,
+  ]);
+
+  const activeFilterCount =
+    selectedGenres.length + selectedPlatforms.length + selectedProductionHouses.length;
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -262,7 +283,9 @@ export default function DiscoverScreen() {
       )}
 
       {/* Active Filter Pills */}
-      {(selectedGenres.length > 0 || selectedPlatforms.length > 0) && (
+      {(selectedGenres.length > 0 ||
+        selectedPlatforms.length > 0 ||
+        selectedProductionHouses.length > 0) && (
         <View style={styles.activePills}>
           {selectedGenres.map((g) => (
             <TouchableOpacity key={g} style={styles.activePill} onPress={() => toggleGenre(g)}>
@@ -275,6 +298,19 @@ export default function DiscoverScreen() {
             return (
               <TouchableOpacity key={p} style={styles.activePill} onPress={() => togglePlatform(p)}>
                 <Text style={styles.activePillText}>{platform?.name ?? p}</Text>
+                <Ionicons name="close" size={14} color={colors.red400} />
+              </TouchableOpacity>
+            );
+          })}
+          {selectedProductionHouses.map((phId) => {
+            const ph = productionHouses.find((p) => p.id === phId);
+            return (
+              <TouchableOpacity
+                key={phId}
+                style={styles.activePill}
+                onPress={() => toggleProductionHouse(phId)}
+              >
+                <Text style={styles.activePillText}>{ph?.name ?? phId}</Text>
                 <Ionicons name="close" size={14} color={colors.red400} />
               </TouchableOpacity>
             );
@@ -385,6 +421,33 @@ export default function DiscoverScreen() {
                   );
                 })}
               </View>
+
+              {/* Production Houses */}
+              {productionHouses.length > 0 && (
+                <>
+                  <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>
+                    Production Houses
+                  </Text>
+                  <View style={styles.genreGrid}>
+                    {productionHouses.map((ph) => {
+                      const isSelected = selectedProductionHouses.includes(ph.id);
+                      return (
+                        <TouchableOpacity
+                          key={ph.id}
+                          style={[styles.genrePill, isSelected && styles.genrePillActive]}
+                          onPress={() => toggleProductionHouse(ph.id)}
+                        >
+                          <Text
+                            style={[styles.genrePillText, isSelected && styles.genrePillTextActive]}
+                          >
+                            {ph.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
             </ScrollView>
 
             <View style={styles.modalActions}>

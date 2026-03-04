@@ -57,6 +57,7 @@ export default function MovieDetailScreen() {
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewBody, setReviewBody] = useState('');
   const [containsSpoiler, setContainsSpoiler] = useState(false);
+  const [selectedPoster, setSelectedPoster] = useState<MoviePoster | null>(null);
 
   const isWatchlisted = !!watchlistEntry;
 
@@ -299,7 +300,44 @@ export default function MovieDetailScreen() {
                 </View>
               )}
 
-              {movie.trailer_url && (
+              {/* First video preview (trailer/teaser) — tap switches to Media tab */}
+              {hasMedia && movie.videos.length > 0 ? (
+                (() => {
+                  const firstVideo =
+                    movie.videos.find((v) => v.video_type === 'trailer') ??
+                    movie.videos.find((v) => v.video_type === 'teaser') ??
+                    movie.videos[0];
+                  return (
+                    <TouchableOpacity
+                      style={styles.videoPreviewCard}
+                      onPress={() => setActiveTab('media')}
+                      accessibilityLabel={`${firstVideo.title} — tap for more videos`}
+                    >
+                      <View style={styles.videoPreviewThumb}>
+                        <Image
+                          source={{
+                            uri: `https://img.youtube.com/vi/${firstVideo.youtube_id}/mqdefault.jpg`,
+                          }}
+                          style={styles.videoPreviewImage}
+                          contentFit="cover"
+                        />
+                        <View style={styles.videoPreviewPlay}>
+                          <Ionicons name="play-circle" size={40} color={colors.white} />
+                        </View>
+                      </View>
+                      <View style={styles.videoPreviewInfo}>
+                        <Text style={styles.videoPreviewTitle} numberOfLines={1}>
+                          {firstVideo.title}
+                        </Text>
+                        <Text style={styles.videoPreviewSubtitle}>
+                          {movie.videos.length} video{movie.videos.length !== 1 ? 's' : ''} — Tap
+                          for all
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })()
+              ) : movie.trailer_url ? (
                 <TouchableOpacity
                   style={styles.trailerButton}
                   onPress={() => Linking.openURL(movie.trailer_url!)}
@@ -307,7 +345,7 @@ export default function MovieDetailScreen() {
                   <Ionicons name="play" size={20} color={colors.red400} />
                   <Text style={styles.trailerButtonText}>Watch Trailer</Text>
                 </TouchableOpacity>
-              )}
+              ) : null}
             </View>
           )}
 
@@ -361,7 +399,13 @@ export default function MovieDetailScreen() {
                   <Text style={styles.mediaSectionTitle}>Posters</Text>
                   <View style={styles.posterGrid}>
                     {movie.posters.map((poster: MoviePoster) => (
-                      <View key={poster.id} style={styles.posterCard}>
+                      <TouchableOpacity
+                        key={poster.id}
+                        style={styles.posterCard}
+                        onPress={() => setSelectedPoster(poster)}
+                        activeOpacity={0.8}
+                        accessibilityLabel={`View ${poster.title}`}
+                      >
                         <Image
                           source={{ uri: poster.image_url }}
                           style={styles.posterImage}
@@ -376,7 +420,7 @@ export default function MovieDetailScreen() {
                         <Text style={styles.posterTitle} numberOfLines={1}>
                           {poster.title}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     ))}
                   </View>
                 </View>
@@ -612,6 +656,34 @@ export default function MovieDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Poster Modal — fullscreen viewer */}
+      <Modal visible={!!selectedPoster} animationType="fade" transparent>
+        <View style={styles.posterModalOverlay}>
+          <TouchableOpacity
+            style={styles.posterModalClose}
+            onPress={() => setSelectedPoster(null)}
+            accessibilityLabel="Close poster"
+          >
+            <Ionicons name="close" size={28} color={colors.white} />
+          </TouchableOpacity>
+          {selectedPoster && (
+            <View style={styles.posterModalContent}>
+              <Image
+                source={{ uri: selectedPoster.image_url }}
+                style={styles.posterModalImage}
+                contentFit="contain"
+              />
+              <View style={styles.posterModalInfo}>
+                <Text style={styles.posterModalTitle}>{selectedPoster.title}</Text>
+                {selectedPoster.description && (
+                  <Text style={styles.posterModalDescription}>{selectedPoster.description}</Text>
+                )}
+              </View>
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -834,6 +906,75 @@ const styles = StyleSheet.create({
   },
   mainPosterText: { fontSize: 10, fontWeight: '700', color: colors.yellow400 },
   posterTitle: { fontSize: 12, fontWeight: '500', color: colors.white60, marginTop: 4 },
+
+  // Video Preview Card (overview tab)
+  videoPreviewCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.white5,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  videoPreviewThumb: {
+    width: 140,
+    height: 80,
+    backgroundColor: colors.white10,
+  },
+  videoPreviewImage: { width: '100%', height: '100%' },
+  videoPreviewPlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  videoPreviewInfo: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'center',
+    gap: 4,
+  },
+  videoPreviewTitle: { fontSize: 14, fontWeight: '600', color: colors.white },
+  videoPreviewSubtitle: { fontSize: 12, color: colors.white40 },
+
+  // Poster Modal
+  posterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  posterModalClose: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  posterModalContent: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 100,
+    paddingBottom: 80,
+  },
+  posterModalImage: {
+    width: SCREEN_WIDTH - 32,
+    flex: 1,
+    borderRadius: 12,
+  },
+  posterModalInfo: {
+    paddingTop: 16,
+    alignItems: 'center',
+    gap: 4,
+  },
+  posterModalTitle: { fontSize: 16, fontWeight: '600', color: colors.white },
+  posterModalDescription: { fontSize: 14, color: colors.white60, textAlign: 'center' },
 
   castTab: { gap: 16 },
   castSectionLabel: {
