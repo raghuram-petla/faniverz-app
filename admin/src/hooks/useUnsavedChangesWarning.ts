@@ -33,16 +33,28 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
       }
     };
 
-    // Browser back / forward
+    // Browser back / forward — push a guard entry with the same URL so pressing
+    // back pops the guard instead of actually navigating away.
+    let intentionalNav = false;
+    history.pushState(null, '', location.href);
+
     const handlePopState = () => {
+      if (intentionalNav) return;
+
       if (isDirtyRef.current) {
         const confirmed = window.confirm(
           'You have unsaved changes. Are you sure you want to leave?',
         );
         if (!confirmed) {
-          history.pushState(null, '', window.location.href);
+          // Re-push the guard to stay on the page
+          history.pushState(null, '', location.href);
+          return;
         }
       }
+
+      // Actually navigate back (past the guard entry)
+      intentionalNav = true;
+      history.back();
     };
 
     document.addEventListener('click', handleClick, true);
