@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
 import {
   useMovieCast,
@@ -27,6 +28,12 @@ import {
   useRemoveMovieProductionHouse,
 } from '@/hooks/useMovieProductionHouses';
 import { useAdminProductionHouses } from '@/hooks/useAdminProductionHouses';
+import {
+  useMoviePlatforms,
+  useAddMoviePlatform,
+  useRemoveMoviePlatform,
+} from '@/hooks/useAdminOtt';
+import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import {
   ArrowLeft,
   Loader2,
@@ -199,6 +206,7 @@ export default function EditMoviePage() {
   const addCast = useAddCast();
   const removeCast = useRemoveCast();
   const updateCastOrder = useUpdateCastOrder();
+  const qc = useQueryClient();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -231,6 +239,12 @@ export default function EditMoviePage() {
   const [uploadingGalleryPoster, setUploadingGalleryPoster] = useState(false);
   const galleryPosterInputRef = useRef<HTMLInputElement>(null);
   const [selectedProductionHouseId, setSelectedProductionHouseId] = useState('');
+  const { data: moviePlatforms = [] } = useMoviePlatforms(id);
+  const { data: allPlatforms = [] } = useAdminPlatforms();
+  const addMoviePlatform = useAddMoviePlatform();
+  const removeMoviePlatform = useRemoveMoviePlatform();
+  const [selectedPlatformId, setSelectedPlatformId] = useState('');
+  const [platformAvailableFrom, setPlatformAvailableFrom] = useState('');
   const [form, setForm] = useState({
     title: '',
     poster_url: '',
@@ -463,7 +477,14 @@ export default function EditMoviePage() {
     const newIndex = castData.findIndex((c) => c.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(castData, oldIndex, newIndex);
+    const reordered = arrayMove(castData, oldIndex, newIndex).map((item, idx) => ({
+      ...item,
+      display_order: idx,
+    }));
+
+    // Optimistically update the cache so the UI doesn't snap back
+    qc.setQueryData(['admin', 'cast', id], reordered);
+
     const updates = reordered.map((item, idx) => ({ id: item.id, display_order: idx }));
     updateCastOrder.mutate({ movieId: id, items: updates });
   }
@@ -1099,6 +1120,108 @@ export default function EditMoviePage() {
             </div>
           </div>
 
+          {/* OTT Platforms */}
+          <div className="space-y-4 mt-8">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Film className="w-5 h-5" /> OTT Platforms
+            </h2>
+
+            {moviePlatforms.length > 0 && (
+              <div className="space-y-2">
+                {moviePlatforms.map((mp) => (
+                  <div
+                    key={mp.platform_id}
+                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
+                  >
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
+                      style={{ backgroundColor: mp.platform?.color || '#333' }}
+                    >
+                      {mp.platform?.logo ? (
+                        <img src={mp.platform.logo} alt="" className="w-6 h-6 object-contain" />
+                      ) : (
+                        <Film className="w-5 h-5 text-white/60" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-white font-medium">
+                        {mp.platform?.name ?? mp.platform_id}
+                      </span>
+                      {mp.available_from && (
+                        <span className="text-white/40 text-sm ml-2">from {mp.available_from}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() =>
+                        removeMoviePlatform.mutate({
+                          movieId: id,
+                          platformId: mp.platform_id,
+                        })
+                      }
+                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
+                      aria-label={`Remove ${mp.platform?.name}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-white/5 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold text-white/60">Add OTT Platform</p>
+              <div className="flex gap-3">
+                <select
+                  value={selectedPlatformId}
+                  onChange={(e) => setSelectedPlatformId(e.target.value)}
+                  className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                >
+                  <option value="">Select platform…</option>
+                  {allPlatforms
+                    .filter((p) => !moviePlatforms.some((mp) => mp.platform_id === p.id))
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  type="date"
+                  value={platformAvailableFrom}
+                  onChange={(e) => setPlatformAvailableFrom(e.target.value)}
+                  placeholder="Available from"
+                  className="bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
+                />
+                <button
+                  type="button"
+                  disabled={addMoviePlatform.isPending || !selectedPlatformId}
+                  onClick={async () => {
+                    try {
+                      await addMoviePlatform.mutateAsync({
+                        movie_id: id,
+                        platform_id: selectedPlatformId,
+                        available_from: platformAvailableFrom || null,
+                      });
+                      setSelectedPlatformId('');
+                      setPlatformAvailableFrom('');
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+                      alert(`Failed to add platform: ${msg}`);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+                >
+                  {addMoviePlatform.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Production Houses */}
           <div className="space-y-4 mt-8">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -1488,23 +1611,14 @@ export default function EditMoviePage() {
       </div>
 
       {/* Sticky Save Bar */}
-      <div className="sticky bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-white/10 py-3 px-4 -mx-4 mt-8 flex items-center justify-between gap-4 z-20">
-        <span className="text-white font-medium truncate">{form.title || 'Untitled Movie'}</span>
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
-          >
-            <Trash2 className="w-4 h-4" /> Delete
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={updateMovie.isPending}
-            className="flex items-center gap-2 px-6 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50 text-sm"
-          >
-            {updateMovie.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
-          </button>
-        </div>
+      <div className="sticky bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-white/10 py-4 px-4 -mx-4 mt-8 flex items-center justify-center z-20">
+        <button
+          onClick={handleSubmit}
+          disabled={updateMovie.isPending}
+          className="flex items-center justify-center gap-2 px-12 py-3 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50 text-base min-w-[200px]"
+        >
+          {updateMovie.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}
+        </button>
       </div>
     </div>
   );
