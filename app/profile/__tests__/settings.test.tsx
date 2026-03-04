@@ -2,6 +2,10 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('@/features/auth/providers/AuthProvider', () => ({
+  useAuth: jest.fn(),
+}));
+
 import React from 'react';
 import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -13,18 +17,38 @@ jest.mock('expo-router', () => ({
 }));
 
 import SettingsScreen from '../settings';
+import { useAuth } from '@/features/auth/providers/AuthProvider';
+
+const mockUseAuth = useAuth as jest.Mock;
+
+function setupLoggedIn() {
+  mockUseAuth.mockReturnValue({ user: { id: 'user-1', email: 'fan@example.com' } });
+}
+
+function setupGuest() {
+  mockUseAuth.mockReturnValue({ user: null });
+}
 
 describe('SettingsScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setupLoggedIn();
+  });
+
   it('renders "Settings" header', () => {
     render(<SettingsScreen />);
     expect(screen.getByText('Settings')).toBeTruthy();
   });
 
-  it('renders notification toggles section', () => {
+  it('renders Appearance section with Theme row', () => {
     render(<SettingsScreen />);
-    // Section heading
+    expect(screen.getByText('Appearance')).toBeTruthy();
+    expect(screen.getByText('Theme')).toBeTruthy();
+  });
+
+  it('renders notification toggles section when logged in', () => {
+    render(<SettingsScreen />);
     expect(screen.getByText('Notifications')).toBeTruthy();
-    // Individual toggle rows
     expect(screen.getByText('Push Notifications')).toBeTruthy();
     expect(screen.getByText('Email Notifications')).toBeTruthy();
   });
@@ -43,16 +67,9 @@ describe('SettingsScreen', () => {
 
   it('renders toggle switches and toggles push notifications', () => {
     render(<SettingsScreen />);
-    // Find the Push Notifications toggle
-    // Toggle is a TouchableOpacity — find all of them
     const { TouchableOpacity } = require('react-native');
     const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
-    // The first toggleable touchable is the Push Notifications toggle
-    // Push Notifications row has a Toggle component
-    // We can verify the text and press the toggle
     expect(screen.getByText('Push Notifications')).toBeTruthy();
-    // The toggles are the TouchableOpacities with toggle styles
-    // Since we can't directly test state, we just verify that pressing doesn't crash
     fireEvent.press(touchables[0]);
   });
 
@@ -110,7 +127,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('Privacy Policy')).toBeTruthy();
   });
 
-  it('renders Privacy section', () => {
+  it('renders Privacy section when logged in', () => {
     render(<SettingsScreen />);
     expect(screen.getByText('Privacy')).toBeTruthy();
     expect(screen.getByText('Change Password')).toBeTruthy();
@@ -125,13 +142,29 @@ describe('SettingsScreen', () => {
   it('toggles email notifications', () => {
     render(<SettingsScreen />);
     expect(screen.getByText('Email Notifications')).toBeTruthy();
-    // Find the toggle for email notifications by pressing the second toggle
     const { TouchableOpacity } = require('react-native');
     const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
-    // The first touchable is the push toggle, the second is the email toggle
-    // Press the email toggle (second toggleable element)
     fireEvent.press(touchables[1]);
-    // If it didn't crash, the toggle worked
     expect(screen.getByText('Email Notifications')).toBeTruthy();
+  });
+
+  // ── Guest (not logged in) ──────────────────────────────────────────────
+
+  it('shows Appearance, Preferences, About sections when guest', () => {
+    setupGuest();
+    render(<SettingsScreen />);
+    expect(screen.getByText('Appearance')).toBeTruthy();
+    expect(screen.getByText('Theme')).toBeTruthy();
+    expect(screen.getByText('Preferences')).toBeTruthy();
+    expect(screen.getByText('About')).toBeTruthy();
+  });
+
+  it('hides Notifications and Privacy sections when guest', () => {
+    setupGuest();
+    render(<SettingsScreen />);
+    expect(screen.queryByText('Notifications')).toBeNull();
+    expect(screen.queryByText('Push Notifications')).toBeNull();
+    expect(screen.queryByText('Privacy')).toBeNull();
+    expect(screen.queryByText('Change Password')).toBeNull();
   });
 });

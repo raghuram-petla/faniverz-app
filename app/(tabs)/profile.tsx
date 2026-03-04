@@ -30,20 +30,8 @@ const MENU_ITEMS: MenuItem[] = [
   { icon: 'person-outline', label: 'Account Details', route: '/profile/account' },
 ];
 
-const THEME_MODE_LABELS: Record<string, string> = {
-  system: 'System',
-  light: 'Light',
-  dark: 'Dark',
-};
-
-function nextThemeMode(current: string): 'system' | 'light' | 'dark' {
-  if (current === 'system') return 'light';
-  if (current === 'light') return 'dark';
-  return 'system';
-}
-
 export default function ProfileScreen() {
-  const { theme, colors, mode, setMode } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -92,19 +80,18 @@ export default function ProfileScreen() {
             <Text style={styles.loginText}>Login / Sign Up</Text>
           </TouchableOpacity>
         </View>
-        {/* Theme Toggle */}
         <View style={styles.menuCard}>
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.7}
-            onPress={() => setMode(nextThemeMode(mode))}
+            onPress={() => router.push('/profile/settings' as Parameters<typeof router.push>[0])}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name="sunny-outline" size={20} color={theme.textSecondary} />
-              <Text style={styles.menuItemLabel}>Theme</Text>
+              <Ionicons name="settings-outline" size={20} color={theme.textSecondary} />
+              <Text style={styles.menuItemLabel}>Settings</Text>
             </View>
             <View style={styles.menuItemRight}>
-              <Text style={styles.themeLabel}>{THEME_MODE_LABELS[mode]}</Text>
+              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
             </View>
           </TouchableOpacity>
         </View>
@@ -196,21 +183,6 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
         ))}
-
-        {/* Theme Toggle */}
-        <TouchableOpacity
-          style={styles.menuItem}
-          activeOpacity={0.7}
-          onPress={() => setMode(nextThemeMode(mode))}
-        >
-          <View style={styles.menuItemLeft}>
-            <Ionicons name="sunny-outline" size={20} color={theme.textSecondary} />
-            <Text style={styles.menuItemLabel}>Theme</Text>
-          </View>
-          <View style={styles.menuItemRight}>
-            <Text style={styles.themeLabel}>{THEME_MODE_LABELS[mode]}</Text>
-          </View>
-        </TouchableOpacity>
       </View>
 
       {/* Footer */}

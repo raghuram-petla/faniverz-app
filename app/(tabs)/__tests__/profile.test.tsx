@@ -95,12 +95,21 @@ describe('ProfileScreen', () => {
     render(<ProfileScreen />);
 
     expect(screen.queryByText('Edit Profile')).toBeNull();
-    expect(screen.queryByText('Settings')).toBeNull();
     expect(screen.queryByText('My Reviews')).toBeNull();
     expect(screen.queryByText('Notifications')).toBeNull();
     expect(screen.queryByText('Favorite Actors')).toBeNull();
     expect(screen.queryByText('Watched Movies')).toBeNull();
     expect(screen.queryByText('Account Details')).toBeNull();
+  });
+
+  it('shows Settings navigation row in guest view', () => {
+    setupGuest();
+
+    render(<ProfileScreen />);
+
+    expect(screen.getByText('Settings')).toBeTruthy();
+    fireEvent.press(screen.getByText('Settings'));
+    expect(mockPush).toHaveBeenCalledWith('/profile/settings');
   });
 
   it('does not show profile card stats when guest', () => {

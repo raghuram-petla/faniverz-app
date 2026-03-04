@@ -145,13 +145,6 @@ export const createStyles = (t: SemanticTheme) =>
       gap: 8,
     },
 
-    // Theme label
-    themeLabel: {
-      fontSize: 13,
-      fontWeight: '500',
-      color: t.textTertiary,
-    },
-
     // Badge
     badge: {
       backgroundColor: colors.red600,

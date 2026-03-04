@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'rea
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -32,10 +33,23 @@ interface Section {
   rows: SettingsRow[];
 }
 
+const THEME_MODE_LABELS: Record<string, string> = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+};
+
+function nextThemeMode(current: string): 'system' | 'light' | 'dark' {
+  if (current === 'system') return 'light';
+  if (current === 'light') return 'dark';
+  return 'system';
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { theme } = useTheme();
+  const { user } = useAuth();
+  const { theme, mode, setMode } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -46,31 +60,59 @@ export default function SettingsScreen() {
     email: { value: emailEnabled, setter: () => setEmailEnabled((v) => !v) },
   };
 
+  const isLoggedIn = !!user;
+
   const sections: Section[] = [
     {
-      title: 'Notifications',
-      rows: [
-        { kind: 'toggle', icon: 'notifications-outline', label: 'Push Notifications', key: 'push' },
-        { kind: 'toggle', icon: 'mail-outline', label: 'Email Notifications', key: 'email' },
-      ],
-    },
-    {
-      title: 'Privacy',
+      title: 'Appearance',
       rows: [
         {
           kind: 'link',
-          icon: 'lock-closed-outline',
-          label: 'Change Password',
-          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
-        },
-        {
-          kind: 'link',
-          icon: 'shield-outline',
-          label: 'Privacy Settings',
-          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+          icon: 'sunny-outline',
+          label: 'Theme',
+          value: THEME_MODE_LABELS[mode],
+          onPress: () => setMode(nextThemeMode(mode)),
         },
       ],
     },
+    ...(isLoggedIn
+      ? [
+          {
+            title: 'Notifications',
+            rows: [
+              {
+                kind: 'toggle' as const,
+                icon: 'notifications-outline' as IconName,
+                label: 'Push Notifications',
+                key: 'push',
+              },
+              {
+                kind: 'toggle' as const,
+                icon: 'mail-outline' as IconName,
+                label: 'Email Notifications',
+                key: 'email',
+              },
+            ],
+          },
+          {
+            title: 'Privacy',
+            rows: [
+              {
+                kind: 'link' as const,
+                icon: 'lock-closed-outline' as IconName,
+                label: 'Change Password',
+                onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+              },
+              {
+                kind: 'link' as const,
+                icon: 'shield-outline' as IconName,
+                label: 'Privacy Settings',
+                onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+              },
+            ],
+          },
+        ]
+      : []),
     {
       title: 'Preferences',
       rows: [
