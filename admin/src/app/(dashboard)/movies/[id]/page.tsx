@@ -488,7 +488,7 @@ export default function EditMoviePage() {
         }
       }
       // Cast: adds
-      for (const c of pendingCastAdds) {
+      for (const { _actor, ...c } of pendingCastAdds) {
         promises.push(addCast.mutateAsync({ movie_id: id, ...c }));
       }
       // Cast: removes
