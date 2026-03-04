@@ -30,11 +30,7 @@ export function PlatformsSection({
   const [availableFrom, setAvailableFrom] = useState('');
 
   return (
-    <div className="space-y-4 mt-8">
-      <h2 className="text-lg font-bold text-white flex items-center gap-2">
-        <Film className="w-5 h-5" /> OTT Platforms
-      </h2>
-
+    <div className="space-y-4">
       {visiblePlatforms.length > 0 && (
         <div className="space-y-2">
           {visiblePlatforms.map((mp) => (

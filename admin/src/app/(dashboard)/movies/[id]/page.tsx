@@ -1,6 +1,18 @@
 'use client';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Check, Loader2, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Loader2,
+  Trash2,
+  FileText,
+  Play,
+  Film,
+  Tv,
+  Building2,
+  Users,
+  Calendar,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useMovieEditState } from '@/hooks/useMovieEditState';
 import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
@@ -12,6 +24,9 @@ import {
   ProductionHousesSection,
   CastSection,
   TheatricalRunsSection,
+  SectionNav,
+  MOVIE_SECTIONS,
+  useActiveSection,
 } from '@/components/movie-edit';
 
 export default function EditMoviePage() {
@@ -64,6 +79,8 @@ export default function EditMoviePage() {
     handleSubmit,
     handleDelete,
   } = useMovieEditState(id);
+
+  const { activeId: activeSection, scrollTo } = useActiveSection(MOVIE_SECTIONS.map((s) => s.id));
 
   if (isLoading)
     return (
@@ -122,72 +139,131 @@ export default function EditMoviePage() {
         </div>
       </div>
 
-      <div className="flex gap-8">
+      {/* ─── Section Nav ─── */}
+      <SectionNav activeSection={activeSection} onScrollTo={scrollTo} />
+
+      <div className="flex gap-8 mt-6">
         {/* Left column — Edit form */}
         <div className="flex-1 min-w-0 space-y-6">
-          <BasicInfoSection
-            form={form}
-            setForm={setForm}
-            updateField={updateField}
-            toggleGenre={toggleGenre}
-            uploadingPoster={uploadingPoster}
-            uploadingBackdrop={uploadingBackdrop}
-            posterInputRef={posterInputRef}
-            backdropInputRef={backdropInputRef}
-            handleImageUpload={handleImageUpload}
-            handleBackdropClick={handleBackdropClick}
-            setUploadingPoster={setUploadingPoster}
-            setUploadingBackdrop={setUploadingBackdrop}
-            onSubmit={handleSubmit}
-          />
+          <div
+            id="basic-info"
+            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+          >
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <FileText className="w-5 h-5" /> Basic Info
+            </h2>
+            <BasicInfoSection
+              form={form}
+              setForm={setForm}
+              updateField={updateField}
+              toggleGenre={toggleGenre}
+              uploadingPoster={uploadingPoster}
+              uploadingBackdrop={uploadingBackdrop}
+              posterInputRef={posterInputRef}
+              backdropInputRef={backdropInputRef}
+              handleImageUpload={handleImageUpload}
+              handleBackdropClick={handleBackdropClick}
+              setUploadingPoster={setUploadingPoster}
+              setUploadingBackdrop={setUploadingBackdrop}
+              onSubmit={handleSubmit}
+            />
+          </div>
 
-          <VideosSection
-            visibleVideos={visibleVideos}
-            trailerUrl={form.trailer_url}
-            movieTitle={form.title}
-            onAdd={(video) => setPendingVideoAdds((prev) => [...prev, video])}
-            onRemove={handleVideoRemove}
-          />
+          <div
+            id="videos"
+            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+          >
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <Play className="w-5 h-5" /> Videos
+            </h2>
+            <VideosSection
+              visibleVideos={visibleVideos}
+              trailerUrl={form.trailer_url}
+              movieTitle={form.title}
+              onAdd={(video) => setPendingVideoAdds((prev) => [...prev, video])}
+              onRemove={handleVideoRemove}
+            />
+          </div>
 
-          <PostersSection
-            visiblePosters={visiblePosters}
-            posterUrl={form.poster_url}
-            onAdd={(poster) => setPendingPosterAdds((prev) => [...prev, poster])}
-            onRemove={handlePosterRemove}
-            onSetMain={(posterId) => setPendingMainPosterId(posterId)}
-          />
+          <div
+            id="posters"
+            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+          >
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <Film className="w-5 h-5" /> Poster Gallery
+            </h2>
+            <PostersSection
+              visiblePosters={visiblePosters}
+              posterUrl={form.poster_url}
+              onAdd={(poster) => setPendingPosterAdds((prev) => [...prev, poster])}
+              onRemove={handlePosterRemove}
+              onSetMain={(posterId) => setPendingMainPosterId(posterId)}
+            />
+          </div>
 
-          <PlatformsSection
-            visiblePlatforms={visiblePlatforms}
-            allPlatforms={allPlatforms}
-            onAdd={(platform) => setPendingPlatformAdds((prev) => [...prev, platform])}
-            onRemove={handlePlatformRemove}
-            pendingPlatformAdds={pendingPlatformAdds}
-          />
+          <div
+            id="platforms"
+            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+          >
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <Tv className="w-5 h-5" /> OTT Platforms
+            </h2>
+            <PlatformsSection
+              visiblePlatforms={visiblePlatforms}
+              allPlatforms={allPlatforms}
+              onAdd={(platform) => setPendingPlatformAdds((prev) => [...prev, platform])}
+              onRemove={handlePlatformRemove}
+              pendingPlatformAdds={pendingPlatformAdds}
+            />
+          </div>
 
-          <ProductionHousesSection
-            visibleProductionHouses={visibleProductionHouses}
-            allProductionHouses={allProductionHouses}
-            onAdd={(ph) => setPendingPHAdds((prev) => [...prev, ph])}
-            onRemove={handlePHRemove}
-            pendingPHAdds={pendingPHAdds}
-          />
+          <div
+            id="production-houses"
+            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+          >
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <Building2 className="w-5 h-5" /> Production Houses
+            </h2>
+            <ProductionHousesSection
+              visibleProductionHouses={visibleProductionHouses}
+              allProductionHouses={allProductionHouses}
+              onAdd={(ph) => setPendingPHAdds((prev) => [...prev, ph])}
+              onRemove={handlePHRemove}
+              pendingPHAdds={pendingPHAdds}
+            />
+          </div>
 
-          <CastSection
-            visibleCast={visibleCast}
-            actors={actors}
-            castSearchQuery={castSearchQuery}
-            setCastSearchQuery={setCastSearchQuery}
-            onAdd={(cast) => setPendingCastAdds((prev) => [...prev, cast])}
-            onRemove={handleCastRemove}
-            onReorder={(newOrder) => setLocalCastOrder(newOrder)}
-          />
+          <div
+            id="cast-crew"
+            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+          >
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5" /> Cast & Crew
+            </h2>
+            <CastSection
+              visibleCast={visibleCast}
+              actors={actors}
+              castSearchQuery={castSearchQuery}
+              setCastSearchQuery={setCastSearchQuery}
+              onAdd={(cast) => setPendingCastAdds((prev) => [...prev, cast])}
+              onRemove={handleCastRemove}
+              onReorder={(newOrder) => setLocalCastOrder(newOrder)}
+            />
+          </div>
 
-          <TheatricalRunsSection
-            visibleRuns={visibleRuns}
-            onAdd={(run) => setPendingRunAdds((prev) => [...prev, run])}
-            onRemove={handleRunRemove}
-          />
+          <div
+            id="theatrical-runs"
+            className="scroll-mt-[100px] bg-white/[0.03] border border-white/[0.06] rounded-xl p-6"
+          >
+            <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+              <Calendar className="w-5 h-5" /> Theatrical Runs
+            </h2>
+            <TheatricalRunsSection
+              visibleRuns={visibleRuns}
+              onAdd={(run) => setPendingRunAdds((prev) => [...prev, run])}
+              onRemove={handleRunRemove}
+            />
+          </div>
         </div>
 
         {/* Right column — Preview */}

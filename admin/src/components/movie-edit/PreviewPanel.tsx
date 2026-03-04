@@ -28,7 +28,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
   const contextFocusX = previewMode === 'spotlight' ? form.spotlight_focus_x : form.detail_focus_x;
 
   return (
-    <div className="w-[340px] shrink-0 sticky top-16 self-start space-y-3">
+    <div className="w-[340px] shrink-0 sticky top-[100px] self-start space-y-3">
       <DeviceSelector selected={device} onChange={setDevice} />
 
       {/* Spotlight / Detail toggle */}

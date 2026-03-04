@@ -32,11 +32,7 @@ export function ProductionHousesSection({
   const [selectedId, setSelectedId] = useState('');
 
   return (
-    <div className="space-y-4 mt-8">
-      <h2 className="text-lg font-bold text-white flex items-center gap-2">
-        <Building2 className="w-5 h-5" /> Production Houses
-      </h2>
-
+    <div className="space-y-4">
       {visibleProductionHouses.length > 0 && (
         <div className="space-y-2">
           {visibleProductionHouses.map((mph) => (

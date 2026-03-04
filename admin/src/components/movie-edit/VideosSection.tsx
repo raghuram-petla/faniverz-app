@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Play, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { VIDEO_TYPES } from '@shared/constants';
 import type { VideoType, MovieVideo } from '@/lib/types';
 import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
@@ -58,11 +58,7 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
   }
 
   return (
-    <div className="space-y-4 mt-8">
-      <h2 className="text-lg font-bold text-white flex items-center gap-2">
-        <Play className="w-5 h-5" /> Videos
-      </h2>
-
+    <div className="space-y-4">
       {/* Backward compat: import trailer_url as a video */}
       {trailerUrl && visibleVideos.length === 0 && (
         <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">

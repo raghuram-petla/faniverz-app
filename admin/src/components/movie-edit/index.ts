@@ -7,6 +7,7 @@ export { CastSection } from './CastSection';
 export { TheatricalRunsSection } from './TheatricalRunsSection';
 export { BasicInfoSection } from './BasicInfoSection';
 export { PreviewPanel } from './PreviewPanel';
+export { SectionNav, MOVIE_SECTIONS, useActiveSection } from './SectionNav';
 export { NewMovieForm } from './NewMovieForm';
 export type { PendingCastAdd } from './CastSection';
 export type { PendingRun } from './TheatricalRunsSection';

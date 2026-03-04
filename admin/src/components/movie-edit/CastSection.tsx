@@ -108,10 +108,10 @@ export function CastSection({
   }
 
   return (
-    <div className="space-y-6 mt-8">
+    <div className="space-y-6">
       {/* ─── Cast Section ─── */}
       <div className="space-y-3">
-        <h2 className="text-lg font-bold text-white">Cast</h2>
+        <h3 className="text-base font-bold text-white">Cast</h3>
         {castItems.length > 0 ? (
           <SortableList items={castItems} onDragEnd={handleCastDragEnd} onRemove={onRemove} />
         ) : (
@@ -121,7 +121,7 @@ export function CastSection({
 
       {/* ─── Crew Section ─── */}
       <div className="space-y-3">
-        <h2 className="text-lg font-bold text-white">Crew</h2>
+        <h3 className="text-base font-bold text-white">Crew</h3>
         {crewItems.length > 0 ? (
           <SortableList items={crewItems} onDragEnd={handleCrewDragEnd} onRemove={onRemove} />
         ) : (

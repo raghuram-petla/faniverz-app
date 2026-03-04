@@ -32,8 +32,7 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
   }
 
   return (
-    <div className="space-y-4 mt-8">
-      <h2 className="text-lg font-bold text-white">Theatrical Runs</h2>
+    <div className="space-y-4">
       <p className="text-sm text-white/40">
         Track original release and any re-releases. Use this to record when a movie returns to
         theaters.
