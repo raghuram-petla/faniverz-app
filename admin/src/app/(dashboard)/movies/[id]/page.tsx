@@ -33,46 +33,25 @@ import {
   useRemoveMoviePlatform,
 } from '@/hooks/useAdminOtt';
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
-import {
-  ArrowLeft,
-  Loader2,
-  Trash2,
-  Plus,
-  X,
-  Upload,
-  Star,
-  Play,
-  Film,
-  Building2,
-  GripVertical,
-  User,
-} from 'lucide-react';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
 import Link from 'next/link';
-import { DEVICES, VIDEO_TYPES } from '@shared/constants';
+import { DEVICES } from '@shared/constants';
 import type { VideoType } from '@/lib/types';
-import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { SpotlightPreview } from '@/components/preview/SpotlightPreview';
 import { MovieDetailPreview } from '@/components/preview/MovieDetailPreview';
 import { deriveMovieStatus } from '@shared/movieStatus';
+import {
+  VideosSection,
+  PostersSection,
+  PlatformsSection,
+  ProductionHousesSection,
+  CastSection,
+  TheatricalRunsSection,
+  type PendingCastAdd,
+  type PendingRun,
+} from '@/components/movie-edit';
 
 const genres = [
   'Action',
@@ -89,110 +68,6 @@ const genres = [
   'Historical',
 ];
 
-const ROLE_ORDER_OPTIONS = [
-  { value: 1, label: '1 — Director' },
-  { value: 2, label: '2 — Producer' },
-  { value: 3, label: '3 — Music Director' },
-  { value: 4, label: '4 — Director of Photography' },
-  { value: 5, label: '5 — Editor' },
-  { value: 6, label: '6 — Art Director' },
-  { value: 7, label: '7 — Stunt Choreographer' },
-  { value: 8, label: '8 — Choreographer' },
-  { value: 9, label: '9 — Lyricist' },
-];
-
-const EMPTY_CAST_FORM = {
-  actor_id: '',
-  credit_type: 'cast' as 'cast' | 'crew',
-  role_name: '',
-  role_order: '',
-};
-
-const EMPTY_VIDEO_FORM = {
-  youtube_input: '',
-  title: '',
-  video_type: 'trailer' as VideoType,
-  description: '',
-  video_date: '',
-  duration: '',
-};
-
-const EMPTY_POSTER_FORM = {
-  title: '',
-  description: '',
-  poster_date: '',
-  is_main: false,
-};
-
-function SortableCastItem({
-  entry,
-  onRemove,
-}: {
-  entry: import('@/lib/types').MovieCast;
-  movieId: string;
-  onRemove: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: entry.id,
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : undefined,
-  };
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
-    >
-      <button
-        type="button"
-        className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 shrink-0"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="w-4 h-4" />
-      </button>
-      <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-        {entry.actor?.photo_url ? (
-          <img
-            src={entry.actor.photo_url}
-            alt={entry.actor.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <User className="w-4 h-4 text-white/40" />
-        )}
-      </div>
-      <span className="text-xs font-bold uppercase text-white/40 w-10">
-        {entry.credit_type === 'cast' ? 'Cast' : 'Crew'}
-      </span>
-      <span className="text-white font-medium flex-1 truncate">
-        {entry.actor?.name ?? entry.actor_id}
-      </span>
-      {entry.role_name && (
-        <span className="text-white/60 text-sm truncate max-w-[120px]">{entry.role_name}</span>
-      )}
-      {entry.role_order != null && (
-        <span className="text-xs bg-white/10 text-white/60 px-2 py-0.5 rounded">
-          #{entry.role_order}
-        </span>
-      )}
-      <button
-        onClick={onRemove}
-        className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
-        aria-label={`Remove ${entry.actor?.name}`}
-      >
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
 export default function EditMoviePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -200,15 +75,12 @@ export default function EditMoviePage() {
   const updateMovie = useUpdateMovie();
   const deleteMovie = useDeleteMovie();
   const { data: castData = [] } = useMovieCast(id);
-  const { data: actorsData } = useAdminActors();
+  const [castSearchQuery, setCastSearchQuery] = useState('');
+  const { data: actorsData } = useAdminActors(castSearchQuery);
   const actors = actorsData?.pages.flat() ?? [];
   const addCast = useAddCast();
   const removeCast = useRemoveCast();
   const updateCastOrder = useUpdateCastOrder();
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
   const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);
   const addTheatricalRun = useAddTheatricalRun();
   const removeTheatricalRun = useRemoveTheatricalRun();
@@ -224,27 +96,22 @@ export default function EditMoviePage() {
   const removeMovieProductionHouse = useRemoveMovieProductionHouse();
   const { data: allProductionHousesData } = useAdminProductionHouses();
   const allProductionHouses = allProductionHousesData?.pages.flat() ?? [];
-  const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
-  const [device, setDevice] = useState(DEVICES[1]);
-  const [uploadingPoster, setUploadingPoster] = useState(false);
-  const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
-  const posterInputRef = useRef<HTMLInputElement>(null);
-  const backdropInputRef = useRef<HTMLInputElement>(null);
-  const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
-  const [castSearchQuery, setCastSearchQuery] = useState('');
-  const [castDropdownOpen, setCastDropdownOpen] = useState(false);
-  const [runForm, setRunForm] = useState({ release_date: '', label: '' });
-  const [videoForm, setVideoForm] = useState(EMPTY_VIDEO_FORM);
-  const [posterForm, setPosterForm] = useState(EMPTY_POSTER_FORM);
-  const [uploadingGalleryPoster, setUploadingGalleryPoster] = useState(false);
-  const galleryPosterInputRef = useRef<HTMLInputElement>(null);
-  const [selectedProductionHouseId, setSelectedProductionHouseId] = useState('');
   const { data: moviePlatforms = [] } = useMoviePlatforms(id);
   const { data: allPlatforms = [] } = useAdminPlatforms();
   const addMoviePlatform = useAddMoviePlatform();
   const removeMoviePlatform = useRemoveMoviePlatform();
-  const [selectedPlatformId, setSelectedPlatformId] = useState('');
-  const [platformAvailableFrom, setPlatformAvailableFrom] = useState('');
+
+  // Preview state
+  const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
+  const [device, setDevice] = useState(DEVICES[1]);
+
+  // Upload state
+  const [uploadingPoster, setUploadingPoster] = useState(false);
+  const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
+  const posterInputRef = useRef<HTMLInputElement>(null);
+  const backdropInputRef = useRef<HTMLInputElement>(null);
+
+  // Form state
   const [form, setForm] = useState({
     title: '',
     poster_url: '',
@@ -266,21 +133,10 @@ export default function EditMoviePage() {
   });
 
   // ─── Pending changes (deferred to Save) ───
-  // Cast
-  const [pendingCastAdds, setPendingCastAdds] = useState<
-    {
-      actor_id: string;
-      credit_type: 'cast' | 'crew';
-      role_name: string | null;
-      role_order: number | null;
-      display_order: number;
-      _actor?: import('@shared/types').Actor;
-    }[]
-  >([]);
+  const [pendingCastAdds, setPendingCastAdds] = useState<PendingCastAdd[]>([]);
   const [pendingCastRemoveIds, setPendingCastRemoveIds] = useState<Set<string>>(new Set());
   const [localCastOrder, setLocalCastOrder] = useState<string[] | null>(null);
 
-  // Videos
   const [pendingVideoAdds, setPendingVideoAdds] = useState<
     {
       youtube_id: string;
@@ -294,7 +150,6 @@ export default function EditMoviePage() {
   >([]);
   const [pendingVideoRemoveIds, setPendingVideoRemoveIds] = useState<Set<string>>(new Set());
 
-  // Posters
   const [pendingPosterAdds, setPendingPosterAdds] = useState<
     {
       image_url: string;
@@ -308,7 +163,6 @@ export default function EditMoviePage() {
   const [pendingPosterRemoveIds, setPendingPosterRemoveIds] = useState<Set<string>>(new Set());
   const [pendingMainPosterId, setPendingMainPosterId] = useState<string | null>(null);
 
-  // Platforms
   const [pendingPlatformAdds, setPendingPlatformAdds] = useState<
     {
       platform_id: string;
@@ -318,16 +172,12 @@ export default function EditMoviePage() {
   >([]);
   const [pendingPlatformRemoveIds, setPendingPlatformRemoveIds] = useState<Set<string>>(new Set());
 
-  // Production Houses
   const [pendingPHAdds, setPendingPHAdds] = useState<
     { production_house_id: string; _ph?: import('@shared/types').ProductionHouse }[]
   >([]);
   const [pendingPHRemoveIds, setPendingPHRemoveIds] = useState<Set<string>>(new Set());
 
-  // Theatrical Runs
-  const [pendingRunAdds, setPendingRunAdds] = useState<
-    { release_date: string; label: string | null }[]
-  >([]);
+  const [pendingRunAdds, setPendingRunAdds] = useState<PendingRun[]>([]);
   const [pendingRunRemoveIds, setPendingRunRemoveIds] = useState<Set<string>>(new Set());
 
   // ─── Derived visible lists ───
@@ -499,6 +349,7 @@ export default function EditMoviePage() {
     pendingRunRemoveIds,
   ]);
 
+  // ─── Form helpers ───
   function updateField(field: string, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
@@ -544,60 +395,60 @@ export default function EditMoviePage() {
     }));
   }
 
-  function handleAddVideo(e: React.FormEvent) {
-    e.preventDefault();
-    const youtubeId = extractYouTubeId(videoForm.youtube_input);
-    if (!youtubeId) {
-      alert('Invalid YouTube URL or ID. Please enter a valid YouTube video link.');
-      return;
-    }
-    setPendingVideoAdds((prev) => [
-      ...prev,
-      {
-        youtube_id: youtubeId,
-        title: videoForm.title,
-        video_type: videoForm.video_type,
-        description: videoForm.description || null,
-        video_date: videoForm.video_date || null,
-        duration: videoForm.duration || null,
-        display_order: visibleVideos.length,
-      },
-    ]);
-    setVideoForm(EMPTY_VIDEO_FORM);
-  }
-
-  async function handleAddPoster(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
-    setUploadingGalleryPoster(true);
-    try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/movie-poster', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-
-      setPendingPosterAdds((prev) => [
-        ...prev,
-        {
-          image_url: data.url,
-          title: posterForm.title || 'Poster',
-          description: posterForm.description || null,
-          poster_date: posterForm.poster_date || null,
-          is_main: posterForm.is_main,
-          display_order: visiblePosters.length,
-        },
-      ]);
-      setPosterForm(EMPTY_POSTER_FORM);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploadingGalleryPoster(false);
+  // ─── Section remove handlers ───
+  function handleVideoRemove(videoId: string, isPending: boolean) {
+    if (isPending) {
+      const idx = Number(videoId.replace('pending-video-', ''));
+      setPendingVideoAdds((prev) => prev.filter((_, i) => i !== idx));
+    } else {
+      setPendingVideoRemoveIds((prev) => new Set([...prev, videoId]));
     }
   }
 
+  function handlePosterRemove(posterId: string, isPending: boolean) {
+    if (isPending) {
+      const idx = Number(posterId.replace('pending-poster-', ''));
+      setPendingPosterAdds((prev) => prev.filter((_, i) => i !== idx));
+    } else {
+      setPendingPosterRemoveIds((prev) => new Set([...prev, posterId]));
+    }
+  }
+
+  function handlePlatformRemove(platformId: string, isPending: boolean) {
+    if (isPending) {
+      setPendingPlatformAdds((prev) => prev.filter((p) => p.platform_id !== platformId));
+    } else {
+      setPendingPlatformRemoveIds((prev) => new Set([...prev, platformId]));
+    }
+  }
+
+  function handlePHRemove(phId: string, isPending: boolean) {
+    if (isPending) {
+      setPendingPHAdds((prev) => prev.filter((p) => p.production_house_id !== phId));
+    } else {
+      setPendingPHRemoveIds((prev) => new Set([...prev, phId]));
+    }
+  }
+
+  function handleCastRemove(castId: string, isPending: boolean) {
+    if (isPending) {
+      const idx = Number(castId.replace('pending-cast-', ''));
+      setPendingCastAdds((prev) => prev.filter((_, i) => i !== idx));
+    } else {
+      setPendingCastRemoveIds((prev) => new Set([...prev, castId]));
+    }
+  }
+
+  function handleRunRemove(runId: string, isPending: boolean) {
+    if (isPending) {
+      const idx = Number(runId.replace('pending-run-', ''));
+      setPendingRunAdds((prev) => prev.filter((_, i) => i !== idx));
+    } else {
+      setPendingRunRemoveIds((prev) => new Set([...prev, runId]));
+    }
+  }
+
+  // ─── Save & Delete ───
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleSubmit(e?: React.FormEvent) {
@@ -730,51 +581,6 @@ export default function EditMoviePage() {
     }
   }
 
-  function handleAddTheatricalRun(e: React.FormEvent) {
-    e.preventDefault();
-    if (!runForm.release_date) return;
-    setPendingRunAdds((prev) => [
-      ...prev,
-      { release_date: runForm.release_date, label: runForm.label || null },
-    ]);
-    setRunForm({ release_date: '', label: '' });
-  }
-
-  function handleAddCast(e: React.FormEvent) {
-    e.preventDefault();
-    if (!castForm.actor_id) return;
-    const actor = actors.find((a) => a.id === castForm.actor_id);
-    setPendingCastAdds((prev) => [
-      ...prev,
-      {
-        actor_id: castForm.actor_id,
-        credit_type: castForm.credit_type,
-        role_name: castForm.role_name || null,
-        role_order:
-          castForm.credit_type === 'crew' && castForm.role_order
-            ? Number(castForm.role_order)
-            : null,
-        display_order: visibleCast.length,
-        _actor: actor,
-      },
-    ]);
-    setCastForm(EMPTY_CAST_FORM);
-    setCastSearchQuery('');
-  }
-
-  function handleCastDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const currentOrder = visibleCast;
-    const oldIndex = currentOrder.findIndex((c) => c.id === active.id);
-    const newIndex = currentOrder.findIndex((c) => c.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const reordered = arrayMove(currentOrder, oldIndex, newIndex);
-    setLocalCastOrder(reordered.map((item) => item.id));
-  }
-
   if (isLoading)
     return (
       <div className="flex items-center justify-center py-20">
@@ -794,24 +600,53 @@ export default function EditMoviePage() {
 
   return (
     <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Link href="/movies" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
-            <ArrowLeft className="w-4 h-4 text-white" />
-          </Link>
-          <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
+      {/* ─── Sticky Header ─── */}
+      <div className="sticky top-0 z-30 backdrop-blur bg-zinc-950/95 border-b border-white/10 -mx-4 px-4 py-3 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/movies" className="p-2 rounded-lg bg-white/10 hover:bg-white/20">
+              <ArrowLeft className="w-4 h-4 text-white" />
+            </Link>
+            <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
+            {isDirty && (
+              <span className="text-xs bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-medium">
+                Unsaved changes
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleSubmit()}
+              disabled={!isDirty || isSaving}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all ${
+                isDirty && !isSaving
+                  ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/25'
+                  : 'bg-white/5 text-white/20 cursor-not-allowed'
+              }`}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
+            <button
+              onClick={handleDelete}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
-        >
-          <Trash2 className="w-4 h-4" /> Delete
-        </button>
       </div>
 
       <div className="flex gap-8">
         {/* Left column — Edit form */}
         <div className="flex-1 min-w-0 space-y-6">
+          {/* ─── Basic Info ─── */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm text-white/60 mb-1">Title *</label>
@@ -1100,750 +935,58 @@ export default function EditMoviePage() {
             </div>
           </form>
 
-          {/* Videos Management */}
-          <div className="space-y-4 mt-8">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Play className="w-5 h-5" /> Videos
-            </h2>
+          {/* ─── Section Components ─── */}
+          <VideosSection
+            visibleVideos={visibleVideos}
+            trailerUrl={form.trailer_url}
+            movieTitle={form.title}
+            onAdd={(video) => setPendingVideoAdds((prev) => [...prev, video])}
+            onRemove={handleVideoRemove}
+          />
 
-            {/* Backward compat: import trailer_url as a video */}
-            {form.trailer_url && visibleVideos.length === 0 && (
-              <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-blue-400 font-medium">
-                    This movie has a trailer URL but no videos.
-                  </p>
-                  <p className="text-xs text-white/40 mt-1">Import it as the first video entry?</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const youtubeId = extractYouTubeId(form.trailer_url);
-                    if (!youtubeId) {
-                      alert('Could not extract a YouTube ID from the trailer URL.');
-                      return;
-                    }
-                    setPendingVideoAdds((prev) => [
-                      ...prev,
-                      {
-                        youtube_id: youtubeId,
-                        title: `${form.title} - Official Trailer`,
-                        video_type: 'trailer' as VideoType,
-                        description: null,
-                        video_date: null,
-                        duration: null,
-                        display_order: 0,
-                      },
-                    ]);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
-                >
-                  <Plus className="w-4 h-4" /> Import
-                </button>
-              </div>
-            )}
+          <PostersSection
+            visiblePosters={visiblePosters}
+            posterUrl={form.poster_url}
+            onAdd={(poster) => setPendingPosterAdds((prev) => [...prev, poster])}
+            onRemove={handlePosterRemove}
+            onSetMain={(posterId) => setPendingMainPosterId(posterId)}
+          />
 
-            {visibleVideos.length > 0 && (
-              <div className="space-y-2">
-                {visibleVideos.map((video) => (
-                  <div
-                    key={video.id}
-                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
-                  >
-                    <img
-                      src={getYouTubeThumbnail(video.youtube_id)}
-                      alt={video.title}
-                      className="w-24 h-[54px] rounded-lg object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium text-sm truncate">{video.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs bg-purple-600/20 text-purple-400 px-2 py-0.5 rounded">
-                          {VIDEO_TYPES.find((t) => t.value === video.video_type)?.label ??
-                            video.video_type}
-                        </span>
-                        {video.duration && (
-                          <span className="text-xs text-white/40">{video.duration}</span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        if (video.id.startsWith('pending-video-')) {
-                          const idx = Number(video.id.replace('pending-video-', ''));
-                          setPendingVideoAdds((prev) => prev.filter((_, i) => i !== idx));
-                        } else {
-                          setPendingVideoRemoveIds((prev) => new Set([...prev, video.id]));
-                        }
-                      }}
-                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
-                      aria-label={`Remove ${video.title}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+          <PlatformsSection
+            visiblePlatforms={visiblePlatforms}
+            allPlatforms={allPlatforms}
+            onAdd={(platform) => setPendingPlatformAdds((prev) => [...prev, platform])}
+            onRemove={handlePlatformRemove}
+            pendingPlatformAdds={pendingPlatformAdds}
+          />
 
-            <form onSubmit={handleAddVideo} className="bg-white/5 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-white/60">Add Video</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">YouTube URL or ID *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="https://youtube.com/watch?v=... or dQw4w9WgXcQ"
-                    value={videoForm.youtube_input}
-                    onChange={(e) => setVideoForm((p) => ({ ...p, youtube_input: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">Type *</label>
-                  <select
-                    value={videoForm.video_type}
-                    onChange={(e) =>
-                      setVideoForm((p) => ({ ...p, video_type: e.target.value as VideoType }))
-                    }
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  >
-                    {VIDEO_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-white/40 mb-1">Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Official Trailer"
-                  value={videoForm.title}
-                  onChange={(e) => setVideoForm((p) => ({ ...p, title: e.target.value }))}
-                  className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">Duration</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 2:34"
-                    value={videoForm.duration}
-                    onChange={(e) => setVideoForm((p) => ({ ...p, duration: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={videoForm.video_date}
-                    onChange={(e) => setVideoForm((p) => ({ ...p, video_date: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-              </div>
-              {/* YouTube embed preview */}
-              {extractYouTubeId(videoForm.youtube_input) && (
-                <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${extractYouTubeId(videoForm.youtube_input)}`}
-                    className="w-full h-full"
-                    allowFullScreen
-                    title="YouTube preview"
-                  />
-                </div>
-              )}
-              <button
-                type="submit"
-                disabled={!videoForm.youtube_input || !videoForm.title}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
-              >
-                <Plus className="w-4 h-4" />
-                Add Video
-              </button>
-            </form>
-          </div>
+          <ProductionHousesSection
+            visibleProductionHouses={visibleProductionHouses}
+            allProductionHouses={allProductionHouses}
+            onAdd={(ph) => setPendingPHAdds((prev) => [...prev, ph])}
+            onRemove={handlePHRemove}
+            pendingPHAdds={pendingPHAdds}
+          />
 
-          {/* Posters Gallery */}
-          <div className="space-y-4 mt-8">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Film className="w-5 h-5" /> Poster Gallery
-            </h2>
+          <CastSection
+            visibleCast={visibleCast}
+            actors={actors}
+            castSearchQuery={castSearchQuery}
+            setCastSearchQuery={setCastSearchQuery}
+            onAdd={(cast) => setPendingCastAdds((prev) => [...prev, cast])}
+            onRemove={handleCastRemove}
+            onReorder={(newOrder) => setLocalCastOrder(newOrder)}
+          />
 
-            {/* Backward compat: import poster_url to gallery */}
-            {form.poster_url && visiblePosters.length === 0 && (
-              <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-blue-400 font-medium">
-                    This movie has a poster but no gallery entries.
-                  </p>
-                  <p className="text-xs text-white/40 mt-1">Import it as the main poster?</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPendingPosterAdds((prev) => [
-                      ...prev,
-                      {
-                        image_url: form.poster_url,
-                        title: 'Official Poster',
-                        description: null,
-                        poster_date: null,
-                        is_main: true,
-                        display_order: 0,
-                      },
-                    ]);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
-                >
-                  <Plus className="w-4 h-4" /> Import
-                </button>
-              </div>
-            )}
-
-            {visiblePosters.length > 0 && (
-              <div className="grid grid-cols-3 gap-3">
-                {visiblePosters.map((poster) => (
-                  <div
-                    key={poster.id}
-                    className="relative group bg-white/5 rounded-xl overflow-hidden"
-                  >
-                    <img
-                      src={poster.image_url}
-                      alt={poster.title}
-                      className="w-full aspect-[2/3] object-cover"
-                    />
-                    {poster.is_main && (
-                      <div className="absolute top-2 left-2 flex items-center gap-1 bg-yellow-500 text-black px-2 py-0.5 rounded text-xs font-bold">
-                        <Star className="w-3 h-3" /> Main
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                      <p className="text-white text-xs font-medium px-2 text-center truncate w-full">
-                        {poster.title}
-                      </p>
-                      {!poster.is_main && (
-                        <button
-                          onClick={() => setPendingMainPosterId(poster.id)}
-                          className="text-xs bg-yellow-500 text-black px-3 py-1 rounded font-semibold hover:bg-yellow-400"
-                        >
-                          Set as Main
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          if (poster.id.startsWith('pending-poster-')) {
-                            const idx = Number(poster.id.replace('pending-poster-', ''));
-                            setPendingPosterAdds((prev) => prev.filter((_, i) => i !== idx));
-                          } else {
-                            setPendingPosterRemoveIds((prev) => new Set([...prev, poster.id]));
-                          }
-                        }}
-                        className="text-xs bg-red-600 text-white px-3 py-1 rounded font-semibold hover:bg-red-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="bg-white/5 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-white/60">Add Poster</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">Title *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. First Look, Hero Birthday Poster"
-                    value={posterForm.title}
-                    onChange={(e) => setPosterForm((p) => ({ ...p, title: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={posterForm.poster_date}
-                    onChange={(e) => setPosterForm((p) => ({ ...p, poster_date: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-              </div>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={posterForm.is_main}
-                  onChange={(e) => setPosterForm((p) => ({ ...p, is_main: e.target.checked }))}
-                  className="w-4 h-4 rounded accent-red-600"
-                />
-                <span className="text-sm text-white/60">Set as main poster</span>
-              </label>
-              <input
-                ref={galleryPosterInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleAddPoster(file);
-                  e.target.value = '';
-                }}
-              />
-              <button
-                type="button"
-                disabled={uploadingGalleryPoster || !posterForm.title}
-                onClick={() => galleryPosterInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
-              >
-                {uploadingGalleryPoster ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
-                {uploadingGalleryPoster ? 'Uploading...' : 'Upload & Add Poster'}
-              </button>
-            </div>
-          </div>
-
-          {/* OTT Platforms */}
-          <div className="space-y-4 mt-8">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Film className="w-5 h-5" /> OTT Platforms
-            </h2>
-
-            {visiblePlatforms.length > 0 && (
-              <div className="space-y-2">
-                {visiblePlatforms.map((mp) => (
-                  <div
-                    key={mp.platform_id}
-                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
-                  >
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
-                      style={{ backgroundColor: mp.platform?.color || '#333' }}
-                    >
-                      {mp.platform?.logo ? (
-                        <img src={mp.platform.logo} alt="" className="w-6 h-6 object-contain" />
-                      ) : (
-                        <Film className="w-5 h-5 text-white/60" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <span className="text-white font-medium">
-                        {mp.platform?.name ?? mp.platform_id}
-                      </span>
-                      {mp.available_from && (
-                        <span className="text-white/40 text-sm ml-2">from {mp.available_from}</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => {
-                        const isPending = pendingPlatformAdds.some(
-                          (p) => p.platform_id === mp.platform_id,
-                        );
-                        if (isPending) {
-                          setPendingPlatformAdds((prev) =>
-                            prev.filter((p) => p.platform_id !== mp.platform_id),
-                          );
-                        } else {
-                          setPendingPlatformRemoveIds((prev) => new Set([...prev, mp.platform_id]));
-                        }
-                      }}
-                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
-                      aria-label={`Remove ${mp.platform?.name}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="bg-white/5 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-white/60">Add OTT Platform</p>
-              <div className="flex gap-3">
-                <select
-                  value={selectedPlatformId}
-                  onChange={(e) => setSelectedPlatformId(e.target.value)}
-                  className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                >
-                  <option value="">Select platform…</option>
-                  {allPlatforms
-                    .filter((p) => !visiblePlatforms.some((mp) => mp.platform_id === p.id))
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                </select>
-                <input
-                  type="date"
-                  value={platformAvailableFrom}
-                  onChange={(e) => setPlatformAvailableFrom(e.target.value)}
-                  placeholder="Available from"
-                  className="bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                />
-                <button
-                  type="button"
-                  disabled={!selectedPlatformId}
-                  onClick={() => {
-                    const platform = allPlatforms.find((p) => p.id === selectedPlatformId);
-                    setPendingPlatformAdds((prev) => [
-                      ...prev,
-                      {
-                        platform_id: selectedPlatformId,
-                        available_from: platformAvailableFrom || null,
-                        _platform: platform,
-                      },
-                    ]);
-                    setSelectedPlatformId('');
-                    setPlatformAvailableFrom('');
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Production Houses */}
-          <div className="space-y-4 mt-8">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Building2 className="w-5 h-5" /> Production Houses
-            </h2>
-
-            {visibleProductionHouses.length > 0 && (
-              <div className="space-y-2">
-                {visibleProductionHouses.map((mph) => (
-                  <div
-                    key={mph.production_house_id}
-                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                      {mph.production_house?.logo_url ? (
-                        <img
-                          src={mph.production_house.logo_url}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Building2 className="w-5 h-5 text-white/40" />
-                      )}
-                    </div>
-                    <span className="text-white font-medium flex-1">
-                      {mph.production_house?.name ?? mph.production_house_id}
-                    </span>
-                    <button
-                      onClick={() => {
-                        const isPending = pendingPHAdds.some(
-                          (p) => p.production_house_id === mph.production_house_id,
-                        );
-                        if (isPending) {
-                          setPendingPHAdds((prev) =>
-                            prev.filter((p) => p.production_house_id !== mph.production_house_id),
-                          );
-                        } else {
-                          setPendingPHRemoveIds(
-                            (prev) => new Set([...prev, mph.production_house_id]),
-                          );
-                        }
-                      }}
-                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
-                      aria-label={`Remove ${mph.production_house?.name}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="bg-white/5 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-white/60">Add Production House</p>
-              <div className="flex gap-3">
-                <select
-                  value={selectedProductionHouseId}
-                  onChange={(e) => setSelectedProductionHouseId(e.target.value)}
-                  className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                >
-                  <option value="">Select production house…</option>
-                  {allProductionHouses
-                    .filter(
-                      (ph) =>
-                        !visibleProductionHouses.some((mph) => mph.production_house_id === ph.id),
-                    )
-                    .map((ph) => (
-                      <option key={ph.id} value={ph.id}>
-                        {ph.name}
-                      </option>
-                    ))}
-                </select>
-                <button
-                  type="button"
-                  disabled={!selectedProductionHouseId}
-                  onClick={() => {
-                    const ph = allProductionHouses.find((p) => p.id === selectedProductionHouseId);
-                    setPendingPHAdds((prev) => [
-                      ...prev,
-                      { production_house_id: selectedProductionHouseId, _ph: ph },
-                    ]);
-                    setSelectedProductionHouseId('');
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Cast & Crew Management */}
-          <div className="space-y-4 mt-8">
-            <h2 className="text-lg font-bold text-white">Cast &amp; Crew</h2>
-
-            {visibleCast.length > 0 && (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleCastDragEnd}
-              >
-                <SortableContext
-                  items={visibleCast.map((c) => c.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="space-y-2">
-                    {visibleCast.map((entry) => (
-                      <SortableCastItem
-                        key={entry.id}
-                        entry={entry}
-                        movieId={id}
-                        onRemove={() => {
-                          if (entry.id.startsWith('pending-cast-')) {
-                            const idx = Number(entry.id.replace('pending-cast-', ''));
-                            setPendingCastAdds((prev) => prev.filter((_, i) => i !== idx));
-                          } else {
-                            setPendingCastRemoveIds((prev) => new Set([...prev, entry.id]));
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-
-            <form onSubmit={handleAddCast} className="bg-white/5 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-white/60">Add Cast / Crew</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">Type</label>
-                  <select
-                    value={castForm.credit_type}
-                    onChange={(e) =>
-                      setCastForm((p) => ({
-                        ...p,
-                        credit_type: e.target.value as 'cast' | 'crew',
-                        role_order: '',
-                      }))
-                    }
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  >
-                    <option value="cast">Cast (Actor)</option>
-                    <option value="crew">Crew (Technician)</option>
-                  </select>
-                </div>
-                <div className="relative">
-                  <label className="block text-xs text-white/40 mb-1">Person *</label>
-                  <input
-                    type="text"
-                    placeholder="Type to search…"
-                    value={castSearchQuery}
-                    onChange={(e) => {
-                      setCastSearchQuery(e.target.value);
-                      setCastForm((p) => ({ ...p, actor_id: '' }));
-                      setCastDropdownOpen(true);
-                    }}
-                    onFocus={() => setCastDropdownOpen(true)}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                  {castDropdownOpen && castSearchQuery.length > 0 && (
-                    <div className="absolute z-30 top-full mt-1 left-0 right-0 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                      {actors
-                        .filter((a) => a.name.toLowerCase().includes(castSearchQuery.toLowerCase()))
-                        .slice(0, 20)
-                        .map((a) => (
-                          <button
-                            key={a.id}
-                            type="button"
-                            onClick={() => {
-                              setCastForm((p) => ({ ...p, actor_id: a.id }));
-                              setCastSearchQuery(a.name);
-                              setCastDropdownOpen(false);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/10 text-left"
-                          >
-                            <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                              {a.photo_url ? (
-                                <img
-                                  src={a.photo_url}
-                                  alt=""
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <User className="w-3 h-3 text-white/40" />
-                              )}
-                            </div>
-                            {a.name}
-                          </button>
-                        ))}
-                      {actors.filter((a) =>
-                        a.name.toLowerCase().includes(castSearchQuery.toLowerCase()),
-                      ).length === 0 && (
-                        <p className="px-3 py-2 text-sm text-white/40">No results</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">
-                    {castForm.credit_type === 'cast' ? 'Character Name' : 'Role Title'}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={castForm.credit_type === 'cast' ? 'e.g. Arjun' : 'e.g. Director'}
-                    value={castForm.role_name}
-                    onChange={(e) => setCastForm((p) => ({ ...p, role_name: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-                {castForm.credit_type === 'crew' && (
-                  <div>
-                    <label className="block text-xs text-white/40 mb-1">Role Order</label>
-                    <select
-                      value={castForm.role_order}
-                      onChange={(e) => setCastForm((p) => ({ ...p, role_order: e.target.value }))}
-                      className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                    >
-                      <option value="">Select role…</option>
-                      {ROLE_ORDER_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-              <button
-                type="submit"
-                disabled={!castForm.actor_id}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
-              >
-                <Plus className="w-4 h-4" />
-                Add Entry
-              </button>
-            </form>
-          </div>
-
-          {/* Theatrical Runs */}
-          <div className="space-y-4 mt-8">
-            <h2 className="text-lg font-bold text-white">Theatrical Runs</h2>
-            <p className="text-sm text-white/40">
-              Track original release and any re-releases. Use this to record when a movie returns to
-              theaters.
-            </p>
-
-            {visibleRuns.length > 0 && (
-              <div className="space-y-2">
-                {visibleRuns.map((run) => (
-                  <div
-                    key={run.id}
-                    className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
-                  >
-                    <span className="text-white font-medium flex-1">{run.release_date}</span>
-                    {run.label ? (
-                      <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">
-                        {run.label}
-                      </span>
-                    ) : (
-                      <span className="text-xs bg-white/10 text-white/40 px-2 py-0.5 rounded">
-                        Original
-                      </span>
-                    )}
-                    <button
-                      onClick={() => {
-                        if (run.id.startsWith('pending-run-')) {
-                          const idx = Number(run.id.replace('pending-run-', ''));
-                          setPendingRunAdds((prev) => prev.filter((_, i) => i !== idx));
-                        } else {
-                          setPendingRunRemoveIds((prev) => new Set([...prev, run.id]));
-                        }
-                      }}
-                      className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
-                      aria-label={`Remove run ${run.release_date}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <form onSubmit={handleAddTheatricalRun} className="bg-white/5 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-white/60">Add Theatrical Run</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">Release Date *</label>
-                  <input
-                    type="date"
-                    required
-                    value={runForm.release_date}
-                    onChange={(e) => setRunForm((p) => ({ ...p, release_date: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-white/40 mb-1">
-                    Label <span className="text-white/20 font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Re-release, Director's Cut"
-                    value={runForm.label}
-                    onChange={(e) => setRunForm((p) => ({ ...p, label: e.target.value }))}
-                    className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={!runForm.release_date}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
-              >
-                <Plus className="w-4 h-4" />
-                Add Run
-              </button>
-            </form>
-          </div>
+          <TheatricalRunsSection
+            visibleRuns={visibleRuns}
+            onAdd={(run) => setPendingRunAdds((prev) => [...prev, run])}
+            onRemove={handleRunRemove}
+          />
         </div>
 
         {/* Right column — Preview */}
-        <div className="w-[340px] shrink-0 sticky top-6 self-start space-y-3">
+        <div className="w-[340px] shrink-0 sticky top-16 self-start space-y-3">
           <DeviceSelector selected={device} onChange={setDevice} />
 
           {/* Spotlight / Detail toggle */}
@@ -1946,35 +1089,6 @@ export default function EditMoviePage() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Sticky Save Bar */}
-      <div
-        className={`sticky bottom-0 left-0 right-0 backdrop-blur border-t py-4 px-6 -mx-4 mt-8 flex items-center justify-between z-20 transition-colors ${
-          isDirty ? 'bg-zinc-900/95 border-red-600/30' : 'bg-zinc-900/80 border-white/5'
-        }`}
-      >
-        <span className="text-sm text-white/40">
-          {isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
-        </span>
-        <button
-          onClick={handleSubmit}
-          disabled={!isDirty || isSaving}
-          className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-            isDirty && !isSaving
-              ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20'
-              : 'bg-white/5 text-white/20 cursor-not-allowed'
-          }`}
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving…
-            </>
-          ) : (
-            'Save Changes'
-          )}
-        </button>
       </div>
     </div>
   );
