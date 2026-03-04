@@ -1,7 +1,6 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
 import {
   useMovieCast,
@@ -206,7 +205,6 @@ export default function EditMoviePage() {
   const addCast = useAddCast();
   const removeCast = useRemoveCast();
   const updateCastOrder = useUpdateCastOrder();
-  const qc = useQueryClient();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -233,6 +231,8 @@ export default function EditMoviePage() {
   const posterInputRef = useRef<HTMLInputElement>(null);
   const backdropInputRef = useRef<HTMLInputElement>(null);
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
+  const [castSearchQuery, setCastSearchQuery] = useState('');
+  const [castDropdownOpen, setCastDropdownOpen] = useState(false);
   const [runForm, setRunForm] = useState({ release_date: '', label: '' });
   const [videoForm, setVideoForm] = useState(EMPTY_VIDEO_FORM);
   const [posterForm, setPosterForm] = useState(EMPTY_POSTER_FORM);
@@ -265,9 +265,186 @@ export default function EditMoviePage() {
     detail_focus_y: null as number | null,
   });
 
+  // ─── Pending changes (deferred to Save) ───
+  // Cast
+  const [pendingCastAdds, setPendingCastAdds] = useState<
+    {
+      actor_id: string;
+      credit_type: 'cast' | 'crew';
+      role_name: string | null;
+      role_order: number | null;
+      display_order: number;
+      _actor?: import('@shared/types').Actor;
+    }[]
+  >([]);
+  const [pendingCastRemoveIds, setPendingCastRemoveIds] = useState<Set<string>>(new Set());
+  const [localCastOrder, setLocalCastOrder] = useState<string[] | null>(null);
+
+  // Videos
+  const [pendingVideoAdds, setPendingVideoAdds] = useState<
+    {
+      youtube_id: string;
+      title: string;
+      video_type: VideoType;
+      description: string | null;
+      video_date: string | null;
+      duration: string | null;
+      display_order: number;
+    }[]
+  >([]);
+  const [pendingVideoRemoveIds, setPendingVideoRemoveIds] = useState<Set<string>>(new Set());
+
+  // Posters
+  const [pendingPosterAdds, setPendingPosterAdds] = useState<
+    {
+      image_url: string;
+      title: string;
+      description: string | null;
+      poster_date: string | null;
+      is_main: boolean;
+      display_order: number;
+    }[]
+  >([]);
+  const [pendingPosterRemoveIds, setPendingPosterRemoveIds] = useState<Set<string>>(new Set());
+  const [pendingMainPosterId, setPendingMainPosterId] = useState<string | null>(null);
+
+  // Platforms
+  const [pendingPlatformAdds, setPendingPlatformAdds] = useState<
+    {
+      platform_id: string;
+      available_from: string | null;
+      _platform?: import('@shared/types').OTTPlatform;
+    }[]
+  >([]);
+  const [pendingPlatformRemoveIds, setPendingPlatformRemoveIds] = useState<Set<string>>(new Set());
+
+  // Production Houses
+  const [pendingPHAdds, setPendingPHAdds] = useState<
+    { production_house_id: string; _ph?: import('@shared/types').ProductionHouse }[]
+  >([]);
+  const [pendingPHRemoveIds, setPendingPHRemoveIds] = useState<Set<string>>(new Set());
+
+  // Theatrical Runs
+  const [pendingRunAdds, setPendingRunAdds] = useState<
+    { release_date: string; label: string | null }[]
+  >([]);
+  const [pendingRunRemoveIds, setPendingRunRemoveIds] = useState<Set<string>>(new Set());
+
+  // ─── Derived visible lists ───
+  const visibleCast = useMemo(() => {
+    const serverFiltered = castData.filter((c) => !pendingCastRemoveIds.has(c.id));
+    const allItems = [
+      ...serverFiltered,
+      ...pendingCastAdds.map((p, i) => ({
+        id: `pending-cast-${i}`,
+        movie_id: id,
+        actor_id: p.actor_id,
+        credit_type: p.credit_type,
+        role_name: p.role_name,
+        role_order: p.role_order,
+        display_order: p.display_order,
+        actor: p._actor,
+        created_at: '',
+      })),
+    ] as import('@/lib/types').MovieCast[];
+    if (!localCastOrder) return allItems;
+    const orderMap = new Map(localCastOrder.map((cid, idx) => [cid, idx]));
+    return [...allItems].sort(
+      (a, b) => (orderMap.get(a.id) ?? a.display_order) - (orderMap.get(b.id) ?? b.display_order),
+    );
+  }, [castData, pendingCastAdds, pendingCastRemoveIds, localCastOrder, id]);
+
+  const visibleVideos = useMemo(
+    () => [
+      ...videosData.filter((v) => !pendingVideoRemoveIds.has(v.id)),
+      ...pendingVideoAdds.map((v, i) => ({
+        ...v,
+        id: `pending-video-${i}`,
+        movie_id: id,
+        created_at: '',
+      })),
+    ],
+    [videosData, pendingVideoAdds, pendingVideoRemoveIds, id],
+  );
+
+  const visiblePosters = useMemo(() => {
+    const items = [
+      ...postersData.filter((p) => !pendingPosterRemoveIds.has(p.id)),
+      ...pendingPosterAdds.map((p, i) => ({
+        ...p,
+        id: `pending-poster-${i}`,
+        movie_id: id,
+        created_at: '',
+      })),
+    ];
+    if (pendingMainPosterId) {
+      return items.map((p) => ({ ...p, is_main: p.id === pendingMainPosterId }));
+    }
+    return items;
+  }, [postersData, pendingPosterAdds, pendingPosterRemoveIds, pendingMainPosterId, id]);
+
+  const visiblePlatforms = useMemo(
+    () => [
+      ...moviePlatforms.filter((mp) => !pendingPlatformRemoveIds.has(mp.platform_id)),
+      ...pendingPlatformAdds.map((p) => ({
+        movie_id: id,
+        platform_id: p.platform_id,
+        available_from: p.available_from,
+        platform: p._platform,
+      })),
+    ],
+    [moviePlatforms, pendingPlatformAdds, pendingPlatformRemoveIds, id],
+  );
+
+  const visibleProductionHouses = useMemo(
+    () => [
+      ...movieProductionHouses.filter((mph) => !pendingPHRemoveIds.has(mph.production_house_id)),
+      ...pendingPHAdds.map((p) => ({
+        movie_id: id,
+        production_house_id: p.production_house_id,
+        production_house: p._ph,
+      })),
+    ],
+    [movieProductionHouses, pendingPHAdds, pendingPHRemoveIds, id],
+  );
+
+  const visibleRuns = useMemo(
+    () => [
+      ...theatricalRuns.filter((r) => !pendingRunRemoveIds.has(r.id)),
+      ...pendingRunAdds.map((r, i) => ({
+        id: `pending-run-${i}`,
+        movie_id: id,
+        release_date: r.release_date,
+        label: r.label,
+        created_at: '',
+      })),
+    ],
+    [theatricalRuns, pendingRunAdds, pendingRunRemoveIds, id],
+  );
+
+  // ─── Track initial form state for dirty detection ───
+  const [initialForm, setInitialForm] = useState<typeof form | null>(null);
+
+  function resetPendingState() {
+    setPendingCastAdds([]);
+    setPendingCastRemoveIds(new Set());
+    setLocalCastOrder(null);
+    setPendingVideoAdds([]);
+    setPendingVideoRemoveIds(new Set());
+    setPendingPosterAdds([]);
+    setPendingPosterRemoveIds(new Set());
+    setPendingMainPosterId(null);
+    setPendingPlatformAdds([]);
+    setPendingPlatformRemoveIds(new Set());
+    setPendingPHAdds([]);
+    setPendingPHRemoveIds(new Set());
+    setPendingRunAdds([]);
+    setPendingRunRemoveIds(new Set());
+  }
+
   useEffect(() => {
     if (movie) {
-      setForm({
+      const loaded = {
         title: movie.title,
         poster_url: movie.poster_url ?? '',
         backdrop_url: movie.backdrop_url ?? '',
@@ -285,9 +462,42 @@ export default function EditMoviePage() {
         spotlight_focus_y: movie.spotlight_focus_y ?? null,
         detail_focus_x: movie.detail_focus_x ?? null,
         detail_focus_y: movie.detail_focus_y ?? null,
-      });
+      };
+      setForm(loaded);
+      setInitialForm(loaded);
+      resetPendingState();
     }
   }, [movie]);
+
+  const isDirty = useMemo(() => {
+    if (!initialForm) return false;
+    if (localCastOrder !== null) return true;
+    if (pendingCastAdds.length > 0 || pendingCastRemoveIds.size > 0) return true;
+    if (pendingVideoAdds.length > 0 || pendingVideoRemoveIds.size > 0) return true;
+    if (pendingPosterAdds.length > 0 || pendingPosterRemoveIds.size > 0) return true;
+    if (pendingMainPosterId !== null) return true;
+    if (pendingPlatformAdds.length > 0 || pendingPlatformRemoveIds.size > 0) return true;
+    if (pendingPHAdds.length > 0 || pendingPHRemoveIds.size > 0) return true;
+    if (pendingRunAdds.length > 0 || pendingRunRemoveIds.size > 0) return true;
+    return JSON.stringify(form) !== JSON.stringify(initialForm);
+  }, [
+    form,
+    initialForm,
+    localCastOrder,
+    pendingCastAdds,
+    pendingCastRemoveIds,
+    pendingVideoAdds,
+    pendingVideoRemoveIds,
+    pendingPosterAdds,
+    pendingPosterRemoveIds,
+    pendingMainPosterId,
+    pendingPlatformAdds,
+    pendingPlatformRemoveIds,
+    pendingPHAdds,
+    pendingPHRemoveIds,
+    pendingRunAdds,
+    pendingRunRemoveIds,
+  ]);
 
   function updateField(field: string, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -334,29 +544,26 @@ export default function EditMoviePage() {
     }));
   }
 
-  async function handleAddVideo(e: React.FormEvent) {
+  function handleAddVideo(e: React.FormEvent) {
     e.preventDefault();
     const youtubeId = extractYouTubeId(videoForm.youtube_input);
     if (!youtubeId) {
       alert('Invalid YouTube URL or ID. Please enter a valid YouTube video link.');
       return;
     }
-    try {
-      await addVideo.mutateAsync({
-        movie_id: id,
+    setPendingVideoAdds((prev) => [
+      ...prev,
+      {
         youtube_id: youtubeId,
         title: videoForm.title,
         video_type: videoForm.video_type,
         description: videoForm.description || null,
         video_date: videoForm.video_date || null,
         duration: videoForm.duration || null,
-        display_order: videosData.length,
-      });
-      setVideoForm(EMPTY_VIDEO_FORM);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Failed to add video: ${msg}`);
-    }
+        display_order: visibleVideos.length,
+      },
+    ]);
+    setVideoForm(EMPTY_VIDEO_FORM);
   }
 
   async function handleAddPoster(file: File) {
@@ -372,15 +579,17 @@ export default function EditMoviePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Upload failed');
 
-      await addPoster.mutateAsync({
-        movie_id: id,
-        image_url: data.url,
-        title: posterForm.title || 'Poster',
-        description: posterForm.description || null,
-        poster_date: posterForm.poster_date || null,
-        is_main: posterForm.is_main,
-        display_order: postersData.length,
-      });
+      setPendingPosterAdds((prev) => [
+        ...prev,
+        {
+          image_url: data.url,
+          title: posterForm.title || 'Poster',
+          description: posterForm.description || null,
+          poster_date: posterForm.poster_date || null,
+          is_main: posterForm.is_main,
+          display_order: visiblePosters.length,
+        },
+      ]);
       setPosterForm(EMPTY_POSTER_FORM);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
@@ -389,33 +598,123 @@ export default function EditMoviePage() {
     }
   }
 
+  const [isSaving, setIsSaving] = useState(false);
+
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
+    setIsSaving(true);
     try {
-      await updateMovie.mutateAsync({
-        id,
-        title: form.title,
-        poster_url: form.poster_url || null,
-        backdrop_url: form.backdrop_url || null,
-        release_date: form.release_date,
-        runtime: form.runtime ? Number(form.runtime) : null,
-        genres: form.genres,
-        certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
-        synopsis: form.synopsis || null,
-        director: form.director || null,
-        trailer_url: form.trailer_url || null,
-        in_theaters: form.in_theaters,
-        backdrop_focus_x: form.backdrop_focus_x,
-        backdrop_focus_y: form.backdrop_focus_y,
-        spotlight_focus_x: form.spotlight_focus_x,
-        spotlight_focus_y: form.spotlight_focus_y,
-        detail_focus_x: form.detail_focus_x,
-        detail_focus_y: form.detail_focus_y,
-      });
+      const promises: Promise<unknown>[] = [
+        updateMovie.mutateAsync({
+          id,
+          title: form.title,
+          poster_url: form.poster_url || null,
+          backdrop_url: form.backdrop_url || null,
+          release_date: form.release_date,
+          runtime: form.runtime ? Number(form.runtime) : null,
+          genres: form.genres,
+          certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
+          synopsis: form.synopsis || null,
+          director: form.director || null,
+          trailer_url: form.trailer_url || null,
+          in_theaters: form.in_theaters,
+          backdrop_focus_x: form.backdrop_focus_x,
+          backdrop_focus_y: form.backdrop_focus_y,
+          spotlight_focus_x: form.spotlight_focus_x,
+          spotlight_focus_y: form.spotlight_focus_y,
+          detail_focus_x: form.detail_focus_x,
+          detail_focus_y: form.detail_focus_y,
+        }),
+      ];
+
+      // Cast: reorder
+      if (localCastOrder) {
+        const updates = localCastOrder
+          .filter((cid) => !cid.startsWith('pending-'))
+          .map((castId, idx) => ({ id: castId, display_order: idx }));
+        if (updates.length > 0) {
+          promises.push(updateCastOrder.mutateAsync({ movieId: id, items: updates }));
+        }
+      }
+      // Cast: adds
+      for (const c of pendingCastAdds) {
+        promises.push(addCast.mutateAsync({ movie_id: id, ...c }));
+      }
+      // Cast: removes
+      for (const castId of pendingCastRemoveIds) {
+        promises.push(removeCast.mutateAsync({ id: castId, movieId: id }));
+      }
+      // Videos: adds
+      for (const v of pendingVideoAdds) {
+        promises.push(addVideo.mutateAsync({ movie_id: id, ...v }));
+      }
+      // Videos: removes
+      for (const videoId of pendingVideoRemoveIds) {
+        promises.push(removeVideo.mutateAsync({ id: videoId, movieId: id }));
+      }
+      // Posters: adds
+      for (const p of pendingPosterAdds) {
+        promises.push(addPoster.mutateAsync({ movie_id: id, ...p }));
+      }
+      // Posters: removes
+      for (const posterId of pendingPosterRemoveIds) {
+        promises.push(removePoster.mutateAsync({ id: posterId, movieId: id }));
+      }
+      // Posters: set main
+      if (pendingMainPosterId && !pendingMainPosterId.startsWith('pending-')) {
+        promises.push(setMainPoster.mutateAsync({ id: pendingMainPosterId, movieId: id }));
+      }
+      // Platforms: adds
+      for (const p of pendingPlatformAdds) {
+        promises.push(
+          addMoviePlatform.mutateAsync({
+            movie_id: id,
+            platform_id: p.platform_id,
+            available_from: p.available_from,
+          }),
+        );
+      }
+      // Platforms: removes
+      for (const platformId of pendingPlatformRemoveIds) {
+        promises.push(removeMoviePlatform.mutateAsync({ movieId: id, platformId }));
+      }
+      // Production Houses: adds
+      for (const ph of pendingPHAdds) {
+        promises.push(
+          addMovieProductionHouse.mutateAsync({
+            movieId: id,
+            productionHouseId: ph.production_house_id,
+          }),
+        );
+      }
+      // Production Houses: removes
+      for (const phId of pendingPHRemoveIds) {
+        promises.push(
+          removeMovieProductionHouse.mutateAsync({ movieId: id, productionHouseId: phId }),
+        );
+      }
+      // Theatrical Runs: adds
+      for (const r of pendingRunAdds) {
+        promises.push(
+          addTheatricalRun.mutateAsync({
+            movie_id: id,
+            release_date: r.release_date,
+            label: r.label,
+          }),
+        );
+      }
+      // Theatrical Runs: removes
+      for (const runId of pendingRunRemoveIds) {
+        promises.push(removeTheatricalRun.mutateAsync({ id: runId, movieId: id }));
+      }
+
+      await Promise.all(promises);
       router.push('/movies');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       alert(`Save failed: ${msg}`);
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -431,28 +730,23 @@ export default function EditMoviePage() {
     }
   }
 
-  async function handleAddTheatricalRun(e: React.FormEvent) {
+  function handleAddTheatricalRun(e: React.FormEvent) {
     e.preventDefault();
     if (!runForm.release_date) return;
-    try {
-      await addTheatricalRun.mutateAsync({
-        movie_id: id,
-        release_date: runForm.release_date,
-        label: runForm.label || null,
-      });
-      setRunForm({ release_date: '', label: '' });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Failed to add theatrical run: ${msg}`);
-    }
+    setPendingRunAdds((prev) => [
+      ...prev,
+      { release_date: runForm.release_date, label: runForm.label || null },
+    ]);
+    setRunForm({ release_date: '', label: '' });
   }
 
-  async function handleAddCast(e: React.FormEvent) {
+  function handleAddCast(e: React.FormEvent) {
     e.preventDefault();
     if (!castForm.actor_id) return;
-    try {
-      await addCast.mutateAsync({
-        movie_id: id,
+    const actor = actors.find((a) => a.id === castForm.actor_id);
+    setPendingCastAdds((prev) => [
+      ...prev,
+      {
         actor_id: castForm.actor_id,
         credit_type: castForm.credit_type,
         role_name: castForm.role_name || null,
@@ -460,33 +754,25 @@ export default function EditMoviePage() {
           castForm.credit_type === 'crew' && castForm.role_order
             ? Number(castForm.role_order)
             : null,
-        display_order: castData.length,
-      });
-      setCastForm(EMPTY_CAST_FORM);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Failed to add cast: ${msg}`);
-    }
+        display_order: visibleCast.length,
+        _actor: actor,
+      },
+    ]);
+    setCastForm(EMPTY_CAST_FORM);
+    setCastSearchQuery('');
   }
 
   function handleCastDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = castData.findIndex((c) => c.id === active.id);
-    const newIndex = castData.findIndex((c) => c.id === over.id);
+    const currentOrder = visibleCast;
+    const oldIndex = currentOrder.findIndex((c) => c.id === active.id);
+    const newIndex = currentOrder.findIndex((c) => c.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(castData, oldIndex, newIndex).map((item, idx) => ({
-      ...item,
-      display_order: idx,
-    }));
-
-    // Optimistically update the cache so the UI doesn't snap back
-    qc.setQueryData(['admin', 'cast', id], reordered);
-
-    const updates = reordered.map((item, idx) => ({ id: item.id, display_order: idx }));
-    updateCastOrder.mutate({ movieId: id, items: updates });
+    const reordered = arrayMove(currentOrder, oldIndex, newIndex);
+    setLocalCastOrder(reordered.map((item) => item.id));
   }
 
   if (isLoading)
@@ -821,7 +1107,7 @@ export default function EditMoviePage() {
             </h2>
 
             {/* Backward compat: import trailer_url as a video */}
-            {form.trailer_url && videosData.length === 0 && (
+            {form.trailer_url && visibleVideos.length === 0 && (
               <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-blue-400 font-medium">
@@ -831,24 +1117,24 @@ export default function EditMoviePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={async () => {
+                  onClick={() => {
                     const youtubeId = extractYouTubeId(form.trailer_url);
                     if (!youtubeId) {
                       alert('Could not extract a YouTube ID from the trailer URL.');
                       return;
                     }
-                    try {
-                      await addVideo.mutateAsync({
-                        movie_id: id,
+                    setPendingVideoAdds((prev) => [
+                      ...prev,
+                      {
                         youtube_id: youtubeId,
                         title: `${form.title} - Official Trailer`,
-                        video_type: 'trailer',
+                        video_type: 'trailer' as VideoType,
+                        description: null,
+                        video_date: null,
+                        duration: null,
                         display_order: 0,
-                      });
-                    } catch (err: unknown) {
-                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-                      alert(`Import failed: ${msg}`);
-                    }
+                      },
+                    ]);
                   }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
                 >
@@ -857,9 +1143,9 @@ export default function EditMoviePage() {
               </div>
             )}
 
-            {videosData.length > 0 && (
+            {visibleVideos.length > 0 && (
               <div className="space-y-2">
-                {videosData.map((video) => (
+                {visibleVideos.map((video) => (
                   <div
                     key={video.id}
                     className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
@@ -882,7 +1168,14 @@ export default function EditMoviePage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => removeVideo.mutate({ id: video.id, movieId: id })}
+                      onClick={() => {
+                        if (video.id.startsWith('pending-video-')) {
+                          const idx = Number(video.id.replace('pending-video-', ''));
+                          setPendingVideoAdds((prev) => prev.filter((_, i) => i !== idx));
+                        } else {
+                          setPendingVideoRemoveIds((prev) => new Set([...prev, video.id]));
+                        }
+                      }}
                       className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
                       aria-label={`Remove ${video.title}`}
                     >
@@ -969,14 +1262,10 @@ export default function EditMoviePage() {
               )}
               <button
                 type="submit"
-                disabled={addVideo.isPending || !videoForm.youtube_input || !videoForm.title}
+                disabled={!videoForm.youtube_input || !videoForm.title}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
               >
-                {addVideo.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
+                <Plus className="w-4 h-4" />
                 Add Video
               </button>
             </form>
@@ -989,7 +1278,7 @@ export default function EditMoviePage() {
             </h2>
 
             {/* Backward compat: import poster_url to gallery */}
-            {form.poster_url && postersData.length === 0 && (
+            {form.poster_url && visiblePosters.length === 0 && (
               <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm text-blue-400 font-medium">
@@ -999,19 +1288,18 @@ export default function EditMoviePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={async () => {
-                    try {
-                      await addPoster.mutateAsync({
-                        movie_id: id,
+                  onClick={() => {
+                    setPendingPosterAdds((prev) => [
+                      ...prev,
+                      {
                         image_url: form.poster_url,
                         title: 'Official Poster',
+                        description: null,
+                        poster_date: null,
                         is_main: true,
                         display_order: 0,
-                      });
-                    } catch (err: unknown) {
-                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-                      alert(`Import failed: ${msg}`);
-                    }
+                      },
+                    ]);
                   }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
                 >
@@ -1020,9 +1308,9 @@ export default function EditMoviePage() {
               </div>
             )}
 
-            {postersData.length > 0 && (
+            {visiblePosters.length > 0 && (
               <div className="grid grid-cols-3 gap-3">
-                {postersData.map((poster) => (
+                {visiblePosters.map((poster) => (
                   <div
                     key={poster.id}
                     className="relative group bg-white/5 rounded-xl overflow-hidden"
@@ -1043,14 +1331,21 @@ export default function EditMoviePage() {
                       </p>
                       {!poster.is_main && (
                         <button
-                          onClick={() => setMainPoster.mutate({ id: poster.id, movieId: id })}
+                          onClick={() => setPendingMainPosterId(poster.id)}
                           className="text-xs bg-yellow-500 text-black px-3 py-1 rounded font-semibold hover:bg-yellow-400"
                         >
                           Set as Main
                         </button>
                       )}
                       <button
-                        onClick={() => removePoster.mutate({ id: poster.id, movieId: id })}
+                        onClick={() => {
+                          if (poster.id.startsWith('pending-poster-')) {
+                            const idx = Number(poster.id.replace('pending-poster-', ''));
+                            setPendingPosterAdds((prev) => prev.filter((_, i) => i !== idx));
+                          } else {
+                            setPendingPosterRemoveIds((prev) => new Set([...prev, poster.id]));
+                          }
+                        }}
                         className="text-xs bg-red-600 text-white px-3 py-1 rounded font-semibold hover:bg-red-700"
                       >
                         Remove
@@ -1126,9 +1421,9 @@ export default function EditMoviePage() {
               <Film className="w-5 h-5" /> OTT Platforms
             </h2>
 
-            {moviePlatforms.length > 0 && (
+            {visiblePlatforms.length > 0 && (
               <div className="space-y-2">
-                {moviePlatforms.map((mp) => (
+                {visiblePlatforms.map((mp) => (
                   <div
                     key={mp.platform_id}
                     className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
@@ -1152,12 +1447,18 @@ export default function EditMoviePage() {
                       )}
                     </div>
                     <button
-                      onClick={() =>
-                        removeMoviePlatform.mutate({
-                          movieId: id,
-                          platformId: mp.platform_id,
-                        })
-                      }
+                      onClick={() => {
+                        const isPending = pendingPlatformAdds.some(
+                          (p) => p.platform_id === mp.platform_id,
+                        );
+                        if (isPending) {
+                          setPendingPlatformAdds((prev) =>
+                            prev.filter((p) => p.platform_id !== mp.platform_id),
+                          );
+                        } else {
+                          setPendingPlatformRemoveIds((prev) => new Set([...prev, mp.platform_id]));
+                        }
+                      }}
                       className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
                       aria-label={`Remove ${mp.platform?.name}`}
                     >
@@ -1178,7 +1479,7 @@ export default function EditMoviePage() {
                 >
                   <option value="">Select platform…</option>
                   {allPlatforms
-                    .filter((p) => !moviePlatforms.some((mp) => mp.platform_id === p.id))
+                    .filter((p) => !visiblePlatforms.some((mp) => mp.platform_id === p.id))
                     .map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -1194,28 +1495,23 @@ export default function EditMoviePage() {
                 />
                 <button
                   type="button"
-                  disabled={addMoviePlatform.isPending || !selectedPlatformId}
-                  onClick={async () => {
-                    try {
-                      await addMoviePlatform.mutateAsync({
-                        movie_id: id,
+                  disabled={!selectedPlatformId}
+                  onClick={() => {
+                    const platform = allPlatforms.find((p) => p.id === selectedPlatformId);
+                    setPendingPlatformAdds((prev) => [
+                      ...prev,
+                      {
                         platform_id: selectedPlatformId,
                         available_from: platformAvailableFrom || null,
-                      });
-                      setSelectedPlatformId('');
-                      setPlatformAvailableFrom('');
-                    } catch (err: unknown) {
-                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-                      alert(`Failed to add platform: ${msg}`);
-                    }
+                        _platform: platform,
+                      },
+                    ]);
+                    setSelectedPlatformId('');
+                    setPlatformAvailableFrom('');
                   }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
                 >
-                  {addMoviePlatform.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Plus className="w-4 h-4" />
-                  )}
+                  <Plus className="w-4 h-4" />
                   Add
                 </button>
               </div>
@@ -1228,9 +1524,9 @@ export default function EditMoviePage() {
               <Building2 className="w-5 h-5" /> Production Houses
             </h2>
 
-            {movieProductionHouses.length > 0 && (
+            {visibleProductionHouses.length > 0 && (
               <div className="space-y-2">
-                {movieProductionHouses.map((mph) => (
+                {visibleProductionHouses.map((mph) => (
                   <div
                     key={mph.production_house_id}
                     className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
@@ -1250,12 +1546,20 @@ export default function EditMoviePage() {
                       {mph.production_house?.name ?? mph.production_house_id}
                     </span>
                     <button
-                      onClick={() =>
-                        removeMovieProductionHouse.mutate({
-                          movieId: id,
-                          productionHouseId: mph.production_house_id,
-                        })
-                      }
+                      onClick={() => {
+                        const isPending = pendingPHAdds.some(
+                          (p) => p.production_house_id === mph.production_house_id,
+                        );
+                        if (isPending) {
+                          setPendingPHAdds((prev) =>
+                            prev.filter((p) => p.production_house_id !== mph.production_house_id),
+                          );
+                        } else {
+                          setPendingPHRemoveIds(
+                            (prev) => new Set([...prev, mph.production_house_id]),
+                          );
+                        }
+                      }}
                       className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
                       aria-label={`Remove ${mph.production_house?.name}`}
                     >
@@ -1278,7 +1582,7 @@ export default function EditMoviePage() {
                   {allProductionHouses
                     .filter(
                       (ph) =>
-                        !movieProductionHouses.some((mph) => mph.production_house_id === ph.id),
+                        !visibleProductionHouses.some((mph) => mph.production_house_id === ph.id),
                     )
                     .map((ph) => (
                       <option key={ph.id} value={ph.id}>
@@ -1288,26 +1592,18 @@ export default function EditMoviePage() {
                 </select>
                 <button
                   type="button"
-                  disabled={addMovieProductionHouse.isPending || !selectedProductionHouseId}
-                  onClick={async () => {
-                    try {
-                      await addMovieProductionHouse.mutateAsync({
-                        movieId: id,
-                        productionHouseId: selectedProductionHouseId,
-                      });
-                      setSelectedProductionHouseId('');
-                    } catch (err: unknown) {
-                      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-                      alert(`Failed to add: ${msg}`);
-                    }
+                  disabled={!selectedProductionHouseId}
+                  onClick={() => {
+                    const ph = allProductionHouses.find((p) => p.id === selectedProductionHouseId);
+                    setPendingPHAdds((prev) => [
+                      ...prev,
+                      { production_house_id: selectedProductionHouseId, _ph: ph },
+                    ]);
+                    setSelectedProductionHouseId('');
                   }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
                 >
-                  {addMovieProductionHouse.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Plus className="w-4 h-4" />
-                  )}
+                  <Plus className="w-4 h-4" />
                   Add
                 </button>
               </div>
@@ -1318,23 +1614,30 @@ export default function EditMoviePage() {
           <div className="space-y-4 mt-8">
             <h2 className="text-lg font-bold text-white">Cast &amp; Crew</h2>
 
-            {castData.length > 0 && (
+            {visibleCast.length > 0 && (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleCastDragEnd}
               >
                 <SortableContext
-                  items={castData.map((c) => c.id)}
+                  items={visibleCast.map((c) => c.id)}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-2">
-                    {castData.map((entry) => (
+                    {visibleCast.map((entry) => (
                       <SortableCastItem
                         key={entry.id}
                         entry={entry}
                         movieId={id}
-                        onRemove={() => removeCast.mutate({ id: entry.id, movieId: id })}
+                        onRemove={() => {
+                          if (entry.id.startsWith('pending-cast-')) {
+                            const idx = Number(entry.id.replace('pending-cast-', ''));
+                            setPendingCastAdds((prev) => prev.filter((_, i) => i !== idx));
+                          } else {
+                            setPendingCastRemoveIds((prev) => new Set([...prev, entry.id]));
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -1362,21 +1665,57 @@ export default function EditMoviePage() {
                     <option value="crew">Crew (Technician)</option>
                   </select>
                 </div>
-                <div>
+                <div className="relative">
                   <label className="block text-xs text-white/40 mb-1">Person *</label>
-                  <select
-                    required
-                    value={castForm.actor_id}
-                    onChange={(e) => setCastForm((p) => ({ ...p, actor_id: e.target.value }))}
+                  <input
+                    type="text"
+                    placeholder="Type to search…"
+                    value={castSearchQuery}
+                    onChange={(e) => {
+                      setCastSearchQuery(e.target.value);
+                      setCastForm((p) => ({ ...p, actor_id: '' }));
+                      setCastDropdownOpen(true);
+                    }}
+                    onFocus={() => setCastDropdownOpen(true)}
                     className="w-full bg-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:ring-2 focus:ring-red-600"
-                  >
-                    <option value="">Select person…</option>
-                    {actors.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  {castDropdownOpen && castSearchQuery.length > 0 && (
+                    <div className="absolute z-30 top-full mt-1 left-0 right-0 bg-zinc-800 border border-white/10 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                      {actors
+                        .filter((a) => a.name.toLowerCase().includes(castSearchQuery.toLowerCase()))
+                        .slice(0, 20)
+                        .map((a) => (
+                          <button
+                            key={a.id}
+                            type="button"
+                            onClick={() => {
+                              setCastForm((p) => ({ ...p, actor_id: a.id }));
+                              setCastSearchQuery(a.name);
+                              setCastDropdownOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-white/10 text-left"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden shrink-0 flex items-center justify-center">
+                              {a.photo_url ? (
+                                <img
+                                  src={a.photo_url}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <User className="w-3 h-3 text-white/40" />
+                              )}
+                            </div>
+                            {a.name}
+                          </button>
+                        ))}
+                      {actors.filter((a) =>
+                        a.name.toLowerCase().includes(castSearchQuery.toLowerCase()),
+                      ).length === 0 && (
+                        <p className="px-3 py-2 text-sm text-white/40">No results</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -1412,14 +1751,10 @@ export default function EditMoviePage() {
               </div>
               <button
                 type="submit"
-                disabled={addCast.isPending || !castForm.actor_id}
+                disabled={!castForm.actor_id}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
               >
-                {addCast.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
+                <Plus className="w-4 h-4" />
                 Add Entry
               </button>
             </form>
@@ -1433,9 +1768,9 @@ export default function EditMoviePage() {
               theaters.
             </p>
 
-            {theatricalRuns.length > 0 && (
+            {visibleRuns.length > 0 && (
               <div className="space-y-2">
-                {theatricalRuns.map((run) => (
+                {visibleRuns.map((run) => (
                   <div
                     key={run.id}
                     className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3"
@@ -1451,7 +1786,14 @@ export default function EditMoviePage() {
                       </span>
                     )}
                     <button
-                      onClick={() => removeTheatricalRun.mutate({ id: run.id, movieId: id })}
+                      onClick={() => {
+                        if (run.id.startsWith('pending-run-')) {
+                          const idx = Number(run.id.replace('pending-run-', ''));
+                          setPendingRunAdds((prev) => prev.filter((_, i) => i !== idx));
+                        } else {
+                          setPendingRunRemoveIds((prev) => new Set([...prev, run.id]));
+                        }
+                      }}
                       className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-red-400"
                       aria-label={`Remove run ${run.release_date}`}
                     >
@@ -1490,14 +1832,10 @@ export default function EditMoviePage() {
               </div>
               <button
                 type="submit"
-                disabled={addTheatricalRun.isPending || !runForm.release_date}
+                disabled={!runForm.release_date}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
               >
-                {addTheatricalRun.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
+                <Plus className="w-4 h-4" />
                 Add Run
               </button>
             </form>
@@ -1611,13 +1949,31 @@ export default function EditMoviePage() {
       </div>
 
       {/* Sticky Save Bar */}
-      <div className="sticky bottom-0 left-0 right-0 bg-zinc-900/95 backdrop-blur border-t border-white/10 py-4 px-4 -mx-4 mt-8 flex items-center justify-center z-20">
+      <div
+        className={`sticky bottom-0 left-0 right-0 backdrop-blur border-t py-4 px-6 -mx-4 mt-8 flex items-center justify-between z-20 transition-colors ${
+          isDirty ? 'bg-zinc-900/95 border-red-600/30' : 'bg-zinc-900/80 border-white/5'
+        }`}
+      >
+        <span className="text-sm text-white/40">
+          {isDirty ? 'You have unsaved changes' : 'No unsaved changes'}
+        </span>
         <button
           onClick={handleSubmit}
-          disabled={updateMovie.isPending}
-          className="flex items-center justify-center gap-2 px-12 py-3 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50 text-base min-w-[200px]"
+          disabled={!isDirty || isSaving}
+          className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+            isDirty && !isSaving
+              ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20'
+              : 'bg-white/5 text-white/20 cursor-not-allowed'
+          }`}
         >
-          {updateMovie.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Changes'}
+          {isSaving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            'Save Changes'
+          )}
         </button>
       </div>
     </div>
