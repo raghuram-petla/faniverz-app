@@ -36,19 +36,18 @@ import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { createMovieEditHandlers } from '@/hooks/useMovieEditHandlers';
 import { useMovieEditDerived } from '@/hooks/useMovieEditDerived';
-import type {
-  MovieForm,
+import { useMovieEditPendingState } from '@/hooks/useMovieEditPendingState';
+import type { MovieForm } from '@/hooks/useMovieEditTypes';
+
+export type { MovieForm };
+export type {
   PendingVideoAdd,
   PendingPosterAdd,
   PendingPlatformAdd,
   PendingPHAdd,
 } from '@/hooks/useMovieEditTypes';
-import type { VideoType } from '@/lib/types';
-import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
-import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
-import type { OTTPlatform, ProductionHouse } from '@shared/types';
-
-export type { MovieForm };
+export type { VideoType } from '@/lib/types';
+export type { OTTPlatform, ProductionHouse } from '@shared/types';
 
 export function useMovieEditState(id: string) {
   const router = useRouter();
@@ -115,52 +114,17 @@ export function useMovieEditState(id: string) {
     detail_focus_y: null,
   });
 
-  // ─── Pending changes (deferred to Save) ───
-  const [pendingCastAdds, setPendingCastAdds] = useState<PendingCastAdd[]>([]);
-  const [pendingCastRemoveIds, setPendingCastRemoveIds] = useState<Set<string>>(new Set());
-  const [localCastOrder, setLocalCastOrder] = useState<string[] | null>(null);
+  // Pending changes (deferred to Save)
+  const pending = useMovieEditPendingState();
 
-  const [pendingVideoAdds, setPendingVideoAdds] = useState<PendingVideoAdd[]>([]);
-  const [pendingVideoRemoveIds, setPendingVideoRemoveIds] = useState<Set<string>>(new Set());
-
-  const [pendingPosterAdds, setPendingPosterAdds] = useState<PendingPosterAdd[]>([]);
-  const [pendingPosterRemoveIds, setPendingPosterRemoveIds] = useState<Set<string>>(new Set());
-  const [pendingMainPosterId, setPendingMainPosterId] = useState<string | null>(null);
-
-  const [pendingPlatformAdds, setPendingPlatformAdds] = useState<PendingPlatformAdd[]>([]);
-  const [pendingPlatformRemoveIds, setPendingPlatformRemoveIds] = useState<Set<string>>(new Set());
-
-  const [pendingPHAdds, setPendingPHAdds] = useState<PendingPHAdd[]>([]);
-  const [pendingPHRemoveIds, setPendingPHRemoveIds] = useState<Set<string>>(new Set());
-
-  const [pendingRunAdds, setPendingRunAdds] = useState<PendingRun[]>([]);
-  const [pendingRunRemoveIds, setPendingRunRemoveIds] = useState<Set<string>>(new Set());
-
-  // ─── Track initial form state for dirty detection ───
+  // Track initial form state for dirty detection
   const [initialForm, setInitialForm] = useState<MovieForm | null>(null);
 
-  // ─── Save & Delete state ───
+  // Save & Delete state
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
-  function resetPendingState() {
-    setPendingCastAdds([]);
-    setPendingCastRemoveIds(new Set());
-    setLocalCastOrder(null);
-    setPendingVideoAdds([]);
-    setPendingVideoRemoveIds(new Set());
-    setPendingPosterAdds([]);
-    setPendingPosterRemoveIds(new Set());
-    setPendingMainPosterId(null);
-    setPendingPlatformAdds([]);
-    setPendingPlatformRemoveIds(new Set());
-    setPendingPHAdds([]);
-    setPendingPHRemoveIds(new Set());
-    setPendingRunAdds([]);
-    setPendingRunRemoveIds(new Set());
-  }
-
-  // ─── Data hydration effect ───
+  // Data hydration effect
   useEffect(() => {
     if (movie) {
       const loaded: MovieForm = {
@@ -184,11 +148,11 @@ export function useMovieEditState(id: string) {
       };
       setForm(loaded);
       setInitialForm(loaded);
-      resetPendingState();
+      pending.resetPendingState();
     }
   }, [movie]);
 
-  // ─── Save status reset timer ───
+  // Save status reset timer
   useEffect(() => {
     if (saveStatus === 'success') {
       const timer = setTimeout(() => setSaveStatus('idle'), 3000);
@@ -196,68 +160,30 @@ export function useMovieEditState(id: string) {
     }
   }, [saveStatus]);
 
-  // ─── Derived visible lists + isDirty ───
+  // Derived visible lists + isDirty
   const derived = useMovieEditDerived({
     id,
     castData,
-    pendingCastAdds,
-    pendingCastRemoveIds,
-    localCastOrder,
     videosData,
-    pendingVideoAdds,
-    pendingVideoRemoveIds,
     postersData,
-    pendingPosterAdds,
-    pendingPosterRemoveIds,
-    pendingMainPosterId,
     moviePlatforms,
-    pendingPlatformAdds,
-    pendingPlatformRemoveIds,
     movieProductionHouses,
-    pendingPHAdds,
-    pendingPHRemoveIds,
     theatricalRuns,
-    pendingRunAdds,
-    pendingRunRemoveIds,
     form,
     initialForm,
+    ...pending,
   });
 
-  // ─── Warn on unsaved navigation ───
+  // Warn on unsaved navigation
   useUnsavedChangesWarning(derived.isDirty);
 
-  // ─── Compose handlers ───
+  // Compose handlers
   const handlers = createMovieEditHandlers({
     id,
     form,
     setForm,
     router,
-    setPendingCastAdds,
-    setPendingCastRemoveIds,
-    setPendingVideoAdds,
-    setPendingVideoRemoveIds,
-    setPendingPosterAdds,
-    setPendingPosterRemoveIds,
-    setPendingPlatformAdds,
-    setPendingPlatformRemoveIds,
-    setPendingPHAdds,
-    setPendingPHRemoveIds,
-    setPendingRunAdds,
-    setPendingRunRemoveIds,
-    localCastOrder,
-    pendingCastAdds,
-    pendingCastRemoveIds,
-    pendingVideoAdds,
-    pendingVideoRemoveIds,
-    pendingPosterAdds,
-    pendingPosterRemoveIds,
-    pendingMainPosterId,
-    pendingPlatformAdds,
-    pendingPlatformRemoveIds,
-    pendingPHAdds,
-    pendingPHRemoveIds,
-    pendingRunAdds,
-    pendingRunRemoveIds,
+    ...pending,
     updateMovie,
     deleteMovie,
     addCast,
@@ -274,7 +200,6 @@ export function useMovieEditState(id: string) {
     removeMovieProductionHouse,
     addTheatricalRun,
     removeTheatricalRun,
-    resetPendingState,
     setInitialForm,
     setIsSaving,
     setSaveStatus,
@@ -283,14 +208,11 @@ export function useMovieEditState(id: string) {
   });
 
   return {
-    // Loading
     isLoading,
-    // Form
     form,
     setForm,
     updateField: handlers.updateField,
     toggleGenre: handlers.toggleGenre,
-    // Upload
     uploadingPoster,
     setUploadingPoster,
     uploadingBackdrop,
@@ -299,40 +221,33 @@ export function useMovieEditState(id: string) {
     backdropInputRef,
     handleImageUpload: handlers.handleImageUpload,
     handleBackdropClick: handlers.handleBackdropClick,
-    // Pending state setters
-    setPendingVideoAdds,
-    setPendingPosterAdds,
-    setPendingPlatformAdds,
-    setPendingPHAdds,
-    setPendingCastAdds,
-    setPendingRunAdds,
-    setPendingMainPosterId,
-    setLocalCastOrder,
-    // Remove handlers
+    setPendingVideoAdds: pending.setPendingVideoAdds,
+    setPendingPosterAdds: pending.setPendingPosterAdds,
+    setPendingPlatformAdds: pending.setPendingPlatformAdds,
+    setPendingPHAdds: pending.setPendingPHAdds,
+    setPendingCastAdds: pending.setPendingCastAdds,
+    setPendingRunAdds: pending.setPendingRunAdds,
+    setPendingMainPosterId: pending.setPendingMainPosterId,
+    setLocalCastOrder: pending.setLocalCastOrder,
     handleVideoRemove: handlers.handleVideoRemove,
     handlePosterRemove: handlers.handlePosterRemove,
     handlePlatformRemove: handlers.handlePlatformRemove,
     handlePHRemove: handlers.handlePHRemove,
     handleCastRemove: handlers.handleCastRemove,
     handleRunRemove: handlers.handleRunRemove,
-    // Visible (derived) lists
     visibleCast: derived.visibleCast,
     visibleVideos: derived.visibleVideos,
     visiblePosters: derived.visiblePosters,
     visiblePlatforms: derived.visiblePlatforms,
     visibleProductionHouses: derived.visibleProductionHouses,
     visibleRuns: derived.visibleRuns,
-    // Cast search
     actors,
     castSearchQuery,
     setCastSearchQuery,
-    // Platform / PH data
     allPlatforms,
     allProductionHouses,
-    // Pending adds (needed for section components)
-    pendingPlatformAdds,
-    pendingPHAdds,
-    // Save/delete
+    pendingPlatformAdds: pending.pendingPlatformAdds,
+    pendingPHAdds: pending.pendingPHAdds,
     isDirty: derived.isDirty,
     isSaving,
     saveStatus,
@@ -340,9 +255,3 @@ export function useMovieEditState(id: string) {
     handleDelete: handlers.handleDelete,
   };
 }
-
-// ─── Re-export pending add types needed by consumers ───
-export type { PendingVideoAdd, PendingPosterAdd, PendingPlatformAdd, PendingPHAdd };
-// Kept for backwards compat – VideoType is used by consumers of this hook
-export type { VideoType };
-export type { OTTPlatform, ProductionHouse };
