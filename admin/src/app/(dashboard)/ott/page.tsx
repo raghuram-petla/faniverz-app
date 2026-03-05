@@ -1,11 +1,15 @@
 'use client';
 
 import { useAdminOttReleases, useDeleteOttRelease } from '@/hooks/useAdminOtt';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Tv, Trash2, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OttReleasesPage() {
-  const { data: releases, isLoading } = useAdminOttReleases();
+  const { isPHAdmin, productionHouseIds, canDelete } = usePermissions();
+  const { data: releases, isLoading } = useAdminOttReleases(
+    isPHAdmin ? productionHouseIds : undefined,
+  );
   const deleteRelease = useDeleteOttRelease();
 
   const handleDelete = (movieId: string, platformId: string) => {
@@ -94,14 +98,16 @@ export default function OttReleasesPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(release.movie_id, release.platform_id)}
-                      disabled={deleteRelease.isPending}
-                      className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                      title="Delete release"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canDelete('ott_release') && (
+                      <button
+                        onClick={() => handleDelete(release.movie_id, release.platform_id)}
+                        disabled={deleteRelease.isPending}
+                        className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                        title="Delete release"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

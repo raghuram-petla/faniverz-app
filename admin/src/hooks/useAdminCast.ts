@@ -65,7 +65,7 @@ export function useMovieCast(movieId: string) {
 export function useCreateActor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (actor: Partial<Actor>) => {
+    mutationFn: async (actor: Partial<Actor> & { created_by?: string }) => {
       const { data, error } = await supabase.from('actors').insert(actor).select().single();
       if (error) throw error;
       return data as Actor;

@@ -2,6 +2,8 @@
 
 import { Fragment, useState, useEffect } from 'react';
 import { useAdminAuditLog, type AuditFilters } from '@/hooks/useAdminAudit';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { AUDIT_ENTITY_TYPES } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import { Shield, ChevronDown, ChevronRight, Loader2, Search } from 'lucide-react';
@@ -44,6 +46,8 @@ const actionStyles: Record<string, { bg: string; text: string }> = {
 };
 
 export default function AuditLogPage() {
+  const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
@@ -63,6 +67,8 @@ export default function AuditLogPage() {
   if (debouncedSearch.length >= 2) filters.search = debouncedSearch;
   if (dateFrom) filters.dateFrom = dateFrom;
   if (dateTo) filters.dateTo = dateTo;
+  // Non-super admins only see their own audit entries
+  if (!isSuperAdmin && user?.id) filters.adminUserId = user.id;
 
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminAuditLog(Object.keys(filters).length ? filters : undefined);
@@ -86,25 +92,32 @@ export default function AuditLogPage() {
         <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center">
           <Shield className="w-5 h-5 text-purple-500" />
         </div>
-        <h1 className="text-2xl font-bold text-on-surface">Audit Log</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-on-surface">Audit Log</h1>
+          {!isSuperAdmin && (
+            <p className="text-sm text-on-surface-muted mt-0.5">Showing your activity only</p>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
-            <input
-              type="text"
-              placeholder="Search by admin email, entity type, entity ID..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-input rounded-lg pl-10 pr-10 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
-            />
-            {isFetching && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
-            )}
-          </div>
+          {isSuperAdmin && (
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
+              <input
+                type="text"
+                placeholder="Search by admin email, entity type, entity ID..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-input rounded-lg pl-10 pr-10 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
+              />
+              {isFetching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
+              )}
+            </div>
+          )}
 
           <select
             value={actionFilter}

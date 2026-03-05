@@ -23,7 +23,7 @@ function createWrapper() {
 }
 
 describe('useAdminMovies', () => {
-  it('uses the correct query key ["admin", "movies", search, statusFilter]', async () => {
+  it('uses the correct query key ["admin", "movies", search, statusFilter, productionHouseIds]', async () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         order: vi.fn().mockReturnValue({
@@ -44,7 +44,7 @@ describe('useAdminMovies', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const cachedData = queryClient.getQueryData(['admin', 'movies', '', '']);
+    const cachedData = queryClient.getQueryData(['admin', 'movies', '', '', undefined]);
     expect(cachedData).toBeDefined();
   });
 

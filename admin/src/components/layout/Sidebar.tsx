@@ -13,23 +13,43 @@ import {
   Bell,
   RefreshCw,
   FileText,
+  Shield,
 } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
+import type { AdminPage } from '@/hooks/usePermissions';
+import type { LucideIcon } from 'lucide-react';
 
-const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/movies', label: 'Movies', icon: Film },
-  { href: '/cast', label: 'Cast/Actors', icon: Users },
-  { href: '/production-houses', label: 'Production Houses', icon: Building2 },
-  { href: '/ott', label: 'OTT Releases', icon: Tv },
-  { href: '/platforms', label: 'Platforms', icon: Layers },
-  { href: '/surprise', label: 'Surprise Content', icon: Sparkles },
-  { href: '/notifications', label: 'Notifications', icon: Bell },
-  { href: '/sync', label: 'Sync', icon: RefreshCw },
-  { href: '/audit', label: 'Audit Log', icon: FileText },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  page: AdminPage;
+}
+
+const navItems: NavItem[] = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard, page: 'dashboard' },
+  { href: '/movies', label: 'Movies', icon: Film, page: 'movies' },
+  { href: '/cast', label: 'Cast/Actors', icon: Users, page: 'cast' },
+  {
+    href: '/production-houses',
+    label: 'Production Houses',
+    icon: Building2,
+    page: 'production-houses',
+  },
+  { href: '/ott', label: 'OTT Releases', icon: Tv, page: 'ott' },
+  { href: '/platforms', label: 'Platforms', icon: Layers, page: 'platforms' },
+  { href: '/surprise', label: 'Surprise Content', icon: Sparkles, page: 'surprise' },
+  { href: '/notifications', label: 'Notifications', icon: Bell, page: 'notifications' },
+  { href: '/sync', label: 'Sync', icon: RefreshCw, page: 'sync' },
+  { href: '/audit', label: 'Audit Log', icon: FileText, page: 'audit' },
+  { href: '/users', label: 'User Management', icon: Shield, page: 'users' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { canViewPage } = usePermissions();
+
+  const visibleItems = navItems.filter((item) => canViewPage(item.page));
 
   return (
     <aside className="w-64 bg-surface-card border-r border-outline min-h-screen p-4">
@@ -44,7 +64,7 @@ export function Sidebar() {
       </div>
 
       <nav className="space-y-1">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive =
             pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           const Icon = item.icon;

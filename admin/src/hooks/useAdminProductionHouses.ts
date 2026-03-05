@@ -5,13 +5,22 @@ import type { ProductionHouse } from '@/lib/types';
 
 const PAGE_SIZE = 50;
 
-export function useAdminProductionHouses(search = '') {
+/**
+ * List production houses. PH admins only see their assigned PHs.
+ * Pass productionHouseIds to scope for PH admins.
+ */
+export function useAdminProductionHouses(search = '', productionHouseIds?: string[]) {
+  const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
+
   return useInfiniteQuery({
-    queryKey: ['admin', 'production-houses', search],
+    queryKey: ['admin', 'production-houses', search, productionHouseIds],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       let query = supabase.from('production_houses').select('*').order('name').range(from, to);
+      if (hasPHScope) {
+        query = query.in('id', productionHouseIds);
+      }
       if (search) {
         query = query.ilike('name', `%${search}%`);
       }

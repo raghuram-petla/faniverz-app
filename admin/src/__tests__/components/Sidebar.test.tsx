@@ -46,8 +46,24 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+// Mock usePermissions to return super_admin permissions (sees all pages)
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: 'super_admin',
+    isSuperAdmin: true,
+    isAdmin: false,
+    isPHAdmin: false,
+    productionHouseIds: [],
+    canViewPage: () => true,
+    canCreate: () => true,
+    canUpdate: () => true,
+    canDelete: () => true,
+    auditScope: 'all',
+  }),
+}));
+
 describe('Sidebar', () => {
-  it('renders all 9 nav items', () => {
+  it('renders all nav items for super admin (11 items)', () => {
     render(<Sidebar />);
 
     const navLabels = [
@@ -60,6 +76,7 @@ describe('Sidebar', () => {
       'Notifications',
       'Sync',
       'Audit Log',
+      'User Management',
     ];
 
     for (const label of navLabels) {

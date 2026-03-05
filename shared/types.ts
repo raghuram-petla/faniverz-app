@@ -65,6 +65,7 @@ export interface Actor {
   biography: string | null;
   place_of_birth: string | null;
   height_cm: number | null;
+  created_by: string | null;
   created_at: string;
 }
 

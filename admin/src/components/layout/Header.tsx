@@ -2,6 +2,7 @@
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTheme } from 'next-themes';
 import { LogOut, User, Sun, Moon, Monitor } from 'lucide-react';
+import { ADMIN_ROLE_LABELS } from '@/lib/types';
 
 const THEME_CYCLE = ['system', 'light', 'dark'] as const;
 const THEME_ICONS = { system: Monitor, light: Sun, dark: Moon } as const;
@@ -32,6 +33,11 @@ export function Header() {
             <User className="w-4 h-4 text-on-surface-muted" />
           </div>
           <span className="text-sm text-on-surface-muted">{user?.email ?? 'Admin'}</span>
+          {user?.role && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-600/10 text-red-500 font-medium">
+              {ADMIN_ROLE_LABELS[user.role]}
+            </span>
+          )}
         </div>
         <button
           onClick={signOut}

@@ -110,3 +110,69 @@ export interface DashboardStats {
   reviewsToday: number;
   activeNotifications: number;
 }
+
+// ============================================================
+// RBAC Types
+// ============================================================
+
+export type AdminRoleId = 'super_admin' | 'admin' | 'production_house_admin';
+
+export interface AdminRole {
+  id: AdminRoleId;
+  label: string;
+  description: string | null;
+}
+
+export interface AdminUserRole {
+  id: string;
+  user_id: string;
+  role_id: AdminRoleId;
+  assigned_by: string | null;
+  created_at: string;
+}
+
+export interface AdminPHAssignment {
+  user_id: string;
+  production_house_id: string;
+  assigned_by: string | null;
+  created_at: string;
+  production_house?: import('@shared/types').ProductionHouse;
+}
+
+export interface AdminInvitation {
+  id: string;
+  email: string;
+  role_id: AdminRoleId;
+  invited_by: string;
+  production_house_ids: string[];
+  status: 'pending' | 'accepted' | 'revoked';
+  token: string;
+  created_at: string;
+  accepted_at: string | null;
+  expires_at: string;
+  inviter?: UserProfile;
+}
+
+/** Extended user profile with role info — used by AuthProvider */
+export interface AdminUser extends UserProfile {
+  role: AdminRoleId;
+  productionHouseIds: string[];
+}
+
+export const ADMIN_ROLE_LABELS: Record<AdminRoleId, string> = {
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  production_house_admin: 'PH Admin',
+};
+
+/** Admin user with role + PH assignment details — used by user management */
+export interface AdminUserWithDetails {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  role_id: AdminRoleId;
+  role_assigned_at: string;
+  assigned_by: string | null;
+  ph_assignments: AdminPHAssignment[];
+}

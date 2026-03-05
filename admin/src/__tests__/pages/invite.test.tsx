@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import DashboardPage from '@/app/(dashboard)/page';
+import InviteAdminPage from '@/app/(dashboard)/users/invite/page';
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -14,20 +14,20 @@ vi.mock('@/lib/supabase-browser', () => ({
       limit: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
       gte: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null }),
+      ilike: vi.fn().mockReturnThis(),
     })),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
       onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
-      signInWithPassword: vi.fn(),
       signOut: vi.fn(),
     },
-    functions: { invoke: vi.fn() },
   },
 }));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
-  usePathname: () => '/',
+  usePathname: () => '/users/invite',
   useParams: () => ({}),
 }));
 
@@ -47,19 +47,13 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-// Mock usePermissions to return super_admin permissions
-vi.mock('@/hooks/usePermissions', () => ({
-  usePermissions: () => ({
-    role: 'super_admin',
-    isSuperAdmin: true,
-    isAdmin: false,
-    isPHAdmin: false,
-    productionHouseIds: [],
-    canViewPage: () => true,
-    canCreate: () => true,
-    canUpdate: () => true,
-    canDelete: () => true,
-    auditScope: 'all',
+vi.mock('@/components/providers/AuthProvider', () => ({
+  useAuth: () => ({
+    user: { id: 'user-1', role: 'super_admin', productionHouseIds: [] },
+    isLoading: false,
+    isAccessDenied: false,
+    signInWithGoogle: vi.fn(),
+    signOut: vi.fn(),
   }),
 }));
 
@@ -70,24 +64,30 @@ function renderWithProviders(ui: React.ReactElement) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-describe('DashboardPage', () => {
-  it('renders "Dashboard" heading', () => {
-    renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+describe('InviteAdminPage', () => {
+  it('renders "Invite New Admin" heading', () => {
+    renderWithProviders(<InviteAdminPage />);
+    expect(screen.getByText('Invite New Admin')).toBeInTheDocument();
   });
 
-  it('renders stat cards', () => {
-    renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Total Movies')).toBeInTheDocument();
-    expect(screen.getByText('Total Users')).toBeInTheDocument();
-    expect(screen.getByText('Reviews Today')).toBeInTheDocument();
-    expect(screen.getByText('Active Notifications')).toBeInTheDocument();
+  it('renders "Back to User Management" link', () => {
+    renderWithProviders(<InviteAdminPage />);
+    expect(screen.getByText('Back to User Management')).toBeInTheDocument();
   });
 
-  it('renders quick action links', () => {
-    renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Add Movie')).toBeInTheDocument();
-    expect(screen.getByText('Add OTT Release')).toBeInTheDocument();
-    expect(screen.getByText('Trigger Sync')).toBeInTheDocument();
+  it('renders email input with placeholder "admin@example.com"', () => {
+    renderWithProviders(<InviteAdminPage />);
+    expect(screen.getByPlaceholderText('admin@example.com')).toBeInTheDocument();
+  });
+
+  it('renders role select dropdown', () => {
+    renderWithProviders(<InviteAdminPage />);
+    expect(screen.getByText('Role')).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('renders "Create Invitation" submit button', () => {
+    renderWithProviders(<InviteAdminPage />);
+    expect(screen.getByText('Create Invitation')).toBeInTheDocument();
   });
 });

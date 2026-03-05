@@ -5,6 +5,7 @@ import {
   useCreateProductionHouse,
   useDeleteProductionHouse,
 } from '@/hooks/useAdminProductionHouses';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Plus, Trash2, Search, Loader2, Building2, Pencil, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -15,10 +16,11 @@ const EMPTY_FORM = {
 };
 
 export default function ProductionHousesPage() {
+  const { isPHAdmin, productionHouseIds, canCreate, canDelete } = usePermissions();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAdminProductionHouses(debouncedSearch);
+    useAdminProductionHouses(debouncedSearch, isPHAdmin ? productionHouseIds : undefined);
   const houses = data?.pages.flat() ?? [];
   const createHouse = useCreateProductionHouse();
   const deleteHouse = useDeleteProductionHouse();
@@ -72,12 +74,14 @@ export default function ProductionHousesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-on-surface">Production Houses</h1>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700"
-        >
-          <Plus className="w-4 h-4" /> Add Production House
-        </button>
+        {canCreate('production_house') && (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700"
+          >
+            <Plus className="w-4 h-4" /> Add Production House
+          </button>
+        )}
       </div>
 
       {showAdd && (
@@ -223,20 +227,26 @@ export default function ProductionHousesPage() {
                   )}
                 </div>
               </Link>
-              <Link
-                href={'/production-houses/' + house.id}
-                className="p-2 rounded-lg text-on-surface-subtle hover:text-on-surface hover:bg-input"
-              >
-                <Pencil className="w-4 h-4" />
-              </Link>
-              <button
-                onClick={() => {
-                  if (confirm('Delete this production house?')) deleteHouse.mutate(house.id);
-                }}
-                className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {!isPHAdmin && (
+                <>
+                  <Link
+                    href={'/production-houses/' + house.id}
+                    className="p-2 rounded-lg text-on-surface-subtle hover:text-on-surface hover:bg-input"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Link>
+                  {canDelete('production_house') && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Delete this production house?')) deleteHouse.mutate(house.id);
+                      }}
+                      className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           ))}
           {houses.length === 0 && (

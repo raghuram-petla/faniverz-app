@@ -1,11 +1,13 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-browser';
-import type { UserProfile } from '@/lib/types';
+import type { AdminUser, AdminRoleId } from '@/lib/types';
 
 interface AuthContextValue {
-  user: UserProfile | null;
+  user: AdminUser | null;
   isLoading: boolean;
+  /** True when user is authenticated but has no admin role */
+  isAccessDenied: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -13,6 +15,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
+  isAccessDenied: false,
   signInWithGoogle: async () => {},
   signOut: async () => {},
 });
@@ -22,13 +25,13 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
 
   useEffect(() => {
     let initialLoadDone = false;
 
-    // Safety timeout: if nothing resolves auth state within 3s, show login
     const timeout = setTimeout(() => {
       if (!initialLoadDone) {
         initialLoadDone = true;
@@ -44,34 +47,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    async function fetchProfile(userId: string, accessToken: string) {
-      // Use direct fetch() instead of supabase.from().select() to avoid
-      // _getAccessToken() → getSession() → _acquireLock() deadlock when
-      // this is called from onAuthStateChange during _initialize().
+    async function fetchAdminUser(userId: string, email: string | undefined, accessToken: string) {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
         const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-        const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
-          headers: { apikey: anonKey, Authorization: `Bearer ${accessToken}` },
-        });
-        if (res.ok) {
-          const rows = await res.json();
-          if (rows[0]?.is_admin) setUser(rows[0]);
-          else setUser(null);
-        } else {
-          setUser(null);
+        const headers = { apikey: anonKey, Authorization: `Bearer ${accessToken}` };
+
+        // Try to auto-accept invitation first (if applicable)
+        if (email) {
+          await tryAcceptInvitation(email, userId, accessToken);
         }
+
+        // Fetch profile
+        const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+          headers,
+        });
+        if (!profileRes.ok) {
+          setUser(null);
+          setIsAccessDenied(false);
+          return;
+        }
+        const profiles = await profileRes.json();
+        if (!profiles[0]) {
+          setUser(null);
+          setIsAccessDenied(false);
+          return;
+        }
+
+        // Fetch admin role
+        const roleRes = await fetch(
+          `${supabaseUrl}/rest/v1/admin_user_roles?user_id=eq.${userId}&select=role_id`,
+          { headers },
+        );
+        if (!roleRes.ok) {
+          setUser(null);
+          setIsAccessDenied(true);
+          return;
+        }
+        const roles = await roleRes.json();
+        if (!roles[0]?.role_id) {
+          setUser(null);
+          setIsAccessDenied(true);
+          return;
+        }
+
+        const role = roles[0].role_id as AdminRoleId;
+
+        // Fetch PH assignments (only needed for PH admins, but cheap to always fetch)
+        let phIds: string[] = [];
+        if (role === 'production_house_admin') {
+          const phRes = await fetch(
+            `${supabaseUrl}/rest/v1/admin_ph_assignments?user_id=eq.${userId}&select=production_house_id`,
+            { headers },
+          );
+          if (phRes.ok) {
+            const phData = await phRes.json();
+            phIds = phData.map((r: { production_house_id: string }) => r.production_house_id);
+          }
+        }
+
+        setUser({ ...profiles[0], role, productionHouseIds: phIds });
+        setIsAccessDenied(false);
       } catch {
         setUser(null);
+        setIsAccessDenied(false);
       }
     }
 
-    // Fast path: restore session directly from localStorage + REST API.
-    // This bypasses the Supabase client entirely for the initial load.
+    async function tryAcceptInvitation(email: string, userId: string, accessToken: string) {
+      try {
+        const res = await fetch('/api/accept-invitation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ email, userId }),
+        });
+        // Silently succeed or fail — the role fetch below will determine access
+        if (!res.ok) return;
+      } catch {
+        // ignore — invitation acceptance is best-effort
+      }
+    }
+
+    // Fast path: restore session from localStorage
     async function restoreSession(): Promise<boolean> {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
         const ref = new URL(supabaseUrl).hostname.split('.')[0];
         const stored = localStorage.getItem(`sb-${ref}-auth-token`);
         if (!stored) return false;
@@ -79,37 +142,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { user: storedUser, access_token } = JSON.parse(stored);
         if (!storedUser?.id || !access_token) return false;
 
-        const res = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${storedUser.id}&select=*`, {
-          headers: { apikey: anonKey, Authorization: `Bearer ${access_token}` },
-        });
-        if (res.ok) {
-          const rows = await res.json();
-          if (rows[0]?.is_admin) {
-            setUser(rows[0]);
-            return true;
-          }
-        }
+        await fetchAdminUser(storedUser.id, storedUser.email, access_token);
+        return true;
       } catch {
-        // Session expired or invalid
+        return false;
       }
-      return false;
     }
 
     restoreSession().then((restored) => {
-      // If we restored from localStorage, stop loading immediately.
-      // If not (first login / OAuth callback), wait for onAuthStateChange.
       if (restored) finish();
     });
 
-    // Handle auth state changes: initial session, sign in, sign out.
-    // With autoRefreshToken=false, the client initializes without deadlocking.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        await fetchProfile(session.user.id, session.access_token);
+        await fetchAdminUser(
+          session.user.id,
+          session.user.email ?? undefined,
+          session.access_token,
+        );
       } else {
         setUser(null);
+        setIsAccessDenied(false);
       }
       finish();
     });
@@ -129,21 +184,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    // Clear UI and stored session immediately (don't wait for Supabase client
-    // which may be blocked by the Web Lock during initialization)
     setUser(null);
+    setIsAccessDenied(false);
     try {
       const ref = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0];
       localStorage.removeItem(`sb-${ref}-auth-token`);
     } catch {
       // ignore
     }
-    // Also tell the Supabase client to clean up (fire-and-forget)
     supabase.auth.signOut().catch(() => {});
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, isAccessDenied, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

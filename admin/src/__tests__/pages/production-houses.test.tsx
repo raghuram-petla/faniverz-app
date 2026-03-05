@@ -49,6 +49,22 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+// Mock usePermissions to return super_admin permissions
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    role: 'super_admin',
+    isSuperAdmin: true,
+    isAdmin: false,
+    isPHAdmin: false,
+    productionHouseIds: [],
+    canViewPage: () => true,
+    canCreate: () => true,
+    canUpdate: () => true,
+    canDelete: () => true,
+    auditScope: 'all',
+  }),
+}));
+
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },

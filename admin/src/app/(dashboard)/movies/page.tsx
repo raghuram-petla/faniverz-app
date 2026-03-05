@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAdminMovies, useDeleteMovie } from '@/hooks/useAdminMovies';
+import { usePermissions } from '@/hooks/usePermissions';
 import { formatDate } from '@/lib/utils';
 import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
 import { MOVIE_STATUS_CONFIG } from '@shared/constants';
@@ -25,11 +26,12 @@ function getStatusBadge(movie: Movie) {
 }
 
 export default function MoviesPage() {
+  const { isPHAdmin, productionHouseIds, canDelete } = usePermissions();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAdminMovies(debouncedSearch, statusFilter);
+    useAdminMovies(debouncedSearch, statusFilter, isPHAdmin ? productionHouseIds : undefined);
   const movies = data?.pages.flat() ?? [];
   const deleteMovie = useDeleteMovie();
 
@@ -154,14 +156,16 @@ export default function MoviesPage() {
                       >
                         <Edit className="w-4 h-4" />
                       </Link>
-                      <button
-                        onClick={() => {
-                          if (confirm('Delete this movie?')) deleteMovie.mutate(movie.id);
-                        }}
-                        className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canDelete('movie') && (
+                        <button
+                          onClick={() => {
+                            if (confirm('Delete this movie?')) deleteMovie.mutate(movie.id);
+                          }}
+                          className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

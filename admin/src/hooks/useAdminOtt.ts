@@ -3,10 +3,33 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { MoviePlatform } from '@/lib/types';
 
-export function useAdminOttReleases() {
+/**
+ * List OTT releases. PH admins only see releases for their PH's movies.
+ */
+export function useAdminOttReleases(productionHouseIds?: string[]) {
+  const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
+
   return useQuery({
-    queryKey: ['admin', 'ott'],
+    queryKey: ['admin', 'ott', productionHouseIds],
     queryFn: async () => {
+      if (hasPHScope) {
+        const { data: junctionData, error: jErr } = await supabase
+          .from('movie_production_houses')
+          .select('movie_id')
+          .in('production_house_id', productionHouseIds);
+        if (jErr) throw jErr;
+        const movieIds = [...new Set((junctionData ?? []).map((r) => r.movie_id))];
+        if (movieIds.length === 0) return [] as MoviePlatform[];
+
+        const { data, error } = await supabase
+          .from('movie_platforms')
+          .select('*, movie:movies(id, title, poster_url), platform:platforms(*)')
+          .in('movie_id', movieIds)
+          .order('movie_id');
+        if (error) throw error;
+        return data as MoviePlatform[];
+      }
+
       const { data, error } = await supabase
         .from('movie_platforms')
         .select('*, movie:movies(id, title, poster_url), platform:platforms(*)')

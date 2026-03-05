@@ -11,6 +11,8 @@ export interface AuditFilters {
   search?: string;
   dateFrom?: string;
   dateTo?: string;
+  /** When set, only show entries for this admin user (non-super admins) */
+  adminUserId?: string;
 }
 
 /** Strip characters that break PostgREST .or() filter syntax */
@@ -31,6 +33,10 @@ export function useAdminAuditLog(filters?: AuditFilters) {
         .order('created_at', { ascending: false })
         .range(from, to);
 
+      // Non-super admins: restrict to own entries (defense in depth — RLS also enforces this)
+      if (filters?.adminUserId) {
+        query = query.eq('admin_user_id', filters.adminUserId);
+      }
       if (filters?.action) {
         query = query.eq('action', filters.action);
       }
