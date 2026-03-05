@@ -2,6 +2,7 @@ import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { FeedContentBadge } from './FeedContentBadge';
+import { VoteButtons } from './VoteButtons';
 import { formatRelativeTime, CARD_GRADIENTS } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem } from '@shared/types';
@@ -10,9 +11,12 @@ export interface FeedCardProps {
   item: NewsFeedItem;
   index: number;
   onPress: (item: NewsFeedItem) => void;
+  userVote?: 'up' | 'down' | null;
+  onUpvote?: (itemId: string) => void;
+  onDownvote?: (itemId: string) => void;
 }
 
-export function FeedCard({ item, index, onPress }: FeedCardProps) {
+export function FeedCard({ item, index, onPress, userVote, onUpvote, onDownvote }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
   const bgColor = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
@@ -33,26 +37,22 @@ export function FeedCard({ item, index, onPress }: FeedCardProps) {
           <Image source={{ uri: item.thumbnail_url! }} style={styles.thumbnailImage} />
         ) : null}
 
-        {/* Play button for videos */}
         {hasVideo ? (
           <View style={styles.playBtn}>
             <Ionicons name="play" size={20} color={colors.white} style={styles.playIcon} />
           </View>
         ) : null}
 
-        {/* Content type badge — top left */}
         <View style={styles.badgeContainer}>
           <FeedContentBadge contentType={item.content_type} size="small" />
         </View>
 
-        {/* Duration — bottom right */}
         {item.duration ? (
           <View style={styles.durationBadge}>
             <Text style={styles.durationText}>{item.duration}</Text>
           </View>
         ) : null}
 
-        {/* Pin indicator */}
         {item.is_pinned ? (
           <View style={styles.pinBadge}>
             <Ionicons name="pin" size={10} color={colors.white} />
@@ -73,6 +73,15 @@ export function FeedCard({ item, index, onPress }: FeedCardProps) {
           ) : null}
           <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
         </View>
+        {onUpvote && onDownvote ? (
+          <VoteButtons
+            upvoteCount={item.upvote_count}
+            downvoteCount={item.downvote_count}
+            userVote={userVote ?? null}
+            onUpvote={() => onUpvote(item.id)}
+            onDownvote={() => onDownvote(item.id)}
+          />
+        ) : null}
       </View>
     </TouchableOpacity>
   );

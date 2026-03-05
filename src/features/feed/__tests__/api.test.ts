@@ -12,11 +12,35 @@ jest.mock('@/lib/supabase', () => {
     range: mockRange,
   }));
   const mockSelect = jest.fn(() => ({ order: mockOrder, eq: mockEq }));
-  const mockFrom = jest.fn(() => ({ select: mockSelect }));
+
+  // Vote chain mocks
+  const mockSingle = jest.fn();
+  const mockUpsertSelect = jest.fn(() => ({ single: mockSingle }));
+  const mockUpsert = jest.fn(() => ({ select: mockUpsertSelect }));
+  const mockDeleteEq2 = jest.fn();
+  const mockDeleteEq = jest.fn(() => ({ eq: mockDeleteEq2 }));
+  const mockDelete = jest.fn(() => ({ eq: mockDeleteEq }));
+  const mockVoteIn = jest.fn();
+  const mockVoteEq = jest.fn(() => ({ in: mockVoteIn }));
+  const mockVoteSelect = jest.fn(() => ({ eq: mockVoteEq }));
+
+  const mockFrom = jest.fn((table: string) => {
+    if (table === 'feed_votes') {
+      return {
+        upsert: mockUpsert,
+        delete: mockDelete,
+        select: mockVoteSelect,
+      };
+    }
+    return { select: mockSelect };
+  });
+
+  const mockRpc = jest.fn();
 
   return {
     supabase: {
       from: mockFrom,
+      rpc: mockRpc,
       __mocks: {
         mockFrom,
         mockSelect,
@@ -27,12 +51,29 @@ jest.mock('@/lib/supabase', () => {
         mockIn,
         mockRange,
         mockLimit,
+        mockRpc,
+        mockUpsert,
+        mockUpsertSelect,
+        mockSingle,
+        mockDelete,
+        mockDeleteEq,
+        mockDeleteEq2,
+        mockVoteSelect,
+        mockVoteEq,
+        mockVoteIn,
       },
     },
   };
 });
 
-import { fetchNewsFeed, fetchFeaturedFeedItems } from '../api';
+import {
+  fetchNewsFeed,
+  fetchFeaturedFeedItems,
+  fetchPersonalizedFeed,
+  voteFeedItem,
+  removeFeedVote,
+  fetchUserVotes,
+} from '../api';
 import { supabase } from '@/lib/supabase';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -143,5 +184,262 @@ describe('fetchFeaturedFeedItems', () => {
   it('throws on supabase error', async () => {
     mocks.mockLimit.mockResolvedValue({ data: null, error: new Error('fail') });
     await expect(fetchFeaturedFeedItems()).rejects.toThrow('fail');
+  });
+});
+
+describe('fetchPersonalizedFeed', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('calls supabase.rpc with correct params', async () => {
+    const rpcResult = [
+      {
+        id: 'item-1',
+        feed_type: 'video',
+        content_type: 'trailer',
+        title: 'Personalized Item',
+        description: null,
+        movie_id: 'm1',
+        source_table: 'movie_videos',
+        source_id: 'v1',
+        thumbnail_url: 'https://example.com/thumb.jpg',
+        youtube_id: 'xyz',
+        duration: '2:00',
+        is_pinned: false,
+        is_featured: false,
+        display_order: 0,
+        upvote_count: 10,
+        downvote_count: 2,
+        published_at: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        score: 8,
+        movie_title: 'Test Movie',
+        movie_poster_url: null,
+        movie_release_date: '2024-03-01',
+      },
+    ];
+    mocks.mockRpc.mockResolvedValue({ data: rpcResult, error: null });
+
+    const result = await fetchPersonalizedFeed('user-123', 'trailers', 1, 15);
+
+    expect(mocks.mockRpc).toHaveBeenCalledWith('get_personalized_feed', {
+      p_user_id: 'user-123',
+      p_filter: 'trailers',
+      p_limit: 15,
+      p_offset: 15,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('item-1');
+    expect(result[0].title).toBe('Personalized Item');
+  });
+
+  it('maps response with nested movie object', async () => {
+    const rpcResult = [
+      {
+        id: 'item-2',
+        feed_type: 'poster',
+        content_type: 'poster',
+        title: 'Poster Item',
+        description: 'A poster',
+        movie_id: 'm2',
+        source_table: null,
+        source_id: null,
+        thumbnail_url: null,
+        youtube_id: null,
+        duration: null,
+        is_pinned: true,
+        is_featured: false,
+        display_order: 1,
+        upvote_count: 5,
+        downvote_count: 0,
+        published_at: '2024-02-01T00:00:00Z',
+        created_at: '2024-02-01T00:00:00Z',
+        score: 5,
+        movie_title: 'Movie Two',
+        movie_poster_url: 'https://example.com/poster.jpg',
+        movie_release_date: '2024-06-01',
+      },
+    ];
+    mocks.mockRpc.mockResolvedValue({ data: rpcResult, error: null });
+
+    const result = await fetchPersonalizedFeed('user-123');
+
+    expect(result[0].movie).toEqual({
+      id: 'm2',
+      title: 'Movie Two',
+      poster_url: 'https://example.com/poster.jpg',
+      release_date: '2024-06-01',
+    });
+  });
+
+  it('returns undefined movie when movie_title is absent', async () => {
+    const rpcResult = [
+      {
+        id: 'item-3',
+        feed_type: 'update',
+        content_type: 'update',
+        title: 'General Update',
+        description: null,
+        movie_id: null,
+        source_table: null,
+        source_id: null,
+        thumbnail_url: null,
+        youtube_id: null,
+        duration: null,
+        is_pinned: false,
+        is_featured: false,
+        display_order: 0,
+        upvote_count: 0,
+        downvote_count: 0,
+        published_at: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        score: 0,
+        movie_title: null,
+        movie_poster_url: null,
+        movie_release_date: null,
+      },
+    ];
+    mocks.mockRpc.mockResolvedValue({ data: rpcResult, error: null });
+
+    const result = await fetchPersonalizedFeed(null);
+    expect(result[0].movie).toBeUndefined();
+  });
+
+  it('passes null userId when not logged in', async () => {
+    mocks.mockRpc.mockResolvedValue({ data: [], error: null });
+    await fetchPersonalizedFeed(null, 'all', 0, 15);
+    expect(mocks.mockRpc).toHaveBeenCalledWith('get_personalized_feed', {
+      p_user_id: null,
+      p_filter: 'all',
+      p_limit: 15,
+      p_offset: 0,
+    });
+  });
+
+  it('throws on supabase error', async () => {
+    mocks.mockRpc.mockResolvedValue({ data: null, error: new Error('RPC failed') });
+    await expect(fetchPersonalizedFeed('user-123')).rejects.toThrow('RPC failed');
+  });
+
+  it('returns empty array when data is null', async () => {
+    mocks.mockRpc.mockResolvedValue({ data: null, error: null });
+    const result = await fetchPersonalizedFeed('user-123');
+    expect(result).toEqual([]);
+  });
+});
+
+describe('voteFeedItem', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('upserts to feed_votes with correct params', async () => {
+    const voteData = {
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    };
+    mocks.mockSingle.mockResolvedValue({ data: voteData, error: null });
+
+    const result = await voteFeedItem('item-1', 'user-123', 'up');
+
+    expect(mocks.mockFrom).toHaveBeenCalledWith('feed_votes');
+    expect(mocks.mockUpsert).toHaveBeenCalledWith(
+      { feed_item_id: 'item-1', user_id: 'user-123', vote_type: 'up' },
+      { onConflict: 'feed_item_id,user_id' },
+    );
+    expect(result).toEqual(voteData);
+  });
+
+  it('handles downvote type', async () => {
+    const voteData = {
+      id: 'vote-2',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'down',
+      created_at: '2024-01-01T00:00:00Z',
+    };
+    mocks.mockSingle.mockResolvedValue({ data: voteData, error: null });
+
+    const result = await voteFeedItem('item-1', 'user-123', 'down');
+
+    expect(mocks.mockUpsert).toHaveBeenCalledWith(
+      { feed_item_id: 'item-1', user_id: 'user-123', vote_type: 'down' },
+      { onConflict: 'feed_item_id,user_id' },
+    );
+    expect(result.vote_type).toBe('down');
+  });
+
+  it('throws on supabase error', async () => {
+    mocks.mockSingle.mockResolvedValue({ data: null, error: new Error('Vote failed') });
+    await expect(voteFeedItem('item-1', 'user-123', 'up')).rejects.toThrow('Vote failed');
+  });
+});
+
+describe('removeFeedVote', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('deletes from feed_votes with correct params', async () => {
+    mocks.mockDeleteEq2.mockResolvedValue({ error: null });
+
+    await removeFeedVote('item-1', 'user-123');
+
+    expect(mocks.mockFrom).toHaveBeenCalledWith('feed_votes');
+    expect(mocks.mockDeleteEq).toHaveBeenCalledWith('feed_item_id', 'item-1');
+    expect(mocks.mockDeleteEq2).toHaveBeenCalledWith('user_id', 'user-123');
+  });
+
+  it('throws on supabase error', async () => {
+    mocks.mockDeleteEq2.mockResolvedValue({ error: new Error('Delete failed') });
+    await expect(removeFeedVote('item-1', 'user-123')).rejects.toThrow('Delete failed');
+  });
+});
+
+describe('fetchUserVotes', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns empty object when feedItemIds is empty', async () => {
+    const result = await fetchUserVotes('user-123', []);
+    expect(result).toEqual({});
+    expect(mocks.mockFrom).not.toHaveBeenCalledWith('feed_votes');
+  });
+
+  it('fetches votes and returns vote map', async () => {
+    const voteData = [
+      { feed_item_id: 'item-1', vote_type: 'up' },
+      { feed_item_id: 'item-2', vote_type: 'down' },
+    ];
+    mocks.mockVoteIn.mockResolvedValue({ data: voteData, error: null });
+
+    const result = await fetchUserVotes('user-123', ['item-1', 'item-2', 'item-3']);
+
+    expect(mocks.mockFrom).toHaveBeenCalledWith('feed_votes');
+    expect(mocks.mockVoteEq).toHaveBeenCalledWith('user_id', 'user-123');
+    expect(mocks.mockVoteIn).toHaveBeenCalledWith('feed_item_id', ['item-1', 'item-2', 'item-3']);
+    expect(result).toEqual({ 'item-1': 'up', 'item-2': 'down' });
+  });
+
+  it('returns empty map when no votes found', async () => {
+    mocks.mockVoteIn.mockResolvedValue({ data: [], error: null });
+    const result = await fetchUserVotes('user-123', ['item-1']);
+    expect(result).toEqual({});
+  });
+
+  it('returns empty map when data is null', async () => {
+    mocks.mockVoteIn.mockResolvedValue({ data: null, error: null });
+    const result = await fetchUserVotes('user-123', ['item-1']);
+    expect(result).toEqual({});
+  });
+
+  it('throws on supabase error', async () => {
+    mocks.mockVoteIn.mockResolvedValue({ data: null, error: new Error('Fetch votes failed') });
+    await expect(fetchUserVotes('user-123', ['item-1'])).rejects.toThrow('Fetch votes failed');
   });
 });

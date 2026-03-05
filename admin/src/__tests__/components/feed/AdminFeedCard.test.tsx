@@ -34,6 +34,8 @@ const makeItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   is_pinned: false,
   is_featured: false,
   display_order: 0,
+  upvote_count: 0,
+  downvote_count: 0,
   published_at: '2024-01-01T00:00:00Z',
   created_at: '2024-01-01T00:00:00Z',
   movie: { id: 'm1', title: 'Test Movie', poster_url: null, release_date: '2024-03-01' },

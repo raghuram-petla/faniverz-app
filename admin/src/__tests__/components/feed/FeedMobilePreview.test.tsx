@@ -37,6 +37,8 @@ const makeItem = (
   is_pinned: false,
   is_featured: false,
   display_order: 0,
+  upvote_count: 0,
+  downvote_count: 0,
   published_at: '2024-01-01T00:00:00Z',
   created_at: '2024-01-01T00:00:00Z',
   ...overrides,

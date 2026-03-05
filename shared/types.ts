@@ -170,7 +170,18 @@ export interface NewsFeedItem {
   is_pinned: boolean;
   is_featured: boolean;
   display_order: number;
+  upvote_count: number;
+  downvote_count: number;
   published_at: string;
   created_at: string;
+  score?: number;
   movie?: { id: string; title: string; poster_url: string | null; release_date: string | null };
+}
+
+export interface FeedVote {
+  id: string;
+  feed_item_id: string;
+  user_id: string;
+  vote_type: 'up' | 'down';
+  created_at: string;
 }

@@ -1,7 +1,15 @@
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
-    colors: { white: '#fff', red600: '#dc2626', gray500: '#6b7280' },
+    colors: {
+      white: '#fff',
+      red600: '#dc2626',
+      gray500: '#6b7280',
+      green500: '#22c55e',
+      green600_20: 'rgba(22,163,74,0.2)',
+      red500: '#ef4444',
+      red600_20: 'rgba(220,38,38,0.2)',
+    },
   }),
 }));
 
@@ -29,6 +37,8 @@ const makeItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   is_pinned: false,
   is_featured: false,
   display_order: 0,
+  upvote_count: 5,
+  downvote_count: 1,
   published_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
   movie: { id: 'm1', title: 'Test Movie', poster_url: null, release_date: '2024-03-01' },
@@ -82,5 +92,114 @@ describe('FeedCard', () => {
   it('renders pinned indicator for pinned items', () => {
     const item = makeItem({ is_pinned: true });
     render(<FeedCard item={item} index={0} onPress={jest.fn()} />);
+  });
+
+  // Vote button tests
+  it('renders vote buttons when onUpvote and onDownvote are provided', () => {
+    const item = makeItem({ upvote_count: 10, downvote_count: 3 });
+    const { getByLabelText } = render(
+      <FeedCard
+        item={item}
+        index={0}
+        onPress={jest.fn()}
+        userVote={null}
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(getByLabelText('Upvote, 10 upvotes')).toBeTruthy();
+    expect(getByLabelText('Downvote, 3 downvotes')).toBeTruthy();
+  });
+
+  it('does not render vote buttons when callbacks not provided', () => {
+    const item = makeItem({ upvote_count: 10, downvote_count: 3 });
+    const { queryByLabelText } = render(<FeedCard item={item} index={0} onPress={jest.fn()} />);
+    expect(queryByLabelText('Upvote, 10 upvotes')).toBeNull();
+    expect(queryByLabelText('Downvote, 3 downvotes')).toBeNull();
+  });
+
+  it('shows correct vote counts', () => {
+    const item = makeItem({ upvote_count: 42, downvote_count: 7 });
+    const { getByText } = render(
+      <FeedCard
+        item={item}
+        index={0}
+        onPress={jest.fn()}
+        userVote={null}
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(getByText('42')).toBeTruthy();
+    expect(getByText('7')).toBeTruthy();
+  });
+
+  it('pressing upvote calls onUpvote with item id', () => {
+    const onUpvote = jest.fn();
+    const item = makeItem({ id: 'feed-item-99', upvote_count: 5, downvote_count: 1 });
+    const { getByLabelText } = render(
+      <FeedCard
+        item={item}
+        index={0}
+        onPress={jest.fn()}
+        userVote={null}
+        onUpvote={onUpvote}
+        onDownvote={jest.fn()}
+      />,
+    );
+    fireEvent.press(getByLabelText('Upvote, 5 upvotes'));
+    expect(onUpvote).toHaveBeenCalledWith('feed-item-99');
+  });
+
+  it('pressing downvote calls onDownvote with item id', () => {
+    const onDownvote = jest.fn();
+    const item = makeItem({ id: 'feed-item-99', upvote_count: 5, downvote_count: 1 });
+    const { getByLabelText } = render(
+      <FeedCard
+        item={item}
+        index={0}
+        onPress={jest.fn()}
+        userVote={null}
+        onUpvote={jest.fn()}
+        onDownvote={onDownvote}
+      />,
+    );
+    fireEvent.press(getByLabelText('Downvote, 1 downvotes'));
+    expect(onDownvote).toHaveBeenCalledWith('feed-item-99');
+  });
+
+  it('passes userVote to VoteButtons for active state', () => {
+    const item = makeItem({ upvote_count: 5, downvote_count: 1 });
+    const { getByLabelText } = render(
+      <FeedCard
+        item={item}
+        index={0}
+        onPress={jest.fn()}
+        userVote="up"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    // Upvote button should have active background style (style may be flattened)
+    const upvoteBtn = getByLabelText('Upvote, 5 upvotes');
+    expect(upvoteBtn.props.style).toEqual(
+      expect.objectContaining({ backgroundColor: 'rgba(22,163,74,0.2)' }),
+    );
+  });
+
+  it('does not render vote buttons when only onUpvote provided', () => {
+    const item = makeItem({ upvote_count: 5, downvote_count: 1 });
+    const { queryByLabelText } = render(
+      <FeedCard item={item} index={0} onPress={jest.fn()} onUpvote={jest.fn()} />,
+    );
+    expect(queryByLabelText('Upvote, 5 upvotes')).toBeNull();
+  });
+
+  it('does not render vote buttons when only onDownvote provided', () => {
+    const item = makeItem({ upvote_count: 5, downvote_count: 1 });
+    const { queryByLabelText } = render(
+      <FeedCard item={item} index={0} onPress={jest.fn()} onDownvote={jest.fn()} />,
+    );
+    expect(queryByLabelText('Downvote, 1 downvotes')).toBeNull();
   });
 });

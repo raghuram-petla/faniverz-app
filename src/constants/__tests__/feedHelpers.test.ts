@@ -10,8 +10,8 @@ import {
 } from '../feedHelpers';
 
 describe('FEED_PILLS', () => {
-  it('has 6 filter options', () => {
-    expect(FEED_PILLS).toHaveLength(6);
+  it('has 7 filter options', () => {
+    expect(FEED_PILLS).toHaveLength(7);
   });
 
   it('starts with All filter', () => {

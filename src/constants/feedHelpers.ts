@@ -9,6 +9,7 @@ export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'Posters', value: 'posters', activeColor: colors.green500 },
   { label: 'BTS', value: 'bts', activeColor: colors.orange500 },
   { label: 'Surprise', value: 'surprise', activeColor: colors.pink600 },
+  { label: 'Updates', value: 'updates', activeColor: colors.yellow400 },
 ];
 
 export const CARD_GRADIENTS: string[] = [
@@ -42,6 +43,14 @@ export function getFeedTypeColor(contentType: string): string {
       return colors.pink600;
     case 'update':
       return colors.gray500;
+    case 'new_movie':
+      return colors.red600;
+    case 'theatrical_release':
+      return colors.red600;
+    case 'ott_release':
+      return colors.purple600;
+    case 'rating_milestone':
+      return colors.yellow400;
     default:
       return colors.red600;
   }
@@ -73,6 +82,14 @@ export function getFeedTypeLabel(contentType: string): string {
       return 'Short Film';
     case 'update':
       return 'Update';
+    case 'new_movie':
+      return 'New Movie';
+    case 'theatrical_release':
+      return 'In Theaters';
+    case 'ott_release':
+      return 'Now Streaming';
+    case 'rating_milestone':
+      return 'Milestone';
     default:
       return contentType;
   }
@@ -101,6 +118,14 @@ export function getFeedTypeIconName(
       return 'film';
     case 'update':
       return 'megaphone';
+    case 'new_movie':
+      return 'star';
+    case 'theatrical_release':
+      return 'ticket';
+    case 'ott_release':
+      return 'tv';
+    case 'rating_milestone':
+      return 'trophy';
     default:
       return 'newspaper';
   }

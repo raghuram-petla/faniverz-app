@@ -3,12 +3,14 @@ jest.mock('expo-router', () => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MockTabsScreen = (mockProps: any) => {
+    const hasHref = mockProps.options?.href !== null;
     const mockTitle = mockProps.options?.title ?? mockProps.name;
     const mockIconFn = mockProps.options?.tabBarIcon;
     return (
       <View testID={`tab-screen-${mockProps.name}`}>
-        <Text>{mockTitle}</Text>
+        {hasHref && <Text>{mockTitle}</Text>}
         {mockIconFn ? mockIconFn({ color: '#fff', size: 24 }) : null}
+        {mockProps.options?.href === null && <Text>hidden</Text>}
       </View>
     );
   };
@@ -45,21 +47,59 @@ describe('TabLayout', () => {
     expect(screen.getByTestId('tabs-root')).toBeTruthy();
   });
 
-  it('renders all tab screens including hidden surprise', () => {
+  it('renders Home tab first with home icon', () => {
     render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-index')).toBeTruthy();
+    expect(screen.getByText('Home')).toBeTruthy();
+  });
+
+  it('renders Spotlight tab with star icon', () => {
+    render(<TabLayout />);
+    expect(screen.getByTestId('tab-screen-spotlight')).toBeTruthy();
+    expect(screen.getByText('Spotlight')).toBeTruthy();
+  });
+
+  it('renders Calendar tab', () => {
+    render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-calendar')).toBeTruthy();
-    expect(screen.getByTestId('tab-screen-feed')).toBeTruthy();
+    expect(screen.getByText('Calendar')).toBeTruthy();
+  });
+
+  it('renders Watchlist tab', () => {
+    render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-watchlist')).toBeTruthy();
+    expect(screen.getByText('Watchlist')).toBeTruthy();
+  });
+
+  it('renders Profile tab', () => {
+    render(<TabLayout />);
+    expect(screen.getByTestId('tab-screen-profile')).toBeTruthy();
+    expect(screen.getByText('Profile')).toBeTruthy();
+  });
+
+  it('renders all tab screens including hidden ones', () => {
+    render(<TabLayout />);
+    expect(screen.getByTestId('tab-screen-index')).toBeTruthy();
+    expect(screen.getByTestId('tab-screen-spotlight')).toBeTruthy();
+    expect(screen.getByTestId('tab-screen-calendar')).toBeTruthy();
+    expect(screen.getByTestId('tab-screen-watchlist')).toBeTruthy();
+    expect(screen.getByTestId('tab-screen-feed')).toBeTruthy();
     expect(screen.getByTestId('tab-screen-surprise')).toBeTruthy();
     expect(screen.getByTestId('tab-screen-profile')).toBeTruthy();
   });
 
-  it('displays tab titles for visible tabs', () => {
+  it('marks feed and surprise tabs as hidden (href: null)', () => {
+    render(<TabLayout />);
+    // Hidden tabs render "hidden" text but no title
+    const hiddenTexts = screen.getAllByText('hidden');
+    expect(hiddenTexts).toHaveLength(2);
+  });
+
+  it('displays tab titles for all visible tabs', () => {
     render(<TabLayout />);
     expect(screen.getByText('Home')).toBeTruthy();
+    expect(screen.getByText('Spotlight')).toBeTruthy();
     expect(screen.getByText('Calendar')).toBeTruthy();
-    expect(screen.getByText('Feed')).toBeTruthy();
     expect(screen.getByText('Watchlist')).toBeTruthy();
     expect(screen.getByText('Profile')).toBeTruthy();
   });
@@ -68,8 +108,8 @@ describe('TabLayout', () => {
     const { toJSON } = render(<TabLayout />);
     const tree = JSON.stringify(toJSON());
     expect(tree).toContain('tab-screen-index');
+    expect(tree).toContain('tab-screen-spotlight');
     expect(tree).toContain('tab-screen-calendar');
-    expect(tree).toContain('tab-screen-feed');
     expect(tree).toContain('tab-screen-watchlist');
     expect(tree).toContain('tab-screen-profile');
   });

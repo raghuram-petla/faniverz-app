@@ -1,15 +1,45 @@
 jest.mock('../api');
 
-import { renderHook, waitFor } from '@testing-library/react-native';
+jest.mock('@/features/auth/providers/AuthProvider', () => ({
+  useAuth: jest.fn(() => ({
+    user: { id: 'user-123' },
+    session: {},
+    isLoading: false,
+    isGuest: false,
+    setIsGuest: jest.fn(),
+  })),
+}));
+
+import { renderHook, waitFor, act } from '@testing-library/react-native';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useNewsFeed, useFeaturedFeed } from '../hooks';
-import { fetchNewsFeed, fetchFeaturedFeedItems } from '../api';
+import {
+  useNewsFeed,
+  useFeaturedFeed,
+  usePersonalizedFeed,
+  useVoteFeedItem,
+  useRemoveFeedVote,
+  useUserVotes,
+} from '../hooks';
+import {
+  fetchNewsFeed,
+  fetchFeaturedFeedItems,
+  fetchPersonalizedFeed,
+  voteFeedItem,
+  removeFeedVote,
+  fetchUserVotes,
+} from '../api';
 
 const mockFetchNewsFeed = fetchNewsFeed as jest.MockedFunction<typeof fetchNewsFeed>;
 const mockFetchFeatured = fetchFeaturedFeedItems as jest.MockedFunction<
   typeof fetchFeaturedFeedItems
 >;
+const mockFetchPersonalized = fetchPersonalizedFeed as jest.MockedFunction<
+  typeof fetchPersonalizedFeed
+>;
+const mockVoteFeedItem = voteFeedItem as jest.MockedFunction<typeof voteFeedItem>;
+const mockRemoveFeedVote = removeFeedVote as jest.MockedFunction<typeof removeFeedVote>;
+const mockFetchUserVotes = fetchUserVotes as jest.MockedFunction<typeof fetchUserVotes>;
 
 function createWrapper() {
   const client = new QueryClient({
@@ -34,6 +64,8 @@ const mockItem = {
   is_pinned: false,
   is_featured: false,
   display_order: 0,
+  upvote_count: 5,
+  downvote_count: 1,
   published_at: '2024-01-01T00:00:00Z',
   created_at: '2024-01-01T00:00:00Z',
 };
@@ -78,6 +110,153 @@ describe('useFeaturedFeed', () => {
   it('handles errors', async () => {
     mockFetchFeatured.mockRejectedValue(new Error('fail'));
     const { result } = renderHook(() => useFeaturedFeed(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('usePersonalizedFeed', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFetchPersonalized.mockResolvedValue([mockItem]);
+  });
+
+  it('fetches personalized feed successfully', async () => {
+    const { result } = renderHook(() => usePersonalizedFeed(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.pages[0]).toEqual([mockItem]);
+  });
+
+  it('calls fetchPersonalizedFeed with user id and filter', async () => {
+    const { result } = renderHook(() => usePersonalizedFeed('trailers'), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchPersonalized).toHaveBeenCalledWith('user-123', 'trailers', 0, 15);
+  });
+
+  it('defaults filter to all', async () => {
+    const { result } = renderHook(() => usePersonalizedFeed(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchPersonalized).toHaveBeenCalledWith('user-123', 'all', 0, 15);
+  });
+
+  it('handles errors', async () => {
+    mockFetchPersonalized.mockRejectedValue(new Error('personalized fail'));
+    const { result } = renderHook(() => usePersonalizedFeed(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useVoteFeedItem', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+  });
+
+  it('calls voteFeedItem mutation successfully', async () => {
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockVoteFeedItem).toHaveBeenCalledWith('item-1', 'user-123', 'up');
+  });
+
+  it('calls voteFeedItem with downvote', async () => {
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-2',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'down',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'down' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockVoteFeedItem).toHaveBeenCalledWith('item-1', 'user-123', 'down');
+  });
+
+  it('handles mutation error', async () => {
+    mockVoteFeedItem.mockRejectedValue(new Error('vote error'));
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useRemoveFeedVote', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRemoveFeedVote.mockResolvedValue(undefined);
+  });
+
+  it('calls removeFeedVote mutation successfully', async () => {
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockRemoveFeedVote).toHaveBeenCalledWith('item-1', 'user-123');
+  });
+
+  it('handles mutation error', async () => {
+    mockRemoveFeedVote.mockRejectedValue(new Error('remove error'));
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useUserVotes', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFetchUserVotes.mockResolvedValue({ 'item-1': 'up', 'item-2': 'down' });
+  });
+
+  it('fetches user votes with correct ids', async () => {
+    const { result } = renderHook(() => useUserVotes(['item-1', 'item-2']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchUserVotes).toHaveBeenCalledWith('user-123', ['item-1', 'item-2']);
+    expect(result.current.data).toEqual({ 'item-1': 'up', 'item-2': 'down' });
+  });
+
+  it('does not fetch when feedItemIds is empty', async () => {
+    const { result } = renderHook(() => useUserVotes([]), { wrapper: createWrapper() });
+    // Should remain in idle/pending since enabled is false
+    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
+    expect(mockFetchUserVotes).not.toHaveBeenCalled();
+  });
+
+  it('handles error', async () => {
+    mockFetchUserVotes.mockRejectedValue(new Error('votes error'));
+    const { result } = renderHook(() => useUserVotes(['item-1']), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

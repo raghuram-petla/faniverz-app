@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
 export const createStyles = (t: SemanticTheme) =>
@@ -16,33 +17,26 @@ export const createStyles = (t: SemanticTheme) =>
       backgroundColor: t.background,
     },
     header: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 50,
-      paddingHorizontal: 10,
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      paddingBottom: 4,
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingBottom: 16,
       backgroundColor: t.background,
     },
-    logoFull: {
-      height: 52,
-      width: 146,
-    },
-    headerButtons: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    headerButton: {
+    headerIconBadge: {
       width: 40,
       height: 40,
-      borderRadius: 20,
-      backgroundColor: t.input,
+      borderRadius: 12,
+      backgroundColor: colors.red600,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: t.textPrimary,
+      lineHeight: 28,
     },
     scroll: {
       flex: 1,

@@ -1,397 +1,355 @@
+jest.mock('@/theme', () => ({
+  useTheme: () => ({
+    theme: new Proxy({}, { get: () => '#000' }),
+    colors: {
+      red600: '#dc2626',
+      white: '#fff',
+      gray500: '#6b7280',
+      green500: '#22c55e',
+      green600_20: 'rgba(22,163,74,0.2)',
+      red500: '#ef4444',
+      red600_20: 'rgba(220,38,38,0.2)',
+    },
+  }),
+}));
+
+jest.mock('@/styles/tabs/feed.styles', () => ({
+  createFeedStyles: () => new Proxy({}, { get: () => ({}) }),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
-jest.mock('@/features/movies/hooks/useMovies', () => ({
-  useMovies: jest.fn(),
+jest.mock('@/features/feed', () => ({
+  usePersonalizedFeed: jest.fn(),
+  useFeaturedFeed: jest.fn(),
+  useVoteFeedItem: jest.fn(),
+  useRemoveFeedVote: jest.fn(),
+  useUserVotes: jest.fn(),
 }));
 
-jest.mock('@/features/ott/hooks', () => ({
-  usePlatforms: jest.fn(),
-  useMoviePlatformMap: jest.fn(),
+jest.mock('@/stores/useFeedStore', () => ({
+  useFeedStore: jest.fn(),
 }));
 
-const mockPush = jest.fn();
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush, back: jest.fn() }),
+jest.mock('@/components/feed/FeedHeader', () => ({
+  FeedHeader: () => null,
+  useCollapsibleHeader: () => ({
+    headerTranslateY: { setValue: jest.fn() },
+    totalHeaderHeight: 99,
+    handleScroll: jest.fn(),
+  }),
 }));
 
-jest.mock('@/components/home/HeroCarousel', () => {
-  const { View } = require('react-native');
-  return { HeroCarousel: View };
-});
+jest.mock('@/components/feed/FeedFilterPills', () => ({
+  FeedFilterPills: () => null,
+}));
 
-jest.mock('@/components/movie/MovieCard', () => {
-  const { Text } = require('react-native');
-  return {
-    MovieCard: ({ movie }: { movie: { title: string } }) => <Text>{movie.title}</Text>,
-  };
-});
-
-jest.mock('@/components/ui/SectionHeader', () => {
-  const { Text, TouchableOpacity } = require('react-native');
-  return {
-    SectionHeader: ({
-      title,
-      actionLabel,
-      onAction,
-    }: {
-      title: string;
-      actionLabel?: string;
-      onAction?: () => void;
-    }) => (
-      <>
-        <Text>{title}</Text>
-        {actionLabel && onAction && (
-          <TouchableOpacity onPress={onAction}>
-            <Text>{actionLabel}</Text>
+jest.mock('@/components/feed/FeedCard', () => ({
+  FeedCard: ({ item, onUpvote, onDownvote }: any) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View>
+        <Text>{item.title}</Text>
+        {onUpvote && (
+          <TouchableOpacity
+            onPress={() => onUpvote(item.id)}
+            accessibilityLabel={`Upvote ${item.title}`}
+          >
+            <Text>Upvote</Text>
           </TouchableOpacity>
         )}
-      </>
-    ),
-  };
-});
+        {onDownvote && (
+          <TouchableOpacity
+            onPress={() => onDownvote(item.id)}
+            accessibilityLabel={`Downvote ${item.title}`}
+          >
+            <Text>Downvote</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  },
+}));
+
+jest.mock('@/components/feed/FeaturedFeedCard', () => ({
+  FeaturedFeedCard: ({ item }: any) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View>
+        <Text>Featured: {item.title}</Text>
+      </View>
+    );
+  },
+}));
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { useMovies } from '@/features/movies/hooks/useMovies';
-import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
-import HomeScreen from '../index';
+import FeedScreen from '../index';
+import {
+  usePersonalizedFeed,
+  useFeaturedFeed,
+  useVoteFeedItem,
+  useRemoveFeedVote,
+  useUserVotes,
+} from '@/features/feed';
+import { useFeedStore } from '@/stores/useFeedStore';
+import type { NewsFeedItem } from '@shared/types';
 
-const mockMovies = [
-  {
-    id: '1',
-    title: 'Theater Movie',
-    in_theaters: true,
-    release_date: '2025-03-01',
-    poster_url: null,
-    backdrop_url: null,
-    rating: 4.5,
-    review_count: 10,
-    genres: ['Action'],
-    certification: 'UA',
-    runtime: 120,
-    synopsis: '',
-    director: 'Dir',
-    trailer_url: null,
-  },
-  {
-    id: '2',
-    title: 'OTT Movie',
-    in_theaters: false,
-    release_date: '2025-02-01',
-    poster_url: null,
-    backdrop_url: null,
-    rating: 3.5,
-    review_count: 5,
-    genres: ['Drama'],
-    certification: 'U',
-    runtime: 90,
-    synopsis: '',
-    director: 'Dir2',
-    trailer_url: null,
-  },
-  {
-    id: '3',
-    title: 'Upcoming Movie',
-    in_theaters: false,
-    release_date: '2099-06-01',
-    poster_url: null,
-    backdrop_url: null,
-    rating: 0,
-    review_count: 0,
-    genres: ['Comedy'],
-    certification: null,
-    runtime: null,
-    synopsis: '',
-    director: '',
-    trailer_url: null,
-  },
-];
+const mockSetFilter = jest.fn();
+const mockFetchNextPage = jest.fn();
+const mockVoteMutate = jest.fn();
+const mockRemoveMutate = jest.fn();
 
-const mockPlatforms = [
-  { id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 },
-  { id: 'aha', name: 'Aha', logo: '🎬', color: '#FF6B00', display_order: 2 },
-];
+const mockUsePersonalizedFeed = usePersonalizedFeed as jest.MockedFunction<
+  typeof usePersonalizedFeed
+>;
+const mockUseFeaturedFeed = useFeaturedFeed as jest.MockedFunction<typeof useFeaturedFeed>;
+const mockUseVoteFeedItem = useVoteFeedItem as jest.MockedFunction<typeof useVoteFeedItem>;
+const mockUseRemoveFeedVote = useRemoveFeedVote as jest.MockedFunction<typeof useRemoveFeedVote>;
+const mockUseUserVotes = useUserVotes as jest.MockedFunction<typeof useUserVotes>;
+const mockUseFeedStore = useFeedStore as jest.MockedFunction<typeof useFeedStore>;
 
-const mockUseMovies = useMovies as jest.Mock;
-const mockUsePlatforms = usePlatforms as jest.Mock;
-const mockUseMoviePlatformMap = useMoviePlatformMap as jest.Mock;
-
-function setupDefaultMocks() {
-  mockUseMovies.mockReturnValue({ data: mockMovies });
-  mockUsePlatforms.mockReturnValue({ data: mockPlatforms });
-  mockUseMoviePlatformMap.mockReturnValue({
-    data: {
-      '2': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
-    },
-  });
+function makeItem(overrides: Partial<NewsFeedItem> = {}): NewsFeedItem {
+  return {
+    id: 'item-1',
+    feed_type: 'video',
+    content_type: 'trailer',
+    title: 'Test Item',
+    description: null,
+    movie_id: 'movie-1',
+    source_table: 'movie_videos',
+    source_id: 'src-1',
+    thumbnail_url: 'https://example.com/thumb.jpg',
+    youtube_id: 'abc123',
+    duration: '2:30',
+    is_pinned: false,
+    is_featured: false,
+    display_order: 0,
+    upvote_count: 5,
+    downvote_count: 1,
+    published_at: '2024-01-01T00:00:00Z',
+    created_at: '2024-01-01T00:00:00Z',
+    movie: { id: 'movie-1', title: 'Test Movie', poster_url: null, release_date: null },
+    ...overrides,
+  };
 }
 
-describe('HomeScreen', () => {
+function setupMocks(
+  overrides: {
+    store?: Partial<ReturnType<typeof useFeedStore>>;
+    feed?: Record<string, unknown>;
+    featured?: Record<string, unknown>;
+    votes?: Record<string, 'up' | 'down'>;
+  } = {},
+) {
+  mockUseFeedStore.mockReturnValue({
+    filter: 'all',
+    setFilter: mockSetFilter,
+    ...overrides.store,
+  } as any);
+
+  mockUsePersonalizedFeed.mockReturnValue({
+    data: { pages: [[makeItem()]], pageParams: [0] },
+    isLoading: false,
+    hasNextPage: false,
+    fetchNextPage: mockFetchNextPage,
+    isFetchingNextPage: false,
+    ...overrides.feed,
+  } as any);
+
+  mockUseFeaturedFeed.mockReturnValue({
+    data: [],
+    ...overrides.featured,
+  } as any);
+
+  mockUseVoteFeedItem.mockReturnValue({
+    mutate: mockVoteMutate,
+  } as any);
+
+  mockUseRemoveFeedVote.mockReturnValue({
+    mutate: mockRemoveMutate,
+  } as any);
+
+  mockUseUserVotes.mockReturnValue({
+    data: overrides.votes ?? {},
+  } as any);
+}
+
+describe('FeedScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    setupDefaultMocks();
+    setupMocks();
   });
 
-  it('renders the Faniverz logo', () => {
-    render(<HomeScreen />);
-    expect(screen.getByLabelText('Faniverz')).toBeTruthy();
+  it('renders loading spinner when loading', () => {
+    setupMocks({ feed: { data: undefined, isLoading: true } });
+    const { UNSAFE_getAllByType } = render(<FeedScreen />);
+    const { ActivityIndicator } = require('react-native');
+    const indicators = UNSAFE_getAllByType(ActivityIndicator);
+    expect(indicators.length).toBeGreaterThan(0);
   });
 
-  it('renders the Search header button', () => {
-    render(<HomeScreen />);
-    expect(screen.getByLabelText('Search')).toBeTruthy();
+  it('renders empty state when no items', () => {
+    setupMocks({ feed: { data: { pages: [[]], pageParams: [0] }, isLoading: false } });
+    render(<FeedScreen />);
+    expect(screen.getByText('No updates yet')).toBeTruthy();
+    expect(
+      screen.getByText('Check back soon for trailers, posters, and exclusive content!'),
+    ).toBeTruthy();
   });
 
-  it('renders the Notifications header button', () => {
-    render(<HomeScreen />);
-    expect(screen.getByLabelText('Notifications')).toBeTruthy();
+  it('renders feed items when data exists', () => {
+    const items = [
+      makeItem({ id: 'item-1', title: 'First Trailer' }),
+      makeItem({ id: 'item-2', title: 'Second Trailer' }),
+    ];
+    setupMocks({ feed: { data: { pages: [items], pageParams: [0] }, isLoading: false } });
+    render(<FeedScreen />);
+    expect(screen.getByText('First Trailer')).toBeTruthy();
+    expect(screen.getByText('Second Trailer')).toBeTruthy();
   });
 
-  it('renders "In Theaters" section when theatrical movies exist', () => {
-    render(<HomeScreen />);
-    expect(screen.getByText('In Theaters')).toBeTruthy();
+  it('renders featured section when filter is "all" and featured items exist', () => {
+    const featuredItem = makeItem({ id: 'f1', title: 'Hot Trailer', is_featured: true });
+    setupMocks({ featured: { data: [featuredItem] } });
+    render(<FeedScreen />);
+    expect(screen.getByText('Featured')).toBeTruthy();
+    expect(screen.getByText('Featured: Hot Trailer')).toBeTruthy();
   });
 
-  it('renders theatrical movie titles in the "In Theaters" section', () => {
-    render(<HomeScreen />);
-    expect(screen.getByText('Theater Movie')).toBeTruthy();
-  });
-
-  it('renders "Streaming Now" section when OTT movies exist', () => {
-    render(<HomeScreen />);
-    expect(screen.getByText('Streaming Now')).toBeTruthy();
-  });
-
-  it('renders OTT movie titles in the "Streaming Now" section', () => {
-    render(<HomeScreen />);
-    expect(screen.getByText('OTT Movie')).toBeTruthy();
-  });
-
-  it('renders "Coming Soon" section when upcoming movies exist', () => {
-    render(<HomeScreen />);
-    expect(screen.getByText('Coming Soon')).toBeTruthy();
-  });
-
-  it('renders upcoming movie titles in the "Coming Soon" section', () => {
-    render(<HomeScreen />);
-    expect(screen.getByText('Upcoming Movie')).toBeTruthy();
-  });
-
-  it('renders "Browse by Platform" section when platforms exist', () => {
-    render(<HomeScreen />);
-    expect(screen.getByText('Browse by Platform')).toBeTruthy();
-  });
-
-  it('renders platform squares with accessible labels', () => {
-    render(<HomeScreen />);
-    expect(screen.getByLabelText('Netflix')).toBeTruthy();
-    expect(screen.getByLabelText('Aha')).toBeTruthy();
-  });
-
-  it('does not render "In Theaters" section when no theatrical movies', () => {
-    const nonTheatrical = mockMovies.filter((m) => !m.in_theaters);
-    mockUseMovies.mockReturnValue({ data: nonTheatrical });
-    render(<HomeScreen />);
-    expect(screen.queryByText('In Theaters')).toBeNull();
-  });
-
-  it('does not render "Streaming Now" section when no OTT movies', () => {
-    const nonStreaming = mockMovies.filter((m) => m.in_theaters || m.release_date === '2099-06-01');
-    mockUseMovies.mockReturnValue({ data: nonStreaming });
-    mockUseMoviePlatformMap.mockReturnValue({ data: {} });
-    render(<HomeScreen />);
-    expect(screen.queryByText('Streaming Now')).toBeNull();
-  });
-
-  it('does not render "Coming Soon" section when no upcoming movies', () => {
-    const nonUpcoming = mockMovies.filter((m) => m.release_date !== '2099-06-01');
-    mockUseMovies.mockReturnValue({ data: nonUpcoming });
-    render(<HomeScreen />);
-    expect(screen.queryByText('Coming Soon')).toBeNull();
-  });
-
-  it('does not render "Browse by Platform" section when no platforms', () => {
-    mockUsePlatforms.mockReturnValue({ data: [] });
-    render(<HomeScreen />);
-    expect(screen.queryByText('Browse by Platform')).toBeNull();
-  });
-
-  it('renders correctly with empty movie and platform data', () => {
-    mockUseMovies.mockReturnValue({ data: [] });
-    mockUsePlatforms.mockReturnValue({ data: [] });
-    render(<HomeScreen />);
-    expect(screen.getByLabelText('Faniverz')).toBeTruthy();
-  });
-
-  it('navigates to discover with platform filter when a platform square is pressed', () => {
-    render(<HomeScreen />);
-    const netflixButton = screen.getByLabelText('Netflix');
-    fireEvent.press(netflixButton);
-    expect(mockPush).toHaveBeenCalledWith('/discover?platform=netflix');
-  });
-
-  it('renders "To Theaters" subsection when upcoming movies have no platforms', () => {
-    mockUseMoviePlatformMap.mockReturnValue({ data: {} });
-    render(<HomeScreen />);
-    expect(screen.getByText('To Theaters')).toBeTruthy();
-  });
-
-  it('renders "To Streaming" subsection when upcoming movies have platforms', () => {
-    mockUseMoviePlatformMap.mockReturnValue({
-      data: {
-        '3': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
-      },
+  it('does not render featured section when filter is not "all"', () => {
+    const featuredItem = makeItem({ id: 'f1', title: 'Hot Trailer', is_featured: true });
+    setupMocks({
+      store: { filter: 'trailers' },
+      featured: { data: [featuredItem] },
     });
-    render(<HomeScreen />);
-    expect(screen.getByText('To Streaming')).toBeTruthy();
+    render(<FeedScreen />);
+    expect(screen.queryByText('Featured')).toBeNull();
   });
 
-  it('navigates to discover when the search button is pressed', () => {
-    render(<HomeScreen />);
-    const searchButton = screen.getByLabelText('Search');
-    fireEvent.press(searchButton);
-    expect(mockPush).toHaveBeenCalledWith('/discover');
+  it('does not render featured section when no featured items', () => {
+    setupMocks({ featured: { data: [] } });
+    render(<FeedScreen />);
+    expect(screen.queryByText('Featured')).toBeNull();
   });
 
-  it('navigates to notifications when the notifications button is pressed', () => {
-    render(<HomeScreen />);
-    const notifButton = screen.getByLabelText('Notifications');
-    fireEvent.press(notifButton);
-    expect(mockPush).toHaveBeenCalledWith('/notifications');
-  });
-
-  it('handles scroll events without crashing', () => {
-    render(<HomeScreen />);
+  it('calls fetchNextPage on scroll near bottom when hasNextPage is true', () => {
+    setupMocks({ feed: { hasNextPage: true, isFetchingNextPage: false } });
+    render(<FeedScreen />);
     const { ScrollView } = require('react-native');
     const scrollView = screen.UNSAFE_getByType(ScrollView);
-    // Scroll down
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 200 } } });
-    // Scroll further down
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 400 } } });
-    // Scroll back up
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 50 } } });
-    // Scroll to top
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: 0 } } });
-    // Negative offset edge case
-    fireEvent.scroll(scrollView, { nativeEvent: { contentOffset: { y: -10 } } });
-    expect(screen.getByLabelText('Faniverz')).toBeTruthy();
-  });
-
-  it('navigates to discover with theatrical filter when In Theaters "See All" is pressed', () => {
-    render(<HomeScreen />);
-    const seeAllButtons = screen.getAllByText('See All');
-    // The first "See All" corresponds to "In Theaters"
-    fireEvent.press(seeAllButtons[0]);
-    expect(mockPush).toHaveBeenCalledWith('/discover?filter=in_theaters');
-  });
-
-  it('navigates to discover with streaming filter when Streaming Now "See All" is pressed', () => {
-    render(<HomeScreen />);
-    const seeAllButtons = screen.getAllByText('See All');
-    // The second "See All" corresponds to "Streaming Now"
-    fireEvent.press(seeAllButtons[1]);
-    expect(mockPush).toHaveBeenCalledWith('/discover?filter=streaming');
-  });
-
-  it('navigates to discover with upcoming filter when Coming Soon "See All" is pressed', () => {
-    render(<HomeScreen />);
-    const seeAllButtons = screen.getAllByText('See All');
-    // The third "See All" corresponds to "Coming Soon"
-    fireEvent.press(seeAllButtons[2]);
-    expect(mockPush).toHaveBeenCalledWith('/discover?filter=upcoming');
-  });
-
-  it('renders FlatList separators and movie cards for theatrical movies', () => {
-    render(<HomeScreen />);
-    // Theatrical movie rendered through FlatList renderItem
-    expect(screen.getByText('Theater Movie')).toBeTruthy();
-  });
-
-  it('renders upcoming movies in both To Theaters and To Streaming subsections', () => {
-    // Add a second upcoming movie that has a platform mapping
-    const upcomingOTTMovie = {
-      id: '4',
-      title: 'Upcoming OTT Film',
-      in_theaters: false,
-      release_date: '2099-07-01',
-      poster_url: null,
-      backdrop_url: null,
-      rating: 0,
-      review_count: 0,
-      genres: ['Drama'],
-      certification: null,
-      runtime: null,
-      synopsis: '',
-      director: '',
-      trailer_url: null,
-    };
-    mockUseMovies.mockReturnValue({ data: [...mockMovies, upcomingOTTMovie] });
-    mockUseMoviePlatformMap.mockReturnValue({
-      data: {
-        '4': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+    fireEvent.scroll(scrollView, {
+      nativeEvent: {
+        layoutMeasurement: { height: 800 },
+        contentOffset: { y: 900 },
+        contentSize: { height: 1100 },
       },
     });
-
-    render(<HomeScreen />);
-    expect(screen.getByText('To Theaters')).toBeTruthy();
-    expect(screen.getByText('To Streaming')).toBeTruthy();
-    expect(screen.getByText('Upcoming Movie')).toBeTruthy();
-    expect(screen.getByText('Upcoming OTT Film')).toBeTruthy();
+    expect(mockFetchNextPage).toHaveBeenCalled();
   });
 
-  it('renders FlatList item separators when multiple items exist in each section', () => {
-    // 2 theatrical, 2 OTT, 2 upcoming theatrical, 2 upcoming OTT → triggers ItemSeparatorComponent
-    const multiMovies = [
-      { ...mockMovies[0], id: '1', title: 'Theater 1', in_theaters: true },
-      { ...mockMovies[0], id: '2', title: 'Theater 2', in_theaters: true },
-      { ...mockMovies[1], id: '3', title: 'OTT 1', in_theaters: false },
-      { ...mockMovies[1], id: '4', title: 'OTT 2', in_theaters: false },
-      {
-        ...mockMovies[2],
-        id: '5',
-        title: 'Upcoming Theater 1',
-        in_theaters: false,
-        release_date: '2099-06-01',
+  it('does not call fetchNextPage when already fetching next page', () => {
+    setupMocks({ feed: { hasNextPage: true, isFetchingNextPage: true } });
+    render(<FeedScreen />);
+    const { ScrollView } = require('react-native');
+    const scrollView = screen.UNSAFE_getByType(ScrollView);
+    fireEvent.scroll(scrollView, {
+      nativeEvent: {
+        layoutMeasurement: { height: 800 },
+        contentOffset: { y: 900 },
+        contentSize: { height: 1100 },
       },
-      {
-        ...mockMovies[2],
-        id: '6',
-        title: 'Upcoming Theater 2',
-        in_theaters: false,
-        release_date: '2099-06-01',
+    });
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('does not call fetchNextPage when hasNextPage is false', () => {
+    setupMocks({ feed: { hasNextPage: false, isFetchingNextPage: false } });
+    render(<FeedScreen />);
+    const { ScrollView } = require('react-native');
+    const scrollView = screen.UNSAFE_getByType(ScrollView);
+    fireEvent.scroll(scrollView, {
+      nativeEvent: {
+        layoutMeasurement: { height: 800 },
+        contentOffset: { y: 900 },
+        contentSize: { height: 1100 },
       },
-      {
-        ...mockMovies[2],
-        id: '7',
-        title: 'Upcoming OTT 1',
-        in_theaters: false,
-        release_date: '2099-06-01',
-      },
-      {
-        ...mockMovies[2],
-        id: '8',
-        title: 'Upcoming OTT 2',
-        in_theaters: false,
-        release_date: '2099-06-01',
-      },
+    });
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('upvote button triggers vote mutation when no existing vote', () => {
+    setupMocks({ votes: {} });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Upvote Test Item'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'item-1',
+      voteType: 'up',
+      previousVote: null,
+    });
+  });
+
+  it('upvote button triggers remove mutation when already upvoted', () => {
+    setupMocks({ votes: { 'item-1': 'up' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Upvote Test Item'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({
+      feedItemId: 'item-1',
+      previousVote: 'up',
+    });
+  });
+
+  it('downvote button triggers vote mutation when no existing vote', () => {
+    setupMocks({ votes: {} });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Downvote Test Item'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'item-1',
+      voteType: 'down',
+      previousVote: null,
+    });
+  });
+
+  it('downvote button triggers remove mutation when already downvoted', () => {
+    setupMocks({ votes: { 'item-1': 'down' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Downvote Test Item'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({
+      feedItemId: 'item-1',
+      previousVote: 'down',
+    });
+  });
+
+  it('renders isFetchingNextPage indicator at the bottom', () => {
+    setupMocks({ feed: { isFetchingNextPage: true } });
+    const { UNSAFE_getAllByType } = render(<FeedScreen />);
+    const { ActivityIndicator } = require('react-native');
+    const indicators = UNSAFE_getAllByType(ActivityIndicator);
+    expect(indicators.length).toBeGreaterThan(0);
+  });
+
+  it('renders multiple featured items in horizontal list', () => {
+    const items = [
+      makeItem({ id: 'f1', title: 'Featured One', is_featured: true }),
+      makeItem({ id: 'f2', title: 'Featured Two', is_featured: true }),
     ];
-    mockUseMovies.mockReturnValue({ data: multiMovies });
-    mockUseMoviePlatformMap.mockReturnValue({
-      data: {
-        '3': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
-        '4': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
-        '7': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
-        '8': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
-      },
-    });
+    setupMocks({ featured: { data: items } });
+    render(<FeedScreen />);
+    expect(screen.getByText('Featured: Featured One')).toBeTruthy();
+    expect(screen.getByText('Featured: Featured Two')).toBeTruthy();
+  });
 
-    render(<HomeScreen />);
+  it('passes filter to usePersonalizedFeed', () => {
+    setupMocks({ store: { filter: 'songs' } });
+    render(<FeedScreen />);
+    expect(mockUsePersonalizedFeed).toHaveBeenCalledWith('songs');
+  });
 
-    expect(screen.getByText('Theater 1')).toBeTruthy();
-    expect(screen.getByText('Theater 2')).toBeTruthy();
-    expect(screen.getByText('OTT 1')).toBeTruthy();
-    expect(screen.getByText('OTT 2')).toBeTruthy();
+  it('handles empty pages array gracefully', () => {
+    setupMocks({ feed: { data: { pages: [], pageParams: [] }, isLoading: false } });
+    render(<FeedScreen />);
+    expect(screen.getByText('No updates yet')).toBeTruthy();
   });
 });

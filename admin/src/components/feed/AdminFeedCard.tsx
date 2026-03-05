@@ -1,5 +1,5 @@
 'use client';
-import { Pin, Star, Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Pin, Star, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { NewsFeedItem } from '@/lib/types';
@@ -17,6 +17,10 @@ const TYPE_COLORS: Record<string, string> = {
   making: 'bg-orange-400',
   'short-film': 'bg-pink-600',
   update: 'bg-gray-500',
+  new_movie: 'bg-red-600',
+  theatrical_release: 'bg-red-600',
+  ott_release: 'bg-purple-600',
+  rating_milestone: 'bg-yellow-500',
 };
 
 export interface AdminFeedCardProps {
@@ -83,6 +87,16 @@ export function AdminFeedCard({
           ) : null}
         </div>
         <p className="text-sm text-on-surface font-medium truncate">{item.title}</p>
+        <div className="flex items-center gap-3 mt-0.5">
+          <span className="flex items-center gap-1 text-xs text-green-400">
+            <ArrowUp className="w-3 h-3" />
+            {item.upvote_count}
+          </span>
+          <span className="flex items-center gap-1 text-xs text-red-400">
+            <ArrowDown className="w-3 h-3" />
+            {item.downvote_count}
+          </span>
+        </div>
       </div>
 
       {/* Actions */}
