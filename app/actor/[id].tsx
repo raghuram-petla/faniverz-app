@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useActorDetail } from '@/features/actors/hooks';
 import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/formatDate';
-import { createStyles } from './_styles/[id].styles';
+import { createStyles } from '@/styles/actorDetail.styles';
 
 const GENDER_LABELS: Record<number, string> = {
   1: 'Female',

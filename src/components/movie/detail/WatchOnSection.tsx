@@ -5,7 +5,7 @@ import { useTheme } from '@/theme';
 import { getPlatformLogo } from '@/constants/platformLogos';
 import { formatDate } from '@/utils/formatDate';
 import type { MoviePlatform, MovieStatus } from '@/types';
-import { createStyles } from '../_styles/[id].styles';
+import { createStyles } from '@/styles/movieDetail.styles';
 
 interface WatchOnSectionProps {
   platforms: MoviePlatform[];

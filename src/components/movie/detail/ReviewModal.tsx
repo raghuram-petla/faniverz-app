@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { StarRating } from '@/components/ui/StarRating';
-import { createStyles } from '../_styles/[id].styles';
+import { createStyles } from '@/styles/movieDetail.styles';
 
 interface ReviewModalProps {
   visible: boolean;

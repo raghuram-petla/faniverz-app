@@ -18,7 +18,7 @@ import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
-import { createStyles } from './_styles/edit.styles';
+import { createStyles } from '@/styles/profile/edit.styles';
 
 const BIO_LIMIT = 150;
 

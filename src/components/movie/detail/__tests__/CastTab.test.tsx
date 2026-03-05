@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { CastTab } from '../CastTab';
 
-jest.mock('../../_styles/[id].styles', () => ({
+jest.mock('@/styles/movieDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 

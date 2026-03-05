@@ -15,7 +15,7 @@ import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
-import { createStyles } from './_styles/search.styles';
+import { createStyles } from '@/styles/search.styles';
 
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;

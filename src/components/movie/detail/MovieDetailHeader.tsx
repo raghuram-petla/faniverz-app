@@ -1,7 +1,7 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { createStyles } from '../_styles/[id].styles';
+import { createStyles } from '@/styles/movieDetail.styles';
 
 interface MovieDetailHeaderProps {
   insetsTop: number;

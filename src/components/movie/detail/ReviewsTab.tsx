@@ -4,7 +4,7 @@ import { useTheme } from '@/theme';
 import { StarRating } from '@/components/ui/StarRating';
 import { formatDate } from '@/utils/formatDate';
 import type { Review } from '@/types/review';
-import { createStyles } from '../_styles/[id].styles';
+import { createStyles } from '@/styles/movieDetail.styles';
 
 interface ReviewsTabProps {
   rating: number;

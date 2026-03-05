@@ -11,7 +11,7 @@ import { useUnreadCount } from '@/features/notifications/hooks';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { formatMemberSince } from '@/utils/formatDate';
-import { createStyles } from './_styles/profile.styles';
+import { createStyles } from '@/styles/tabs/profile.styles';
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;

@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { ActorAvatar } from '@/components/common/ActorAvatar';
 import type { CastMember } from '@/types';
 import { useTheme } from '@/theme';
-import { createStyles } from '../_styles/[id].styles';
+import { createStyles } from '@/styles/movieDetail.styles';
 
 interface CastTabProps {
   cast: CastMember[];

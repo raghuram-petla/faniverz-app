@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { MovieHeroSection } from '../MovieHeroSection';
 
-jest.mock('../../_styles/[id].styles', () => ({
+jest.mock('@/styles/movieDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 

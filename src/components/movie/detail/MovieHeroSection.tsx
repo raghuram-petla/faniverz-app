@@ -6,7 +6,7 @@ import { useTheme } from '@/theme';
 import { getMovieStatusLabel } from '@/constants';
 import type { MovieStatus } from '@/types';
 import type { MovieWithDetails } from '@/types/movie';
-import { createStyles } from '../_styles/[id].styles';
+import { createStyles } from '@/styles/movieDetail.styles';
 
 interface MovieHeroSectionProps {
   movie: MovieWithDetails;
