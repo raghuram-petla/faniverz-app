@@ -50,7 +50,7 @@ CREATE TABLE admin_invitations (
   production_house_ids uuid[] DEFAULT '{}',
   status text NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'accepted', 'revoked')),
-  token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  token text NOT NULL UNIQUE DEFAULT replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
   created_at timestamptz DEFAULT now(),
   accepted_at timestamptz,
   expires_at timestamptz DEFAULT now() + interval '7 days'
