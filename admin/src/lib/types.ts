@@ -61,10 +61,28 @@ export interface AuditLogEntry {
   admin_user_id: string;
   action: 'create' | 'update' | 'delete' | 'sync';
   entity_type: string;
-  entity_id: string;
+  entity_id: string | null;
   details: Record<string, unknown>;
   created_at: string;
+  admin_email: string | null;
+  admin_display_name: string | null;
 }
+
+export const AUDIT_ENTITY_TYPES = [
+  'actor',
+  'movie',
+  'movie_cast',
+  'movie_poster',
+  'movie_production_house',
+  'movie_video',
+  'notification',
+  'ott_release',
+  'platform',
+  'production_house',
+  'surprise',
+  'sync',
+  'theatrical_run',
+] as const;
 
 export interface SyncLog {
   id: string;

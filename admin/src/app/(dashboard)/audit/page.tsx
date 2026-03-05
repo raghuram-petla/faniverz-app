@@ -1,9 +1,10 @@
 'use client';
 
-import { Fragment, useState } from 'react';
-import { useAdminAuditLog } from '@/hooks/useAdminAudit';
+import { Fragment, useState, useEffect } from 'react';
+import { useAdminAuditLog, type AuditFilters } from '@/hooks/useAdminAudit';
+import { AUDIT_ENTITY_TYPES } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Shield, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { Shield, ChevronDown, ChevronRight, Loader2, Search } from 'lucide-react';
 
 const actionStyles: Record<string, { bg: string; text: string }> = {
   create: { bg: 'bg-green-600/20', text: 'text-green-400' },
@@ -13,17 +14,29 @@ const actionStyles: Record<string, { bg: string; text: string }> = {
 };
 
 export default function AuditLogPage() {
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const filters: { action?: string; entityType?: string } = {};
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const filters: AuditFilters = {};
   if (actionFilter) filters.action = actionFilter;
   if (entityTypeFilter) filters.entityType = entityTypeFilter;
+  if (debouncedSearch.length >= 2) filters.search = debouncedSearch;
+  if (dateFrom) filters.dateFrom = dateFrom;
+  if (dateTo) filters.dateTo = dateTo;
 
-  const { data: entries, isLoading } = useAdminAuditLog(
-    Object.keys(filters).length ? filters : undefined,
-  );
+  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useAdminAuditLog(Object.keys(filters).length ? filters : undefined);
+  const entries = data?.pages.flat() ?? [];
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {
@@ -37,9 +50,6 @@ export default function AuditLogPage() {
     });
   };
 
-  // Derive unique entity types from the data for the filter dropdown
-  const entityTypes = entries ? [...new Set(entries.map((e) => e.entity_type))].sort() : [];
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -50,38 +60,80 @@ export default function AuditLogPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={actionFilter}
-          onChange={(e) => setActionFilter(e.target.value)}
-          className="bg-input border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
-        >
-          <option value="">All Actions</option>
-          <option value="create">Create</option>
-          <option value="update">Update</option>
-          <option value="delete">Delete</option>
-          <option value="sync">Sync</option>
-        </select>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
+            <input
+              type="text"
+              placeholder="Search by admin email, entity type, entity ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-input rounded-lg pl-10 pr-10 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
+            />
+            {isFetching && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
+            )}
+          </div>
 
-        <select
-          value={entityTypeFilter}
-          onChange={(e) => setEntityTypeFilter(e.target.value)}
-          className="bg-input border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
-        >
-          <option value="">All Entity Types</option>
-          {entityTypes.map((et) => (
-            <option key={et} value={et}>
-              {et}
-            </option>
-          ))}
-        </select>
+          <select
+            value={actionFilter}
+            onChange={(e) => setActionFilter(e.target.value)}
+            className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+          >
+            <option value="">All Actions</option>
+            <option value="create">Create</option>
+            <option value="update">Update</option>
+            <option value="delete">Delete</option>
+            <option value="sync">Sync</option>
+          </select>
+
+          <select
+            value={entityTypeFilter}
+            onChange={(e) => setEntityTypeFilter(e.target.value)}
+            className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+          >
+            <option value="">All Entity Types</option>
+            {AUDIT_ENTITY_TYPES.map((et) => (
+              <option key={et} value={et}>
+                {et}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+            />
+            <span className="text-on-surface-subtle text-sm">to</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+            />
+          </div>
+        </div>
+
+        {search.length === 1 && (
+          <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
+        )}
+        {!isLoading && entries.length > 0 && (
+          <p className="text-xs text-on-surface-subtle">
+            Showing {entries.length} entr{entries.length !== 1 ? 'ies' : 'y'}
+            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
+          </p>
+        )}
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
-      ) : !entries?.length ? (
+      ) : entries.length === 0 ? (
         <div className="text-center py-20 text-on-surface-subtle">No audit log entries found.</div>
       ) : (
         <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
@@ -124,9 +176,14 @@ export default function AuditLogPage() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-on-surface text-sm font-mono">
-                          {entry.admin_user_id.slice(0, 8)}...
-                        </span>
+                        <div className="text-sm">
+                          <span className="text-on-surface">
+                            {entry.admin_display_name || entry.admin_email || 'Unknown'}
+                          </span>
+                          {entry.admin_display_name && entry.admin_email && (
+                            <p className="text-on-surface-subtle text-xs">{entry.admin_email}</p>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -140,7 +197,7 @@ export default function AuditLogPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-on-surface-muted text-sm font-mono">
-                          {entry.entity_id.slice(0, 8)}...
+                          {entry.entity_id ? `${entry.entity_id.slice(0, 8)}...` : '—'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-on-surface-muted text-sm">
@@ -166,6 +223,24 @@ export default function AuditLogPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {hasNextPage && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="flex items-center gap-2 bg-input hover:bg-input-hover text-on-surface px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+              </>
+            ) : (
+              'Load More'
+            )}
+          </button>
         </div>
       )}
     </div>
