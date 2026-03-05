@@ -40,6 +40,7 @@
       "expo-router",
       "expo-localization",
       "expo-font",
+      "expo-system-ui",
       "@react-native-google-signin/google-signin"
     ],
     "extra": {

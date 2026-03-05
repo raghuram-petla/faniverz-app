@@ -40,7 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEYS.THEME_MODE, newMode);
   }, []);
 
-  const isDark = mode === 'system' ? systemScheme !== 'light' : mode === 'dark';
+  const isDark = mode === 'system' ? systemScheme === 'dark' : mode === 'dark';
 
   const value = useMemo<ThemeContextValue>(
     () => ({
