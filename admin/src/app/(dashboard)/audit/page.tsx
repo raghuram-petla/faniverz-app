@@ -6,6 +6,36 @@ import { AUDIT_ENTITY_TYPES } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import { Shield, ChevronDown, ChevronRight, Loader2, Search } from 'lucide-react';
 
+/** For updates, compute only the fields that changed between old and new */
+function getChangedFields(details: Record<string, unknown>): Record<string, unknown> | null {
+  const old = details.old as Record<string, unknown> | undefined;
+  const newVal = details.new as Record<string, unknown> | undefined;
+  if (!old || !newVal) return null;
+
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const key of Object.keys(newVal)) {
+    if (JSON.stringify(old[key]) !== JSON.stringify(newVal[key])) {
+      changes[key] = { from: old[key], to: newVal[key] };
+    }
+  }
+  return Object.keys(changes).length > 0 ? changes : null;
+}
+
+/** Format details for display — show diff for updates, relevant data for create/delete */
+function formatDetails(action: string, details: Record<string, unknown>): string {
+  if (action === 'update') {
+    const diff = getChangedFields(details);
+    if (diff) return JSON.stringify(diff, null, 2);
+  }
+  if (action === 'create' && details.new) {
+    return JSON.stringify(details.new, null, 2);
+  }
+  if (action === 'delete' && details.old) {
+    return JSON.stringify(details.old, null, 2);
+  }
+  return JSON.stringify(details, null, 2);
+}
+
 const actionStyles: Record<string, { bg: string; text: string }> = {
   create: { bg: 'bg-green-600/20', text: 'text-green-400' },
   update: { bg: 'bg-blue-600/20', text: 'text-blue-400' },
@@ -137,7 +167,7 @@ export default function AuditLogPage() {
         <div className="text-center py-20 text-on-surface-subtle">No audit log entries found.</div>
       ) : (
         <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
-          <table className="w-full">
+          <table className="w-full table-fixed">
             <thead>
               <tr className="border-b border-outline">
                 <th className="w-10 px-3 py-4" />
@@ -209,11 +239,13 @@ export default function AuditLogPage() {
                         <td colSpan={6} className="px-6 py-4 bg-surface">
                           <div className="space-y-2">
                             <p className="text-xs font-medium text-on-surface-subtle uppercase tracking-wider">
-                              Details
+                              {entry.action === 'update' ? 'Changes' : 'Details'}
                             </p>
-                            <pre className="text-sm text-on-surface-muted bg-surface-elevated rounded-lg p-4 overflow-x-auto max-h-60 font-mono">
-                              {JSON.stringify(entry.details, null, 2)}
-                            </pre>
+                            <div className="overflow-x-auto max-h-60 rounded-lg">
+                              <pre className="text-sm text-on-surface-muted bg-surface-elevated p-4 font-mono whitespace-pre w-max min-w-full">
+                                {formatDetails(entry.action, entry.details)}
+                              </pre>
+                            </div>
                           </div>
                         </td>
                       </tr>
