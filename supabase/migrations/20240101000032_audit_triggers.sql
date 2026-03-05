@@ -1,11 +1,11 @@
 -- Automatic audit logging via database triggers
 -- Replaces manual client-side logAudit() calls — catches ALL changes in one place
 
--- 1. Alter entity_id from uuid to text for flexibility (composite keys, non-UUID IDs)
-ALTER TABLE audit_log ALTER COLUMN entity_id TYPE text;
-
--- 2. Recreate the view (entity_id type changed, drop cast)
+-- 1. Drop view first (depends on entity_id column)
 DROP VIEW IF EXISTS audit_log_view;
+
+-- 2. Alter entity_id from uuid to text for flexibility (composite keys, non-UUID IDs)
+ALTER TABLE audit_log ALTER COLUMN entity_id TYPE text;
 
 CREATE VIEW audit_log_view
 WITH (security_invoker = true)
