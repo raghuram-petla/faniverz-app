@@ -66,6 +66,10 @@ export interface AuditLogEntry {
   created_at: string;
   admin_email: string | null;
   admin_display_name: string | null;
+  impersonating_user_id: string | null;
+  impersonating_role: string | null;
+  impersonating_email: string | null;
+  impersonating_display_name: string | null;
 }
 
 export const AUDIT_ENTITY_TYPES = [
@@ -164,6 +168,18 @@ export const ADMIN_ROLE_LABELS: Record<AdminRoleId, string> = {
   admin: 'Admin',
   production_house_admin: 'PH Admin',
 };
+
+/** Impersonation session — tracks active/historical impersonation */
+export interface ImpersonationSession {
+  id: string;
+  real_user_id: string;
+  target_user_id: string | null;
+  target_role: AdminRoleId;
+  target_ph_ids: string[];
+  started_at: string;
+  ended_at: string | null;
+  is_active: boolean;
+}
 
 /** Admin user with role + PH assignment details — used by user management */
 export interface AdminUserWithDetails {

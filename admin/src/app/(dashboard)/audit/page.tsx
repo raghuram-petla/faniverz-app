@@ -3,8 +3,9 @@
 import { Fragment, useState, useEffect } from 'react';
 import { useAdminAuditLog, type AuditFilters } from '@/hooks/useAdminAudit';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { AUDIT_ENTITY_TYPES } from '@/lib/types';
+import { useEffectiveUser } from '@/hooks/useImpersonation';
+import { AUDIT_ENTITY_TYPES, ADMIN_ROLE_LABELS } from '@/lib/types';
+import type { AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import { Shield, ChevronDown, ChevronRight, Loader2, Search } from 'lucide-react';
 
@@ -46,7 +47,7 @@ const actionStyles: Record<string, { bg: string; text: string }> = {
 };
 
 export default function AuditLogPage() {
-  const { user } = useAuth();
+  const user = useEffectiveUser();
   const { isSuperAdmin } = usePermissions();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -225,6 +226,15 @@ export default function AuditLogPage() {
                           </span>
                           {entry.admin_display_name && entry.admin_email && (
                             <p className="text-on-surface-subtle text-xs">{entry.admin_email}</p>
+                          )}
+                          {entry.impersonating_role && (
+                            <p className="text-amber-500 text-xs mt-0.5">
+                              as{' '}
+                              {entry.impersonating_display_name ||
+                                entry.impersonating_email ||
+                                ADMIN_ROLE_LABELS[entry.impersonating_role as AdminRoleId] ||
+                                entry.impersonating_role}
+                            </p>
                           )}
                         </div>
                       </td>

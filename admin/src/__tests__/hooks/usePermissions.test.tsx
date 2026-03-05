@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { AdminUser } from '@/lib/types';
 
-vi.mock('@/components/providers/AuthProvider', () => ({
-  useAuth: vi.fn(() => ({ user: null, isLoading: false, isAccessDenied: false })),
+vi.mock('@/hooks/useImpersonation', () => ({
+  useEffectiveUser: vi.fn(() => null),
 }));
 
 import { usePermissions } from '@/hooks/usePermissions';
 import type { AdminPage, AdminEntity } from '@/hooks/usePermissions';
-import { useAuth } from '@/components/providers/AuthProvider';
+import { useEffectiveUser } from '@/hooks/useImpersonation';
 
 const ALL_PAGES: AdminPage[] = [
   'dashboard',
@@ -49,13 +49,7 @@ function makeUser(overrides: Partial<AdminUser> & Pick<AdminUser, 'role'>): Admi
 }
 
 function setUser(user: AdminUser | null) {
-  vi.mocked(useAuth).mockReturnValue({
-    user,
-    isLoading: false,
-    isAccessDenied: false,
-    signInWithGoogle: vi.fn(),
-    signOut: vi.fn(),
-  });
+  vi.mocked(useEffectiveUser).mockReturnValue(user);
 }
 
 describe('usePermissions', () => {

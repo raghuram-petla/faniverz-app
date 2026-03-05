@@ -23,6 +23,27 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
+vi.mock('@/components/providers/AuthProvider', () => ({
+  useAuth: () => ({
+    user: { id: 'super-1', role: 'super_admin', email: 'admin@test.com' },
+    isLoading: false,
+    isAccessDenied: false,
+    signInWithGoogle: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}));
+
+vi.mock('@/hooks/useImpersonation', () => ({
+  useImpersonation: () => ({
+    isImpersonating: false,
+    effectiveUser: null,
+    realUser: null,
+    startImpersonation: vi.fn(),
+    startRoleImpersonation: vi.fn(),
+    stopImpersonation: vi.fn(),
+  }),
+}));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
   usePathname: () => '/users',

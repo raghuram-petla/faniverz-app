@@ -7,14 +7,29 @@ import {
   useRevokeInvitation,
 } from '@/hooks/useAdminUsers';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
+import type { AdminUserWithDetails } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Shield, UserPlus, Trash2, Loader2, User, Clock, XCircle, CheckCircle } from 'lucide-react';
+import {
+  Shield,
+  UserPlus,
+  Trash2,
+  Loader2,
+  User,
+  Clock,
+  XCircle,
+  CheckCircle,
+  Eye,
+} from 'lucide-react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { ImpersonateModal } from '@/components/users/ImpersonateModal';
 import Link from 'next/link';
 
 type Tab = 'admins' | 'invitations';
 
 export default function UsersPage() {
   const [tab, setTab] = useState<Tab>('admins');
+  const [impersonateTarget, setImpersonateTarget] = useState<AdminUserWithDetails | null>(null);
+  const { user: realUser } = useAuth();
   const { data: users, isLoading: usersLoading } = useAdminUserList();
   const { data: invitations, isLoading: invitesLoading } = useAdminInvitations();
   const revokeAdmin = useRevokeAdmin();
@@ -126,14 +141,25 @@ export default function UsersPage() {
                         {formatDateTime(u.role_assigned_at)}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleRevoke(u.id, u.role_id)}
-                          disabled={revokeAdmin.isPending}
-                          className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                          title="Revoke access"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          {u.id !== realUser?.id && (
+                            <button
+                              onClick={() => setImpersonateTarget(u)}
+                              className="p-2 text-on-surface-subtle hover:text-amber-500 transition-colors"
+                              title="Impersonate"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleRevoke(u.id, u.role_id)}
+                            disabled={revokeAdmin.isPending}
+                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            title="Revoke access"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -239,6 +265,12 @@ export default function UsersPage() {
             </div>
           )}
         </>
+      )}
+      {impersonateTarget && (
+        <ImpersonateModal
+          targetUser={impersonateTarget}
+          onClose={() => setImpersonateTarget(null)}
+        />
       )}
     </div>
   );

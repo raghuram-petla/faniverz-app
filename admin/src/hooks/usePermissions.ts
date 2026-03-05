@@ -1,5 +1,5 @@
 'use client';
-import { useAuth } from '@/components/providers/AuthProvider';
+import { useEffectiveUser } from '@/hooks/useImpersonation';
 import type { AdminRoleId } from '@/lib/types';
 
 /** Pages in the admin panel */
@@ -90,7 +90,7 @@ const CREATE_ACCESS: Record<AdminRoleId, Set<AdminEntity>> = {
 };
 
 export function usePermissions() {
-  const { user } = useAuth();
+  const user = useEffectiveUser();
   const role = user?.role ?? null;
   const phIds = user?.productionHouseIds ?? [];
 
