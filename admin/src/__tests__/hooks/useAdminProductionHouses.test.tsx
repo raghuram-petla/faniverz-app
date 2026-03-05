@@ -11,10 +11,6 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-vi.mock('@/lib/audit-client', () => ({
-  logAudit: vi.fn(),
-}));
-
 import {
   useAdminProductionHouses,
   useAdminProductionHouse,

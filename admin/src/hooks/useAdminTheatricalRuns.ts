@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { MovieTheatricalRun } from '@/lib/types';
 
 export function useMovieTheatricalRuns(movieId: string) {
@@ -34,10 +33,6 @@ export function useAddTheatricalRun() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'theatrical-runs', data.movie_id] });
-      logAudit('create', 'theatrical_run', data.id, {
-        movie_id: data.movie_id,
-        release_date: data.release_date,
-      });
     },
   });
 }
@@ -50,9 +45,8 @@ export function useRemoveTheatricalRun() {
       if (error) throw error;
       return movieId;
     },
-    onSuccess: (movieId, variables) => {
+    onSuccess: (movieId) => {
       qc.invalidateQueries({ queryKey: ['admin', 'theatrical-runs', movieId] });
-      logAudit('delete', 'theatrical_run', variables.id, { movie_id: movieId });
     },
   });
 }

@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { MovieVideo } from '@/lib/types';
 
 export function useMovieVideos(movieId: string) {
@@ -28,12 +27,8 @@ export function useAddVideo() {
       if (error) throw error;
       return data as MovieVideo;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'videos', variables.movie_id] });
-      logAudit('create', 'movie_video', data.id, {
-        movie_id: data.movie_id,
-        title: data.title,
-      });
     },
   });
 }
@@ -57,7 +52,6 @@ export function useUpdateVideo() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'videos', data.movieId] });
-      logAudit('update', 'movie_video', data.id, { title: data.title });
     },
   });
 }
@@ -72,7 +66,6 @@ export function useRemoveVideo() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'videos', variables.movieId] });
-      logAudit('delete', 'movie_video', variables.id, { movie_id: variables.movieId });
     },
   });
 }

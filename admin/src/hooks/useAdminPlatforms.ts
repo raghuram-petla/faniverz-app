@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { OTTPlatform } from '@/lib/types';
 
 export function useAdminPlatforms() {
@@ -23,9 +22,8 @@ export function useCreatePlatform() {
       if (error) throw error;
       return data as OTTPlatform;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'platforms'] });
-      logAudit('create', 'platform', data.id, { name: data.name });
     },
   });
 }
@@ -43,9 +41,8 @@ export function useUpdatePlatform() {
       if (error) throw error;
       return data as OTTPlatform;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'platforms'] });
-      logAudit('update', 'platform', data.id, { name: data.name });
     },
   });
 }
@@ -58,9 +55,8 @@ export function useDeletePlatform() {
       if (error) throw error;
       return id;
     },
-    onSuccess: (id) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'platforms'] });
-      logAudit('delete', 'platform', id);
     },
   });
 }

@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { MoviePlatform } from '@/lib/types';
 
 export function useAdminOttReleases() {
@@ -35,12 +34,8 @@ export function useCreateOttRelease() {
       if (error) throw error;
       return data as MoviePlatform;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
-      logAudit('create', 'ott_release', `${data.movie_id}-${data.platform_id}`, {
-        movie_id: data.movie_id,
-        platform_id: data.platform_id,
-      });
     },
   });
 }
@@ -56,12 +51,8 @@ export function useDeleteOttRelease() {
         .eq('platform_id', platformId);
       if (error) throw error;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
-      logAudit('delete', 'ott_release', `${variables.movieId}-${variables.platformId}`, {
-        movie_id: variables.movieId,
-        platform_id: variables.platformId,
-      });
     },
   });
 }
@@ -101,10 +92,6 @@ export function useAddMoviePlatform() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', data.movie_id] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
-      logAudit('create', 'ott_release', `${data.movie_id}-${data.platform_id}`, {
-        movie_id: data.movie_id,
-        platform_id: data.platform_id,
-      });
     },
   });
 }
@@ -124,10 +111,6 @@ export function useRemoveMoviePlatform() {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', variables.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
-      logAudit('delete', 'ott_release', `${variables.movieId}-${variables.platformId}`, {
-        movie_id: variables.movieId,
-        platform_id: variables.platformId,
-      });
     },
   });
 }

@@ -17,6 +17,12 @@ SELECT
 FROM audit_log al
 LEFT JOIN profiles p ON p.id = al.admin_user_id;
 
+-- Grant access so PostgREST exposes the view to authenticated users
+GRANT SELECT ON audit_log_view TO authenticated, anon;
+
+-- Notify PostgREST to reload its schema cache
+NOTIFY pgrst, 'reload schema';
+
 -- Indexes for common filter/sort patterns
 CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_entity_type ON audit_log (entity_type);

@@ -1,7 +1,6 @@
 'use client';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { ProductionHouse } from '@/lib/types';
 
 const PAGE_SIZE = 50;
@@ -55,9 +54,8 @@ export function useCreateProductionHouse() {
       if (error) throw error;
       return data as ProductionHouse;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'production-houses'] });
-      logAudit('create', 'production_house', data.id, { name: data.name });
     },
   });
 }
@@ -78,7 +76,6 @@ export function useUpdateProductionHouse() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'production-houses'] });
       qc.invalidateQueries({ queryKey: ['admin', 'production-house', data.id] });
-      logAudit('update', 'production_house', data.id, { name: data.name });
     },
   });
 }
@@ -94,7 +91,6 @@ export function useDeleteProductionHouse() {
     onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ['admin', 'production-houses'] });
       qc.invalidateQueries({ queryKey: ['admin', 'production-house', id] });
-      logAudit('delete', 'production_house', id);
     },
   });
 }

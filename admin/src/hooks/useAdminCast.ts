@@ -1,7 +1,6 @@
 'use client';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { Actor, MovieCast } from '@/lib/types';
 
 const PAGE_SIZE = 50;
@@ -71,9 +70,8 @@ export function useCreateActor() {
       if (error) throw error;
       return data as Actor;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
-      logAudit('create', 'actor', data.id, { name: data.name });
     },
   });
 }
@@ -94,7 +92,6 @@ export function useUpdateActor() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
       qc.invalidateQueries({ queryKey: ['admin', 'actor', data.id] });
-      logAudit('update', 'actor', data.id, { name: data.name });
     },
   });
 }
@@ -110,7 +107,6 @@ export function useDeleteActor() {
     onSuccess: (id) => {
       qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
       qc.invalidateQueries({ queryKey: ['admin', 'actor', id] });
-      logAudit('delete', 'actor', id);
     },
   });
 }
@@ -123,12 +119,8 @@ export function useAddCast() {
       if (error) throw error;
       return data as MovieCast;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] });
-      logAudit('create', 'movie_cast', data.id, {
-        movie_id: data.movie_id,
-        actor_id: data.actor_id,
-      });
     },
   });
 }
@@ -143,7 +135,6 @@ export function useRemoveCast() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movieId] });
-      logAudit('delete', 'movie_cast', variables.id, { movie_id: variables.movieId });
     },
   });
 }
@@ -172,7 +163,6 @@ export function useUpdateCastOrder() {
     },
     onSuccess: (movieId) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', movieId] });
-      logAudit('update', 'movie_cast', movieId, { action: 'reorder' });
     },
   });
 }

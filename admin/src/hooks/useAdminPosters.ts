@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { MoviePoster } from '@/lib/types';
 
 export function useMoviePosters(movieId: string) {
@@ -28,12 +27,8 @@ export function useAddPoster() {
       if (error) throw error;
       return data as MoviePoster;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'posters', variables.movie_id] });
-      logAudit('create', 'movie_poster', data.id, {
-        movie_id: data.movie_id,
-        title: data.title,
-      });
     },
   });
 }
@@ -57,7 +52,6 @@ export function useUpdatePoster() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'posters', data.movieId] });
-      logAudit('update', 'movie_poster', data.id, { title: data.title });
     },
   });
 }
@@ -72,7 +66,6 @@ export function useRemovePoster() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'posters', variables.movieId] });
-      logAudit('delete', 'movie_poster', variables.id, { movie_id: variables.movieId });
     },
   });
 }
@@ -105,7 +98,6 @@ export function useSetMainPoster() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'posters', data.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'movie', data.movieId] });
-      logAudit('update', 'movie_poster', data.id, { action: 'set_main', movie_id: data.movieId });
     },
   });
 }

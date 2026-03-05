@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { ProductionHouse } from '@/lib/types';
 
 interface MovieProductionHouse {
@@ -46,9 +45,6 @@ export function useAddMovieProductionHouse() {
       qc.invalidateQueries({
         queryKey: ['admin', 'movie-production-houses', data.movieId],
       });
-      logAudit('create', 'movie_production_house', data.productionHouseId, {
-        movie_id: data.movieId,
-      });
     },
   });
 }
@@ -74,9 +70,6 @@ export function useRemoveMovieProductionHouse() {
     onSuccess: (data) => {
       qc.invalidateQueries({
         queryKey: ['admin', 'movie-production-houses', data.movieId],
-      });
-      logAudit('delete', 'movie_production_house', data.productionHouseId, {
-        movie_id: data.movieId,
       });
     },
   });

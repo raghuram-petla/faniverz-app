@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { SyncLog } from '@/lib/types';
 
 export function useAdminSyncLogs() {
@@ -27,9 +26,8 @@ export function useTriggerSync() {
       if (error) throw error;
       return functionName;
     },
-    onSuccess: (functionName) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
-      logAudit('sync', 'sync', functionName, { function: functionName });
     },
   });
 }

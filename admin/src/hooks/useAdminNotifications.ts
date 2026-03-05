@@ -1,7 +1,6 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { logAudit } from '@/lib/audit-client';
 import type { Notification } from '@/lib/types';
 
 export function useAdminNotifications(filters?: { status?: string; type?: string }) {
@@ -34,9 +33,8 @@ export function useCreateNotification() {
       if (error) throw error;
       return data as Notification;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-      logAudit('create', 'notification', data.id, { title: data.title });
     },
   });
 }
@@ -52,9 +50,8 @@ export function useCancelNotification() {
       if (error) throw error;
       return id;
     },
-    onSuccess: (id) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-      logAudit('update', 'notification', id, { status: 'cancelled' });
     },
   });
 }
@@ -70,9 +67,8 @@ export function useRetryNotification() {
       if (error) throw error;
       return id;
     },
-    onSuccess: (id) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-      logAudit('update', 'notification', id, { status: 'pending', action: 'retry' });
     },
   });
 }
@@ -89,7 +85,6 @@ export function useBulkRetryFailed() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-      logAudit('update', 'notification', 'bulk', { action: 'bulk_retry_failed' });
     },
   });
 }
@@ -106,7 +101,6 @@ export function useBulkCancelPending() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-      logAudit('update', 'notification', 'bulk', { action: 'bulk_cancel_pending' });
     },
   });
 }
