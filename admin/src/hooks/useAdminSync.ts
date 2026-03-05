@@ -11,9 +11,14 @@ export function useAdminSyncLogs() {
         .from('sync_logs')
         .select('*')
         .order('started_at', { ascending: false })
-        .limit(30);
+        .limit(50);
       if (error) throw error;
       return data as SyncLog[];
+    },
+    refetchInterval: (query) => {
+      const logs = query.state.data;
+      if (logs?.some((log) => log.status === 'running')) return 5000;
+      return false;
     },
   });
 }
