@@ -7,8 +7,8 @@ import * as api from '../api';
 jest.mock('../api');
 
 const mockPlatforms = [
-  { id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 },
-  { id: 'aha', name: 'Aha', logo: '🎬', color: '#FF6B00', display_order: 2 },
+  { id: 'netflix', name: 'Netflix', logo: 'N', logo_url: null, color: '#E50914', display_order: 1 },
+  { id: 'aha', name: 'Aha', logo: '🎬', logo_url: null, color: '#FF6B00', display_order: 2 },
 ];
 
 function createWrapper() {

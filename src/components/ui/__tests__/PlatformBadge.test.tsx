@@ -14,6 +14,7 @@ const mockPlatform: OTTPlatform = {
   id: 'netflix',
   name: 'Netflix',
   logo: 'N',
+  logo_url: null,
   color: '#E50914',
   display_order: 1,
 };
@@ -23,6 +24,7 @@ const unknownPlatform: OTTPlatform = {
   id: 'custom',
   name: 'Custom',
   logo: 'C',
+  logo_url: null,
   color: '#333333',
   display_order: 99,
 };
@@ -81,6 +83,7 @@ describe('PlatformBadge', () => {
       id: 'aha',
       name: 'Aha',
       logo: 'A',
+      logo_url: null,
       color: '#FF6B00',
       display_order: 2,
     };
@@ -94,6 +97,7 @@ describe('PlatformBadge', () => {
       id: 'custom',
       name: 'Custom',
       logo: '🎬',
+      logo_url: null,
       color: '#333333',
       display_order: 3,
     };

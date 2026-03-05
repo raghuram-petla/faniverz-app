@@ -1,18 +1,24 @@
 import React from 'react';
 import { render, fireEvent, act } from '@testing-library/react-native';
 import { HeroCarousel } from '../HeroCarousel';
-import { Movie } from '@/types';
+import { Movie, OTTPlatform } from '@/types';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
-const mockPlatformMap: Record<
-  string,
-  { id: string; name: string; logo: string; color: string; display_order: number }[]
-> = {
-  '2': [{ id: 'netflix', name: 'Netflix', logo: '', color: '#E50914', display_order: 0 }],
+const mockPlatformMap: Record<string, OTTPlatform[]> = {
+  '2': [
+    {
+      id: 'netflix',
+      name: 'Netflix',
+      logo: '',
+      logo_url: null,
+      color: '#E50914',
+      display_order: 0,
+    },
+  ],
 };
 
 const mockMovies: Movie[] = [
@@ -142,7 +148,16 @@ describe('HeroCarousel', () => {
 
   it('renders OTT platform badges when platformMap provided', () => {
     const platformMap = {
-      '1': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+      '1': [
+        {
+          id: 'netflix',
+          name: 'Netflix',
+          logo: 'N',
+          logo_url: null,
+          color: '#E50914',
+          display_order: 1,
+        },
+      ],
     };
     const { getByText, UNSAFE_getAllByType } = render(
       <HeroCarousel movies={mockMovies} platformMap={platformMap} />,

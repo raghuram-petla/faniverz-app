@@ -42,8 +42,8 @@ export function PlatformsSection({
                 className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
                 style={{ backgroundColor: mp.platform?.color || '#333' }}
               >
-                {mp.platform?.logo ? (
-                  <img src={mp.platform.logo} alt="" className="w-6 h-6 object-contain" />
+                {mp.platform?.logo_url ? (
+                  <img src={mp.platform.logo_url} alt="" className="w-6 h-6 object-contain" />
                 ) : (
                   <Film className="w-5 h-5 text-on-surface-muted" />
                 )}

@@ -22,6 +22,7 @@ const lightPlatform: OTTPlatform = {
   id: 'netflix',
   name: 'Netflix',
   logo: 'N',
+  logo_url: null,
   color: '#E50914',
   display_order: 1,
 };
@@ -31,6 +32,7 @@ const darkPlatform: OTTPlatform = {
   id: 'hotstar',
   name: 'Hotstar',
   logo: 'H',
+  logo_url: null,
   color: '#0F1014',
   display_order: 2,
 };
@@ -39,6 +41,7 @@ const unknownPlatform: OTTPlatform = {
   id: 'custom',
   name: 'Custom',
   logo: 'C',
+  logo_url: null,
   color: '#333333',
   display_order: 99,
 };

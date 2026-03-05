@@ -33,7 +33,14 @@ describe('ott api', () => {
 
     it('returns platform data', async () => {
       const mockData = [
-        { id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 },
+        {
+          id: 'netflix',
+          name: 'Netflix',
+          logo: 'N',
+          logo_url: null,
+          color: '#E50914',
+          display_order: 1,
+        },
       ];
       mockSelect.mockReturnValue({ order: mockOrder });
       mockOrder.mockResolvedValue({ data: mockData, error: null });

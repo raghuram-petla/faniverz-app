@@ -95,6 +95,7 @@ export interface OTTPlatform {
   id: string;
   name: string;
   logo: string;
+  logo_url: string | null;
   color: string;
   display_order: number;
 }

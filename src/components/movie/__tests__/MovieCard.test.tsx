@@ -62,7 +62,14 @@ describe('MovieCard', () => {
 
   it('renders OTT platform badges when platforms provided', () => {
     const platforms = [
-      { id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 },
+      {
+        id: 'netflix',
+        name: 'Netflix',
+        logo: 'N',
+        logo_url: null,
+        color: '#E50914',
+        display_order: 1,
+      },
     ];
     const ottMovie = { ...mockMovie, in_theaters: false };
     const { UNSAFE_queryAllByType } = render(<MovieCard movie={ottMovie} platforms={platforms} />);

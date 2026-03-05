@@ -7,17 +7,16 @@ import {
   useUpdatePlatform,
   useDeletePlatform,
 } from '@/hooks/useAdminPlatforms';
+import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
 import type { OTTPlatform } from '@/lib/types';
 import { Monitor, Plus, Pencil, Trash2, X, Loader2 } from 'lucide-react';
 
 interface PlatformFormData {
   name: string;
-  logo: string;
-  color: string;
-  display_order: number;
+  logo_url: string;
 }
 
-const emptyForm: PlatformFormData = { name: '', logo: '', color: '#e50914', display_order: 0 };
+const emptyForm: PlatformFormData = { name: '', logo_url: '' };
 
 export default function PlatformsPage() {
   const { data: platforms, isLoading } = useAdminPlatforms();
@@ -28,6 +27,7 @@ export default function PlatformsPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PlatformFormData>(emptyForm);
+  const [uploading, setUploading] = useState(false);
 
   const openAdd = () => {
     setEditingId(null);
@@ -39,9 +39,7 @@ export default function PlatformsPage() {
     setEditingId(platform.id);
     setForm({
       name: platform.name,
-      logo: platform.logo,
-      color: platform.color,
-      display_order: platform.display_order,
+      logo_url: platform.logo_url ?? '',
     });
     setShowDialog(true);
   };
@@ -54,10 +52,19 @@ export default function PlatformsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = { name: form.name, logo_url: form.logo_url || null };
     if (editingId) {
-      updatePlatform.mutate({ id: editingId, ...form }, { onSuccess: handleClose });
+      updatePlatform.mutate({ id: editingId, ...payload }, { onSuccess: handleClose });
     } else {
-      createPlatform.mutate(form, { onSuccess: handleClose });
+      createPlatform.mutate(
+        {
+          ...payload,
+          logo: form.name.charAt(0).toUpperCase() || '?',
+          color: '#333333',
+          display_order: 0,
+        },
+        { onSuccess: handleClose },
+      );
     }
   };
 
@@ -65,6 +72,22 @@ export default function PlatformsPage() {
     if (!confirm('Delete this platform? This will also remove all related OTT releases.')) return;
     deletePlatform.mutate(id);
   };
+
+  async function handleLogoUpload(file: File) {
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/upload/platform-logo', { method: 'POST', body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
+      setForm((prev) => ({ ...prev, logo_url: data.url }));
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const isSaving = createPlatform.isPending || updatePlatform.isPending;
 
@@ -103,16 +126,18 @@ export default function PlatformsPage() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <span
-                    className="w-12 h-12 rounded-lg flex items-center justify-center text-sm font-bold text-on-surface"
-                    style={{ backgroundColor: platform.color }}
-                  >
-                    {platform.logo}
-                  </span>
-                  <div>
-                    <h3 className="text-on-surface font-semibold text-lg">{platform.name}</h3>
-                    <p className="text-on-surface-subtle text-sm font-mono">{platform.color}</p>
-                  </div>
+                  {platform.logo_url ? (
+                    <img
+                      src={platform.logo_url}
+                      alt={platform.name}
+                      className="w-12 h-12 rounded-lg object-contain border border-outline"
+                    />
+                  ) : (
+                    <span className="w-12 h-12 rounded-lg flex items-center justify-center bg-zinc-700">
+                      <Monitor className="w-5 h-5 text-on-surface-subtle" />
+                    </span>
+                  )}
+                  <h3 className="text-on-surface font-semibold text-lg">{platform.name}</h3>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -131,10 +156,6 @@ export default function PlatformsPage() {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-on-surface-subtle">Display Order</span>
-                <span className="text-on-surface font-medium">{platform.display_order}</span>
               </div>
             </div>
           ))}
@@ -173,77 +194,17 @@ export default function PlatformsPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label htmlFor="logo" className="block text-sm font-medium text-on-surface-muted">
-                  Logo Text
-                </label>
-                <input
-                  id="logo"
-                  type="text"
-                  value={form.logo}
-                  onChange={(e) => setForm({ ...form, logo: e.target.value })}
-                  required
-                  placeholder="e.g. N"
-                  className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="color" className="block text-sm font-medium text-on-surface-muted">
-                  Brand Color
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={form.color}
-                    onChange={(e) => setForm({ ...form, color: e.target.value })}
-                    className="w-10 h-10 rounded border border-outline bg-transparent cursor-pointer"
-                  />
-                  <input
-                    id="color"
-                    type="text"
-                    value={form.color}
-                    onChange={(e) => setForm({ ...form, color: e.target.value })}
-                    required
-                    placeholder="#e50914"
-                    className="flex-1 bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface font-mono placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="display_order"
-                  className="block text-sm font-medium text-on-surface-muted"
-                >
-                  Display Order
-                </label>
-                <input
-                  id="display_order"
-                  type="number"
-                  value={form.display_order}
-                  onChange={(e) => setForm({ ...form, display_order: Number(e.target.value) })}
-                  required
-                  min={0}
-                  className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-                />
-              </div>
-
-              {/* Preview */}
-              <div className="pt-2">
-                <p className="text-sm text-on-surface-subtle mb-2">Preview</p>
-                <div className="flex items-center gap-3">
-                  <span
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold text-on-surface"
-                    style={{ backgroundColor: form.color || '#333' }}
-                  >
-                    {form.logo || '?'}
-                  </span>
-                  <span className="font-medium" style={{ color: form.color || '#fff' }}>
-                    {form.name || 'Platform'}
-                  </span>
-                </div>
-              </div>
+              <ImageUploadField
+                label="Logo"
+                url={form.logo_url}
+                uploading={uploading}
+                uploadEndpoint="/api/upload/platform-logo"
+                previewAlt="Platform logo"
+                previewClassName="w-20 h-20"
+                showUrlCaption={false}
+                onUpload={(file) => handleLogoUpload(file)}
+                onRemove={() => setForm((prev) => ({ ...prev, logo_url: '' }))}
+              />
 
               {(createPlatform.isError || updatePlatform.isError) && (
                 <p className="text-red-400 text-sm">Failed to save platform. Please try again.</p>
