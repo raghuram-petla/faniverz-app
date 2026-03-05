@@ -1,3 +1,4 @@
+// NOTE: Client-safe copy of variant specs lives in variant-config.ts — keep in sync.
 import sharp from 'sharp';
 
 export interface ImageVariant {

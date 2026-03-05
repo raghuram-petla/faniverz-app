@@ -1,6 +1,7 @@
 'use client';
 import { useRef } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
+import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 
 export interface ActorFormState {
   name: string;
@@ -104,6 +105,7 @@ export function ActorFormFields({
         {form.photo_url && (
           <p className="mt-2 text-xs text-on-surface-disabled truncate">{form.photo_url}</p>
         )}
+        <ImageVariantsPanel originalUrl={form.photo_url} variantType="photo" />
       </div>
 
       {/* Person Type + DOB */}

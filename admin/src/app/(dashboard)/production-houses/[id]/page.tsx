@@ -7,6 +7,7 @@ import {
   useDeleteProductionHouse,
 } from '@/hooks/useAdminProductionHouses';
 import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
+import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 import Link from 'next/link';
 
 export default function EditProductionHousePage() {
@@ -175,6 +176,7 @@ export default function EditProductionHousePage() {
               {uploading ? 'Uploading...' : 'Upload Logo'}
             </button>
           )}
+          <ImageVariantsPanel originalUrl={form.logo_url} variantType="photo" />
         </div>
 
         <div>

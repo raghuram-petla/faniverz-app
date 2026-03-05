@@ -1,6 +1,7 @@
 'use client';
 import type { MovieForm } from '@/hooks/useMovieEditState';
 import { ImageUploadField } from './ImageUploadField';
+import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 
 const genres = [
   'Action',
@@ -136,6 +137,7 @@ export function BasicInfoSection({
         }
         onRemove={() => updateField('poster_url', '')}
       />
+      <ImageVariantsPanel originalUrl={form.poster_url} variantType="poster" />
 
       {/* Backdrop */}
       <ImageUploadField
@@ -154,6 +156,7 @@ export function BasicInfoSection({
       {form.backdrop_url && (
         <p className="text-xs text-on-surface-disabled truncate">{form.backdrop_url}</p>
       )}
+      <ImageVariantsPanel originalUrl={form.backdrop_url} variantType="backdrop" />
 
       {/* Backdrop Focal Point */}
       {form.backdrop_url && (
