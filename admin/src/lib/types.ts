@@ -14,6 +14,8 @@ export type {
   MoviePoster,
   MovieVideo,
   ProductionHouse,
+  FeedType,
+  NewsFeedItem,
 } from '@shared/types';
 
 // Admin-only types (not used by mobile)
@@ -79,6 +81,7 @@ export const AUDIT_ENTITY_TYPES = [
   'movie_poster',
   'movie_production_house',
   'movie_video',
+  'news_feed',
   'notification',
   'ott_release',
   'platform',

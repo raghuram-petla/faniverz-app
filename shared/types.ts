@@ -150,3 +150,27 @@ export interface ProductionHouse {
   description: string | null;
   created_at: string;
 }
+
+// ── News Feed ───────────────────────────────────────────────────────────────────
+
+export type FeedType = 'video' | 'poster' | 'surprise' | 'update';
+
+export interface NewsFeedItem {
+  id: string;
+  feed_type: FeedType;
+  content_type: string;
+  title: string;
+  description: string | null;
+  movie_id: string | null;
+  source_table: string | null;
+  source_id: string | null;
+  thumbnail_url: string | null;
+  youtube_id: string | null;
+  duration: string | null;
+  is_pinned: boolean;
+  is_featured: boolean;
+  display_order: number;
+  published_at: string;
+  created_at: string;
+  movie?: { id: string; title: string; poster_url: string | null; release_date: string | null };
+}

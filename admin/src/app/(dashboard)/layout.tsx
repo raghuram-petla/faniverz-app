@@ -21,6 +21,7 @@ const ROUTE_PAGE_MAP: Record<string, AdminPage> = {
   '/ott': 'ott',
   '/platforms': 'platforms',
   '/surprise': 'surprise',
+  '/feed': 'feed',
   '/notifications': 'notifications',
   '/sync': 'sync',
   '/audit': 'audit',

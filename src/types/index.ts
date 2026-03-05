@@ -4,3 +4,4 @@ export * from './review';
 export * from './notification';
 export * from './ott';
 export * from './surprise';
+export * from './feed';

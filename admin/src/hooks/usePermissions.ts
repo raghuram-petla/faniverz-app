@@ -11,6 +11,7 @@ export type AdminPage =
   | 'ott'
   | 'platforms'
   | 'surprise'
+  | 'feed'
   | 'notifications'
   | 'sync'
   | 'audit'
@@ -24,6 +25,7 @@ export type AdminEntity =
   | 'ott_release'
   | 'platform'
   | 'surprise'
+  | 'news_feed'
   | 'notification'
   | 'sync';
 
@@ -37,6 +39,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'ott',
     'platforms',
     'surprise',
+    'feed',
     'notifications',
     'sync',
     'audit',
@@ -50,6 +53,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'ott',
     'platforms',
     'surprise',
+    'feed',
     'notifications',
     'sync',
     'audit',
@@ -73,6 +77,7 @@ const CREATE_ACCESS: Record<AdminRoleId, Set<AdminEntity>> = {
     'ott_release',
     'platform',
     'surprise',
+    'news_feed',
     'notification',
     'sync',
   ]),
@@ -83,6 +88,7 @@ const CREATE_ACCESS: Record<AdminRoleId, Set<AdminEntity>> = {
     'ott_release',
     'platform',
     'surprise',
+    'news_feed',
     'notification',
     'sync',
   ]),

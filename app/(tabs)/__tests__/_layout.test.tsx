@@ -45,33 +45,32 @@ describe('TabLayout', () => {
     expect(screen.getByTestId('tabs-root')).toBeTruthy();
   });
 
-  it('renders all five tab screens', () => {
+  it('renders all tab screens including hidden surprise', () => {
     render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-index')).toBeTruthy();
     expect(screen.getByTestId('tab-screen-calendar')).toBeTruthy();
+    expect(screen.getByTestId('tab-screen-feed')).toBeTruthy();
     expect(screen.getByTestId('tab-screen-watchlist')).toBeTruthy();
     expect(screen.getByTestId('tab-screen-surprise')).toBeTruthy();
     expect(screen.getByTestId('tab-screen-profile')).toBeTruthy();
   });
 
-  it('displays tab titles', () => {
+  it('displays tab titles for visible tabs', () => {
     render(<TabLayout />);
     expect(screen.getByText('Home')).toBeTruthy();
     expect(screen.getByText('Calendar')).toBeTruthy();
+    expect(screen.getByText('Feed')).toBeTruthy();
     expect(screen.getByText('Watchlist')).toBeTruthy();
-    expect(screen.getByText('Surprise')).toBeTruthy();
     expect(screen.getByText('Profile')).toBeTruthy();
   });
 
-  it('renders tab bar icons for each screen', () => {
-    // The mock invokes tabBarIcon({ color, size }) so each Ionicons icon renders as a View
-    // We verify the overall structure renders and all 5 screens appear in the tree
+  it('renders tab bar icons for each visible screen', () => {
     const { toJSON } = render(<TabLayout />);
     const tree = JSON.stringify(toJSON());
     expect(tree).toContain('tab-screen-index');
     expect(tree).toContain('tab-screen-calendar');
+    expect(tree).toContain('tab-screen-feed');
     expect(tree).toContain('tab-screen-watchlist');
-    expect(tree).toContain('tab-screen-surprise');
     expect(tree).toContain('tab-screen-profile');
   });
 });
