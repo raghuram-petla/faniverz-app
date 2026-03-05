@@ -147,14 +147,6 @@ export const createStyles = (t: SemanticTheme) =>
       flexDirection: 'row',
       gap: 4,
     },
-    gridPlatformIcon: {
-      width: 28,
-      height: 28,
-      borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    gridPlatformText: { color: colors.white, fontSize: 10, fontWeight: '700' },
     gridRating: {
       position: 'absolute',
       bottom: 10,
@@ -196,7 +188,6 @@ export const createStyles = (t: SemanticTheme) =>
       padding: 12,
       borderRadius: 12,
     },
-    platformLogo: { fontSize: 18, fontWeight: '700', color: t.textPrimary },
     platformName: { fontSize: 13, color: t.textPrimary, flex: 1 },
     platformCheck: {
       width: 20,

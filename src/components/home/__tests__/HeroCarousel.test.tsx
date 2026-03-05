@@ -140,13 +140,19 @@ describe('HeroCarousel', () => {
     expect(toJSON()).toBeNull();
   });
 
-  it('renders OTT platform chips when platformMap provided', () => {
+  it('renders OTT platform badges when platformMap provided', () => {
     const platformMap = {
       '1': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
     };
-    const { getByText } = render(<HeroCarousel movies={mockMovies} platformMap={platformMap} />);
+    const { getByText, UNSAFE_getAllByType } = render(
+      <HeroCarousel movies={mockMovies} platformMap={platformMap} />,
+    );
     expect(getByText('Watch on:')).toBeTruthy();
-    expect(getByText('N')).toBeTruthy();
+    // PlatformBadge renders an Image for known platforms
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    // At least one image beyond backdrops (the platform logo)
+    expect(images.length).toBeGreaterThanOrEqual(3);
   });
 
   it('navigates to movie detail when Get Tickets is pressed (theatrical)', () => {

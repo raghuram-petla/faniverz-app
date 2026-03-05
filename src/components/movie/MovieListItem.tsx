@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
+import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 
@@ -52,9 +53,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
         )}
         {status === 'streaming' && platforms && platforms.length > 0 && (
           <View style={styles.posterBadgeRight}>
-            <View style={[styles.platformIcon, { backgroundColor: platforms[0].color }]}>
-              <Text style={styles.platformIconText}>{platforms[0].logo}</Text>
-            </View>
+            <PlatformBadge platform={platforms[0]} size={24} />
           </View>
         )}
       </View>
@@ -153,18 +152,6 @@ const createStyles = (t: SemanticTheme) =>
       borderRadius: 4,
     },
     theaterBadgeText: {
-      color: '#FFFFFF',
-      fontSize: 10,
-      fontWeight: '700',
-    },
-    platformIcon: {
-      width: 24,
-      height: 24,
-      borderRadius: 4,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    platformIconText: {
       color: '#FFFFFF',
       fontSize: 10,
       fontWeight: '700',

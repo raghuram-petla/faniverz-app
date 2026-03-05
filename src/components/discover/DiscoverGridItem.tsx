@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie, OTTPlatform } from '@/types';
 
@@ -36,9 +37,7 @@ export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemPr
         {platforms.length > 0 && (
           <View style={styles.gridBadgeRight}>
             {platforms.slice(0, 2).map((p) => (
-              <View key={p.id} style={[styles.gridPlatformIcon, { backgroundColor: p.color }]}>
-                <Text style={styles.gridPlatformText}>{p.logo}</Text>
-              </View>
+              <PlatformBadge key={p.id} platform={p} size={22} />
             ))}
           </View>
         )}

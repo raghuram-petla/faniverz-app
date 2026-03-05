@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import type { OTTPlatform, ProductionHouse } from '@/types';
 
 interface DiscoverFilterModalProps {
@@ -90,7 +91,7 @@ export function DiscoverFilterModal({
                     ]}
                     onPress={() => onTogglePlatform(p.id)}
                   >
-                    <Text style={styles.platformLogo}>{p.logo}</Text>
+                    <PlatformBadge platform={p} size={28} />
                     <Text style={styles.platformName}>{p.name}</Text>
                     {isSelected && (
                       <View style={styles.platformCheck}>

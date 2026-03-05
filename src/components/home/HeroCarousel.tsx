@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
+import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
 
@@ -140,9 +141,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
             <View style={styles.platformRow}>
               <Text style={styles.platformLabel}>Watch on:</Text>
               {platforms_.map((p) => (
-                <View key={p.id} style={[styles.platformChip, { backgroundColor: p.color }]}>
-                  <Text style={styles.platformChipText}>{p.logo}</Text>
-                </View>
+                <PlatformBadge key={p.id} platform={p} size={28} />
               ))}
             </View>
           )}

@@ -94,16 +94,6 @@ export const createStyles = (_t: SemanticTheme) =>
       fontSize: 14,
       color: 'rgba(255,255,255,0.6)',
     },
-    platformChip: {
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 8,
-    },
-    platformChipText: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: '600',
-    },
     buttonRow: {
       flexDirection: 'row',
       gap: 12,
