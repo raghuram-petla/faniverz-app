@@ -30,7 +30,7 @@ export function useAdminUserList() {
       // Fetch users with roles
       const { data: roleData, error: roleErr } = await supabase
         .from('admin_user_roles')
-        .select('*, profile:profiles(id, display_name, email, avatar_url)')
+        .select('*, profile:profiles!user_id(id, display_name, email, avatar_url)')
         .order('created_at', { ascending: false });
       if (roleErr) throw roleErr;
 

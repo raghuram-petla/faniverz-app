@@ -110,7 +110,7 @@ describe('useAdminUserList', () => {
     expect(mockFrom).toHaveBeenCalledWith('admin_user_roles');
     expect(mockFrom).toHaveBeenCalledWith('admin_ph_assignments');
     expect(mockSelectRoles).toHaveBeenCalledWith(
-      '*, profile:profiles(id, display_name, email, avatar_url)',
+      '*, profile:profiles!user_id(id, display_name, email, avatar_url)',
     );
     expect(mockSelectPh).toHaveBeenCalledWith(
       '*, production_house:production_houses(id, name, logo_url)',
