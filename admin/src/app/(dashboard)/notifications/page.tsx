@@ -84,7 +84,7 @@ export default function NotificationsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-zinc-800 border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
+          className="bg-input border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
         >
           <option value="">All Statuses</option>
           <option value="pending">Pending</option>
@@ -96,7 +96,7 @@ export default function NotificationsPage() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="bg-zinc-800 border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
+          className="bg-input border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
         >
           <option value="">All Types</option>
           <option value="release">Release</option>
@@ -110,7 +110,7 @@ export default function NotificationsPage() {
         <button
           onClick={handleBulkRetry}
           disabled={bulkRetry.isPending}
-          className="flex items-center gap-2 bg-zinc-800 border border-outline hover:bg-input text-white/80 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
         >
           {bulkRetry.isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -123,7 +123,7 @@ export default function NotificationsPage() {
         <button
           onClick={handleBulkCancel}
           disabled={bulkCancel.isPending}
-          className="flex items-center gap-2 bg-zinc-800 border border-outline hover:bg-input text-white/80 px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
         >
           {bulkCancel.isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />

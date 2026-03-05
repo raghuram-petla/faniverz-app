@@ -169,7 +169,7 @@ export default function PlatformsPage() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
                   placeholder="e.g. Netflix"
-                  className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 />
               </div>
 
@@ -184,7 +184,7 @@ export default function PlatformsPage() {
                   onChange={(e) => setForm({ ...form, logo: e.target.value })}
                   required
                   placeholder="e.g. N"
-                  className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 />
               </div>
 
@@ -206,7 +206,7 @@ export default function PlatformsPage() {
                     onChange={(e) => setForm({ ...form, color: e.target.value })}
                     required
                     placeholder="#e50914"
-                    className="flex-1 bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface font-mono placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                    className="flex-1 bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface font-mono placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -225,7 +225,7 @@ export default function PlatformsPage() {
                   onChange={(e) => setForm({ ...form, display_order: Number(e.target.value) })}
                   required
                   min={0}
-                  className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+                  className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
                 />
               </div>
 

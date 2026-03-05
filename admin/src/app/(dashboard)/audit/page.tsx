@@ -54,7 +54,7 @@ export default function AuditLogPage() {
         <select
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
-          className="bg-zinc-800 border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
+          className="bg-input border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
         >
           <option value="">All Actions</option>
           <option value="create">Create</option>
@@ -66,7 +66,7 @@ export default function AuditLogPage() {
         <select
           value={entityTypeFilter}
           onChange={(e) => setEntityTypeFilter(e.target.value)}
-          className="bg-zinc-800 border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
+          className="bg-input border border-outline rounded-lg px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600"
         >
           <option value="">All Entity Types</option>
           {entityTypes.map((et) => (
@@ -116,7 +116,7 @@ export default function AuditLogPage() {
                       className="border-b border-outline-subtle hover:bg-surface-elevated transition-colors cursor-pointer"
                       onClick={() => toggleRow(entry.id)}
                     >
-                      <td className="px-3 py-4 text-white/30">
+                      <td className="px-3 py-4 text-on-surface-disabled">
                         {isExpanded ? (
                           <ChevronDown className="w-4 h-4" />
                         ) : (
@@ -154,7 +154,7 @@ export default function AuditLogPage() {
                             <p className="text-xs font-medium text-on-surface-subtle uppercase tracking-wider">
                               Details
                             </p>
-                            <pre className="text-sm text-on-surface-muted bg-zinc-800 rounded-lg p-4 overflow-x-auto max-h-60 font-mono">
+                            <pre className="text-sm text-on-surface-muted bg-surface-elevated rounded-lg p-4 overflow-x-auto max-h-60 font-mono">
                               {JSON.stringify(entry.details, null, 2)}
                             </pre>
                           </div>

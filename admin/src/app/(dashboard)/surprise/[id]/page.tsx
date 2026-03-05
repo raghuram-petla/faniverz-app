@@ -129,7 +129,7 @@ export default function EditSurpriseContentPage() {
             onChange={(e) => setTitle(e.target.value)}
             required
             placeholder="Enter title"
-            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           />
         </div>
 
@@ -143,7 +143,7 @@ export default function EditSurpriseContentPage() {
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Optional description"
-            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
+            className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
           />
         </div>
 
@@ -158,7 +158,7 @@ export default function EditSurpriseContentPage() {
             onChange={(e) => setYoutubeId(e.target.value)}
             required
             placeholder="e.g. dQw4w9WgXcQ"
-            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           />
         </div>
 
@@ -171,7 +171,7 @@ export default function EditSurpriseContentPage() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             required
-            className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
           >
             <option value="">Select category...</option>
             {categories.map((cat) => (
@@ -193,7 +193,7 @@ export default function EditSurpriseContentPage() {
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
               placeholder="e.g. 3:45"
-              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
 
@@ -207,7 +207,7 @@ export default function EditSurpriseContentPage() {
               value={views}
               onChange={(e) => setViews(Number(e.target.value))}
               min={0}
-              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
         </div>

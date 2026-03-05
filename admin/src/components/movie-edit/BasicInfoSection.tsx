@@ -160,7 +160,7 @@ export function BasicInfoSection({
         <div>
           <label className="block text-sm text-on-surface-muted mb-1">
             Backdrop Focal Point{' '}
-            <span className="text-white/30 font-normal">— click image to set</span>
+            <span className="text-on-surface-disabled font-normal">— click image to set</span>
           </label>
           <div
             className="relative w-full overflow-hidden rounded-xl cursor-crosshair"

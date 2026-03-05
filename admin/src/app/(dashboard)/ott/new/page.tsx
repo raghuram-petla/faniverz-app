@@ -68,7 +68,7 @@ export default function NewOttReleasePage() {
               value={movieId}
               onChange={(e) => setMovieId(e.target.value)}
               required
-              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             >
               <option value="">Select a movie...</option>
               {movies?.map((movie) => (
@@ -88,7 +88,7 @@ export default function NewOttReleasePage() {
               value={platformId}
               onChange={(e) => setPlatformId(e.target.value)}
               required
-              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             >
               <option value="">Select a platform...</option>
               {platforms?.map((platform) => (
@@ -114,7 +114,7 @@ export default function NewOttReleasePage() {
               type="date"
               value={availableFrom}
               onChange={(e) => setAvailableFrom(e.target.value)}
-              className="w-full bg-zinc-800 border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
 

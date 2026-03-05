@@ -35,7 +35,7 @@ export function ActorSearchDropdown({
         className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
       />
       {dropdownOpen && searchQuery.length >= 2 && !selectedActorId && (
-        <div className="absolute z-40 top-full mt-1 left-0 right-0 bg-zinc-800 border border-outline rounded-lg shadow-xl max-h-48 overflow-y-auto">
+        <div className="absolute z-40 top-full mt-1 left-0 right-0 bg-surface-elevated border border-outline rounded-lg shadow-xl max-h-48 overflow-y-auto">
           {actors.length > 0 ? (
             actors.map((a) => (
               <button
@@ -45,7 +45,7 @@ export function ActorSearchDropdown({
                   onSelect(a);
                   setDropdownOpen(false);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-input text-left"
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-on-surface hover:bg-input text-left"
               >
                 <div className="w-6 h-6 rounded-full bg-input overflow-hidden shrink-0 flex items-center justify-center">
                   {a.photo_url ? (
