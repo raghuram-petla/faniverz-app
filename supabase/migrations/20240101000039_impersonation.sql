@@ -4,7 +4,7 @@
 -- ============================================================
 -- 1. IMPERSONATION SESSIONS TABLE
 -- ============================================================
-CREATE TABLE admin_impersonation_sessions (
+CREATE TABLE IF NOT EXISTS admin_impersonation_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   real_user_id uuid NOT NULL REFERENCES profiles ON DELETE CASCADE,
   target_user_id uuid REFERENCES profiles ON DELETE SET NULL,
@@ -16,17 +16,25 @@ CREATE TABLE admin_impersonation_sessions (
 );
 
 -- Only one active session per user at a time
-CREATE UNIQUE INDEX idx_impersonation_active
+CREATE UNIQUE INDEX IF NOT EXISTS idx_impersonation_active
   ON admin_impersonation_sessions (real_user_id) WHERE is_active = true;
 
-CREATE INDEX idx_impersonation_real_user
+CREATE INDEX IF NOT EXISTS idx_impersonation_real_user
   ON admin_impersonation_sessions (real_user_id);
 
 ALTER TABLE admin_impersonation_sessions ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Super admins can manage impersonation sessions"
-  ON admin_impersonation_sessions FOR ALL
-  USING (public.is_super_admin());
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'admin_impersonation_sessions'
+      AND policyname = 'Super admins can manage impersonation sessions'
+  ) THEN
+    CREATE POLICY "Super admins can manage impersonation sessions"
+      ON admin_impersonation_sessions FOR ALL
+      USING (public.is_super_admin());
+  END IF;
+END $$;
 
 -- ============================================================
 -- 2. AUDIT LOG: ADD IMPERSONATION COLUMNS
