@@ -1,7 +1,7 @@
 // NOTE: Keep in sync with image-resize.ts (which uses Sharp, server-only).
 // This file is client-safe and used by the ImageVariantsPanel component.
 
-export interface VariantSpec {
+interface VariantSpec {
   suffix: string;
   width: number;
   quality: number;

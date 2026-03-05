@@ -9,6 +9,7 @@ module.exports = {
     '^@shared/(.*)$': '<rootDir>/shared/$1',
   },
   modulePathIgnorePatterns: ['<rootDir>/figma-design/', '<rootDir>/admin/'],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/admin/'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     'app/**/*.{ts,tsx}',

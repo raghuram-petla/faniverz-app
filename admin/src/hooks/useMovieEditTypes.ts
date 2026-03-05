@@ -55,7 +55,7 @@ export type PendingPlatformAdd = {
 export type PendingPHAdd = { production_house_id: string; _ph?: ProductionHouse };
 
 // ─── Mutation types (minimal shape needed) ───
-export interface MutateAsync<TArgs, TResult = unknown> {
+interface MutateAsync<TArgs, TResult = unknown> {
   mutateAsync: (args: TArgs) => Promise<TResult>;
 }
 

@@ -91,10 +91,6 @@ export const createFeedStyles = (t: SemanticTheme) =>
       paddingTop: 40,
       alignItems: 'center',
     },
-    loadingText: {
-      color: t.textSecondary,
-      fontSize: 15,
-    },
     emptyContainer: {
       paddingTop: 60,
       alignItems: 'center',

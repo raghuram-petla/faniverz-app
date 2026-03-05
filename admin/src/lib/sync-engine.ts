@@ -24,7 +24,7 @@ export interface ImportMovieResult {
   crewCount: number;
 }
 
-export interface RefreshActorResult {
+interface RefreshActorResult {
   actorId: string;
   name: string;
   updated: boolean;

@@ -225,33 +225,3 @@ export function extractTrailerUrl(videos: TmdbVideo[]): string | null {
   const trailer = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
   return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
 }
-
-/** Search TMDB for movies by query string. Returns top 20 results. */
-export async function searchMovies(query: string, apiKey: string): Promise<TmdbDiscoverMovie[]> {
-  const data = await tmdbGet<{ results: TmdbDiscoverMovie[] }>('/search/movie', {
-    api_key: apiKey,
-    query,
-    language: 'en-US',
-  });
-  return data.results;
-}
-
-/** Search TMDB for people by query string. Returns top 20 results. */
-export async function searchPeople(query: string, apiKey: string): Promise<TmdbPerson[]> {
-  const data = await tmdbGet<{
-    results: Array<{
-      id: number;
-      name: string;
-      birthday: string | null;
-      profile_path: string | null;
-      biography: string | null;
-      place_of_birth: string | null;
-      gender: number;
-    }>;
-  }>('/search/person', {
-    api_key: apiKey,
-    query,
-    language: 'en-US',
-  });
-  return data.results;
-}

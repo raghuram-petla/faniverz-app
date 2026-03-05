@@ -16,11 +16,6 @@ export interface Review {
   movie?: Pick<Movie, 'id' | 'title' | 'poster_url'>;
 }
 
-export interface ReviewHelpful {
-  user_id: string;
-  review_id: string;
-}
-
 export interface CreateReviewInput {
   user_id: string;
   movie_id: string;

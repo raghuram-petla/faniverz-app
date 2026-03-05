@@ -60,11 +60,7 @@ function getVariantsForBucket(bucket: string): ImageVariant[] {
  * @param key        Object key, e.g. "{uuid}.jpg"
  * @returns          Public R2 URL, or sourceUrl if R2 is not configured
  */
-export async function uploadImageFromUrl(
-  sourceUrl: string,
-  bucket: string,
-  key: string,
-): Promise<string> {
+async function uploadImageFromUrl(sourceUrl: string, bucket: string, key: string): Promise<string> {
   const r2 = getR2Client();
   if (!r2) return sourceUrl;
 

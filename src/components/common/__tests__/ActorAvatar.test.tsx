@@ -17,6 +17,7 @@ const base: Actor = {
   biography: null,
   place_of_birth: null,
   height_cm: null,
+  created_by: null,
   created_at: '',
 };
 

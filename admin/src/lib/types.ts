@@ -102,7 +102,7 @@ export interface SyncLog {
   completed_at: string | null;
 }
 
-export interface UserProfile {
+interface UserProfile {
   id: string;
   display_name: string | null;
   email: string | null;
@@ -123,20 +123,6 @@ export interface DashboardStats {
 // ============================================================
 
 export type AdminRoleId = 'super_admin' | 'admin' | 'production_house_admin';
-
-export interface AdminRole {
-  id: AdminRoleId;
-  label: string;
-  description: string | null;
-}
-
-export interface AdminUserRole {
-  id: string;
-  user_id: string;
-  role_id: AdminRoleId;
-  assigned_by: string | null;
-  created_at: string;
-}
 
 export interface AdminPHAssignment {
   user_id: string;
@@ -171,18 +157,6 @@ export const ADMIN_ROLE_LABELS: Record<AdminRoleId, string> = {
   admin: 'Admin',
   production_house_admin: 'PH Admin',
 };
-
-/** Impersonation session — tracks active/historical impersonation */
-export interface ImpersonationSession {
-  id: string;
-  real_user_id: string;
-  target_user_id: string | null;
-  target_role: AdminRoleId;
-  target_ph_ids: string[];
-  started_at: string;
-  ended_at: string | null;
-  is_active: boolean;
-}
 
 /** Admin user with role + PH assignment details — used by user management */
 export interface AdminUserWithDetails {

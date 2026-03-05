@@ -6,8 +6,6 @@ import type { MovieStatus, VideoType } from './types';
 // Layout dimensions (used by both mobile components and admin preview replicas)
 export const HERO_HEIGHT = 600;
 export const ACTOR_AVATAR_SIZE = 120;
-export const POSTER_ASPECT_RATIO = 2 / 3;
-
 // Movie status configuration (derived, not stored)
 export const MOVIE_STATUS_CONFIG: Record<MovieStatus, { label: string; color: string }> = {
   upcoming: { label: 'Coming Soon', color: '#2563EB' },
