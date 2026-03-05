@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import type { MovieVideo, MoviePoster } from '@/types';
-import { createStyles } from '../[id].styles';
+import { createStyles } from '../_styles/[id].styles';
 
 interface VideoGroup {
   label: string;

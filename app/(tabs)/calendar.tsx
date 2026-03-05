@@ -10,7 +10,7 @@ import { MovieListItem } from '@/components/movie/MovieListItem';
 import { Movie } from '@/types';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { CalendarFilterPanel } from '@/components/calendar/CalendarFilterPanel';
-import { createStyles } from './calendar.styles';
+import { createStyles } from './_styles/calendar.styles';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

@@ -11,7 +11,7 @@ import { WatchlistEntry } from '@/types';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatWatchTime } from '@/utils/formatDate';
-import { createStyles } from './watched.styles';
+import { createStyles } from './_styles/watched.styles';
 
 // Avg runtime assumption for watch time estimate (90 min)
 const AVG_RUNTIME_MINUTES = 90;

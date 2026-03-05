@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useTheme } from '@/theme';
 import { WatchlistEntry } from '@/types';
 import { AvailableCard, UpcomingCard, WatchedCard } from '@/components/watchlist/WatchlistCards';
-import { createStyles } from './watchlist.styles';
+import { createStyles } from './_styles/watchlist.styles';
 
 type ListItem =
   | {

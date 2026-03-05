@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { PosterModal } from '../PosterModal';
 
-jest.mock('../../[id].styles', () => ({
+jest.mock('../../_styles/[id].styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 

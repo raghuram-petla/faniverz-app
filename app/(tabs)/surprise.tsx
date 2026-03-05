@@ -13,7 +13,7 @@ import {
   formatViews,
 } from '@/constants/surpriseHelpers';
 import { FeaturedVideoCard } from '@/components/surprise/FeaturedVideoCard';
-import { createStyles } from './surprise.styles';
+import { createStyles } from './_styles/surprise.styles';
 
 type FilterOption = 'all' | SurpriseCategory;
 

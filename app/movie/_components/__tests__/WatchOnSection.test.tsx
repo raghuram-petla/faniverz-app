@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { WatchOnSection } from '../WatchOnSection';
 
-jest.mock('../../[id].styles', () => ({
+jest.mock('../../_styles/[id].styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 

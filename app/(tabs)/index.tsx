@@ -23,7 +23,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
 import { Movie } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
-import { createStyles } from './index.styles';
+import { createStyles } from './_styles/index.styles';
 
 const HEADER_CONTENT_HEIGHT = 52;
 const FEATURED_MOVIE_LIMIT = 7;

@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import type { MovieWithDetails } from '@/types/movie';
-import { createStyles } from '../[id].styles';
+import { createStyles } from '../_styles/[id].styles';
 
 interface OverviewTabProps {
   movie: MovieWithDetails;

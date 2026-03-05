@@ -12,7 +12,7 @@ import { Review } from '@/types';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
-import { createStyles } from './reviews.styles';
+import { createStyles } from './_styles/reviews.styles';
 
 type SortKey = 'recent' | 'rating' | 'helpful';
 
