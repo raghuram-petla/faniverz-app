@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 /**
  * POST /api/accept-invitation
@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
     if (authUser.id !== userId || authUser.email?.toLowerCase() !== email.toLowerCase()) {
       return NextResponse.json({ error: 'Identity mismatch' }, { status: 403 });
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     // Find pending, non-expired invitation for this email
     const { data: invitation, error: inviteErr } = await supabaseAdmin

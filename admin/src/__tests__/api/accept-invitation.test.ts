@@ -13,9 +13,9 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({
-  supabaseAdmin: {
+  getSupabaseAdmin: () => ({
     from: (...args: unknown[]) => mockFrom(...args),
-  },
+  }),
 }));
 
 vi.mock('next/server', () => {
