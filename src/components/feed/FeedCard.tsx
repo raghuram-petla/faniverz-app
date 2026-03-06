@@ -1,7 +1,9 @@
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, Image, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { FeedContentBadge } from './FeedContentBadge';
+import { FeedVideoPlayer } from './FeedVideoPlayer';
 import { VoteButtons } from './VoteButtons';
 import { formatRelativeTime, getFeedTypeLabel } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
@@ -13,18 +15,39 @@ export interface FeedCardProps {
   userVote?: 'up' | 'down' | null;
   onUpvote?: (itemId: string) => void;
   onDownvote?: (itemId: string) => void;
+  isVideoActive?: boolean;
+  onVideoLayout?: (id: string, y: number, height: number) => void;
 }
 
-export function FeedCard({ item, onPress, userVote, onUpvote, onDownvote }: FeedCardProps) {
+function FeedCardInner({
+  item,
+  onPress,
+  userVote,
+  onUpvote,
+  onDownvote,
+  isVideoActive,
+  onVideoLayout,
+}: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
   const hasVideo = !!item.youtube_id;
   const hasThumbnail = !!item.thumbnail_url;
+  const isPosterImage = hasThumbnail && !hasVideo;
   const movieName = item.movie?.title;
   const label = getFeedTypeLabel(item.content_type);
 
+  const handleLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      if (onVideoLayout) {
+        const { y, height } = e.nativeEvent.layout;
+        onVideoLayout(item.id, y, height);
+      }
+    },
+    [item.id, onVideoLayout],
+  );
+
   return (
-    <View style={styles.post}>
+    <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
       {item.is_pinned ? (
         <View style={styles.pinnedRow}>
           <Ionicons name="pin" size={12} color={theme.textTertiary} />
@@ -71,20 +94,17 @@ export function FeedCard({ item, onPress, userVote, onUpvote, onDownvote }: Feed
           </Text>
         ) : null}
 
-        {/* Media */}
-        {hasThumbnail ? (
-          <View style={styles.mediaContainer}>
+        {/* Media: video player or static image */}
+        {hasVideo ? (
+          <FeedVideoPlayer
+            youtubeId={item.youtube_id!}
+            thumbnailUrl={item.thumbnail_url}
+            duration={item.duration}
+            isActive={isVideoActive ?? false}
+          />
+        ) : isPosterImage ? (
+          <View style={styles.posterMediaContainer}>
             <Image source={{ uri: item.thumbnail_url! }} style={styles.media} />
-            {hasVideo ? (
-              <View style={styles.playBtn}>
-                <Ionicons name="play" size={24} color={colors.white} style={styles.playIcon} />
-              </View>
-            ) : null}
-            {item.duration ? (
-              <View style={styles.durationBadge}>
-                <Text style={styles.durationText}>{item.duration}</Text>
-              </View>
-            ) : null}
           </View>
         ) : null}
       </TouchableOpacity>
@@ -106,3 +126,13 @@ export function FeedCard({ item, onPress, userVote, onUpvote, onDownvote }: Feed
     </View>
   );
 }
+
+export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
+  return (
+    prev.item.id === next.item.id &&
+    prev.userVote === next.userVote &&
+    prev.isVideoActive === next.isVideoActive &&
+    prev.item.upvote_count === next.item.upvote_count &&
+    prev.item.downvote_count === next.item.downvote_count
+  );
+});

@@ -10,6 +10,7 @@ import {
   useUserVotes,
 } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
+import { useActiveVideo } from '@/hooks/useActiveVideo';
 import { FeedCard } from '@/components/feed/FeedCard';
 import { FeedHeader, useCollapsibleHeader } from '@/components/feed/FeedHeader';
 import { FeedFilterPills } from '@/components/feed/FeedFilterPills';
@@ -30,6 +31,7 @@ export default function FeedScreen() {
     usePersonalizedFeed(filter);
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
+  const { activeVideoId, registerVideoLayout, handleScrollForVideo } = useActiveVideo();
 
   const allItems = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page) ?? [];
@@ -91,6 +93,7 @@ export default function FeedScreen() {
           if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300) {
             loadMore();
           }
+          handleScrollForVideo(contentOffset.y, layoutMeasurement.height);
         }}
         scrollEventThrottle={16}
       >
@@ -119,6 +122,8 @@ export default function FeedScreen() {
                 userVote={userVotes[item.id] ?? null}
                 onUpvote={handleUpvote}
                 onDownvote={handleDownvote}
+                isVideoActive={activeVideoId === item.id}
+                onVideoLayout={item.youtube_id ? registerVideoLayout : undefined}
               />
             ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}

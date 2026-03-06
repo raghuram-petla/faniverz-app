@@ -179,6 +179,13 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       aspectRatio: 16 / 9,
       backgroundColor: t.surfaceElevated,
     },
+    posterMediaContainer: {
+      marginTop: 10,
+      borderRadius: 12,
+      overflow: 'hidden',
+      aspectRatio: 2 / 3,
+      backgroundColor: t.surfaceElevated,
+    },
     media: {
       ...StyleSheet.absoluteFillObject,
     },

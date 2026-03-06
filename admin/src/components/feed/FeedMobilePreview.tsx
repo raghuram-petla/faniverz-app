@@ -139,7 +139,11 @@ function PreviewFeedCard({ item }: { item: NewsFeedItem }) {
 
       {/* Thumbnail */}
       {item.thumbnail_url ? (
-        <div style={previewStyles.mediaContainer}>
+        <div
+          style={
+            !item.youtube_id ? previewStyles.posterMediaContainer : previewStyles.mediaContainer
+          }
+        >
           <img src={item.thumbnail_url} alt="" style={previewStyles.thumbImg} />
         </div>
       ) : null}
@@ -235,6 +239,13 @@ const previewStyles: Record<string, React.CSSProperties> = {
     borderRadius: 8,
     overflow: 'hidden',
     aspectRatio: '16/9',
+    background: '#18181B',
+  },
+  posterMediaContainer: {
+    marginTop: 6,
+    borderRadius: 8,
+    overflow: 'hidden',
+    aspectRatio: '2/3',
     background: '#18181B',
   },
   thumbImg: {

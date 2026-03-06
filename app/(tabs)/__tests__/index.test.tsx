@@ -45,6 +45,14 @@ jest.mock('@/components/feed/FeedFilterPills', () => ({
   FeedFilterPills: () => null,
 }));
 
+jest.mock('@/hooks/useActiveVideo', () => ({
+  useActiveVideo: () => ({
+    activeVideoId: null,
+    registerVideoLayout: jest.fn(),
+    handleScrollForVideo: jest.fn(),
+  }),
+}));
+
 jest.mock('@/components/feed/FeedCard', () => ({
   FeedCard: ({ item, onUpvote, onDownvote }: any) => {
     const { View, Text, TouchableOpacity } = require('react-native');

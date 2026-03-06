@@ -18,6 +18,27 @@ jest.mock('@/styles/tabs/feed.styles', () => ({
   createFeedCardStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
+jest.mock('../FeedVideoPlayer', () => ({
+  FeedVideoPlayer: ({
+    isActive,
+    youtubeId,
+    duration,
+  }: {
+    isActive: boolean;
+    youtubeId: string;
+    duration: string | null;
+  }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View testID="feed-video-player">
+        <Text>{isActive ? 'Playing' : 'Paused'}</Text>
+        <Text>{youtubeId}</Text>
+        {duration ? <Text>{duration}</Text> : null}
+      </View>
+    );
+  },
+}));
+
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { FeedCard } from '../FeedCard';
@@ -239,5 +260,43 @@ describe('FeedCard', () => {
     const item = makeItem({ upvote_count: 5, downvote_count: 1 });
     render(<FeedCard item={item} onPress={jest.fn()} onDownvote={jest.fn()} />);
     expect(screen.queryByLabelText('Downvote, 1 downvotes')).toBeNull();
+  });
+
+  // Video autoplay tests
+  it('renders FeedVideoPlayer for video items', () => {
+    const item = makeItem({ youtube_id: 'xyz789' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.getByTestId('feed-video-player')).toBeTruthy();
+    expect(screen.getByText('xyz789')).toBeTruthy();
+  });
+
+  it('passes isVideoActive to FeedVideoPlayer', () => {
+    const item = makeItem();
+    render(<FeedCard item={item} onPress={jest.fn()} isVideoActive={true} />);
+    expect(screen.getByText('Playing')).toBeTruthy();
+  });
+
+  it('shows Paused state when isVideoActive is false', () => {
+    const item = makeItem();
+    render(<FeedCard item={item} onPress={jest.fn()} isVideoActive={false} />);
+    expect(screen.getByText('Paused')).toBeTruthy();
+  });
+
+  it('does not render FeedVideoPlayer for non-video items', () => {
+    const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('feed-video-player')).toBeNull();
+  });
+
+  it('calls onVideoLayout when video card lays out', () => {
+    const onVideoLayout = jest.fn();
+    const item = makeItem({ id: 'v1' });
+    render(<FeedCard item={item} onPress={jest.fn()} onVideoLayout={onVideoLayout} />);
+    // Trigger onLayout on the root View
+    const { View } = require('react-native');
+    const rootViews = screen.UNSAFE_getAllByType(View);
+    const postView = rootViews[0];
+    fireEvent(postView, 'layout', { nativeEvent: { layout: { y: 100, height: 300 } } });
+    expect(onVideoLayout).toHaveBeenCalledWith('v1', 100, 300);
   });
 });
