@@ -5,7 +5,7 @@ import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import type { NewsFeedItem } from '@/lib/types';
 
-const FEED_TABS = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Surprise'];
+const FEED_TABS = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'];
 
 const TYPE_COLORS: Record<string, string> = {
   trailer: '#2563EB',
@@ -20,14 +20,36 @@ const TYPE_COLORS: Record<string, string> = {
   making: '#EA580C',
   'short-film': '#DB2777',
   update: '#6B7280',
+  new_movie: '#DC2626',
+  theatrical_release: '#DC2626',
+  ott_release: '#9333EA',
+  rating_milestone: '#FACC15',
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  trailer: 'Trailer',
+  teaser: 'Teaser',
+  glimpse: 'Glimpse',
+  promo: 'Promo',
+  song: 'Song',
+  poster: 'Poster',
+  bts: 'BTS',
+  interview: 'Interview',
+  event: 'Event',
+  making: 'Making',
+  'short-film': 'Short Film',
+  update: 'Update',
+  new_movie: 'New Movie',
+  theatrical_release: 'In Theaters',
+  ott_release: 'Now Streaming',
+  rating_milestone: 'Milestone',
 };
 
 export interface FeedMobilePreviewProps {
   items: NewsFeedItem[];
-  featuredItems: NewsFeedItem[];
 }
 
-export function FeedMobilePreview({ items, featuredItems }: FeedMobilePreviewProps) {
+export function FeedMobilePreview({ items }: FeedMobilePreviewProps) {
   const [device, setDevice] = useState<DeviceConfig>(DEVICES[0]);
   const displayItems = items.slice(0, 10);
 
@@ -43,11 +65,11 @@ export function FeedMobilePreview({ items, featuredItems }: FeedMobilePreviewPro
             style={{ padding: '60px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}
           >
             <div style={previewStyles.iconBadge}>
-              <span style={{ fontSize: 14 }}>📰</span>
+              <span style={{ fontSize: 14 }}>F</span>
             </div>
             <div>
-              <div style={{ color: '#fff', fontSize: 18, fontWeight: 700 }}>News Feed</div>
-              <div style={{ color: '#888', fontSize: 10 }}>Latest Updates & Content</div>
+              <div style={{ color: '#fff', fontSize: 18, fontWeight: 700 }}>Faniverz</div>
+              <div style={{ color: '#888', fontSize: 10 }}>Telugu Cinema Updates</div>
             </div>
           </div>
 
@@ -68,22 +90,8 @@ export function FeedMobilePreview({ items, featuredItems }: FeedMobilePreviewPro
             ))}
           </div>
 
-          {/* Featured */}
-          {featuredItems.length > 0 ? (
-            <div style={{ padding: '8px 16px' }}>
-              <div style={{ color: '#fff', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
-                Featured
-              </div>
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
-                {featuredItems.slice(0, 3).map((item) => (
-                  <PreviewFeaturedCard key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {/* Grid */}
-          <div style={previewStyles.grid}>
+          {/* Feed list (single column, X-style) */}
+          <div style={{ padding: '0 0 60px' }}>
             {displayItems.map((item) => (
               <PreviewFeedCard key={item.id} item={item} />
             ))}
@@ -94,45 +102,56 @@ export function FeedMobilePreview({ items, featuredItems }: FeedMobilePreviewPro
   );
 }
 
-function PreviewFeaturedCard({ item }: { item: NewsFeedItem }) {
-  const color = TYPE_COLORS[item.content_type] ?? '#DC2626';
-  return (
-    <div style={previewStyles.featuredCard}>
-      <div style={previewStyles.featuredThumb}>
-        {item.thumbnail_url ? (
-          <img src={item.thumbnail_url} alt="" style={previewStyles.thumbImg} />
-        ) : (
-          <div style={{ ...previewStyles.thumbPlaceholder }} />
-        )}
-        <div style={{ ...previewStyles.typeBadge, background: color }}>
-          <span style={previewStyles.typeBadgeText}>{item.content_type}</span>
-        </div>
-      </div>
-      <div style={{ padding: '6px 8px' }}>
-        <div style={previewStyles.cardTitle}>{item.title}</div>
-      </div>
-    </div>
-  );
-}
-
 function PreviewFeedCard({ item }: { item: NewsFeedItem }) {
   const color = TYPE_COLORS[item.content_type] ?? '#DC2626';
+  const label = TYPE_LABELS[item.content_type] ?? item.content_type;
+  const movieName = item.movie?.title;
+
   return (
-    <div style={previewStyles.card}>
-      <div style={previewStyles.cardThumb}>
-        {item.thumbnail_url ? (
-          <img src={item.thumbnail_url} alt="" style={previewStyles.thumbImg} />
-        ) : (
-          <div style={previewStyles.thumbPlaceholder} />
-        )}
-        <div style={{ ...previewStyles.typeBadge, background: color }}>
-          <span style={previewStyles.typeBadgeText}>{item.content_type}</span>
+    <div style={previewStyles.post}>
+      {/* Pinned / Featured label */}
+      {item.is_pinned ? (
+        <div style={previewStyles.statusLabel}>
+          <span style={{ fontSize: 8, color: '#888' }}>📌 Pinned</span>
         </div>
+      ) : item.is_featured ? (
+        <div style={previewStyles.statusLabel}>
+          <span style={{ fontSize: 8, color: '#FACC15' }}>⭐ Featured</span>
+        </div>
+      ) : null}
+
+      {/* Header: badge + movie + time */}
+      <div style={previewStyles.headerRow}>
+        <div style={{ ...previewStyles.typeBadge, background: color }}>
+          <span style={previewStyles.typeBadgeText}>{label}</span>
+        </div>
+        {movieName ? (
+          <>
+            <span style={previewStyles.movieName}>{movieName}</span>
+            <span style={{ fontSize: 8, color: '#888' }}>·</span>
+          </>
+        ) : null}
+        <span style={{ fontSize: 8, color: '#888' }}>2h</span>
       </div>
-      <div style={{ padding: '6px 8px' }}>
-        <div style={previewStyles.cardTitle}>{item.title}</div>
-        {item.movie?.title ? <div style={previewStyles.movieLabel}>{item.movie.title}</div> : null}
+
+      {/* Title */}
+      <div style={previewStyles.cardTitle}>{item.title}</div>
+
+      {/* Thumbnail */}
+      {item.thumbnail_url ? (
+        <div style={previewStyles.mediaContainer}>
+          <img src={item.thumbnail_url} alt="" style={previewStyles.thumbImg} />
+        </div>
+      ) : null}
+
+      {/* Vote counts */}
+      <div style={previewStyles.actionBar}>
+        <span style={{ fontSize: 8, color: '#888' }}>▲ {item.upvote_count ?? 0}</span>
+        <span style={{ fontSize: 8, color: '#888' }}>▼ {item.downvote_count ?? 0}</span>
       </div>
+
+      {/* Separator */}
+      <div style={previewStyles.separator} />
     </div>
   );
 }
@@ -146,6 +165,9 @@ const previewStyles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    color: '#fff',
+    fontWeight: 700,
+    fontSize: 16,
   },
   pillRow: {
     display: 'flex',
@@ -165,52 +187,23 @@ const previewStyles: Record<string, React.CSSProperties> = {
     background: '#27272A',
     border: '1px solid #3F3F46',
   },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 10,
-    padding: '8px 16px 60px',
+  post: {
+    padding: '0 16px',
   },
-  card: {
-    borderRadius: 8,
-    overflow: 'hidden',
-    background: '#18181B',
+  statusLabel: {
+    paddingTop: 6,
+    paddingLeft: 2,
   },
-  cardThumb: {
-    width: '100%',
-    aspectRatio: '16/9',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  thumbImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  thumbPlaceholder: {
-    width: '100%',
-    height: '100%',
-    background: '#1e1b4b',
-  },
-  featuredCard: {
-    width: 200,
-    borderRadius: 10,
-    overflow: 'hidden',
-    background: '#18181B',
-    flexShrink: 0,
-  },
-  featuredThumb: {
-    width: '100%',
-    aspectRatio: '16/9',
-    position: 'relative',
-    overflow: 'hidden',
+  headerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 8,
   },
   typeBadge: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
     padding: '1px 5px',
     borderRadius: 4,
+    flexShrink: 0,
   },
   typeBadgeText: {
     fontSize: 7,
@@ -218,20 +211,46 @@ const previewStyles: Record<string, React.CSSProperties> = {
     color: '#fff',
     textTransform: 'uppercase',
   },
-  cardTitle: {
-    fontSize: 9,
-    fontWeight: 600,
+  movieName: {
+    fontSize: 10,
+    fontWeight: 700,
     color: '#fff',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  movieLabel: {
-    fontSize: 8,
-    color: '#888',
-    marginTop: 2,
+  cardTitle: {
+    fontSize: 10,
+    fontWeight: 400,
+    color: '#fff',
+    marginTop: 3,
+    lineHeight: '14px',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
+  },
+  mediaContainer: {
+    marginTop: 6,
+    borderRadius: 8,
+    overflow: 'hidden',
+    aspectRatio: '16/9',
+    background: '#18181B',
+  },
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  actionBar: {
+    display: 'flex',
+    gap: 12,
+    paddingTop: 6,
+    paddingBottom: 4,
+  },
+  separator: {
+    height: 1,
+    background: '#27272A',
+    marginTop: 6,
   },
 };

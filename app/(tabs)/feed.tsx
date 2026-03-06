@@ -1,20 +1,12 @@
 import { useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { useNewsFeed, useFeaturedFeed } from '@/features/feed';
+import { useNewsFeed } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { FEED_PILLS } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
-import { FeaturedFeedCard } from '@/components/feed/FeaturedFeedCard';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
@@ -29,18 +21,8 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { filter, setFilter } = useFeedStore();
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useNewsFeed(filter);
-  const { data: featuredItems = [] } = useFeaturedFeed();
 
   const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
-
-  const showFeatured = filter === 'all' && featuredItems.length > 0;
-
-  const renderFeaturedItem = useCallback(
-    ({ item }: { item: NewsFeedItem }) => (
-      <FeaturedFeedCard item={item} onPress={handleFeedItemPress} />
-    ),
-    [],
-  );
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -90,32 +72,12 @@ export default function FeedScreen() {
             </Text>
           </View>
         ) : (
-          <>
-            {/* Featured section */}
-            {showFeatured ? (
-              <View style={styles.featuredSection}>
-                <Text style={styles.featuredSectionTitle}>Featured</Text>
-                <FlatList
-                  horizontal
-                  data={featuredItems}
-                  renderItem={renderFeaturedItem}
-                  keyExtractor={(item) => item.id}
-                  contentContainerStyle={styles.featuredListContent}
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
-            ) : null}
-
-            {/* Feed grid */}
-            <View style={styles.grid}>
-              {allItems.map((item, idx) => (
-                <FeedCard key={item.id} item={item} index={idx} onPress={handleFeedItemPress} />
-              ))}
-            </View>
-
-            {/* Loading more */}
+          <View style={styles.feedList}>
+            {allItems.map((item) => (
+              <FeedCard key={item.id} item={item} onPress={handleFeedItemPress} />
+            ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}
-          </>
+          </View>
         )}
       </ScrollView>
     </View>

@@ -23,7 +23,6 @@ jest.mock('react-native-safe-area-context', () => ({
 
 jest.mock('@/features/feed', () => ({
   usePersonalizedFeed: jest.fn(),
-  useFeaturedFeed: jest.fn(),
   useVoteFeedItem: jest.fn(),
   useRemoveFeedVote: jest.fn(),
   useUserVotes: jest.fn(),
@@ -52,6 +51,8 @@ jest.mock('@/components/feed/FeedCard', () => ({
     return (
       <View>
         <Text>{item.title}</Text>
+        {item.is_pinned ? <Text>Pinned</Text> : null}
+        {item.is_featured ? <Text>Featured</Text> : null}
         {onUpvote && (
           <TouchableOpacity
             onPress={() => onUpvote(item.id)}
@@ -73,23 +74,11 @@ jest.mock('@/components/feed/FeedCard', () => ({
   },
 }));
 
-jest.mock('@/components/feed/FeaturedFeedCard', () => ({
-  FeaturedFeedCard: ({ item }: any) => {
-    const { View, Text } = require('react-native');
-    return (
-      <View>
-        <Text>Featured: {item.title}</Text>
-      </View>
-    );
-  },
-}));
-
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import FeedScreen from '../index';
 import {
   usePersonalizedFeed,
-  useFeaturedFeed,
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
@@ -105,7 +94,6 @@ const mockRemoveMutate = jest.fn();
 const mockUsePersonalizedFeed = usePersonalizedFeed as jest.MockedFunction<
   typeof usePersonalizedFeed
 >;
-const mockUseFeaturedFeed = useFeaturedFeed as jest.MockedFunction<typeof useFeaturedFeed>;
 const mockUseVoteFeedItem = useVoteFeedItem as jest.MockedFunction<typeof useVoteFeedItem>;
 const mockUseRemoveFeedVote = useRemoveFeedVote as jest.MockedFunction<typeof useRemoveFeedVote>;
 const mockUseUserVotes = useUserVotes as jest.MockedFunction<typeof useUserVotes>;
@@ -140,7 +128,6 @@ function setupMocks(
   overrides: {
     store?: Partial<ReturnType<typeof useFeedStore>>;
     feed?: Record<string, unknown>;
-    featured?: Record<string, unknown>;
     votes?: Record<string, 'up' | 'down'>;
   } = {},
 ) {
@@ -157,11 +144,6 @@ function setupMocks(
     fetchNextPage: mockFetchNextPage,
     isFetchingNextPage: false,
     ...overrides.feed,
-  } as any);
-
-  mockUseFeaturedFeed.mockReturnValue({
-    data: [],
-    ...overrides.featured,
   } as any);
 
   mockUseVoteFeedItem.mockReturnValue({
@@ -211,28 +193,15 @@ describe('FeedScreen', () => {
     expect(screen.getByText('Second Trailer')).toBeTruthy();
   });
 
-  it('renders featured section when filter is "all" and featured items exist', () => {
-    const featuredItem = makeItem({ id: 'f1', title: 'Hot Trailer', is_featured: true });
-    setupMocks({ featured: { data: [featuredItem] } });
+  it('renders pinned and featured indicators in stream', () => {
+    const items = [
+      makeItem({ id: 'p1', title: 'Pinned Post', is_pinned: true }),
+      makeItem({ id: 'f1', title: 'Featured Post', is_featured: true }),
+    ];
+    setupMocks({ feed: { data: { pages: [items], pageParams: [0] }, isLoading: false } });
     render(<FeedScreen />);
+    expect(screen.getByText('Pinned')).toBeTruthy();
     expect(screen.getByText('Featured')).toBeTruthy();
-    expect(screen.getByText('Featured: Hot Trailer')).toBeTruthy();
-  });
-
-  it('does not render featured section when filter is not "all"', () => {
-    const featuredItem = makeItem({ id: 'f1', title: 'Hot Trailer', is_featured: true });
-    setupMocks({
-      store: { filter: 'trailers' },
-      featured: { data: [featuredItem] },
-    });
-    render(<FeedScreen />);
-    expect(screen.queryByText('Featured')).toBeNull();
-  });
-
-  it('does not render featured section when no featured items', () => {
-    setupMocks({ featured: { data: [] } });
-    render(<FeedScreen />);
-    expect(screen.queryByText('Featured')).toBeNull();
   });
 
   it('calls fetchNextPage on scroll near bottom when hasNextPage is true', () => {
@@ -330,17 +299,6 @@ describe('FeedScreen', () => {
     expect(indicators.length).toBeGreaterThan(0);
   });
 
-  it('renders multiple featured items in horizontal list', () => {
-    const items = [
-      makeItem({ id: 'f1', title: 'Featured One', is_featured: true }),
-      makeItem({ id: 'f2', title: 'Featured Two', is_featured: true }),
-    ];
-    setupMocks({ featured: { data: items } });
-    render(<FeedScreen />);
-    expect(screen.getByText('Featured: Featured One')).toBeTruthy();
-    expect(screen.getByText('Featured: Featured Two')).toBeTruthy();
-  });
-
   it('passes filter to usePersonalizedFeed', () => {
     setupMocks({ store: { filter: 'songs' } });
     render(<FeedScreen />);
@@ -351,5 +309,14 @@ describe('FeedScreen', () => {
     setupMocks({ feed: { data: { pages: [], pageParams: [] }, isLoading: false } });
     render(<FeedScreen />);
     expect(screen.getByText('No updates yet')).toBeTruthy();
+  });
+
+  it('deduplicates items across paginated pages', () => {
+    const item = makeItem({ id: 'dup-1', title: 'Duplicate' });
+    setupMocks({
+      feed: { data: { pages: [[item], [item]], pageParams: [0, 15] }, isLoading: false },
+    });
+    render(<FeedScreen />);
+    expect(screen.getAllByText('Duplicate')).toHaveLength(1);
   });
 });

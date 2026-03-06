@@ -393,7 +393,7 @@ BEGIN
       WHEN 'updates' THEN nf.feed_type = 'update'
       ELSE true
     END
-  ORDER BY nf.is_pinned DESC, score DESC
+  ORDER BY nf.is_pinned DESC, score DESC, nf.published_at DESC, nf.id
   LIMIT p_limit
   OFFSET p_offset;
 END;

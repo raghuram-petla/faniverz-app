@@ -1,18 +1,16 @@
 import { useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import {
   usePersonalizedFeed,
-  useFeaturedFeed,
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
 } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { FeedCard } from '@/components/feed/FeedCard';
-import { FeaturedFeedCard } from '@/components/feed/FeaturedFeedCard';
 import { FeedHeader, useCollapsibleHeader } from '@/components/feed/FeedHeader';
 import { FeedFilterPills } from '@/components/feed/FeedFilterPills';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
@@ -30,15 +28,20 @@ export default function FeedScreen() {
   const { headerTranslateY, totalHeaderHeight, handleScroll } = useCollapsibleHeader(insets.top);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
     usePersonalizedFeed(filter);
-  const { data: featuredItems = [] } = useFeaturedFeed();
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
 
-  const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
+  const allItems = useMemo(() => {
+    const flat = data?.pages.flatMap((page) => page) ?? [];
+    const seen = new Set<string>();
+    return flat.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [data?.pages]);
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   const { data: userVotes = {} } = useUserVotes(feedItemIds);
-
-  const showFeatured = filter === 'all' && featuredItems.length > 0;
 
   const handleUpvote = useCallback(
     (itemId: string) => {
@@ -62,13 +65,6 @@ export default function FeedScreen() {
       }
     },
     [userVotes, voteMutation, removeMutation],
-  );
-
-  const renderFeaturedItem = useCallback(
-    ({ item }: { item: NewsFeedItem }) => (
-      <FeaturedFeedCard item={item} onPress={handleFeedItemPress} />
-    ),
-    [],
   );
 
   const loadMore = useCallback(() => {
@@ -114,37 +110,19 @@ export default function FeedScreen() {
             </Text>
           </View>
         ) : (
-          <>
-            {showFeatured ? (
-              <View style={styles.featuredSection}>
-                <Text style={styles.featuredSectionTitle}>Featured</Text>
-                <FlatList
-                  horizontal
-                  data={featuredItems}
-                  renderItem={renderFeaturedItem}
-                  keyExtractor={(item) => item.id}
-                  contentContainerStyle={styles.featuredListContent}
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
-            ) : null}
-
-            <View style={styles.grid}>
-              {allItems.map((item, idx) => (
-                <FeedCard
-                  key={item.id}
-                  item={item}
-                  index={idx}
-                  onPress={handleFeedItemPress}
-                  userVote={userVotes[item.id] ?? null}
-                  onUpvote={handleUpvote}
-                  onDownvote={handleDownvote}
-                />
-              ))}
-            </View>
-
+          <View style={styles.feedList}>
+            {allItems.map((item) => (
+              <FeedCard
+                key={item.id}
+                item={item}
+                onPress={handleFeedItemPress}
+                userVote={userVotes[item.id] ?? null}
+                onUpvote={handleUpvote}
+                onDownvote={handleDownvote}
+              />
+            ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}
-          </>
+          </View>
         )}
       </ScrollView>
     </View>

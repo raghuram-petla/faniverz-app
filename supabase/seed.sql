@@ -1817,7 +1817,343 @@ INSERT INTO surprise_content (title, description, youtube_id, category, duration
 
 ON CONFLICT DO NOTHING;
 
+-- -----------------------------------------------------------------------------
+-- 7. Movie Videos (40 — triggers auto-populate news_feed)
+-- -----------------------------------------------------------------------------
+-- Trailers
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'dQw4w9WgXcQ', 'Official Trailer', 'The official theatrical trailer.', 'trailer', '2024-11-15', '2:45', 1
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'xvFZjo5PgG0', 'Official Trailer', 'Jr NTR in a never-before-seen avatar.', 'trailer', '2024-08-10', '3:02', 1
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'L0MK7qz13bU', 'Official Trailer', 'Ram Charan and Shankar team up for a political action thriller.', 'trailer', '2024-10-20', '3:15', 1
+FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'pBk4NYhWNMM', 'Official Trailer', 'Prabhas in an epic sci-fi spectacle.', 'trailer', '2024-06-01', '3:30', 1
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'abc123trail', 'Official Trailer', 'Nani delivers a career-best performance.', 'trailer', '2024-09-25', '2:50', 1
+FROM movies m WHERE m.title = 'Lucky Baskhar' ON CONFLICT DO NOTHING;
+
+-- Teasers
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tsr_pushpa2', 'Teaser', 'The first glimpse of Pushpa Raj''s return.', 'teaser', '2024-08-15', '1:30', 2
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tsr_devara', 'Teaser', 'A storm is coming — Devara teaser.', 'teaser', '2024-04-10', '1:15', 2
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tsr_kalki', 'Teaser', 'The future of Indian cinema begins here.', 'teaser', '2024-03-22', '1:45', 2
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tsr_ssmb29', 'Teaser', 'Mahesh Babu and Rajamouli — the wait is over.', 'teaser', '2025-01-09', '1:00', 2
+FROM movies m WHERE m.title = 'SSMB 29' ON CONFLICT DO NOTHING;
+
+-- Glimpses
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'glm_pushpa2', 'Glimpse', 'A 60-second mass fest — Pushpa is back.', 'glimpse', '2024-06-01', '1:00', 3
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'glm_gamechn', 'Glimpse', 'Ram Charan''s power-packed first look in motion.', 'glimpse', '2024-07-15', '0:45', 3
+FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
+
+-- Promos
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'prm_pushpa2', 'Pre-Release Promo', 'The madness is about to begin — mass promo cut.', 'promo', '2024-12-01', '1:30', 4
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'prm_devara', 'Dialogue Promo', '"Fear has a new name" — Devara dialogue promo.', 'promo', '2024-09-20', '1:15', 4
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+-- Songs
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_pushpa_p', 'Pushpa Pushpa Song', 'The chartbusting mass anthem from Pushpa 2.', 'song', '2024-11-20', '4:32', 5
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_angaaron', 'Angaaron Song', 'The electrifying dance number from Pushpa 2.', 'song', '2024-11-25', '3:48', 6
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_devara', 'Fear Song', 'The haunting theme track of Devara.', 'song', '2024-09-15', '4:10', 5
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_kalki', 'Bhairava Anthem', 'Prabhas''s mass anthem from Kalki 2898 AD.', 'song', '2024-05-20', '3:55', 5
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_gamechn', 'Jaragandi Song', 'Ram Charan''s electrifying dance number from Game Changer.', 'song', '2024-10-05', '4:20', 5
+FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_lucky', 'Lucky Baskhar Theme', 'The soulful title track.', 'song', '2024-09-10', '4:45', 5
+FROM movies m WHERE m.title = 'Lucky Baskhar' ON CONFLICT DO NOTHING;
+
+-- Interviews
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'intv_pushpa', 'Allu Arjun Interview', 'Allu Arjun talks about becoming Pushpa Raj and the pressure of the sequel.', 'interview', '2024-12-03', '18:30', 7
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'intv_devara', 'NTR Interview', 'Jr NTR opens up about his dual role in Devara.', 'interview', '2024-09-25', '15:20', 7
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'intv_kalki', 'Prabhas & Nag Ashwin Interview', 'The director-actor duo discuss building Kalki''s world.', 'interview', '2024-06-15', '22:00', 7
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'intv_lucky', 'Nani Press Meet', 'Nani at the Lucky Baskhar success meet — full speech.', 'interview', '2024-10-15', '12:45', 7
+FROM movies m WHERE m.title = 'Lucky Baskhar' ON CONFLICT DO NOTHING;
+
+-- BTS (Behind the Scenes)
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'bts_pushpa', 'Making of Pushpa 2', 'Go behind the camera of the biggest Telugu film ever made.', 'bts', '2024-12-10', '25:00', 8
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'bts_kalki', 'VFX Breakdown', 'How the groundbreaking visual effects of Kalki were created.', 'bts', '2024-07-01', '15:20', 8
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'bts_devara', 'Action Choreography', 'The intense fight sequences of Devara — from rehearsal to screen.', 'bts', '2024-10-01', '10:30', 8
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'bts_gamechn', 'On Set With Shankar', 'A day on set with India''s biggest director.', 'bts', '2024-11-01', '8:45', 8
+FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
+
+-- Events
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'evt_pushpa', 'Pushpa 2 Grand Pre-Release Event', 'The massive fan event in Hyderabad with 100K+ crowd.', 'event', '2024-12-02', '45:00', 9
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'evt_kalki', 'Kalki Success Celebrations', 'The star-studded success meet after crossing ₹1000 Cr worldwide.', 'event', '2024-07-10', '35:00', 9
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+-- Making Videos
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'mkg_pushpa', 'Pushpa 2 Dance Rehearsals', 'Allu Arjun''s intense dance rehearsals for the iconic songs.', 'making', '2024-12-08', '12:30', 10
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'mkg_devara', 'Devara Underwater Sequence', 'How the breathtaking underwater fight was filmed.', 'making', '2024-10-05', '8:15', 10
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+-- Additional trailers for variety
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tr_tillu2', 'Official Trailer', 'Tillu is back and funnier than ever.', 'trailer', '2024-03-10', '2:30', 1
+FROM movies m WHERE m.title = 'Tillu Square' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tr_hanu', 'Official Trailer', 'A village boy discovers his extraordinary destiny.', 'trailer', '2024-01-05', '2:55', 1
+FROM movies m WHERE m.title = 'Hanu-Man' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tr_guntur', 'Official Trailer', 'Three friends, one explosive night in Guntur.', 'trailer', '2024-02-25', '2:40', 1
+FROM movies m WHERE m.title = 'Guntur Kaaram' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'tr_matka', 'Official Trailer', 'Varun Tej in a stylish period thriller.', 'trailer', '2024-11-01', '3:10', 1
+FROM movies m WHERE m.title = 'Matka' ON CONFLICT DO NOTHING;
+
+-- Songs for more movies
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_tillu', 'Tillu Anna DJ Pedithe', 'The viral party anthem from Tillu Square.', 'song', '2024-03-01', '3:30', 5
+FROM movies m WHERE m.title = 'Tillu Square' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_videos (movie_id, youtube_id, title, description, video_type, video_date, duration, display_order)
+SELECT m.id, 'sng_hanu', 'Hanuman Theme', 'The epic superhero theme that gave goosebumps.', 'song', '2024-01-01', '4:00', 5
+FROM movies m WHERE m.title = 'Hanu-Man' ON CONFLICT DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 8. Movie Posters (20 — triggers auto-populate news_feed)
+-- -----------------------------------------------------------------------------
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_first_look.jpg', 'First Look Poster', 'The iconic first look of Pushpa Raj with the tagline "The Rule Begins".', '2024-04-01', true, 1
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_motion.jpg', 'Character Poster - Pushpa', 'Allu Arjun as Pushpa Raj — mass avatar.', '2024-06-15', false, 2
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_bday.jpg', 'Birthday Special Poster', 'Special poster released on Allu Arjun''s birthday.', '2024-04-08', false, 3
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/devara_first_look.jpg', 'First Look Poster', 'Jr NTR''s fierce look from the sea — "Fear has a new name".', '2024-03-20', true, 1
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/devara_char.jpg', 'Character Poster - Janhvi', 'Janhvi Kapoor''s character reveal from Devara.', '2024-07-20', false, 2
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_first_look.jpg', 'First Look Poster', 'The epic reveal of Prabhas as Bhairava.', '2024-01-15', true, 1
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_amitabh.jpg', 'Character Poster - Ashwatthama', 'Amitabh Bachchan as the immortal Ashwatthama.', '2024-02-10', false, 2
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_deepika.jpg', 'Character Poster - Sumathi', 'Deepika Padukone as the mysterious Sumathi.', '2024-03-08', false, 3
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/gamechanger_fl.jpg', 'First Look Poster', 'Ram Charan in a powerful IAS officer avatar.', '2024-03-27', true, 1
+FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/gamechanger_diwali.jpg', 'Diwali Special Poster', 'Festival special poster with the entire cast.', '2024-11-01', false, 2
+FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/lucky_first_look.jpg', 'First Look Poster', 'Nani as the mild-mannered banker with a secret.', '2024-07-01', true, 1
+FROM movies m WHERE m.title = 'Lucky Baskhar' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/ssmb29_fl.jpg', 'First Look Poster', 'Mahesh Babu''s stunning transformation for Rajamouli''s vision.', '2025-01-09', true, 1
+FROM movies m WHERE m.title = 'SSMB 29' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/tillu2_fl.jpg', 'First Look Poster', 'Tillu is back — funnier and crazier.', '2024-02-15', true, 1
+FROM movies m WHERE m.title = 'Tillu Square' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/hanuman_fl.jpg', 'First Look Poster', 'A small-town hero with a divine destiny.', '2023-12-01', true, 1
+FROM movies m WHERE m.title = 'Hanu-Man' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/guntur_fl.jpg', 'First Look Poster', 'Mahesh Babu in a massy Trivikram entertainer.', '2023-12-25', true, 1
+FROM movies m WHERE m.title = 'Guntur Kaaram' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/matka_fl.jpg', 'First Look Poster', 'Varun Tej''s retro-styled character reveal.', '2024-08-15', true, 1
+FROM movies m WHERE m.title = 'Matka' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_release.jpg', 'Release Day Poster', 'The grand release day poster — "Wildfire has arrived".', '2024-12-05', false, 4
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_1000cr.jpg', '₹1000 Crore Poster', 'Celebrating Kalki 2898 AD crossing the ₹1000 crore milestone.', '2024-07-10', false, 4
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/devara_release.jpg', 'Release Day Poster', 'The storm arrives — Devara in cinemas now.', '2024-09-27', false, 3
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
+SELECT m.id, 'https://image.tmdb.org/t/p/w500/lucky_success.jpg', 'Blockbuster Poster', 'Lucky Baskhar declared a blockbuster!', '2024-10-20', false, 2
+FROM movies m WHERE m.title = 'Lucky Baskhar' ON CONFLICT DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 9. Feed Item Enrichment & Manual Entries
+-- -----------------------------------------------------------------------------
+-- Vote counts for trigger-generated entries (triggers created these on movie INSERT)
+UPDATE news_feed SET upvote_count = 12, downvote_count = 1
+WHERE content_type = 'new_movie' AND movie_id = (SELECT id FROM movies WHERE title = 'SSMB 29');
+
+UPDATE news_feed SET upvote_count = 8, downvote_count = 0
+WHERE content_type = 'new_movie' AND movie_id = (SELECT id FROM movies WHERE title = 'Spirit');
+
+-- Theatrical releases
+INSERT INTO news_feed (feed_type, content_type, title, description, movie_id, thumbnail_url, published_at, upvote_count, downvote_count)
+SELECT 'update', 'theatrical_release', m.title || ' is now in theaters!',
+  'Catch ' || m.title || ' on the big screen. Book your tickets now!',
+  m.id, m.poster_url, '2024-12-05'::timestamptz, 45, 3
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO news_feed (feed_type, content_type, title, description, movie_id, thumbnail_url, published_at, upvote_count, downvote_count)
+SELECT 'update', 'theatrical_release', m.title || ' is now in theaters!',
+  'Jr NTR''s Devara hits the big screen!',
+  m.id, m.poster_url, '2024-09-27'::timestamptz, 38, 2
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+INSERT INTO news_feed (feed_type, content_type, title, description, movie_id, thumbnail_url, published_at, upvote_count, downvote_count)
+SELECT 'update', 'theatrical_release', m.title || ' is now in theaters!',
+  'The biggest sci-fi film India has ever made is now in cinemas.',
+  m.id, m.poster_url, '2024-06-27'::timestamptz, 52, 4
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+-- OTT releases
+INSERT INTO news_feed (feed_type, content_type, title, description, movie_id, thumbnail_url, published_at, upvote_count, downvote_count)
+SELECT 'update', 'ott_release', m.title || ' now streaming on Netflix',
+  'Watch ' || m.title || ' on Netflix from the comfort of your home.',
+  m.id, m.poster_url, '2025-01-10'::timestamptz, 22, 1
+FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
+
+-- Update vote counts on trigger-generated ott_release for Kalki (trigger already created it)
+UPDATE news_feed SET upvote_count = 30, downvote_count = 2,
+  published_at = '2024-08-22'::timestamptz
+WHERE content_type = 'ott_release' AND movie_id = (SELECT id FROM movies WHERE title = 'Kalki 2898 AD')
+  AND title LIKE '%Amazon Prime%';
+
+INSERT INTO news_feed (feed_type, content_type, title, description, movie_id, thumbnail_url, published_at, upvote_count, downvote_count)
+SELECT 'update', 'ott_release', m.title || ' now streaming on Aha',
+  'Watch ' || m.title || ' exclusively on Aha.',
+  m.id, m.poster_url, '2024-05-01'::timestamptz, 15, 0
+FROM movies m WHERE m.title = 'Tillu Square' ON CONFLICT DO NOTHING;
+
+-- Rating milestones
+INSERT INTO news_feed (feed_type, content_type, title, description, movie_id, thumbnail_url, published_at, upvote_count, downvote_count)
+SELECT 'update', 'rating_milestone', m.title || ' has reached 100 reviews!',
+  m.title || ' now has 100 reviews from the Faniverz community. What a milestone!',
+  m.id, m.poster_url, '2025-01-15'::timestamptz, 18, 0
+FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
+
+INSERT INTO news_feed (feed_type, content_type, title, description, movie_id, thumbnail_url, published_at, upvote_count, downvote_count)
+SELECT 'update', 'rating_milestone', m.title || ' has reached 50 reviews!',
+  m.title || ' crosses 50 community reviews!',
+  m.id, m.poster_url, '2024-10-20'::timestamptz, 10, 1
+FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
+
+-- General text updates
+INSERT INTO news_feed (feed_type, content_type, title, description, published_at, upvote_count, downvote_count, is_pinned)
+VALUES
+  ('update', 'update', 'Welcome to Faniverz!',
+   'Your one-stop destination for Telugu cinema updates. Follow your favorite movies, actors, and never miss a release!',
+   '2024-01-01'::timestamptz, 25, 0, true),
+
+  ('update', 'update', 'Faniverz Community Guidelines',
+   'Be respectful, share your honest opinions, and help build the best Telugu movie community. Report any inappropriate content.',
+   '2024-01-02'::timestamptz, 15, 0, false),
+
+  ('update', 'update', 'Telugu Cinema Box Office: 2024 Wrap-Up',
+   '2024 was a record-breaking year for Tollywood with Pushpa 2, Kalki 2898 AD, and Devara leading the charge. Total box office crossed ₹5000 crores!',
+   '2025-01-01'::timestamptz, 42, 3, true)
+ON CONFLICT DO NOTHING;
+
+-- Pin and feature some auto-generated feed items for variety
+UPDATE news_feed SET is_featured = true
+WHERE title LIKE '%Pushpa 2%' AND content_type IN ('trailer', 'song')
+  AND NOT is_featured;
+
+UPDATE news_feed SET is_featured = true
+WHERE title LIKE '%Kalki%' AND content_type = 'trailer'
+  AND NOT is_featured;
+
+UPDATE news_feed SET is_pinned = true
+WHERE title LIKE '%Pushpa 2: The Rule%' AND content_type = 'theatrical_release'
+  AND NOT is_pinned;
+
 -- =============================================================================
 -- Seed complete.
 -- 120 movies | 30 actors | ~120 cast links | ~60 platform links | 20 surprise
+-- 40 movie videos | 20 movie posters | ~15 manual feed items
 -- =============================================================================

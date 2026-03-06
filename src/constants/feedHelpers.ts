@@ -12,17 +12,6 @@ export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'Updates', value: 'updates', activeColor: colors.yellow400 },
 ];
 
-export const CARD_GRADIENTS: string[] = [
-  '#1e1b4b',
-  '#1a0533',
-  '#0a1628',
-  '#0f2a0f',
-  '#2a0a0a',
-  '#1a1a0a',
-  '#0a1a2a',
-  '#1a0a1a',
-];
-
 export function getFeedTypeColor(contentType: string): string {
   switch (contentType) {
     case 'trailer':

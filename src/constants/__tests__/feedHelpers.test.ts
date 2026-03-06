@@ -1,7 +1,6 @@
 import { colors } from '@/theme/colors';
 import {
   FEED_PILLS,
-  CARD_GRADIENTS,
   getFeedTypeColor,
   getFeedTypeLabel,
   getFeedTypeIconName,
@@ -24,18 +23,6 @@ describe('FEED_PILLS', () => {
       expect(pill).toHaveProperty('label');
       expect(pill).toHaveProperty('value');
       expect(pill).toHaveProperty('activeColor');
-    }
-  });
-});
-
-describe('CARD_GRADIENTS', () => {
-  it('has 8 gradient colors', () => {
-    expect(CARD_GRADIENTS).toHaveLength(8);
-  });
-
-  it('each is a hex color string', () => {
-    for (const color of CARD_GRADIENTS) {
-      expect(color).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
 });

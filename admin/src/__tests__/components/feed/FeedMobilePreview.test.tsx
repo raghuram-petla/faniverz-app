@@ -46,36 +46,58 @@ const makeItem = (
 
 describe('FeedMobilePreview', () => {
   it('renders device frame', () => {
-    render(<FeedMobilePreview items={[]} featuredItems={[]} />);
+    render(<FeedMobilePreview items={[]} />);
     expect(screen.getByTestId('device-frame')).toBeInTheDocument();
   });
 
   it('renders device selector', () => {
-    render(<FeedMobilePreview items={[]} featuredItems={[]} />);
+    render(<FeedMobilePreview items={[]} />);
     expect(screen.getByTestId('device-selector')).toBeInTheDocument();
   });
 
-  it('renders News Feed header', () => {
-    render(<FeedMobilePreview items={[]} featuredItems={[]} />);
-    expect(screen.getByText('News Feed')).toBeInTheDocument();
+  it('renders Faniverz header', () => {
+    render(<FeedMobilePreview items={[]} />);
+    expect(screen.getByText('Faniverz')).toBeInTheDocument();
   });
 
   it('renders filter tabs', () => {
-    render(<FeedMobilePreview items={[]} featuredItems={[]} />);
+    render(<FeedMobilePreview items={[]} />);
     expect(screen.getByText('All')).toBeInTheDocument();
     expect(screen.getByText('Trailers')).toBeInTheDocument();
+    expect(screen.getByText('Updates')).toBeInTheDocument();
   });
 
-  it('renders feed items', () => {
+  it('renders feed items in single column', () => {
     const items = [makeItem('1', 'Test Item')];
-    render(<FeedMobilePreview items={items} featuredItems={[]} />);
+    render(<FeedMobilePreview items={items} />);
     expect(screen.getByText('Test Item')).toBeInTheDocument();
   });
 
-  it('renders featured section when featured items exist', () => {
-    const featured = [makeItem('f1', 'Featured Item', { is_featured: true })];
-    render(<FeedMobilePreview items={[]} featuredItems={featured} />);
-    expect(screen.getByText('Featured')).toBeInTheDocument();
-    expect(screen.getByText('Featured Item')).toBeInTheDocument();
+  it('renders pinned indicator for pinned items', () => {
+    const items = [makeItem('p1', 'Pinned Post', { is_pinned: true })];
+    render(<FeedMobilePreview items={items} />);
+    expect(screen.getByText('📌 Pinned')).toBeInTheDocument();
+  });
+
+  it('renders featured indicator for featured items', () => {
+    const items = [makeItem('f1', 'Featured Post', { is_featured: true })];
+    render(<FeedMobilePreview items={items} />);
+    expect(screen.getByText('⭐ Featured')).toBeInTheDocument();
+  });
+
+  it('renders content type badge', () => {
+    const items = [makeItem('1', 'Test Trailer', { content_type: 'trailer' })];
+    render(<FeedMobilePreview items={items} />);
+    expect(screen.getByText('Trailer')).toBeInTheDocument();
+  });
+
+  it('renders movie name when available', () => {
+    const items = [
+      makeItem('1', 'Test Trailer', {
+        movie: { id: 'm1', title: 'Pushpa 2', poster_url: null, release_date: null },
+      }),
+    ];
+    render(<FeedMobilePreview items={items} />);
+    expect(screen.getByText('Pushpa 2')).toBeInTheDocument();
   });
 });

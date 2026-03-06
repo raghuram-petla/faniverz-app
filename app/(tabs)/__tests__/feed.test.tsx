@@ -15,7 +15,6 @@ jest.mock('react-native-safe-area-context', () => ({
 
 jest.mock('@/features/feed', () => ({
   useNewsFeed: jest.fn(),
-  useFeaturedFeed: jest.fn(),
 }));
 
 jest.mock('@/stores/useFeedStore', () => ({
@@ -33,26 +32,14 @@ jest.mock('@/components/feed/FeedCard', () => ({
   },
 }));
 
-jest.mock('@/components/feed/FeaturedFeedCard', () => ({
-  FeaturedFeedCard: ({ item }: any) => {
-    const { View, Text } = require('react-native');
-    return (
-      <View>
-        <Text>Featured: {item.title}</Text>
-      </View>
-    );
-  },
-}));
-
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import FeedScreen from '../feed';
-import { useNewsFeed, useFeaturedFeed } from '@/features/feed';
+import { useNewsFeed } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 
 const mockSetFilter = jest.fn();
 const mockUseNewsFeed = useNewsFeed as jest.MockedFunction<typeof useNewsFeed>;
-const mockUseFeaturedFeed = useFeaturedFeed as jest.MockedFunction<typeof useFeaturedFeed>;
 const mockUseFeedStore = useFeedStore as jest.MockedFunction<typeof useFeedStore>;
 
 const mockItem = {
@@ -88,10 +75,6 @@ function setupMocks(overrides: any = {}) {
     isFetchingNextPage: false,
     ...overrides.feed,
   } as any);
-  mockUseFeaturedFeed.mockReturnValue({
-    data: [],
-    ...overrides.featured,
-  } as any);
 }
 
 describe('FeedScreen', () => {
@@ -123,31 +106,12 @@ describe('FeedScreen', () => {
   it('shows loading state', () => {
     setupMocks({ feed: { data: undefined, isLoading: true } });
     render(<FeedScreen />);
-    // ActivityIndicator renders — no crash
   });
 
   it('shows empty state when no items', () => {
     setupMocks({ feed: { data: { pages: [[]], pageParams: [0] }, isLoading: false } });
     const { getByText } = render(<FeedScreen />);
     expect(getByText('No updates yet')).toBeTruthy();
-  });
-
-  it('shows featured section on All filter', () => {
-    const featuredItem = { ...mockItem, id: 'f1', title: 'Featured Item', is_featured: true };
-    setupMocks({ featured: { data: [featuredItem] } });
-    const { getByText } = render(<FeedScreen />);
-    expect(getByText('Featured')).toBeTruthy();
-    expect(getByText('Featured: Featured Item')).toBeTruthy();
-  });
-
-  it('hides featured section on non-All filter', () => {
-    const featuredItem = { ...mockItem, id: 'f1', title: 'Featured Item' };
-    setupMocks({
-      store: { filter: 'trailers' },
-      featured: { data: [featuredItem] },
-    });
-    const { queryByText } = render(<FeedScreen />);
-    expect(queryByText('Featured')).toBeNull();
   });
 
   it('calls setFilter when pill pressed', () => {

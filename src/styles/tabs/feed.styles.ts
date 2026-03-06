@@ -1,10 +1,6 @@
-import { Dimensions, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - 16 * 2 - 16) / 2;
-const FEATURED_WIDTH = SCREEN_WIDTH - 64;
 
 // ── Feed screen styles ──────────────────────────────────────────────────────────
 
@@ -85,7 +81,6 @@ export const createFeedStyles = (t: SemanticTheme) =>
     },
     scrollContent: {
       paddingBottom: 100,
-      gap: 20,
     },
     loadingContainer: {
       paddingTop: 40,
@@ -108,204 +103,120 @@ export const createFeedStyles = (t: SemanticTheme) =>
       textAlign: 'center',
       lineHeight: 20,
     },
-    featuredSection: {
-      paddingLeft: 16,
-    },
-    featuredSectionTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: t.textPrimary,
-      marginBottom: 12,
-    },
-    featuredListContent: {
-      gap: 12,
-      paddingRight: 16,
-    },
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      paddingHorizontal: 16,
-      gap: 16,
+    feedList: {
+      paddingHorizontal: 0,
     },
   });
 
-// ── Feed card styles ────────────────────────────────────────────────────────────
+// ── Feed card styles (X/Twitter-style single column) ────────────────────────────
 
 export const createFeedCardStyles = (t: SemanticTheme) =>
   StyleSheet.create({
-    card: {
-      width: CARD_WIDTH,
+    post: {
+      paddingHorizontal: 16,
+    },
+    pinnedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingTop: 10,
+      paddingLeft: 4,
+    },
+    pinnedText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: t.textTertiary,
+    },
+    featuredRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingTop: 10,
+      paddingLeft: 4,
+    },
+    featuredText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.yellow400,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingTop: 12,
+    },
+    movieName: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: t.textPrimary,
+      flexShrink: 1,
+    },
+    dot: {
+      fontSize: 13,
+      color: t.textTertiary,
+    },
+    timestamp: {
+      fontSize: 13,
+      color: t.textTertiary,
+    },
+    title: {
+      fontSize: 15,
+      fontWeight: '400',
+      color: t.textPrimary,
+      lineHeight: 21,
+      marginTop: 4,
+    },
+    description: {
+      fontSize: 14,
+      color: t.textSecondary,
+      lineHeight: 20,
+      marginTop: 4,
+    },
+    mediaContainer: {
+      marginTop: 10,
       borderRadius: 12,
       overflow: 'hidden',
+      aspectRatio: 16 / 9,
       backgroundColor: t.surfaceElevated,
     },
-    thumbnail: {
-      width: '100%',
-      aspectRatio: 16 / 9,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    thumbnailImage: {
+    media: {
       ...StyleSheet.absoluteFillObject,
     },
     playBtn: {
       position: 'absolute',
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: 'rgba(220, 38, 38, 0.80)',
+      alignSelf: 'center',
+      top: '40%',
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: 'rgba(220, 38, 38, 0.85)',
       alignItems: 'center',
       justifyContent: 'center',
     },
     playIcon: {
       marginLeft: 2,
     },
-    badgeContainer: {
-      position: 'absolute',
-      top: 6,
-      left: 6,
-    },
     durationBadge: {
       position: 'absolute',
-      bottom: 6,
-      right: 6,
+      bottom: 8,
+      right: 8,
       backgroundColor: t.overlayHeavy,
       paddingHorizontal: 6,
       paddingVertical: 2,
       borderRadius: 4,
     },
     durationText: {
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: '600',
       color: '#FFFFFF',
     },
-    pinBadge: {
-      position: 'absolute',
-      top: 6,
-      right: 6,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: colors.red600,
-      alignItems: 'center',
-      justifyContent: 'center',
+    actionBar: {
+      paddingTop: 10,
+      paddingBottom: 4,
     },
-    body: {
-      padding: 10,
-      gap: 4,
-    },
-    title: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: t.textPrimary,
-      lineHeight: 18,
-    },
-    metaRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    movieTitle: {
-      fontSize: 11,
-      color: t.textSecondary,
-      flex: 1,
-      marginRight: 8,
-    },
-    timestamp: {
-      fontSize: 10,
-      color: t.textTertiary,
-    },
-  });
-
-// ── Featured card styles ────────────────────────────────────────────────────────
-
-export const createFeaturedCardStyles = (t: SemanticTheme) =>
-  StyleSheet.create({
-    card: {
-      width: FEATURED_WIDTH,
-      borderRadius: 16,
-      overflow: 'hidden',
-      backgroundColor: t.surfaceElevated,
-    },
-    thumbnail: {
-      width: '100%',
-      aspectRatio: 16 / 9,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: t.surfaceElevated,
-    },
-    thumbnailImage: {
-      ...StyleSheet.absoluteFillObject,
-    },
-    thumbnailPlaceholder: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: colors.zinc900,
-    },
-    playBtn: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.red600,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.5,
-      shadowRadius: 4,
-      elevation: 6,
-    },
-    playIcon: {
-      marginLeft: 3,
-    },
-    featuredBadge: {
-      position: 'absolute',
-      top: 8,
-      right: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: colors.red600,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 6,
-    },
-    featuredText: {
-      fontSize: 10,
-      fontWeight: '700',
-      color: colors.white,
-    },
-    meta: {
-      padding: 14,
-      gap: 6,
-    },
-    badgeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    duration: {
-      fontSize: 12,
-      color: t.textSecondary,
-    },
-    title: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: t.textPrimary,
-      lineHeight: 22,
-    },
-    bottomRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    movieTitle: {
-      fontSize: 12,
-      color: t.textSecondary,
-      flex: 1,
-      marginRight: 8,
-    },
-    timestamp: {
-      fontSize: 11,
-      color: t.textTertiary,
+    separator: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: t.border,
+      marginTop: 10,
     },
   });

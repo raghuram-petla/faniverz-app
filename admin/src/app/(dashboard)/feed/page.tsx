@@ -27,8 +27,6 @@ export default function FeedPage() {
   const featureMutation = useToggleFeatureFeed();
   const reorderMutation = useReorderFeed();
 
-  const featuredItems = items.filter((i) => i.is_featured);
-
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -111,7 +109,7 @@ export default function FeedPage() {
 
           {/* Right: Mobile preview */}
           <div className="shrink-0">
-            <FeedMobilePreview items={items} featuredItems={featuredItems} />
+            <FeedMobilePreview items={items} />
           </div>
         </div>
       )}
