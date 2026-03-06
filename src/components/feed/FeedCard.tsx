@@ -1,10 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { FeedContentBadge } from './FeedContentBadge';
 import { FeedVideoPlayer } from './FeedVideoPlayer';
 import { VoteButtons } from './VoteButtons';
+import { ImageViewerModal } from '@/components/common/ImageViewerModal';
 import { formatRelativeTime, getFeedTypeLabel } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem } from '@shared/types';
@@ -30,6 +31,7 @@ function FeedCardInner({
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
+  const [viewerImage, setViewerImage] = useState<string | null>(null);
   const hasVideo = !!item.youtube_id;
   const hasThumbnail = !!item.thumbnail_url;
   const isPosterImage = hasThumbnail && !hasVideo;
@@ -103,11 +105,19 @@ function FeedCardInner({
             isActive={isVideoActive ?? false}
           />
         ) : isPosterImage ? (
-          <View style={styles.posterMediaContainer}>
-            <Image source={{ uri: item.thumbnail_url! }} style={styles.media} />
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setViewerImage(item.thumbnail_url!)}
+            accessibilityLabel={`View ${item.title} poster`}
+          >
+            <View style={styles.posterMediaContainer}>
+              <Image source={{ uri: item.thumbnail_url! }} style={styles.media} />
+            </View>
+          </TouchableOpacity>
         ) : null}
       </TouchableOpacity>
+
+      <ImageViewerModal imageUrl={viewerImage} onClose={() => setViewerImage(null)} />
 
       {/* Action bar */}
       {onUpvote && onDownvote ? (

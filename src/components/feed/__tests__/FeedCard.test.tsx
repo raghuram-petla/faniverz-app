@@ -18,6 +18,21 @@ jest.mock('@/styles/tabs/feed.styles', () => ({
   createFeedCardStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
+jest.mock('@/components/common/ImageViewerModal', () => ({
+  ImageViewerModal: ({ imageUrl, onClose }: { imageUrl: string | null; onClose: () => void }) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    if (!imageUrl) return null;
+    return (
+      <View testID="image-viewer-modal">
+        <Text>{imageUrl}</Text>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Close viewer">
+          <Text>Close</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  },
+}));
+
 jest.mock('../FeedVideoPlayer', () => ({
   FeedVideoPlayer: ({
     isActive,
@@ -298,5 +313,23 @@ describe('FeedCard', () => {
     const postView = rootViews[0];
     fireEvent(postView, 'layout', { nativeEvent: { layout: { y: 100, height: 300 } } });
     expect(onVideoLayout).toHaveBeenCalledWith('v1', 100, 300);
+  });
+
+  // Poster viewer tests
+  it('tapping poster opens image viewer', () => {
+    const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('image-viewer-modal')).toBeNull();
+    fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
+    expect(screen.getByTestId('image-viewer-modal')).toBeTruthy();
+  });
+
+  it('closing image viewer hides it', () => {
+    const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
+    expect(screen.getByTestId('image-viewer-modal')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Close viewer'));
+    expect(screen.queryByTestId('image-viewer-modal')).toBeNull();
   });
 });

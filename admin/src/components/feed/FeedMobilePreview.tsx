@@ -245,7 +245,7 @@ const previewStyles: Record<string, React.CSSProperties> = {
     marginTop: 6,
     borderRadius: 8,
     overflow: 'hidden',
-    aspectRatio: '2/3',
+    aspectRatio: '40/51',
     background: '#18181B',
   },
   thumbImg: {

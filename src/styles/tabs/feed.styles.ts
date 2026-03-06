@@ -183,7 +183,7 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       marginTop: 10,
       borderRadius: 12,
       overflow: 'hidden',
-      aspectRatio: 2 / 3,
+      aspectRatio: 40 / 51,
       backgroundColor: t.surfaceElevated,
     },
     media: {
