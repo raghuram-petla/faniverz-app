@@ -8,9 +8,10 @@ import { Movie } from '@/types';
 import { useFilterStore } from '@/stores/useFilterStore';
 
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 const mockLocalSearchParams: Record<string, string> = {};
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush, back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: mockBack }),
   useLocalSearchParams: () => mockLocalSearchParams,
 }));
 
@@ -120,6 +121,12 @@ beforeEach(() => {
 });
 
 describe('DiscoverScreen', () => {
+  it('navigates back when back button is pressed', () => {
+    const { getByLabelText } = render(<DiscoverScreen />);
+    fireEvent.press(getByLabelText('Go back'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
   it('renders search input', () => {
     const { getByPlaceholderText } = render(<DiscoverScreen />);
     expect(getByPlaceholderText('Search movies, genres, actors...')).toBeTruthy();

@@ -18,11 +18,24 @@ export const createStyles = (t: SemanticTheme) =>
       paddingHorizontal: 16,
       paddingBottom: 12,
     },
+    headerTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 16,
+    },
+    backButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     screenTitle: {
       fontSize: 30,
       fontWeight: '700',
       color: t.textPrimary,
-      marginBottom: 16,
     },
     searchInputContainer: {
       flexDirection: 'row',

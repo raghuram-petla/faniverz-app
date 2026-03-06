@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { createStyles } from '@/styles/discover.styles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -25,6 +25,7 @@ export default function DiscoverScreen() {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const params = useLocalSearchParams<{ filter?: string; platform?: string }>();
 
   const {
@@ -121,7 +122,16 @@ export default function DiscoverScreen() {
     <View style={styles.screen}>
       <View style={[styles.safeAreaCover, { height: insets.top }]} />
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <Text style={styles.screenTitle}>Discover</Text>
+        <View style={styles.headerTitleRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.screenTitle}>Discover</Text>
+        </View>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={18} color={theme.textTertiary} style={styles.searchIcon} />
           <TextInput
