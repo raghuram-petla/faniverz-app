@@ -7,9 +7,11 @@ import { LogOut, User, Sun, Moon, Monitor, Eye } from 'lucide-react';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import { ImpersonateModal } from '@/components/users/ImpersonateModal';
 
-const THEME_CYCLE = ['system', 'light', 'dark'] as const;
-const THEME_ICONS = { system: Monitor, light: Sun, dark: Moon } as const;
-const THEME_LABELS = { system: 'System', light: 'Light', dark: 'Dark' } as const;
+const THEME_OPTIONS = [
+  { key: 'system', icon: Monitor, label: 'System' },
+  { key: 'light', icon: Sun, label: 'Light' },
+  { key: 'dark', icon: Moon, label: 'Dark' },
+] as const;
 
 export function Header() {
   const { user, signOut } = useAuth();
@@ -20,9 +22,7 @@ export function Header() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = user?.role === 'super_admin';
-  const currentTheme = (theme ?? 'system') as (typeof THEME_CYCLE)[number];
-  const ThemeIcon = THEME_ICONS[currentTheme] ?? Monitor;
-  const nextTheme = THEME_CYCLE[(THEME_CYCLE.indexOf(currentTheme) + 1) % THEME_CYCLE.length];
+  const currentTheme = theme ?? 'system';
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -51,7 +51,7 @@ export function Header() {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-surface-elevated border border-outline rounded-xl shadow-xl z-50 py-1">
+            <div className="absolute right-0 top-full mt-2 w-64 bg-surface-card border border-outline rounded-xl shadow-xl z-50 py-1">
               <div className="px-4 py-3">
                 <p className="text-sm text-on-surface font-medium truncate">
                   {user?.email ?? 'Admin'}
@@ -63,16 +63,26 @@ export function Header() {
                 )}
               </div>
               <div className="border-t border-outline my-1" />
-              <button
-                onClick={() => {
-                  setTheme(nextTheme);
-                  setMenuOpen(false);
-                }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-on-surface hover:bg-input transition-colors"
-              >
-                <ThemeIcon className="w-4 h-4" />
-                Theme: {THEME_LABELS[currentTheme]}
-              </button>
+              <div className="px-4 py-2.5">
+                <p className="text-xs text-on-surface-muted mb-2">Theme</p>
+                <div className="flex rounded-lg bg-input p-0.5 gap-0.5">
+                  {THEME_OPTIONS.map(({ key, icon: Icon, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setTheme(key)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        currentTheme === key
+                          ? 'bg-surface-card text-on-surface shadow-sm'
+                          : 'text-on-surface-muted hover:text-on-surface'
+                      }`}
+                      aria-label={`${label} theme`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {isSuperAdmin && !isImpersonating && (
                 <button
                   onClick={() => {

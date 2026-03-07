@@ -93,10 +93,12 @@ describe('Header', () => {
     expect(screen.getByText('Super Admin')).toBeInTheDocument();
   });
 
-  it('shows theme option in dropdown', () => {
+  it('shows theme segmented control in dropdown', () => {
     render(<Header />);
     openMenu();
-    expect(screen.getByText('Theme: System')).toBeInTheDocument();
+    expect(screen.getByLabelText('System theme')).toBeInTheDocument();
+    expect(screen.getByLabelText('Light theme')).toBeInTheDocument();
+    expect(screen.getByLabelText('Dark theme')).toBeInTheDocument();
   });
 
   it('shows impersonate option for super admins', () => {
