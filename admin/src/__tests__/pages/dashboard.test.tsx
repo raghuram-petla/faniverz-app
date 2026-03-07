@@ -76,12 +76,14 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('renders stat cards', () => {
+  it('renders stat cards with loading skeletons while data loads', () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Total Movies')).toBeInTheDocument();
     expect(screen.getByText('Total Users')).toBeInTheDocument();
     expect(screen.getByText('Reviews Today')).toBeInTheDocument();
     expect(screen.getByText('Active Notifications')).toBeInTheDocument();
+    // While loading, numeric values should not be rendered
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
   it('renders quick action links', () => {

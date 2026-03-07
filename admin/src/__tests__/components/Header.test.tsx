@@ -50,6 +50,21 @@ function setUser(user: AdminUser | null) {
   });
 }
 
+const superAdmin: AdminUser = {
+  id: 'u1',
+  display_name: 'Admin',
+  email: 'admin@test.com',
+  is_admin: true,
+  avatar_url: null,
+  created_at: '2024-01-01',
+  role: 'super_admin',
+  productionHouseIds: [],
+};
+
+function openMenu() {
+  fireEvent.click(screen.getByLabelText('User menu'));
+}
+
 describe('Header', () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -58,54 +73,66 @@ describe('Header', () => {
     expect(screen.getByRole('heading', { name: /admin/i })).toBeInTheDocument();
   });
 
-  it('renders sign out button', () => {
+  it('renders user menu button', () => {
     render(<Header />);
-    expect(screen.getByTitle('Sign out')).toBeInTheDocument();
+    expect(screen.getByLabelText('User menu')).toBeInTheDocument();
   });
 
-  it('shows impersonate button for super admins', () => {
-    setUser({
-      id: 'u1',
-      display_name: 'Admin',
-      email: 'admin@test.com',
-      is_admin: true,
-      avatar_url: null,
-      created_at: '2024-01-01',
-      role: 'super_admin',
-      productionHouseIds: [],
-    });
+  it('opens dropdown when avatar is clicked', () => {
     render(<Header />);
-    expect(screen.getByTitle('Impersonate a role or user')).toBeInTheDocument();
+    expect(screen.queryByText('Sign out')).not.toBeInTheDocument();
+    openMenu();
+    expect(screen.getByText('Sign out')).toBeInTheDocument();
   });
 
-  it('hides impersonate button for non-super admins', () => {
-    setUser({
-      id: 'u1',
-      display_name: 'Admin',
-      email: 'admin@test.com',
-      is_admin: true,
-      avatar_url: null,
-      created_at: '2024-01-01',
-      role: 'admin',
-      productionHouseIds: [],
-    });
+  it('shows email and role in dropdown', () => {
+    setUser(superAdmin);
     render(<Header />);
-    expect(screen.queryByTitle('Impersonate a role or user')).not.toBeInTheDocument();
+    openMenu();
+    expect(screen.getByText('admin@test.com')).toBeInTheDocument();
+    expect(screen.getByText('Super Admin')).toBeInTheDocument();
   });
 
-  it('opens impersonate modal when button clicked', () => {
-    setUser({
-      id: 'u1',
-      display_name: 'Admin',
-      email: 'admin@test.com',
-      is_admin: true,
-      avatar_url: null,
-      created_at: '2024-01-01',
-      role: 'super_admin',
-      productionHouseIds: [],
-    });
+  it('shows theme option in dropdown', () => {
     render(<Header />);
-    fireEvent.click(screen.getByTitle('Impersonate a role or user'));
+    openMenu();
+    expect(screen.getByText('Theme: System')).toBeInTheDocument();
+  });
+
+  it('shows impersonate option for super admins', () => {
+    setUser(superAdmin);
+    render(<Header />);
+    openMenu();
+    expect(screen.getByText('Impersonate')).toBeInTheDocument();
+  });
+
+  it('hides impersonate option for non-super admins', () => {
+    setUser({ ...superAdmin, role: 'admin' });
+    render(<Header />);
+    openMenu();
+    expect(screen.queryByText('Impersonate')).not.toBeInTheDocument();
+  });
+
+  it('opens impersonate modal when option clicked', () => {
+    setUser(superAdmin);
+    render(<Header />);
+    openMenu();
+    fireEvent.click(screen.getByText('Impersonate'));
     expect(screen.getByText('Impersonate Role')).toBeInTheDocument();
+  });
+
+  it('calls signOut when sign out clicked', () => {
+    render(<Header />);
+    openMenu();
+    fireEvent.click(screen.getByText('Sign out'));
+    expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it('closes dropdown on click outside', () => {
+    render(<Header />);
+    openMenu();
+    expect(screen.getByText('Sign out')).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByText('Sign out')).not.toBeInTheDocument();
   });
 });

@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export default function DashboardPage() {
   const { isPHAdmin, productionHouseIds, canViewPage } = usePermissions();
-  const { data: stats } = useDashboardStats(isPHAdmin ? productionHouseIds : undefined);
+  const { data: stats, isLoading } = useDashboardStats(isPHAdmin ? productionHouseIds : undefined);
 
   const statCards = [
     {
@@ -64,7 +64,11 @@ export default function DashboardPage() {
                 </div>
                 <span className="text-sm text-on-surface-muted">{card.label}</span>
               </div>
-              <p className="text-3xl font-bold text-on-surface">{card.value}</p>
+              {isLoading ? (
+                <div className="h-9 w-16 bg-outline/30 rounded animate-pulse" />
+              ) : (
+                <p className="text-3xl font-bold text-on-surface">{card.value}</p>
+              )}
             </div>
           );
         })}
