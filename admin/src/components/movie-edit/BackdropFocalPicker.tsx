@@ -1,14 +1,14 @@
 'use client';
-import { useRef, useCallback } from 'react';
-import { HERO_HEIGHT } from '@shared/constants';
+import { useRef, useCallback, useState } from 'react';
+import { HERO_HEIGHT, DEVICES, SPOTLIGHT_GRADIENT } from '@shared/constants';
 
-// iPhone 15 width — used to compute viewport frame aspect ratio
-const HERO_WIDTH = 393;
-const HERO_ASPECT = HERO_WIDTH / HERO_HEIGHT; // ≈ 0.655
-const BACKDROP_ASPECT = 16 / 9; // ≈ 1.778
+// Use widest device — gives the most conservative (smallest) frame for portrait images.
+// Whatever the picker shows as "visible" will be visible on ALL devices.
+const HERO_WIDTH = Math.max(...DEVICES.map((d) => d.width));
+const HERO_ASPECT = HERO_WIDTH / HERO_HEIGHT;
 
-// Frame width as fraction of picker width (how much of the backdrop is visible on mobile)
-const FRAME_W_FRAC = HERO_ASPECT / BACKDROP_ASPECT; // ≈ 0.368
+// Pre-compute the spotlight gradient CSS (same gradient used in the mobile hero)
+const GRADIENT_CSS = `linear-gradient(to bottom, ${SPOTLIGHT_GRADIENT.join(', ')})`;
 
 interface BackdropFocalPickerProps {
   backdropUrl: string;
@@ -27,25 +27,65 @@ export function BackdropFocalPicker({
 }: BackdropFocalPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const [imageAspect, setImageAspect] = useState<number | null>(null);
 
   const cx = focusX ?? 0.5;
   const cy = focusY ?? 0.5;
 
-  // Frame bounds (clamped so frame stays within image)
-  const halfW = FRAME_W_FRAC / 2;
-  const frameLeft = Math.max(0, Math.min(1 - FRAME_W_FRAC, cx - halfW));
-  const frameRight = frameLeft + FRAME_W_FRAC;
+  // Determine panning direction from image vs hero aspect ratio
+  // Wider than hero → horizontal pan; taller than hero → vertical pan
+  const panDir =
+    imageAspect == null
+      ? null
+      : imageAspect > HERO_ASPECT
+        ? 'horizontal'
+        : imageAspect < HERO_ASPECT
+          ? 'vertical'
+          : 'none';
+
+  // Frame size as fraction of picker dimensions
+  const frameW = panDir === 'horizontal' ? HERO_ASPECT / imageAspect! : 1;
+  const frameH = panDir === 'vertical' ? imageAspect! / HERO_ASPECT : 1;
+  const overflowW = 1 - frameW;
+  const overflowH = 1 - frameH;
+
+  // Frame position — matches CSS objectPosition semantics:
+  // objectPosition X% distributes X% of the overflow to the left (cropped).
+  // So frameLeft = focusX × overflow.  This keeps the picker in sync with
+  // the preview, which uses `objectPosition: '${focusX*100}% ${focusY*100}%'`.
+  const frameLeft = panDir === 'horizontal' ? cx * overflowW : 0;
+  const frameTop = panDir === 'vertical' ? cy * overflowH : 0;
+
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      setImageAspect(img.naturalWidth / img.naturalHeight);
+    }
+  }, []);
 
   const positionFromEvent = useCallback(
     (clientX: number, clientY: number) => {
       const el = containerRef.current;
-      if (!el) return;
+      if (!el || !panDir || panDir === 'none') return;
       const rect = el.getBoundingClientRect();
-      const x = Math.max(halfW, Math.min(1 - halfW, (clientX - rect.left) / rect.width));
-      const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
-      onChange(x, y);
+
+      let newX = cx;
+      let newY = cy;
+
+      if (panDir === 'horizontal') {
+        // User clicks a point → center frame there → derive objectPosition value
+        const mouseX = (clientX - rect.left) / rect.width;
+        const desiredLeft = Math.max(0, Math.min(overflowW, mouseX - frameW / 2));
+        newX = overflowW > 0 ? desiredLeft / overflowW : 0.5;
+      } else {
+        const mouseY = (clientY - rect.top) / rect.height;
+        const desiredTop = Math.max(0, Math.min(overflowH, mouseY - frameH / 2));
+        newY = overflowH > 0 ? desiredTop / overflowH : 0.5;
+      }
+
+      onChange(newX, newY);
     },
-    [onChange, halfW],
+    [onChange, frameW, frameH, overflowW, overflowH, cx, cy, panDir],
   );
 
   const onPointerDown = useCallback(
@@ -72,17 +112,30 @@ export function BackdropFocalPicker({
 
   if (!backdropUrl) return null;
 
+  const containerAspectRatio = imageAspect != null ? `${imageAspect}` : '16 / 9';
+  const directionHint =
+    panDir === 'horizontal'
+      ? 'drag left / right'
+      : panDir === 'vertical'
+        ? 'drag up / down'
+        : panDir === 'none'
+          ? 'image fits perfectly'
+          : 'loading…';
+
   return (
     <div>
       <label className="block text-sm text-on-surface-muted mb-1">
         Backdrop Focal Point{' '}
-        <span className="text-on-surface-disabled font-normal">— drag the frame to position</span>
+        <span className="text-on-surface-disabled font-normal">— {directionHint}</span>
       </label>
 
       <div
         ref={containerRef}
         className="relative w-full overflow-hidden rounded-xl select-none"
-        style={{ aspectRatio: '16/9', cursor: 'grab' }}
+        style={{
+          aspectRatio: containerAspectRatio,
+          cursor: panDir && panDir !== 'none' ? 'grab' : 'default',
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -93,27 +146,63 @@ export function BackdropFocalPicker({
           alt="Backdrop"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           draggable={false}
+          onLoad={handleImageLoad}
         />
 
-        {/* Dark overlay — left */}
-        <div
-          className="absolute top-0 bottom-0 left-0 bg-black/60 pointer-events-none"
-          style={{ width: `${frameLeft * 100}%` }}
-        />
-        {/* Dark overlay — right */}
-        <div
-          className="absolute top-0 bottom-0 right-0 bg-black/60 pointer-events-none"
-          style={{ width: `${(1 - frameRight) * 100}%` }}
-        />
+        {/* Dark overlays — horizontal mode (left/right) */}
+        {panDir === 'horizontal' && (
+          <>
+            <div
+              className="absolute top-0 bottom-0 left-0 bg-black/60 pointer-events-none"
+              style={{ width: `${frameLeft * 100}%` }}
+            />
+            <div
+              className="absolute top-0 bottom-0 right-0 bg-black/60 pointer-events-none"
+              style={{ width: `${(1 - frameLeft - frameW) * 100}%` }}
+            />
+          </>
+        )}
 
-        {/* Viewport frame */}
-        <div
-          className="absolute top-0 bottom-0 border-2 border-white/80 rounded-lg pointer-events-none"
-          style={{
-            left: `${frameLeft * 100}%`,
-            width: `${FRAME_W_FRAC * 100}%`,
-          }}
-        />
+        {/* Dark overlays — vertical mode (top/bottom) */}
+        {panDir === 'vertical' && (
+          <>
+            <div
+              className="absolute top-0 left-0 right-0 bg-black/60 pointer-events-none"
+              style={{ height: `${frameTop * 100}%` }}
+            />
+            <div
+              className="absolute bottom-0 left-0 right-0 bg-black/60 pointer-events-none"
+              style={{ height: `${(1 - frameTop - frameH) * 100}%` }}
+            />
+          </>
+        )}
+
+        {/* Spotlight gradient preview — shows what the hero actually looks like */}
+        {panDir && panDir !== 'none' && (
+          <div
+            className="absolute pointer-events-none rounded-lg"
+            style={{
+              left: `${frameLeft * 100}%`,
+              top: `${frameTop * 100}%`,
+              width: `${frameW * 100}%`,
+              height: `${frameH * 100}%`,
+              background: GRADIENT_CSS,
+            }}
+          />
+        )}
+
+        {/* Viewport frame border */}
+        {panDir && panDir !== 'none' && (
+          <div
+            className="absolute border-2 border-white/80 rounded-lg pointer-events-none"
+            style={{
+              left: `${frameLeft * 100}%`,
+              top: `${frameTop * 100}%`,
+              width: `${frameW * 100}%`,
+              height: `${frameH * 100}%`,
+            }}
+          />
+        )}
       </div>
 
       <div className="flex items-center gap-4 mt-1.5">
