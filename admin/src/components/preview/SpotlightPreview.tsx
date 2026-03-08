@@ -13,7 +13,6 @@ interface SpotlightPreviewProps {
   releaseDate: string | null;
   focusX: number | null;
   focusY: number | null;
-  onFocusClick?: (x: number, y: number) => void;
 }
 
 export function SpotlightPreview({
@@ -26,7 +25,6 @@ export function SpotlightPreview({
   releaseDate,
   focusX,
   focusY,
-  onFocusClick,
 }: SpotlightPreviewProps) {
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
   const config = MOVIE_STATUS_CONFIG[movieStatus];
@@ -36,14 +34,6 @@ export function SpotlightPreview({
       ? `${Math.round(focusX * 100)}% ${Math.round(focusY * 100)}%`
       : 'center';
 
-  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (!onFocusClick) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    onFocusClick(x, y);
-  }
-
   return (
     <div
       style={{
@@ -51,9 +41,7 @@ export function SpotlightPreview({
         height: HERO_HEIGHT,
         position: 'relative',
         backgroundColor: colors.black,
-        cursor: onFocusClick ? 'crosshair' : 'default',
       }}
-      onClick={handleClick}
     >
       {/* Backdrop */}
       {backdropUrl && (
@@ -74,26 +62,6 @@ export function SpotlightPreview({
 
       {/* Gradient overlay */}
       <div style={{ position: 'absolute', inset: 0, background: gradientCss }} />
-
-      {/* Focus indicator */}
-      {focusX != null && focusY != null && (
-        <div
-          style={{
-            position: 'absolute',
-            left: `${focusX * 100}%`,
-            top: `${focusY * 100}%`,
-            width: 12,
-            height: 12,
-            marginLeft: -6,
-            marginTop: -6,
-            borderRadius: '50%',
-            border: '2px solid white',
-            boxShadow: '0 0 4px rgba(0,0,0,0.8)',
-            pointerEvents: 'none',
-            zIndex: 5,
-          }}
-        />
-      )}
 
       {/* Content overlay */}
       <div

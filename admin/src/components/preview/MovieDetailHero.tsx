@@ -13,11 +13,8 @@ interface MovieDetailHeroProps {
   runtime: number | null;
   certification: string | null;
   releaseDate: string | null;
-  focusX: number | null;
-  focusY: number | null;
   gradientCss: string;
   objectPosition: string;
-  onFocusClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 export function MovieDetailHero({
@@ -30,11 +27,8 @@ export function MovieDetailHero({
   runtime,
   certification,
   releaseDate,
-  focusX,
-  focusY,
   gradientCss,
   objectPosition,
-  onFocusClick,
 }: MovieDetailHeroProps) {
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
   const config = MOVIE_STATUS_CONFIG[movieStatus];
@@ -45,9 +39,7 @@ export function MovieDetailHero({
         width: '100%',
         height: HERO_HEIGHT,
         position: 'relative',
-        cursor: onFocusClick ? 'crosshair' : 'default',
       }}
-      onClick={onFocusClick}
     >
       {/* Backdrop */}
       {(backdropUrl || posterUrl) && (
@@ -68,26 +60,6 @@ export function MovieDetailHero({
 
       {/* Gradient overlay */}
       <div style={{ position: 'absolute', inset: 0, background: gradientCss }} />
-
-      {/* Focus dot */}
-      {focusX != null && focusY != null && (
-        <div
-          style={{
-            position: 'absolute',
-            left: `${focusX * 100}%`,
-            top: `${focusY * 100}%`,
-            width: 12,
-            height: 12,
-            marginLeft: -6,
-            marginTop: -6,
-            borderRadius: '50%',
-            border: '2px solid white',
-            boxShadow: '0 0 4px rgba(0,0,0,0.8)',
-            pointerEvents: 'none',
-            zIndex: 5,
-          }}
-        />
-      )}
 
       {/* Floating header */}
       <div

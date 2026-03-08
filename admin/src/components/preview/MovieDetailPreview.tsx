@@ -16,7 +16,6 @@ interface MovieDetailPreviewProps {
   releaseDate: string | null;
   focusX: number | null;
   focusY: number | null;
-  onFocusClick?: (x: number, y: number) => void;
 }
 
 export function MovieDetailPreview({
@@ -31,7 +30,6 @@ export function MovieDetailPreview({
   releaseDate,
   focusX,
   focusY,
-  onFocusClick,
 }: MovieDetailPreviewProps) {
   const gradientCss = buildGradientCss(DETAIL_GRADIENT);
 
@@ -39,14 +37,6 @@ export function MovieDetailPreview({
     focusX != null && focusY != null
       ? `${Math.round(focusX * 100)}% ${Math.round(focusY * 100)}%`
       : 'center';
-
-  function handleHeroClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (!onFocusClick) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    onFocusClick(x, y);
-  }
 
   return (
     <div style={{ width: '100%', backgroundColor: colors.black, minHeight: '100%' }}>
@@ -60,11 +50,8 @@ export function MovieDetailPreview({
         runtime={runtime}
         certification={certification}
         releaseDate={releaseDate}
-        focusX={focusX}
-        focusY={focusY}
         gradientCss={gradientCss}
         objectPosition={objectPosition}
-        onFocusClick={onFocusClick ? handleHeroClick : undefined}
       />
 
       {/* Tabs bar */}

@@ -39,7 +39,6 @@ export default function NewMoviePage() {
     posterInputRef,
     backdropInputRef,
     handleImageUpload,
-    handleBackdropClick,
     setPendingVideoAdds,
     setPendingPosterAdds,
     setPendingPlatformAdds,
@@ -134,7 +133,6 @@ export default function NewMoviePage() {
               posterInputRef={posterInputRef}
               backdropInputRef={backdropInputRef}
               handleImageUpload={handleImageUpload}
-              handleBackdropClick={handleBackdropClick}
               setUploadingPoster={setUploadingPoster}
               setUploadingBackdrop={setUploadingBackdrop}
               onSubmit={handleSubmit}
@@ -239,7 +237,7 @@ export default function NewMoviePage() {
         </div>
 
         {/* Right column — Preview */}
-        <PreviewPanel form={form} setForm={setForm} />
+        <PreviewPanel form={form} />
       </div>
     </div>
   );

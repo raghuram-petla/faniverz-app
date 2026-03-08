@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { SpotlightPreview } from '@/components/preview/SpotlightPreview';
 
 const defaultProps = {
@@ -53,33 +53,5 @@ describe('SpotlightPreview', () => {
     const { container } = render(<SpotlightPreview {...defaultProps} focusX={0.3} focusY={0.7} />);
     const img = container.querySelector('img');
     expect(img?.style.objectPosition).toBe('30% 70%');
-  });
-
-  it('calls onFocusClick when backdrop is clicked', () => {
-    const onFocusClick = vi.fn();
-    const { container } = render(
-      <SpotlightPreview {...defaultProps} onFocusClick={onFocusClick} />,
-    );
-    const heroDiv = container.firstChild as HTMLElement;
-    // Mock getBoundingClientRect
-    heroDiv.getBoundingClientRect = vi.fn(() => ({
-      left: 0,
-      top: 0,
-      width: 400,
-      height: 600,
-      right: 400,
-      bottom: 600,
-      x: 0,
-      y: 0,
-      toJSON: vi.fn(),
-    }));
-    fireEvent.click(heroDiv, { clientX: 200, clientY: 300 });
-    expect(onFocusClick).toHaveBeenCalledWith(0.5, 0.5);
-  });
-
-  it('shows focus indicator when focal point is set', () => {
-    const { container } = render(<SpotlightPreview {...defaultProps} focusX={0.5} focusY={0.5} />);
-    const indicator = container.querySelector('[style*="border: 2px solid white"]');
-    expect(indicator).toBeTruthy();
   });
 });

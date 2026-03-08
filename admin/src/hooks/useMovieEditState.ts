@@ -108,10 +108,6 @@ export function useMovieEditState(id: string) {
     in_theaters: false,
     backdrop_focus_x: null,
     backdrop_focus_y: null,
-    spotlight_focus_x: null,
-    spotlight_focus_y: null,
-    detail_focus_x: null,
-    detail_focus_y: null,
   });
 
   // Pending changes (deferred to Save)
@@ -141,10 +137,6 @@ export function useMovieEditState(id: string) {
         in_theaters: movie.in_theaters,
         backdrop_focus_x: movie.backdrop_focus_x ?? null,
         backdrop_focus_y: movie.backdrop_focus_y ?? null,
-        spotlight_focus_x: movie.spotlight_focus_x ?? null,
-        spotlight_focus_y: movie.spotlight_focus_y ?? null,
-        detail_focus_x: movie.detail_focus_x ?? null,
-        detail_focus_y: movie.detail_focus_y ?? null,
       };
       setForm(loaded);
       setInitialForm(loaded);
@@ -220,7 +212,6 @@ export function useMovieEditState(id: string) {
     posterInputRef,
     backdropInputRef,
     handleImageUpload: handlers.handleImageUpload,
-    handleBackdropClick: handlers.handleBackdropClick,
     setPendingVideoAdds: pending.setPendingVideoAdds,
     setPendingPosterAdds: pending.setPendingPosterAdds,
     setPendingPlatformAdds: pending.setPendingPlatformAdds,

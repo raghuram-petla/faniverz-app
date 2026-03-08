@@ -8,24 +8,34 @@ import { MovieDetailPreview } from '@/components/preview/MovieDetailPreview';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { MovieForm } from '@/hooks/useMovieEditState';
 
+// SVG placeholders — visible against the black preview background.
+// Use manually-encoded data URIs (# → %23) to avoid double-encoding.
+const PLACEHOLDER_BACKDROP =
+  'data:image/svg+xml,' +
+  '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22800%22 height=%22450%22%3E' +
+  '%3Crect width=%22800%22 height=%22450%22 fill=%22%233f3f46%22/%3E' +
+  '%3Crect x=%22376%22 y=%22185%22 width=%2248%22 height=%2256%22 rx=%224%22 stroke=%22%23a1a1aa%22 stroke-width=%222%22 fill=%22none%22/%3E' +
+  '%3Ccircle cx=%22390%22 cy=%22201%22 r=%224%22 fill=%22%23a1a1aa%22/%3E' +
+  '%3Cpath d=%22M382 229l10-14 8 10 6-6 12 16H382z%22 fill=%22%23a1a1aa%22/%3E' +
+  '%3Ctext x=%22400%22 y=%22270%22 text-anchor=%22middle%22 fill=%22%23a1a1aa%22 font-family=%22sans-serif%22 font-size=%2214%22%3EUpload a backdrop image%3C/text%3E' +
+  '%3C/svg%3E';
+const PLACEHOLDER_POSTER =
+  'data:image/svg+xml,' +
+  '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22300%22%3E' +
+  '%3Crect width=%22200%22 height=%22300%22 fill=%22%233f3f46%22/%3E' +
+  '%3Crect x=%2276%22 y=%22110%22 width=%2248%22 height=%2256%22 rx=%224%22 stroke=%22%23a1a1aa%22 stroke-width=%222%22 fill=%22none%22/%3E' +
+  '%3Ccircle cx=%2290%22 cy=%22126%22 r=%224%22 fill=%22%23a1a1aa%22/%3E' +
+  '%3Cpath d=%22M82 154l10-14 8 10 6-6 12 16H82z%22 fill=%22%23a1a1aa%22/%3E' +
+  '%3Ctext x=%22100%22 y=%22195%22 text-anchor=%22middle%22 fill=%22%23a1a1aa%22 font-family=%22sans-serif%22 font-size=%2212%22%3ENo Poster%3C/text%3E' +
+  '%3C/svg%3E';
+
 interface PreviewPanelProps {
   form: MovieForm;
-  setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
 }
 
-export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
+export function PreviewPanel({ form }: PreviewPanelProps) {
   const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
   const [device, setDevice] = useState(DEVICES[1]);
-
-  const focusX =
-    previewMode === 'spotlight'
-      ? (form.spotlight_focus_x ?? form.backdrop_focus_x)
-      : (form.detail_focus_x ?? form.backdrop_focus_x);
-  const focusY =
-    previewMode === 'spotlight'
-      ? (form.spotlight_focus_y ?? form.backdrop_focus_y)
-      : (form.detail_focus_y ?? form.backdrop_focus_y);
-  const contextFocusX = previewMode === 'spotlight' ? form.spotlight_focus_x : form.detail_focus_x;
 
   return (
     <div className="w-[340px] shrink-0 sticky top-[100px] self-start space-y-3">
@@ -59,7 +69,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
         {previewMode === 'spotlight' ? (
           <SpotlightPreview
             title={form.title || 'Movie Title'}
-            backdropUrl={form.backdrop_url}
+            backdropUrl={form.backdrop_url || PLACEHOLDER_BACKDROP}
             movieStatus={deriveMovieStatus(
               {
                 release_date: form.release_date || null,
@@ -71,17 +81,14 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
             runtime={form.runtime ? Number(form.runtime) : null}
             certification={form.certification || null}
             releaseDate={form.release_date || null}
-            focusX={focusX}
-            focusY={focusY}
-            onFocusClick={(x, y) =>
-              setForm((p) => ({ ...p, spotlight_focus_x: x, spotlight_focus_y: y }))
-            }
+            focusX={form.backdrop_focus_x}
+            focusY={form.backdrop_focus_y}
           />
         ) : (
           <MovieDetailPreview
             title={form.title || 'Movie Title'}
-            backdropUrl={form.backdrop_url}
-            posterUrl={form.poster_url}
+            backdropUrl={form.backdrop_url || PLACEHOLDER_BACKDROP}
+            posterUrl={form.poster_url || PLACEHOLDER_POSTER}
             movieStatus={deriveMovieStatus(
               {
                 release_date: form.release_date || null,
@@ -94,42 +101,11 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
             runtime={form.runtime ? Number(form.runtime) : null}
             certification={form.certification || null}
             releaseDate={form.release_date || null}
-            focusX={focusX}
-            focusY={focusY}
-            onFocusClick={(x, y) =>
-              setForm((p) => ({ ...p, detail_focus_x: x, detail_focus_y: y }))
-            }
+            focusX={form.backdrop_focus_x}
+            focusY={form.backdrop_focus_y}
           />
         )}
       </DeviceFrame>
-
-      {contextFocusX != null && (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-on-surface-subtle">
-            Focus: ({Math.round(contextFocusX * 100)}%,{' '}
-            {Math.round(
-              ((previewMode === 'spotlight' ? form.spotlight_focus_y : form.detail_focus_y) ?? 0) *
-                100,
-            )}
-            %)
-          </span>
-          <button
-            type="button"
-            onClick={() =>
-              previewMode === 'spotlight'
-                ? setForm((p) => ({
-                    ...p,
-                    spotlight_focus_x: null,
-                    spotlight_focus_y: null,
-                  }))
-                : setForm((p) => ({ ...p, detail_focus_x: null, detail_focus_y: null }))
-            }
-            className="text-xs text-red-400 hover:text-red-300"
-          >
-            Use Default
-          </button>
-        </div>
-      )}
     </div>
   );
 }

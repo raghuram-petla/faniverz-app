@@ -9,6 +9,10 @@ vi.mock('@/components/movie-edit/ImageUploadField', () => ({
   ),
 }));
 
+vi.mock('@/components/movie-edit/BackdropFocalPicker', () => ({
+  BackdropFocalPicker: () => <div data-testid="backdrop-focal-picker" />,
+}));
+
 const defaultForm: MovieForm = {
   title: 'Test Movie',
   poster_url: '',
@@ -23,10 +27,6 @@ const defaultForm: MovieForm = {
   in_theaters: false,
   backdrop_focus_x: null,
   backdrop_focus_y: null,
-  spotlight_focus_x: null,
-  spotlight_focus_y: null,
-  detail_focus_x: null,
-  detail_focus_y: null,
 };
 
 /** Find an input/select/textarea that is a sibling of a label with the given text */
@@ -52,7 +52,6 @@ function renderBasicInfo(overrides: Partial<MovieForm> = {}) {
     posterInputRef: createRef<HTMLInputElement>(),
     backdropInputRef: createRef<HTMLInputElement>(),
     handleImageUpload: vi.fn(),
-    handleBackdropClick: vi.fn(),
     setUploadingPoster: vi.fn(),
     setUploadingBackdrop: vi.fn(),
     onSubmit: vi.fn(),

@@ -45,7 +45,6 @@ export default function EditMoviePage() {
     posterInputRef,
     backdropInputRef,
     handleImageUpload,
-    handleBackdropClick,
     setPendingVideoAdds,
     setPendingPosterAdds,
     setPendingPlatformAdds,
@@ -162,7 +161,6 @@ export default function EditMoviePage() {
               posterInputRef={posterInputRef}
               backdropInputRef={backdropInputRef}
               handleImageUpload={handleImageUpload}
-              handleBackdropClick={handleBackdropClick}
               setUploadingPoster={setUploadingPoster}
               setUploadingBackdrop={setUploadingBackdrop}
               onSubmit={handleSubmit}
@@ -267,7 +265,7 @@ export default function EditMoviePage() {
         </div>
 
         {/* Right column — Preview */}
-        <PreviewPanel form={form} setForm={setForm} />
+        <PreviewPanel form={form} />
       </div>
     </div>
   );

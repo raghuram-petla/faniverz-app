@@ -2,6 +2,7 @@
 import type { MovieForm } from '@/hooks/useMovieEditState';
 import { ImageUploadField } from './ImageUploadField';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
+import { BackdropFocalPicker } from './BackdropFocalPicker';
 
 const genres = [
   'Action',
@@ -33,7 +34,6 @@ interface BasicInfoSectionProps {
     field: 'poster_url' | 'backdrop_url',
     setUploading: (v: boolean) => void,
   ) => Promise<void>;
-  handleBackdropClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   setUploadingPoster: (v: boolean) => void;
   setUploadingBackdrop: (v: boolean) => void;
   onSubmit: (e?: React.FormEvent) => Promise<void>;
@@ -47,7 +47,6 @@ export function BasicInfoSection({
   uploadingPoster,
   uploadingBackdrop,
   handleImageUpload,
-  handleBackdropClick,
   setUploadingPoster,
   setUploadingBackdrop,
   onSubmit,
@@ -158,51 +157,13 @@ export function BasicInfoSection({
       <ImageVariantsPanel originalUrl={form.backdrop_url} variantType="backdrop" />
 
       {/* Backdrop Focal Point */}
-      {form.backdrop_url && (
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">
-            Backdrop Focal Point{' '}
-            <span className="text-on-surface-disabled font-normal">— click image to set</span>
-          </label>
-          <div
-            className="relative w-full overflow-hidden rounded-xl cursor-crosshair"
-            style={{ aspectRatio: '16/9' }}
-            onClick={handleBackdropClick}
-          >
-            <img
-              src={form.backdrop_url}
-              alt="Backdrop preview"
-              className="w-full h-full object-cover pointer-events-none select-none"
-            />
-            {form.backdrop_focus_x != null && form.backdrop_focus_y != null && (
-              <div
-                className="absolute w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-2 border-white bg-red-500/60 pointer-events-none"
-                style={{
-                  left: `${form.backdrop_focus_x * 100}%`,
-                  top: `${form.backdrop_focus_y * 100}%`,
-                }}
-              />
-            )}
-          </div>
-          {form.backdrop_focus_x != null && form.backdrop_focus_y != null && (
-            <div className="flex items-center gap-4 mt-1.5">
-              <span className="text-xs text-on-surface-subtle">
-                Focus: ({Math.round(form.backdrop_focus_x * 100)}%,{' '}
-                {Math.round(form.backdrop_focus_y * 100)}%)
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((p) => ({ ...p, backdrop_focus_x: null, backdrop_focus_y: null }))
-                }
-                className="text-xs text-red-400 hover:text-red-300"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <BackdropFocalPicker
+        backdropUrl={form.backdrop_url}
+        focusX={form.backdrop_focus_x}
+        focusY={form.backdrop_focus_y}
+        onChange={(x, y) => setForm((p) => ({ ...p, backdrop_focus_x: x, backdrop_focus_y: y }))}
+        onClear={() => setForm((p) => ({ ...p, backdrop_focus_x: null, backdrop_focus_y: null }))}
+      />
 
       {/* Trailer URL */}
       <div>

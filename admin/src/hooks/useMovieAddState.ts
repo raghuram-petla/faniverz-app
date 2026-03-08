@@ -31,10 +31,6 @@ const INITIAL_FORM: MovieForm = {
   in_theaters: false,
   backdrop_focus_x: null,
   backdrop_focus_y: null,
-  spotlight_focus_x: null,
-  spotlight_focus_y: null,
-  detail_focus_x: null,
-  detail_focus_y: null,
 };
 
 export function useMovieAddState() {
@@ -103,12 +99,6 @@ export function useMovieAddState() {
     } finally {
       setUploading(false);
     }
-  }
-  function handleBackdropClick(e: React.MouseEvent<HTMLDivElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    setForm((prev) => ({ ...prev, backdrop_focus_x: x, backdrop_focus_y: y }));
   }
   function toggleGenre(genre: string) {
     setForm((prev) => ({
@@ -188,10 +178,10 @@ export function useMovieAddState() {
         in_theaters: form.in_theaters,
         backdrop_focus_x: form.backdrop_focus_x,
         backdrop_focus_y: form.backdrop_focus_y,
-        spotlight_focus_x: form.spotlight_focus_x,
-        spotlight_focus_y: form.spotlight_focus_y,
-        detail_focus_x: form.detail_focus_x,
-        detail_focus_y: form.detail_focus_y,
+        spotlight_focus_x: null,
+        spotlight_focus_y: null,
+        detail_focus_x: null,
+        detail_focus_y: null,
       } as Record<string, unknown>);
       const movieId = movie.id;
 
@@ -267,7 +257,6 @@ export function useMovieAddState() {
     posterInputRef,
     backdropInputRef,
     handleImageUpload,
-    handleBackdropClick,
     setPendingVideoAdds: pending.setPendingVideoAdds,
     setPendingPosterAdds: pending.setPendingPosterAdds,
     setPendingPlatformAdds: pending.setPendingPlatformAdds,

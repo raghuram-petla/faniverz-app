@@ -88,8 +88,13 @@ describe('useMovieAddState', () => {
     const { result } = renderHook(() => useMovieAddState(), { wrapper });
     expect(result.current.form.title).toBe('');
     expect(result.current.form.genres).toEqual([]);
+    expect(result.current.form.backdrop_focus_x).toBeNull();
+    expect(result.current.form.backdrop_focus_y).toBeNull();
     expect(result.current.isDirty).toBe(false);
     expect(result.current.isSaving).toBe(false);
+    // Simplified focal point system — no spotlight/detail focus fields
+    expect('spotlight_focus_x' in result.current.form).toBe(false);
+    expect('detail_focus_x' in result.current.form).toBe(false);
   });
 
   it('updateField modifies form state', () => {

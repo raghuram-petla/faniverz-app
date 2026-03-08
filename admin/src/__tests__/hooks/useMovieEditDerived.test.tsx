@@ -18,10 +18,6 @@ const defaultForm: MovieForm = {
   in_theaters: false,
   backdrop_focus_x: null,
   backdrop_focus_y: null,
-  spotlight_focus_x: null,
-  spotlight_focus_y: null,
-  detail_focus_x: null,
-  detail_focus_y: null,
 };
 
 function emptyParams(overrides: Record<string, unknown> = {}) {

@@ -21,10 +21,6 @@ export interface MovieForm {
   in_theaters: boolean;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;
-  spotlight_focus_x: number | null;
-  spotlight_focus_y: number | null;
-  detail_focus_x: number | null;
-  detail_focus_y: number | null;
 }
 
 export type PendingVideoAdd = {
