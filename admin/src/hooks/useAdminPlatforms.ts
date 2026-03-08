@@ -1,62 +1,16 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase-browser';
+import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { OTTPlatform } from '@/lib/types';
 
-export function useAdminPlatforms() {
-  return useQuery({
-    queryKey: ['admin', 'platforms'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('platforms').select('*').order('display_order');
-      if (error) throw error;
-      return data as OTTPlatform[];
-    },
-  });
-}
+const crud = createCrudHooks<OTTPlatform>({
+  table: 'platforms',
+  queryKeyBase: 'platforms',
+  orderBy: 'display_order',
+  orderAscending: true,
+  paginated: false,
+});
 
-export function useCreatePlatform() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (platform: Partial<OTTPlatform>) => {
-      const { data, error } = await supabase.from('platforms').insert(platform).select().single();
-      if (error) throw error;
-      return data as OTTPlatform;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'platforms'] });
-    },
-  });
-}
-
-export function useUpdatePlatform() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...platform }: Partial<OTTPlatform> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('platforms')
-        .update(platform)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as OTTPlatform;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'platforms'] });
-    },
-  });
-}
-
-export function useDeletePlatform() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('platforms').delete().eq('id', id);
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'platforms'] });
-    },
-  });
-}
+export const useAdminPlatforms = crud.useSimpleList;
+export const useCreatePlatform = crud.useCreate;
+export const useUpdatePlatform = crud.useUpdate;
+export const useDeletePlatform = crud.useDelete;

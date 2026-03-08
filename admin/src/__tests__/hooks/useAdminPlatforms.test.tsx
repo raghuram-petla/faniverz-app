@@ -43,7 +43,9 @@ describe('useAdminPlatforms', () => {
 
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: mockPlatforms, error: null }),
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: mockPlatforms, error: null }),
+        }),
       }),
     });
 
@@ -60,7 +62,9 @@ describe('useAdminPlatforms', () => {
   it('throws on supabase error', async () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: null, error: { message: 'DB error' } }),
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: null, error: { message: 'DB error' } }),
+        }),
       }),
     });
 

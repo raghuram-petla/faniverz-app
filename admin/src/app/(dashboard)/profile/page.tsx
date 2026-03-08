@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useUpdateProfile } from '@/hooks/useUpdateProfile';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import { ArrowLeft } from 'lucide-react';
@@ -11,28 +12,16 @@ export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
   const updateProfile = useUpdateProfile();
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? '');
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useImageUpload('/api/upload/profile-avatar');
 
   async function handleUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
-    setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/profile-avatar', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-
-      setAvatarUrl(data.url);
-      await updateProfile.mutateAsync({ avatar_url: data.url });
+      const url = await upload(file);
+      setAvatarUrl(url);
+      await updateProfile.mutateAsync({ avatar_url: url });
       await refreshUser();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   }
 

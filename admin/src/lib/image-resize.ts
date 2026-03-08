@@ -1,36 +1,12 @@
-// NOTE: Client-safe copy of variant specs lives in variant-config.ts — keep in sync.
 import sharp from 'sharp';
+import { VARIANT_SPECS, type VariantSpec } from '@/lib/variant-config';
 
-export interface ImageVariant {
-  suffix: string;
-  width: number;
-  height?: number;
-  quality: number;
-}
-
-export const POSTER_VARIANTS: ImageVariant[] = [
-  { suffix: '_sm', width: 200, quality: 80 },
-  { suffix: '_md', width: 400, quality: 85 },
-  { suffix: '_lg', width: 800, quality: 90 },
-];
-
-export const BACKDROP_VARIANTS: ImageVariant[] = [
-  { suffix: '_sm', width: 480, quality: 80 },
-  { suffix: '_md', width: 960, quality: 85 },
-  { suffix: '_lg', width: 1920, quality: 90 },
-];
-
-export const PHOTO_VARIANTS: ImageVariant[] = [
-  { suffix: '_sm', width: 100, quality: 80 },
-  { suffix: '_md', width: 200, quality: 85 },
-  { suffix: '_lg', width: 400, quality: 90 },
-];
-
-export const AVATAR_VARIANTS: ImageVariant[] = [
-  { suffix: '_sm', width: 64, quality: 80 },
-  { suffix: '_md', width: 128, quality: 85 },
-  { suffix: '_lg', width: 256, quality: 90 },
-];
+// Re-export variant arrays for upload routes
+export type ImageVariant = VariantSpec;
+export const POSTER_VARIANTS = VARIANT_SPECS.poster;
+export const BACKDROP_VARIANTS = VARIANT_SPECS.backdrop;
+export const PHOTO_VARIANTS = VARIANT_SPECS.photo;
+export const AVATAR_VARIANTS = VARIANT_SPECS.avatar;
 
 export async function generateVariants(
   buffer: Buffer,

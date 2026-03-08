@@ -1,10 +1,20 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { NewsFeedItem, FeedType } from '@/lib/types';
 
 const QUERY_KEY = ['admin', 'news-feed'];
 
+const crud = createCrudHooks<NewsFeedItem>({
+  table: 'news_feed',
+  queryKeyBase: 'news-feed',
+  orderBy: 'published_at',
+  orderAscending: false,
+  paginated: false,
+});
+
+// Custom list: multi-column ordering + JOIN + feed_type filter
 export function useAdminFeed(filter?: FeedType) {
   return useQuery({
     queryKey: [...QUERY_KEY, filter],
@@ -28,6 +38,7 @@ export function useAdminFeed(filter?: FeedType) {
   });
 }
 
+// Custom single: needs JOIN
 export function useAdminFeedItem(id: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, id],
@@ -44,52 +55,9 @@ export function useAdminFeedItem(id: string) {
   });
 }
 
-export function useCreateFeedItem() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (item: Partial<NewsFeedItem>) => {
-      const { data, error } = await supabase.from('news_feed').insert(item).select().single();
-      if (error) throw error;
-      return data as unknown as NewsFeedItem;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEY });
-    },
-  });
-}
-
-export function useUpdateFeedItem() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...item }: Partial<NewsFeedItem> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('news_feed')
-        .update(item)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as unknown as NewsFeedItem;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEY });
-    },
-  });
-}
-
-export function useDeleteFeedItem() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('news_feed').delete().eq('id', id);
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEY });
-    },
-  });
-}
+export const useCreateFeedItem = crud.useCreate;
+export const useUpdateFeedItem = crud.useUpdate;
+export const useDeleteFeedItem = crud.useDelete;
 
 export function useTogglePinFeed() {
   const qc = useQueryClient();

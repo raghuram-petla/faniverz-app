@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { Plus, Star, Upload, Loader2 } from 'lucide-react';
 import type { MoviePoster } from '@/lib/types';
 
@@ -32,23 +33,14 @@ interface Props {
 
 export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onSetMain }: Props) {
   const [posterForm, setPosterForm] = useState(EMPTY_POSTER_FORM);
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useImageUpload('/api/upload/movie-poster');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
-    setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/movie-poster', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
+      const url = await upload(file);
       onAdd({
-        image_url: data.url,
+        image_url: url,
         title: posterForm.title || 'Poster',
         description: posterForm.description || null,
         poster_date: posterForm.poster_date || null,
@@ -58,8 +50,6 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
       setPosterForm(EMPTY_POSTER_FORM);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   }
 

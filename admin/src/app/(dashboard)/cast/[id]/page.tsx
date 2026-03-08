@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminActor, useUpdateActor, useDeleteActor } from '@/hooks/useAdminCast';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { ArrowLeft, Loader2, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
 import { DEVICES } from '@shared/constants';
@@ -18,7 +19,7 @@ export default function EditActorPage() {
   const updateActor = useUpdateActor();
   const deleteActor = useDeleteActor();
   const [device, setDevice] = useState(DEVICES[1]);
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useImageUpload('/api/upload/actor-photo');
 
   const [form, setForm] = useState<ActorFormState>({
     name: '',
@@ -51,22 +52,11 @@ export default function EditActorPage() {
   }
 
   async function handlePhotoUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
-    setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/actor-photo', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-      updateField('photo_url', data.url);
+      const url = await upload(file);
+      updateField('photo_url', url);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   }
 

@@ -1,5 +1,6 @@
 'use client';
 import type React from 'react';
+import { uploadImage } from '@/hooks/useImageUpload';
 import type { MovieEditHandlerDeps } from '@/hooks/useMovieEditTypes';
 
 export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
@@ -67,18 +68,10 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     field: 'poster_url' | 'backdrop_url',
     setUploading: (v: boolean) => void,
   ) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
     setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch(endpoint, { method: 'POST', body });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-      setForm((prev) => ({ ...prev, [field]: data.url }));
+      const url = await uploadImage(file, endpoint);
+      setForm((prev) => ({ ...prev, [field]: url }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
     } finally {

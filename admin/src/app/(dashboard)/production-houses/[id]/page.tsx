@@ -6,6 +6,7 @@ import {
   useUpdateProductionHouse,
   useDeleteProductionHouse,
 } from '@/hooks/useAdminProductionHouses';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 import Link from 'next/link';
@@ -16,7 +17,7 @@ export default function EditProductionHousePage() {
   const { data: house, isLoading } = useAdminProductionHouse(id);
   const updateHouse = useUpdateProductionHouse();
   const deleteHouse = useDeleteProductionHouse();
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useImageUpload('/api/upload/production-house-logo');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: '',
@@ -35,22 +36,11 @@ export default function EditProductionHousePage() {
   }, [house]);
 
   async function handleLogoUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
-    setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/production-house-logo', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-      setForm((prev) => ({ ...prev, logo_url: data.url }));
+      const url = await upload(file);
+      setForm((prev) => ({ ...prev, logo_url: url }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   }
 

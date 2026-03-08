@@ -1,42 +1,26 @@
 'use client';
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { Actor, MovieCast } from '@/lib/types';
 
-const PAGE_SIZE = 50;
+const actorsCrud = createCrudHooks<Actor>({
+  table: 'actors',
+  queryKeyBase: 'actors',
+  singleKeyBase: 'actor',
+  orderBy: 'name',
+  orderAscending: true,
+  searchField: 'name',
+  enabledFn: (s) => s.length >= 2 || s === '',
+});
 
-export function useAdminActors(search = '') {
-  return useInfiniteQuery({
-    queryKey: ['admin', 'actors', search],
-    queryFn: async ({ pageParam = 0 }) => {
-      const from = pageParam * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-      let query = supabase.from('actors').select('*').order('name').range(from, to);
-      if (search) {
-        query = query.ilike('name', `%${search}%`);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as Actor[];
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
-    enabled: search.length >= 2 || search === '',
-  });
-}
+export const useAdminActors = actorsCrud.usePaginatedList;
+export const useAdminActor = actorsCrud.useSingle;
+export const useCreateActor = actorsCrud.useCreate;
+export const useUpdateActor = actorsCrud.useUpdate;
+export const useDeleteActor = actorsCrud.useDelete;
 
-export function useAdminActor(id: string) {
-  return useQuery({
-    queryKey: ['admin', 'actor', id],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('actors').select('*').eq('id', id).single();
-      if (error) throw error;
-      return data as Actor;
-    },
-    enabled: !!id,
-  });
-}
+// ── Movie-specific cast hooks (different table, custom logic) ──
 
 export function useMovieCast(movieId: string) {
   return useQuery({
@@ -48,66 +32,15 @@ export function useMovieCast(movieId: string) {
         .eq('movie_id', movieId);
       if (error) throw error;
       const all = (data ?? []) as MovieCast[];
-      // Cast: sort by display_order ASC (per-movie billing from TMDB)
       const cast = all
         .filter((c) => c.credit_type === 'cast')
         .sort((a, b) => a.display_order - b.display_order);
-      // Crew: sort by role_order ASC
       const crew = all
         .filter((c) => c.credit_type === 'crew')
         .sort((a, b) => (a.role_order ?? 99) - (b.role_order ?? 99));
       return [...cast, ...crew];
     },
     enabled: !!movieId,
-  });
-}
-
-export function useCreateActor() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (actor: Partial<Actor> & { created_by?: string }) => {
-      const { data, error } = await supabase.from('actors').insert(actor).select().single();
-      if (error) throw error;
-      return data as Actor;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
-    },
-  });
-}
-
-export function useUpdateActor() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...actor }: Partial<Actor> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('actors')
-        .update(actor)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Actor;
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actor', data.id] });
-    },
-  });
-}
-
-export function useDeleteActor() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('actors').delete().eq('id', id);
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: (id) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actor', id] });
-    },
   });
 }
 

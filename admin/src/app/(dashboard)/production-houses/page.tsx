@@ -6,6 +6,7 @@ import {
   useDeleteProductionHouse,
 } from '@/hooks/useAdminProductionHouses';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { Plus, Trash2, Search, Loader2, Building2, Pencil, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -26,26 +27,15 @@ export default function ProductionHousesPage() {
   const deleteHouse = useDeleteProductionHouse();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useImageUpload('/api/upload/production-house-logo');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleLogoUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
-    setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/production-house-logo', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-      setForm((p) => ({ ...p, logo_url: data.url }));
+      const url = await upload(file);
+      setForm((p) => ({ ...p, logo_url: url }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   }
 

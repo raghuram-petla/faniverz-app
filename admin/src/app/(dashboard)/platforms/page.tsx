@@ -8,6 +8,7 @@ import {
   useDeletePlatform,
 } from '@/hooks/useAdminPlatforms';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import type { OTTPlatform } from '@/lib/types';
 import { Monitor, Plus, Pencil, Trash2, X, Loader2 } from 'lucide-react';
 
@@ -27,7 +28,7 @@ export default function PlatformsPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PlatformFormData>(emptyForm);
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useImageUpload('/api/upload/platform-logo');
 
   const openAdd = () => {
     setEditingId(null);
@@ -74,18 +75,11 @@ export default function PlatformsPage() {
   };
 
   async function handleLogoUpload(file: File) {
-    setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/platform-logo', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-      setForm((prev) => ({ ...prev, logo_url: data.url }));
+      const url = await upload(file);
+      setForm((prev) => ({ ...prev, logo_url: url }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   }
 

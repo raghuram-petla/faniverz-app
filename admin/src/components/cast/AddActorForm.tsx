@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { Loader2, Upload, X } from 'lucide-react';
 
 export interface AddActorFormProps {
@@ -24,26 +25,15 @@ const EMPTY_FORM = {
 
 export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProps) {
   const [form, setForm] = useState(EMPTY_FORM);
-  const [uploading, setUploading] = useState(false);
+  const { upload, uploading } = useImageUpload('/api/upload/actor-photo');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handlePhotoUpload(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      alert('File too large. Maximum size is 5 MB.');
-      return;
-    }
-    setUploading(true);
     try {
-      const body = new FormData();
-      body.append('file', file);
-      const res = await fetch('/api/upload/actor-photo', { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-      setForm((p) => ({ ...p, photo_url: data.url }));
+      const url = await upload(file);
+      setForm((p) => ({ ...p, photo_url: url }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
     }
   }
 
