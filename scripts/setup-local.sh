@@ -143,24 +143,13 @@ else
   done
 fi
 
-# Create buckets using the S3 API
-for BUCKET in "${BUCKETS[@]}"; do
-  STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
-    -X PUT "${MINIO_ENDPOINT}/${BUCKET}" \
-    -u "${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}" 2>/dev/null || echo "000")
-  if [ "$STATUS" = "200" ] || [ "$STATUS" = "409" ]; then
-    : # 200=created, 409=already exists
-  else
-    warn "Could not create bucket ${BUCKET} (HTTP ${STATUS})"
-  fi
-done
+# Configure mc alias inside the MinIO container
+docker exec faniverz-minio mc alias set local http://localhost:9000 "${MINIO_ACCESS_KEY}" "${MINIO_SECRET_KEY}" >/dev/null 2>&1
 
-# Set buckets to public read (anonymous download)
+# Create buckets and set public read policy
 for BUCKET in "${BUCKETS[@]}"; do
-  POLICY="{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::${BUCKET}/*\"]}]}"
-  curl -sf -X PUT "${MINIO_ENDPOINT}/${BUCKET}/?policy" \
-    -u "${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}" \
-    -d "${POLICY}" >/dev/null 2>&1 || true
+  docker exec faniverz-minio mc mb "local/${BUCKET}" --ignore-existing >/dev/null 2>&1 || warn "Could not create bucket ${BUCKET}"
+  docker exec faniverz-minio mc anonymous set download "local/${BUCKET}" >/dev/null 2>&1 || true
 done
 info "Buckets created: ${BUCKETS[*]}"
 
