@@ -26,6 +26,12 @@ export const PHOTO_VARIANTS: ImageVariant[] = [
   { suffix: '_lg', width: 400, quality: 90 },
 ];
 
+export const AVATAR_VARIANTS: ImageVariant[] = [
+  { suffix: '_sm', width: 64, quality: 80 },
+  { suffix: '_md', width: 128, quality: 85 },
+  { suffix: '_lg', width: 256, quality: 90 },
+];
+
 export async function generateVariants(
   buffer: Buffer,
   contentType: string,

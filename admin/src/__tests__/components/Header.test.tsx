@@ -9,6 +9,7 @@ vi.mock('@/components/providers/AuthProvider', () => ({
     isLoading: false,
     signInWithGoogle: vi.fn(),
     signOut: mockSignOut,
+    refreshUser: vi.fn(),
   })),
 }));
 
@@ -47,6 +48,7 @@ function setUser(user: AdminUser | null) {
     isAccessDenied: false,
     signInWithGoogle: vi.fn(),
     signOut: mockSignOut,
+    refreshUser: vi.fn(),
   });
 }
 
@@ -136,5 +138,36 @@ describe('Header', () => {
     expect(screen.getByText('Sign out')).toBeInTheDocument();
     fireEvent.mouseDown(document.body);
     expect(screen.queryByText('Sign out')).not.toBeInTheDocument();
+  });
+
+  it('shows avatar image when user has avatar_url', () => {
+    setUser({ ...superAdmin, avatar_url: 'https://cdn.example.com/avatar.jpg' });
+    render(<Header />);
+    const img = screen.getByAltText('Avatar');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://cdn.example.com/avatar.jpg');
+  });
+
+  it('shows generic icon when user has no avatar_url', () => {
+    setUser(superAdmin);
+    render(<Header />);
+    expect(screen.queryByAltText('Avatar')).not.toBeInTheDocument();
+  });
+
+  it('falls back to generic icon when avatar image fails to load', () => {
+    setUser({ ...superAdmin, avatar_url: 'https://cdn.example.com/broken.jpg' });
+    render(<Header />);
+    const img = screen.getByAltText('Avatar');
+    fireEvent.error(img);
+    expect(screen.queryByAltText('Avatar')).not.toBeInTheDocument();
+  });
+
+  it('shows Profile link in dropdown', () => {
+    setUser(superAdmin);
+    render(<Header />);
+    openMenu();
+    const link = screen.getByText('Profile');
+    expect(link).toBeInTheDocument();
+    expect(link.closest('a')).toHaveAttribute('href', '/profile');
   });
 });

@@ -55,6 +55,39 @@ Before you begin, install the following:
 
 ## Quick Start
 
+### Automated Setup (Recommended)
+
+```bash
+# 1. Clone the repo
+git clone <repo-url> faniverz-app
+cd faniverz-app
+
+# 2. Run the setup script (installs deps, starts Supabase + MinIO, configures .env files)
+bash scripts/setup-local.sh
+
+# 3. Start the mobile app
+yarn start
+# Press 'i' for iOS simulator, 'a' for Android emulator
+
+# 4. Start the admin panel (in a separate terminal)
+cd admin && yarn dev
+# Opens at http://localhost:3000
+```
+
+The setup script automates: dependency installation, Supabase start, MinIO (local S3/R2 storage) start, bucket creation, environment file configuration, and database migrations.
+
+**Services started by the script:**
+| Service | URL |
+|---------|-----|
+| Supabase API | http://127.0.0.1:54321 |
+| Supabase Studio | http://127.0.0.1:54323 |
+| MinIO Console | http://localhost:9001 (minioadmin / minioadmin) |
+| MinIO S3 API | http://localhost:9000 |
+
+**Stop services:** `supabase stop && docker stop faniverz-minio`
+
+### Manual Setup
+
 ```bash
 # 1. Clone the repo
 git clone <repo-url> faniverz-app
@@ -125,7 +158,8 @@ faniverz-app/
 │   ├── config.toml         #   Local Supabase config
 │   ├── migrations/         #   41 PostgreSQL migration files
 │   └── seed.sql            #   Initial seed data
-├── scripts/                # Data pipeline scripts
+├── scripts/                # Setup and data pipeline scripts
+│   ├── setup-local.sh           # Automated local dev setup (Supabase + MinIO)
 │   ├── seed-telugu-movies.ts    # TMDB movie import
 │   ├── migrate-images-to-storage.ts
 │   └── fix-r2-urls.ts

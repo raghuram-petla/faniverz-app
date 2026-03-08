@@ -4,6 +4,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { useTheme } from 'next-themes';
 import { LogOut, User, Sun, Moon, Monitor, Eye } from 'lucide-react';
+import Link from 'next/link';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import { ImpersonateModal } from '@/components/users/ImpersonateModal';
 
@@ -19,6 +20,7 @@ export function Header() {
   const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = user?.role === 'super_admin';
@@ -47,7 +49,16 @@ export function Header() {
             className="w-9 h-9 rounded-full bg-input flex items-center justify-center hover:ring-2 hover:ring-outline transition-all"
             aria-label="User menu"
           >
-            <User className="w-4 h-4 text-on-surface-muted" />
+            {user?.avatar_url && !imgError ? (
+              <img
+                src={user.avatar_url}
+                alt="Avatar"
+                className="w-9 h-9 rounded-full object-cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <User className="w-4 h-4 text-on-surface-muted" />
+            )}
           </button>
 
           {menuOpen && (
@@ -62,6 +73,15 @@ export function Header() {
                   </span>
                 )}
               </div>
+              <div className="border-t border-outline my-1" />
+              <Link
+                href="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-on-surface hover:bg-input transition-colors"
+              >
+                <User className="w-4 h-4" />
+                Profile
+              </Link>
               <div className="border-t border-outline my-1" />
               <div className="px-4 py-2.5">
                 <p className="text-xs text-on-surface-muted mb-2">Theme</p>

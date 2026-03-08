@@ -22,20 +22,33 @@ Built with Next.js 16, Tailwind CSS v4, and Supabase.
 
 ## Setup
 
-### Prerequisites
+### Automated Setup (Recommended)
+
+From the project root, run the setup script which handles everything (Supabase, MinIO, env files, dependencies):
+
+```bash
+bash scripts/setup-local.sh
+cd admin && yarn dev
+```
+
+See the root [README.md](../README.md) for full details on what the setup script does.
+
+### Manual Setup
+
+#### Prerequisites
 
 - Node.js 18+ (same as root project)
 - Yarn 1.x
 - Local Supabase running (see root [README.md](../README.md))
 
-### Install Dependencies
+#### Install Dependencies
 
 ```bash
 cd admin
 yarn install
 ```
 
-### Environment Variables
+#### Environment Variables
 
 Create `admin/.env.local`:
 
@@ -46,11 +59,22 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
 
 # Service role key — required for admin API routes (bypasses RLS)
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIs...
+
+# Image storage — leave R2_ENDPOINT empty for Cloudflare R2, set for MinIO
+R2_ENDPOINT=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_PUBLIC_BASE_URL_ACTORS=
+R2_PUBLIC_BASE_URL_POSTERS=
+R2_PUBLIC_BASE_URL_BACKDROPS=
+R2_PUBLIC_BASE_URL_AVATARS=
+R2_PUBLIC_BASE_URL_PLATFORMS=
+R2_PUBLIC_BASE_URL_PRODUCTION_HOUSES=
 ```
 
 For local development, use the keys printed by `supabase start` in the root project.
 
-### Run Development Server
+#### Run Development Server
 
 ```bash
 yarn dev
@@ -226,6 +250,7 @@ The admin panel includes a sync engine for importing and refreshing movie/actor 
 | `/api/upload/actor-photo`           | Upload actor photo to R2           |
 | `/api/upload/platform-logo`         | Upload platform logo to R2         |
 | `/api/upload/production-house-logo` | Upload production house logo to R2 |
+| `/api/upload/profile-avatar`        | Upload user profile avatar to R2   |
 
 ## Testing
 
@@ -327,6 +352,7 @@ admin/src/
 │   ├── supabase-browser.ts      #   Browser-side Supabase
 │   ├── tmdb.ts                  #   TMDB API client
 │   ├── sync-engine.ts           #   TMDB-to-Supabase sync logic
+│   ├── r2-client.ts             #   Shared R2/MinIO S3 client
 │   ├── r2-sync.ts               #   Cloudflare R2 image sync
 │   ├── image-resize.ts          #   Sharp image resizing
 │   ├── types.ts                 #   Admin-specific types

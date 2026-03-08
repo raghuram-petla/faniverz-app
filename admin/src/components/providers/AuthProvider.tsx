@@ -10,6 +10,8 @@ interface AuthContextValue {
   isAccessDenied: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-fetch the profile from Supabase and update user state */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAccessDenied: false,
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  refreshUser: async () => {},
 });
 
 export function useAuth() {
@@ -183,6 +186,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const ref = new URL(supabaseUrl).hostname.split('.')[0];
+      const stored = localStorage.getItem(`sb-${ref}-auth-token`);
+      if (!stored) return;
+
+      const { user: storedUser, access_token } = JSON.parse(stored);
+      if (!storedUser?.id || !access_token) return;
+
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const headers = { apikey: anonKey, Authorization: `Bearer ${access_token}` };
+      const profileRes = await fetch(
+        `${supabaseUrl}/rest/v1/profiles?id=eq.${storedUser.id}&select=*`,
+        { headers },
+      );
+      if (!profileRes.ok) return;
+      const profiles = await profileRes.json();
+      if (!profiles[0]) return;
+
+      setUser((prev) => (prev ? { ...prev, ...profiles[0] } : prev));
+    } catch {
+      // ignore — refresh is best-effort
+    }
+  }, []);
+
   const signOut = useCallback(async () => {
     setUser(null);
     setIsAccessDenied(false);
@@ -196,7 +225,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAccessDenied, signInWithGoogle, signOut }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, isAccessDenied, signInWithGoogle, signOut, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
