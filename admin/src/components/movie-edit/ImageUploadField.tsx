@@ -1,6 +1,6 @@
 'use client';
-import { useRef } from 'react';
-import { Loader2, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Loader2, Upload, X, ImageOff } from 'lucide-react';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -29,6 +29,7 @@ export function ImageUploadField({
   onRemove,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [imgError, setImgError] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -48,11 +49,20 @@ export function ImageUploadField({
       />
       {url ? (
         <div className="flex items-center gap-4">
-          <img
-            src={url}
-            alt={previewAlt}
-            className={`rounded-lg object-cover border border-outline ${previewClassName}`}
-          />
+          {imgError ? (
+            <div
+              className={`rounded-lg border border-outline bg-input flex items-center justify-center ${previewClassName}`}
+            >
+              <ImageOff className="w-8 h-8 text-on-surface-muted" />
+            </div>
+          ) : (
+            <img
+              src={url}
+              alt={previewAlt}
+              className={`rounded-lg object-cover border border-outline ${previewClassName}`}
+              onError={() => setImgError(true)}
+            />
+          )}
           <div className="flex flex-col gap-2">
             <button
               type="button"

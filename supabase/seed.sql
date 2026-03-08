@@ -2152,8 +2152,37 @@ UPDATE news_feed SET is_pinned = true
 WHERE title LIKE '%Pushpa 2: The Rule%' AND content_type = 'theatrical_release'
   AND NOT is_pinned;
 
+-- -----------------------------------------------------------------------------
+-- Admin: auto-assign super_admin to rams.sep5@gmail.com on first Google sign-in.
+-- When the user signs in via Google, Supabase creates auth.users → triggers
+-- handle_new_user → creates profiles row. This trigger then assigns the role.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.seed_auto_assign_admin()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  IF NEW.email = 'rams.sep5@gmail.com' THEN
+    INSERT INTO public.admin_user_roles (user_id, role_id)
+    VALUES (NEW.id, 'super_admin')
+    ON CONFLICT (user_id) DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- Fire after profile is created (handle_new_user runs first, then this)
+DROP TRIGGER IF EXISTS on_profile_assign_admin ON public.profiles;
+CREATE TRIGGER on_profile_assign_admin
+  AFTER INSERT ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.seed_auto_assign_admin();
+
 -- =============================================================================
 -- Seed complete.
 -- 120 movies | 30 actors | ~120 cast links | ~60 platform links | 20 surprise
 -- 40 movie videos | 20 movie posters | ~15 manual feed items
+-- super_admin auto-assigned to rams.sep5@gmail.com on first sign-in
 -- =============================================================================

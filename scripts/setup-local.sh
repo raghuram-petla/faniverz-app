@@ -173,11 +173,11 @@ DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 TABLE_COUNT=$(psql "$DB_URL" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null || echo "0")
 
 if [ "$FORCE_DB_RESET" = true ]; then
-  supabase db reset --no-seed 2>/dev/null || supabase db reset
+  supabase db reset
   info "Database reset (forced via --reset-db)"
 elif [ "$TABLE_COUNT" -le 1 ]; then
-  supabase db reset --no-seed 2>/dev/null || supabase db reset
-  info "Database migrations applied (fresh database)"
+  supabase db reset
+  info "Database migrations + seed applied (fresh database)"
 else
   info "Database already has tables (skipping reset — use --reset-db to force)"
 fi
