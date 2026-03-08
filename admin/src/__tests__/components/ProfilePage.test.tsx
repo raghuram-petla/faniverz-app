@@ -31,9 +31,32 @@ vi.mock('@/hooks/useUpdateProfile', () => ({
   }),
 }));
 
+vi.mock('@/lib/supabase-browser', () => ({
+  supabase: {
+    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
+  },
+}));
+
 vi.mock('@/components/movie-edit/ImageUploadField', () => ({
-  ImageUploadField: ({ label, url }: { label: string; url: string }) => (
-    <div data-testid="image-upload">{url ? `Preview: ${url}` : `Upload ${label}`}</div>
+  ImageUploadField: ({
+    label,
+    url,
+    onReset,
+    resetLabel,
+  }: {
+    label: string;
+    url: string;
+    onReset?: () => void;
+    resetLabel?: string;
+  }) => (
+    <div data-testid="image-upload">
+      {url ? `Preview: ${url}` : `Upload ${label}`}
+      {onReset && (
+        <button data-testid="reset-avatar" onClick={onReset}>
+          {resetLabel}
+        </button>
+      )}
+    </div>
   ),
 }));
 
@@ -90,5 +113,12 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     const link = screen.getByText('Back to Dashboard');
     expect(link.closest('a')).toHaveAttribute('href', '/');
+  });
+
+  it('renders reset to Google avatar button', () => {
+    render(<ProfilePage />);
+    const resetBtn = screen.getByTestId('reset-avatar');
+    expect(resetBtn).toBeInTheDocument();
+    expect(resetBtn).toHaveTextContent('Reset to Google avatar');
   });
 });

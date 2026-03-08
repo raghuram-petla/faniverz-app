@@ -5,6 +5,7 @@ import { useUpdateProfile } from '@/hooks/useUpdateProfile';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
+import { supabase } from '@/lib/supabase-browser';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -36,6 +37,33 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleResetToGoogle() {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const res = await fetch('/api/profile', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch Google avatar');
+
+      const { google_avatar_url } = await res.json();
+      if (!google_avatar_url) {
+        alert('No Google avatar found');
+        return;
+      }
+
+      setAvatarUrl(google_avatar_url);
+      await updateProfile.mutateAsync({ avatar_url: google_avatar_url });
+      await refreshUser();
+    } catch (err) {
+      setAvatarUrl(user?.avatar_url ?? '');
+      alert(err instanceof Error ? err.message : 'Failed to reset avatar');
+    }
+  }
+
   return (
     <div className="max-w-xl mx-auto py-10 px-4">
       <Link
@@ -59,6 +87,8 @@ export default function ProfilePage() {
           showUrlCaption={false}
           onUpload={handleUpload}
           onRemove={handleRemove}
+          onReset={handleResetToGoogle}
+          resetLabel="Reset to Google avatar"
         />
 
         <div>

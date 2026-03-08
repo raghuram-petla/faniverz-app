@@ -1,6 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
-import { Loader2, Upload, X, ImageOff } from 'lucide-react';
+import { Loader2, Upload, X, ImageOff, RotateCcw } from 'lucide-react';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -15,6 +15,10 @@ interface ImageUploadFieldProps {
   showUrlCaption?: boolean;
   onUpload: (file: File, endpoint: string) => Promise<void>;
   onRemove: () => void;
+  /** Optional callback to reset to a default image (e.g. Google avatar) */
+  onReset?: () => void;
+  /** Label for the reset button */
+  resetLabel?: string;
 }
 
 export function ImageUploadField({
@@ -27,6 +31,8 @@ export function ImageUploadField({
   showUrlCaption = true,
   onUpload,
   onRemove,
+  onReset,
+  resetLabel = 'Reset',
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [imgError, setImgError] = useState(false);
@@ -84,22 +90,42 @@ export function ImageUploadField({
             >
               <X className="w-3.5 h-3.5" /> Remove
             </button>
+            {onReset && (
+              <button
+                type="button"
+                onClick={onReset}
+                className="flex items-center gap-2 text-sm text-on-surface-muted hover:text-on-surface px-3 py-1.5 bg-surface-elevated rounded-lg"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> {resetLabel}
+              </button>
+            )}
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          disabled={uploading}
-          onClick={() => inputRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 bg-input rounded-xl px-4 py-3 text-sm text-on-surface-muted hover:bg-input-hover hover:text-on-surface transition-colors disabled:opacity-50"
-        >
-          {uploading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Upload className="w-4 h-4" />
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 bg-input rounded-xl px-4 py-3 text-sm text-on-surface-muted hover:bg-input-hover hover:text-on-surface transition-colors disabled:opacity-50"
+          >
+            {uploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            {uploading ? 'Uploading...' : `Upload ${label}`}
+          </button>
+          {onReset && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="w-full flex items-center justify-center gap-2 bg-surface-elevated rounded-xl px-4 py-3 text-sm text-on-surface-muted hover:text-on-surface transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" /> {resetLabel}
+            </button>
           )}
-          {uploading ? 'Uploading...' : `Upload ${label}`}
-        </button>
+        </div>
       )}
       {showUrlCaption && url && (
         <p className="mt-2 text-xs text-on-surface-disabled truncate">{url}</p>

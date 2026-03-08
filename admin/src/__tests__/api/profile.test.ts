@@ -34,11 +34,20 @@ vi.mock('next/server', () => ({
   },
 }));
 
-import { PATCH } from '@/app/api/profile/route';
+import { GET, PATCH } from '@/app/api/profile/route';
 
 function makeRequest(body: Record<string, unknown>, authHeader?: string) {
   return {
     json: async () => body,
+    headers: {
+      get: (name: string) =>
+        name === 'authorization' ? (authHeader ?? 'Bearer valid-token') : null,
+    },
+  } as unknown as NextRequest;
+}
+
+function makeGetRequest(authHeader?: string) {
+  return {
     headers: {
       get: (name: string) =>
         name === 'authorization' ? (authHeader ?? 'Bearer valid-token') : null,
@@ -120,5 +129,60 @@ describe('PATCH /api/profile', () => {
     expect(res.status).toBe(500);
     const data = await res.json();
     expect(data.error).toContain('Failed to update profile');
+  });
+});
+
+describe('GET /api/profile', () => {
+  it('returns 401 when authorization header is missing', async () => {
+    const res = await GET(makeGetRequest(''));
+    expect(res.status).toBe(401);
+  });
+
+  it('returns google_avatar_url from user metadata', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'user-1',
+          email: 'admin@test.com',
+          user_metadata: { avatar_url: 'https://lh3.google.com/photo.jpg' },
+        },
+      },
+      error: null,
+    });
+
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.google_avatar_url).toBe('https://lh3.google.com/photo.jpg');
+  });
+
+  it('falls back to picture field in metadata', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'user-1',
+          email: 'admin@test.com',
+          user_metadata: { picture: 'https://lh3.google.com/pic.jpg' },
+        },
+      },
+      error: null,
+    });
+
+    const res = await GET(makeGetRequest());
+    const data = await res.json();
+    expect(data.google_avatar_url).toBe('https://lh3.google.com/pic.jpg');
+  });
+
+  it('returns null when no avatar in metadata', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: {
+        user: { id: 'user-1', email: 'admin@test.com', user_metadata: {} },
+      },
+      error: null,
+    });
+
+    const res = await GET(makeGetRequest());
+    const data = await res.json();
+    expect(data.google_avatar_url).toBeNull();
   });
 });
