@@ -38,7 +38,8 @@ describe('ActorAvatar', () => {
     // expo-image Image mocked as View; source.uri should be present
     const imgView = views.find(
       (v) =>
-        (v.props.source as { uri?: string } | undefined)?.uri === 'https://example.com/photo.jpg',
+        (v.props.source as { uri?: string } | undefined)?.uri ===
+        'https://example.com/photo_sm.jpg',
     );
     expect(imgView).toBeTruthy();
   });

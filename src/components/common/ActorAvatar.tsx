@@ -3,6 +3,13 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Actor } from '@/types';
+import { getImageUrl, ImageSize } from '@shared/imageUrl';
+
+function photoVariant(displaySize: number): ImageSize {
+  if (displaySize <= 80) return 'sm';
+  if (displaySize <= 160) return 'md';
+  return 'lg';
+}
 
 // TMDB gender encoding
 const GENDER_FEMALE = 1;
@@ -48,7 +55,7 @@ export function ActorAvatar({ actor, size = 64 }: Props) {
   if (actor?.photo_url) {
     return (
       <Image
-        source={{ uri: actor.photo_url }}
+        source={{ uri: getImageUrl(actor.photo_url, photoVariant(size)) ?? undefined }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"
       />

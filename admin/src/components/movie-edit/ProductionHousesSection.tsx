@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Building2, Plus, X } from 'lucide-react';
 import type { ProductionHouse } from '@/lib/types';
+import { getImageUrl } from '@shared/imageUrl';
 
 type PendingPH = {
   production_house_id: string;
@@ -43,7 +44,7 @@ export function ProductionHousesSection({
               <div className="w-10 h-10 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                 {mph.production_house?.logo_url ? (
                   <img
-                    src={mph.production_house.logo_url}
+                    src={getImageUrl(mph.production_house.logo_url, 'sm')!}
                     alt=""
                     className="w-full h-full object-cover"
                   />

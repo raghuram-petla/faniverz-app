@@ -9,6 +9,7 @@ import type { SemanticTheme } from '@shared/themes';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface MovieListItemProps {
   movie: Movie;
@@ -39,7 +40,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
       {/* Poster */}
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: movie.poster_url ?? undefined }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
           style={[styles.poster, isPast && styles.posterPast]}
           contentFit="cover"
           transition={200}

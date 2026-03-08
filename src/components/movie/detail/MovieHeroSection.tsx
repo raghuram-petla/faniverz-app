@@ -7,6 +7,7 @@ import { getMovieStatusLabel } from '@/constants';
 import type { MovieStatus } from '@/types';
 import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface MovieHeroSectionProps {
   movie: MovieWithDetails;
@@ -20,7 +21,12 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
   return (
     <View style={styles.hero}>
       <Image
-        source={{ uri: movie.backdrop_url ?? movie.poster_url ?? undefined }}
+        source={{
+          uri:
+            getImageUrl(movie.backdrop_url, 'md') ??
+            getImageUrl(movie.poster_url, 'md') ??
+            undefined,
+        }}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
         contentPosition={
@@ -42,7 +48,7 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
       <View style={styles.heroInfo}>
         <View style={styles.heroInfoRow}>
           <Image
-            source={{ uri: movie.poster_url ?? undefined }}
+            source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
             style={styles.heroPoster}
             contentFit="cover"
           />

@@ -11,6 +11,7 @@ import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import type { OTTPlatform } from '@/lib/types';
 import { Monitor, Plus, Pencil, Trash2, X, Loader2 } from 'lucide-react';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface PlatformFormData {
   name: string;
@@ -122,7 +123,7 @@ export default function PlatformsPage() {
                 <div className="flex items-center gap-3">
                   {platform.logo_url ? (
                     <img
-                      src={platform.logo_url}
+                      src={getImageUrl(platform.logo_url, 'sm')!}
                       alt={platform.name}
                       className="w-12 h-12 rounded-lg object-contain border border-outline"
                     />

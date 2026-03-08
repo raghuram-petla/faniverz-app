@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Film, Plus, X } from 'lucide-react';
 import type { OTTPlatform, MoviePlatform } from '@/lib/types';
+import { getImageUrl } from '@shared/imageUrl';
 
 type PendingPlatform = {
   platform_id: string;
@@ -43,7 +44,11 @@ export function PlatformsSection({
                 style={{ backgroundColor: mp.platform?.color || '#333' }}
               >
                 {mp.platform?.logo_url ? (
-                  <img src={mp.platform.logo_url} alt="" className="w-6 h-6 object-contain" />
+                  <img
+                    src={getImageUrl(mp.platform.logo_url, 'sm')!}
+                    alt=""
+                    className="w-6 h-6 object-contain"
+                  />
                 ) : (
                   <Film className="w-5 h-5 text-on-surface-muted" />
                 )}

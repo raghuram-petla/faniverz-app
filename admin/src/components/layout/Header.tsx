@@ -7,6 +7,7 @@ import { LogOut, User, Sun, Moon, Monitor, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import { ImpersonateModal } from '@/components/users/ImpersonateModal';
+import { getImageUrl } from '@shared/imageUrl';
 
 const THEME_OPTIONS = [
   { key: 'system', icon: Monitor, label: 'System' },
@@ -51,7 +52,7 @@ export function Header() {
           >
             {user?.avatar_url && !imgError ? (
               <img
-                src={user.avatar_url}
+                src={getImageUrl(user.avatar_url, 'sm')!}
                 alt="Avatar"
                 className="w-9 h-9 rounded-full object-cover"
                 onError={() => setImgError(true)}

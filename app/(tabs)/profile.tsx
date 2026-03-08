@@ -12,6 +12,7 @@ import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { formatMemberSince } from '@/utils/formatDate';
 import { createStyles } from '@/styles/tabs/profile.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -42,7 +43,7 @@ export default function ProfileScreen() {
 
   const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Guest';
   const email = user?.email ?? '';
-  const avatarUrl = profile?.avatar_url ?? PLACEHOLDER_AVATAR;
+  const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md') ?? PLACEHOLDER_AVATAR;
   const memberSince = formatMemberSince(user?.created_at);
 
   const userId = user?.id ?? '';

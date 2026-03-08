@@ -65,7 +65,7 @@ describe('PlatformsSection', () => {
     );
     const img = container.querySelector('img');
     expect(img).toBeTruthy();
-    expect(img).toHaveAttribute('src', 'https://cdn.example.com/netflix.png');
+    expect(img).toHaveAttribute('src', 'https://cdn.example.com/netflix_sm.png');
   });
 
   it('renders Film icon fallback when logo_url is null', () => {

@@ -13,6 +13,7 @@ import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/reviews.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 type SortKey = 'recent' | 'rating' | 'helpful';
 
@@ -142,7 +143,8 @@ export default function MyReviewsScreen() {
       ) : (
         <View style={styles.reviewList}>
           {sorted.map((review) => {
-            const posterUrl = review.movie?.poster_url ?? PLACEHOLDER_POSTER;
+            const posterUrl =
+              getImageUrl(review.movie?.poster_url ?? null, 'sm') ?? PLACEHOLDER_POSTER;
             const movieTitle = review.movie?.title ?? 'Unknown Movie';
             return (
               <View key={review.id} style={styles.reviewCard}>

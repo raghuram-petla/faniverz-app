@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { StarRating } from '@/components/ui/StarRating';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface ReviewModalProps {
   visible: boolean;
@@ -55,7 +56,7 @@ export function ReviewModal({
 
           <View style={styles.modalMovieInfo}>
             <Image
-              source={{ uri: posterUrl ?? undefined }}
+              source={{ uri: getImageUrl(posterUrl, 'sm') ?? undefined }}
               style={styles.modalPoster}
               contentFit="cover"
             />

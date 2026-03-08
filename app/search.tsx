@@ -16,6 +16,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { createStyles } from '@/styles/search.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;
@@ -149,7 +150,7 @@ export default function SearchScreen() {
                     <Text style={styles.trendingRankText}>{index + 1}</Text>
                   </View>
                   <Image
-                    source={{ uri: movie.poster_url ?? undefined }}
+                    source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
                     style={styles.trendingPoster}
                     contentFit="cover"
                   />
@@ -197,7 +198,7 @@ export default function SearchScreen() {
               <TouchableOpacity style={styles.resultItem} onPress={() => handleMoviePress(item)}>
                 <View>
                   <Image
-                    source={{ uri: item.poster_url ?? undefined }}
+                    source={{ uri: getImageUrl(item.poster_url, 'sm') ?? undefined }}
                     style={styles.resultPoster}
                     contentFit="cover"
                   />

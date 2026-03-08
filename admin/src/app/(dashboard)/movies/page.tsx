@@ -8,6 +8,7 @@ import { Plus, Edit, Trash2, Search, Loader2, Film } from 'lucide-react';
 import { MOVIE_STATUS_CONFIG } from '@shared/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie } from '@/lib/types';
+import { getImageUrl } from '@shared/imageUrl';
 
 function getStatusBadge(movie: Movie) {
   // For list page, we don't have platform count; use 0 (streaming will show for those with platforms in detail)
@@ -123,7 +124,7 @@ export default function MoviesPage() {
                     <div className="flex items-center gap-3">
                       {movie.poster_url ? (
                         <img
-                          src={movie.poster_url}
+                          src={getImageUrl(movie.poster_url, 'sm')!}
                           alt=""
                           className="w-10 h-14 rounded object-cover"
                         />

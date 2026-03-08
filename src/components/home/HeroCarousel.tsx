@@ -10,6 +10,7 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 const AUTO_PLAY_INTERVAL = 5000;
 
@@ -79,7 +80,12 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
     return (
       <View style={styles.slide}>
         <Image
-          source={{ uri: item.backdrop_url ?? item.poster_url ?? undefined }}
+          source={{
+            uri:
+              getImageUrl(item.backdrop_url, 'md') ??
+              getImageUrl(item.poster_url, 'md') ??
+              undefined,
+          }}
           style={styles.backdrop}
           contentFit="cover"
           contentPosition={

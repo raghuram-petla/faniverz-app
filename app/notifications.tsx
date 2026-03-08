@@ -17,6 +17,7 @@ import {
 } from '@/features/notifications/hooks';
 import { Notification } from '@/types';
 import { formatRelativeTime } from '@/utils/formatDate';
+import { getImageUrl } from '@shared/imageUrl';
 
 type NotificationIconConfig = {
   name: React.ComponentProps<typeof Ionicons>['name'];
@@ -50,7 +51,7 @@ function NotificationItem({
       {/* Poster with type icon overlay */}
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: item.movie?.poster_url ?? undefined }}
+          source={{ uri: getImageUrl(item.movie?.poster_url ?? null, 'sm') ?? undefined }}
           style={styles.poster}
           contentFit="cover"
         />

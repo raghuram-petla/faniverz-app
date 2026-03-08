@@ -21,6 +21,7 @@ import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
+import { getImageUrl } from '@shared/imageUrl';
 
 const COLUMN_GAP = 12;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -100,7 +101,7 @@ export default function FavoriteActorsScreen() {
             <View key={rowIndex} style={styles.gridRow}>
               {row.map((fav) => {
                 const actor = fav.actor;
-                const photoUrl = actor?.photo_url ?? PLACEHOLDER_PHOTO;
+                const photoUrl = getImageUrl(actor?.photo_url ?? null, 'sm') ?? PLACEHOLDER_PHOTO;
                 const name = actor?.name ?? 'Unknown';
                 return (
                   <View key={fav.actor_id} style={styles.actorCard}>

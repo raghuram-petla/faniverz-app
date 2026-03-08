@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface OverviewTabProps {
   movie: MovieWithDetails;
@@ -51,7 +52,7 @@ export function OverviewTab({ movie, hasMedia, onSwitchToMedia }: OverviewTabPro
               <View key={ph.id} style={styles.productionHouseChip}>
                 {ph.logo_url && (
                   <Image
-                    source={{ uri: ph.logo_url }}
+                    source={{ uri: getImageUrl(ph.logo_url, 'sm')! }}
                     style={styles.productionHouseLogo}
                     contentFit="cover"
                   />

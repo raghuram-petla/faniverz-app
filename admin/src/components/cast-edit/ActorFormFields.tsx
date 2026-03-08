@@ -2,6 +2,7 @@
 import { useRef } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
+import { getImageUrl } from '@shared/imageUrl';
 
 export interface ActorFormState {
   name: string;
@@ -60,7 +61,7 @@ export function ActorFormFields({
         {form.photo_url ? (
           <div className="flex items-center gap-4">
             <img
-              src={form.photo_url}
+              src={getImageUrl(form.photo_url, 'sm')!}
               alt="Photo preview"
               className="w-20 h-20 rounded-full object-cover border border-outline"
             />

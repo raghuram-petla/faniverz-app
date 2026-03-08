@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie, OTTPlatform } from '@/types';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface DiscoverGridItemProps {
   item: Movie;
@@ -27,7 +28,7 @@ export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemPr
     >
       <View style={styles.gridPoster}>
         <Image
-          source={{ uri: item.poster_url ?? undefined }}
+          source={{ uri: getImageUrl(item.poster_url, 'md') ?? undefined }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
         />

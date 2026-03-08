@@ -12,6 +12,7 @@ import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatWatchTime } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/watched.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 // Avg runtime assumption for watch time estimate (90 min)
 const AVG_RUNTIME_MINUTES = 90;
@@ -164,7 +165,8 @@ export default function WatchedMoviesScreen() {
             <View key={rowIndex} style={styles.gridRow}>
               {row.map((entry) => {
                 const movie = entry.movie;
-                const posterUrl = movie?.poster_url ?? PLACEHOLDER_POSTER;
+                const posterUrl =
+                  getImageUrl(movie?.poster_url ?? null, 'sm') ?? PLACEHOLDER_POSTER;
                 const title = movie?.title ?? 'Unknown';
                 const rating = movie?.rating ?? 0;
                 return (

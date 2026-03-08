@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { MovieCast } from '@/lib/types';
+import { getImageUrl } from '@shared/imageUrl';
 
 function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -47,7 +48,7 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
       <div className="w-8 h-8 rounded-full bg-input overflow-hidden shrink-0 flex items-center justify-center">
         {entry.actor?.photo_url ? (
           <img
-            src={entry.actor.photo_url}
+            src={getImageUrl(entry.actor.photo_url, 'sm')!}
             alt={entry.actor.name}
             className="w-full h-full object-cover"
           />

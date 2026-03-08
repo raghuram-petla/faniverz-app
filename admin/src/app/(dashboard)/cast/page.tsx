@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { AddActorForm } from '@/components/cast/AddActorForm';
 import { Plus, Trash2, Search, Loader2, Users, Pencil } from 'lucide-react';
 import Link from 'next/link';
+import { getImageUrl } from '@shared/imageUrl';
 
 export default function CastPage() {
   const { user } = useAuth();
@@ -97,7 +98,11 @@ export default function CastPage() {
               <Link href={'/cast/' + actor.id} className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-14 h-14 rounded-full bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {actor.photo_url ? (
-                    <img src={actor.photo_url} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={getImageUrl(actor.photo_url, 'sm')!}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <Users className="w-6 h-6 text-on-surface-subtle" />
                   )}

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import type { MovieVideo, MoviePoster } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface VideoGroup {
   label: string;
@@ -75,7 +76,7 @@ export function MediaTab({ videosByType, posters, onSelectPoster }: MediaTabProp
                 accessibilityLabel={`View ${poster.title}`}
               >
                 <Image
-                  source={{ uri: poster.image_url }}
+                  source={{ uri: getImageUrl(poster.image_url, 'md') ?? undefined }}
                   style={styles.posterImage}
                   contentFit="cover"
                 />

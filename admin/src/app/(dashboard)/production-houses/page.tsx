@@ -9,6 +9,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { Plus, Trash2, Search, Loader2, Building2, Pencil, Upload, X } from 'lucide-react';
 import Link from 'next/link';
+import { getImageUrl } from '@shared/imageUrl';
 
 const EMPTY_FORM = {
   name: '',
@@ -99,7 +100,7 @@ export default function ProductionHousesPage() {
               {form.logo_url ? (
                 <div className="flex items-center gap-2 flex-1">
                   <img
-                    src={form.logo_url}
+                    src={getImageUrl(form.logo_url, 'sm')!}
                     alt=""
                     className="w-9 h-9 rounded object-cover border border-outline shrink-0"
                   />
@@ -203,7 +204,11 @@ export default function ProductionHousesPage() {
               >
                 <div className="w-14 h-14 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {house.logo_url ? (
-                    <img src={house.logo_url} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={getImageUrl(house.logo_url, 'sm')!}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <Building2 className="w-6 h-6 text-on-surface-subtle" />
                   )}

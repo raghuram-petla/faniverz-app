@@ -145,7 +145,7 @@ describe('Header', () => {
     render(<Header />);
     const img = screen.getByAltText('Avatar');
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute('src', 'https://cdn.example.com/avatar.jpg');
+    expect(img).toHaveAttribute('src', 'https://cdn.example.com/avatar_sm.jpg');
   });
 
   it('shows generic icon when user has no avatar_url', () => {

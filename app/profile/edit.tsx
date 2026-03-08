@@ -19,6 +19,7 @@ import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { createStyles } from '@/styles/profile/edit.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 const BIO_LIMIT = 150;
 
@@ -69,7 +70,7 @@ export default function EditProfileScreen() {
     );
   };
 
-  const avatarUrl = profile?.avatar_url ?? PLACEHOLDER_AVATAR;
+  const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md') ?? PLACEHOLDER_AVATAR;
   const email = user?.email ?? '';
   const bioOverLimit = bio.length > BIO_LIMIT;
 

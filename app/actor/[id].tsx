@@ -18,6 +18,7 @@ import { useActorDetail } from '@/features/actors/hooks';
 import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/actorDetail.styles';
+import { getImageUrl } from '@shared/imageUrl';
 
 const GENDER_LABELS: Record<number, string> = {
   1: 'Female',
@@ -199,7 +200,7 @@ export default function ActorDetailScreen() {
                 testID={`film-card-${movie.id}`}
               >
                 <Image
-                  source={{ uri: movie.poster_url ?? undefined }}
+                  source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
                   style={styles.filmPoster}
                   contentFit="cover"
                   transition={200}
