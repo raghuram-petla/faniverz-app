@@ -17,7 +17,7 @@ export function useAdminSyncLogs() {
     },
     refetchInterval: (query) => {
       const logs = query.state.data;
-      if (logs?.some((log) => log.status === 'running')) return 5000;
+      if (logs?.some((log) => log.status === 'running')) return 10_000;
       return false;
     },
   });
