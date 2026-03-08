@@ -3,6 +3,17 @@ set -euo pipefail
 
 # Faniverz — Local Development Setup
 # Automates: dependency install, Supabase, MinIO (local R2), env config, DB migrations.
+#
+# Usage:
+#   bash scripts/setup-local.sh            # normal run (skips db reset if tables exist)
+#   bash scripts/setup-local.sh --reset-db # force db reset (use after schema/seed changes)
+
+FORCE_DB_RESET=false
+for arg in "$@"; do
+  case "$arg" in
+    --reset-db) FORCE_DB_RESET=true ;;
+  esac
+done
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -168,8 +179,19 @@ info "MinIO credentials injected into admin/.env.local"
 # ── Database Migrations ────────────────────────────────────
 echo ""
 echo "Applying database migrations..."
-supabase db reset --no-seed 2>/dev/null || supabase db reset
-info "Database migrations applied"
+
+DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+TABLE_COUNT=$(psql "$DB_URL" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null || echo "0")
+
+if [ "$FORCE_DB_RESET" = true ]; then
+  supabase db reset --no-seed 2>/dev/null || supabase db reset
+  info "Database reset (forced via --reset-db)"
+elif [ "$TABLE_COUNT" -le 1 ]; then
+  supabase db reset --no-seed 2>/dev/null || supabase db reset
+  info "Database migrations applied (fresh database)"
+else
+  info "Database already has tables (skipping reset — use --reset-db to force)"
+fi
 
 # ── Summary ────────────────────────────────────────────────
 echo ""
