@@ -69,7 +69,7 @@ describe('BasicInfoSection', () => {
 
   it('renders Release Date input', () => {
     renderBasicInfo({ release_date: '2025-06-15' });
-    expect(getFieldByLabel('Release Date *')).toHaveValue('2025-06-15');
+    expect(getFieldByLabel('Release Date')).toHaveValue('2025-06-15');
   });
 
   it('renders Runtime input', () => {

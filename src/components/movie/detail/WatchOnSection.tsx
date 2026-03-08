@@ -10,7 +10,7 @@ import { createStyles } from '@/styles/movieDetail.styles';
 interface WatchOnSectionProps {
   platforms: MoviePlatform[];
   movieStatus: MovieStatus;
-  releaseDate: string;
+  releaseDate: string | null;
 }
 
 export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnSectionProps) {
@@ -60,7 +60,9 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
           <Ionicons name="alert-circle" size={24} color={colors.blue400} />
           <View style={{ flex: 1 }}>
             <Text style={styles.releaseAlertTitle}>Upcoming Release</Text>
-            <Text style={styles.releaseAlertDate}>Releasing on {formatDate(releaseDate)}</Text>
+            <Text style={styles.releaseAlertDate}>
+              {releaseDate ? `Releasing on ${formatDate(releaseDate)}` : 'Release date TBA'}
+            </Text>
           </View>
         </View>
       )}

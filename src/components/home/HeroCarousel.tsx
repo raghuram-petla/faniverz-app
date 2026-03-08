@@ -73,7 +73,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
 
   const renderSlide = ({ item }: { item: Movie }) => {
     const platforms_ = platformMap?.[item.id] ?? [];
-    const releaseYear = new Date(item.release_date).getFullYear();
+    const releaseYear = item.release_date ? new Date(item.release_date).getFullYear() : null;
     const status = deriveMovieStatus(item, platforms_.length);
 
     return (

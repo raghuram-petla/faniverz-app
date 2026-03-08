@@ -13,7 +13,7 @@ interface MovieDetailPreviewProps {
   reviewCount: number;
   runtime: number | null;
   certification: string | null;
-  releaseDate: string;
+  releaseDate: string | null;
   focusX: number | null;
   focusY: number | null;
   onFocusClick?: (x: number, y: number) => void;

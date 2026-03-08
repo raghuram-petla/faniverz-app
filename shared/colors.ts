@@ -48,6 +48,7 @@ export const colors = {
 
   // Status colors
   status: {
+    announced: '#F59E0B', // amber-500
     theatrical: '#DC2626', // red-600
     ott: '#9333EA', // purple-600
     upcoming: '#2563EB', // blue-600

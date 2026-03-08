@@ -8,6 +8,7 @@ export const HERO_HEIGHT = 600;
 export const ACTOR_AVATAR_SIZE = 120;
 // Movie status configuration (derived, not stored)
 export const MOVIE_STATUS_CONFIG: Record<MovieStatus, { label: string; color: string }> = {
+  announced: { label: 'Announced', color: '#F59E0B' },
   upcoming: { label: 'Coming Soon', color: '#2563EB' },
   in_theaters: { label: 'In Theaters', color: '#DC2626' },
   streaming: { label: 'Streaming', color: '#9333EA' },

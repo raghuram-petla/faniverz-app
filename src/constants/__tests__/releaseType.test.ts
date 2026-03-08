@@ -4,8 +4,9 @@ import { MovieStatus } from '@/types';
 import { MOVIE_STATUS_CONFIG, getMovieStatusLabel, getMovieStatusColor } from '../releaseType';
 
 describe('MOVIE_STATUS_CONFIG', () => {
-  it('contains entries for all 4 movie statuses', () => {
-    expect(Object.keys(MOVIE_STATUS_CONFIG)).toHaveLength(4);
+  it('contains entries for all 5 movie statuses', () => {
+    expect(Object.keys(MOVIE_STATUS_CONFIG)).toHaveLength(5);
+    expect(MOVIE_STATUS_CONFIG).toHaveProperty('announced');
     expect(MOVIE_STATUS_CONFIG).toHaveProperty('upcoming');
     expect(MOVIE_STATUS_CONFIG).toHaveProperty('in_theaters');
     expect(MOVIE_STATUS_CONFIG).toHaveProperty('streaming');

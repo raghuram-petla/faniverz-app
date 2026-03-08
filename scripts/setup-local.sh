@@ -182,6 +182,32 @@ else
   info "Database already has tables (skipping reset — use --reset-db to force)"
 fi
 
+# ── Shell Guard: block accidental `supabase db reset` ─────
+echo ""
+echo "Installing supabase db reset guard..."
+
+GUARD_MARKER="# Guard against accidental supabase db reset"
+SHELL_RC="$HOME/.zshrc"
+[ -f "$HOME/.bashrc" ] && [ ! -f "$HOME/.zshrc" ] && SHELL_RC="$HOME/.bashrc"
+
+if grep -qF "$GUARD_MARKER" "$SHELL_RC" 2>/dev/null; then
+  info "Shell guard already installed in $(basename "$SHELL_RC")"
+else
+  cat >> "$SHELL_RC" << 'GUARD'
+
+# Guard against accidental supabase db reset
+supabase() {
+  if [[ "$1" == "db" && "$2" == "reset" && "$*" != *"--force"* ]]; then
+    echo "\033[31mBLOCKED: 'supabase db reset' wipes all local data.\033[0m"
+    echo "If you really mean it, run: supabase db reset --force"
+    return 1
+  fi
+  command supabase "$@"
+}
+GUARD
+  info "Shell guard installed — 'supabase db reset' now requires --force"
+fi
+
 # ── Summary ────────────────────────────────────────────────
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -131,7 +131,7 @@ export function useMovieEditState(id: string) {
         title: movie.title,
         poster_url: movie.poster_url ?? '',
         backdrop_url: movie.backdrop_url ?? '',
-        release_date: movie.release_date,
+        release_date: movie.release_date ?? '',
         runtime: movie.runtime?.toString() ?? '',
         genres: movie.genres ?? [],
         certification: movie.certification ?? '',

@@ -10,7 +10,7 @@ interface SpotlightPreviewProps {
   rating: number;
   runtime: number | null;
   certification: string | null;
-  releaseDate: string;
+  releaseDate: string | null;
   focusX: number | null;
   focusY: number | null;
   onFocusClick?: (x: number, y: number) => void;
@@ -28,7 +28,7 @@ export function SpotlightPreview({
   focusY,
   onFocusClick,
 }: SpotlightPreviewProps) {
-  const year = new Date(releaseDate).getFullYear();
+  const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
   const config = MOVIE_STATUS_CONFIG[movieStatus];
   const gradientCss = `linear-gradient(to bottom, ${SPOTLIGHT_GRADIENT.join(', ')})`;
   const objectPosition =
@@ -149,7 +149,7 @@ export function SpotlightPreview({
 
         {/* Meta */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>{year}</span>
+          {year && <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>{year}</span>}
           {runtime != null && (
             <>
               <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>•</span>

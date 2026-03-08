@@ -185,7 +185,7 @@ export default function ActorDetailScreen() {
           {filmography.map((credit) => {
             const movie = credit.movie;
             if (!movie) return null;
-            const year = new Date(movie.release_date).getFullYear();
+            const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
             const roleText =
               credit.credit_type === 'cast' && credit.role_name
                 ? `as ${credit.role_name}`

@@ -62,7 +62,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
             backdropUrl={form.backdrop_url}
             movieStatus={deriveMovieStatus(
               {
-                release_date: form.release_date || new Date().toISOString(),
+                release_date: form.release_date || null,
                 in_theaters: form.in_theaters,
               },
               0,
@@ -70,7 +70,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
             rating={0}
             runtime={form.runtime ? Number(form.runtime) : null}
             certification={form.certification || null}
-            releaseDate={form.release_date || new Date().toISOString()}
+            releaseDate={form.release_date || null}
             focusX={focusX}
             focusY={focusY}
             onFocusClick={(x, y) =>
@@ -84,7 +84,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
             posterUrl={form.poster_url}
             movieStatus={deriveMovieStatus(
               {
-                release_date: form.release_date || new Date().toISOString(),
+                release_date: form.release_date || null,
                 in_theaters: form.in_theaters,
               },
               0,
@@ -93,7 +93,7 @@ export function PreviewPanel({ form, setForm }: PreviewPanelProps) {
             reviewCount={0}
             runtime={form.runtime ? Number(form.runtime) : null}
             certification={form.certification || null}
-            releaseDate={form.release_date || new Date().toISOString()}
+            releaseDate={form.release_date || null}
             focusX={focusX}
             focusY={focusY}
             onFocusClick={(x, y) =>

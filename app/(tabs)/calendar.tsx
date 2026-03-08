@@ -45,6 +45,7 @@ export default function CalendarScreen() {
   const filteredMovies = useMemo(() => {
     if (!hasUserFiltered) return allMovies;
     return allMovies.filter((movie) => {
+      if (!movie.release_date) return false;
       const d = new Date(movie.release_date);
       if (selectedYear !== null && d.getFullYear() !== selectedYear) return false;
       if (selectedMonth !== null && d.getMonth() !== selectedMonth) return false;
@@ -58,7 +59,7 @@ export default function CalendarScreen() {
     const map = new Map<string, Movie[]>();
 
     for (const movie of filteredMovies) {
-      const key = movie.release_date;
+      const key = movie.release_date ?? '';
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(movie);
     }
@@ -72,9 +73,13 @@ export default function CalendarScreen() {
 
   const years = useMemo(
     () =>
-      Array.from(new Set(allMovies.map((m) => new Date(m.release_date).getFullYear()))).sort(
-        (a, b) => b - a,
-      ),
+      Array.from(
+        new Set(
+          allMovies
+            .filter((m) => m.release_date)
+            .map((m) => new Date(m.release_date!).getFullYear()),
+        ),
+      ).sort((a, b) => b - a),
     [allMovies],
   );
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAdminMovies, useDeleteMovie } from '@/hooks/useAdminMovies';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatDate } from '@/lib/utils';
-import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Loader2, Film } from 'lucide-react';
 import { MOVIE_STATUS_CONFIG } from '@shared/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie } from '@/lib/types';
@@ -14,6 +14,7 @@ function getStatusBadge(movie: Movie) {
   const status = deriveMovieStatus(movie, 0);
   const config = MOVIE_STATUS_CONFIG[status];
   const colorMap: Record<string, string> = {
+    '#F59E0B': 'bg-amber-600/20 text-amber-400',
     '#2563EB': 'bg-blue-600/20 text-blue-400',
     '#DC2626': 'bg-red-600/20 text-red-400',
     '#9333EA': 'bg-purple-600/20 text-purple-400',
@@ -120,12 +121,16 @@ export default function MoviesPage() {
                 <tr key={movie.id} className="hover:bg-surface-elevated">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      {movie.poster_url && (
+                      {movie.poster_url ? (
                         <img
                           src={movie.poster_url}
                           alt=""
                           className="w-10 h-14 rounded object-cover"
                         />
+                      ) : (
+                        <div className="w-10 h-14 rounded bg-input flex items-center justify-center">
+                          <Film className="w-4 h-4 text-on-surface-subtle" />
+                        </div>
                       )}
                       <span className="font-medium text-on-surface">{movie.title}</span>
                     </div>
@@ -143,7 +148,7 @@ export default function MoviesPage() {
                     })()}
                   </td>
                   <td className="px-4 py-3 text-sm text-on-surface-muted">
-                    {formatDate(movie.release_date)}
+                    {movie.release_date ? formatDate(movie.release_date) : '—'}
                   </td>
                   <td className="px-4 py-3 text-sm text-yellow-400">
                     {movie.rating > 0 ? `★ ${movie.rating.toFixed(1)}` : '—'}

@@ -73,7 +73,8 @@ export default function NewOttReleasePage() {
               <option value="">Select a movie...</option>
               {movies?.map((movie) => (
                 <option key={movie.id} value={movie.id}>
-                  {movie.title} ({new Date(movie.release_date).getFullYear()})
+                  {movie.title}
+                  {movie.release_date ? ` (${new Date(movie.release_date).getFullYear()})` : ''}
                 </option>
               ))}
             </select>

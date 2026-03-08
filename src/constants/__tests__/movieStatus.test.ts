@@ -26,9 +26,14 @@ describe('deriveMovieStatus', () => {
     expect(deriveMovieStatus(movie, 3)).toBe('in_theaters');
   });
 
-  it('upcoming takes priority over in_theaters', () => {
+  it('in_theaters takes priority over upcoming', () => {
     const movie = { release_date: '2099-06-15', in_theaters: true };
-    expect(deriveMovieStatus(movie, 0)).toBe('upcoming');
+    expect(deriveMovieStatus(movie, 0)).toBe('in_theaters');
+  });
+
+  it('returns "announced" when release_date is null', () => {
+    const movie = { release_date: null, in_theaters: false };
+    expect(deriveMovieStatus(movie, 0)).toBe('announced');
   });
 
   it('returns "released" when platformCount is 0 and not in theaters', () => {

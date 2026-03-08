@@ -9,7 +9,7 @@ interface ReviewModalProps {
   visible: boolean;
   movieTitle: string;
   posterUrl: string | null;
-  releaseYear: number;
+  releaseYear: number | null;
   director: string | null;
   reviewRating: number;
   reviewTitle: string;

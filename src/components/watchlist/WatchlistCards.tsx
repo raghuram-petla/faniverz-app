@@ -90,11 +90,13 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
   const { remove, markWatched } = useWatchlistMutations();
   const movie = entry.movie!;
 
-  const releaseDateFormatted = new Date(movie.release_date).toLocaleDateString('en-IN', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const releaseDateFormatted = movie.release_date
+    ? new Date(movie.release_date).toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : 'TBA';
 
   return (
     <TouchableOpacity

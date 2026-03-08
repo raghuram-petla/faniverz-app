@@ -1,7 +1,7 @@
 // Shared type definitions — single source of truth for mobile + admin
 // Only Supabase-backed types go here; app-specific types stay in their respective projects.
 
-export type MovieStatus = 'upcoming' | 'in_theaters' | 'streaming' | 'released';
+export type MovieStatus = 'announced' | 'upcoming' | 'in_theaters' | 'streaming' | 'released';
 export type Certification = 'U' | 'UA' | 'A';
 export type WatchlistStatus = 'watchlist' | 'watched';
 
@@ -23,7 +23,7 @@ export interface Movie {
   title: string;
   poster_url: string | null;
   backdrop_url: string | null;
-  release_date: string;
+  release_date: string | null;
   runtime: number | null;
   genres: string[];
   certification: Certification | null;

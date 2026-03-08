@@ -12,7 +12,7 @@ interface MovieDetailHeroProps {
   reviewCount: number;
   runtime: number | null;
   certification: string | null;
-  releaseDate: string;
+  releaseDate: string | null;
   focusX: number | null;
   focusY: number | null;
   gradientCss: string;
@@ -36,7 +36,7 @@ export function MovieDetailHero({
   objectPosition,
   onFocusClick,
 }: MovieDetailHeroProps) {
-  const year = new Date(releaseDate).getFullYear();
+  const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
   const config = MOVIE_STATUS_CONFIG[movieStatus];
 
   return (
@@ -214,7 +214,7 @@ export function MovieDetailHero({
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{year}</span>
+            {year && <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>{year}</span>}
             {runtime != null && (
               <>
                 <span style={{ color: 'rgba(255,255,255,0.6)' }}>|</span>

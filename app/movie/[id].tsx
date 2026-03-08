@@ -54,7 +54,7 @@ export default function MovieDetailScreen() {
   if (!movie) return null;
 
   const handleShare = async () => {
-    const text = `${movie.title} (${new Date(movie.release_date).getFullYear()}) — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;
+    const text = `${movie.title}${movie.release_date ? ` (${new Date(movie.release_date).getFullYear()})` : ''} — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;
     await Share.share({ message: text });
   };
 
@@ -85,7 +85,7 @@ export default function MovieDetailScreen() {
   };
 
   const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
-  const releaseYear = new Date(movie.release_date).getFullYear();
+  const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
   const hasMedia = movie.videos.length > 0 || movie.posters.length > 0;
   const tabs: TabName[] = hasMedia
     ? ['overview', 'media', 'cast', 'reviews']

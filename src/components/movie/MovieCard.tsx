@@ -35,9 +35,10 @@ export function MovieCard({
     router.push(`/movie/${movie.id}`);
   };
 
-  const releaseDate = new Date(movie.release_date);
-  const monthAbbr = releaseDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-  const day = releaseDate.getDate();
+  const releaseDate = movie.release_date ? new Date(movie.release_date) : null;
+  const monthAbbr =
+    releaseDate?.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() ?? 'TBA';
+  const day = releaseDate?.getDate() ?? '';
 
   return (
     <TouchableOpacity
@@ -102,7 +103,7 @@ export function MovieCard({
         </View>
       )}
 
-      {showReleaseDate && (
+      {showReleaseDate && releaseDate && (
         <Text style={styles.releaseDateText}>
           {releaseDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </Text>

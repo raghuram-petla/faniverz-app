@@ -11,7 +11,7 @@ import { createStyles } from '@/styles/movieDetail.styles';
 interface MovieHeroSectionProps {
   movie: MovieWithDetails;
   movieStatus: MovieStatus;
-  releaseYear: number;
+  releaseYear: number | null;
 }
 
 export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroSectionProps) {

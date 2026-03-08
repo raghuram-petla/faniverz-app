@@ -66,10 +66,9 @@ export function BasicInfoSection({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Release Date *</label>
+          <label className="block text-sm text-on-surface-muted mb-1">Release Date</label>
           <input
             type="date"
-            required
             value={form.release_date}
             onChange={(e) => updateField('release_date', e.target.value)}
             className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"

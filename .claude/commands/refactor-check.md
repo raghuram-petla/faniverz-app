@@ -7,11 +7,20 @@ Audit the codebase for files exceeding 300 lines and enforce decomposition stand
 1. **Line count audit** — Find all source files over 300 lines (excluding `node_modules`, `__tests__`, `.test.`, `.styles.ts`, `.config.`, `jest.setup`, `.next`, `scripts/`, `.d.ts`):
 
 ```bash
-find . \( -name '*.ts' -o -name '*.tsx' \) \
-  ! -path '*/node_modules/*' ! -path '*/.next/*' ! -path '*/scripts/*' \
-  ! -name '*.d.ts' ! -name '*.config.*' ! -name 'jest.setup*' \
-  ! -path '*/__tests__/*' ! -name '*.test.*' ! -name '*.styles.*' \
-  | xargs wc -l 2>/dev/null | sort -rn | awk '$1 > 300 && !/total$/'
+find . \( -name "*.ts" -o -name "*.tsx" \) \
+  -not -path "*/node_modules/*" \
+  -not -path "*/.next/*" \
+  -not -path "*/scripts/*" \
+  -not -name "*.d.ts" \
+  -not -name "*.config.*" \
+  -not -name "jest.setup*" \
+  -not -path "*/__tests__/*" \
+  -not -name "*.test.*" \
+  -not -name "*.styles.*" \
+  -print0 \
+  | xargs -0 wc -l 2>/dev/null \
+  | sort -rn \
+  | awk '$1 > 300 { if ($0 ~ /total/) next; print }'
 ```
 
 2. **If violations found**, for each file over 300 lines:
