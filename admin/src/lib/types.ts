@@ -113,9 +113,6 @@ interface UserProfile {
 
 export interface DashboardStats {
   totalMovies: number;
-  totalUsers: number;
-  reviewsToday: number;
-  activeNotifications: number;
 }
 
 // ============================================================

@@ -5,15 +5,7 @@ import DashboardPage from '@/app/(dashboard)/page';
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      insert: vi.fn().mockReturnThis(),
-      update: vi.fn().mockReturnThis(),
-      delete: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      gte: vi.fn().mockReturnThis(),
+      select: vi.fn().mockResolvedValue({ count: 42, data: null, error: null }),
     })),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
@@ -76,19 +68,23 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('renders stat cards with loading skeletons while data loads', () => {
+  it('renders Total Movies stat card', () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Total Movies')).toBeInTheDocument();
-    expect(screen.getByText('Total Users')).toBeInTheDocument();
-    expect(screen.getByText('Reviews Today')).toBeInTheDocument();
-    expect(screen.getByText('Active Notifications')).toBeInTheDocument();
-    // While loading, numeric values should not be rendered
-    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
+
+  it('does not render removed stat cards', () => {
+    renderWithProviders(<DashboardPage />);
+    expect(screen.queryByText('Total Users')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reviews Today')).not.toBeInTheDocument();
+    expect(screen.queryByText('Active Notifications')).not.toBeInTheDocument();
   });
 
   it('renders quick action links', () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Add Movie')).toBeInTheDocument();
+    expect(screen.getByText('Add Actor')).toBeInTheDocument();
+    expect(screen.getByText('Add Feed Post')).toBeInTheDocument();
     expect(screen.getByText('Add OTT Release')).toBeInTheDocument();
     expect(screen.getByText('Trigger Sync')).toBeInTheDocument();
   });
