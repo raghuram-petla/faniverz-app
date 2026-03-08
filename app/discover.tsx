@@ -20,6 +20,7 @@ import {
   FILTER_TABS,
 } from '@/components/discover/DiscoverFilterModal';
 import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
+import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
 
 export default function DiscoverScreen() {
   const { theme, colors } = useTheme();
@@ -210,43 +211,18 @@ export default function DiscoverScreen() {
         </View>
       )}
 
-      {(selectedGenres.length > 0 ||
-        selectedPlatforms.length > 0 ||
-        selectedProductionHouses.length > 0) && (
-        <View style={styles.activePills}>
-          {selectedGenres.map((g) => (
-            <TouchableOpacity key={g} style={styles.activePill} onPress={() => toggleGenre(g)}>
-              <Text style={styles.activePillText}>{g}</Text>
-              <Ionicons name="close" size={14} color={colors.red400} />
-            </TouchableOpacity>
-          ))}
-          {selectedPlatforms.map((p) => {
-            const platform = platforms.find((pl) => pl.id === p);
-            return (
-              <TouchableOpacity key={p} style={styles.activePill} onPress={() => togglePlatform(p)}>
-                <Text style={styles.activePillText}>{platform?.name ?? p}</Text>
-                <Ionicons name="close" size={14} color={colors.red400} />
-              </TouchableOpacity>
-            );
-          })}
-          {selectedProductionHouses.map((phId) => {
-            const ph = productionHouses.find((p) => p.id === phId);
-            return (
-              <TouchableOpacity
-                key={phId}
-                style={styles.activePill}
-                onPress={() => toggleProductionHouse(phId)}
-              >
-                <Text style={styles.activePillText}>{ph?.name ?? phId}</Text>
-                <Ionicons name="close" size={14} color={colors.red400} />
-              </TouchableOpacity>
-            );
-          })}
-          <TouchableOpacity onPress={clearAll}>
-            <Text style={styles.clearAllLink}>Clear All</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <ActiveFilterPills
+        selectedGenres={selectedGenres}
+        selectedPlatforms={selectedPlatforms}
+        selectedProductionHouses={selectedProductionHouses}
+        platforms={platforms}
+        productionHouses={productionHouses}
+        onToggleGenre={toggleGenre}
+        onTogglePlatform={togglePlatform}
+        onToggleProductionHouse={toggleProductionHouse}
+        onClearAll={clearAll}
+        styles={styles}
+      />
 
       {filteredMovies.length > 0 && (
         <View style={styles.movieCountRow}>
