@@ -34,7 +34,8 @@ function FeedCardInner({
   const styles = createFeedCardStyles(theme);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
   const hasVideo = !!item.youtube_id;
-  const hasThumbnail = !!item.thumbnail_url;
+  const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
+  const hasThumbnail = !!imageUrl;
   const isPosterImage = hasThumbnail && !hasVideo;
   const movieName = item.movie?.title;
   const label = getFeedTypeLabel(item.content_type);
@@ -108,15 +109,11 @@ function FeedCardInner({
         ) : isPosterImage ? (
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => setViewerImage(item.thumbnail_url!)}
+            onPress={() => setViewerImage(imageUrl!)}
             accessibilityLabel={`View ${item.title} poster`}
           >
             <View style={styles.posterMediaContainer}>
-              <Image
-                source={{ uri: item.thumbnail_url! }}
-                style={styles.media}
-                contentFit="cover"
-              />
+              <Image source={{ uri: imageUrl! }} style={styles.media} contentFit="cover" />
             </View>
           </TouchableOpacity>
         ) : null}
