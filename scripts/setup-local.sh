@@ -182,6 +182,29 @@ else
   info "Database already has tables (skipping reset — use --reset-db to force)"
 fi
 
+# ── Image Variant Backfill ─────────────────────────────────
+echo ""
+echo "Backfilling image variants (TMDB → MinIO with _sm/_md/_lg)..."
+
+set -a
+source admin/.env.local
+set +a
+
+SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL" \
+R2_ENDPOINT="$R2_ENDPOINT" \
+R2_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID" \
+R2_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY" \
+R2_PUBLIC_BASE_URL_POSTERS="$R2_PUBLIC_BASE_URL_POSTERS" \
+R2_PUBLIC_BASE_URL_BACKDROPS="$R2_PUBLIC_BASE_URL_BACKDROPS" \
+R2_PUBLIC_BASE_URL_ACTORS="$R2_PUBLIC_BASE_URL_ACTORS" \
+R2_PUBLIC_BASE_URL_AVATARS="$R2_PUBLIC_BASE_URL_AVATARS" \
+R2_PUBLIC_BASE_URL_PLATFORMS="$R2_PUBLIC_BASE_URL_PLATFORMS" \
+R2_PUBLIC_BASE_URL_PRODUCTION_HOUSES="$R2_PUBLIC_BASE_URL_PRODUCTION_HOUSES" \
+SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  npx tsx scripts/backfill-image-variants.ts
+
+info "Image variants backfilled"
+
 # ── Shell Guard: block accidental `supabase db reset` ─────
 echo ""
 echo "Installing supabase db reset guard..."

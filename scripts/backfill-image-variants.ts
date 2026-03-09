@@ -1,6 +1,10 @@
 /* eslint-disable no-console */
 /**
- * Backfill script: ensures every R2 image has _sm, _md, _lg variants.
+ * Backfill script: ensures every image is on R2 with _sm, _md, _lg variants.
+ *
+ * Handles two cases:
+ *   1. External URLs (e.g. TMDB CDN) → download, upload to R2 with variants, update DB
+ *   2. R2 URLs missing variants → download original from R2, generate & upload variants
  *
  * Usage:
  *   R2_ACCOUNT_ID=xxx \
@@ -16,11 +20,9 @@
  *   SUPABASE_SERVICE_ROLE_KEY=xxx \
  *     npx tsx scripts/backfill-image-variants.ts
  *
- * Safe to re-run — images with existing _sm variant are skipped.
+ * For local dev with MinIO, set R2_ENDPOINT=http://localhost:9000 instead of R2_ACCOUNT_ID.
  *
- * Efficiency: Uses ListObjectsV2 to build an in-memory index of each bucket
- * (one paginated API call per bucket) instead of per-image HEAD requests.
- * Only images missing their _sm variant are downloaded and processed.
+ * Safe to re-run — images already on R2 with variants are skipped.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -43,12 +45,15 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-if (
-  !process.env.R2_ACCOUNT_ID ||
-  !process.env.R2_ACCESS_KEY_ID ||
-  !process.env.R2_SECRET_ACCESS_KEY
-) {
-  console.error('R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY are required.');
+const R2_ENDPOINT = process.env.R2_ENDPOINT; // custom endpoint for MinIO / local dev
+
+if (!R2_ENDPOINT && !process.env.R2_ACCOUNT_ID) {
+  console.error('Either R2_ENDPOINT or R2_ACCOUNT_ID is required.');
+  process.exit(1);
+}
+
+if (!process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
+  console.error('R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required.');
   process.exit(1);
 }
 
@@ -72,13 +77,16 @@ for (const [name, url] of Object.entries(PUBLIC_URLS)) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+const r2Endpoint = R2_ENDPOINT || `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+
 const r2 = new S3Client({
   region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: r2Endpoint,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
+  forcePathStyle: !!R2_ENDPOINT,
 });
 
 // ── Image source config ──────────────────────────────────────────────────────
@@ -183,6 +191,37 @@ async function listBucketKeys(bucket: string): Promise<Set<string>> {
   return keys;
 }
 
+/** Upload a buffer + its variants to R2. Returns the public URL. */
+async function uploadWithVariants(
+  buffer: Buffer,
+  contentType: string,
+  bucket: string,
+  key: string,
+  variantType: VariantType,
+  publicBaseUrl: string,
+): Promise<string> {
+  const specs = VARIANT_SPECS[variantType];
+  const variants = await generateVariants(buffer, contentType, specs);
+
+  await Promise.all([
+    r2.send(
+      new PutObjectCommand({ Bucket: bucket, Key: key, Body: buffer, ContentType: contentType }),
+    ),
+    ...variants.map((v) =>
+      r2.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: variantKey(key, v.suffix),
+          Body: v.buffer,
+          ContentType: v.contentType,
+        }),
+      ),
+    ),
+  ]);
+
+  return `${publicBaseUrl.replace(/\/$/, '')}/${key}`;
+}
+
 async function pLimit<T>(
   items: T[],
   concurrency: number,
@@ -202,8 +241,8 @@ async function pLimit<T>(
 
 let totalProcessed = 0;
 let skippedExisting = 0;
-let skippedNonR2 = 0;
-let generated = 0;
+let migratedExternal = 0;
+let generatedVariants = 0;
 let failed = 0;
 
 // ── Bucket index cache ───────────────────────────────────────────────────────
@@ -223,6 +262,16 @@ async function getBucketIndex(bucket: string): Promise<Set<string>> {
 
 // ── Core backfill ────────────────────────────────────────────────────────────
 
+interface ExternalRow {
+  id: unknown;
+  url: string;
+  key: string;
+}
+interface MissingVariantRow {
+  id: unknown;
+  key: string;
+}
+
 async function backfillSource(source: ImageSource) {
   console.log(`\n── ${source.table}.${source.column} ──`);
 
@@ -236,8 +285,9 @@ async function backfillSource(source: ImageSource) {
   if (error) throw error;
   console.log(`  Rows with non-null URLs: ${rows?.length ?? 0}`);
 
-  // Filter to only rows that need backfilling (no network calls here)
-  const needsBackfill: { id: unknown; key: string }[] = [];
+  // Categorise rows without any network calls
+  const externals: ExternalRow[] = [];
+  const missingVariants: MissingVariantRow[] = [];
 
   for (const row of rows ?? []) {
     totalProcessed++;
@@ -245,7 +295,9 @@ async function backfillSource(source: ImageSource) {
     if (!url) continue;
 
     if (!isR2Url(url, source.publicBaseUrl)) {
-      skippedNonR2++;
+      // External URL (TMDB CDN etc.) → migrate to R2 with variants
+      const key = `${row.id}.jpg`;
+      externals.push({ id: row.id, url, key });
       continue;
     }
 
@@ -257,61 +309,101 @@ async function backfillSource(source: ImageSource) {
       continue;
     }
 
-    needsBackfill.push({ id: row.id, key });
+    missingVariants.push({ id: row.id, key });
   }
 
-  console.log(`  Need backfill: ${needsBackfill.length}`);
-  if (needsBackfill.length === 0) return;
+  // ── Handle external URLs: download → upload to R2 with variants → update DB ──
+  if (externals.length > 0) {
+    console.log(`  External URLs to migrate: ${externals.length}`);
+    await pLimit(externals, 3, async ({ id, url, key }) => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${url}`);
+        const buffer = Buffer.from(await response.arrayBuffer());
+        const contentType = response.headers.get('content-type') ?? 'image/jpeg';
 
-  await pLimit(needsBackfill, 3, async ({ id, key }) => {
-    try {
-      const getResult = await r2.send(new GetObjectCommand({ Bucket: source.bucket, Key: key }));
-      const body = await getResult.Body?.transformToByteArray();
-      if (!body) throw new Error('Empty body from R2');
+        const newUrl = await uploadWithVariants(
+          buffer,
+          contentType,
+          source.bucket,
+          key,
+          source.variantType,
+          source.publicBaseUrl,
+        );
 
-      const buffer = Buffer.from(body);
-      const contentType = getResult.ContentType ?? 'image/jpeg';
-      const specs = VARIANT_SPECS[source.variantType];
-      const variants = await generateVariants(buffer, contentType, specs);
+        const { error: upErr } = await supabase
+          .from(source.table)
+          .update({ [source.column]: newUrl })
+          .eq('id', id);
 
-      await Promise.all(
-        variants.map((v) =>
-          r2.send(
-            new PutObjectCommand({
-              Bucket: source.bucket,
-              Key: variantKey(key, v.suffix),
-              Body: v.buffer,
-              ContentType: v.contentType,
-            }),
+        if (upErr) throw new Error(`DB update: ${upErr.message}`);
+
+        migratedExternal++;
+        process.stdout.write('M');
+      } catch (e) {
+        console.error(`\n  FAIL migrate [${source.table}.${id}]: ${(e as Error).message}`);
+        failed++;
+      }
+    });
+  }
+
+  // ── Handle R2 URLs missing variants: download original → generate & upload variants ──
+  if (missingVariants.length > 0) {
+    console.log(`  R2 images missing variants: ${missingVariants.length}`);
+    await pLimit(missingVariants, 3, async ({ id, key }) => {
+      try {
+        const getResult = await r2.send(new GetObjectCommand({ Bucket: source.bucket, Key: key }));
+        const body = await getResult.Body?.transformToByteArray();
+        if (!body) throw new Error('Empty body from R2');
+
+        const buffer = Buffer.from(body);
+        const contentType = getResult.ContentType ?? 'image/jpeg';
+        const specs = VARIANT_SPECS[source.variantType];
+        const variants = await generateVariants(buffer, contentType, specs);
+
+        await Promise.all(
+          variants.map((v) =>
+            r2.send(
+              new PutObjectCommand({
+                Bucket: source.bucket,
+                Key: variantKey(key, v.suffix),
+                Body: v.buffer,
+                ContentType: v.contentType,
+              }),
+            ),
           ),
-        ),
-      );
+        );
 
-      generated++;
-      process.stdout.write('+');
-    } catch (e) {
-      console.error(`\n  FAIL [${source.table}.${id}]: ${(e as Error).message}`);
-      failed++;
-    }
-  });
+        generatedVariants++;
+        process.stdout.write('+');
+      } catch (e) {
+        console.error(`\n  FAIL variants [${source.table}.${id}]: ${(e as Error).message}`);
+        failed++;
+      }
+    });
+  }
+
+  if (externals.length === 0 && missingVariants.length === 0) {
+    console.log('  Nothing to do.');
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log('=== Faniverz R2 image variant backfill ===');
-  console.log('Ensures every R2 image has _sm, _md, _lg variants.\n');
+  console.log('Migrates external URLs to R2 and ensures all images have _sm, _md, _lg variants.\n');
 
   for (const source of IMAGE_SOURCES) {
     await backfillSource(source);
   }
 
   console.log('\n\n=== Summary ===');
-  console.log(`  Total rows checked  : ${totalProcessed}`);
-  console.log(`  Already had variants: ${skippedExisting}`);
-  console.log(`  Skipped (non-R2)    : ${skippedNonR2}`);
-  console.log(`  Generated           : ${generated}`);
-  console.log(`  Failed              : ${failed}`);
+  console.log(`  Total rows checked    : ${totalProcessed}`);
+  console.log(`  Already complete      : ${skippedExisting}`);
+  console.log(`  Migrated from external: ${migratedExternal}`);
+  console.log(`  Generated variants    : ${generatedVariants}`);
+  console.log(`  Failed                : ${failed}`);
 
   if (failed > 0) process.exit(1);
 }
