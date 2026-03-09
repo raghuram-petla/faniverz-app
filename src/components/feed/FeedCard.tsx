@@ -8,6 +8,7 @@ import { VoteButtons } from './VoteButtons';
 import { ImageViewerModal } from '@/components/common/ImageViewerModal';
 import { formatRelativeTime, getFeedTypeLabel } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
+import { getImageUrl } from '@shared/imageUrl';
 import type { NewsFeedItem } from '@shared/types';
 
 export interface FeedCardProps {
@@ -111,7 +112,10 @@ function FeedCardInner({
             accessibilityLabel={`View ${item.title} poster`}
           >
             <View style={styles.posterMediaContainer}>
-              <Image source={{ uri: item.thumbnail_url! }} style={styles.media} />
+              <Image
+                source={{ uri: getImageUrl(item.thumbnail_url, 'md')! }}
+                style={styles.media}
+              />
             </View>
           </TouchableOpacity>
         ) : null}
