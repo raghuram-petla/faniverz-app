@@ -125,18 +125,20 @@ export function ImageViewerOverlay({
     opacity: backdropOpacity.value,
   }));
 
+  const animatedCloseBtnStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value < 1 ? 0 : 1,
+  }));
+
   return (
     <Animated.View style={styles.root} pointerEvents="auto">
       <StatusBar barStyle="light-content" />
       <Animated.View style={[styles.backdrop, animatedBackdropStyle]} />
 
-      <TouchableOpacity
-        style={styles.closeBtn}
-        onPress={handleCloseButton}
-        accessibilityLabel="Close image"
-      >
-        <Ionicons name="close" size={28} color="#fff" />
-      </TouchableOpacity>
+      <Animated.View style={[styles.closeBtnWrapper, animatedCloseBtnStyle]}>
+        <TouchableOpacity onPress={handleCloseButton} accessibilityLabel="Close image">
+          <Ionicons name="close" size={28} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
 
       <ImageViewerGestures onDismiss={handleSwipeDismiss} backdropOpacity={backdropOpacity}>
         <Animated.View style={[styles.gestureArea]}>

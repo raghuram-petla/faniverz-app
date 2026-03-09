@@ -11,7 +11,7 @@ export const overlayStyles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#000',
   },
-  closeBtn: {
+  closeBtnWrapper: {
     position: 'absolute',
     top: 60,
     right: 20,
