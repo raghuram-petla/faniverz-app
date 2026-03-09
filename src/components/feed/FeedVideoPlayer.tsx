@@ -1,7 +1,14 @@
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { useCallback } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '@/theme';
+import {
+  buildYouTubeEmbedHtml,
+  shareYouTubeVideo,
+  handleYouTubeNavigation,
+  handleYouTubeOpenWindow,
+} from '@/utils/youtubeNavigation';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 
 export interface FeedVideoPlayerProps {
@@ -9,17 +16,6 @@ export interface FeedVideoPlayerProps {
   thumbnailUrl: string | null;
   duration: string | null;
   isActive: boolean;
-}
-
-function buildVideoHtml(youtubeId: string): string {
-  return `<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>*{margin:0;padding:0}body{background:#000;overflow:hidden}
-iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}</style>
-</head><body>
-<iframe src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&playsinline=1&mute=1&rel=0"
-  allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>
-</body></html>`;
 }
 
 export function FeedVideoPlayer({
@@ -32,11 +28,24 @@ export function FeedVideoPlayer({
   const styles = createFeedCardStyles(theme);
   const thumb = thumbnailUrl ?? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 
+  const onNavRequest = useCallback(
+    (request: { url: string }) => handleYouTubeNavigation(request as any, youtubeId),
+    [youtubeId],
+  );
+
+  const onOpenWindow = useCallback(
+    (e: { nativeEvent: { targetUrl: string } }) =>
+      handleYouTubeOpenWindow(e.nativeEvent.targetUrl, youtubeId),
+    [youtubeId],
+  );
+
+  const onShare = useCallback(() => shareYouTubeVideo(youtubeId), [youtubeId]);
+
   if (isActive) {
     return (
       <View style={styles.mediaContainer}>
         <WebView
-          source={{ html: buildVideoHtml(youtubeId), baseUrl: 'https://example.com' }}
+          source={{ html: buildYouTubeEmbedHtml(youtubeId, true), baseUrl: 'https://example.com' }}
           style={videoStyles.player}
           allowsInlineMediaPlayback
           allowsFullscreenVideo
@@ -45,7 +54,16 @@ export function FeedVideoPlayer({
           scrollEnabled={false}
           bounces={false}
           javaScriptEnabled
+          onShouldStartLoadWithRequest={onNavRequest}
+          onOpenWindow={onOpenWindow}
         />
+        <View style={videoStyles.shareOverlay} pointerEvents="box-none">
+          <TouchableOpacity
+            style={videoStyles.shareHitArea}
+            onPress={onShare}
+            accessibilityLabel="Share video"
+          />
+        </View>
       </View>
     );
   }
@@ -69,5 +87,15 @@ const videoStyles = StyleSheet.create({
   player: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#000',
+  },
+  shareOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  shareHitArea: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: 56,
+    height: 44,
   },
 });

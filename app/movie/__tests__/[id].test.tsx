@@ -1,5 +1,10 @@
 // Mocks must be declared before imports
 
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native');
+  return { WebView: (props: any) => <View testID="webview" {...props} /> };
+});
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -584,7 +589,7 @@ describe('MovieDetailScreen', () => {
     (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithPosters });
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Media'));
-    expect(screen.getByText('Posters')).toBeTruthy();
+    expect(screen.getByLabelText('Filter by Posters')).toBeTruthy();
     expect(screen.getByText('First Look')).toBeTruthy();
     expect(screen.getByText('Main')).toBeTruthy();
   });
@@ -632,7 +637,7 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('3:20')).toBeTruthy();
   });
 
-  it('opens YouTube URL when video card is pressed', () => {
+  it('plays video inline when video card is pressed', () => {
     const movieWithVideos = {
       ...mockMovie,
       videos: [
@@ -650,12 +655,10 @@ describe('MovieDetailScreen', () => {
         },
       ],
     };
-    const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
     (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Media'));
-    fireEvent.press(screen.getByLabelText('Official Trailer'));
-    expect(linkingSpy).toHaveBeenCalledWith('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    linkingSpy.mockRestore();
+    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
+    expect(screen.getByTestId('webview')).toBeTruthy();
   });
 });

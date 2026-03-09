@@ -1,7 +1,10 @@
-import { View, Text, TouchableOpacity, ScrollView, Linking } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { MediaFilterPills } from './MediaFilterPills';
+import { MediaVideoCard } from './MediaVideoCard';
 import type { MovieVideo, MoviePoster } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
@@ -11,61 +14,78 @@ interface VideoGroup {
   videos: MovieVideo[];
 }
 
-interface MediaTabProps {
+export interface MediaTabProps {
   videosByType: VideoGroup[];
   posters: MoviePoster[];
   onSelectPoster: (poster: MoviePoster) => void;
 }
 
+const ALL_CATEGORY = 'All';
+const POSTERS_CATEGORY = 'Posters';
+
 export function MediaTab({ videosByType, posters, onSelectPoster }: MediaTabProps) {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
+  const [activeCategory, setActiveCategory] = useState(ALL_CATEGORY);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+
+  const categories = useMemo(() => {
+    const cats = [ALL_CATEGORY, ...videosByType.map((g) => g.label)];
+    if (posters.length > 0) cats.push(POSTERS_CATEGORY);
+    return cats;
+  }, [videosByType, posters.length]);
+
+  const handleCategoryChange = (cat: string) => {
+    setActiveCategory(cat);
+    setPlayingVideoId(null);
+  };
+
+  const handlePlay = (id: string) => {
+    setPlayingVideoId((prev) => (prev === id ? null : id));
+  };
+
+  const filteredVideos = useMemo(() => {
+    if (activeCategory === ALL_CATEGORY || activeCategory === POSTERS_CATEGORY) {
+      return videosByType;
+    }
+    return videosByType.filter((g) => g.label === activeCategory);
+  }, [activeCategory, videosByType]);
+
+  const showPosters =
+    posters.length > 0 && (activeCategory === ALL_CATEGORY || activeCategory === POSTERS_CATEGORY);
+
   return (
     <View style={styles.mediaTab}>
-      {videosByType.map((group) => (
-        <View key={group.label} style={styles.mediaSection}>
-          <Text style={styles.mediaSectionTitle}>{group.label}s</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.videoRow}>
+      <MediaFilterPills
+        categories={categories}
+        active={activeCategory}
+        onSelect={handleCategoryChange}
+        theme={theme}
+      />
+
+      {activeCategory !== POSTERS_CATEGORY &&
+        filteredVideos.map((group) => (
+          <View key={group.label} style={styles.mediaSection}>
+            {activeCategory === ALL_CATEGORY && (
+              <Text style={styles.mediaSectionTitle}>{group.label}s</Text>
+            )}
+            <View style={styles.mediaVideoList}>
               {group.videos.map((video: MovieVideo) => (
-                <TouchableOpacity
+                <MediaVideoCard
                   key={video.id}
-                  style={styles.videoCard}
-                  onPress={() =>
-                    Linking.openURL(`https://www.youtube.com/watch?v=${video.youtube_id}`)
-                  }
-                  accessibilityLabel={video.title}
-                >
-                  <View style={styles.videoThumbnailWrapper}>
-                    <Image
-                      source={{
-                        uri: `https://img.youtube.com/vi/${video.youtube_id}/mqdefault.jpg`,
-                      }}
-                      style={styles.videoThumbnail}
-                      contentFit="cover"
-                    />
-                    <View style={styles.playOverlay}>
-                      <Ionicons name="play-circle" size={36} color={colors.white} />
-                    </View>
-                    {video.duration && (
-                      <View style={styles.durationBadge}>
-                        <Text style={styles.durationText}>{video.duration}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.videoTitle} numberOfLines={2}>
-                    {video.title}
-                  </Text>
-                </TouchableOpacity>
+                  video={video}
+                  isPlaying={playingVideoId === video.id}
+                  onPlay={handlePlay}
+                  theme={theme}
+                />
               ))}
             </View>
-          </ScrollView>
-        </View>
-      ))}
+          </View>
+        ))}
 
-      {posters.length > 0 && (
+      {showPosters && (
         <View style={styles.mediaSection}>
-          <Text style={styles.mediaSectionTitle}>Posters</Text>
+          {activeCategory === ALL_CATEGORY && <Text style={styles.mediaSectionTitle}>Posters</Text>}
           <View style={styles.posterGrid}>
             {posters.map((poster: MoviePoster) => (
               <TouchableOpacity

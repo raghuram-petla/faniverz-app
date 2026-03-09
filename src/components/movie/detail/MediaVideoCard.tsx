@@ -1,0 +1,160 @@
+import { useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
+import { colors } from '@/theme/colors';
+import {
+  buildYouTubeEmbedHtml,
+  shareYouTubeVideo,
+  handleYouTubeNavigation,
+  handleYouTubeOpenWindow,
+} from '@/utils/youtubeNavigation';
+import type { MovieVideo } from '@/types';
+import type { SemanticTheme } from '@shared/themes';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_WIDTH = SCREEN_WIDTH - 32;
+const THUMB_HEIGHT = Math.round(CARD_WIDTH * (9 / 16));
+
+export interface MediaVideoCardProps {
+  video: MovieVideo;
+  isPlaying: boolean;
+  onPlay: (id: string) => void;
+  theme: SemanticTheme;
+}
+
+export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCardProps) {
+  const styles = createCardStyles(theme);
+
+  const onNavRequest = useCallback(
+    (request: { url: string }) => handleYouTubeNavigation(request as any, video.youtube_id),
+    [video.youtube_id],
+  );
+
+  const onOpenWindow = useCallback(
+    (e: { nativeEvent: { targetUrl: string } }) =>
+      handleYouTubeOpenWindow(e.nativeEvent.targetUrl, video.youtube_id),
+    [video.youtube_id],
+  );
+
+  const onShare = useCallback(() => shareYouTubeVideo(video.youtube_id), [video.youtube_id]);
+
+  if (isPlaying) {
+    return (
+      <View style={styles.card}>
+        <View style={styles.playerWrapper}>
+          <WebView
+            source={{
+              html: buildYouTubeEmbedHtml(video.youtube_id),
+              baseUrl: 'https://example.com',
+            }}
+            style={styles.player}
+            allowsInlineMediaPlayback
+            allowsFullscreenVideo
+            mediaPlaybackRequiresUserAction={false}
+            originWhitelist={['*']}
+            scrollEnabled={false}
+            bounces={false}
+            javaScriptEnabled
+            onShouldStartLoadWithRequest={onNavRequest}
+            onOpenWindow={onOpenWindow}
+          />
+          <View style={styles.shareOverlay} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.shareHitArea}
+              onPress={onShare}
+              accessibilityLabel="Share video"
+            />
+          </View>
+        </View>
+        <Text style={styles.title} numberOfLines={2}>
+          {video.title}
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => onPlay(video.id)}
+      activeOpacity={0.85}
+      accessibilityLabel={`Play ${video.title}`}
+    >
+      <View style={styles.thumbnailWrapper}>
+        <Image
+          source={{ uri: `https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg` }}
+          style={styles.thumbnail}
+          contentFit="cover"
+        />
+        <View style={styles.playOverlay}>
+          <Ionicons name="play-circle" size={56} color={colors.white} />
+        </View>
+        {video.duration && (
+          <View style={styles.durationBadge}>
+            <Text style={styles.durationText}>{video.duration}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={styles.title} numberOfLines={2}>
+        {video.title}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+const createCardStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    card: { gap: 8 },
+    thumbnailWrapper: {
+      width: CARD_WIDTH,
+      height: THUMB_HEIGHT,
+      borderRadius: 12,
+      overflow: 'hidden',
+      backgroundColor: t.surfaceElevated,
+    },
+    thumbnail: { width: '100%', height: '100%' },
+    playOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    durationBadge: {
+      position: 'absolute',
+      bottom: 8,
+      right: 8,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 4,
+    },
+    durationText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+    playerWrapper: {
+      width: CARD_WIDTH,
+      height: THUMB_HEIGHT,
+      borderRadius: 12,
+      overflow: 'hidden',
+      backgroundColor: '#000',
+    },
+    player: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: '#000',
+    },
+    shareOverlay: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    shareHitArea: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      width: 56,
+      height: 44,
+    },
+    title: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: t.textPrimary,
+    },
+  });

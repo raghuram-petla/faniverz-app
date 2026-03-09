@@ -5,6 +5,12 @@ import { Image } from 'expo-image';
 import { WebView } from 'react-native-webview';
 import { colors } from '@/theme/colors';
 import {
+  buildYouTubeEmbedHtml,
+  shareYouTubeVideo,
+  handleYouTubeNavigation,
+  handleYouTubeOpenWindow,
+} from '@/utils/youtubeNavigation';
+import {
   getCategoryColor,
   getCategoryLabel,
   getCategoryIconName,
@@ -14,15 +20,6 @@ import type { SurpriseContent } from '@/types';
 
 const FEATURED_VIDEO_ID = 'roYRXbhxhlM';
 const THUMBNAIL_URL = `https://img.youtube.com/vi/${FEATURED_VIDEO_ID}/hqdefault.jpg`;
-
-const VIDEO_HTML = `<!DOCTYPE html>
-<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>*{margin:0;padding:0}body{background:#000;overflow:hidden}
-iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}</style>
-</head><body>
-<iframe src="https://www.youtube.com/embed/${FEATURED_VIDEO_ID}?autoplay=1&playsinline=1&rel=0"
-  allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>
-</body></html>`;
 
 interface FeaturedVideoCardProps {
   item: SurpriseContent;
@@ -39,6 +36,19 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   const handlePlay = useCallback(() => {
     setActivated(true);
   }, []);
+
+  const onNavRequest = useCallback(
+    (request: { url: string }) => handleYouTubeNavigation(request as any, FEATURED_VIDEO_ID),
+    [],
+  );
+
+  const onOpenWindow = useCallback(
+    (e: { nativeEvent: { targetUrl: string } }) =>
+      handleYouTubeOpenWindow(e.nativeEvent.targetUrl, FEATURED_VIDEO_ID),
+    [],
+  );
+
+  const onShare = useCallback(() => shareYouTubeVideo(FEATURED_VIDEO_ID), []);
 
   return (
     <View style={styles.featuredContainer}>
@@ -63,7 +73,10 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
         ) : (
           <View style={styles.videoPlayer}>
             <WebView
-              source={{ html: VIDEO_HTML, baseUrl: 'https://example.com' }}
+              source={{
+                html: buildYouTubeEmbedHtml(FEATURED_VIDEO_ID),
+                baseUrl: 'https://example.com',
+              }}
               style={StyleSheet.absoluteFill}
               allowsInlineMediaPlayback
               allowsFullscreenVideo
@@ -72,7 +85,16 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
               scrollEnabled={false}
               bounces={false}
               javaScriptEnabled
+              onShouldStartLoadWithRequest={onNavRequest}
+              onOpenWindow={onOpenWindow}
             />
+            <View style={overlayStyles.shareOverlay} pointerEvents="box-none">
+              <TouchableOpacity
+                style={overlayStyles.shareHitArea}
+                onPress={onShare}
+                accessibilityLabel="Share video"
+              />
+            </View>
           </View>
         )}
       </View>
@@ -98,3 +120,16 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
     </View>
   );
 }
+
+const overlayStyles = StyleSheet.create({
+  shareOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  shareHitArea: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: 56,
+    height: 44,
+  },
+});
