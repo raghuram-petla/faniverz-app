@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,7 @@ import { useTheme } from '@/theme';
 import { useImageViewer } from '@/providers/ImageViewerProvider';
 import { measureView } from '@/utils/measureView';
 import { getImageUrl } from '@shared/imageUrl';
+import { SkeletonBox } from '@/components/ui/SkeletonBox';
 import { FeedContentBadge } from './FeedContentBadge';
 import { FeedVideoPlayer } from './FeedVideoPlayer';
 import { VoteButtons } from './VoteButtons';
@@ -36,6 +37,7 @@ function FeedCardInner({
   const styles = createFeedCardStyles(theme);
   const { openImage } = useImageViewer();
   const posterRef = useRef<View>(null);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
   const hasVideo = !!item.youtube_id;
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
   const hasThumbnail = !!imageUrl;
@@ -129,10 +131,12 @@ function FeedCardInner({
             accessibilityLabel={`View ${item.title} poster`}
           >
             <View ref={posterRef} collapsable={false} style={styles.posterMediaContainer}>
+              {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
               <Image
                 source={{ uri: getImageUrl(imageUrl!, 'md') ?? imageUrl! }}
                 style={styles.media}
                 contentFit="cover"
+                onLoad={() => setMediaLoaded(true)}
               />
             </View>
           </TouchableOpacity>
