@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Image, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
+import { View, Text, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { FeedContentBadge } from './FeedContentBadge';
@@ -8,7 +9,6 @@ import { VoteButtons } from './VoteButtons';
 import { ImageViewerModal } from '@/components/common/ImageViewerModal';
 import { formatRelativeTime, getFeedTypeLabel } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
-import { getImageUrl } from '@shared/imageUrl';
 import type { NewsFeedItem } from '@shared/types';
 
 export interface FeedCardProps {
@@ -113,8 +113,9 @@ function FeedCardInner({
           >
             <View style={styles.posterMediaContainer}>
               <Image
-                source={{ uri: getImageUrl(item.thumbnail_url, 'md')! }}
+                source={{ uri: item.thumbnail_url! }}
                 style={styles.media}
+                contentFit="cover"
               />
             </View>
           </TouchableOpacity>

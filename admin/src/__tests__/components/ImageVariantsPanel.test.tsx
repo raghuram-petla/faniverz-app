@@ -149,14 +149,13 @@ describe('ImageVariantsPanel', () => {
     expect(mockUseImageVariants).toHaveBeenCalledWith('https://r2.dev/abc.jpg', 'backdrop');
   });
 
-  it('renders thumbnails with correct src when expanded', () => {
+  it('renders all thumbnails using SM variant URL for efficiency', () => {
     render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
     fireEvent.click(screen.getByText(/3\/4 variants ready/));
 
     const images = screen.getAllByRole('img');
-    expect(images[0]).toHaveAttribute('src', 'https://r2.dev/abc.jpg');
-    expect(images[1]).toHaveAttribute('src', 'https://r2.dev/abc_sm.jpg');
-    expect(images[2]).toHaveAttribute('src', 'https://r2.dev/abc_md.jpg');
-    expect(images[3]).toHaveAttribute('src', 'https://r2.dev/abc_lg.jpg');
+    images.forEach((img) => {
+      expect(img).toHaveAttribute('src', 'https://r2.dev/abc_sm.jpg');
+    });
   });
 });

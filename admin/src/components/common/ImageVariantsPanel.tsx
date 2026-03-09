@@ -66,13 +66,13 @@ const LABEL_COLORS: Record<string, string> = {
   LG: 'bg-orange-600/20 text-orange-400',
 };
 
-function VariantRow({ variant }: { variant: VariantInfo }) {
+function VariantRow({ variant, thumbnailUrl }: { variant: VariantInfo; thumbnailUrl: string }) {
   const specs = variant.width ? `${variant.width}px @ q${variant.quality}` : 'Full size';
 
   return (
     <div className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-zinc-800/50">
       <img
-        src={variant.url}
+        src={thumbnailUrl}
         alt={variant.label}
         className="h-12 w-auto rounded bg-zinc-800 flex-shrink-0"
       />
@@ -102,6 +102,8 @@ export function ImageVariantsPanel({ originalUrl, variantType }: ImageVariantsPa
     ? 'Checking variants...'
     : `${readyCount}/${totalCount} variants ready`;
 
+  const thumbnailUrl = variants.find((v) => v.label === 'SM')?.url ?? variants[0]?.url;
+
   return (
     <div className="mt-2 border border-zinc-700/50 rounded-lg overflow-hidden">
       <button
@@ -117,7 +119,7 @@ export function ImageVariantsPanel({ originalUrl, variantType }: ImageVariantsPa
       {open && (
         <div className="border-t border-zinc-700/50 px-1 py-1 space-y-0.5">
           {variants.map((v) => (
-            <VariantRow key={v.label} variant={v} />
+            <VariantRow key={v.label} variant={v} thumbnailUrl={thumbnailUrl} />
           ))}
           <div className="flex justify-end px-2 py-1">
             <button
