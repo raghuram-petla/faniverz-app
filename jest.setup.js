@@ -85,29 +85,44 @@ jest.mock('expo-linear-gradient', () => {
 });
 
 // Mock react-native-reanimated
-jest.mock('react-native-reanimated', () => ({
-  default: {
-    call: jest.fn(),
-    createAnimatedComponent: (component) => component,
-    addWhitelistedNativeProps: jest.fn(),
-    addWhitelistedUIProps: jest.fn(),
-  },
-  useSharedValue: jest.fn(() => ({ value: 0 })),
-  useAnimatedStyle: jest.fn(() => ({})),
-  withTiming: jest.fn((value) => value),
-  withSpring: jest.fn((value) => value),
-  withSequence: jest.fn((...values) => values[values.length - 1]),
-  withDelay: jest.fn((_, animation) => animation),
-  FadeIn: { duration: jest.fn(() => ({ delay: jest.fn() })) },
-  FadeInDown: { duration: jest.fn(() => ({ delay: jest.fn() })) },
-  FadeOut: { duration: jest.fn() },
-  SlideInRight: { duration: jest.fn() },
-  SlideOutLeft: { duration: jest.fn() },
-  Layout: { duration: jest.fn() },
-  Easing: { bezier: jest.fn() },
-  runOnJS: jest.fn((fn) => fn),
-  interpolate: jest.fn(),
-}));
+jest.mock('react-native-reanimated', () => {
+  const { View } = require('react-native');
+  const React = require('react');
+  const AnimatedView = React.forwardRef((props, ref) =>
+    React.createElement(View, { ...props, ref }),
+  );
+  return {
+    __esModule: true,
+    default: {
+      call: jest.fn(),
+      createAnimatedComponent: (component) => component,
+      addWhitelistedNativeProps: jest.fn(),
+      addWhitelistedUIProps: jest.fn(),
+      View: AnimatedView,
+    },
+    useSharedValue: jest.fn(() => ({ value: 0 })),
+    useAnimatedStyle: jest.fn(() => ({})),
+    useAnimatedRef: jest.fn(() => ({ current: null })),
+    measure: jest.fn(() => ({ x: 0, y: 0, width: 200, height: 255, pageX: 16, pageY: 200 })),
+    withTiming: jest.fn((value, _config, callback) => {
+      if (callback) callback(true);
+      return value;
+    }),
+    withSpring: jest.fn((value) => value),
+    withSequence: jest.fn((...values) => values[values.length - 1]),
+    withDelay: jest.fn((_, animation) => animation),
+    withDecay: jest.fn(() => 0),
+    FadeIn: { duration: jest.fn(() => ({ delay: jest.fn() })) },
+    FadeInDown: { duration: jest.fn(() => ({ delay: jest.fn() })) },
+    FadeOut: { duration: jest.fn() },
+    SlideInRight: { duration: jest.fn() },
+    SlideOutLeft: { duration: jest.fn() },
+    Layout: { duration: jest.fn() },
+    Easing: { bezier: jest.fn(() => (t) => t), bezierFn: jest.fn(() => (t) => t) },
+    runOnJS: jest.fn((fn) => fn),
+    interpolate: jest.fn(),
+  };
+});
 
 // Mock expo-google-fonts (fonts always "loaded" in tests)
 jest.mock('@expo-google-fonts/exo-2', () => ({

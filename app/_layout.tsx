@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Exo2_800ExtraBold_Italic } from '@expo-google-fonts/exo-2';
 import { queryClient } from '@/lib/queryClient';
 import { AuthProvider } from '@/features/auth/providers/AuthProvider';
+import { ImageViewerProvider } from '@/providers/ImageViewerProvider';
 import { ThemeProvider, useTheme } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -52,7 +53,9 @@ export default function RootLayout() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <ThemedStack />
+            <ImageViewerProvider>
+              <ThemedStack />
+            </ImageViewerProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ThemeProvider>

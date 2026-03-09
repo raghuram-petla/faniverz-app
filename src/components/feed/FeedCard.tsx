@@ -1,12 +1,14 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useImageViewer } from '@/providers/ImageViewerProvider';
+import { measureView } from '@/utils/measureView';
+import { getImageUrl } from '@shared/imageUrl';
 import { FeedContentBadge } from './FeedContentBadge';
 import { FeedVideoPlayer } from './FeedVideoPlayer';
 import { VoteButtons } from './VoteButtons';
-import { ImageViewerModal } from '@/components/common/ImageViewerModal';
 import { formatRelativeTime, getFeedTypeLabel } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem } from '@shared/types';
@@ -32,7 +34,8 @@ function FeedCardInner({
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
-  const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const { openImage } = useImageViewer();
+  const posterRef = useRef<View>(null);
   const hasVideo = !!item.youtube_id;
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
   const hasThumbnail = !!imageUrl;
@@ -49,6 +52,19 @@ function FeedCardInner({
     },
     [item.id, onVideoLayout],
   );
+
+  const handlePosterPress = useCallback(() => {
+    if (!imageUrl) return;
+    measureView(posterRef, (layout) => {
+      openImage({
+        feedUrl: getImageUrl(imageUrl, 'md') ?? imageUrl,
+        fullUrl: imageUrl,
+        sourceLayout: layout,
+        sourceRef: posterRef,
+        borderRadius: 12,
+      });
+    });
+  }, [imageUrl, openImage]);
 
   return (
     <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
@@ -109,17 +125,19 @@ function FeedCardInner({
         ) : isPosterImage ? (
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => setViewerImage(imageUrl!)}
+            onPress={handlePosterPress}
             accessibilityLabel={`View ${item.title} poster`}
           >
-            <View style={styles.posterMediaContainer}>
-              <Image source={{ uri: imageUrl! }} style={styles.media} contentFit="cover" />
+            <View ref={posterRef} collapsable={false} style={styles.posterMediaContainer}>
+              <Image
+                source={{ uri: getImageUrl(imageUrl!, 'md') ?? imageUrl! }}
+                style={styles.media}
+                contentFit="cover"
+              />
             </View>
           </TouchableOpacity>
         ) : null}
       </TouchableOpacity>
-
-      <ImageViewerModal imageUrl={viewerImage} onClose={() => setViewerImage(null)} />
 
       {/* Action bar */}
       {onUpvote && onDownvote ? (

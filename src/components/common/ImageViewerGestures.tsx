@@ -1,32 +1,28 @@
 import { useCallback } from 'react';
-import { Modal, View, StyleSheet, Dimensions, TouchableOpacity, StatusBar } from 'react-native';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Dimensions } from 'react-native';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withDecay,
   runOnJS,
+  type SharedValue,
 } from 'react-native-reanimated';
 
-export interface ImageViewerModalProps {
-  imageUrl: string | null;
-  onClose: () => void;
+export interface ImageViewerGesturesProps {
+  children: React.ReactNode;
+  onDismiss: () => void;
+  /** Backdrop opacity driven by drag-to-dismiss (0–1). */
+  backdropOpacity: SharedValue<number>;
 }
 
 const MAX_SCALE = 4;
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-
-// Image is contained in SCREEN_W × SCREEN_H with contentFit="contain".
-// For a portrait image the limiting dimension is width, so the rendered
-// image height = SCREEN_W * (imageH/imageW).  We don't know the exact
-// aspect ratio, so we assume a 2:3 poster (most common case).
 const IMG_W = SCREEN_W;
-const IMG_H = SCREEN_W * 1.5; // 2:3 poster rendered height
-// Extra vertical overscroll so users can pan past notch / Dynamic Island / curved edges
+const IMG_H = SCREEN_W * 1.5; // 2:3 poster
 const Y_OVERSCROLL = 150;
+const DISMISS_THRESHOLD = 100;
 
 function clampX(x: number, s: number): number {
   'worklet';
@@ -40,7 +36,11 @@ function clampY(y: number, s: number): number {
   return Math.min(maxY, Math.max(-maxY, y));
 }
 
-export function ImageViewerModal({ imageUrl, onClose }: ImageViewerModalProps) {
+export function ImageViewerGestures({
+  children,
+  onDismiss,
+  backdropOpacity,
+}: ImageViewerGesturesProps) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -56,7 +56,16 @@ export function ImageViewerModal({ imageUrl, onClose }: ImageViewerModalProps) {
     savedScale.value = 1;
     savedTranslateX.value = 0;
     savedTranslateY.value = 0;
-  }, [scale, translateX, translateY, savedScale, savedTranslateX, savedTranslateY]);
+    backdropOpacity.value = withTiming(1);
+  }, [
+    scale,
+    translateX,
+    translateY,
+    savedScale,
+    savedTranslateX,
+    savedTranslateY,
+    backdropOpacity,
+  ]);
 
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
@@ -77,7 +86,6 @@ export function ImageViewerModal({ imageUrl, onClose }: ImageViewerModalProps) {
   const pan = Gesture.Pan()
     .minPointers(1)
     .onStart(() => {
-      // Sync saved values to current position (may have changed via withDecay)
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
     })
@@ -87,14 +95,24 @@ export function ImageViewerModal({ imageUrl, onClose }: ImageViewerModalProps) {
         translateY.value = clampY(savedTranslateY.value + e.translationY, scale.value);
       } else {
         translateY.value = e.translationY;
+        backdropOpacity.value = 1 - Math.min(1, Math.abs(e.translationY) / (SCREEN_H * 0.4));
       }
     })
     .onEnd((e) => {
       if (scale.value <= 1) {
-        if (Math.abs(e.translationY) > 100) {
-          runOnJS(onClose)();
+        if (Math.abs(e.translationY) > DISMISS_THRESHOLD) {
+          // Reset gesture transforms so they don't conflict with fly-back
+          translateY.value = withTiming(0, { duration: 250 });
+          translateX.value = withTiming(0, { duration: 250 });
+          scale.value = withTiming(1, { duration: 250 });
+          savedScale.value = 1;
+          savedTranslateX.value = 0;
+          savedTranslateY.value = 0;
+          runOnJS(onDismiss)();
+        } else {
+          translateY.value = withTiming(0);
+          backdropOpacity.value = withTiming(1);
         }
-        translateY.value = withTiming(0);
       } else {
         const s = scale.value;
         const maxX = Math.max(0, (IMG_W * s - SCREEN_W) / 2);
@@ -133,63 +151,9 @@ export function ImageViewerModal({ imageUrl, onClose }: ImageViewerModalProps) {
     ],
   }));
 
-  const handleClose = useCallback(() => {
-    resetTransforms();
-    onClose();
-  }, [resetTransforms, onClose]);
-
-  if (!imageUrl) return null;
-
   return (
-    <Modal visible animationType="fade" transparent statusBarTranslucent>
-      <StatusBar barStyle="light-content" />
-      <GestureHandlerRootView style={styles.root}>
-        <View style={styles.overlay}>
-          <TouchableOpacity
-            style={styles.closeBtn}
-            onPress={handleClose}
-            accessibilityLabel="Close image"
-          >
-            <Ionicons name="close" size={28} color="#fff" />
-          </TouchableOpacity>
-
-          <GestureDetector gesture={gesture}>
-            <Animated.View style={[styles.imageWrapper, animatedStyle]}>
-              <Image source={{ uri: imageUrl }} style={styles.image} contentFit="contain" />
-            </Animated.View>
-          </GestureDetector>
-        </View>
-      </GestureHandlerRootView>
-    </Modal>
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={animatedStyle}>{children}</Animated.View>
+    </GestureDetector>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  overlay: {
-    flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeBtn: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imageWrapper: {
-    width: SCREEN_W,
-    height: SCREEN_H,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-});
