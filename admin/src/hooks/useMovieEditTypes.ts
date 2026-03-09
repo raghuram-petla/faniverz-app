@@ -16,7 +16,6 @@ export interface MovieForm {
   genres: string[];
   certification: string;
   synopsis: string;
-  director: string;
   trailer_url: string;
   in_theaters: boolean;
   backdrop_focus_x: number | null;
@@ -102,7 +101,6 @@ export interface MovieEditHandlerDeps {
     genres: string[];
     certification: 'U' | 'UA' | 'A' | null;
     synopsis: string | null;
-    director: string | null;
     trailer_url: string | null;
     in_theaters: boolean;
     backdrop_focus_x: number | null;

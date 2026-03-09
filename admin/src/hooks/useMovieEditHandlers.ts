@@ -153,7 +153,6 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
           genres: form.genres,
           certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
           synopsis: form.synopsis || null,
-          director: form.director || null,
           trailer_url: form.trailer_url || null,
           in_theaters: form.in_theaters,
           backdrop_focus_x: form.backdrop_focus_x,

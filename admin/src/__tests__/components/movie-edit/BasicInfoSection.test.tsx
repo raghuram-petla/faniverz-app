@@ -22,7 +22,6 @@ const defaultForm: MovieForm = {
   genres: [],
   certification: '',
   synopsis: '',
-  director: '',
   trailer_url: '',
   in_theaters: false,
   backdrop_focus_x: null,
@@ -79,11 +78,6 @@ describe('BasicInfoSection', () => {
   it('renders Certification select', () => {
     renderBasicInfo({ certification: 'UA' });
     expect(getFieldByLabel('Certification')).toHaveValue('UA');
-  });
-
-  it('renders Director input', () => {
-    renderBasicInfo({ director: 'Rajamouli' });
-    expect(getFieldByLabel('Director')).toHaveValue('Rajamouli');
   });
 
   it('renders Synopsis textarea', () => {

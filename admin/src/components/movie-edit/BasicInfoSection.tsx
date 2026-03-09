@@ -112,16 +112,6 @@ export function BasicInfoSection({
           </select>
         </div>
       </div>
-      <div>
-        <label className="block text-sm text-on-surface-muted mb-1">Director</label>
-        <input
-          type="text"
-          value={form.director}
-          onChange={(e) => updateField('director', e.target.value)}
-          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-        />
-      </div>
-
       {/* Poster */}
       <ImageUploadField
         label="Poster"

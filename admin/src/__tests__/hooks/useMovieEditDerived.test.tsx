@@ -13,7 +13,6 @@ const defaultForm: MovieForm = {
   genres: [],
   certification: '',
   synopsis: '',
-  director: '',
   trailer_url: '',
   in_theaters: false,
   backdrop_focus_x: null,
