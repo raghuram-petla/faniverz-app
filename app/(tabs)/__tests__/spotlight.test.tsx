@@ -27,6 +27,13 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
+jest.mock('@/components/spotlight/SpotlightSkeleton', () => {
+  const { View } = require('react-native');
+  return {
+    SpotlightSkeleton: () => <View testID="spotlight-skeleton" />,
+  };
+});
+
 jest.mock('@/components/home/HeroCarousel', () => {
   const { View } = require('react-native');
   return {
@@ -135,7 +142,7 @@ const mockPlatforms = [
 ];
 
 function setupDefaultMocks() {
-  mockUseMovies.mockReturnValue({ data: mockMovies });
+  mockUseMovies.mockReturnValue({ data: mockMovies, isLoading: false });
   mockUsePlatforms.mockReturnValue({ data: mockPlatforms });
   mockUseMoviePlatformMap.mockReturnValue({
     data: {
@@ -284,6 +291,20 @@ describe('SpotlightScreen', () => {
     const seeAllButtons = screen.getAllByText('See All');
     fireEvent.press(seeAllButtons[2]);
     expect(mockPush).toHaveBeenCalledWith('/discover?filter=upcoming');
+  });
+
+  it('shows skeleton when data is loading', () => {
+    mockUseMovies.mockReturnValue({ data: [], isLoading: true });
+    render(<SpotlightScreen />);
+    expect(screen.getByTestId('spotlight-skeleton')).toBeTruthy();
+    expect(screen.queryByText('In Theaters')).toBeNull();
+    expect(screen.queryByText('Browse by Platform')).toBeNull();
+  });
+
+  it('hides skeleton when data has loaded', () => {
+    render(<SpotlightScreen />);
+    expect(screen.queryByTestId('spotlight-skeleton')).toBeNull();
+    expect(screen.getByText('In Theaters')).toBeTruthy();
   });
 
   it('renders both To Theaters and To Streaming when both types of upcoming exist', () => {

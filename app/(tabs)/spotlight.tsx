@@ -9,6 +9,7 @@ import { HeroCarousel } from '@/components/home/HeroCarousel';
 import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
+import { SpotlightSkeleton } from '@/components/spotlight/SpotlightSkeleton';
 import { Movie } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { createStyles } from '@/styles/tabs/spotlight.styles';
@@ -27,7 +28,7 @@ export default function SpotlightScreen() {
   const tileSize = Math.floor(
     (screenWidth - PLATFORM_GRID_H_PADDING - PLATFORM_GRID_GAP_TOTAL) / 4,
   );
-  const { data: allMovies = [] } = useMovies();
+  const { data: allMovies = [], isLoading } = useMovies();
   const { data: platforms = [] } = usePlatforms();
 
   const movieIds = allMovies.map((m) => m.id);
@@ -81,105 +82,111 @@ export default function SpotlightScreen() {
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {featuredMovies.length > 0 && (
-          <HeroCarousel movies={featuredMovies} platformMap={platformMap} />
+        {isLoading ? (
+          <SpotlightSkeleton />
+        ) : (
+          <>
+            {featuredMovies.length > 0 && (
+              <HeroCarousel movies={featuredMovies} platformMap={platformMap} />
+            )}
+
+            <View style={styles.sections}>
+              {theatricalMovies.length > 0 && (
+                <View>
+                  <SectionHeader
+                    title="In Theaters"
+                    actionLabel="See All"
+                    onAction={() => router.push('/discover?filter=in_theaters')}
+                  />
+                  <FlatList
+                    data={theatricalMovies}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalList}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => renderMovieCard(item, false, false)}
+                    ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                  />
+                </View>
+              )}
+
+              {streamingMovies.length > 0 && (
+                <View>
+                  <SectionHeader
+                    title="Streaming Now"
+                    actionLabel="See All"
+                    onAction={() => router.push('/discover?filter=streaming')}
+                  />
+                  <FlatList
+                    data={streamingMovies}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalList}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => renderMovieCard(item, false, false)}
+                    ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                  />
+                </View>
+              )}
+
+              {(upcomingTheatrical.length > 0 || upcomingOTT.length > 0) && (
+                <View>
+                  <SectionHeader
+                    title="Coming Soon"
+                    actionLabel="See All"
+                    onAction={() => router.push('/discover?filter=upcoming')}
+                  />
+
+                  {upcomingTheatrical.length > 0 && (
+                    <View style={styles.subsection}>
+                      <Text style={styles.subsectionTitle}>To Theaters</Text>
+                      <FlatList
+                        data={upcomingTheatrical}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalList}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => renderMovieCard(item, true)}
+                        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                      />
+                    </View>
+                  )}
+
+                  {upcomingOTT.length > 0 && (
+                    <View style={styles.subsection}>
+                      <Text style={styles.subsectionTitle}>To Streaming</Text>
+                      <FlatList
+                        data={upcomingOTT}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.horizontalList}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => renderMovieCard(item, true)}
+                        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {platforms.length > 0 && (
+                <View>
+                  <SectionHeader title="Browse by Platform" />
+                  <View style={styles.platformGrid}>
+                    {platforms.slice(0, PLATFORM_TILE_COUNT).map((platform) => (
+                      <PlatformSquare
+                        key={platform.id}
+                        platform={platform}
+                        size={tileSize}
+                        onPress={() => router.push(`/discover?platform=${platform.id}`)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          </>
         )}
-
-        <View style={styles.sections}>
-          {theatricalMovies.length > 0 && (
-            <View>
-              <SectionHeader
-                title="In Theaters"
-                actionLabel="See All"
-                onAction={() => router.push('/discover?filter=in_theaters')}
-              />
-              <FlatList
-                data={theatricalMovies}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalList}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => renderMovieCard(item, false, false)}
-                ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-              />
-            </View>
-          )}
-
-          {streamingMovies.length > 0 && (
-            <View>
-              <SectionHeader
-                title="Streaming Now"
-                actionLabel="See All"
-                onAction={() => router.push('/discover?filter=streaming')}
-              />
-              <FlatList
-                data={streamingMovies}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalList}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => renderMovieCard(item, false, false)}
-                ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-              />
-            </View>
-          )}
-
-          {(upcomingTheatrical.length > 0 || upcomingOTT.length > 0) && (
-            <View>
-              <SectionHeader
-                title="Coming Soon"
-                actionLabel="See All"
-                onAction={() => router.push('/discover?filter=upcoming')}
-              />
-
-              {upcomingTheatrical.length > 0 && (
-                <View style={styles.subsection}>
-                  <Text style={styles.subsectionTitle}>To Theaters</Text>
-                  <FlatList
-                    data={upcomingTheatrical}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalList}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => renderMovieCard(item, true)}
-                    ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-                  />
-                </View>
-              )}
-
-              {upcomingOTT.length > 0 && (
-                <View style={styles.subsection}>
-                  <Text style={styles.subsectionTitle}>To Streaming</Text>
-                  <FlatList
-                    data={upcomingOTT}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalList}
-                    keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => renderMovieCard(item, true)}
-                    ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
-                  />
-                </View>
-              )}
-            </View>
-          )}
-
-          {platforms.length > 0 && (
-            <View>
-              <SectionHeader title="Browse by Platform" />
-              <View style={styles.platformGrid}>
-                {platforms.slice(0, PLATFORM_TILE_COUNT).map((platform) => (
-                  <PlatformSquare
-                    key={platform.id}
-                    platform={platform}
-                    size={tileSize}
-                    onPress={() => router.push(`/discover?platform=${platform.id}`)}
-                  />
-                ))}
-              </View>
-            </View>
-          )}
-        </View>
       </ScrollView>
     </View>
   );
