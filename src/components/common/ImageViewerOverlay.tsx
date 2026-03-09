@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, StatusBar, BackHandler, TouchableOpacity, type View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withRepeat,
+  withSequence,
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
@@ -28,6 +30,8 @@ const POSTER_ASPECT = 3 / 2; // 2:3 poster (height / width)
 const OPEN_DURATION = 300;
 const CLOSE_DURATION = 250;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
+const PROGRESS_BAR_H = 2;
+const PROGRESS_BAR_COLOR = '#dc2626'; // red-600 theme accent
 
 export function ImageViewerOverlay({
   feedUrl,
@@ -52,6 +56,55 @@ export function ImageViewerOverlay({
   const tgtH = SCREEN_W * POSTER_ASPECT;
   const tgtX = 0;
   const tgtY = (SCREEN_H - tgtH) / 2;
+
+  const [fullResLoaded, setFullResLoaded] = useState(false);
+  const progressX = useSharedValue(-1);
+  const progressBarOpacity = useSharedValue(0);
+
+  // Start indeterminate animation after the open transition finishes
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      if (!fullResLoaded) {
+        progressBarOpacity.value = withTiming(1, { duration: 200 });
+        progressX.value = withRepeat(
+          withSequence(
+            withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+            withTiming(-1, { duration: 0 }),
+          ),
+          -1,
+        );
+      }
+    }, OPEN_DURATION);
+    return () => clearTimeout(delay);
+  }, [fullResLoaded, progressX, progressBarOpacity]);
+
+  // Fade out progress bar when full-res loads
+  useEffect(() => {
+    if (fullResLoaded) {
+      progressBarOpacity.value = withTiming(0, { duration: 300 });
+    }
+  }, [fullResLoaded, progressBarOpacity]);
+
+  const progressBarContainerStyle = useAnimatedStyle(() => ({
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: PROGRESS_BAR_H,
+    overflow: 'hidden' as const,
+    opacity: progressBarOpacity.value,
+  }));
+
+  const progressBarFillStyle = useAnimatedStyle(() => ({
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    width: '40%' as unknown as number,
+    height: PROGRESS_BAR_H,
+    backgroundColor: PROGRESS_BAR_COLOR,
+    borderRadius: PROGRESS_BAR_H / 2,
+    transform: [{ translateX: progressX.value * SCREEN_W * 0.6 + SCREEN_W * 0.3 }],
+  }));
 
   // Animate open on mount
   useEffect(() => {
@@ -151,7 +204,12 @@ export function ImageViewerOverlay({
               style={styles.imageFill}
               contentFit="cover"
               transition={300}
+              onLoad={() => setFullResLoaded(true)}
             />
+            {/* Indeterminate progress bar while full-res loads */}
+            <Animated.View style={progressBarContainerStyle}>
+              <Animated.View style={progressBarFillStyle} />
+            </Animated.View>
           </Animated.View>
         </Animated.View>
       </ImageViewerGestures>
