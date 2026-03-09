@@ -14,6 +14,9 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/reviews.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 type SortKey = 'recent' | 'rating' | 'helpful';
 
@@ -39,8 +42,13 @@ export default function MyReviewsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const { data: reviews, isLoading } = useUserReviews(user?.id ?? '');
+  const { data: reviews, isLoading, refetch } = useUserReviews(user?.id ?? '');
   const { remove } = useReviewMutations();
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const [sortKey, setSortKey] = useState<SortKey>('recent');
 
@@ -88,7 +96,15 @@ export default function MyReviewsScreen() {
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
+      onScroll={handlePullScroll}
+      onScrollEndDrag={handleScrollEndDrag}
+      scrollEventThrottle={16}
     >
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        refreshing={refreshing}
+      />
       {/* Header */}
       <ScreenHeader title="My Reviews" />
 

@@ -21,11 +21,14 @@ import { PosterModal } from '@/components/movie/detail/PosterModal';
 import { MovieDetailHeader } from '@/components/movie/detail/MovieDetailHeader';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTheme } from '@/theme';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 type TabName = 'overview' | 'media' | 'cast' | 'reviews';
 
 export default function MovieDetailScreen() {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,11 +38,16 @@ export default function MovieDetailScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
-  const { data: movie } = useMovieDetail(id ?? '');
+  const { data: movie, refetch: refetchMovie } = useMovieDetail(id ?? '');
   const { data: watchlistEntry } = useIsWatchlisted(userId, id ?? '');
   const { add: addWatchlist, remove: removeWatchlist } = useWatchlistMutations();
-  const { data: reviews = [] } = useMovieReviews(id ?? '');
+  const { data: reviews = [], refetch: refetchReviews } = useMovieReviews(id ?? '');
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
+  const { refreshing, onRefresh } = useRefresh(refetchMovie, refetchReviews);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const [activeTab, setActiveTab] = useState<TabName>('overview');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -106,7 +114,15 @@ export default function MovieDetailScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top }}
+        onScroll={handlePullScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
       >
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          refreshing={refreshing}
+        />
         <MovieHeroSection movie={movie} movieStatus={movieStatus} releaseYear={releaseYear} />
 
         <WatchOnSection

@@ -18,6 +18,9 @@ import {
 import { Notification } from '@/types';
 import { formatRelativeTime } from '@/utils/formatDate';
 import { getImageUrl } from '@shared/imageUrl';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 type NotificationIconConfig = {
   name: React.ComponentProps<typeof Ionicons>['name'];
@@ -83,16 +86,21 @@ function NotificationItem({
 }
 
 export default function NotificationsScreen() {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
-  const { data: notifications = [] } = useNotifications(userId);
+  const { data: notifications = [], refetch } = useNotifications(userId);
   const unreadCount = useUnreadCount(userId);
   const { markRead, markAllRead } = useNotificationMutations();
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const handleNotificationPress = (notification: Notification) => {
     if (!notification.read) {
@@ -156,6 +164,16 @@ export default function NotificationsScreen() {
         }
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        onScroll={handlePullScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
+        ListHeaderComponent={
+          <PullToRefreshIndicator
+            pullDistance={pullDistance}
+            isRefreshing={isRefreshing}
+            refreshing={refreshing}
+          />
+        }
       />
     </View>
   );

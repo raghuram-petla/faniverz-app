@@ -19,6 +19,9 @@ import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/actorDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const GENDER_LABELS: Record<number, string> = {
   1: 'Female',
@@ -34,9 +37,14 @@ export default function ActorDetailScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const navIndex = navigation.getState()?.index ?? 0;
-  const { actor, filmography, isLoading } = useActorDetail(id ?? '');
+  const { actor, filmography, isLoading, refetch } = useActorDetail(id ?? '');
   const [showPhoto, setShowPhoto] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   if (isLoading) {
     return (
@@ -71,7 +79,15 @@ export default function ActorDetailScreen() {
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
+      onScroll={handlePullScroll}
+      onScrollEndDrag={handleScrollEndDrag}
+      scrollEventThrottle={16}
     >
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        refreshing={refreshing}
+      />
       {/* Navigation buttons — absolute left, avatar centered */}
       <View style={styles.headerSection}>
         <View style={styles.navRow}>

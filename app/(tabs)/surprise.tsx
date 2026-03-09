@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { useSurpriseContent } from '@/features/surprise/hooks';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { SurpriseCategory, SurpriseContent } from '@/types';
 import {
   PILLS,
@@ -95,7 +98,12 @@ export default function SurpriseScreen() {
   const [filter, setFilter] = useState<FilterOption>('all');
 
   const category = filter === 'all' ? undefined : filter;
-  const { data: items = [], isLoading } = useSurpriseContent(category);
+  const { data: items = [], isLoading, refetch } = useSurpriseContent(category);
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const featured = items[0] ?? null;
   const gridItems = items.slice(1);
@@ -149,7 +157,15 @@ export default function SurpriseScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handlePullScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
       >
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          refreshing={refreshing}
+        />
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading...</Text>

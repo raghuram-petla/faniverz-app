@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { View, Text, ScrollView, FlatList, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +11,10 @@ import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
 import { SpotlightSkeleton } from '@/components/spotlight/SpotlightSkeleton';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useScrollToTop } from '@react-navigation/native';
 import { Movie } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { createStyles } from '@/styles/tabs/spotlight.styles';
@@ -28,11 +33,18 @@ export default function SpotlightScreen() {
   const tileSize = Math.floor(
     (screenWidth - PLATFORM_GRID_H_PADDING - PLATFORM_GRID_GAP_TOTAL) / 4,
   );
-  const { data: allMovies = [], isLoading } = useMovies();
-  const { data: platforms = [] } = usePlatforms();
+  const { data: allMovies = [], isLoading, refetch: refetchMovies } = useMovies();
+  const { data: platforms = [], refetch: refetchPlatforms } = usePlatforms();
 
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
+  const { refreshing, onRefresh } = useRefresh(refetchMovies, refetchPlatforms);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const moviesWithStatus = allMovies.map((m) => ({
     movie: m,
@@ -81,7 +93,19 @@ export default function SpotlightScreen() {
         <Text style={styles.headerTitle}>Spotlight</Text>
       </View>
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        onScroll={handlePullScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
+      >
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          refreshing={refreshing}
+        />
         {isLoading ? (
           <SpotlightSkeleton />
         ) : (

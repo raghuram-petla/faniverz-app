@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,10 @@ import { useWatchlist } from '@/features/watchlist/hooks';
 import { useUserReviews } from '@/features/reviews/hooks';
 import { useUnreadCount } from '@/features/notifications/hooks';
 import { useTheme } from '@/theme';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useScrollToTop } from '@react-navigation/native';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { formatMemberSince } from '@/utils/formatDate';
 import { createStyles } from '@/styles/tabs/profile.styles';
@@ -37,7 +42,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { data: profile, refetch: refetchProfile } = useProfile();
 
   const isLoggedIn = !!user;
 
@@ -47,9 +52,16 @@ export default function ProfileScreen() {
   const memberSince = formatMemberSince(user?.created_at);
 
   const userId = user?.id ?? '';
-  const { data: watchlistItems = [] } = useWatchlist(userId);
-  const { data: userReviews = [] } = useUserReviews(userId);
+  const { data: watchlistItems = [], refetch: refetchWatchlist } = useWatchlist(userId);
+  const { data: userReviews = [], refetch: refetchReviews } = useUserReviews(userId);
   const unreadCount = useUnreadCount(userId);
+  const { refreshing, onRefresh } = useRefresh(refetchProfile, refetchWatchlist, refetchReviews);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const watchlistCount = watchlistItems.length;
   const reviewsCount = userReviews.length;
@@ -107,10 +119,19 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16 }]}
       showsVerticalScrollIndicator={false}
+      onScroll={handlePullScroll}
+      onScrollEndDrag={handleScrollEndDrag}
+      scrollEventThrottle={16}
     >
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        refreshing={refreshing}
+      />
       {/* Profile Card */}
       <View style={styles.profileCard}>
         <View style={styles.profileTop}>

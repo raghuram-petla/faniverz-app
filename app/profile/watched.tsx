@@ -13,6 +13,9 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatWatchTime } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/watched.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 // Avg runtime assumption for watch time estimate (90 min)
 const AVG_RUNTIME_MINUTES = 90;
@@ -30,10 +33,15 @@ export default function WatchedMoviesScreen() {
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { watched, isLoading } = useWatchlist(user?.id ?? '');
+  const { watched, isLoading, refetch } = useWatchlist(user?.id ?? '');
 
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const sorted = useMemo(() => {
     const copy = [...(watched ?? [])];
@@ -72,7 +80,15 @@ export default function WatchedMoviesScreen() {
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
+      onScroll={handlePullScroll}
+      onScrollEndDrag={handleScrollEndDrag}
+      scrollEventThrottle={16}
     >
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        refreshing={refreshing}
+      />
       {/* Header */}
       <ScreenHeader
         title="Watched Movies"

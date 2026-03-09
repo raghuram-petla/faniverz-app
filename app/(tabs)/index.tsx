@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,10 @@ import { useActiveVideo } from '@/hooks/useActiveVideo';
 import { FeedCard } from '@/components/feed/FeedCard';
 import { FeedHeader, useCollapsibleHeader } from '@/components/feed/FeedHeader';
 import { FeedFilterPills } from '@/components/feed/FeedFilterPills';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useScrollToTop } from '@react-navigation/native';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem } from '@shared/types';
 
@@ -27,7 +31,7 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { filter, setFilter } = useFeedStore();
   const { headerTranslateY, totalHeaderHeight, handleScroll } = useCollapsibleHeader(insets.top);
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } =
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     usePersonalizedFeed(filter);
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
@@ -43,7 +47,14 @@ export default function FeedScreen() {
     });
   }, [data?.pages]);
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
-  const { data: userVotes = {} } = useUserVotes(feedItemIds);
+  const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
+  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
+  const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
 
   const handleUpvote = useCallback(
     (itemId: string) => {
@@ -84,10 +95,12 @@ export default function FeedScreen() {
       />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingTop: totalHeaderHeight }]}
         showsVerticalScrollIndicator={false}
         onScroll={(e) => {
+          handlePullScroll(e);
           handleScroll(e);
           const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
           if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300) {
@@ -95,8 +108,15 @@ export default function FeedScreen() {
           }
           handleScrollForVideo(contentOffset.y, layoutMeasurement.height);
         }}
+        onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          refreshing={refreshing}
+        />
+
         {/* Filter pills */}
         <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
 

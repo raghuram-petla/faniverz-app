@@ -22,6 +22,9 @@ import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { getImageUrl } from '@shared/imageUrl';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const COLUMN_GAP = 12;
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -36,10 +39,15 @@ export default function FavoriteActorsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  const { data: favorites, isLoading } = useFavoriteActors(user?.id ?? '');
+  const { data: favorites, isLoading, refetch } = useFavoriteActors(user?.id ?? '');
   const { remove } = useFavoriteActorMutations();
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const actorList = (favorites ?? []) as FavoriteActorWithActor[];
   const count = actorList.length;
@@ -60,7 +68,15 @@ export default function FavoriteActorsScreen() {
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
+      onScroll={handlePullScroll}
+      onScrollEndDrag={handleScrollEndDrag}
+      scrollEventThrottle={16}
     >
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        refreshing={refreshing}
+      />
       {/* Header */}
       <ScreenHeader
         title="Favorite Actors"

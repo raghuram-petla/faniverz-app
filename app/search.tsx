@@ -17,6 +17,9 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { createStyles } from '@/styles/search.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;
@@ -29,14 +32,19 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  const { data: results = [] } = useMovieSearch(query);
-  const { data: allMovies = [] } = useMovies();
+  const { data: results = [], refetch: refetchResults } = useMovieSearch(query);
+  const { data: allMovies = [], refetch: refetchMovies } = useMovies();
   const trendingMovies = useMemo(
     () => [...allMovies].sort((a, b) => b.rating - a.rating).slice(0, 5),
     [allMovies],
   );
   const resultIds = results.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(resultIds);
+  const { refreshing, onRefresh } = useRefresh(refetchResults, refetchMovies);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   useEffect(() => {
     loadRecentSearches();
@@ -184,6 +192,16 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
+          onScroll={handlePullScroll}
+          onScrollEndDrag={handleScrollEndDrag}
+          scrollEventThrottle={16}
+          ListHeaderComponent={
+            <PullToRefreshIndicator
+              pullDistance={pullDistance}
+              isRefreshing={isRefreshing}
+              refreshing={refreshing}
+            />
+          }
           ListEmptyComponent={
             <EmptyState
               icon="search"

@@ -1,10 +1,14 @@
 import { View, Text, FlatList, ActivityIndicator } from 'react-native';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlistPaginated } from '@/features/watchlist/hooks';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useScrollToTop } from '@react-navigation/native';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useTheme } from '@/theme';
 import { WatchlistEntry } from '@/types';
@@ -58,7 +62,16 @@ export default function WatchlistScreen() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    refetch,
   } = useWatchlistPaginated(userId);
+
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
+  const listRef = useRef<FlatList>(null);
+  useScrollToTop(listRef);
 
   const totalSaved = available.length + upcoming.length;
   const hasContent = totalSaved > 0 || watched.length > 0;
@@ -229,6 +242,7 @@ export default function WatchlistScreen() {
       </View>
 
       <FlatList
+        ref={listRef}
         data={listItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.key}
@@ -237,6 +251,16 @@ export default function WatchlistScreen() {
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
+        onScroll={handlePullScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
+        ListHeaderComponent={
+          <PullToRefreshIndicator
+            pullDistance={pullDistance}
+            isRefreshing={isRefreshing}
+            refreshing={refreshing}
+          />
+        }
       />
     </View>
   );

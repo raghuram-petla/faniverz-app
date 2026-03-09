@@ -7,6 +7,9 @@ import { useNewsFeed } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { FEED_PILLS } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
@@ -20,7 +23,13 @@ export default function FeedScreen() {
   const styles = createFeedStyles(theme);
   const insets = useSafeAreaInsets();
   const { filter, setFilter } = useFeedStore();
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useNewsFeed(filter);
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
+    useNewsFeed(filter);
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
 
@@ -51,14 +60,21 @@ export default function FeedScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+        onScroll={(e) => {
+          handlePullScroll(e);
+          const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
           if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300) {
             loadMore();
           }
         }}
+        onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={400}
       >
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          refreshing={refreshing}
+        />
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.red600} />

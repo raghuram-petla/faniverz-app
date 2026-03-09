@@ -21,6 +21,9 @@ import {
 } from '@/components/discover/DiscoverFilterModal';
 import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
 import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 export default function DiscoverScreen() {
   const { theme, colors } = useTheme();
@@ -64,8 +67,14 @@ export default function DiscoverScreen() {
     return f;
   }, [selectedFilter, sortBy]);
 
-  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading } =
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch } =
     useMoviesPaginated(filters);
+
+  const { refreshing, onRefresh } = useRefresh(refetch);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
 
   const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
   const { data: platforms = [] } = usePlatforms();
@@ -243,6 +252,16 @@ export default function DiscoverScreen() {
           keyExtractor={(item) => item.id}
           columnWrapperStyle={filteredMovies.length > 0 ? styles.gridRow : undefined}
           contentContainerStyle={styles.gridContent}
+          onScroll={handlePullScroll}
+          onScrollEndDrag={handleScrollEndDrag}
+          scrollEventThrottle={16}
+          ListHeaderComponent={
+            <PullToRefreshIndicator
+              pullDistance={pullDistance}
+              isRefreshing={isRefreshing}
+              refreshing={refreshing}
+            />
+          }
           renderItem={({ item }: { item: Movie }) => (
             <DiscoverGridItem item={item} platforms={platformMap[item.id] ?? []} styles={styles} />
           )}

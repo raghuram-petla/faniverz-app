@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,10 @@ import { MovieListItem } from '@/components/movie/MovieListItem';
 import { Movie } from '@/types';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { CalendarFilterPanel } from '@/components/calendar/CalendarFilterPanel';
+import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import { useRefresh } from '@/hooks/useRefresh';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useScrollToTop } from '@react-navigation/native';
 import { createStyles } from '@/styles/tabs/calendar.styles';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -18,11 +22,19 @@ export default function CalendarScreen() {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
-  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading } = useUpcomingMovies();
+  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch } =
+    useUpcomingMovies();
 
   const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
   const movieIds = allMovies.map((m) => m.id);
-  const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
+  const { data: platformMap = {}, refetch: refetchPlatforms } = useMoviePlatformMap(movieIds);
+  const { refreshing, onRefresh } = useRefresh(refetch, refetchPlatforms);
+  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
+    onRefresh,
+    refreshing,
+  );
+  const listRef = useRef(null);
+  useScrollToTop(listRef);
 
   const {
     selectedYear,
@@ -159,10 +171,21 @@ export default function CalendarScreen() {
 
       {/* Movie List */}
       <FlashList
+        ref={listRef}
         data={groupedMovies}
         keyExtractor={(item) => item.date}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handlePullScroll}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
+        ListHeaderComponent={
+          <PullToRefreshIndicator
+            pullDistance={pullDistance}
+            isRefreshing={isRefreshing}
+            refreshing={refreshing}
+          />
+        }
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={

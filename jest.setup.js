@@ -127,6 +127,7 @@ jest.mock('react-native-reanimated', () => {
     },
     runOnJS: jest.fn((fn) => fn),
     interpolate: jest.fn(),
+    Extrapolation: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },
   };
 });
 
@@ -134,6 +135,12 @@ jest.mock('react-native-reanimated', () => {
 jest.mock('@expo-google-fonts/exo-2', () => ({
   useFonts: jest.fn(() => [true]),
   Exo2_800ExtraBold_Italic: 'Exo2_800ExtraBold_Italic',
+}));
+
+// Mock useScrollToTop from React Navigation (requires navigation context)
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useScrollToTop: jest.fn(),
 }));
 
 // Mock theme context — always dark in tests

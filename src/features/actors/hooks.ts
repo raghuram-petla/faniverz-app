@@ -41,10 +41,15 @@ export function useActorDetail(id: string) {
     enabled: !!id,
   });
 
+  const refetch = async () => {
+    await Promise.all([actorQuery.refetch(), filmographyQuery.refetch()]);
+  };
+
   return {
     actor: actorQuery.data ?? null,
     filmography: filmographyQuery.data ?? [],
     isLoading: actorQuery.isLoading || filmographyQuery.isLoading,
+    refetch,
   };
 }
 
