@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useTheme } from '@/theme';
 import ScreenHeader from '@/components/common/ScreenHeader';
-import { createStyles } from './settings.styles';
+import { createStyles } from '@/styles/profile/settings.styles';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
