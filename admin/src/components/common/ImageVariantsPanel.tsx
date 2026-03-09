@@ -74,7 +74,7 @@ function VariantRow({ variant }: { variant: VariantInfo }) {
       <img
         src={variant.url}
         alt={variant.label}
-        className="w-10 h-10 rounded object-cover bg-zinc-800 flex-shrink-0"
+        className="h-12 w-auto rounded bg-zinc-800 flex-shrink-0"
       />
       <span
         className={`text-xs font-medium px-2 py-0.5 rounded ${LABEL_COLORS[variant.label] ?? 'bg-zinc-700 text-zinc-300'}`}
