@@ -4,6 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { HomeButton } from '@/components/common/HomeButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/theme';
@@ -90,6 +91,7 @@ export default function SearchScreen() {
       <View style={[styles.safeAreaCover, { height: insets.top }]} />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <HomeButton />
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={18} color={theme.textTertiary} />
           <TextInput

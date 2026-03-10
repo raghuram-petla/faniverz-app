@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { HomeButton } from '@/components/common/HomeButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { VIDEO_TYPES } from '@shared/constants';
@@ -92,14 +93,7 @@ export default function MediaScreen() {
               >
                 <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.stickyNavButton}
-                onPress={() => router.navigate('/(tabs)')}
-                accessibilityLabel="Go to home"
-                testID="home-button"
-              >
-                <Ionicons name="home-outline" size={22} color={theme.textPrimary} />
-              </TouchableOpacity>
+              <HomeButton forceShow style={styles.stickyNavButton} />
             </View>
             <Animated.View style={[styles.stickyTitleWrap, titleFadeStyle]}>
               <Text style={styles.stickyTitle} numberOfLines={1}>

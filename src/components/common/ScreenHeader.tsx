@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter, useNavigation } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { HomeButton } from './HomeButton';
 import type { SemanticTheme } from '@shared/themes';
 
 interface ScreenHeaderProps {
@@ -26,24 +27,6 @@ export default function ScreenHeader({
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
-  const navigation = useNavigation();
-  const state = navigation.getState();
-
-  // Show home button when 2+ screens are pushed on top of the root (tabs)
-  const stackDepth = state?.index ?? 0;
-  const showHome = forceShowHome ?? stackDepth >= 2;
-
-  const homeButton = showHome ? (
-    <TouchableOpacity
-      style={styles.homeButton}
-      onPress={() => router.dismissAll()}
-      activeOpacity={0.7}
-      accessibilityLabel="Go to home"
-      testID="home-button"
-    >
-      <Ionicons name="home-outline" size={22} color={theme.textPrimary} />
-    </TouchableOpacity>
-  ) : null;
 
   return (
     <View style={styles.container}>
@@ -56,7 +39,7 @@ export default function ScreenHeader({
         >
           <Ionicons name={backIcon} size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-        {homeButton}
+        <HomeButton forceShow={forceShowHome} />
       </View>
 
       <View style={styles.titleRow}>
@@ -84,14 +67,6 @@ const createStyles = (t: SemanticTheme) =>
       minWidth: 40,
     },
     backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: t.input,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    homeButton: {
       width: 40,
       height: 40,
       borderRadius: 20,

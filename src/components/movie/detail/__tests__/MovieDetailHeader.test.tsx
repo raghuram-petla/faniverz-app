@@ -10,17 +10,28 @@ jest.mock('@/theme/colors', () => ({
   colors: new Proxy({}, { get: () => '#000' }),
 }));
 
+const mockDismissAll = jest.fn();
+const mockState = { index: 0 };
+
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ dismissAll: mockDismissAll }),
+  useNavigation: () => ({ getState: () => mockState }),
+}));
+
 const baseProps = {
   insetsTop: 44,
-  navIndex: 0,
   isWatchlisted: false,
   onBack: jest.fn(),
-  onHome: jest.fn(),
   onShare: jest.fn(),
   onToggleWatchlist: jest.fn(),
 };
 
 describe('MovieDetailHeader', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockState.index = 0;
+  });
+
   it('renders back button with accessibility label "Go back"', () => {
     render(<MovieDetailHeader {...baseProps} />);
     expect(screen.getByLabelText('Go back')).toBeTruthy();
@@ -36,14 +47,23 @@ describe('MovieDetailHeader', () => {
     expect(screen.getByLabelText(/watchlist/i)).toBeTruthy();
   });
 
-  it('shows home button when navIndex >= 2', () => {
-    render(<MovieDetailHeader {...baseProps} navIndex={2} />);
+  it('shows home button when stack depth >= 2', () => {
+    mockState.index = 2;
+    render(<MovieDetailHeader {...baseProps} />);
     expect(screen.getByLabelText(/home/i)).toBeTruthy();
   });
 
-  it('does not show home button when navIndex < 2', () => {
-    render(<MovieDetailHeader {...baseProps} navIndex={1} />);
+  it('does not show home button when stack depth < 2', () => {
+    mockState.index = 1;
+    render(<MovieDetailHeader {...baseProps} />);
     expect(screen.queryByLabelText(/home/i)).toBeNull();
+  });
+
+  it('home button calls dismissAll on press', () => {
+    mockState.index = 2;
+    render(<MovieDetailHeader {...baseProps} />);
+    fireEvent.press(screen.getByTestId('home-button'));
+    expect(mockDismissAll).toHaveBeenCalledTimes(1);
   });
 
   it('calls onBack when back button pressed', () => {

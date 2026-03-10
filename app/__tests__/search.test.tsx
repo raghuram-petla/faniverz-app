@@ -9,7 +9,8 @@ import { Movie } from '@/types';
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush, back: mockBack }),
+  useRouter: () => ({ push: mockPush, back: mockBack, dismissAll: jest.fn() }),
+  useNavigation: () => ({ getState: () => ({ index: 0 }) }),
 }));
 
 const mockResults: Movie[] = [

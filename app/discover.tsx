@@ -22,6 +22,7 @@ import {
 import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
 import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
 import { SortDropdown } from '@/components/discover/SortDropdown';
+import { HomeButton } from '@/components/common/HomeButton';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -141,6 +142,7 @@ export default function DiscoverScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
+          <HomeButton />
           <Text style={styles.screenTitle}>Discover</Text>
         </View>
         <View style={styles.searchInputContainer}>

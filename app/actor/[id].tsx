@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActorAvatar } from '@/components/common/ActorAvatar';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { HomeButton } from '@/components/common/HomeButton';
 import { useActorDetail } from '@/features/actors/hooks';
 import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/formatDate';
@@ -35,8 +36,6 @@ export default function ActorDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const navigation = useNavigation();
-  const navIndex = navigation.getState()?.index ?? 0;
   const { actor, filmography, isLoading, refetch } = useActorDetail(id ?? '');
   const [showPhoto, setShowPhoto] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
@@ -99,17 +98,7 @@ export default function ActorDetailScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
-          {navIndex >= 2 && (
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.dismissAll()}
-              activeOpacity={0.7}
-              accessibilityLabel="Go to home"
-              testID="home-button"
-            >
-              <Ionicons name="home-outline" size={22} color={theme.textPrimary} />
-            </TouchableOpacity>
-          )}
+          <HomeButton />
         </View>
 
         <View style={styles.avatarCenter}>

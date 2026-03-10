@@ -1,24 +1,21 @@
 import { View, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { HomeButton } from '@/components/common/HomeButton';
 import { createStyles } from '@/styles/movieDetail.styles';
 
 interface MovieDetailHeaderProps {
   insetsTop: number;
-  navIndex: number;
   isWatchlisted: boolean;
   onBack: () => void;
-  onHome: () => void;
   onShare: () => void;
   onToggleWatchlist: () => void;
 }
 
 export function MovieDetailHeader({
   insetsTop,
-  navIndex,
   isWatchlisted,
   onBack,
-  onHome,
   onShare,
   onToggleWatchlist,
 }: MovieDetailHeaderProps) {
@@ -30,16 +27,7 @@ export function MovieDetailHeader({
         <TouchableOpacity style={styles.heroButton} onPress={onBack} accessibilityLabel="Go back">
           <Ionicons name="arrow-back" size={22} color={colors.white} />
         </TouchableOpacity>
-        {navIndex >= 2 && (
-          <TouchableOpacity
-            style={styles.heroButton}
-            onPress={onHome}
-            accessibilityLabel="Go to home"
-            testID="home-button"
-          >
-            <Ionicons name="home-outline" size={22} color={colors.white} />
-          </TouchableOpacity>
-        )}
+        <HomeButton style={styles.heroButton} iconColor={colors.white} />
       </View>
       <View style={styles.heroHeaderRight}>
         <TouchableOpacity style={styles.heroButton} onPress={onShare} accessibilityLabel="Share">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, TouchableOpacity, ScrollView, Share } from 'react-native';
-import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
@@ -30,8 +30,6 @@ export default function MovieDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const navigation = useNavigation();
-  const navIndex = navigation.getState()?.index ?? 0;
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
@@ -169,10 +167,8 @@ export default function MovieDetailScreen() {
 
       <MovieDetailHeader
         insetsTop={insets.top}
-        navIndex={navIndex}
         isWatchlisted={isWatchlisted}
         onBack={() => router.back()}
-        onHome={() => router.dismissAll()}
         onShare={handleShare}
         onToggleWatchlist={handleToggleWatchlist}
       />
