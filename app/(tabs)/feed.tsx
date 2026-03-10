@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -37,6 +37,15 @@ export default function FeedScreen() {
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const handleShare = useCallback(
+    (itemId: string) => {
+      const item = allItems.find((i) => i.id === itemId);
+      if (!item) return;
+      Share.share({ message: `${item.title} — Check it out on Faniverz!` });
+    },
+    [allItems],
+  );
 
   return (
     <View style={styles.screen}>
@@ -91,7 +100,12 @@ export default function FeedScreen() {
         ) : (
           <View style={styles.feedList}>
             {allItems.map((item) => (
-              <FeedCard key={item.id} item={item} onPress={handleFeedItemPress} />
+              <FeedCard
+                key={item.id}
+                item={item}
+                onPress={handleFeedItemPress}
+                onShare={handleShare}
+              />
             ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}
           </View>

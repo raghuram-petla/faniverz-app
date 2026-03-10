@@ -100,44 +100,31 @@ export const createFeedStyles = (t: SemanticTheme) =>
     },
   });
 
-// ── Feed card styles (X/Twitter-style single column) ────────────────────────────
+// ── Feed card styles (X/Twitter-style two-column layout) ─────────────────────────
 
 export const createFeedCardStyles = (t: SemanticTheme) =>
   StyleSheet.create({
+    // Two-column container
     post: {
-      paddingHorizontal: 16,
-    },
-    pinnedRow: {
       flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingTop: 10,
-      paddingLeft: 4,
-    },
-    pinnedText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: t.textTertiary,
-    },
-    featuredRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingTop: 10,
-      paddingLeft: 4,
-    },
-    featuredText: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.yellow400,
-    },
-    headerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
+      paddingLeft: 8,
+      paddingRight: 16,
       paddingTop: 12,
     },
-    movieName: {
+    avatarColumn: {
+      width: 58, // 48px avatar + 10px gap
+      paddingTop: 2,
+    },
+    contentColumn: {
+      flex: 1,
+    },
+    // Name row: entity name + optional pin/star + dot + timestamp
+    nameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    entityName: {
       fontSize: 15,
       fontWeight: '700',
       color: t.textPrimary,
@@ -150,6 +137,11 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
     timestamp: {
       fontSize: 13,
       color: t.textTertiary,
+    },
+    // Badge row + title (stacked vertically)
+    badgeRow: {
+      flexDirection: 'row',
+      marginTop: 6,
     },
     title: {
       fontSize: 15,
@@ -164,6 +156,7 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       lineHeight: 20,
       marginTop: 4,
     },
+    // Media containers
     mediaContainer: {
       marginTop: 10,
       borderRadius: 12,
@@ -217,5 +210,6 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       height: StyleSheet.hairlineWidth,
       backgroundColor: t.border,
       marginTop: 10,
+      marginLeft: -58, // extend separator full width across both columns
     },
   });

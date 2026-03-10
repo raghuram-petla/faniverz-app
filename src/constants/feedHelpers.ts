@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import type { FeedPillConfig } from '@/types';
+import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'All', value: 'all', activeColor: colors.red600 },
@@ -143,4 +144,19 @@ export function formatRelativeTime(dateStr: string): string {
   if (diffWeeks < 4) return `${diffWeeks}w ago`;
 
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+// ── Entity helpers (for X-style feed layout) ────────────────────────────────────
+
+export function deriveEntityType(item: NewsFeedItem): FeedEntityType {
+  if (item.movie_id) return 'movie';
+  return 'movie'; // default until actor/user/production_house support is added
+}
+
+export function getEntityAvatarUrl(item: NewsFeedItem): string | null {
+  return item.movie?.poster_url ?? null;
+}
+
+export function getEntityName(item: NewsFeedItem): string {
+  return item.movie?.title ?? 'Unknown';
 }

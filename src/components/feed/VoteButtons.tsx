@@ -30,7 +30,7 @@ export function VoteButtons({
       >
         <Ionicons
           name={userVote === 'up' ? 'arrow-up' : 'arrow-up-outline'}
-          size={14}
+          size={16}
           color={userVote === 'up' ? colors.green500 : theme.textSecondary}
         />
         <Text
@@ -52,7 +52,7 @@ export function VoteButtons({
       >
         <Ionicons
           name={userVote === 'down' ? 'arrow-down' : 'arrow-down-outline'}
-          size={14}
+          size={16}
           color={userVote === 'down' ? colors.red500 : theme.textSecondary}
         />
         <Text
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   voteCount: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
   },
 });

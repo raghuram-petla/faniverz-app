@@ -7,10 +7,17 @@ import { useImageViewer } from '@/providers/ImageViewerProvider';
 import { measureView } from '@/utils/measureView';
 import { getImageUrl } from '@shared/imageUrl';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
+import { FeedAvatar } from './FeedAvatar';
+import { FeedActionBar } from './FeedActionBar';
 import { FeedContentBadge } from './FeedContentBadge';
 import { FeedVideoPlayer } from './FeedVideoPlayer';
-import { VoteButtons } from './VoteButtons';
-import { formatRelativeTime, getFeedTypeLabel } from '@/constants/feedHelpers';
+import {
+  formatRelativeTime,
+  getFeedTypeLabel,
+  deriveEntityType,
+  getEntityAvatarUrl,
+  getEntityName,
+} from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem } from '@shared/types';
 
@@ -20,6 +27,8 @@ export interface FeedCardProps {
   userVote?: 'up' | 'down' | null;
   onUpvote?: (itemId: string) => void;
   onDownvote?: (itemId: string) => void;
+  onComment?: (itemId: string) => void;
+  onShare?: (itemId: string) => void;
   isVideoActive?: boolean;
   onVideoLayout?: (id: string, y: number, height: number) => void;
 }
@@ -30,6 +39,8 @@ function FeedCardInner({
   userVote,
   onUpvote,
   onDownvote,
+  onComment,
+  onShare,
   isVideoActive,
   onVideoLayout,
 }: FeedCardProps) {
@@ -42,8 +53,11 @@ function FeedCardInner({
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
   const hasThumbnail = !!imageUrl;
   const isPosterImage = hasThumbnail && !hasVideo;
-  const movieName = item.movie?.title;
   const label = getFeedTypeLabel(item.content_type);
+
+  const entityType = deriveEntityType(item);
+  const entityAvatarUrl = getEntityAvatarUrl(item);
+  const entityName = getEntityName(item);
 
   const handleLayout = useCallback(
     (e: LayoutChangeEvent) => {
@@ -70,93 +84,88 @@ function FeedCardInner({
 
   return (
     <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
-      {item.is_pinned ? (
-        <View style={styles.pinnedRow}>
-          <Ionicons name="pin" size={12} color={theme.textTertiary} />
-          <Text style={styles.pinnedText}>Pinned</Text>
-        </View>
-      ) : null}
+      {/* Left column: avatar */}
+      <View style={styles.avatarColumn}>
+        <FeedAvatar imageUrl={entityAvatarUrl} entityType={entityType} label={entityName} />
+      </View>
 
-      {!item.is_pinned && item.is_featured ? (
-        <View style={styles.featuredRow}>
-          <Ionicons name="star" size={12} color={colors.yellow400} />
-          <Text style={styles.featuredText}>Featured</Text>
-        </View>
-      ) : null}
+      {/* Right column: all content */}
+      <View style={styles.contentColumn}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => onPress(item)}
+          accessibilityRole="button"
+          accessibilityLabel={`${label}: ${item.title}`}
+        >
+          {/* Name row */}
+          <View style={styles.nameRow}>
+            <Text style={styles.entityName} numberOfLines={1}>
+              {entityName}
+            </Text>
+            {item.is_featured ? <Ionicons name="star" size={12} color={colors.yellow400} /> : null}
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
+          </View>
 
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={() => onPress(item)}
-        accessibilityRole="button"
-        accessibilityLabel={`${label}: ${item.title}`}
-      >
-        {/* Header: badge + movie + timestamp */}
-        <View style={styles.headerRow}>
-          <FeedContentBadge contentType={item.content_type} />
-          {movieName ? (
-            <>
-              <Text style={styles.movieName} numberOfLines={1}>
-                {movieName}
-              </Text>
-              <Text style={styles.dot}>·</Text>
-            </>
-          ) : null}
-          <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
-        </View>
-
-        {/* Title */}
-        <Text style={styles.title} numberOfLines={2}>
-          {item.title}
-        </Text>
-
-        {/* Description for text-only items */}
-        {item.description && !hasThumbnail ? (
-          <Text style={styles.description} numberOfLines={3}>
-            {item.description}
+          {/* Badge + Title */}
+          <View style={styles.badgeRow}>
+            <FeedContentBadge contentType={item.content_type} />
+          </View>
+          <Text style={styles.title} numberOfLines={2}>
+            {item.title}
           </Text>
-        ) : null}
 
-        {/* Media: video player or static image */}
-        {hasVideo ? (
-          <FeedVideoPlayer
-            youtubeId={item.youtube_id!}
-            thumbnailUrl={item.thumbnail_url}
-            duration={item.duration}
-            isActive={isVideoActive ?? false}
-          />
-        ) : isPosterImage ? (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={handlePosterPress}
-            accessibilityLabel={`View ${item.title} poster`}
-          >
-            <View ref={posterRef} collapsable={false} style={styles.posterMediaContainer}>
-              {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
-              <Image
-                source={{ uri: getImageUrl(imageUrl!, 'md') ?? imageUrl! }}
-                style={styles.media}
-                contentFit="cover"
-                onLoad={() => setMediaLoaded(true)}
-              />
-            </View>
-          </TouchableOpacity>
-        ) : null}
-      </TouchableOpacity>
+          {/* Description for text-only items */}
+          {item.description && !hasThumbnail ? (
+            <Text style={styles.description} numberOfLines={3}>
+              {item.description}
+            </Text>
+          ) : null}
 
-      {/* Action bar */}
-      {onUpvote && onDownvote ? (
+          {/* Media: video player or static image */}
+          {hasVideo ? (
+            <FeedVideoPlayer
+              youtubeId={item.youtube_id!}
+              thumbnailUrl={item.thumbnail_url}
+              duration={item.duration}
+              isActive={isVideoActive ?? false}
+            />
+          ) : isPosterImage ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handlePosterPress}
+              accessibilityLabel={`View ${item.title} poster`}
+            >
+              <View ref={posterRef} collapsable={false} style={styles.posterMediaContainer}>
+                {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
+                <Image
+                  source={{ uri: getImageUrl(imageUrl!, 'md') ?? imageUrl! }}
+                  style={styles.media}
+                  contentFit="cover"
+                  onLoad={() => setMediaLoaded(true)}
+                />
+              </View>
+            </TouchableOpacity>
+          ) : null}
+        </TouchableOpacity>
+
+        {/* Action bar */}
         <View style={styles.actionBar}>
-          <VoteButtons
+          <FeedActionBar
+            commentCount={item.comment_count}
             upvoteCount={item.upvote_count}
             downvoteCount={item.downvote_count}
+            viewCount={item.view_count}
             userVote={userVote ?? null}
-            onUpvote={() => onUpvote(item.id)}
-            onDownvote={() => onDownvote(item.id)}
+            onComment={onComment ? () => onComment(item.id) : undefined}
+            onUpvote={onUpvote ? () => onUpvote(item.id) : undefined}
+            onDownvote={onDownvote ? () => onDownvote(item.id) : undefined}
+            onShare={onShare ? () => onShare(item.id) : undefined}
           />
         </View>
-      ) : null}
 
-      <View style={styles.separator} />
+        <View style={styles.separator} />
+      </View>
     </View>
   );
 }
@@ -167,6 +176,8 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
     prev.userVote === next.userVote &&
     prev.isVideoActive === next.isVideoActive &&
     prev.item.upvote_count === next.item.upvote_count &&
-    prev.item.downvote_count === next.item.downvote_count
+    prev.item.downvote_count === next.item.downvote_count &&
+    prev.item.view_count === next.item.view_count &&
+    prev.item.comment_count === next.item.comment_count
   );
 });

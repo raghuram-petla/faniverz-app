@@ -30,6 +30,63 @@ jest.mock('@/utils/measureView', () => ({
   ),
 }));
 
+jest.mock('../FeedAvatar', () => ({
+  FeedAvatar: ({
+    imageUrl,
+    entityType,
+    label,
+  }: {
+    imageUrl: string | null;
+    entityType: string;
+    label?: string;
+  }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View testID="feed-avatar" accessibilityLabel={label}>
+        <Text testID="avatar-entity-type">{entityType}</Text>
+        {imageUrl ? <Text testID="avatar-image-url">{imageUrl}</Text> : null}
+      </View>
+    );
+  },
+}));
+
+jest.mock('../FeedActionBar', () => ({
+  FeedActionBar: (props: {
+    commentCount: number;
+    upvoteCount: number;
+    downvoteCount: number;
+    viewCount: number;
+    userVote: 'up' | 'down' | null;
+    onComment?: () => void;
+    onUpvote?: () => void;
+    onDownvote?: () => void;
+    onShare?: () => void;
+  }) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View testID="feed-action-bar">
+        <Text testID="action-comment-count">{props.commentCount}</Text>
+        <Text testID="action-upvote-count">{props.upvoteCount}</Text>
+        <Text testID="action-downvote-count">{props.downvoteCount}</Text>
+        <Text testID="action-view-count">{props.viewCount}</Text>
+        <Text testID="action-user-vote">{props.userVote ?? 'none'}</Text>
+        {props.onComment ? (
+          <TouchableOpacity testID="action-comment-btn" onPress={props.onComment} />
+        ) : null}
+        {props.onUpvote ? (
+          <TouchableOpacity testID="action-upvote-btn" onPress={props.onUpvote} />
+        ) : null}
+        {props.onDownvote ? (
+          <TouchableOpacity testID="action-downvote-btn" onPress={props.onDownvote} />
+        ) : null}
+        {props.onShare ? (
+          <TouchableOpacity testID="action-share-btn" onPress={props.onShare} />
+        ) : null}
+      </View>
+    );
+  },
+}));
+
 jest.mock('../FeedVideoPlayer', () => ({
   FeedVideoPlayer: ({
     isActive,
@@ -73,30 +130,44 @@ const makeItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   display_order: 0,
   upvote_count: 5,
   downvote_count: 1,
+  view_count: 100,
+  comment_count: 3,
   published_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
-  movie: { id: 'm1', title: 'Test Movie', poster_url: null, release_date: '2024-03-01' },
+  movie: { id: 'm1', title: 'Test Movie', poster_url: 'poster.jpg', release_date: '2024-03-01' },
   ...overrides,
 });
 
 describe('FeedCard', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  // Avatar rendering
+  it('renders FeedAvatar with movie entity type', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.getByTestId('feed-avatar')).toBeTruthy();
+    expect(screen.getByTestId('avatar-entity-type').props.children).toBe('movie');
+  });
+
+  it('passes movie poster_url to FeedAvatar', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.getByTestId('avatar-image-url').props.children).toBe('poster.jpg');
+  });
+
+  it('renders entity name in name row', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.getByText('Test Movie')).toBeTruthy();
+  });
+
   it('renders title', () => {
     render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
     expect(screen.getByText('Test Trailer')).toBeTruthy();
-  });
-
-  it('renders movie name in header row', () => {
-    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
-    expect(screen.getByText('Test Movie')).toBeTruthy();
   });
 
   it('renders without movie reference', () => {
     const item = makeItem({ movie: undefined, movie_id: null });
     render(<FeedCard item={item} onPress={jest.fn()} />);
     expect(screen.getByText('Test Trailer')).toBeTruthy();
-    expect(screen.queryByText('·')).toBeNull();
+    expect(screen.getByText('Unknown')).toBeTruthy();
   });
 
   it('renders duration when present', () => {
@@ -117,36 +188,31 @@ describe('FeedCard', () => {
     expect(onPress).toHaveBeenCalledWith(item);
   });
 
-  it('renders pinned indicator for pinned items', () => {
-    render(<FeedCard item={makeItem({ is_pinned: true })} onPress={jest.fn()} />);
-    expect(screen.getByText('Pinned')).toBeTruthy();
-  });
-
-  it('does not render pinned indicator for non-pinned items', () => {
-    render(<FeedCard item={makeItem({ is_pinned: false })} onPress={jest.fn()} />);
-    expect(screen.queryByText('Pinned')).toBeNull();
-  });
-
-  it('renders featured indicator for featured items', () => {
-    render(<FeedCard item={makeItem({ is_featured: true })} onPress={jest.fn()} />);
-    expect(screen.getByText('Featured')).toBeTruthy();
-  });
-
-  it('does not render featured indicator for non-featured items', () => {
-    render(<FeedCard item={makeItem({ is_featured: false })} onPress={jest.fn()} />);
-    expect(screen.queryByText('Featured')).toBeNull();
-  });
-
-  it('shows pinned instead of featured when both are true', () => {
-    render(
-      <FeedCard item={makeItem({ is_pinned: true, is_featured: true })} onPress={jest.fn()} />,
+  // Featured inline icon
+  it('renders star icon for featured items', () => {
+    const { toJSON } = render(
+      <FeedCard item={makeItem({ is_featured: true })} onPress={jest.fn()} />,
     );
-    expect(screen.getByText('Pinned')).toBeTruthy();
-    expect(screen.queryByText('Featured')).toBeNull();
+    const json = JSON.stringify(toJSON());
+    expect(json).toContain('"star"');
   });
 
+  it('does not render star icon for non-featured items', () => {
+    const { toJSON } = render(
+      <FeedCard item={makeItem({ is_featured: false })} onPress={jest.fn()} />,
+    );
+    const json = JSON.stringify(toJSON());
+    expect(json).not.toContain('"star"');
+  });
+
+  // Description
   it('renders description for text-only items without thumbnail', () => {
-    const item = makeItem({ thumbnail_url: null, youtube_id: null, description: 'A text update' });
+    const item = makeItem({
+      thumbnail_url: null,
+      youtube_id: null,
+      description: 'A text update',
+      movie: { id: 'm1', title: 'Test Movie', poster_url: null, release_date: '2024-03-01' },
+    });
     render(<FeedCard item={item} onPress={jest.fn()} />);
     expect(screen.getByText('A text update')).toBeTruthy();
   });
@@ -166,109 +232,74 @@ describe('FeedCard', () => {
     expect(screen.queryByTestId('feed-video-player')).toBeNull();
   });
 
-  // Vote button tests
-  it('renders vote buttons when onUpvote and onDownvote are provided', () => {
-    const item = makeItem({ upvote_count: 10, downvote_count: 3 });
-    render(
-      <FeedCard
-        item={item}
-        onPress={jest.fn()}
-        userVote={null}
-        onUpvote={jest.fn()}
-        onDownvote={jest.fn()}
-      />,
-    );
-    expect(screen.getByLabelText('Upvote, 10 upvotes')).toBeTruthy();
-    expect(screen.getByLabelText('Downvote, 3 downvotes')).toBeTruthy();
+  // Action bar tests
+  it('renders FeedActionBar with correct counts', () => {
+    const item = makeItem({
+      upvote_count: 10,
+      downvote_count: 3,
+      view_count: 500,
+      comment_count: 7,
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.getByTestId('feed-action-bar')).toBeTruthy();
+    expect(screen.getByTestId('action-upvote-count').props.children).toBe(10);
+    expect(screen.getByTestId('action-downvote-count').props.children).toBe(3);
+    expect(screen.getByTestId('action-view-count').props.children).toBe(500);
+    expect(screen.getByTestId('action-comment-count').props.children).toBe(7);
   });
 
-  it('does not render vote buttons when callbacks not provided', () => {
-    render(
-      <FeedCard item={makeItem({ upvote_count: 10, downvote_count: 3 })} onPress={jest.fn()} />,
-    );
-    expect(screen.queryByLabelText('Upvote, 10 upvotes')).toBeNull();
-  });
-
-  it('shows correct vote counts', () => {
-    const item = makeItem({ upvote_count: 42, downvote_count: 7 });
-    render(
-      <FeedCard
-        item={item}
-        onPress={jest.fn()}
-        userVote={null}
-        onUpvote={jest.fn()}
-        onDownvote={jest.fn()}
-      />,
-    );
-    expect(screen.getByText('42')).toBeTruthy();
-    expect(screen.getByText('7')).toBeTruthy();
-  });
-
-  it('pressing upvote calls onUpvote with item id', () => {
+  it('passes vote callbacks to FeedActionBar', () => {
     const onUpvote = jest.fn();
-    const item = makeItem({ id: 'feed-99', upvote_count: 5, downvote_count: 1 });
-    render(
-      <FeedCard
-        item={item}
-        onPress={jest.fn()}
-        userVote={null}
-        onUpvote={onUpvote}
-        onDownvote={jest.fn()}
-      />,
-    );
-    fireEvent.press(screen.getByLabelText('Upvote, 5 upvotes'));
-    expect(onUpvote).toHaveBeenCalledWith('feed-99');
-  });
-
-  it('pressing downvote calls onDownvote with item id', () => {
     const onDownvote = jest.fn();
-    const item = makeItem({ id: 'feed-99', upvote_count: 5, downvote_count: 1 });
+    const item = makeItem({ id: 'feed-99' });
     render(
-      <FeedCard
-        item={item}
-        onPress={jest.fn()}
-        userVote={null}
-        onUpvote={jest.fn()}
-        onDownvote={onDownvote}
-      />,
+      <FeedCard item={item} onPress={jest.fn()} onUpvote={onUpvote} onDownvote={onDownvote} />,
     );
-    fireEvent.press(screen.getByLabelText('Downvote, 1 downvotes'));
+    fireEvent.press(screen.getByTestId('action-upvote-btn'));
+    expect(onUpvote).toHaveBeenCalledWith('feed-99');
+    fireEvent.press(screen.getByTestId('action-downvote-btn'));
     expect(onDownvote).toHaveBeenCalledWith('feed-99');
   });
 
-  it('passes userVote to VoteButtons for active state', () => {
-    const item = makeItem({ upvote_count: 5, downvote_count: 1 });
+  it('passes userVote to FeedActionBar', () => {
     render(
       <FeedCard
-        item={item}
+        item={makeItem()}
         onPress={jest.fn()}
         userVote="up"
         onUpvote={jest.fn()}
         onDownvote={jest.fn()}
       />,
     );
-    const upvoteBtn = screen.getByLabelText('Upvote, 5 upvotes');
-    expect(upvoteBtn.props.style).toEqual(
-      expect.objectContaining({ backgroundColor: 'rgba(22,163,74,0.2)' }),
-    );
+    expect(screen.getByTestId('action-user-vote').props.children).toBe('up');
   });
 
-  it('does not render vote buttons when only onUpvote provided', () => {
-    render(
-      <FeedCard item={makeItem({ upvote_count: 5 })} onPress={jest.fn()} onUpvote={jest.fn()} />,
-    );
-    expect(screen.queryByLabelText('Upvote, 5 upvotes')).toBeNull();
+  it('does not pass vote callbacks when not provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('action-upvote-btn')).toBeNull();
+    expect(screen.queryByTestId('action-downvote-btn')).toBeNull();
   });
 
-  it('does not render vote buttons when only onDownvote provided', () => {
-    render(
-      <FeedCard
-        item={makeItem({ downvote_count: 1 })}
-        onPress={jest.fn()}
-        onDownvote={jest.fn()}
-      />,
-    );
-    expect(screen.queryByLabelText('Downvote, 1 downvotes')).toBeNull();
+  it('passes onComment callback to FeedActionBar', () => {
+    const onComment = jest.fn();
+    const item = makeItem({ id: 'feed-55' });
+    render(<FeedCard item={item} onPress={jest.fn()} onComment={onComment} />);
+    fireEvent.press(screen.getByTestId('action-comment-btn'));
+    expect(onComment).toHaveBeenCalledWith('feed-55');
+  });
+
+  it('passes onShare callback to FeedActionBar', () => {
+    const onShare = jest.fn();
+    const item = makeItem({ id: 'feed-55' });
+    render(<FeedCard item={item} onPress={jest.fn()} onShare={onShare} />);
+    fireEvent.press(screen.getByTestId('action-share-btn'));
+    expect(onShare).toHaveBeenCalledWith('feed-55');
+  });
+
+  it('does not pass comment/share callbacks when not provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('action-comment-btn')).toBeNull();
+    expect(screen.queryByTestId('action-share-btn')).toBeNull();
   });
 
   // Video autoplay tests
@@ -305,7 +336,7 @@ describe('FeedCard', () => {
     expect(onVideoLayout).toHaveBeenCalledWith('v1', 100, 300);
   });
 
-  // Poster viewer tests (now context-based)
+  // Poster viewer tests
   it('tapping poster calls openImage on context', () => {
     const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
     render(<FeedCard item={item} onPress={jest.fn()} />);

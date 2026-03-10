@@ -6,7 +6,36 @@ import {
   getFeedTypeIconName,
   getYouTubeThumbnail,
   formatRelativeTime,
+  deriveEntityType,
+  getEntityAvatarUrl,
+  getEntityName,
 } from '../feedHelpers';
+import type { NewsFeedItem } from '@shared/types';
+
+const makeFeedItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
+  id: '1',
+  feed_type: 'video',
+  content_type: 'trailer',
+  title: 'Test',
+  description: null,
+  movie_id: 'm1',
+  source_table: null,
+  source_id: null,
+  thumbnail_url: null,
+  youtube_id: null,
+  duration: null,
+  is_pinned: false,
+  is_featured: false,
+  display_order: 0,
+  upvote_count: 0,
+  downvote_count: 0,
+  view_count: 0,
+  comment_count: 0,
+  published_at: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  movie: { id: 'm1', title: 'Test Movie', poster_url: 'poster.jpg', release_date: null },
+  ...overrides,
+});
 
 describe('FEED_PILLS', () => {
   it('has 7 filter options', () => {
@@ -152,5 +181,42 @@ describe('formatRelativeTime', () => {
   it('returns date for old timestamps', () => {
     const result = formatRelativeTime('2024-01-15T00:00:00Z');
     expect(result).toMatch(/\d{1,2} \w{3}/);
+  });
+});
+
+describe('deriveEntityType', () => {
+  it('returns movie when movie_id is set', () => {
+    expect(deriveEntityType(makeFeedItem({ movie_id: 'm1' }))).toBe('movie');
+  });
+
+  it('returns movie as default when no entity IDs set', () => {
+    expect(deriveEntityType(makeFeedItem({ movie_id: null }))).toBe('movie');
+  });
+});
+
+describe('getEntityAvatarUrl', () => {
+  it('returns movie poster_url when available', () => {
+    expect(getEntityAvatarUrl(makeFeedItem())).toBe('poster.jpg');
+  });
+
+  it('returns null when no movie', () => {
+    expect(getEntityAvatarUrl(makeFeedItem({ movie: undefined }))).toBeNull();
+  });
+
+  it('returns null when movie has no poster', () => {
+    const item = makeFeedItem({
+      movie: { id: 'm1', title: 'Movie', poster_url: null, release_date: null },
+    });
+    expect(getEntityAvatarUrl(item)).toBeNull();
+  });
+});
+
+describe('getEntityName', () => {
+  it('returns movie title when available', () => {
+    expect(getEntityName(makeFeedItem())).toBe('Test Movie');
+  });
+
+  it('returns Unknown when no movie', () => {
+    expect(getEntityName(makeFeedItem({ movie: undefined }))).toBe('Unknown');
   });
 });

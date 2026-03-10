@@ -153,6 +153,7 @@ export interface ProductionHouse {
 
 // ── News Feed ───────────────────────────────────────────────────────────────────
 
+export type FeedEntityType = 'movie' | 'actor' | 'production_house' | 'user';
 export type FeedType = 'video' | 'poster' | 'surprise' | 'update';
 
 export interface NewsFeedItem {
@@ -172,6 +173,8 @@ export interface NewsFeedItem {
   display_order: number;
   upvote_count: number;
   downvote_count: number;
+  view_count: number;
+  comment_count: number;
   published_at: string;
   created_at: string;
   score?: number;

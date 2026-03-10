@@ -12,7 +12,6 @@ export async function fetchNewsFeed(
   let query = supabase
     .from('news_feed')
     .select('*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, release_date)')
-    .order('is_pinned', { ascending: false })
     .order('published_at', { ascending: false });
 
   if (filter && filter !== 'all') {
@@ -94,6 +93,8 @@ export async function fetchPersonalizedFeed(
     display_order: row.display_order as number,
     upvote_count: row.upvote_count as number,
     downvote_count: row.downvote_count as number,
+    view_count: row.view_count as number,
+    comment_count: row.comment_count as number,
     published_at: row.published_at as string,
     created_at: row.created_at as string,
     score: row.score as number,

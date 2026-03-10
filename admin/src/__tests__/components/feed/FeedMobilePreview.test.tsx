@@ -39,6 +39,8 @@ const makeItem = (
   display_order: 0,
   upvote_count: 0,
   downvote_count: 0,
+  view_count: 0,
+  comment_count: 0,
   published_at: '2024-01-01T00:00:00Z',
   created_at: '2024-01-01T00:00:00Z',
   ...overrides,
