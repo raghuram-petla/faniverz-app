@@ -1,12 +1,5 @@
-jest.mock('@/theme', () => ({
-  useTheme: () => ({
-    theme: new Proxy({}, { get: () => '#000' }),
-    colors: {
-      white: '#fff',
-      red600: '#dc2626',
-      gray500: '#6b7280',
-    },
-  }),
+jest.mock('@/theme/colors', () => ({
+  colors: { green500: '#22c55e', gray500: '#6b7280' },
 }));
 
 import React from 'react';
@@ -27,7 +20,7 @@ describe('FollowButton', () => {
   it('calls onPress when pressed', () => {
     const onPress = jest.fn();
     render(<FollowButton isFollowing={false} onPress={onPress} />);
-    fireEvent.press(screen.getByText('Follow'));
+    fireEvent.press(screen.getByLabelText('Follow entity'));
     expect(onPress).toHaveBeenCalled();
   });
 

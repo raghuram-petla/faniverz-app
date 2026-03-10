@@ -1,5 +1,5 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { useTheme } from '@/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 
 export interface FollowButtonProps {
@@ -9,16 +9,9 @@ export interface FollowButtonProps {
 }
 
 export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonProps) {
-  const { theme } = useTheme();
-
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        isFollowing
-          ? { backgroundColor: theme.surfaceElevated, borderColor: theme.border }
-          : { borderColor: colors.red600 },
-      ]}
+      style={[styles.button, isFollowing ? styles.buttonFollowing : styles.buttonDefault]}
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
@@ -28,7 +21,12 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
           : `Follow ${entityName ?? 'entity'}`
       }
     >
-      <Text style={[styles.text, { color: isFollowing ? theme.textSecondary : colors.red600 }]}>
+      <Ionicons
+        name={isFollowing ? 'checkmark-circle' : 'person-add-outline'}
+        size={14}
+        color={isFollowing ? colors.green500 : colors.gray500}
+      />
+      <Text style={[styles.text, { color: isFollowing ? colors.green500 : colors.gray500 }]}>
         {isFollowing ? 'Following' : 'Follow'}
       </Text>
     </TouchableOpacity>
@@ -37,13 +35,22 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
 
 const styles = StyleSheet.create({
   button: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
     borderWidth: 1,
   },
+  buttonDefault: {
+    borderColor: colors.gray500,
+  },
+  buttonFollowing: {
+    borderColor: colors.green500,
+  },
   text: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
 });
