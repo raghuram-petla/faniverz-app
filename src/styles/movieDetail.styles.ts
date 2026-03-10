@@ -8,7 +8,7 @@ const HERO_HEIGHT = 600;
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
-    hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH },
+    hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH, overflow: 'hidden' as const },
     safeAreaCover: {
       position: 'absolute',
       top: 0,

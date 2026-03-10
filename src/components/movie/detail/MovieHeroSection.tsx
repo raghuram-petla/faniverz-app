@@ -29,6 +29,8 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
         }}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
+        recyclingKey={`hero-${movie.id}`}
+        cachePolicy="memory-disk"
         contentPosition={
           (movie.detail_focus_x ?? movie.backdrop_focus_x) != null &&
           (movie.detail_focus_y ?? movie.backdrop_focus_y) != null
