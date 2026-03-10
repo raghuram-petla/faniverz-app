@@ -92,11 +92,12 @@ SUPABASE_ANON_KEY=$(supabase status --output json 2>/dev/null | python3 -c "impo
 SUPABASE_SERVICE_KEY=$(supabase status --output json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['SERVICE_ROLE_KEY'])" 2>/dev/null || echo "")
 
 if [ -n "$SUPABASE_ANON_KEY" ]; then
-  # Update mobile .env.local
-  sed -i '' "s|^EXPO_PUBLIC_SUPABASE_URL=.*|EXPO_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" .env.local 2>/dev/null || true
+  # Update mobile .env.local — use LAN IP so the device/emulator can reach Supabase
+  MOBILE_SUPABASE_URL="http://${LAN_IP}:54321"
+  sed -i '' "s|^EXPO_PUBLIC_SUPABASE_URL=.*|EXPO_PUBLIC_SUPABASE_URL=${MOBILE_SUPABASE_URL}|" .env.local 2>/dev/null || true
   sed -i '' "s|^EXPO_PUBLIC_SUPABASE_ANON_KEY=.*|EXPO_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}|" .env.local 2>/dev/null || true
 
-  # Update admin .env.local
+  # Update admin .env.local — admin runs on localhost, so 127.0.0.1 is fine
   sed -i '' "s|^NEXT_PUBLIC_SUPABASE_URL=.*|NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" admin/.env.local 2>/dev/null || true
   sed -i '' "s|^NEXT_PUBLIC_SUPABASE_ANON_KEY=.*|NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}|" admin/.env.local 2>/dev/null || true
   sed -i '' "s|^SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_KEY}|" admin/.env.local 2>/dev/null || true
@@ -111,7 +112,13 @@ MINIO_ACCESS_KEY="minioadmin"
 MINIO_SECRET_KEY="minioadmin"
 MINIO_PORT=9000
 MINIO_CONSOLE_PORT=9001
-MINIO_ENDPOINT="http://localhost:${MINIO_PORT}"
+
+# Detect LAN IP so the mobile device/emulator can reach MinIO
+LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
+if [ "$LAN_IP" = "" ]; then LAN_IP="localhost"; fi
+info "Detected LAN IP: ${LAN_IP}"
+
+MINIO_ENDPOINT="http://${LAN_IP}:${MINIO_PORT}"
 
 BUCKETS=(
   "faniverz-actor-photos"

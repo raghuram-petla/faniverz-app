@@ -32,14 +32,24 @@ function allViews(queries: ReturnType<typeof render>) {
 }
 
 describe('ActorAvatar', () => {
-  it('renders an image when photo_url is set', () => {
-    const actor: Actor = { ...base, photo_url: 'https://example.com/photo.jpg' };
+  it('renders an image with variant suffix for R2 photo_url', () => {
+    const actor: Actor = { ...base, photo_url: 'https://pub-abc.r2.dev/photo.jpg' };
     const views = allViews(render(<ActorAvatar actor={actor} />));
-    // expo-image Image mocked as View; source.uri should be present
     const imgView = views.find(
       (v) =>
         (v.props.source as { uri?: string } | undefined)?.uri ===
-        'https://example.com/photo_sm.jpg',
+        'https://pub-abc.r2.dev/photo_sm.jpg',
+    );
+    expect(imgView).toBeTruthy();
+  });
+
+  it('renders an image with original URL for non-R2 photo_url', () => {
+    const actor: Actor = { ...base, photo_url: 'https://image.tmdb.org/t/p/w185/abc.jpg' };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    const imgView = views.find(
+      (v) =>
+        (v.props.source as { uri?: string } | undefined)?.uri ===
+        'https://image.tmdb.org/t/p/w185/abc.jpg',
     );
     expect(imgView).toBeTruthy();
   });
