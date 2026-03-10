@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -8,6 +8,9 @@ import {
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
+  useEntityFollows,
+  useFollowEntity,
+  useUnfollowEntity,
 } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { useActiveVideo } from '@/hooks/useActiveVideo';
@@ -20,7 +23,8 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
-import type { NewsFeedItem } from '@shared/types';
+import { deriveEntityType, getEntityId } from '@/constants/feedHelpers';
+import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 function handleFeedItemPress(_item: NewsFeedItem) {
   // TODO: Navigate to content detail (video player, poster view, etc.)
@@ -37,6 +41,9 @@ export default function FeedScreen() {
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
   const { activeVideoId, registerVideoLayout, handleScrollForVideo } = useActiveVideo();
+  const { followSet } = useEntityFollows();
+  const followMutation = useFollowEntity();
+  const unfollowMutation = useUnfollowEntity();
 
   const allItems = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page) ?? [];
@@ -79,6 +86,29 @@ export default function FeedScreen() {
       }
     },
     [userVotes, voteMutation, removeMutation],
+  );
+
+  const handleShare = useCallback(
+    (itemId: string) => {
+      const item = allItems.find((i) => i.id === itemId);
+      if (!item) return;
+      Share.share({ message: `${item.title} — Check it out on Faniverz!` });
+    },
+    [allItems],
+  );
+
+  const handleFollow = useCallback(
+    (entityType: FeedEntityType, entityId: string) => {
+      followMutation.mutate({ entityType, entityId });
+    },
+    [followMutation],
+  );
+
+  const handleUnfollow = useCallback(
+    (entityType: FeedEntityType, entityId: string) => {
+      unfollowMutation.mutate({ entityType, entityId });
+    },
+    [unfollowMutation],
   );
 
   const loadMore = useCallback(() => {
@@ -143,8 +173,12 @@ export default function FeedScreen() {
                 userVote={userVotes[item.id] ?? null}
                 onUpvote={handleUpvote}
                 onDownvote={handleDownvote}
+                onShare={handleShare}
                 isVideoActive={activeVideoId === item.id}
                 onVideoLayout={item.youtube_id ? registerVideoLayout : undefined}
+                isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
+                onFollow={handleFollow}
+                onUnfollow={handleUnfollow}
               />
             ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}

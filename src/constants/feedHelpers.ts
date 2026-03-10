@@ -160,3 +160,8 @@ export function getEntityAvatarUrl(item: NewsFeedItem): string | null {
 export function getEntityName(item: NewsFeedItem): string {
   return item.movie?.title ?? 'Unknown';
 }
+
+export function getEntityId(item: NewsFeedItem): string | null {
+  if (item.movie_id) return item.movie_id;
+  return null;
+}

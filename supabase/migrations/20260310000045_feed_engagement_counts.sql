@@ -2,7 +2,8 @@
 ALTER TABLE news_feed ADD COLUMN view_count integer NOT NULL DEFAULT 0;
 ALTER TABLE news_feed ADD COLUMN comment_count integer NOT NULL DEFAULT 0;
 
--- Update personalized feed RPC to include new columns
+-- Drop and recreate because return type changed (added view_count, comment_count)
+DROP FUNCTION IF EXISTS get_personalized_feed(uuid, text, integer, integer);
 CREATE OR REPLACE FUNCTION get_personalized_feed(
   p_user_id uuid DEFAULT NULL,
   p_filter text DEFAULT 'all',

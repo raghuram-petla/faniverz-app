@@ -118,11 +118,18 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
     contentColumn: {
       flex: 1,
     },
-    // Name row: entity name + optional pin/star + dot + timestamp
+    // Name row: entity name + optional pin/star + dot + timestamp + follow button
     nameRow: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       gap: 6,
+    },
+    nameRowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      flex: 1,
     },
     entityName: {
       fontSize: 15,

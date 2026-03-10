@@ -9,6 +9,7 @@ import {
   deriveEntityType,
   getEntityAvatarUrl,
   getEntityName,
+  getEntityId,
 } from '../feedHelpers';
 import type { NewsFeedItem } from '@shared/types';
 
@@ -218,5 +219,15 @@ describe('getEntityName', () => {
 
   it('returns Unknown when no movie', () => {
     expect(getEntityName(makeFeedItem({ movie: undefined }))).toBe('Unknown');
+  });
+});
+
+describe('getEntityId', () => {
+  it('returns movie_id when set', () => {
+    expect(getEntityId(makeFeedItem({ movie_id: 'm1' }))).toBe('m1');
+  });
+
+  it('returns null when no movie_id', () => {
+    expect(getEntityId(makeFeedItem({ movie_id: null }))).toBeNull();
   });
 });

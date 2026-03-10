@@ -87,6 +87,25 @@ jest.mock('../FeedActionBar', () => ({
   },
 }));
 
+jest.mock('../FollowButton', () => ({
+  FollowButton: ({
+    isFollowing,
+    onPress,
+    entityName,
+  }: {
+    isFollowing: boolean;
+    onPress: () => void;
+    entityName?: string;
+  }) => {
+    const { TouchableOpacity, Text } = require('react-native');
+    return (
+      <TouchableOpacity testID="follow-button" onPress={onPress} accessibilityLabel={entityName}>
+        <Text testID="follow-button-state">{isFollowing ? 'Following' : 'Follow'}</Text>
+      </TouchableOpacity>
+    );
+  },
+}));
+
 jest.mock('../FeedVideoPlayer', () => ({
   FeedVideoPlayer: ({
     isActive,
@@ -366,5 +385,53 @@ describe('FeedCard', () => {
     expect(mockOpenImage).toHaveBeenCalledWith(
       expect.objectContaining({ fullUrl: 'https://example.com/poster.jpg' }),
     );
+  });
+
+  // Follow button tests
+  it('renders FollowButton when onFollow is provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} onFollow={jest.fn()} />);
+    expect(screen.getByTestId('follow-button')).toBeTruthy();
+  });
+
+  it('does not render FollowButton when onFollow is not provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('follow-button')).toBeNull();
+  });
+
+  it('passes isFollowing state to FollowButton', () => {
+    render(
+      <FeedCard item={makeItem()} onPress={jest.fn()} isFollowing={true} onFollow={jest.fn()} />,
+    );
+    expect(screen.getByTestId('follow-button-state').props.children).toBe('Following');
+  });
+
+  it('calls onFollow with entity type and ID when follow pressed', () => {
+    const onFollow = jest.fn();
+    const item = makeItem({ movie_id: 'm1' });
+    render(<FeedCard item={item} onPress={jest.fn()} onFollow={onFollow} />);
+    fireEvent.press(screen.getByTestId('follow-button'));
+    expect(onFollow).toHaveBeenCalledWith('movie', 'm1');
+  });
+
+  it('calls onUnfollow when already following and pressed', () => {
+    const onUnfollow = jest.fn();
+    const item = makeItem({ movie_id: 'm1' });
+    render(
+      <FeedCard
+        item={item}
+        onPress={jest.fn()}
+        isFollowing={true}
+        onFollow={jest.fn()}
+        onUnfollow={onUnfollow}
+      />,
+    );
+    fireEvent.press(screen.getByTestId('follow-button'));
+    expect(onUnfollow).toHaveBeenCalledWith('movie', 'm1');
+  });
+
+  it('does not render FollowButton when entity has no ID', () => {
+    const item = makeItem({ movie_id: null, movie: undefined });
+    render(<FeedCard item={item} onPress={jest.fn()} onFollow={jest.fn()} />);
+    expect(screen.queryByTestId('follow-button')).toBeNull();
   });
 });

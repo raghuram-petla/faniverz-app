@@ -15,6 +15,9 @@ jest.mock('react-native-safe-area-context', () => ({
 
 jest.mock('@/features/feed', () => ({
   useNewsFeed: jest.fn(),
+  useEntityFollows: jest.fn(() => ({ followSet: new Set(), data: [], isSuccess: true })),
+  useFollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
+  useUnfollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
 }));
 
 jest.mock('@/stores/useFeedStore', () => ({
@@ -57,6 +60,10 @@ const mockItem = {
   is_pinned: false,
   is_featured: false,
   display_order: 0,
+  upvote_count: 0,
+  downvote_count: 0,
+  view_count: 0,
+  comment_count: 0,
   published_at: '2024-01-01T00:00:00Z',
   created_at: '2024-01-01T00:00:00Z',
 };

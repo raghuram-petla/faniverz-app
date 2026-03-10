@@ -6,3 +6,4 @@ export {
   useRemoveFeedVote,
   useUserVotes,
 } from './hooks';
+export { useEntityFollows, useFollowEntity, useUnfollowEntity } from './followHooks';

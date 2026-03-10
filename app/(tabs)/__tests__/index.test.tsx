@@ -26,6 +26,9 @@ jest.mock('@/features/feed', () => ({
   useVoteFeedItem: jest.fn(),
   useRemoveFeedVote: jest.fn(),
   useUserVotes: jest.fn(),
+  useEntityFollows: jest.fn(),
+  useFollowEntity: jest.fn(),
+  useUnfollowEntity: jest.fn(),
 }));
 
 jest.mock('@/stores/useFeedStore', () => ({
@@ -90,6 +93,9 @@ import {
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
+  useEntityFollows,
+  useFollowEntity,
+  useUnfollowEntity,
 } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 import type { NewsFeedItem } from '@shared/types';
@@ -98,6 +104,12 @@ const mockSetFilter = jest.fn();
 const mockFetchNextPage = jest.fn();
 const mockVoteMutate = jest.fn();
 const mockRemoveMutate = jest.fn();
+const mockFollowMutate = jest.fn();
+const mockUnfollowMutate = jest.fn();
+
+const mockUseEntityFollows = useEntityFollows as jest.MockedFunction<typeof useEntityFollows>;
+const mockUseFollowEntity = useFollowEntity as jest.MockedFunction<typeof useFollowEntity>;
+const mockUseUnfollowEntity = useUnfollowEntity as jest.MockedFunction<typeof useUnfollowEntity>;
 
 const mockUsePersonalizedFeed = usePersonalizedFeed as jest.MockedFunction<
   typeof usePersonalizedFeed
@@ -166,6 +178,18 @@ function setupMocks(
 
   mockUseUserVotes.mockReturnValue({
     data: overrides.votes ?? {},
+  } as any);
+
+  mockUseEntityFollows.mockReturnValue({
+    followSet: new Set<string>(),
+  } as any);
+
+  mockUseFollowEntity.mockReturnValue({
+    mutate: mockFollowMutate,
+  } as any);
+
+  mockUseUnfollowEntity.mockReturnValue({
+    mutate: mockUnfollowMutate,
   } as any);
 }
 

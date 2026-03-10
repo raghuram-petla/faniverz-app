@@ -11,15 +11,17 @@ import { FeedAvatar } from './FeedAvatar';
 import { FeedActionBar } from './FeedActionBar';
 import { FeedContentBadge } from './FeedContentBadge';
 import { FeedVideoPlayer } from './FeedVideoPlayer';
+import { FollowButton } from './FollowButton';
 import {
   formatRelativeTime,
   getFeedTypeLabel,
   deriveEntityType,
   getEntityAvatarUrl,
   getEntityName,
+  getEntityId,
 } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
-import type { NewsFeedItem } from '@shared/types';
+import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 export interface FeedCardProps {
   item: NewsFeedItem;
@@ -31,6 +33,9 @@ export interface FeedCardProps {
   onShare?: (itemId: string) => void;
   isVideoActive?: boolean;
   onVideoLayout?: (id: string, y: number, height: number) => void;
+  isFollowing?: boolean;
+  onFollow?: (entityType: FeedEntityType, entityId: string) => void;
+  onUnfollow?: (entityType: FeedEntityType, entityId: string) => void;
 }
 
 function FeedCardInner({
@@ -43,6 +48,9 @@ function FeedCardInner({
   onShare,
   isVideoActive,
   onVideoLayout,
+  isFollowing,
+  onFollow,
+  onUnfollow,
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
@@ -58,6 +66,7 @@ function FeedCardInner({
   const entityType = deriveEntityType(item);
   const entityAvatarUrl = getEntityAvatarUrl(item);
   const entityName = getEntityName(item);
+  const entityId = getEntityId(item);
 
   const handleLayout = useCallback(
     (e: LayoutChangeEvent) => {
@@ -99,12 +108,25 @@ function FeedCardInner({
         >
           {/* Name row */}
           <View style={styles.nameRow}>
-            <Text style={styles.entityName} numberOfLines={1}>
-              {entityName}
-            </Text>
-            {item.is_featured ? <Ionicons name="star" size={12} color={colors.yellow400} /> : null}
-            <Text style={styles.dot}>·</Text>
-            <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
+            <View style={styles.nameRowLeft}>
+              <Text style={styles.entityName} numberOfLines={1}>
+                {entityName}
+              </Text>
+              {item.is_featured ? (
+                <Ionicons name="star" size={12} color={colors.yellow400} />
+              ) : null}
+              <Text style={styles.dot}>·</Text>
+              <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
+            </View>
+            {entityId && onFollow ? (
+              <FollowButton
+                isFollowing={isFollowing ?? false}
+                entityName={entityName}
+                onPress={() =>
+                  isFollowing ? onUnfollow?.(entityType, entityId) : onFollow(entityType, entityId)
+                }
+              />
+            ) : null}
           </View>
 
           {/* Badge + Title */}
@@ -175,6 +197,7 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
     prev.item.id === next.item.id &&
     prev.userVote === next.userVote &&
     prev.isVideoActive === next.isVideoActive &&
+    prev.isFollowing === next.isFollowing &&
     prev.item.upvote_count === next.item.upvote_count &&
     prev.item.downvote_count === next.item.downvote_count &&
     prev.item.view_count === next.item.view_count &&

@@ -3,16 +3,16 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } fr
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { useNewsFeed } from '@/features/feed';
+import { useNewsFeed, useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
-import { FEED_PILLS } from '@/constants/feedHelpers';
+import { FEED_PILLS, deriveEntityType, getEntityId } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
-import type { NewsFeedItem } from '@shared/types';
+import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
 
 function handleFeedItemPress(_item: NewsFeedItem) {
@@ -31,6 +31,9 @@ export default function FeedScreen() {
     onRefresh,
     refreshing,
   );
+  const { followSet } = useEntityFollows();
+  const followMutation = useFollowEntity();
+  const unfollowMutation = useUnfollowEntity();
 
   const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
 
@@ -45,6 +48,20 @@ export default function FeedScreen() {
       Share.share({ message: `${item.title} — Check it out on Faniverz!` });
     },
     [allItems],
+  );
+
+  const handleFollow = useCallback(
+    (entityType: FeedEntityType, entityId: string) => {
+      followMutation.mutate({ entityType, entityId });
+    },
+    [followMutation],
+  );
+
+  const handleUnfollow = useCallback(
+    (entityType: FeedEntityType, entityId: string) => {
+      unfollowMutation.mutate({ entityType, entityId });
+    },
+    [unfollowMutation],
   );
 
   return (
@@ -105,6 +122,9 @@ export default function FeedScreen() {
                 item={item}
                 onPress={handleFeedItemPress}
                 onShare={handleShare}
+                isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
+                onFollow={handleFollow}
+                onUnfollow={handleUnfollow}
               />
             ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}
