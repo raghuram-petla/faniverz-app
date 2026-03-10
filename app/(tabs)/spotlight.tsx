@@ -1,5 +1,12 @@
 import { useRef } from 'react';
-import { View, Text, ScrollView, FlatList, useWindowDimensions } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  FlatList,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -87,10 +94,20 @@ export default function SpotlightScreen() {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerIconBadge}>
-          <Ionicons name="star" size={20} color={colors.white} />
+        <View style={styles.headerLeft}>
+          <View style={styles.headerIconBadge}>
+            <Ionicons name="star" size={20} color={colors.white} />
+          </View>
+          <Text style={styles.headerTitle}>Spotlight</Text>
         </View>
-        <Text style={styles.headerTitle}>Spotlight</Text>
+        <TouchableOpacity
+          style={styles.searchButton}
+          onPress={() => router.push('/discover')}
+          accessibilityRole="button"
+          accessibilityLabel="Search"
+        >
+          <Ionicons name="search" size={20} color={theme.textPrimary} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView

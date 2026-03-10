@@ -19,10 +19,23 @@ export const createStyles = (t: SemanticTheme) =>
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingBottom: 16,
       backgroundColor: t.background,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    searchButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     headerIconBadge: {
       width: 40,

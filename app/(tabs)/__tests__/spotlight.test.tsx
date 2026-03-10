@@ -272,6 +272,13 @@ describe('SpotlightScreen', () => {
     expect(screen.getByText('To Streaming')).toBeTruthy();
   });
 
+  it('navigates to discover when search button is pressed', () => {
+    render(<SpotlightScreen />);
+    const searchButton = screen.getByLabelText('Search');
+    fireEvent.press(searchButton);
+    expect(mockPush).toHaveBeenCalledWith('/discover');
+  });
+
   it('navigates to discover with theatrical filter when In Theaters "See All" is pressed', () => {
     render(<SpotlightScreen />);
     const seeAllButtons = screen.getAllByText('See All');
