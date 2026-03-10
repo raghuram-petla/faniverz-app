@@ -10,10 +10,12 @@ import { MovieListItem } from '@/components/movie/MovieListItem';
 import { Movie } from '@/types';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { CalendarFilterPanel } from '@/components/calendar/CalendarFilterPanel';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
+import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { createStyles } from '@/styles/tabs/calendar.styles';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -95,25 +97,21 @@ export default function CalendarScreen() {
     [allMovies],
   );
 
-  const hasActiveFilters = hasUserFiltered;
-
   const handleEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (isLoading) {
     return (
-      <View style={[styles.screen, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.red600} />
+      <View style={styles.screen}>
+        <LoadingCenter />
       </View>
     );
   }
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <SafeAreaCover />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>Release Calendar</Text>
@@ -124,12 +122,12 @@ export default function CalendarScreen() {
           accessibilityLabel="Toggle filters"
         >
           <Ionicons name="options-outline" size={20} color={theme.textPrimary} />
-          {hasActiveFilters && <View style={styles.filterDot} />}
+          {hasUserFiltered && <View style={styles.filterDot} />}
         </TouchableOpacity>
       </View>
 
       {/* Active Filter Pills */}
-      {hasActiveFilters && (
+      {hasUserFiltered && (
         <View style={styles.filterPills}>
           {selectedYear !== null && (
             <FilterPill
@@ -191,7 +189,7 @@ export default function CalendarScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No releases found for the selected filters.</Text>
-            {hasActiveFilters && (
+            {hasUserFiltered && (
               <TouchableOpacity onPress={clearFilters}>
                 <Text style={styles.clearFiltersLink}>Clear filters</Text>
               </TouchableOpacity>

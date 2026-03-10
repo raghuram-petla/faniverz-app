@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import ScreenHeader from '@/components/common/ScreenHeader';
@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlist } from '@/features/watchlist/hooks';
 import { WatchlistEntry } from '@/types';
 import { useTheme } from '@/theme';
+import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatWatchTime } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/watched.styles';
@@ -166,9 +167,7 @@ export default function WatchedMoviesScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.red600} />
-        </View>
+        <LoadingCenter style={styles.centered} />
       ) : sorted.length === 0 ? (
         <EmptyState
           icon="eye-outline"

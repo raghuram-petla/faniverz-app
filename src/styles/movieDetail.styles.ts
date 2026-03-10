@@ -9,14 +9,6 @@ export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
     hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH, overflow: 'hidden' as const },
-    safeAreaCover: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 100,
-      backgroundColor: t.background,
-    },
     heroHeader: {
       position: 'absolute',
       top: 0,

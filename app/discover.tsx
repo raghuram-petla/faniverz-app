@@ -23,6 +23,8 @@ import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
 import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
 import { SortDropdown } from '@/components/discover/SortDropdown';
 import { HomeButton } from '@/components/common/HomeButton';
+import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -132,7 +134,7 @@ export default function DiscoverScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <SafeAreaCover />
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerTitleRow}>
           <TouchableOpacity
@@ -234,9 +236,7 @@ export default function DiscoverScreen() {
       )}
 
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.red600} />
-        </View>
+        <LoadingCenter />
       ) : (
         <FlatList
           data={filteredMovies}

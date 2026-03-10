@@ -13,15 +13,6 @@ export const createStyles = (t: SemanticTheme) =>
       flex: 1,
       backgroundColor: t.background,
     },
-    safeAreaCover: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 100,
-      backgroundColor: t.background,
-    },
-
     // ── Header ──────────────────────────────────────────────────────────────────
     header: {
       flexDirection: 'row',

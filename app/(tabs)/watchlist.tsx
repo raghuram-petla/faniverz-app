@@ -10,6 +10,8 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { useTheme } from '@/theme';
 import { WatchlistEntry } from '@/types';
 import { AvailableCard, UpcomingCard, WatchedCard } from '@/components/watchlist/WatchlistCards';
@@ -156,7 +158,7 @@ export default function WatchlistScreen() {
   if (!user) {
     return (
       <View style={styles.screen}>
-        <View style={[styles.safeAreaCover, { height: insets.top }]} />
+        <SafeAreaCover />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
@@ -182,7 +184,7 @@ export default function WatchlistScreen() {
   if (isLoading) {
     return (
       <View style={styles.screen}>
-        <View style={[styles.safeAreaCover, { height: insets.top }]} />
+        <SafeAreaCover />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
@@ -191,9 +193,7 @@ export default function WatchlistScreen() {
             <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
           </View>
         </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.red600} />
-        </View>
+        <LoadingCenter />
       </View>
     );
   }
@@ -202,7 +202,7 @@ export default function WatchlistScreen() {
   if (!hasContent) {
     return (
       <View style={styles.screen}>
-        <View style={[styles.safeAreaCover, { height: insets.top }]} />
+        <SafeAreaCover />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
             <Text style={styles.headerTitle}>My Watchlist</Text>
@@ -227,7 +227,7 @@ export default function WatchlistScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <SafeAreaCover />
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
         <View>

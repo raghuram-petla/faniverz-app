@@ -7,6 +7,7 @@ import { useNewsFeed } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { FEED_PILLS } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -39,7 +40,7 @@ export default function FeedScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <SafeAreaCover />
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>

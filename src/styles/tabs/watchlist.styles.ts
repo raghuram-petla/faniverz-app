@@ -8,15 +8,6 @@ export const createStyles = (t: SemanticTheme) =>
       flex: 1,
       backgroundColor: t.background,
     },
-    safeAreaCover: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 100,
-      backgroundColor: t.background,
-    },
-
     // Header
     stickyHeader: {
       backgroundColor: t.background,
@@ -43,13 +34,6 @@ export const createStyles = (t: SemanticTheme) =>
       height: 48,
       borderRadius: 24,
       backgroundColor: colors.red600_20,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    // Loading
-    loadingContainer: {
-      flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
     },

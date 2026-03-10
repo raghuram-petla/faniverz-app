@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { HomeButton } from '@/components/common/HomeButton';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/theme';
@@ -88,7 +89,7 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <SafeAreaCover />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <HomeButton />

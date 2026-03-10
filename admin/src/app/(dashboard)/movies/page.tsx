@@ -1,10 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAdminMovies, useDeleteMovie } from '@/hooks/useAdminMovies';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatDate } from '@/lib/utils';
-import { Plus, Edit, Trash2, Search, Loader2, Film } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Film } from 'lucide-react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
+import { SearchInput } from '@/components/common/SearchInput';
+import { LoadMoreButton } from '@/components/common/LoadMoreButton';
 import { MOVIE_STATUS_CONFIG } from '@shared/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie } from '@/lib/types';
@@ -29,18 +32,12 @@ function getStatusBadge(movie: Movie) {
 
 export default function MoviesPage() {
   const { isPHAdmin, productionHouseIds, canDelete } = usePermissions();
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [statusFilter, setStatusFilter] = useState<string>('');
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminMovies(debouncedSearch, statusFilter, isPHAdmin ? productionHouseIds : undefined);
   const movies = data?.pages.flat() ?? [];
   const deleteMovie = useDeleteMovie();
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(id);
-  }, [search]);
 
   return (
     <div className="space-y-6">
@@ -56,19 +53,12 @@ export default function MoviesPage() {
 
       <div className="space-y-2">
         <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
-            <input
-              type="text"
-              placeholder="Search movies..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-input rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
-            />
-            {isFetching && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
-            )}
-          </div>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search movies..."
+            isLoading={isFetching}
+          />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -187,23 +177,11 @@ export default function MoviesPage() {
           </table>
         </div>
       )}
-      {hasNextPage && (
-        <div className="flex justify-center">
-          <button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            className="flex items-center gap-2 bg-input hover:bg-input-hover text-on-surface px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            {isFetchingNextPage ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Loading...
-              </>
-            ) : (
-              'Load More'
-            )}
-          </button>
-        </div>
-      )}
+      <LoadMoreButton
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+      />
     </div>
   );
 }

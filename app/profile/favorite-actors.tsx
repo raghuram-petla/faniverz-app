@@ -1,13 +1,5 @@
 import { useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -20,6 +12,7 @@ import { Actor, FavoriteActor } from '@/types';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
+import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { getImageUrl } from '@shared/imageUrl';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
@@ -41,7 +34,7 @@ export default function FavoriteActorsScreen() {
   const { user } = useAuth();
   const { data: favorites, isLoading, refetch } = useFavoriteActors(user?.id ?? '');
   const { remove } = useFavoriteActorMutations();
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { refreshing, onRefresh } = useRefresh(refetch);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
@@ -100,9 +93,7 @@ export default function FavoriteActorsScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={palette.red600} />
-        </View>
+        <LoadingCenter style={styles.centered} />
       ) : actorList.length === 0 ? (
         <EmptyState
           icon="heart-outline"

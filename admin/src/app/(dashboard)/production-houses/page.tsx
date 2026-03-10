@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   useAdminProductionHouses,
   useCreateProductionHouse,
@@ -7,7 +7,10 @@ import {
 } from '@/hooks/useAdminProductionHouses';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import { Plus, Trash2, Search, Loader2, Building2, Pencil, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Loader2, Building2, Pencil, Upload, X } from 'lucide-react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
+import { SearchInput } from '@/components/common/SearchInput';
+import { LoadMoreButton } from '@/components/common/LoadMoreButton';
 import Link from 'next/link';
 import { getImageUrl } from '@shared/imageUrl';
 
@@ -19,8 +22,7 @@ const EMPTY_FORM = {
 
 export default function ProductionHousesPage() {
   const { isPHAdmin, productionHouseIds, canCreate, canDelete } = usePermissions();
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminProductionHouses(debouncedSearch, isPHAdmin ? productionHouseIds : undefined);
   const houses = data?.pages.flat() ?? [];
@@ -39,11 +41,6 @@ export default function ProductionHousesPage() {
       alert(err instanceof Error ? err.message : 'Upload failed');
     }
   }
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(id);
-  }, [search]);
 
   async function handleAdd() {
     if (!form.name.trim()) return;
@@ -163,19 +160,12 @@ export default function ProductionHousesPage() {
       )}
 
       <div className="space-y-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
-          <input
-            type="text"
-            placeholder="Search production houses..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-input rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
-          />
-          {isFetching && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
-          )}
-        </div>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search production houses..."
+          isLoading={isFetching}
+        />
         {search.length === 1 && (
           <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
         )}
@@ -251,23 +241,11 @@ export default function ProductionHousesPage() {
           )}
         </div>
       )}
-      {hasNextPage && (
-        <div className="flex justify-center">
-          <button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            className="flex items-center gap-2 bg-input hover:bg-input-hover text-on-surface px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            {isFetchingNextPage ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Loading...
-              </>
-            ) : (
-              'Load More'
-            )}
-          </button>
-        </div>
-      )}
+      <LoadMoreButton
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+      />
     </div>
   );
 }

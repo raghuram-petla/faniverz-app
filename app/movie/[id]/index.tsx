@@ -17,6 +17,7 @@ import { ReviewModal } from '@/components/movie/detail/ReviewModal';
 import { MovieDetailHeader } from '@/components/movie/detail/MovieDetailHeader';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTheme } from '@/theme';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -104,7 +105,7 @@ export default function MovieDetailScreen() {
   return (
     <View style={styles.screen}>
       <StatusBar style="light" />
-      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <SafeAreaCover />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top }}

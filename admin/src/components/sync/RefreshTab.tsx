@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMovieSearch, useActorSearch, useRefreshMovie, useRefreshActor } from '@/hooks/useSync';
 import { formatRelativeTime } from './syncHelpers';
 import { Search, Film, Users, Loader2, RefreshCw, Clock } from 'lucide-react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
 export function RefreshTab() {
   return (
@@ -17,17 +18,15 @@ export function RefreshTab() {
 // ── Movie Section ────────────────────────────────────────────────────────────
 
 function RefreshMovieSection() {
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const {
+    search: query,
+    setSearch: setQuery,
+    debouncedSearch: debouncedQuery,
+  } = useDebouncedSearch();
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const { data: searchResults } = useMovieSearch(debouncedQuery);
   const refreshMovie = useRefreshMovie();
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(id);
-  }, [query]);
 
   const selectedMovie = searchResults?.find((m) => m.id === selectedMovieId);
 
@@ -137,17 +136,15 @@ function RefreshMovieSection() {
 // ── Actor Section ────────────────────────────────────────────────────────────
 
 function RefreshActorSection() {
-  const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const {
+    search: query,
+    setSearch: setQuery,
+    debouncedSearch: debouncedQuery,
+  } = useDebouncedSearch();
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const { data: searchResults } = useActorSearch(debouncedQuery);
   const refreshActor = useRefreshActor();
-
-  useEffect(() => {
-    const id = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(id);
-  }, [query]);
 
   const selectedActor = searchResults?.find((a) => a.id === selectedActorId);
 

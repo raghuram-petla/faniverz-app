@@ -5,15 +5,6 @@ import type { SemanticTheme } from '@shared/themes';
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
-    safeAreaCover: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 100,
-      backgroundColor: t.background,
-    },
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
       paddingHorizontal: 16,
       paddingBottom: 12,

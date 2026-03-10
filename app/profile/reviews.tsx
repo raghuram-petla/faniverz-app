@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useUserReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { Review } from '@/types';
 import { useTheme } from '@/theme';
+import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/reviews.styles';
@@ -147,9 +148,7 @@ export default function MyReviewsScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.red600} />
-        </View>
+        <LoadingCenter style={styles.centered} />
       ) : sorted.length === 0 ? (
         <EmptyState
           icon="star-outline"

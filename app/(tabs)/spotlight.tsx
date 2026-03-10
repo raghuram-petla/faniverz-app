@@ -18,6 +18,7 @@ import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
 import { SpotlightSkeleton } from '@/components/spotlight/SpotlightSkeleton';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -90,7 +91,7 @@ export default function SpotlightScreen() {
 
   return (
     <View style={styles.screen}>
-      <View style={[styles.safeAreaCover, { height: insets.top }]} />
+      <SafeAreaCover />
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
