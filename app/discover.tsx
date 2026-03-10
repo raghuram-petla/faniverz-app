@@ -21,6 +21,7 @@ import {
 } from '@/components/discover/DiscoverFilterModal';
 import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
 import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
+import { SortDropdown } from '@/components/discover/SortDropdown';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -199,26 +200,15 @@ export default function DiscoverScreen() {
         </TouchableOpacity>
       </View>
 
-      {showSortDropdown && (
-        <View style={styles.sortDropdown}>
-          {SORT_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.value}
-              style={[styles.sortOption, sortBy === opt.value && styles.sortOptionActive]}
-              onPress={() => {
-                setSortBy(opt.value);
-                setShowSortDropdown(false);
-              }}
-            >
-              <Text
-                style={[styles.sortOptionText, sortBy === opt.value && styles.sortOptionTextActive]}
-              >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+      <SortDropdown
+        visible={showSortDropdown}
+        sortBy={sortBy}
+        onSelectSort={(value) => {
+          setSortBy(value);
+          setShowSortDropdown(false);
+        }}
+        styles={styles}
+      />
 
       <ActiveFilterPills
         selectedGenres={selectedGenres}

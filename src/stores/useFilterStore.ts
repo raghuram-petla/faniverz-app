@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { MovieStatus } from '@/types';
 
 type FilterType = 'all' | MovieStatus;
-type SortBy = 'popular' | 'top_rated' | 'latest' | 'upcoming';
+export type SortBy = 'popular' | 'top_rated' | 'latest' | 'upcoming';
 
 interface FilterState {
   selectedFilter: FilterType;
