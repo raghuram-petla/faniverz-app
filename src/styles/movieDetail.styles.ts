@@ -177,104 +177,28 @@ export const createStyles = (t: SemanticTheme) =>
     productionHouseLogo: { width: 24, height: 24, borderRadius: 12 },
     productionHouseName: { fontSize: 13, fontWeight: '600', color: t.textPrimary },
 
-    // Media Tab
-    mediaTab: { gap: 24 },
-    mediaSection: { gap: 12 },
-    mediaSectionTitle: { fontSize: 16, fontWeight: '700', color: t.textPrimary },
-    mediaVideoList: { gap: 20 },
-
-    // Poster Gallery
-    posterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-    posterCard: { width: (SCREEN_WIDTH - 32 - 12) / 2 },
-    posterImage: {
-      width: '100%',
-      aspectRatio: 2 / 3,
-      borderRadius: 12,
-      backgroundColor: t.surfaceElevated,
-    },
-    mainPosterBadge: {
-      position: 'absolute',
-      top: 8,
-      left: 8,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      paddingHorizontal: 6,
-      paddingVertical: 3,
-      borderRadius: 8,
-    },
-    mainPosterText: { fontSize: 10, fontWeight: '700', color: colors.yellow400 },
-    posterTitle: { fontSize: 12, fontWeight: '500', color: t.textSecondary, marginTop: 4 },
-
-    // Video Preview Card (overview tab)
-    videoPreviewCard: {
-      flexDirection: 'row',
+    // Media Summary Card (overview tab)
+    mediaSummaryCard: {
       backgroundColor: t.surfaceElevated,
       borderRadius: 12,
       overflow: 'hidden',
     },
-    videoPreviewThumb: {
-      width: 140,
-      height: 80,
+    mediaSummaryThumb: {
+      width: '100%',
+      aspectRatio: 16 / 9,
       backgroundColor: t.input,
     },
-    videoPreviewImage: { width: '100%', height: '100%' },
-    videoPreviewPlay: {
+    mediaSummaryImage: { width: '100%', height: '100%' },
+    mediaSummaryPlay: {
       ...StyleSheet.absoluteFillObject,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: 'rgba(0,0,0,0.3)',
     },
-    videoPreviewInfo: {
-      flex: 1,
-      padding: 12,
-      justifyContent: 'center',
-      gap: 4,
-    },
-    videoPreviewTitle: { fontSize: 14, fontWeight: '600', color: t.textPrimary },
-    videoPreviewSubtitle: { fontSize: 12, color: t.textTertiary },
-
-    // Poster Modal
-    posterModalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.95)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    posterModalClose: {
-      position: 'absolute',
-      top: 60,
-      right: 20,
-      zIndex: 10,
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: t.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    posterModalContent: {
-      flex: 1,
-      width: '100%',
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      paddingTop: 100,
-      paddingBottom: 80,
-    },
-    posterModalImage: {
-      width: SCREEN_WIDTH - 32,
-      flex: 1,
-      borderRadius: 12,
-    },
-    posterModalInfo: {
-      paddingTop: 16,
-      alignItems: 'center',
-      gap: 4,
-    },
-    posterModalTitle: { fontSize: 16, fontWeight: '600', color: t.textPrimary },
-    posterModalDescription: { fontSize: 14, color: t.textSecondary, textAlign: 'center' },
+    mediaSummaryInfo: { padding: 12, gap: 4 },
+    mediaSummaryText: { fontSize: 14, fontWeight: '500', color: t.textSecondary },
+    mediaSummaryCtaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    mediaSummaryCtaText: { fontSize: 14, fontWeight: '600', color: colors.red400 },
 
     castTab: { gap: 16 },
     castSectionLabel: {

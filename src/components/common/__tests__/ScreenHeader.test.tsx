@@ -86,4 +86,10 @@ describe('ScreenHeader', () => {
     fireEvent.press(getByTestId('home-button'));
     expect(mockDismissAll).toHaveBeenCalledTimes(1);
   });
+
+  it('shows home button when forceShowHome is true regardless of stack depth', () => {
+    mockState.index = 0;
+    const { getByTestId } = render(<ScreenHeader title="Test" forceShowHome />);
+    expect(getByTestId('home-button')).toBeTruthy();
+  });
 });

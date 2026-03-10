@@ -8,16 +8,12 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useIsWatchlisted, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { deriveMovieStatus } from '@shared/movieStatus';
-import { VIDEO_TYPES } from '@shared/constants';
-import type { MovieVideo, MoviePoster } from '@/types';
 import { MovieHeroSection } from '@/components/movie/detail/MovieHeroSection';
 import { WatchOnSection } from '@/components/movie/detail/WatchOnSection';
 import { OverviewTab } from '@/components/movie/detail/OverviewTab';
-import { MediaTab } from '@/components/movie/detail/MediaTab';
 import { CastTab } from '@/components/movie/detail/CastTab';
 import { ReviewsTab } from '@/components/movie/detail/ReviewsTab';
 import { ReviewModal } from '@/components/movie/detail/ReviewModal';
-import { PosterModal } from '@/components/movie/detail/PosterModal';
 import { MovieDetailHeader } from '@/components/movie/detail/MovieDetailHeader';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTheme } from '@/theme';
@@ -25,10 +21,11 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
-type TabName = 'overview' | 'media' | 'cast' | 'reviews';
+type TabName = 'overview' | 'cast' | 'reviews';
+type DisplayTab = TabName | 'media';
 
 export default function MovieDetailScreen() {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,7 +52,6 @@ export default function MovieDetailScreen() {
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewBody, setReviewBody] = useState('');
   const [containsSpoiler, setContainsSpoiler] = useState(false);
-  const [selectedPoster, setSelectedPoster] = useState<MoviePoster | null>(null);
 
   const isWatchlisted = !!watchlistEntry;
 
@@ -95,17 +91,17 @@ export default function MovieDetailScreen() {
   const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
   const hasMedia = movie.videos.length > 0 || movie.posters.length > 0;
-  const tabs: TabName[] = hasMedia
+  const tabs: DisplayTab[] = hasMedia
     ? ['overview', 'media', 'cast', 'reviews']
     : ['overview', 'cast', 'reviews'];
 
-  const videosByType = hasMedia
-    ? VIDEO_TYPES.reduce<{ label: string; videos: MovieVideo[] }[]>((acc, vt) => {
-        const matches = movie.videos.filter((v) => v.video_type === vt.value);
-        if (matches.length > 0) acc.push({ label: vt.label, videos: matches });
-        return acc;
-      }, [])
-    : [];
+  const handleTabPress = (tab: DisplayTab) => {
+    if (tab === 'media') {
+      router.push(`/movie/${id}/media`);
+    } else {
+      setActiveTab(tab);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -137,7 +133,7 @@ export default function MovieDetailScreen() {
             <TouchableOpacity
               key={tab}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
-              onPress={() => setActiveTab(tab)}
+              onPress={() => handleTabPress(tab)}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -149,18 +145,7 @@ export default function MovieDetailScreen() {
         {/* Tab Content */}
         <View style={styles.tabContent}>
           {activeTab === 'overview' && (
-            <OverviewTab
-              movie={movie}
-              hasMedia={hasMedia}
-              onSwitchToMedia={() => setActiveTab('media')}
-            />
-          )}
-          {activeTab === 'media' && (
-            <MediaTab
-              videosByType={videosByType}
-              posters={movie.posters}
-              onSelectPoster={setSelectedPoster}
-            />
+            <OverviewTab movie={movie} onExploreMedia={() => router.push(`/movie/${id}/media`)} />
           )}
           {activeTab === 'cast' && (
             <CastTab
@@ -209,8 +194,6 @@ export default function MovieDetailScreen() {
         onSubmit={handleSubmitReview}
         onClose={() => setShowReviewModal(false)}
       />
-
-      <PosterModal poster={selectedPoster} onClose={() => setSelectedPoster(null)} />
     </View>
   );
 }

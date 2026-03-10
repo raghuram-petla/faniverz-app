@@ -5,16 +5,18 @@ import { useTheme } from '@/theme';
 import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { MediaSummaryCard } from './MediaSummaryCard';
 
-interface OverviewTabProps {
+export interface OverviewTabProps {
   movie: MovieWithDetails;
-  hasMedia: boolean;
-  onSwitchToMedia: () => void;
+  onExploreMedia: () => void;
 }
 
-export function OverviewTab({ movie, hasMedia, onSwitchToMedia }: OverviewTabProps) {
+export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
+  const hasMedia = movie.videos.length > 0 || movie.posters.length > 0;
+
   return (
     <View style={styles.overviewTab}>
       {movie.synopsis && <Text style={styles.synopsis}>{movie.synopsis}</Text>}
@@ -64,41 +66,12 @@ export function OverviewTab({ movie, hasMedia, onSwitchToMedia }: OverviewTabPro
         </View>
       )}
 
-      {hasMedia && movie.videos.length > 0 ? (
-        (() => {
-          const firstVideo =
-            movie.videos.find((v) => v.video_type === 'trailer') ??
-            movie.videos.find((v) => v.video_type === 'teaser') ??
-            movie.videos[0];
-          return (
-            <TouchableOpacity
-              style={styles.videoPreviewCard}
-              onPress={onSwitchToMedia}
-              accessibilityLabel={`${firstVideo.title} — tap for more videos`}
-            >
-              <View style={styles.videoPreviewThumb}>
-                <Image
-                  source={{
-                    uri: `https://img.youtube.com/vi/${firstVideo.youtube_id}/mqdefault.jpg`,
-                  }}
-                  style={styles.videoPreviewImage}
-                  contentFit="cover"
-                />
-                <View style={styles.videoPreviewPlay}>
-                  <Ionicons name="play-circle" size={40} color={colors.white} />
-                </View>
-              </View>
-              <View style={styles.videoPreviewInfo}>
-                <Text style={styles.videoPreviewTitle} numberOfLines={1}>
-                  {firstVideo.title}
-                </Text>
-                <Text style={styles.videoPreviewSubtitle}>
-                  {movie.videos.length} video{movie.videos.length !== 1 ? 's' : ''} — Tap for all
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })()
+      {hasMedia ? (
+        <MediaSummaryCard
+          videos={movie.videos}
+          posters={movie.posters}
+          onExploreMedia={onExploreMedia}
+        />
       ) : movie.trailer_url ? (
         <TouchableOpacity
           style={styles.trailerButton}

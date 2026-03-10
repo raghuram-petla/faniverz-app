@@ -9,9 +9,10 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+const mockPush = jest.fn();
 const mockBack = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: mockBack, dismissAll: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: mockBack, dismissAll: jest.fn() }),
   useLocalSearchParams: () => ({ id: 'movie-1' }),
   useNavigation: () => ({ getState: () => ({ index: 0 }) }),
 }));
@@ -82,7 +83,7 @@ jest.mock('@/components/ui/StarRating', () => {
 import React from 'react';
 import { Share, Linking } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import MovieDetailScreen from '../[id]';
+import MovieDetailScreen from '../index';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useIsWatchlisted } from '@/features/watchlist/hooks';
 import { useMovieReviews } from '@/features/reviews/hooks';
@@ -191,7 +192,6 @@ describe('MovieDetailScreen', () => {
 
   it('shows the star rating component', () => {
     render(<MovieDetailScreen />);
-    // Navigate to reviews tab and open the Write Review modal to trigger StarRating
     fireEvent.press(screen.getByText('Reviews'));
     fireEvent.press(screen.getByText('Write Review'));
     expect(screen.getAllByTestId('star-rating').length).toBeGreaterThan(0);
@@ -215,6 +215,58 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Reviews')).toBeTruthy();
   });
 
+  it('does not show Media tab when no videos or posters', () => {
+    render(<MovieDetailScreen />);
+    expect(screen.queryByText('Media')).toBeNull();
+  });
+
+  it('shows Media tab when movie has videos', () => {
+    const movieWithVideos = {
+      ...mockMovie,
+      videos: [
+        {
+          id: 'v1',
+          movie_id: 'movie-1',
+          youtube_id: 'dQw4w9WgXcQ',
+          title: 'Official Trailer',
+          video_type: 'trailer',
+          description: null,
+          video_date: null,
+          duration: '3:20',
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+    render(<MovieDetailScreen />);
+    expect(screen.getByText('Media')).toBeTruthy();
+  });
+
+  it('navigates to media screen when Media tab is tapped', () => {
+    const movieWithVideos = {
+      ...mockMovie,
+      videos: [
+        {
+          id: 'v1',
+          movie_id: 'movie-1',
+          youtube_id: 'dQw4w9WgXcQ',
+          title: 'Official Trailer',
+          video_type: 'trailer',
+          description: null,
+          video_date: null,
+          duration: '3:20',
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Media'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/movie-1/media');
+  });
+
   it('switches to cast tab and shows cast member', () => {
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Cast'));
@@ -225,7 +277,6 @@ describe('MovieDetailScreen', () => {
   it('shows "Cast" section label when cast entries exist', () => {
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Cast'));
-    // After pressing the Cast tab, "Cast" appears twice: tab button + section label
     expect(screen.getAllByText('Cast').length).toBeGreaterThanOrEqual(2);
   });
 
@@ -252,18 +303,14 @@ describe('MovieDetailScreen', () => {
 
   it('shows movie metadata in the hero section', () => {
     render(<MovieDetailScreen />);
-    // Year extracted from release_date
     expect(screen.getByText('2025')).toBeTruthy();
-    // Runtime
     expect(screen.getByText('180m')).toBeTruthy();
-    // Certification appears in both hero and overview info card
     expect(screen.getAllByText('UA').length).toBeGreaterThan(0);
   });
 
   it('switches to the Reviews tab and shows rating summary', () => {
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Reviews'));
-    // 4.5 appears in both the hero and the rating summary
     expect(screen.getAllByText('4.5').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('/5')).toBeTruthy();
     expect(screen.getAllByText('(10 reviews)').length).toBeGreaterThanOrEqual(1);
@@ -325,26 +372,15 @@ describe('MovieDetailScreen', () => {
 
   it('submits a review via the modal', () => {
     render(<MovieDetailScreen />);
-
-    // Navigate to reviews tab
     fireEvent.press(screen.getByText('Reviews'));
-
-    // Open the review modal
     fireEvent.press(screen.getByText('Write Review'));
-
-    // Set a rating using the mocked interactive star
     fireEvent.press(screen.getByTestId('star-rate-4'));
-
-    // Fill in title and body
     fireEvent.changeText(screen.getByPlaceholderText('Review Title'), 'Amazing Movie');
     fireEvent.changeText(
       screen.getByPlaceholderText('Write your review...'),
       'Loved every moment of it.',
     );
-
-    // Submit
     fireEvent.press(screen.getByText('Submit'));
-
     expect(mockCreateReviewMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-1',
@@ -373,19 +409,10 @@ describe('MovieDetailScreen', () => {
       },
     ];
     (useMovieReviews as jest.Mock).mockReturnValue({ data: mockReviews });
-
     render(<MovieDetailScreen />);
-
-    // Navigate to reviews tab
     fireEvent.press(screen.getByText('Reviews'));
-
-    // Press the helpful button
     fireEvent.press(screen.getByLabelText('Mark review as helpful, 5 found helpful'));
-
-    expect(mockHelpfulMutate).toHaveBeenCalledWith({
-      userId: 'user-1',
-      reviewId: 'r1',
-    });
+    expect(mockHelpfulMutate).toHaveBeenCalledWith({ userId: 'user-1', reviewId: 'r1' });
   });
 
   it('shows platform button in Watch On section and opens URL on press', () => {
@@ -418,14 +445,8 @@ describe('MovieDetailScreen', () => {
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Reviews'));
     fireEvent.press(screen.getByText('Write Review'));
-
-    // Modal should be open with Cancel visible
     expect(screen.getByText('Cancel')).toBeTruthy();
-
     fireEvent.press(screen.getByText('Cancel'));
-
-    // After cancelling, the modal content should be hidden
-    // The "Write Review" button in the reviews tab should still be there
     expect(screen.getByText('Write Review')).toBeTruthy();
   });
 
@@ -433,11 +454,9 @@ describe('MovieDetailScreen', () => {
     jest
       .spyOn(require('@/features/auth/providers/AuthProvider'), 'useAuth')
       .mockReturnValue({ user: null });
-
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Reviews'));
     fireEvent.press(screen.getByText('Write Review'));
-    // Rating is 0, so submit is disabled — mutate should not be called
     fireEvent.press(screen.getByText('Submit'));
     expect(mockCreateReviewMutate).not.toHaveBeenCalled();
   });
@@ -446,9 +465,7 @@ describe('MovieDetailScreen', () => {
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Reviews'));
     fireEvent.press(screen.getByText('Write Review'));
-    // Press the Contains Spoiler toggle
     fireEvent.press(screen.getByText('Contains Spoiler'));
-    // Should not crash — just verify it renders
     expect(screen.getByText('Contains Spoiler')).toBeTruthy();
   });
 
@@ -495,12 +512,7 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Streaming')).toBeTruthy();
   });
 
-  it('does not show Media tab when no videos or posters', () => {
-    render(<MovieDetailScreen />);
-    expect(screen.queryByText('Media')).toBeNull();
-  });
-
-  it('shows Media tab when movie has videos', () => {
+  it('shows MediaSummaryCard when movie has videos', () => {
     const movieWithVideos = {
       ...mockMovie,
       videos: [
@@ -520,10 +532,11 @@ describe('MovieDetailScreen', () => {
     };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
     render(<MovieDetailScreen />);
-    expect(screen.getByText('Media')).toBeTruthy();
+    expect(screen.getByText('Explore All Media')).toBeTruthy();
+    expect(screen.getByText('1 Video')).toBeTruthy();
   });
 
-  it('switches to Media tab and shows video title', () => {
+  it('navigates to media screen when MediaSummaryCard is tapped', () => {
     const movieWithVideos = {
       ...mockMovie,
       videos: [
@@ -543,55 +556,8 @@ describe('MovieDetailScreen', () => {
     };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Media'));
-    expect(screen.getByText('Official Trailer')).toBeTruthy();
-  });
-
-  it('shows Media tab when movie has posters', () => {
-    const movieWithPosters = {
-      ...mockMovie,
-      posters: [
-        {
-          id: 'p1',
-          movie_id: 'movie-1',
-          image_url: 'https://r2.dev/poster.jpg',
-          title: 'First Look',
-          description: null,
-          poster_date: null,
-          is_main: true,
-          display_order: 0,
-          created_at: '',
-        },
-      ],
-    };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithPosters });
-    render(<MovieDetailScreen />);
-    expect(screen.getByText('Media')).toBeTruthy();
-  });
-
-  it('shows poster title and main badge in Media tab', () => {
-    const movieWithPosters = {
-      ...mockMovie,
-      posters: [
-        {
-          id: 'p1',
-          movie_id: 'movie-1',
-          image_url: 'https://r2.dev/poster.jpg',
-          title: 'First Look',
-          description: null,
-          poster_date: null,
-          is_main: true,
-          display_order: 0,
-          created_at: '',
-        },
-      ],
-    };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithPosters });
-    render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Media'));
-    expect(screen.getByLabelText('Filter by Posters')).toBeTruthy();
-    expect(screen.getByText('First Look')).toBeTruthy();
-    expect(screen.getByText('Main')).toBeTruthy();
+    fireEvent.press(screen.getByText('Explore All Media'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/movie-1/media');
   });
 
   it('shows production houses in overview tab', () => {
@@ -611,54 +577,5 @@ describe('MovieDetailScreen', () => {
     render(<MovieDetailScreen />);
     expect(screen.getByText('Production')).toBeTruthy();
     expect(screen.getByText('Mythri Movie Makers')).toBeTruthy();
-  });
-
-  it('shows video duration badge', () => {
-    const movieWithVideos = {
-      ...mockMovie,
-      videos: [
-        {
-          id: 'v1',
-          movie_id: 'movie-1',
-          youtube_id: 'dQw4w9WgXcQ',
-          title: 'Official Trailer',
-          video_type: 'trailer',
-          description: null,
-          video_date: null,
-          duration: '3:20',
-          display_order: 0,
-          created_at: '',
-        },
-      ],
-    };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
-    render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Media'));
-    expect(screen.getByText('3:20')).toBeTruthy();
-  });
-
-  it('plays video inline when video card is pressed', () => {
-    const movieWithVideos = {
-      ...mockMovie,
-      videos: [
-        {
-          id: 'v1',
-          movie_id: 'movie-1',
-          youtube_id: 'dQw4w9WgXcQ',
-          title: 'Official Trailer',
-          video_type: 'trailer',
-          description: null,
-          video_date: null,
-          duration: '3:20',
-          display_order: 0,
-          created_at: '',
-        },
-      ],
-    };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
-    render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Media'));
-    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
-    expect(screen.getByTestId('webview')).toBeTruthy();
   });
 });

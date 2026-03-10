@@ -11,6 +11,8 @@ interface ScreenHeaderProps {
   backIcon?: 'arrow-back' | 'chevron-back';
   titleBadge?: React.ReactNode;
   rightAction?: React.ReactNode;
+  /** Force-show the home button (useful inside nested stacks where auto-detection underestimates depth) */
+  forceShowHome?: boolean;
 }
 
 export default function ScreenHeader({
@@ -19,6 +21,7 @@ export default function ScreenHeader({
   backIcon = 'chevron-back',
   titleBadge,
   rightAction,
+  forceShowHome,
 }: ScreenHeaderProps) {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -28,7 +31,7 @@ export default function ScreenHeader({
 
   // Show home button when 2+ screens are pushed on top of the root (tabs)
   const stackDepth = state?.index ?? 0;
-  const showHome = stackDepth >= 2;
+  const showHome = forceShowHome ?? stackDepth >= 2;
 
   const homeButton = showHome ? (
     <TouchableOpacity
