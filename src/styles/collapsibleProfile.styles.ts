@@ -2,9 +2,8 @@ import { StyleSheet } from 'react-native';
 import type { SemanticTheme } from '@shared/themes';
 
 export const NAV_BAR_HEIGHT = 48;
-export const COLLAPSED_BAR_HEIGHT = 56;
 export const IMAGE_EXPANDED = 120;
-export const IMAGE_COLLAPSED = 48;
+export const IMAGE_COLLAPSED = 32;
 export const COLLAPSE_SCROLL_DISTANCE = 140;
 // marginTop(12) + approx text line height(30) + marginBottom(8)
 export const HERO_NAME_PLACEHOLDER_HEIGHT = 50;
@@ -39,30 +38,18 @@ export const createStyles = (t: SemanticTheme) =>
     },
     navPlaceholder: { width: 40 },
 
-    // Collapsed bar background — floating avatar + name provide content
-    collapsedBar: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      height: COLLAPSED_BAR_HEIGHT,
-      backgroundColor: t.background,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: t.border,
-      zIndex: 5,
-    },
-
     // Floating avatar (absolutely positioned, animated via transforms)
     floatingAvatar: {
       position: 'absolute',
       width: IMAGE_EXPANDED,
       height: IMAGE_EXPANDED,
-      zIndex: 6,
+      zIndex: 11,
     },
 
     // Floating name (absolutely positioned, animated via transforms)
     floatingName: {
       position: 'absolute',
-      zIndex: 6,
+      zIndex: 11,
     },
     floatingNameText: {
       fontSize: 24,

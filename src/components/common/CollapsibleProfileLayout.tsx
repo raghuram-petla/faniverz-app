@@ -14,11 +14,9 @@ import { HomeButton } from './HomeButton';
 import {
   createStyles,
   NAV_BAR_HEIGHT,
-  COLLAPSED_BAR_HEIGHT,
   IMAGE_EXPANDED,
   IMAGE_COLLAPSED,
   COLLAPSE_SCROLL_DISTANCE,
-  HERO_NAME_PLACEHOLDER_HEIGHT,
 } from '@/styles/collapsibleProfile.styles';
 
 export interface CollapsibleProfileLayoutProps {
@@ -75,8 +73,8 @@ export function CollapsibleProfileLayout({
   // Position anchors
   const scrollViewTop = insets.top + NAV_BAR_HEIGHT;
   const heroAvatarCY = scrollViewTop + 16 + IMAGE_EXPANDED / 2;
-  const collapsedCY = scrollViewTop + COLLAPSED_BAR_HEIGHT / 2;
-  const NAME_SCALE = 18 / 24;
+  const collapsedCY = insets.top + NAV_BAR_HEIGHT / 2;
+  const NAME_SCALE = 14 / 24;
   const COLLAPSED_GAP = 10;
 
   // --- Floating avatar: centered in hero → left-of-center in collapsed (side-by-side with name) ---
@@ -135,16 +133,6 @@ export function CollapsibleProfileLayout({
     };
   });
 
-  // Collapsed bar background fades in
-  const collapsedOpacity = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      scrollOffset.value,
-      [COLLAPSE_SCROLL_DISTANCE * 0.5, COLLAPSE_SCROLL_DISTANCE],
-      [0, 1],
-      Extrapolation.CLAMP,
-    ),
-  }));
-
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollOffset.value = e.nativeEvent.contentOffset.y;
     onScroll?.(e);
@@ -165,12 +153,6 @@ export function CollapsibleProfileLayout({
         </View>
         {rightContent ?? <View style={styles.navPlaceholder} />}
       </View>
-
-      {/* Collapsed bar background — fades in on scroll */}
-      <Animated.View
-        style={[styles.collapsedBar, { top: insets.top + NAV_BAR_HEIGHT }, collapsedOpacity]}
-        testID="collapsed-bar"
-      />
 
       {/* Floating animated avatar */}
       <Animated.View

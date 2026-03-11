@@ -5,9 +5,8 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('@/styles/collapsibleProfile.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
   NAV_BAR_HEIGHT: 48,
-  COLLAPSED_BAR_HEIGHT: 56,
   IMAGE_EXPANDED: 120,
-  IMAGE_COLLAPSED: 48,
+  IMAGE_COLLAPSED: 32,
   COLLAPSE_SCROLL_DISTANCE: 140,
   HERO_NAME_PLACEHOLDER_HEIGHT: 50,
 }));
@@ -60,11 +59,6 @@ describe('CollapsibleProfileLayout', () => {
   it('renders floating name element', () => {
     render(<CollapsibleProfileLayout {...defaultProps} />);
     expect(screen.getByTestId('floating-name')).toBeTruthy();
-  });
-
-  it('renders the collapsed bar', () => {
-    render(<CollapsibleProfileLayout {...defaultProps} />);
-    expect(screen.getByTestId('collapsed-bar')).toBeTruthy();
   });
 
   it('wraps hero image in pressable when onImagePress provided', () => {
