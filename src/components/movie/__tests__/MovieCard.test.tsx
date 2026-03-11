@@ -8,6 +8,20 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+const mockFollowMutate = jest.fn();
+const mockUnfollowMutate = jest.fn();
+const mockFollowSet = new Set<string>();
+
+jest.mock('@/features/feed', () => ({
+  useEntityFollows: () => ({ followSet: mockFollowSet }),
+  useFollowEntity: () => ({ mutate: mockFollowMutate }),
+  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate }),
+}));
+
+jest.mock('@/hooks/useAuthGate', () => ({
+  useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
+}));
+
 const mockMovie: Movie = {
   id: '1',
   tmdb_id: null,
@@ -38,6 +52,11 @@ const mockMovie: Movie = {
 };
 
 describe('MovieCard', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFollowSet.clear();
+  });
+
   it('renders movie title', () => {
     const { getByText } = render(<MovieCard movie={mockMovie} />);
     expect(getByText('Pushpa 2: The Rule')).toBeTruthy();
@@ -98,5 +117,29 @@ describe('MovieCard', () => {
     const noPosterMovie = { ...mockMovie, poster_url: null };
     const { getByText } = render(<MovieCard movie={noPosterMovie} />);
     expect(getByText('Pushpa 2: The Rule')).toBeTruthy();
+  });
+
+  it('renders follow overlay on poster', () => {
+    const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
+    expect(getByLabelText('Follow Pushpa 2: The Rule')).toBeTruthy();
+  });
+
+  it('shows following state when movie is followed', () => {
+    mockFollowSet.add('movie:1');
+    const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
+    expect(getByLabelText(/Following Pushpa 2: The Rule/)).toBeTruthy();
+  });
+
+  it('calls follow mutation when follow overlay is pressed', () => {
+    const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
+    fireEvent.press(getByLabelText('Follow Pushpa 2: The Rule'));
+    expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: '1' });
+  });
+
+  it('calls unfollow mutation when already following', () => {
+    mockFollowSet.add('movie:1');
+    const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
+    fireEvent.press(getByLabelText(/Following Pushpa 2: The Rule/));
+    expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: '1' });
   });
 });

@@ -7,6 +7,7 @@ import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useIsWatchlisted, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
+import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { MovieHeroSection } from '@/components/movie/detail/MovieHeroSection';
 import { WatchOnSection } from '@/components/movie/detail/WatchOnSection';
@@ -41,6 +42,9 @@ export default function MovieDetailScreen() {
   const { data: reviews = [], refetch: refetchReviews } = useMovieReviews(id ?? '');
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
   const { gate } = useAuthGate();
+  const { followSet } = useEntityFollows();
+  const followMutation = useFollowEntity();
+  const unfollowMutation = useUnfollowEntity();
   const { refreshing, onRefresh } = useRefresh(refetchMovie, refetchReviews);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
     onRefresh,
@@ -55,6 +59,15 @@ export default function MovieDetailScreen() {
   const [containsSpoiler, setContainsSpoiler] = useState(false);
 
   const isWatchlisted = !!watchlistEntry;
+  const isFollowing = followSet.has(`movie:${id}`);
+
+  const handleFollowToggle = gate(() => {
+    if (isFollowing) {
+      unfollowMutation.mutate({ entityType: 'movie', entityId: id ?? '' });
+    } else {
+      followMutation.mutate({ entityType: 'movie', entityId: id ?? '' });
+    }
+  });
 
   if (!movie) return null;
 
@@ -167,9 +180,12 @@ export default function MovieDetailScreen() {
       <MovieDetailHeader
         insetsTop={insets.top}
         isWatchlisted={isWatchlisted}
+        isFollowing={isFollowing}
         onBack={() => router.back()}
         onShare={handleShare}
         onToggleWatchlist={handleToggleWatchlist}
+        onToggleFollow={handleFollowToggle}
+        movieTitle={movie.title}
       />
 
       <ReviewModal

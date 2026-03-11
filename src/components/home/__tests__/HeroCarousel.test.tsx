@@ -8,6 +8,24 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
+jest.mock('@/theme/colors', () => ({
+  colors: new Proxy({}, { get: () => '#000' }),
+}));
+
+const mockFollowMutate = jest.fn();
+const mockUnfollowMutate = jest.fn();
+const mockFollowSet = new Set<string>();
+
+jest.mock('@/features/feed', () => ({
+  useEntityFollows: () => ({ followSet: mockFollowSet }),
+  useFollowEntity: () => ({ mutate: mockFollowMutate }),
+  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate }),
+}));
+
+jest.mock('@/hooks/useAuthGate', () => ({
+  useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
+}));
+
 const mockPlatformMap: Record<string, OTTPlatform[]> = {
   '2': [
     {
@@ -83,6 +101,7 @@ const mockMovies: Movie[] = [
 describe('HeroCarousel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFollowSet.clear();
   });
 
   it('renders all movie titles in the FlatList', () => {
@@ -128,8 +147,8 @@ describe('HeroCarousel', () => {
     const { UNSAFE_getAllByType } = render(<HeroCarousel movies={mockMovies} />);
     const { TouchableOpacity } = require('react-native');
     const touchables = UNSAFE_getAllByType(TouchableOpacity);
-    // 2 slides x (Watch Now + More Info) + 2 pagination dots = 6
-    expect(touchables.length).toBe(6);
+    // 2 slides x (Watch Now + Follow + More Info) + 2 pagination dots = 8
+    expect(touchables.length).toBe(8);
   });
 
   it('does not render pagination dots for a single movie', () => {
@@ -137,8 +156,8 @@ describe('HeroCarousel', () => {
     const { UNSAFE_getAllByType } = render(<HeroCarousel movies={singleMovie} />);
     const { TouchableOpacity } = require('react-native');
     const touchables = UNSAFE_getAllByType(TouchableOpacity);
-    // 1 slide x (Watch Now + More Info) = 2, no dots
-    expect(touchables.length).toBe(2);
+    // 1 slide x (Watch Now + Follow + More Info) = 3, no dots
+    expect(touchables.length).toBe(3);
   });
 
   it('renders nothing when movies array is empty', () => {
@@ -300,5 +319,29 @@ describe('HeroCarousel', () => {
       (img: { props: { contentPosition?: unknown } }) => img.props.contentPosition,
     );
     expect(imageWithPosition?.props.contentPosition).toEqual({ left: '30%', top: '70%' });
+  });
+
+  it('renders Follow button in each carousel slide', () => {
+    const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
+    expect(getByLabelText('Follow Pushpa 2')).toBeTruthy();
+  });
+
+  it('shows Following state when movie is followed', () => {
+    mockFollowSet.add('movie:1');
+    const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
+    expect(getByLabelText(/Following Pushpa 2/)).toBeTruthy();
+  });
+
+  it('calls follow mutation when Follow button is pressed', () => {
+    const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
+    fireEvent.press(getByLabelText('Follow Pushpa 2'));
+    expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: '1' });
+  });
+
+  it('calls unfollow mutation when already following', () => {
+    mockFollowSet.add('movie:1');
+    const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
+    fireEvent.press(getByLabelText(/Following Pushpa 2/));
+    expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: '1' });
   });
 });

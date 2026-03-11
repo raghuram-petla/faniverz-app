@@ -61,6 +61,16 @@ jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
 }));
 
+const mockFollowMutate = jest.fn();
+const mockUnfollowMutate = jest.fn();
+const mockFollowSet = new Set<string>();
+
+jest.mock('@/features/feed', () => ({
+  useEntityFollows: () => ({ followSet: mockFollowSet }),
+  useFollowEntity: () => ({ mutate: mockFollowMutate }),
+  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate }),
+}));
+
 jest.mock('@/components/ui/StarRating', () => {
   const { View, TouchableOpacity, Text } = require('react-native');
   return {
@@ -171,6 +181,7 @@ const mockMovie = {
 describe('MovieDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFollowSet.clear();
     (useMovieDetail as jest.Mock).mockReturnValue({ data: mockMovie });
   });
 
@@ -473,6 +484,24 @@ describe('MovieDetailScreen', () => {
     (useMovieDetail as jest.Mock).mockReturnValue({ data: ottMovie });
     render(<MovieDetailScreen />);
     expect(screen.getByText('Streaming')).toBeTruthy();
+  });
+
+  it('renders Follow button in header', () => {
+    render(<MovieDetailScreen />);
+    expect(screen.getByLabelText('Follow Pushpa 2')).toBeTruthy();
+  });
+
+  it('calls follow mutation when Follow is pressed', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Follow Pushpa 2'));
+    expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
+  });
+
+  it('calls unfollow mutation when Following is pressed', () => {
+    mockFollowSet.add('movie:movie-1');
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByLabelText(/Following Pushpa 2/));
+    expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
   });
 
   it('shows MediaSummaryCard when movie has videos', () => {

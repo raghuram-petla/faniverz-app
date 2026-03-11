@@ -21,9 +21,12 @@ jest.mock('expo-router', () => ({
 const baseProps = {
   insetsTop: 44,
   isWatchlisted: false,
+  isFollowing: false,
   onBack: jest.fn(),
   onShare: jest.fn(),
   onToggleWatchlist: jest.fn(),
+  onToggleFollow: jest.fn(),
+  movieTitle: 'Test Movie',
 };
 
 describe('MovieDetailHeader', () => {
@@ -83,5 +86,22 @@ describe('MovieDetailHeader', () => {
   it('shows correct accessibility label for watchlisted state', () => {
     render(<MovieDetailHeader {...baseProps} isWatchlisted={true} />);
     expect(screen.getByLabelText(/remove.*watchlist/i)).toBeTruthy();
+  });
+
+  it('renders Follow button when not following', () => {
+    render(<MovieDetailHeader {...baseProps} isFollowing={false} />);
+    expect(screen.getByLabelText('Follow Test Movie')).toBeTruthy();
+  });
+
+  it('renders Following state when following', () => {
+    render(<MovieDetailHeader {...baseProps} isFollowing={true} />);
+    expect(screen.getByLabelText(/Following Test Movie/)).toBeTruthy();
+  });
+
+  it('calls onToggleFollow when follow button pressed', () => {
+    const onToggleFollow = jest.fn();
+    render(<MovieDetailHeader {...baseProps} onToggleFollow={onToggleFollow} />);
+    fireEvent.press(screen.getByLabelText('Follow Test Movie'));
+    expect(onToggleFollow).toHaveBeenCalled();
   });
 });

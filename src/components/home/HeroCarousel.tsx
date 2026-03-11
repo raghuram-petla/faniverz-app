@@ -5,12 +5,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
+import { useAuthGate } from '@/hooks/useAuthGate';
 
 const AUTO_PLAY_INTERVAL = 5000;
 
@@ -26,6 +29,10 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList<Movie>>(null);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { followSet } = useEntityFollows();
+  const followMutation = useFollowEntity();
+  const unfollowMutation = useUnfollowEntity();
+  const { gate } = useAuthGate();
 
   // Track visible item via onViewableItemsChanged
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -72,10 +79,23 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
 
   if (movies.length === 0) return null;
 
+  const handleFollowToggle = useCallback(
+    (movieId: string) =>
+      gate(() => {
+        if (followSet.has(`movie:${movieId}`)) {
+          unfollowMutation.mutate({ entityType: 'movie', entityId: movieId });
+        } else {
+          followMutation.mutate({ entityType: 'movie', entityId: movieId });
+        }
+      })(),
+    [gate, followSet, followMutation, unfollowMutation],
+  );
+
   const renderSlide = ({ item }: { item: Movie }) => {
     const platforms_ = platformMap?.[item.id] ?? [];
     const releaseYear = item.release_date ? new Date(item.release_date).getFullYear() : null;
     const status = deriveMovieStatus(item, platforms_.length);
+    const isItemFollowing = followSet.has(`movie:${item.id}`);
 
     return (
       <View style={styles.slide}>
@@ -170,12 +190,36 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
+              style={styles.followButton}
+              onPress={() => handleFollowToggle(item.id)}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isItemFollowing
+                  ? `Following ${item.title}, tap to unfollow`
+                  : `Follow ${item.title}`
+              }
+            >
+              <Ionicons
+                name={isItemFollowing ? 'checkmark-circle' : 'person-add-outline'}
+                size={16}
+                color={isItemFollowing ? palette.green500 : '#000000'}
+              />
+              <Text
+                style={[
+                  styles.followButtonText,
+                  { color: isItemFollowing ? palette.green500 : '#000000' },
+                ]}
+              >
+                {isItemFollowing ? 'Following' : 'Follow'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={styles.infoButton}
               onPress={() => handleWatchNow(item)}
               accessibilityRole="button"
               accessibilityLabel="More Info"
             >
-              <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
+              <Ionicons name="chevron-forward" size={22} color="#000000" />
             </TouchableOpacity>
           </View>
         </View>
