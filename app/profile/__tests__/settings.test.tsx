@@ -40,10 +40,18 @@ describe('SettingsScreen', () => {
     expect(screen.getByText('Settings')).toBeTruthy();
   });
 
-  it('renders Appearance section with Theme row', () => {
+  it('renders Appearance section with all theme options', () => {
     render(<SettingsScreen />);
     expect(screen.getByText('Appearance')).toBeTruthy();
     expect(screen.getByText('Theme')).toBeTruthy();
+    expect(screen.getByText('System')).toBeTruthy();
+    expect(screen.getByText('Light')).toBeTruthy();
+    expect(screen.getByText('Dark')).toBeTruthy();
+  });
+
+  it('calls setMode when a theme chip is pressed', () => {
+    render(<SettingsScreen />);
+    fireEvent.press(screen.getByText('Dark'));
   });
 
   it('renders notification toggles section when logged in', () => {

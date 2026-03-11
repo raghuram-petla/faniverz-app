@@ -73,6 +73,41 @@ export const createStyles = (t: SemanticTheme) =>
       color: t.textTertiary,
     },
 
+    // Radio row (theme selector)
+    radioRow: {
+      paddingHorizontal: 16,
+      paddingVertical: 15,
+    },
+    radioHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 12,
+    },
+    radioOptions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    radioChip: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 10,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    radioChipSelected: {
+      backgroundColor: palette.red600,
+    },
+    radioChipText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: t.textSecondary,
+    },
+    radioChipTextSelected: {
+      color: palette.white,
+    },
+
     // Toggle
     toggle: {
       width: 48,

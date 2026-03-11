@@ -25,24 +25,27 @@ interface LinkRow {
   onPress?: () => void;
 }
 
-type SettingsRow = ToggleRow | LinkRow;
+interface RadioRow {
+  kind: 'radio';
+  icon: IconName;
+  label: string;
+  options: { key: string; label: string }[];
+  selected: string;
+  onSelect: (key: string) => void;
+}
+
+type SettingsRow = ToggleRow | LinkRow | RadioRow;
 
 interface Section {
   title: string;
   rows: SettingsRow[];
 }
 
-const THEME_MODE_LABELS: Record<string, string> = {
-  system: 'System',
-  light: 'Light',
-  dark: 'Dark',
-};
-
-function nextThemeMode(current: string): 'system' | 'light' | 'dark' {
-  if (current === 'system') return 'light';
-  if (current === 'light') return 'dark';
-  return 'system';
-}
+const THEME_OPTIONS: { key: string; label: string }[] = [
+  { key: 'system', label: 'System' },
+  { key: 'light', label: 'Light' },
+  { key: 'dark', label: 'Dark' },
+];
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -66,11 +69,12 @@ export default function SettingsScreen() {
       title: 'Appearance',
       rows: [
         {
-          kind: 'link',
+          kind: 'radio',
           icon: 'sunny-outline',
           label: 'Theme',
-          value: THEME_MODE_LABELS[mode],
-          onPress: () => setMode(nextThemeMode(mode)),
+          options: THEME_OPTIONS,
+          selected: mode,
+          onSelect: (key: string) => setMode(key as 'system' | 'light' | 'dark'),
         },
       ],
     },
@@ -187,6 +191,40 @@ export default function SettingsScreen() {
                         ]}
                       />
                     </TouchableOpacity>
+                  </View>
+                );
+              }
+              if (row.kind === 'radio') {
+                return (
+                  <View key={row.label} style={[styles.radioRow, !isLast && styles.rowBorder]}>
+                    <View style={styles.radioHeader}>
+                      <View style={styles.iconWrapper}>
+                        <Ionicons name={row.icon} size={18} color={theme.textSecondary} />
+                      </View>
+                      <Text style={styles.rowLabel}>{row.label}</Text>
+                    </View>
+                    <View style={styles.radioOptions}>
+                      {row.options.map((opt) => {
+                        const isSelected = opt.key === row.selected;
+                        return (
+                          <TouchableOpacity
+                            key={opt.key}
+                            style={[styles.radioChip, isSelected && styles.radioChipSelected]}
+                            activeOpacity={1}
+                            onPress={() => row.onSelect(opt.key)}
+                          >
+                            <Text
+                              style={[
+                                styles.radioChipText,
+                                isSelected && styles.radioChipTextSelected,
+                              ]}
+                            >
+                              {opt.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                   </View>
                 );
               }
