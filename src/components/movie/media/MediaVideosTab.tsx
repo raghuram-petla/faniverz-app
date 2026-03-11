@@ -35,6 +35,14 @@ export function MediaVideosTab({ videosByType, activeCategory }: MediaVideosTabP
     return videosByType.filter((g) => g.label === activeCategory);
   }, [activeCategory, videosByType]);
 
+  if (filteredGroups.length === 0) {
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyStateText}>No videos available yet</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.videosTab}>
       {filteredGroups.map((group) => (

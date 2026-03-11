@@ -24,6 +24,55 @@ jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: (fn: () => void) => fn }),
 }));
 
+jest.mock('@/components/common/CollapsibleProfileLayout', () => ({
+  CollapsibleProfileLayout: ({
+    name,
+    renderImage,
+    onBack,
+    onImagePress,
+    rightContent,
+    heroContent,
+    children,
+  }: any) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View>
+        <TouchableOpacity onPress={onBack} accessibilityLabel="Go back">
+          <Text>Back</Text>
+        </TouchableOpacity>
+        {rightContent}
+        {onImagePress ? (
+          <TouchableOpacity onPress={onImagePress} testID="avatar-tap">
+            {renderImage(120)}
+          </TouchableOpacity>
+        ) : (
+          renderImage(120)
+        )}
+        <Text>{name}</Text>
+        {heroContent}
+        {children}
+      </View>
+    );
+  },
+}));
+
+jest.mock('@/hooks/useRefresh', () => ({
+  useRefresh: () => ({ refreshing: false, onRefresh: jest.fn() }),
+}));
+
+jest.mock('@/hooks/usePullToRefresh', () => ({
+  usePullToRefresh: () => ({
+    pullDistance: { value: 0 },
+    isRefreshing: { value: false },
+    handlePullScroll: jest.fn(),
+    handleScrollEndDrag: jest.fn(),
+  }),
+}));
+
+jest.mock('@/components/common/PullToRefreshIndicator', () => ({
+  PullToRefreshIndicator: () => null,
+}));
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import ActorDetailScreen from '../[id]';

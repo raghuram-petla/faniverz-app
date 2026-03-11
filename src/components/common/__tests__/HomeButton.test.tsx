@@ -4,16 +4,21 @@ import { HomeButton } from '../HomeButton';
 
 const mockDismissAll = jest.fn();
 const mockState = { index: 1 };
+let mockParent: (() => any) | undefined;
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ dismissAll: mockDismissAll }),
-  useNavigation: () => ({ getState: () => mockState }),
+  useNavigation: () => ({
+    getState: () => mockState,
+    getParent: () => (mockParent ? mockParent() : undefined),
+  }),
 }));
 
 describe('HomeButton', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockState.index = 1;
+    mockParent = undefined;
   });
 
   it('renders nothing when stack index < 2', () => {
@@ -70,5 +75,20 @@ describe('HomeButton', () => {
     mockState.index = 2;
     const { getByTestId } = render(<HomeButton iconColor="#ffffff" />);
     expect(getByTestId('home-button')).toBeTruthy();
+  });
+
+  it('uses parent navigator index for nested stacks', () => {
+    // Nested stack: local index 0, parent index 3
+    mockState.index = 0;
+    mockParent = () => ({ getState: () => ({ index: 3 }) });
+    const { getByTestId } = render(<HomeButton />);
+    expect(getByTestId('home-button')).toBeTruthy();
+  });
+
+  it('hides when parent navigator depth < 2 in nested stack', () => {
+    mockState.index = 0;
+    mockParent = () => ({ getState: () => ({ index: 1 }) });
+    const { queryByTestId } = render(<HomeButton />);
+    expect(queryByTestId('home-button')).toBeNull();
   });
 });

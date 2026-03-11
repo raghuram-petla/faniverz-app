@@ -117,4 +117,15 @@ export const createStyles = (t: SemanticTheme) =>
       padding: 6,
     },
     photoTitle: { fontSize: 10, fontWeight: '600', color: colors.white },
+
+    // Empty state
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 60,
+    },
+    emptyStateText: {
+      fontSize: 15,
+      color: t.textSecondary,
+    },
   });

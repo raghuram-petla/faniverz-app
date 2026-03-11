@@ -49,9 +49,9 @@ describe('Home button consistency', () => {
       const hasHomeButton = content.includes('HomeButton');
       const hasMovieDetailHeader = content.includes('MovieDetailHeader');
       // Components that internally contain HomeButton
-      const hasActorCollapsibleHeader = content.includes('ActorCollapsibleHeader');
+      const hasCollapsibleProfileLayout = content.includes('CollapsibleProfileLayout');
       expect(
-        hasScreenHeader || hasHomeButton || hasMovieDetailHeader || hasActorCollapsibleHeader,
+        hasScreenHeader || hasHomeButton || hasMovieDetailHeader || hasCollapsibleProfileLayout,
       ).toBe(true);
     },
   );

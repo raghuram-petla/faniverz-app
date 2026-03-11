@@ -55,8 +55,21 @@ jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: (fn: () => void) => fn }),
 }));
 
-jest.mock('@/components/common/HomeButton', () => ({
-  HomeButton: () => null,
+jest.mock('@/components/common/CollapsibleProfileLayout', () => ({
+  CollapsibleProfileLayout: ({ name, onBack, rightContent, heroContent, children }: any) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View>
+        <TouchableOpacity onPress={onBack} accessibilityLabel="Go back">
+          <Text>Back</Text>
+        </TouchableOpacity>
+        {rightContent}
+        <Text>{name}</Text>
+        {heroContent}
+        {children}
+      </View>
+    );
+  },
 }));
 
 jest.mock('@/components/feed/FollowButton', () => ({

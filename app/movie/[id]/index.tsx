@@ -90,10 +90,7 @@ export default function MovieDetailScreen() {
 
   const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
-  const hasMedia = movie.videos.length > 0 || movie.posters.length > 0;
-  const tabs: DisplayTab[] = hasMedia
-    ? ['overview', 'media', 'cast', 'reviews']
-    : ['overview', 'cast', 'reviews'];
+  const tabs: DisplayTab[] = ['overview', 'media', 'cast', 'reviews'];
 
   const handleTabPress = (tab: DisplayTab) => {
     if (tab === 'media') {

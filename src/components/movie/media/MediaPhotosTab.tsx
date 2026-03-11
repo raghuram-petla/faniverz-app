@@ -43,7 +43,13 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
     [openImage],
   );
 
-  if (posters.length === 0) return null;
+  if (posters.length === 0) {
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyStateText}>No photos available yet</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.photosTab}>

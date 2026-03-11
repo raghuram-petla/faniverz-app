@@ -45,6 +45,11 @@ const videosByType = [
 ];
 
 describe('MediaVideosTab', () => {
+  it('shows empty state when no videos exist', () => {
+    render(<MediaVideosTab videosByType={[]} activeCategory="All" />);
+    expect(screen.getByText('No videos available yet')).toBeTruthy();
+  });
+
   it('shows all video groups when activeCategory is All', () => {
     render(<MediaVideosTab videosByType={videosByType} activeCategory="All" />);
     expect(screen.getByText('Official Trailer')).toBeTruthy();

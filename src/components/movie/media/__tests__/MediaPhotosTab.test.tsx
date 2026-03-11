@@ -55,9 +55,9 @@ describe('MediaPhotosTab', () => {
     expect(screen.queryByText('Main')).toBeNull();
   });
 
-  it('renders nothing when posters array is empty', () => {
-    const { toJSON } = render(<MediaPhotosTab posters={[]} />);
-    expect(toJSON()).toBeNull();
+  it('shows empty state when posters array is empty', () => {
+    render(<MediaPhotosTab posters={[]} />);
+    expect(screen.getByText('No photos available yet')).toBeTruthy();
   });
 
   it('renders correct number of poster cards', () => {

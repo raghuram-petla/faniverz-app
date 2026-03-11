@@ -17,8 +17,19 @@ export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
   const { theme } = useTheme();
   const router = useRouter();
   const navigation = useNavigation();
+
+  // For screens in nested stacks (e.g. movie/[id]/_layout), the nearest
+  // navigator's index is 0. Check the parent navigator too and use the max.
   const state = navigation.getState();
-  const stackDepth = state?.index ?? 0;
+  let stackDepth = state?.index ?? 0;
+  try {
+    const parentIndex = navigation.getParent?.()?.getState?.()?.index;
+    if (parentIndex != null && parentIndex > stackDepth) {
+      stackDepth = parentIndex;
+    }
+  } catch {
+    // getParent may not exist in all environments
+  }
   const shouldShow = forceShow ?? stackDepth >= 2;
 
   if (!shouldShow) return null;

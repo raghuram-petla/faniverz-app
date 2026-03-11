@@ -219,53 +219,12 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Reviews')).toBeTruthy();
   });
 
-  it('does not show Media tab when no videos or posters', () => {
-    render(<MovieDetailScreen />);
-    expect(screen.queryByText('Media')).toBeNull();
-  });
-
-  it('shows Media tab when movie has videos', () => {
-    const movieWithVideos = {
-      ...mockMovie,
-      videos: [
-        {
-          id: 'v1',
-          movie_id: 'movie-1',
-          youtube_id: 'dQw4w9WgXcQ',
-          title: 'Official Trailer',
-          video_type: 'trailer',
-          description: null,
-          video_date: null,
-          duration: '3:20',
-          display_order: 0,
-          created_at: '',
-        },
-      ],
-    };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+  it('always shows Media tab even when no videos or posters', () => {
     render(<MovieDetailScreen />);
     expect(screen.getByText('Media')).toBeTruthy();
   });
 
   it('navigates to media screen when Media tab is tapped', () => {
-    const movieWithVideos = {
-      ...mockMovie,
-      videos: [
-        {
-          id: 'v1',
-          movie_id: 'movie-1',
-          youtube_id: 'dQw4w9WgXcQ',
-          title: 'Official Trailer',
-          video_type: 'trailer',
-          description: null,
-          video_date: null,
-          duration: '3:20',
-          display_order: 0,
-          created_at: '',
-        },
-      ],
-    };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
     render(<MovieDetailScreen />);
     fireEvent.press(screen.getByText('Media'));
     expect(mockPush).toHaveBeenCalledWith('/movie/movie-1/media');
