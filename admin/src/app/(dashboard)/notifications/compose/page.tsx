@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotification } from '@/hooks/useAdminNotifications';
 import { useAllMovies } from '@/hooks/useAdminMovies';
-import { Bell, ArrowLeft, Loader2, Search, AlertTriangle } from 'lucide-react';
+import { Bell, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
+import { MovieSearchField } from '@/components/notifications/MovieSearchField';
 
 const notificationTypes = ['release', 'watchlist', 'trending', 'reminder'] as const;
 const inputClass =
@@ -49,10 +50,6 @@ export default function ComposeNotificationPage() {
       setUserLookupError('No user found with this email');
     }
   };
-
-  const filteredMovies = movies?.filter((m) =>
-    m.title.toLowerCase().includes(movieSearch.toLowerCase()),
-  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,57 +192,24 @@ export default function ComposeNotificationPage() {
           />
         </div>
 
-        {/* Movie search (optional) */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-on-surface-muted">
-            Movie (optional)
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-disabled" />
-            <input
-              type="text"
-              value={movieSearch}
-              onChange={(e) => {
-                setMovieSearch(e.target.value);
-                if (!e.target.value) setMovieId('');
-              }}
-              placeholder="Search movies..."
-              className={`${inputClass} pl-10`}
-            />
-          </div>
-          {movieSearch && filteredMovies && filteredMovies.length > 0 && !movieId && (
-            <div className="bg-surface-elevated border border-outline rounded-lg max-h-40 overflow-y-auto">
-              {filteredMovies.slice(0, 10).map((movie) => (
-                <button
-                  key={movie.id}
-                  type="button"
-                  onClick={() => {
-                    setMovieId(movie.id);
-                    setMovieSearch(movie.title);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-input transition-colors"
-                >
-                  {movie.title}
-                </button>
-              ))}
-            </div>
-          )}
-          {movieId && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-green-400">Selected</span>
-              <button
-                type="button"
-                onClick={() => {
-                  setMovieId('');
-                  setMovieSearch('');
-                }}
-                className="text-sm text-on-surface-subtle hover:text-on-surface transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-        </div>
+        <MovieSearchField
+          movies={movies}
+          movieSearch={movieSearch}
+          movieId={movieId}
+          inputClass={inputClass}
+          onSearchChange={(v) => {
+            setMovieSearch(v);
+            if (!v) setMovieId('');
+          }}
+          onMovieSelect={(id, title) => {
+            setMovieId(id);
+            setMovieSearch(title);
+          }}
+          onClear={() => {
+            setMovieId('');
+            setMovieSearch('');
+          }}
+        />
 
         {/* Schedule */}
         <div className="space-y-3">
