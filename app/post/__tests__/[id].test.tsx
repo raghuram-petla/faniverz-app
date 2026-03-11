@@ -81,9 +81,25 @@ jest.mock('@/features/feed', () => ({
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
-  FeedCard: ({ item }: { item: { title: string } }) => {
-    const { Text } = require('react-native');
-    return <Text testID="feed-card">{item.title}</Text>;
+  FeedCard: ({
+    item,
+    onEntityPress,
+  }: {
+    item: { title: string };
+    onEntityPress?: (type: string, id: string) => void;
+  }) => {
+    const { Text, TouchableOpacity } = require('react-native');
+    return (
+      <>
+        <Text testID="feed-card">{item.title}</Text>
+        {onEntityPress && (
+          <TouchableOpacity
+            testID="entity-press-btn"
+            onPress={() => onEntityPress('movie', 'm1')}
+          />
+        )}
+      </>
+    );
   },
 }));
 
@@ -177,5 +193,11 @@ describe('PostDetailScreen', () => {
   it('renders Post title in header', () => {
     render(<PostDetailScreen />);
     expect(screen.getByText('Post')).toBeTruthy();
+  });
+
+  it('navigates to entity page when entity is pressed', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('entity-press-btn'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/m1');
   });
 });

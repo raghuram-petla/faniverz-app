@@ -11,7 +11,7 @@ import { CommentsList } from '@/components/feed/CommentsList';
 import { CommentInput } from '@/components/feed/CommentInput';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
-import type { NewsFeedItem } from '@shared/types';
+import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 export default function PostDetailScreen() {
   const { theme, colors } = useTheme();
@@ -37,6 +37,15 @@ export default function PostDetailScreen() {
 
   const handleNoOp = (_item: NewsFeedItem) => {};
 
+  const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
+    const routes: Record<FeedEntityType, string> = {
+      movie: `/movie/${entityId}`,
+      actor: `/actor/${entityId}`,
+      production_house: `/production-house/${entityId}`,
+    };
+    router.push(routes[entityType] as Parameters<typeof router.push>[0]);
+  };
+
   return (
     <View style={styles.screen}>
       <SafeAreaCover />
@@ -61,7 +70,7 @@ export default function PostDetailScreen() {
           </View>
         ) : post ? (
           <>
-            <FeedCard item={post} onPress={handleNoOp} />
+            <FeedCard item={post} onPress={handleNoOp} onEntityPress={handleEntityPress} />
 
             {/* Comments */}
             <View style={styles.commentsList}>
