@@ -468,6 +468,14 @@ describe('FeedCard', () => {
     expect(screen.queryByTestId('avatar-press')).toBeNull();
   });
 
+  it('opens post when avatar column is tapped', () => {
+    const onPress = jest.fn();
+    const item = makeItem();
+    render(<FeedCard item={item} onPress={onPress} />);
+    fireEvent.press(screen.getByLabelText(`Open ${item.title}`));
+    expect(onPress).toHaveBeenCalledWith(item);
+  });
+
   it('makes entity name tappable when onEntityPress is provided', () => {
     const onEntityPress = jest.fn();
     render(<FeedCard item={makeItem()} onPress={jest.fn()} onEntityPress={onEntityPress} />);

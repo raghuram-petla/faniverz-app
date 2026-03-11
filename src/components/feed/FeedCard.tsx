@@ -95,8 +95,13 @@ function FeedCardInner({
 
   return (
     <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
-      {/* Left column: avatar */}
-      <View style={styles.avatarColumn}>
+      {/* Left column: avatar + tappable space below */}
+      <TouchableOpacity
+        style={styles.avatarColumn}
+        activeOpacity={0.7}
+        onPress={() => onPress(item)}
+        accessibilityLabel={`Open ${item.title}`}
+      >
         <FeedAvatar
           imageUrl={entityAvatarUrl}
           entityType={entityType}
@@ -105,7 +110,7 @@ function FeedCardInner({
             entityId && onEntityPress ? () => onEntityPress(entityType, entityId) : undefined
           }
         />
-      </View>
+      </TouchableOpacity>
 
       {/* Right column: all content */}
       <View style={styles.contentColumn}>
