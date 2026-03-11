@@ -15,12 +15,11 @@ import { useMovies } from '@/features/movies/hooks/useMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
-import { deriveMovieStatus } from '@shared/movieStatus';
-import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { createStyles } from '@/styles/search.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { SearchResultActor } from '@/components/search/SearchResultActor';
 import { SearchResultProductionHouse } from '@/components/search/SearchResultProductionHouse';
+import { SearchResultMovie } from '@/components/search/SearchResultMovie';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -279,52 +278,13 @@ export default function SearchScreen() {
               />
             ) : null
           }
-          renderItem={({ item }) => {
-            const itemPlatforms = platformMap[item.id] ?? [];
-            const status = deriveMovieStatus(item, itemPlatforms.length);
-            return (
-              <TouchableOpacity style={styles.resultItem} onPress={() => handleMoviePress(item)}>
-                <View>
-                  <Image
-                    source={{ uri: getImageUrl(item.poster_url, 'sm') ?? undefined }}
-                    style={styles.resultPoster}
-                    contentFit="cover"
-                  />
-                  {itemPlatforms.length > 0 && (
-                    <View
-                      style={[styles.platformBadge, { backgroundColor: itemPlatforms[0].color }]}
-                    >
-                      <Text style={styles.platformBadgeText}>{itemPlatforms[0].logo}</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.resultInfo}>
-                  <Text style={styles.resultTitle} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <View style={styles.resultMeta}>
-                    <View
-                      style={[styles.resultBadge, { backgroundColor: getMovieStatusColor(status) }]}
-                    >
-                      <Text style={styles.resultBadgeText}>{getMovieStatusLabel(status)}</Text>
-                    </View>
-                    {item.rating > 0 && (
-                      <View style={styles.resultRating}>
-                        <Ionicons name="star" size={12} color={colors.yellow400} />
-                        <Text style={styles.resultRatingText}>{item.rating}</Text>
-                      </View>
-                    )}
-                  </View>
-                  {item.director && <Text style={styles.resultDirector}>{item.director}</Text>}
-                  {item.genres.length > 0 && (
-                    <Text style={styles.resultGenres} numberOfLines={1}>
-                      {item.genres.join(' • ')}
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={({ item }) => (
+            <SearchResultMovie
+              movie={item}
+              platforms={platformMap[item.id] ?? []}
+              onPress={() => handleMoviePress(item)}
+            />
+          )}
         />
       )}
     </View>
