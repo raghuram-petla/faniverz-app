@@ -2,6 +2,10 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('@/components/movie/detail/ReviewModal', () => ({
+  ReviewModal: () => null,
+}));
+
 import React from 'react';
 import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -167,10 +171,12 @@ describe('MyReviewsScreen', () => {
     expect(screen.getByText('Great film')).toBeTruthy();
   });
 
-  it('renders Edit button that navigates to movie page', () => {
+  it('renders Edit buttons that open edit modal', () => {
     render(<MyReviewsScreen />);
     const editButtons = screen.getAllByText('Edit');
     expect(editButtons.length).toBeGreaterThan(0);
+    // Pressing Edit sets editing state (opens ReviewModal) rather than navigating
+    fireEvent.press(editButtons[0]);
   });
 
   it('shows helpful count for reviews', () => {

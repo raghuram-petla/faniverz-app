@@ -26,6 +26,11 @@ jest.mock('@/features/feed', () => ({
   useEnrichedFollows: jest.fn(() => ({ data: [] })),
 }));
 
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: { expoConfig: { version: '2.3.1' } },
+}));
+
 jest.mock('@/components/profile/FollowingSection', () => ({
   FollowingSection: () => null,
 }));
@@ -144,7 +149,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Faniverz v1.0.0')).toBeTruthy();
+    expect(screen.getByText('Faniverz v2.3.1')).toBeTruthy();
     expect(screen.getByText('Your Movie Companion')).toBeTruthy();
   });
 
@@ -356,7 +361,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Faniverz v1.0.0')).toBeTruthy();
+    expect(screen.getByText('Faniverz v2.3.1')).toBeTruthy();
     expect(screen.getByText('Your Movie Companion')).toBeTruthy();
   });
 });

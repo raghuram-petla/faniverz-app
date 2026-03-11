@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useUserReviews, useReviewMutations } from '@/features/reviews/hooks';
+import { ReviewModal } from '@/components/movie/detail/ReviewModal';
 import { Review } from '@/types';
 import { useTheme } from '@/theme';
 import { LoadingCenter } from '@/components/common/LoadingCenter';
@@ -44,7 +45,7 @@ export default function MyReviewsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { data: reviews, isLoading, refetch } = useUserReviews(user?.id ?? '');
-  const { remove } = useReviewMutations();
+  const { update, remove } = useReviewMutations();
   const { refreshing, onRefresh } = useRefresh(refetch);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
     onRefresh,
@@ -52,6 +53,11 @@ export default function MyReviewsScreen() {
   );
 
   const [sortKey, setSortKey] = useState<SortKey>('recent');
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [editRating, setEditRating] = useState(0);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [editSpoiler, setEditSpoiler] = useState(false);
 
   const sorted = useMemo(() => {
     if (!reviews) return [];
@@ -74,6 +80,30 @@ export default function MyReviewsScreen() {
       ? (reviews!.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
       : '—';
   const totalHelpful = reviews?.reduce((sum, r) => sum + r.helpful_count, 0) ?? 0;
+
+  const handleEdit = (review: Review) => {
+    setEditingReview(review);
+    setEditRating(review.rating);
+    setEditTitle(review.title ?? '');
+    setEditBody(review.body ?? '');
+    setEditSpoiler(review.contains_spoiler);
+  };
+
+  const handleEditSubmit = () => {
+    if (!editingReview || editRating === 0) return;
+    update.mutate(
+      {
+        id: editingReview.id,
+        input: {
+          rating: editRating,
+          title: editTitle,
+          body: editBody,
+          contains_spoiler: editSpoiler,
+        },
+      },
+      { onSuccess: () => setEditingReview(null) },
+    );
+  };
 
   const handleDelete = (review: Review) => {
     Alert.alert('Delete Review', 'Are you sure you want to delete this review?', [
@@ -205,7 +235,7 @@ export default function MyReviewsScreen() {
                     <TouchableOpacity
                       style={styles.actionButton}
                       activeOpacity={0.7}
-                      onPress={() => router.push(`/movie/${review.movie_id}`)}
+                      onPress={() => handleEdit(review)}
                     >
                       <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
                       <Text style={styles.actionText}>Edit</Text>
@@ -225,6 +255,25 @@ export default function MyReviewsScreen() {
           })}
         </View>
       )}
+
+      <ReviewModal
+        visible={!!editingReview}
+        isEditing
+        movieTitle={editingReview?.movie?.title ?? ''}
+        posterUrl={editingReview?.movie?.poster_url ?? null}
+        releaseYear={null}
+        director={null}
+        reviewRating={editRating}
+        reviewTitle={editTitle}
+        reviewBody={editBody}
+        containsSpoiler={editSpoiler}
+        onRatingChange={setEditRating}
+        onTitleChange={setEditTitle}
+        onBodyChange={setEditBody}
+        onSpoilerToggle={() => setEditSpoiler((v) => !v)}
+        onSubmit={handleEditSubmit}
+        onClose={() => setEditingReview(null)}
+      />
     </ScrollView>
   );
 }

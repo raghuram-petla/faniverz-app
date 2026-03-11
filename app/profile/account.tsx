@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
+import { useDeleteAccount } from '@/features/auth/hooks/useDeleteAccount';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -23,6 +24,7 @@ export default function AccountScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { signOut } = useEmailAuth();
+  const deleteAccount = useDeleteAccount();
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
@@ -45,7 +47,24 @@ export default function AccountScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert('Coming Soon', 'This feature is not yet available.');
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all associated data including watchlists, reviews, and follows. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteAccount.mutate(undefined, {
+              onSuccess: () => router.replace('/(tabs)/profile'),
+              onError: (err) =>
+                Alert.alert('Error', err instanceof Error ? err.message : 'Delete failed'),
+            });
+          },
+        },
+      ],
+    );
   };
 
   const rows: AccountRow[] = [

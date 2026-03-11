@@ -16,6 +16,7 @@ interface ReviewModalProps {
   reviewTitle: string;
   reviewBody: string;
   containsSpoiler: boolean;
+  isEditing?: boolean;
   onRatingChange: (rating: number) => void;
   onTitleChange: (title: string) => void;
   onBodyChange: (body: string) => void;
@@ -34,6 +35,7 @@ export function ReviewModal({
   reviewTitle,
   reviewBody,
   containsSpoiler,
+  isEditing = false,
   onRatingChange,
   onTitleChange,
   onBodyChange,
@@ -48,7 +50,7 @@ export function ReviewModal({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Write Review</Text>
+            <Text style={styles.modalTitle}>{isEditing ? 'Edit Review' : 'Write Review'}</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={colors.white} />
             </TouchableOpacity>
@@ -107,7 +109,7 @@ export function ReviewModal({
               onPress={onSubmit}
               disabled={reviewRating === 0}
             >
-              <Text style={styles.modalSubmitText}>Submit</Text>
+              <Text style={styles.modalSubmitText}>{isEditing ? 'Update' : 'Submit'}</Text>
             </TouchableOpacity>
           </View>
         </View>

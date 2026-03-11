@@ -1,0 +1,127 @@
+import { useMemo } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/theme';
+import type { SemanticTheme } from '@shared/themes';
+import { useProfile } from '@/features/auth/hooks/useProfile';
+import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
+import ScreenHeader from '@/components/common/ScreenHeader';
+
+export default function PrivacySettingsScreen() {
+  const { theme, colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { data: profile, isLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
+
+  const isProfilePublic = profile?.is_profile_public ?? true;
+  const isWatchlistPublic = profile?.is_watchlist_public ?? true;
+
+  const handleToggleProfile = () => {
+    updateProfile.mutate({ is_profile_public: !isProfilePublic });
+  };
+
+  const handleToggleWatchlist = () => {
+    updateProfile.mutate({ is_watchlist_public: !isWatchlistPublic });
+  };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top + 12 }]}>
+        <ActivityIndicator size="large" color={colors.red600} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+      <ScreenHeader title="Privacy Settings" />
+
+      <View style={styles.section}>
+        <Text style={styles.sectionDesc}>
+          Control who can see your profile and activity on Faniverz.
+        </Text>
+
+        <View style={styles.card}>
+          <ToggleRow
+            label="Show my profile publicly"
+            description="Others can see your profile, bio, and activity"
+            value={isProfilePublic}
+            onToggle={handleToggleProfile}
+            styles={styles}
+            theme={theme}
+          />
+          <View style={styles.divider} />
+          <ToggleRow
+            label="Show my watchlist"
+            description="Others can see movies on your watchlist"
+            value={isWatchlistPublic}
+            onToggle={handleToggleWatchlist}
+            styles={styles}
+            theme={theme}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+interface ToggleRowProps {
+  label: string;
+  description: string;
+  value: boolean;
+  onToggle: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  styles: Record<string, any>;
+  theme: SemanticTheme;
+}
+
+function ToggleRow({ label, description, value, onToggle, styles, theme }: ToggleRowProps) {
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowText}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowDesc}>{description}</Text>
+      </View>
+      <TouchableOpacity
+        onPress={onToggle}
+        activeOpacity={0.8}
+        style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff]}
+      >
+        <View style={[styles.toggleThumb, value ? styles.toggleThumbOn : styles.toggleThumbOff]} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.background, paddingHorizontal: 16 },
+    centered: { justifyContent: 'center', alignItems: 'center' },
+    section: { paddingTop: 8 },
+    sectionDesc: { fontSize: 14, color: t.textSecondary, lineHeight: 20, marginBottom: 20 },
+    card: { backgroundColor: t.surfaceElevated, borderRadius: 12, overflow: 'hidden' },
+    divider: { height: 1, backgroundColor: t.border, marginHorizontal: 16 },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+    },
+    rowText: { flex: 1, marginRight: 12 },
+    rowLabel: { fontSize: 15, fontWeight: '600', color: t.textPrimary, marginBottom: 2 },
+    rowDesc: { fontSize: 13, color: t.textTertiary, lineHeight: 18 },
+    toggle: {
+      width: 48,
+      height: 28,
+      borderRadius: 14,
+      justifyContent: 'center',
+      paddingHorizontal: 2,
+    },
+    toggleOn: { backgroundColor: '#DC2626' },
+    toggleOff: { backgroundColor: t.border },
+    toggleThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF' },
+    toggleThumbOn: { alignSelf: 'flex-end' },
+    toggleThumbOff: { alignSelf: 'flex-start' },
+  });

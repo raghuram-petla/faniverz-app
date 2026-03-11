@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
+import { useAvatarUpload } from '@/features/profile/hooks/useAvatarUpload';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { createStyles } from '@/styles/profile/edit.styles';
@@ -31,6 +32,7 @@ export default function EditProfileScreen() {
   const { user } = useAuth();
   const { data: profile, isLoading } = useProfile();
   const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile();
+  const { pickAndUpload, isUploading } = useAvatarUpload();
 
   const [displayName, setDisplayName] = useState('');
   const [phone, setPhone] = useState('');
@@ -95,23 +97,24 @@ export default function EditProfileScreen() {
       {/* Avatar Section */}
       <View style={styles.avatarSection}>
         <View style={styles.avatarWrapper}>
-          <Image
-            source={{ uri: avatarUrl }}
-            style={styles.avatar}
-            contentFit="cover"
-            transition={200}
-          />
+          {isUploading ? (
+            <View style={[styles.avatar, styles.avatarLoading]}>
+              <ActivityIndicator size="small" color={colors.red600} />
+            </View>
+          ) : (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatar}
+              contentFit="cover"
+              transition={200}
+            />
+          )}
           <View style={styles.avatarOverlay}>
             <Ionicons name="camera" size={20} color={theme.textPrimary} />
           </View>
         </View>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() =>
-            Alert.alert('Coming Soon', 'Photo upload will be available in a future update.')
-          }
-        >
-          <Text style={styles.changePhotoText}>Change Photo</Text>
+        <TouchableOpacity activeOpacity={0.7} onPress={pickAndUpload} disabled={isUploading}>
+          <Text style={styles.changePhotoText}>{isUploading ? 'Uploading…' : 'Change Photo'}</Text>
         </TouchableOpacity>
       </View>
 

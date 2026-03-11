@@ -6,8 +6,22 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(),
 }));
 
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(() => Promise.resolve(null)),
+  setItem: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: { expoConfig: { version: '2.3.1', extra: { buildDate: '2026.03.11' } } },
+}));
+
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({ i18n: { language: 'en' } }),
+}));
+
 import React from 'react';
-import { Alert } from 'react-native';
+import { Linking } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 
 const mockPush = jest.fn();
@@ -69,8 +83,8 @@ describe('SettingsScreen', () => {
 
   it('shows footer with version info', () => {
     render(<SettingsScreen />);
-    expect(screen.getByText('Faniverz v1.0.0')).toBeTruthy();
-    expect(screen.getByText('Build 2024.02.23')).toBeTruthy();
+    expect(screen.getByText('Faniverz v2.3.1')).toBeTruthy();
+    expect(screen.getByText('2026.03.11')).toBeTruthy();
   });
 
   it('renders toggle switches and toggles push notifications', () => {
@@ -87,44 +101,36 @@ describe('SettingsScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/profile/language');
   });
 
-  it('shows alert when Change Password is pressed', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
+  it('navigates to change-password when Change Password is pressed', () => {
     render(<SettingsScreen />);
     fireEvent.press(screen.getByText('Change Password'));
-    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', 'This feature is not yet available.');
-    alertSpy.mockRestore();
+    expect(mockPush).toHaveBeenCalledWith('/profile/change-password');
   });
 
-  it('shows alert when Privacy Settings is pressed', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
+  it('navigates to privacy when Privacy Settings is pressed', () => {
     render(<SettingsScreen />);
     fireEvent.press(screen.getByText('Privacy Settings'));
-    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', 'This feature is not yet available.');
-    alertSpy.mockRestore();
+    expect(mockPush).toHaveBeenCalledWith('/profile/privacy');
   });
 
-  it('shows alert when Help & Support is pressed', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
+  it('opens mailto link when Help & Support is pressed', () => {
+    const openURLSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
     render(<SettingsScreen />);
     fireEvent.press(screen.getByText('Help & Support'));
-    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', 'This feature is not yet available.');
-    alertSpy.mockRestore();
+    expect(openURLSpy).toHaveBeenCalledWith('mailto:faniverz@gmail.com?subject=Faniverz%20Support');
+    openURLSpy.mockRestore();
   });
 
-  it('shows alert when Terms of Service is pressed', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
+  it('navigates to legal terms when Terms of Service is pressed', () => {
     render(<SettingsScreen />);
     fireEvent.press(screen.getByText('Terms of Service'));
-    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', 'This feature is not yet available.');
-    alertSpy.mockRestore();
+    expect(mockPush).toHaveBeenCalledWith('/profile/legal?type=terms');
   });
 
-  it('shows alert when Privacy Policy is pressed', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
+  it('navigates to legal privacy when Privacy Policy is pressed', () => {
     render(<SettingsScreen />);
     fireEvent.press(screen.getByText('Privacy Policy'));
-    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', 'This feature is not yet available.');
-    alertSpy.mockRestore();
+    expect(mockPush).toHaveBeenCalledWith('/profile/legal?type=privacy');
   });
 
   it('renders the About section with all items', () => {

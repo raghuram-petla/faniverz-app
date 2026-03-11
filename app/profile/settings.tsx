@@ -1,12 +1,16 @@
-import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { useState, useMemo, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useTheme } from '@/theme';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { createStyles } from '@/styles/profile/settings.styles';
+import { STORAGE_KEYS } from '@/constants/storage';
+import { useTranslation } from 'react-i18next';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -52,14 +56,41 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { theme, mode, setMode } = useTheme();
+  const { i18n } = useTranslation();
+  const language = i18n.language;
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
 
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS).then((v) => {
+      if (v !== null) setPushEnabled(v === 'true');
+    });
+    AsyncStorage.getItem(STORAGE_KEYS.EMAIL_NOTIFICATIONS).then((v) => {
+      if (v !== null) setEmailEnabled(v === 'true');
+    });
+  }, []);
+
+  const togglePush = () => {
+    setPushEnabled((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem(STORAGE_KEYS.PUSH_NOTIFICATIONS, String(next));
+      return next;
+    });
+  };
+
+  const toggleEmail = () => {
+    setEmailEnabled((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem(STORAGE_KEYS.EMAIL_NOTIFICATIONS, String(next));
+      return next;
+    });
+  };
+
   const toggleMap: Record<string, { value: boolean; setter: () => void }> = {
-    push: { value: pushEnabled, setter: () => setPushEnabled((v) => !v) },
-    email: { value: emailEnabled, setter: () => setEmailEnabled((v) => !v) },
+    push: { value: pushEnabled, setter: togglePush },
+    email: { value: emailEnabled, setter: toggleEmail },
   };
 
   const isLoggedIn = !!user;
@@ -104,13 +135,13 @@ export default function SettingsScreen() {
                 kind: 'link' as const,
                 icon: 'lock-closed-outline' as IconName,
                 label: 'Change Password',
-                onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+                onPress: () => router.push('/profile/change-password'),
               },
               {
                 kind: 'link' as const,
                 icon: 'shield-outline' as IconName,
                 label: 'Privacy Settings',
-                onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+                onPress: () => router.push('/profile/privacy'),
               },
             ],
           },
@@ -123,7 +154,7 @@ export default function SettingsScreen() {
           kind: 'link',
           icon: 'language-outline',
           label: 'Language',
-          value: 'English',
+          value: language === 'te' ? 'Telugu' : 'English',
           onPress: () => router.push('/profile/language'),
         },
       ],
@@ -141,19 +172,19 @@ export default function SettingsScreen() {
           kind: 'link',
           icon: 'help-circle-outline',
           label: 'Help & Support',
-          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+          onPress: () => Linking.openURL('mailto:faniverz@gmail.com?subject=Faniverz%20Support'),
         },
         {
           kind: 'link',
           icon: 'document-text-outline',
           label: 'Terms of Service',
-          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+          onPress: () => router.push('/profile/legal?type=terms'),
         },
         {
           kind: 'link',
           icon: 'eye-outline',
           label: 'Privacy Policy',
-          onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),
+          onPress: () => router.push('/profile/legal?type=privacy'),
         },
       ],
     },
@@ -259,10 +290,13 @@ export default function SettingsScreen() {
         </View>
       ))}
 
-      {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerVersion}>Faniverz v1.0.0</Text>
-        <Text style={styles.footerBuild}>Build 2024.02.23</Text>
+        <Text style={styles.footerVersion}>
+          Faniverz v{Constants.expoConfig?.version ?? '1.0.0'}
+        </Text>
+        <Text style={styles.footerBuild}>
+          {Constants.expoConfig?.extra?.buildDate ?? '2026.03.11'}
+        </Text>
       </View>
     </ScrollView>
   );

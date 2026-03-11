@@ -37,6 +37,11 @@ export const createStyles = (t: SemanticTheme) =>
       borderWidth: 4,
       borderColor: t.border,
     },
+    avatarLoading: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.surfaceElevated,
+    },
     avatarOverlay: {
       position: 'absolute',
       bottom: 0,

@@ -13,6 +13,11 @@ jest.mock('@/features/auth/hooks/useEmailAuth', () => ({
   useEmailAuth: () => ({ signOut: mockSignOut }),
 }));
 
+const mockDeleteMutate = jest.fn();
+jest.mock('@/features/auth/hooks/useDeleteAccount', () => ({
+  useDeleteAccount: () => ({ mutate: mockDeleteMutate }),
+}));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: () => ({ user: { id: 'user-1', email: 'test@example.com' } }),
 }));
@@ -76,11 +81,38 @@ describe('AccountScreen', () => {
     expect(mockReplace).toHaveBeenCalledWith('/(tabs)/profile');
   });
 
-  it('pressing Delete Account shows Coming Soon alert', () => {
+  it('pressing Delete Account shows a confirmation alert with warning text', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     render(<AccountScreen />);
     fireEvent.press(screen.getByText('Delete Account'));
-    expect(alertSpy).toHaveBeenCalledWith('Coming Soon', 'This feature is not yet available.');
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Delete Account',
+      'This will permanently delete your account and all associated data including watchlists, reviews, and follows. This cannot be undone.',
+      expect.arrayContaining([
+        expect.objectContaining({ text: 'Cancel' }),
+        expect.objectContaining({ text: 'Delete', style: 'destructive' }),
+      ]),
+    );
+    alertSpy.mockRestore();
+  });
+
+  it('calls deleteAccount.mutate when Delete is confirmed', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<AccountScreen />);
+    fireEvent.press(screen.getByText('Delete Account'));
+
+    const alertArgs = alertSpy.mock.calls[0];
+    const buttons = alertArgs[2] as Array<{ text: string; onPress?: () => void }>;
+    const deleteAction = buttons.find((b) => b.text === 'Delete');
+    deleteAction?.onPress?.();
+
+    expect(mockDeleteMutate).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
+    );
     alertSpy.mockRestore();
   });
 

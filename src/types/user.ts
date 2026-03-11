@@ -9,6 +9,8 @@ export interface UserProfile {
   avatar_url: string | null;
   preferred_lang: string;
   is_admin: boolean;
+  is_profile_public: boolean;
+  is_watchlist_public: boolean;
   created_at: string;
   updated_at: string;
 }

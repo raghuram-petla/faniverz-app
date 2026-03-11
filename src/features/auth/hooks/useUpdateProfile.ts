@@ -8,6 +8,8 @@ interface UpdateProfileInput {
   bio?: string;
   phone?: string;
   location?: string;
+  is_profile_public?: boolean;
+  is_watchlist_public?: boolean;
 }
 
 async function updateProfile(userId: string, updates: UpdateProfileInput) {

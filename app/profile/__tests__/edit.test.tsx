@@ -32,6 +32,8 @@ const stableProfile = {
   avatar_url: null,
   preferred_lang: 'te',
   is_admin: false,
+  is_profile_public: true,
+  is_watchlist_public: true,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
 };
@@ -45,6 +47,14 @@ jest.mock('@/features/auth/hooks/useUpdateProfile', () => ({
   useUpdateProfile: () => ({
     mutate: mockUpdateMutate,
     isPending: false,
+  }),
+}));
+
+const mockPickAndUpload = jest.fn();
+jest.mock('@/features/profile/hooks/useAvatarUpload', () => ({
+  useAvatarUpload: () => ({
+    pickAndUpload: mockPickAndUpload,
+    isUploading: false,
   }),
 }));
 
@@ -182,16 +192,10 @@ describe('EditProfileScreen', () => {
     );
   });
 
-  it('shows Change Photo button', () => {
-    const alertSpy = jest.spyOn(Alert, 'alert');
+  it('calls pickAndUpload when Change Photo is pressed', () => {
     render(<EditProfileScreen />);
-
     fireEvent.press(screen.getByText('Change Photo'));
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Coming Soon',
-      'Photo upload will be available in a future update.',
-    );
-    alertSpy.mockRestore();
+    expect(mockPickAndUpload).toHaveBeenCalled();
   });
 
   it('shows Saved alert and navigates back on successful save', () => {

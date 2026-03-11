@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -128,7 +129,9 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerVersion}>Faniverz v1.0.0</Text>
+          <Text style={styles.footerVersion}>
+            Faniverz v{Constants.expoConfig?.version ?? '1.0.0'}
+          </Text>
           <Text style={styles.footerTagline}>Your Movie Companion</Text>
         </View>
       </View>
@@ -237,7 +240,9 @@ export default function ProfileScreen() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerVersion}>Faniverz v1.0.0</Text>
+        <Text style={styles.footerVersion}>
+          Faniverz v{Constants.expoConfig?.version ?? '1.0.0'}
+        </Text>
         <Text style={styles.footerTagline}>Your Movie Companion</Text>
       </View>
     </ScrollView>

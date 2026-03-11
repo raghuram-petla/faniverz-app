@@ -1,0 +1,171 @@
+import { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
+import { useTheme } from '@/theme';
+import type { SemanticTheme } from '@shared/themes';
+import ScreenHeader from '@/components/common/ScreenHeader';
+
+export default function ChangePasswordScreen() {
+  const { theme, colors } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { resetPassword, isLoading, error } = useEmailAuth();
+  const [sent, setSent] = useState(false);
+
+  const email = user?.email ?? '';
+
+  const handleSend = async () => {
+    if (!email) return;
+    try {
+      await resetPassword(email);
+      setSent(true);
+    } catch {
+      // error is surfaced via `error` from the hook
+    }
+  };
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+      <ScreenHeader title="Change Password" />
+
+      <View style={styles.body}>
+        {sent ? (
+          <View style={styles.successCard}>
+            <View style={styles.successIcon}>
+              <Ionicons name="mail-outline" size={32} color={colors.red600} />
+            </View>
+            <Text style={styles.successTitle}>Check your inbox</Text>
+            <Text style={styles.successSubtitle}>
+              We sent a password reset link to{'\n'}
+              <Text style={styles.successEmail}>{email}</Text>
+            </Text>
+            <Text style={styles.successHint}>
+              Follow the link in the email to set a new password.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.subtitle}>
+              We'll send a password reset link to your registered email address.
+            </Text>
+
+            <View style={styles.emailCard}>
+              <Ionicons name="mail-outline" size={18} color={theme.textTertiary} />
+              <Text style={styles.emailText}>{email}</Text>
+            </View>
+
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <TouchableOpacity
+              style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
+              onPress={handleSend}
+              activeOpacity={0.8}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.sendButtonText}>Send Reset Email</Text>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: t.background,
+      paddingHorizontal: 16,
+    },
+    body: {
+      flex: 1,
+      paddingTop: 8,
+    },
+    subtitle: {
+      fontSize: 15,
+      color: t.textSecondary,
+      lineHeight: 22,
+      marginBottom: 24,
+    },
+    emailCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: t.surfaceElevated,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.border,
+      paddingHorizontal: 14,
+      paddingVertical: 16,
+      marginBottom: 16,
+      gap: 10,
+    },
+    emailText: {
+      fontSize: 15,
+      color: t.textPrimary,
+    },
+    errorText: {
+      fontSize: 13,
+      color: '#EF4444',
+      marginBottom: 12,
+      paddingHorizontal: 4,
+    },
+    sendButton: {
+      height: 52,
+      backgroundColor: '#DC2626',
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sendButtonDisabled: {
+      opacity: 0.6,
+    },
+    sendButtonText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    successCard: {
+      alignItems: 'center',
+      paddingTop: 32,
+      gap: 12,
+    },
+    successIcon: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: 'rgba(220, 38, 38, 0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    successTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: t.textPrimary,
+    },
+    successSubtitle: {
+      fontSize: 15,
+      color: t.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    successEmail: {
+      color: t.textPrimary,
+      fontWeight: '600',
+    },
+    successHint: {
+      fontSize: 13,
+      color: t.textTertiary,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+  });
