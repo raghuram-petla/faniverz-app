@@ -59,6 +59,13 @@ export interface MovieEditHandlerDeps {
   form: MovieForm;
   setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
   router: AppRouterInstance;
+  // Original movie data for preserving fields not in the form
+  movieData?: {
+    spotlight_focus_x: number | null;
+    spotlight_focus_y: number | null;
+    detail_focus_x: number | null;
+    detail_focus_y: number | null;
+  } | null;
 
   // Pending state setters
   setPendingCastAdds: React.Dispatch<React.SetStateAction<PendingCastAdd[]>>;

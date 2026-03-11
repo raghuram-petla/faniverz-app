@@ -48,6 +48,7 @@ export function useCreateOttRelease() {
       movie_id: string;
       platform_id: string;
       available_from?: string | null;
+      streaming_url?: string | null;
     }) => {
       const { data, error } = await supabase
         .from('movie_platforms')

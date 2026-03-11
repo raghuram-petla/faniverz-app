@@ -173,6 +173,14 @@ export function useMovieEditState(id: string) {
     form,
     setForm,
     router,
+    movieData: movie
+      ? {
+          spotlight_focus_x: movie.spotlight_focus_x ?? null,
+          spotlight_focus_y: movie.spotlight_focus_y ?? null,
+          detail_focus_x: movie.detail_focus_x ?? null,
+          detail_focus_y: movie.detail_focus_y ?? null,
+        }
+      : null,
     ...pending,
     updateMovie,
     deleteMovie,

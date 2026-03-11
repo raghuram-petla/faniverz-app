@@ -17,6 +17,7 @@ export default function NewOttReleasePage() {
   const [movieId, setMovieId] = useState('');
   const [platformId, setPlatformId] = useState('');
   const [availableFrom, setAvailableFrom] = useState('');
+  const [streamingUrl, setStreamingUrl] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,6 +27,7 @@ export default function NewOttReleasePage() {
         movie_id: movieId,
         platform_id: platformId,
         available_from: availableFrom || null,
+        streaming_url: streamingUrl || null,
       },
       { onSuccess: () => router.push('/ott') },
     );
@@ -116,6 +118,26 @@ export default function NewOttReleasePage() {
               value={availableFrom}
               onChange={(e) => setAvailableFrom(e.target.value)}
               className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="streaming_url"
+              className="block text-sm font-medium text-on-surface-muted"
+            >
+              Streaming URL{' '}
+              <span className="text-on-surface-subtle font-normal">
+                (optional — deep link to the movie on this platform)
+              </span>
+            </label>
+            <input
+              id="streaming_url"
+              type="url"
+              value={streamingUrl}
+              onChange={(e) => setStreamingUrl(e.target.value)}
+              placeholder="https://www.aha.video/movie/..."
+              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>
 

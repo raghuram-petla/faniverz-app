@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity, ScrollView, Share } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Share, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
@@ -15,6 +15,7 @@ import { CastTab } from '@/components/movie/detail/CastTab';
 import { ReviewsTab } from '@/components/movie/detail/ReviewsTab';
 import { ReviewModal } from '@/components/movie/detail/ReviewModal';
 import { MovieDetailHeader } from '@/components/movie/detail/MovieDetailHeader';
+import { Ionicons } from '@expo/vector-icons';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTheme } from '@/theme';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
@@ -27,7 +28,7 @@ type TabName = 'overview' | 'cast' | 'reviews';
 type DisplayTab = TabName | 'media';
 
 export default function MovieDetailScreen() {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,7 +36,7 @@ export default function MovieDetailScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
-  const { data: movie, refetch: refetchMovie } = useMovieDetail(id ?? '');
+  const { data: movie, isLoading: movieLoading, refetch: refetchMovie } = useMovieDetail(id ?? '');
   const { data: reviews = [], refetch: refetchReviews } = useMovieReviews(id ?? '');
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
   const { gate } = useAuthGate();
@@ -60,7 +61,20 @@ export default function MovieDetailScreen() {
   const [reviewBody, setReviewBody] = useState('');
   const [containsSpoiler, setContainsSpoiler] = useState(false);
 
-  if (!movie) return null;
+  if (movieLoading || !movie) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top + 12 }]}>
+        <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
+          <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Go back">
+            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.red600} testID="loading-indicator" />
+        </View>
+      </View>
+    );
+  }
 
   const handleShare = async () => {
     const text = `${movie.title}${movie.release_date ? ` (${new Date(movie.release_date).getFullYear()})` : ''} — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;

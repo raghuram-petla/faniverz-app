@@ -149,10 +149,12 @@ const mockMovie = {
     {
       movie_id: 'movie-1',
       platform_id: 'netflix',
+      streaming_url: 'https://www.netflix.com/title/12345',
       platform: {
         id: 'netflix',
         name: 'Netflix',
         logo: 'N',
+        logo_url: null,
         color: '#E50914',
         display_order: 1,
       },
@@ -202,10 +204,10 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Netflix')).toBeTruthy();
   });
 
-  it('renders nothing when movie data is not available', () => {
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined });
-    const { toJSON } = render(<MovieDetailScreen />);
-    expect(toJSON()).toBeNull();
+  it('shows loading indicator when movie data is not available', () => {
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
+    render(<MovieDetailScreen />);
+    expect(screen.getByTestId('loading-indicator')).toBeTruthy();
   });
 
   it('shows Cast and Reviews tabs in the tab bar', () => {
@@ -375,7 +377,7 @@ describe('MovieDetailScreen', () => {
     const platformButton = screen.getByLabelText('Watch on Netflix');
     expect(platformButton).toBeTruthy();
     fireEvent.press(platformButton);
-    expect(linkingSpy).toHaveBeenCalledWith('https://example.com');
+    expect(linkingSpy).toHaveBeenCalledWith('https://www.netflix.com/title/12345');
     linkingSpy.mockRestore();
   });
 

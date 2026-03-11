@@ -30,24 +30,35 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                 <TouchableOpacity
                   key={p.id}
                   style={[styles.watchOnButton, { backgroundColor: p.color }]}
-                  onPress={() => Linking.openURL('https://example.com')}
+                  onPress={mp.streaming_url ? () => Linking.openURL(mp.streaming_url!) : undefined}
+                  activeOpacity={mp.streaming_url ? 0.7 : 1}
                   accessibilityLabel={`Watch on ${p.name}`}
                 >
                   {logo ? (
                     <Image source={logo} style={styles.watchOnLogo} contentFit="contain" />
+                  ) : p.logo_url ? (
+                    <Image
+                      source={{ uri: p.logo_url }}
+                      style={styles.watchOnLogo}
+                      contentFit="contain"
+                    />
                   ) : (
                     <Text style={styles.watchOnLogoText}>{p.logo}</Text>
                   )}
                   <View>
                     <Text style={styles.watchOnName}>{p.name}</Text>
-                    <Text style={styles.watchOnStream}>Stream Now</Text>
+                    <Text style={styles.watchOnStream}>
+                      {mp.streaming_url ? 'Stream Now' : 'Available'}
+                    </Text>
                   </View>
-                  <Ionicons
-                    name="open-outline"
-                    size={16}
-                    color={colors.white}
-                    style={{ marginLeft: 'auto' }}
-                  />
+                  {mp.streaming_url && (
+                    <Ionicons
+                      name="open-outline"
+                      size={16}
+                      color={colors.white}
+                      style={{ marginLeft: 'auto' }}
+                    />
+                  )}
                 </TouchableOpacity>
               );
             })}

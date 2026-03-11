@@ -4,10 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotification } from '@/hooks/useAdminNotifications';
 import { useAllMovies } from '@/hooks/useAdminMovies';
-import { Bell, ArrowLeft, Loader2, Search } from 'lucide-react';
+import { Bell, ArrowLeft, Loader2, Search, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase-browser';
 
 const notificationTypes = ['release', 'watchlist', 'trending', 'reminder'] as const;
+const inputClass =
+  'w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent';
 
 export default function ComposeNotificationPage() {
   const router = useRouter();
@@ -21,6 +24,31 @@ export default function ComposeNotificationPage() {
   const [movieSearch, setMovieSearch] = useState('');
   const [scheduleMode, setScheduleMode] = useState<'immediate' | 'scheduled'>('immediate');
   const [scheduledFor, setScheduledFor] = useState('');
+  const [targetMode, setTargetMode] = useState<'broadcast' | 'user'>('broadcast');
+  const [userEmail, setUserEmail] = useState('');
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  const [userLookupError, setUserLookupError] = useState('');
+
+  const handleUserLookup = async (email: string) => {
+    setUserEmail(email);
+    setResolvedUserId(null);
+    setUserLookupError('');
+    if (!email.includes('@')) return;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('email', email)
+      .maybeSingle();
+    if (error) {
+      setUserLookupError('Lookup failed');
+      return;
+    }
+    if (data) {
+      setResolvedUserId(data.id);
+    } else {
+      setUserLookupError('No user found with this email');
+    }
+  };
 
   const filteredMovies = movies?.filter((m) =>
     m.title.toLowerCase().includes(movieSearch.toLowerCase()),
@@ -28,7 +56,12 @@ export default function ComposeNotificationPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (targetMode === 'user' && !resolvedUserId) return;
     const now = new Date().toISOString();
+    const userId =
+      targetMode === 'user' && resolvedUserId
+        ? resolvedUserId
+        : '00000000-0000-0000-0000-000000000000';
     createNotification.mutate(
       {
         type: type as (typeof notificationTypes)[number],
@@ -38,7 +71,7 @@ export default function ComposeNotificationPage() {
         scheduled_for:
           scheduleMode === 'scheduled' && scheduledFor ? new Date(scheduledFor).toISOString() : now,
         status: 'pending',
-        user_id: '00000000-0000-0000-0000-000000000000', // broadcast placeholder
+        user_id: userId,
         read: false,
       },
       { onSuccess: () => router.push('/notifications') },
@@ -54,18 +87,64 @@ export default function ComposeNotificationPage() {
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-yellow-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-on-surface">Compose Notification</h1>
+        <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
+          <Bell className="w-5 h-5 text-yellow-500" />
         </div>
+        <h1 className="text-2xl font-bold text-on-surface">Compose Notification</h1>
+      </div>
+
+      <div className="flex items-center gap-3 bg-yellow-600/10 border border-yellow-600/30 rounded-lg p-4">
+        <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+        <p className="text-sm text-on-surface-muted">
+          Broadcast notifications require a background worker to fan out to users. Currently, only{' '}
+          <strong>targeted notifications</strong> (to a specific user) are delivered.
+        </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
         className="bg-surface-card border border-outline rounded-xl p-6 space-y-6"
       >
+        {/* Target mode */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-on-surface-muted">Target</label>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="target"
+                checked={targetMode === 'user'}
+                onChange={() => setTargetMode('user')}
+                className="accent-red-600"
+              />
+              <span className="text-sm text-on-surface">Specific user</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="target"
+                checked={targetMode === 'broadcast'}
+                onChange={() => setTargetMode('broadcast')}
+                className="accent-red-600"
+              />
+              <span className="text-sm text-on-surface">Broadcast (all users)</span>
+            </label>
+          </div>
+          {targetMode === 'user' && (
+            <div className="space-y-2">
+              <input
+                type="email"
+                value={userEmail}
+                onChange={(e) => handleUserLookup(e.target.value)}
+                placeholder="User email address"
+                className={inputClass}
+              />
+              {resolvedUserId && <p className="text-sm text-green-400">User found</p>}
+              {userLookupError && <p className="text-sm text-red-400">{userLookupError}</p>}
+            </div>
+          )}
+        </div>
+
         <div className="space-y-2">
           <label htmlFor="type" className="block text-sm font-medium text-on-surface-muted">
             Type
@@ -75,7 +154,7 @@ export default function ComposeNotificationPage() {
             value={type}
             onChange={(e) => setType(e.target.value)}
             required
-            className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className={inputClass}
           >
             <option value="">Select type...</option>
             {notificationTypes.map((t) => (
@@ -97,7 +176,7 @@ export default function ComposeNotificationPage() {
             onChange={(e) => setTitle(e.target.value)}
             required
             placeholder="Notification title"
-            className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+            className={inputClass}
           />
         </div>
 
@@ -112,7 +191,7 @@ export default function ComposeNotificationPage() {
             required
             rows={3}
             placeholder="Notification message body"
-            className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none"
+            className={`${inputClass} resize-none`}
           />
         </div>
 
@@ -131,7 +210,7 @@ export default function ComposeNotificationPage() {
                 if (!e.target.value) setMovieId('');
               }}
               placeholder="Search movies..."
-              className="w-full bg-input border border-outline rounded-lg pl-10 pr-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className={`${inputClass} pl-10`}
             />
           </div>
           {movieSearch && filteredMovies && filteredMovies.length > 0 && !movieId && (
@@ -199,7 +278,7 @@ export default function ComposeNotificationPage() {
               value={scheduledFor}
               onChange={(e) => setScheduledFor(e.target.value)}
               required
-              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
+              className={inputClass}
             />
           )}
         </div>
@@ -215,7 +294,7 @@ export default function ComposeNotificationPage() {
         <div className="flex items-center gap-3 pt-2">
           <button
             type="submit"
-            disabled={createNotification.isPending}
+            disabled={createNotification.isPending || (targetMode === 'user' && !resolvedUserId)}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {createNotification.isPending && <Loader2 className="w-4 h-4 animate-spin" />}

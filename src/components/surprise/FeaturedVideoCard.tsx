@@ -18,8 +18,7 @@ import {
 } from '@/constants/surpriseHelpers';
 import type { SurpriseContent } from '@/types';
 
-const FEATURED_VIDEO_ID = 'roYRXbhxhlM';
-const THUMBNAIL_URL = `https://img.youtube.com/vi/${FEATURED_VIDEO_ID}/hqdefault.jpg`;
+const FALLBACK_VIDEO_ID = 'roYRXbhxhlM';
 
 interface FeaturedVideoCardProps {
   item: SurpriseContent;
@@ -28,6 +27,8 @@ interface FeaturedVideoCardProps {
 }
 
 export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
+  const videoId = item.youtube_id ?? FALLBACK_VIDEO_ID;
+  const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   const catColor = getCategoryColor(item.category);
   const catLabel = getCategoryLabel(item.category);
   const iconName = getCategoryIconName(item.category);
@@ -38,17 +39,17 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   }, []);
 
   const onNavRequest = useCallback(
-    (request: { url: string }) => handleYouTubeNavigation(request as any, FEATURED_VIDEO_ID),
-    [],
+    (request: { url: string }) => handleYouTubeNavigation(request as any, videoId),
+    [videoId],
   );
 
   const onOpenWindow = useCallback(
     (e: { nativeEvent: { targetUrl: string } }) =>
-      handleYouTubeOpenWindow(e.nativeEvent.targetUrl, FEATURED_VIDEO_ID),
-    [],
+      handleYouTubeOpenWindow(e.nativeEvent.targetUrl, videoId),
+    [videoId],
   );
 
-  const onShare = useCallback(() => shareYouTubeVideo(FEATURED_VIDEO_ID), []);
+  const onShare = useCallback(() => shareYouTubeVideo(videoId), [videoId]);
 
   return (
     <View style={styles.featuredContainer}>
@@ -62,7 +63,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
             accessibilityLabel="Play video"
           >
             <Image
-              source={{ uri: THUMBNAIL_URL }}
+              source={{ uri: thumbnailUrl }}
               style={styles.thumbnailImage}
               contentFit="cover"
             />
@@ -74,7 +75,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
           <View style={styles.videoPlayer}>
             <WebView
               source={{
-                html: buildYouTubeEmbedHtml(FEATURED_VIDEO_ID),
+                html: buildYouTubeEmbedHtml(videoId),
                 baseUrl: 'https://example.com',
               }}
               style={StyleSheet.absoluteFill}

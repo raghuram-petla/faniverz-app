@@ -104,6 +104,7 @@ export interface MoviePlatform {
   movie_id: string;
   platform_id: string;
   available_from: string | null;
+  streaming_url: string | null;
   movie?: Movie;
   platform?: OTTPlatform;
 }
