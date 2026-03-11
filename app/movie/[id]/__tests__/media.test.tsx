@@ -1,3 +1,10 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
   return { WebView: (props: any) => <View testID="webview" {...props} /> };
@@ -107,8 +114,8 @@ describe('MediaScreen', () => {
 
   it('shows Videos and Photos tabs with counts', () => {
     render(<MediaScreen />);
-    expect(screen.getByText('Videos (2)')).toBeTruthy();
-    expect(screen.getByText('Photos (1)')).toBeTruthy();
+    expect(screen.getByText('movieDetail.videos (2)')).toBeTruthy();
+    expect(screen.getByText('movieDetail.photos (1)')).toBeTruthy();
   });
 
   it('defaults to Videos tab', () => {
@@ -119,7 +126,7 @@ describe('MediaScreen', () => {
 
   it('switches to Photos tab on press', () => {
     render(<MediaScreen />);
-    fireEvent.press(screen.getByLabelText('Photos tab, 1 photos'));
+    fireEvent.press(screen.getByLabelText('movieDetail.photos tab, 1 photos'));
     expect(screen.getByLabelText('View First Look')).toBeTruthy();
     expect(screen.getByText('Main')).toBeTruthy();
   });
@@ -148,7 +155,7 @@ describe('MediaScreen', () => {
 
   it('hides filter pills in photos tab', () => {
     render(<MediaScreen />);
-    fireEvent.press(screen.getByLabelText('Photos tab, 1 photos'));
+    fireEvent.press(screen.getByLabelText('movieDetail.photos tab, 1 photos'));
     expect(screen.queryByText('Trailer (1)')).toBeNull();
     expect(screen.queryByText('Song (1)')).toBeNull();
   });

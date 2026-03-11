@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en' },
+  }),
+}));
+
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -59,50 +66,50 @@ describe('RegisterScreen', () => {
 
   it('renders Username input', () => {
     render(<RegisterScreen />);
-    expect(screen.getByPlaceholderText('Username')).toBeTruthy();
+    expect(screen.getByPlaceholderText('auth.username')).toBeTruthy();
   });
 
   it('renders Email input', () => {
     render(<RegisterScreen />);
-    expect(screen.getByPlaceholderText('Email')).toBeTruthy();
+    expect(screen.getByPlaceholderText('auth.email')).toBeTruthy();
   });
 
   it('renders Password input', () => {
     render(<RegisterScreen />);
-    expect(screen.getByPlaceholderText('Password')).toBeTruthy();
+    expect(screen.getByPlaceholderText('auth.password')).toBeTruthy();
   });
 
   it('renders Confirm Password input', () => {
     render(<RegisterScreen />);
-    expect(screen.getByPlaceholderText('Confirm Password')).toBeTruthy();
+    expect(screen.getByPlaceholderText('auth.confirmPassword')).toBeTruthy();
   });
 
   it('renders Create Account button', () => {
     render(<RegisterScreen />);
     // The button text and the title both say "Create Account"
-    const buttons = screen.getAllByText('Create Account');
+    const buttons = screen.getAllByText('auth.createAccount');
     expect(buttons.length).toBeGreaterThan(0);
   });
 
   it('renders "Already have an account?" text with Sign In link', () => {
     render(<RegisterScreen />);
-    expect(screen.getByText('Already have an account? ')).toBeTruthy();
-    expect(screen.getByText('Sign In')).toBeTruthy();
+    expect(screen.getByText('auth.alreadyHaveAccount ')).toBeTruthy();
+    expect(screen.getByText('auth.signInLink')).toBeTruthy();
   });
 
   it('renders page title and subtitle', () => {
     render(<RegisterScreen />);
-    expect(screen.getAllByText('Create Account').length).toBeGreaterThan(0);
-    expect(screen.getByText('Join the movie community')).toBeTruthy();
+    expect(screen.getAllByText('auth.createAccount').length).toBeGreaterThan(0);
+    expect(screen.getByText('auth.joinCommunity')).toBeTruthy();
   });
 
   it('shows validation error when submitting with empty fields', () => {
     render(<RegisterScreen />);
     // The Create Account button text
-    const buttons = screen.getAllByText('Create Account');
+    const buttons = screen.getAllByText('auth.createAccount');
     // Press the button (second one is the button text, first is the title)
     fireEvent.press(buttons[buttons.length - 1]);
-    expect(screen.getByText('All fields are required')).toBeTruthy();
+    expect(screen.getByText('auth.allFieldsRequired')).toBeTruthy();
   });
 
   it('shows auth error from hook', () => {
@@ -126,12 +133,12 @@ describe('RegisterScreen', () => {
 
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
-    fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'secret123');
-    fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'secret123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.username'), 'johndoe');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'john@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'secret123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.confirmPassword'), 'secret123');
 
-    const buttons = screen.getAllByText('Create Account');
+    const buttons = screen.getAllByText('auth.createAccount');
     await act(async () => {
       fireEvent.press(buttons[buttons.length - 1]);
     });
@@ -143,33 +150,33 @@ describe('RegisterScreen', () => {
   it('shows validation error when password is too short', async () => {
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
-    fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'ab');
-    fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'ab');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.username'), 'johndoe');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'john@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'ab');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.confirmPassword'), 'ab');
 
-    const buttons = screen.getAllByText('Create Account');
+    const buttons = screen.getAllByText('auth.createAccount');
     await act(async () => {
       fireEvent.press(buttons[buttons.length - 1]);
     });
 
-    expect(screen.getByText('Password must be at least 6 characters')).toBeTruthy();
+    expect(screen.getByText('auth.passwordMinLength')).toBeTruthy();
   });
 
   it('shows validation error when passwords do not match', async () => {
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
-    fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'secret123');
-    fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'different');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.username'), 'johndoe');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'john@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'secret123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.confirmPassword'), 'different');
 
-    const buttons = screen.getAllByText('Create Account');
+    const buttons = screen.getAllByText('auth.createAccount');
     await act(async () => {
       fireEvent.press(buttons[buttons.length - 1]);
     });
 
-    expect(screen.getByText('Passwords do not match')).toBeTruthy();
+    expect(screen.getByText('auth.passwordsMismatch')).toBeTruthy();
   });
 
   it('navigates back when back button is pressed', () => {
@@ -185,7 +192,7 @@ describe('RegisterScreen', () => {
   it('navigates back when Sign In link is pressed', () => {
     render(<RegisterScreen />);
 
-    fireEvent.press(screen.getByText('Sign In'));
+    fireEvent.press(screen.getByText('auth.signInLink'));
 
     expect(mockRouter.back).toHaveBeenCalled();
   });
@@ -193,7 +200,7 @@ describe('RegisterScreen', () => {
   it('toggles password visibility when eye icon is pressed', () => {
     render(<RegisterScreen />);
 
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const passwordInput = screen.getByPlaceholderText('auth.password');
     expect(passwordInput.props.secureTextEntry).toBe(true);
 
     const eyeIcon = screen.UNSAFE_getByProps({ name: 'eye-outline' });
@@ -214,7 +221,7 @@ describe('RegisterScreen', () => {
     // When loading, the button text "Create Account" inside the button should be replaced
     // The title "Create Account" still exists, but the button text is replaced by spinner
     // So we should have only 1 occurrence of "Create Account" (the title)
-    const matches = screen.getAllByText('Create Account');
+    const matches = screen.getAllByText('auth.createAccount');
     expect(matches.length).toBe(1);
   });
 
@@ -228,12 +235,12 @@ describe('RegisterScreen', () => {
 
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
-    fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'secret123');
-    fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'secret123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.username'), 'johndoe');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'john@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'secret123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.confirmPassword'), 'secret123');
 
-    const buttons = screen.getAllByText('Create Account');
+    const buttons = screen.getAllByText('auth.createAccount');
     await act(async () => {
       fireEvent.press(buttons[buttons.length - 1]);
     });

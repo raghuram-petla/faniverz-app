@@ -1,3 +1,10 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -66,7 +73,7 @@ describe('SurpriseScreen', () => {
   it('renders "Surprise Content" header', () => {
     render(<SurpriseScreen />);
 
-    expect(screen.getByText('Surprise Content')).toBeTruthy();
+    expect(screen.getByText('surprise.title')).toBeTruthy();
   });
 
   it('renders category pills', () => {
@@ -95,7 +102,7 @@ describe('SurpriseScreen', () => {
 
     render(<SurpriseScreen />);
 
-    expect(screen.getByText('Did you know?')).toBeTruthy();
+    expect(screen.getByText('surprise.didYouKnow')).toBeTruthy();
   });
 
   it('filters content when a category pill is selected', () => {
@@ -132,7 +139,7 @@ describe('SurpriseScreen', () => {
 
     render(<SurpriseScreen />);
 
-    expect(screen.getByText('No content yet')).toBeTruthy();
+    expect(screen.getByText('surprise.noContent')).toBeTruthy();
   });
 
   it('renders featured video with description and duration', () => {
@@ -172,8 +179,8 @@ describe('SurpriseScreen', () => {
 
     render(<SurpriseScreen />);
 
-    // 5,200,000 should be displayed as "5.2M views"
-    expect(screen.getByText('5.2M views')).toBeTruthy();
+    // 5,200,000 should be displayed as "5.2M common.views" (mocked t())
+    expect(screen.getByText('5.2M common.views')).toBeTruthy();
   });
 
   it('formats views correctly for thousands', () => {
@@ -182,8 +189,8 @@ describe('SurpriseScreen', () => {
     render(<SurpriseScreen />);
 
     // 980,000 = "980K views", 320,000 = "320K views"
-    expect(screen.getByText('980K views')).toBeTruthy();
-    expect(screen.getByText('320K views')).toBeTruthy();
+    expect(screen.getByText('980K common.views')).toBeTruthy();
+    expect(screen.getByText('320K common.views')).toBeTruthy();
   });
 
   it('filters by BTS category when pill is pressed', () => {
@@ -235,8 +242,8 @@ describe('SurpriseScreen', () => {
 
     expect(screen.getByText('Movie Trailer')).toBeTruthy();
     expect(screen.getByText('TRAILER')).toBeTruthy();
-    // 150 views < 1000, so displayed as "150 views"
-    expect(screen.getByText('150 views')).toBeTruthy();
+    // 150 views < 1000, so displayed as "150 common.views" (mocked t())
+    expect(screen.getByText('150 common.views')).toBeTruthy();
   });
 
   it('shows BTS label when bts item is the featured video', () => {

@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
 }));
@@ -50,7 +57,7 @@ describe('WatchedMoviesScreen', () => {
   it('renders "Watched Movies" header', () => {
     mockUseWatchlist.mockReturnValue({ watched: [], isLoading: false });
     render(<WatchedMoviesScreen />);
-    expect(screen.getByText('Watched Movies')).toBeTruthy();
+    expect(screen.getByText('profile.watchedMovies')).toBeTruthy();
   });
 
   it('shows loading indicator', () => {
@@ -62,10 +69,8 @@ describe('WatchedMoviesScreen', () => {
   it('shows empty state when no watched movies', () => {
     mockUseWatchlist.mockReturnValue({ watched: [], isLoading: false });
     render(<WatchedMoviesScreen />);
-    expect(screen.getByText('No watched movies yet')).toBeTruthy();
-    expect(
-      screen.getByText('Mark movies as watched from your watchlist to track them here.'),
-    ).toBeTruthy();
+    expect(screen.getByText('profile.noWatchedMovies')).toBeTruthy();
+    expect(screen.getByText('profile.noWatchedMoviesSubtitle')).toBeTruthy();
   });
 
   it('shows movie grid when watched movies exist', () => {
@@ -142,11 +147,11 @@ describe('WatchedMoviesScreen', () => {
     render(<WatchedMoviesScreen />);
 
     // Movies Watched count
-    expect(screen.getByText('Movies Watched')).toBeTruthy();
+    expect(screen.getByText('profile.moviesWatched')).toBeTruthy();
     // Avg Rating label
-    expect(screen.getByText('Avg Rating')).toBeTruthy();
+    expect(screen.getByText('profile.avgRating')).toBeTruthy();
     // Watch Time label
-    expect(screen.getByText('Watch Time')).toBeTruthy();
+    expect(screen.getByText('profile.watchTime')).toBeTruthy();
     // 2 movies: avg rating = (4.0 + 3.0) / 2 = 3.5
     expect(screen.getByText('3.5')).toBeTruthy();
     // Watch time: no runtime set → fallback 90 each → 2 * 90 = 180 min = 3h
@@ -188,7 +193,7 @@ describe('WatchedMoviesScreen', () => {
   it('shows sort dropdown with default "Recently Watched"', () => {
     mockUseWatchlist.mockReturnValue({ watched: [], isLoading: false });
     render(<WatchedMoviesScreen />);
-    expect(screen.getByText('Recently Watched')).toBeTruthy();
+    expect(screen.getByText('profile.sortRecentlyWatched')).toBeTruthy();
   });
 
   it('opens sort menu and shows all options', () => {
@@ -196,11 +201,11 @@ describe('WatchedMoviesScreen', () => {
     render(<WatchedMoviesScreen />);
 
     // Press the sort dropdown
-    fireEvent.press(screen.getByText('Recently Watched'));
+    fireEvent.press(screen.getByText('profile.sortRecentlyWatched'));
 
     // All sort options should be visible
-    expect(screen.getByText('Highest Rated')).toBeTruthy();
-    expect(screen.getByText('Title A\u2013Z')).toBeTruthy();
+    expect(screen.getByText('profile.sortHighestRated')).toBeTruthy();
+    expect(screen.getByText('profile.sortTitleAZ')).toBeTruthy();
   });
 
   it('sorts by highest rated when option is selected', () => {
@@ -239,12 +244,12 @@ describe('WatchedMoviesScreen', () => {
     render(<WatchedMoviesScreen />);
 
     // Open sort menu
-    fireEvent.press(screen.getByText('Recently Watched'));
+    fireEvent.press(screen.getByText('profile.sortRecentlyWatched'));
     // Select Highest Rated
-    fireEvent.press(screen.getByText('Highest Rated'));
+    fireEvent.press(screen.getByText('profile.sortHighestRated'));
 
     // The sort dropdown should now show "Highest Rated"
-    expect(screen.getByText('Highest Rated')).toBeTruthy();
+    expect(screen.getByText('profile.sortHighestRated')).toBeTruthy();
 
     // After sorting by rating, Salaar (4.5) should come before Pushpa 2 (3.0)
     const allMovieTitles = screen.getAllByText(/Pushpa 2|Salaar/);
@@ -287,9 +292,9 @@ describe('WatchedMoviesScreen', () => {
     render(<WatchedMoviesScreen />);
 
     // Open sort menu
-    fireEvent.press(screen.getByText('Recently Watched'));
+    fireEvent.press(screen.getByText('profile.sortRecentlyWatched'));
     // Select Title A-Z
-    fireEvent.press(screen.getByText('Title A\u2013Z'));
+    fireEvent.press(screen.getByText('profile.sortTitleAZ'));
 
     // After sorting by title, Akhanda should come before Pushpa 2
     const allMovieTitles = screen.getAllByText(/Pushpa 2|Akhanda/);

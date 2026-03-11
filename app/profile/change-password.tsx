@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import { useTheme } from '@/theme';
@@ -9,6 +10,7 @@ import type { SemanticTheme } from '@shared/themes';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
 export default function ChangePasswordScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
@@ -30,7 +32,7 @@ export default function ChangePasswordScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <ScreenHeader title="Change Password" />
+      <ScreenHeader title={t('settings.changePassword')} />
 
       <View style={styles.body}>
         {sent ? (
@@ -38,20 +40,17 @@ export default function ChangePasswordScreen() {
             <View style={styles.successIcon}>
               <Ionicons name="mail-outline" size={32} color={colors.red600} />
             </View>
-            <Text style={styles.successTitle}>Check your inbox</Text>
+            <Text style={styles.successTitle}>{t('auth.checkInbox')}</Text>
             <Text style={styles.successSubtitle}>
-              We sent a password reset link to{'\n'}
+              {t('profile.resetLinkSentTo')}
+              {'\n'}
               <Text style={styles.successEmail}>{email}</Text>
             </Text>
-            <Text style={styles.successHint}>
-              Follow the link in the email to set a new password.
-            </Text>
+            <Text style={styles.successHint}>{t('profile.followResetLink')}</Text>
           </View>
         ) : (
           <>
-            <Text style={styles.subtitle}>
-              We'll send a password reset link to your registered email address.
-            </Text>
+            <Text style={styles.subtitle}>{t('profile.resetLinkDescription')}</Text>
 
             <View style={styles.emailCard}>
               <Ionicons name="mail-outline" size={18} color={theme.textTertiary} />
@@ -69,7 +68,7 @@ export default function ChangePasswordScreen() {
               {isLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.sendButtonText}>Send Reset Email</Text>
+                <Text style={styles.sendButtonText}>{t('profile.sendResetEmail')}</Text>
               )}
             </TouchableOpacity>
           </>

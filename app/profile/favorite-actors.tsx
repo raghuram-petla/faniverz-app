@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useFavoriteActors, useFavoriteActorMutations } from '@/features/actors/hooks';
 import { Actor, FavoriteActor } from '@/types';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -29,6 +30,7 @@ interface FavoriteActorWithActor extends FavoriteActor {
 }
 
 export default function FavoriteActorsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -72,7 +74,7 @@ export default function FavoriteActorsScreen() {
       />
       {/* Header */}
       <ScreenHeader
-        title="Favorite Actors"
+        title={t('profile.favoriteActors')}
         titleBadge={
           count > 0 && (
             <View style={styles.countBadge}>
@@ -97,9 +99,9 @@ export default function FavoriteActorsScreen() {
       ) : actorList.length === 0 ? (
         <EmptyState
           icon="heart-outline"
-          title="No favorite actors yet"
-          subtitle="Add actors you love to keep track of their upcoming movies."
-          actionLabel="Add Actors"
+          title={t('profile.noFavoriteActors')}
+          subtitle={t('profile.noFavoriteActorsSubtitle')}
+          actionLabel={t('profile.addActors')}
           onAction={() => router.push('/search')}
         />
       ) : (

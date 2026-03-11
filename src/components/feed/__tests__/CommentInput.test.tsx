@@ -1,3 +1,10 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
@@ -22,14 +29,14 @@ describe('CommentInput', () => {
 
   it('shows login prompt when not authenticated', () => {
     render(<CommentInput isAuthenticated={false} onSubmit={jest.fn()} />);
-    expect(screen.getByText('Sign in to comment')).toBeTruthy();
+    expect(screen.getByText('auth.signInToComment')).toBeTruthy();
     expect(screen.queryByLabelText('Comment input')).toBeNull();
   });
 
   it('calls onLoginPress when login prompt tapped', () => {
     const onLogin = jest.fn();
     render(<CommentInput isAuthenticated={false} onSubmit={jest.fn()} onLoginPress={onLogin} />);
-    fireEvent.press(screen.getByText('Sign in to comment'));
+    fireEvent.press(screen.getByText('auth.signInToComment'));
     expect(onLogin).toHaveBeenCalled();
   });
 

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } fr
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import {
@@ -26,6 +27,7 @@ import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 export default function PostDetailScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createPostDetailStyles(theme);
   const insets = useSafeAreaInsets();
@@ -90,7 +92,7 @@ export default function PostDetailScreen() {
       if (entityId === user?.id) {
         router.push('/profile' as Parameters<typeof router.push>[0]);
       } else {
-        Alert.alert('Coming Soon', 'User profiles are not yet available.');
+        Alert.alert(t('postDetail.comingSoon'), t('feed.userProfilesNotAvailable'));
       }
       return;
     }
@@ -115,7 +117,7 @@ export default function PostDetailScreen() {
         >
           <Ionicons name="arrow-back" size={20} color={colors.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Post</Text>
+        <Text style={styles.headerTitle}>{t('postDetail.title')}</Text>
       </View>
 
       {/* Content */}
@@ -148,7 +150,9 @@ export default function PostDetailScreen() {
 
             {/* Comments */}
             <View style={styles.commentsList}>
-              <Text style={styles.commentsHeader}>Comments ({post.comment_count})</Text>
+              <Text style={styles.commentsHeader}>
+                {t('postDetail.comments')} ({post.comment_count})
+              </Text>
               <CommentsList
                 comments={comments}
                 userId={userId}
@@ -162,7 +166,7 @@ export default function PostDetailScreen() {
         ) : (
           <View style={{ paddingVertical: 40, alignItems: 'center' }}>
             <Ionicons name="alert-circle-outline" size={48} color={colors.gray500} />
-            <Text style={{ color: colors.gray500, marginTop: 8 }}>Post not found</Text>
+            <Text style={{ color: colors.gray500, marginTop: 8 }}>{t('postDetail.notFound')}</Text>
           </View>
         )}
       </ScrollView>

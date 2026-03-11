@@ -16,9 +16,19 @@ jest.mock('expo-constants', () => ({
   default: { expoConfig: { version: '2.3.1', extra: { buildDate: '2026.03.11' } } },
 }));
 
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ i18n: { language: 'en' } }),
-}));
+jest.mock('react-i18next', () => {
+  const en = require('../../../src/i18n/en.json') as Record<string, Record<string, string>>;
+  const t = (key: string, params?: Record<string, unknown>) => {
+    const [ns, k] = key.split('.');
+    let val = en[ns]?.[k] ?? key;
+    if (params)
+      Object.entries(params).forEach(([pk, pv]) => {
+        val = val.replace(`{{${pk}}}`, String(pv));
+      });
+    return val;
+  };
+  return { useTranslation: () => ({ t, i18n: { language: 'en' } }) };
+});
 
 import React from 'react';
 import { Linking } from 'react-native';

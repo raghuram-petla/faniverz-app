@@ -2,6 +2,13 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { SocialSignInButtons } from '../SocialSignInButtons';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 describe('SocialSignInButtons', () => {
   const defaultProps = {
     onGoogle: jest.fn(),

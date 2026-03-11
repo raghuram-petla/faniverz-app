@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlist } from '@/features/watchlist/hooks';
 import { WatchlistEntry } from '@/types';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
@@ -23,13 +24,14 @@ const FALLBACK_RUNTIME_MINUTES = 90;
 
 type SortKey = 'recent' | 'rating' | 'title';
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'recent', label: 'Recently Watched' },
-  { key: 'rating', label: 'Highest Rated' },
-  { key: 'title', label: 'Title A–Z' },
+const SORT_OPTION_KEYS: { key: SortKey; i18nKey: string }[] = [
+  { key: 'recent', i18nKey: 'profile.sortRecentlyWatched' },
+  { key: 'rating', i18nKey: 'profile.sortHighestRated' },
+  { key: 'title', i18nKey: 'profile.sortTitleAZ' },
 ];
 
 export default function WatchedMoviesScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -72,7 +74,9 @@ export default function WatchedMoviesScreen() {
   );
   const watchTimeLabel = count > 0 ? formatWatchTime(watchTimeMinutes) : '—';
 
-  const activeSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? 'Sort';
+  const activeSortLabel = SORT_OPTION_KEYS.find((o) => o.key === sortKey)
+    ? t(SORT_OPTION_KEYS.find((o) => o.key === sortKey)!.i18nKey)
+    : t('profile.sort');
 
   // Build rows for the 2-col grid
   const rows: WatchlistEntry[][] = [];
@@ -96,7 +100,7 @@ export default function WatchedMoviesScreen() {
       />
       {/* Header */}
       <ScreenHeader
-        title="Watched Movies"
+        title={t('profile.watchedMovies')}
         titleBadge={
           count > 0 && (
             <View style={styles.countBadge}>
@@ -110,18 +114,18 @@ export default function WatchedMoviesScreen() {
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{count}</Text>
-          <Text style={styles.statLabel}>Movies Watched</Text>
+          <Text style={styles.statLabel}>{t('profile.moviesWatched')}</Text>
         </View>
         <View style={styles.statCard}>
           <View style={styles.ratingValueRow}>
             <Ionicons name="star" size={14} color={colors.yellow400} />
             <Text style={styles.statValue}>{avgRating}</Text>
           </View>
-          <Text style={styles.statLabel}>Avg Rating</Text>
+          <Text style={styles.statLabel}>{t('profile.avgRating')}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{watchTimeLabel}</Text>
-          <Text style={styles.statLabel}>Watch Time</Text>
+          <Text style={styles.statLabel}>{t('profile.watchTime')}</Text>
         </View>
       </View>
 
@@ -142,7 +146,7 @@ export default function WatchedMoviesScreen() {
         </TouchableOpacity>
         {sortMenuOpen && (
           <View style={styles.sortMenu}>
-            {SORT_OPTIONS.map((opt) => (
+            {SORT_OPTION_KEYS.map((opt) => (
               <TouchableOpacity
                 key={opt.key}
                 style={[styles.sortMenuItem, sortKey === opt.key && styles.sortMenuItemActive]}
@@ -158,7 +162,7 @@ export default function WatchedMoviesScreen() {
                     sortKey === opt.key && styles.sortMenuItemTextActive,
                   ]}
                 >
-                  {opt.label}
+                  {t(opt.i18nKey)}
                 </Text>
                 {sortKey === opt.key && (
                   <Ionicons name="checkmark" size={14} color={colors.red500} />
@@ -175,8 +179,8 @@ export default function WatchedMoviesScreen() {
       ) : sorted.length === 0 ? (
         <EmptyState
           icon="eye-outline"
-          title="No watched movies yet"
-          subtitle="Mark movies as watched from your watchlist to track them here."
+          title={t('profile.noWatchedMovies')}
+          subtitle={t('profile.noWatchedMoviesSubtitle')}
         />
       ) : (
         <View style={styles.grid}>

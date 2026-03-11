@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
@@ -35,6 +36,7 @@ const PLATFORM_GRID_GAP_TOTAL = 36;
 
 export default function SpotlightScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -100,7 +102,7 @@ export default function SpotlightScreen() {
           <View style={styles.headerIconBadge}>
             <Ionicons name="star" size={20} color={colors.white} />
           </View>
-          <Text style={styles.headerTitle}>Spotlight</Text>
+          <Text style={styles.headerTitle}>{t('spotlight.title')}</Text>
         </View>
         <TouchableOpacity
           style={styles.searchButton}
@@ -131,7 +133,11 @@ export default function SpotlightScreen() {
           theatricalMovies.length === 0 &&
           streamingMovies.length === 0 &&
           upcomingMovies.length === 0 ? (
-          <EmptyState icon="film-outline" title="No movies yet" subtitle="Check back soon!" />
+          <EmptyState
+            icon="film-outline"
+            title={t('spotlight.noMovies')}
+            subtitle={t('spotlight.checkBackSoon')}
+          />
         ) : (
           <>
             {featuredMovies.length > 0 && (
@@ -142,8 +148,8 @@ export default function SpotlightScreen() {
               {theatricalMovies.length > 0 && (
                 <View>
                   <SectionHeader
-                    title="In Theaters"
-                    actionLabel="See All"
+                    title={t('spotlight.inTheaters')}
+                    actionLabel={t('common.seeAll')}
                     onAction={() => router.push('/discover?filter=in_theaters')}
                   />
                   <FlatList
@@ -161,8 +167,8 @@ export default function SpotlightScreen() {
               {streamingMovies.length > 0 && (
                 <View>
                   <SectionHeader
-                    title="Streaming Now"
-                    actionLabel="See All"
+                    title={t('home.streamingNow')}
+                    actionLabel={t('common.seeAll')}
                     onAction={() => router.push('/discover?filter=streaming')}
                   />
                   <FlatList
@@ -180,14 +186,14 @@ export default function SpotlightScreen() {
               {(upcomingTheatrical.length > 0 || upcomingOTT.length > 0) && (
                 <View>
                   <SectionHeader
-                    title="Coming Soon"
-                    actionLabel="See All"
+                    title={t('home.comingSoon')}
+                    actionLabel={t('common.seeAll')}
                     onAction={() => router.push('/discover?filter=upcoming')}
                   />
 
                   {upcomingTheatrical.length > 0 && (
                     <View style={styles.subsection}>
-                      <Text style={styles.subsectionTitle}>To Theaters</Text>
+                      <Text style={styles.subsectionTitle}>{t('home.toTheaters')}</Text>
                       <FlatList
                         data={upcomingTheatrical}
                         horizontal
@@ -202,7 +208,7 @@ export default function SpotlightScreen() {
 
                   {upcomingOTT.length > 0 && (
                     <View style={styles.subsection}>
-                      <Text style={styles.subsectionTitle}>To Streaming</Text>
+                      <Text style={styles.subsectionTitle}>{t('home.toStreaming')}</Text>
                       <FlatList
                         data={upcomingOTT}
                         horizontal
@@ -219,7 +225,7 @@ export default function SpotlightScreen() {
 
               {platforms.length > 0 && (
                 <View>
-                  <SectionHeader title="Browse by Platform" />
+                  <SectionHeader title={t('home.browseByPlatform')} />
                   <View style={styles.platformGrid}>
                     {platforms.slice(0, PLATFORM_TILE_COUNT).map((platform) => (
                       <PlatformSquare

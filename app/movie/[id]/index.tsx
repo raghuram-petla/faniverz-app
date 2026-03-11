@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, Text, TouchableOpacity, ScrollView, Share, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
@@ -28,6 +29,7 @@ type TabName = 'overview' | 'cast' | 'reviews';
 type DisplayTab = TabName | 'media';
 
 export default function MovieDetailScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -100,6 +102,12 @@ export default function MovieDetailScreen() {
 
   const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+  const tabLabels: Record<DisplayTab, string> = {
+    overview: t('movie.overview'),
+    media: t('movieDetail.media'),
+    cast: t('movie.cast'),
+    reviews: t('movie.reviews'),
+  };
   const tabs: DisplayTab[] = ['overview', 'media', 'cast', 'reviews'];
 
   const handleTabPress = (tab: DisplayTab) => {
@@ -145,7 +153,7 @@ export default function MovieDetailScreen() {
               accessibilityState={{ selected: activeTab === tab }}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tabLabels[tab]}
               </Text>
             </TouchableOpacity>
           ))}

@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useUserReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { ReviewModal } from '@/components/movie/detail/ReviewModal';
 import { Review } from '@/types';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
@@ -39,6 +40,7 @@ function StarRow({ rating, styles }: { rating: number; styles: ReturnType<typeof
 }
 
 export default function MyReviewsScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -106,10 +108,10 @@ export default function MyReviewsScreen() {
   };
 
   const handleDelete = (review: Review) => {
-    Alert.alert('Delete Review', 'Are you sure you want to delete this review?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('profile.deleteReview'), t('profile.deleteReviewConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => remove.mutate(review.id),
       },
@@ -117,9 +119,9 @@ export default function MyReviewsScreen() {
   };
 
   const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-    { key: 'recent', label: 'Recent' },
-    { key: 'rating', label: 'Rating' },
-    { key: 'helpful', label: 'Helpful' },
+    { key: 'recent', label: t('profile.sortRecent') },
+    { key: 'rating', label: t('profile.sortRating') },
+    { key: 'helpful', label: t('profile.sortHelpful') },
   ];
 
   return (
@@ -137,24 +139,24 @@ export default function MyReviewsScreen() {
         refreshing={refreshing}
       />
       {/* Header */}
-      <ScreenHeader title="My Reviews" />
+      <ScreenHeader title={t('profile.myReviews')} />
 
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{totalReviews}</Text>
-          <Text style={styles.statLabel}>Reviews</Text>
+          <Text style={styles.statLabel}>{t('profile.reviewsStat')}</Text>
         </View>
         <View style={styles.statCard}>
           <View style={styles.ratingValueRow}>
             <Ionicons name="star" size={14} color={colors.yellow400} />
             <Text style={styles.statValue}>{avgRating}</Text>
           </View>
-          <Text style={styles.statLabel}>Avg Rating</Text>
+          <Text style={styles.statLabel}>{t('profile.avgRating')}</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{totalHelpful}</Text>
-          <Text style={styles.statLabel}>Helpful</Text>
+          <Text style={styles.statLabel}>{t('profile.sortHelpful')}</Text>
         </View>
       </View>
 
@@ -182,8 +184,8 @@ export default function MyReviewsScreen() {
       ) : sorted.length === 0 ? (
         <EmptyState
           icon="star-outline"
-          title="No reviews yet"
-          subtitle="Your movie reviews will appear here."
+          title={t('profile.noReviews')}
+          subtitle={t('profile.noReviewsSubtitle')}
         />
       ) : (
         <View style={styles.reviewList}>
@@ -228,7 +230,9 @@ export default function MyReviewsScreen() {
                     <Text style={styles.reviewDate}>{formatDate(review.created_at)}</Text>
                     <View style={styles.helpfulBadge}>
                       <Ionicons name="thumbs-up-outline" size={12} color={theme.textTertiary} />
-                      <Text style={styles.helpfulText}>{review.helpful_count} helpful</Text>
+                      <Text style={styles.helpfulText}>
+                        {review.helpful_count} {t('profile.helpful')}
+                      </Text>
                     </View>
                   </View>
                   <View style={styles.reviewActions}>
@@ -238,7 +242,7 @@ export default function MyReviewsScreen() {
                       onPress={() => handleEdit(review)}
                     >
                       <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
-                      <Text style={styles.actionText}>Edit</Text>
+                      <Text style={styles.actionText}>{t('common.edit')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.actionButton, styles.deleteButton]}
@@ -246,7 +250,7 @@ export default function MyReviewsScreen() {
                       onPress={() => handleDelete(review)}
                     >
                       <Ionicons name="trash-outline" size={16} color={colors.red500} />
-                      <Text style={styles.deleteText}>Delete</Text>
+                      <Text style={styles.deleteText}>{t('common.delete')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

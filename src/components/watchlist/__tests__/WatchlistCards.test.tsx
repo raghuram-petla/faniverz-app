@@ -2,6 +2,13 @@ import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { AvailableCard, UpcomingCard, WatchedCard } from '../WatchlistCards';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));
@@ -58,7 +65,7 @@ describe('UpcomingCard', () => {
 
   it('renders "Soon" badge text', () => {
     render(<UpcomingCard entry={mockEntry} userId="u1" styles={mockStyles} />);
-    expect(screen.getByText('Soon')).toBeTruthy();
+    expect(screen.getByText('watchlist.soon')).toBeTruthy();
   });
 });
 

@@ -6,6 +6,7 @@ import { getPlatformLogo } from '@/constants/platformLogos';
 import { formatDate } from '@/utils/formatDate';
 import type { MoviePlatform, MovieStatus } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { useTranslation } from 'react-i18next';
 
 interface WatchOnSectionProps {
   platforms: MoviePlatform[];
@@ -15,12 +16,13 @@ interface WatchOnSectionProps {
 
 export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnSectionProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   return (
     <>
       {platforms.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Watch On</Text>
+          <Text style={styles.sectionTitle}>{t('movie.watchOn')}</Text>
           <View style={styles.watchOnRow}>
             {platforms.map((mp) => {
               const p = mp.platform;
@@ -48,7 +50,7 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                   <View>
                     <Text style={styles.watchOnName}>{p.name}</Text>
                     <Text style={styles.watchOnStream}>
-                      {mp.streaming_url ? 'Stream Now' : 'Available'}
+                      {mp.streaming_url ? t('movie.streamNow') : t('movie.available')}
                     </Text>
                   </View>
                   {mp.streaming_url && (
@@ -70,9 +72,11 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
         <View style={styles.releaseAlert}>
           <Ionicons name="alert-circle" size={24} color={colors.blue400} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.releaseAlertTitle}>Upcoming Release</Text>
+            <Text style={styles.releaseAlertTitle}>{t('movie.upcomingRelease')}</Text>
             <Text style={styles.releaseAlertDate}>
-              {releaseDate ? `Releasing on ${formatDate(releaseDate)}` : 'Release date TBA'}
+              {releaseDate
+                ? t('movie.releasingOn', { date: formatDate(releaseDate) })
+                : t('movie.releaseDateTba')}
             </Text>
           </View>
         </View>

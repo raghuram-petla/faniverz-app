@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -21,14 +22,15 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 type Filter = 'all' | FeedEntityType;
 
-const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'movie', label: 'Movies' },
-  { key: 'actor', label: 'Actors' },
-  { key: 'production_house', label: 'Studios' },
+const FILTER_KEYS: { key: Filter; i18nKey: string }[] = [
+  { key: 'all', i18nKey: 'common.all' },
+  { key: 'movie', i18nKey: 'search.movies' },
+  { key: 'actor', i18nKey: 'search.actors' },
+  { key: 'production_house', i18nKey: 'search.studios' },
 ];
 
 export default function FollowingScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { theme } = useTheme();
@@ -108,16 +110,16 @@ export default function FollowingScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.headerWrapper, { paddingTop: insets.top + 12 }]}>
-        <ScreenHeader title="Following" />
+        <ScreenHeader title={t('profile.following')} />
         <View style={styles.filters}>
-          {FILTERS.map((f) => (
+          {FILTER_KEYS.map((f) => (
             <TouchableOpacity
               key={f.key}
               style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
               onPress={() => setFilter(f.key)}
             >
               <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
-                {f.label}
+                {t(f.i18nKey)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -134,8 +136,8 @@ export default function FollowingScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="heart-outline"
-              title="Not following anything yet"
-              subtitle="Follow movies, actors, and studios to see them here"
+              title={t('profile.noFollowing')}
+              subtitle={t('profile.noFollowingSubtitle')}
             />
           }
           contentContainerStyle={filtered.length === 0 ? styles.emptyContent : styles.listContent}

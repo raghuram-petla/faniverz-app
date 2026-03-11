@@ -1,3 +1,10 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 
@@ -129,7 +136,7 @@ describe('ProductionHouseDetailScreen', () => {
 
   it('renders movies count', () => {
     render(<ProductionHouseDetailScreen />);
-    expect(screen.getByText('Movies (2)')).toBeTruthy();
+    expect(screen.getByText('productionHouse.movies (2)')).toBeTruthy();
   });
 
   it('renders movie cards', () => {

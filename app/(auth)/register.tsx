@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth';
@@ -21,6 +22,7 @@ import { PhoneOtpModal } from '@/components/auth/PhoneOtpModal';
 import { createRegisterStyles } from '@/styles/auth.styles';
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = useMemo(() => createRegisterStyles(theme), [theme]);
   const router = useRouter();
@@ -41,15 +43,15 @@ export default function RegisterScreen() {
   const handleSignUp = async () => {
     setValidationError(null);
     if (!username.trim() || !email.trim() || !password || !confirmPassword) {
-      setValidationError('All fields are required');
+      setValidationError(t('auth.allFieldsRequired'));
       return;
     }
     if (password.length < 6) {
-      setValidationError('Password must be at least 6 characters');
+      setValidationError(t('auth.passwordMinLength'));
       return;
     }
     if (password !== confirmPassword) {
-      setValidationError('Passwords do not match');
+      setValidationError(t('auth.passwordsMismatch'));
       return;
     }
     try {
@@ -101,8 +103,8 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join the movie community</Text>
+        <Text style={styles.title}>{t('auth.createAccount')}</Text>
+        <Text style={styles.subtitle}>{t('auth.joinCommunity')}</Text>
 
         <View style={styles.inputWrapper}>
           <Ionicons
@@ -113,7 +115,7 @@ export default function RegisterScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Username"
+            placeholder={t('auth.username')}
             placeholderTextColor={theme.textTertiary}
             value={username}
             onChangeText={setUsername}
@@ -134,7 +136,7 @@ export default function RegisterScreen() {
           <TextInput
             ref={emailRef}
             style={styles.input}
-            placeholder="Email"
+            placeholder={t('auth.email')}
             placeholderTextColor={theme.textTertiary}
             value={email}
             onChangeText={setEmail}
@@ -156,7 +158,7 @@ export default function RegisterScreen() {
           <TextInput
             ref={passwordRef}
             style={styles.input}
-            placeholder="Password"
+            placeholder={t('auth.password')}
             placeholderTextColor={theme.textTertiary}
             value={password}
             onChangeText={setPassword}
@@ -181,7 +183,7 @@ export default function RegisterScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Confirm Password"
+            placeholder={t('auth.confirmPassword')}
             placeholderTextColor={theme.textTertiary}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -202,13 +204,13 @@ export default function RegisterScreen() {
           {isLoading ? (
             <ActivityIndicator size="small" color={theme.textPrimary} />
           ) : (
-            <Text style={styles.createButtonText}>Create Account</Text>
+            <Text style={styles.createButtonText}>{t('auth.createAccount')}</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
+          <Text style={styles.dividerText}>{t('auth.or')}</Text>
           <View style={styles.dividerLine} />
         </View>
 
@@ -224,9 +226,9 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.signInRow}>
-          <Text style={styles.signInLabel}>Already have an account? </Text>
+          <Text style={styles.signInLabel}>{t('auth.alreadyHaveAccount')} </Text>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-            <Text style={styles.signInLink}>Sign In</Text>
+            <Text style={styles.signInLink}>{t('auth.signInLink')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

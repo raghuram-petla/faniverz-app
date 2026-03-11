@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { useSurpriseContent } from '@/features/surprise/hooks';
@@ -29,6 +30,7 @@ interface ContentCardProps {
 
 function ContentCard({ item, index }: ContentCardProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const catColor = getCategoryColor(item.category);
   const iconName = getCategoryIconName(item.category);
@@ -66,7 +68,9 @@ function ContentCard({ item, index }: ContentCardProps) {
         <Text style={styles.cardTitle} numberOfLines={2}>
           {item.title}
         </Text>
-        <Text style={styles.cardViews}>{formatViews(item.views)} views</Text>
+        <Text style={styles.cardViews}>
+          {formatViews(item.views)} {t('common.views')}
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -78,23 +82,22 @@ interface FunFactBoxProps {
 
 function FunFactBox({ fact }: FunFactBoxProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   return (
     <View style={styles.funFact}>
       <Ionicons name="sparkles" size={20} color={colors.white} style={styles.funFactIcon} />
       <View style={styles.funFactTextBlock}>
-        <Text style={styles.funFactHeading}>Did you know?</Text>
+        <Text style={styles.funFactHeading}>{t('surprise.didYouKnow')}</Text>
         <Text style={styles.funFactBody}>{fact}</Text>
       </View>
     </View>
   );
 }
 
-const FUN_FACT =
-  "This section features rare content you won't find on regular streaming platforms — from unreleased songs to exclusive behind-the-scenes footage!";
-
 export default function SurpriseScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterOption>('all');
@@ -119,8 +122,8 @@ export default function SurpriseScreen() {
           <Ionicons name="sparkles" size={20} color={colors.white} />
         </View>
         <View style={styles.headerTextBlock}>
-          <Text style={styles.headerTitle}>Surprise Content</Text>
-          <Text style={styles.headerSubtitle}>Exclusive &amp; Hidden Gems</Text>
+          <Text style={styles.headerTitle}>{t('surprise.title')}</Text>
+          <Text style={styles.headerSubtitle}>{t('surprise.subtitle')}</Text>
         </View>
       </View>
 
@@ -173,7 +176,7 @@ export default function SurpriseScreen() {
             <ActivityIndicator size="large" color={colors.red600} />
           </View>
         ) : !isLoading && items.length === 0 ? (
-          <EmptyState icon="sparkles-outline" title="No content yet" />
+          <EmptyState icon="sparkles-outline" title={t('surprise.noContent')} />
         ) : (
           <>
             {/* Featured video */}
@@ -189,7 +192,7 @@ export default function SurpriseScreen() {
             ) : null}
 
             {/* Fun Fact */}
-            <FunFactBox fact={FUN_FACT} />
+            <FunFactBox fact={t('surprise.funFact')} />
           </>
         )}
       </ScrollView>

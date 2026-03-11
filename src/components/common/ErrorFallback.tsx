@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useTranslation } from 'react-i18next';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
@@ -12,15 +13,16 @@ interface ErrorFallbackProps {
 
 export function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   return (
     <View style={styles.container}>
       <Ionicons name="alert-circle" size={48} color={palette.red500} />
-      <Text style={styles.title}>Something went wrong</Text>
+      <Text style={styles.title}>{t('common.somethingWentWrong')}</Text>
       {error?.message && <Text style={styles.message}>{error.message}</Text>}
       <TouchableOpacity style={styles.button} onPress={onRetry} accessibilityRole="button">
-        <Text style={styles.buttonText}>Try Again</Text>
+        <Text style={styles.buttonText}>{t('common.retry')}</Text>
       </TouchableOpacity>
     </View>
   );

@@ -2,6 +2,13 @@ import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { WatchOnSection } from '../WatchOnSection';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('@/styles/movieDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
@@ -31,7 +38,7 @@ describe('WatchOnSection', () => {
         releaseDate="2024-12-05"
       />,
     );
-    expect(screen.getByText('Watch On')).toBeTruthy();
+    expect(screen.getByText('movie.watchOn')).toBeTruthy();
   });
 
   it('renders platform names', () => {
@@ -47,16 +54,16 @@ describe('WatchOnSection', () => {
 
   it('does not render "Watch On" when no platforms', () => {
     render(<WatchOnSection platforms={[]} movieStatus="streaming" releaseDate="2024-12-05" />);
-    expect(screen.queryByText('Watch On')).toBeNull();
+    expect(screen.queryByText('movie.watchOn')).toBeNull();
   });
 
   it('shows "Upcoming Release" alert when status is upcoming', () => {
     render(<WatchOnSection platforms={[]} movieStatus="upcoming" releaseDate="2024-12-05" />);
-    expect(screen.getByText(/Upcoming Release/i)).toBeTruthy();
+    expect(screen.getByText('movie.upcomingRelease')).toBeTruthy();
   });
 
   it('does not show upcoming alert for other statuses', () => {
     render(<WatchOnSection platforms={[]} movieStatus="in_theaters" releaseDate="2024-12-05" />);
-    expect(screen.queryByText(/Upcoming Release/i)).toBeNull();
+    expect(screen.queryByText('movie.upcomingRelease')).toBeNull();
   });
 });

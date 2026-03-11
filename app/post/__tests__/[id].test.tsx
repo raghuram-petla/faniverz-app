@@ -1,3 +1,10 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 
@@ -190,7 +197,7 @@ describe('PostDetailScreen', () => {
 
   it('renders comments count header', () => {
     render(<PostDetailScreen />);
-    expect(screen.getByText('Comments (3)')).toBeTruthy();
+    expect(screen.getByText('postDetail.comments (3)')).toBeTruthy();
   });
 
   it('renders comments list', () => {
@@ -224,7 +231,7 @@ describe('PostDetailScreen', () => {
 
   it('renders Post title in header', () => {
     render(<PostDetailScreen />);
-    expect(screen.getByText('Post')).toBeTruthy();
+    expect(screen.getByText('postDetail.title')).toBeTruthy();
   });
 
   it('navigates to entity page when entity is pressed', () => {
@@ -262,7 +269,10 @@ describe('PostDetailScreen', () => {
   it('shows alert when user entity is another user', () => {
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('user-entity-other'));
-    expect(Alert.alert).toHaveBeenCalledWith('Coming Soon', 'User profiles are not yet available.');
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'postDetail.comingSoon',
+      'feed.userProfilesNotAvailable',
+    );
     expect(mockPush).not.toHaveBeenCalled();
   });
 });

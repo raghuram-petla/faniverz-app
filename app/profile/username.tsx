@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -21,6 +22,7 @@ import { useCheckUsername, useSetUsername } from '@/features/auth/hooks/useUsern
 import { useProfile } from '@/features/auth/hooks/useProfile';
 
 export default function UsernameScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { theme } = useTheme();
@@ -61,11 +63,11 @@ export default function UsernameScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerWrapper}>
-          <ScreenHeader title="Choose Username" />
+          <ScreenHeader title={t('profile.chooseUsername')} />
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.label}>Username</Text>
+          <Text style={styles.label}>{t('profile.username')}</Text>
           <View style={styles.inputWrapper}>
             <Text style={styles.prefix}>@</Text>
             <TextInput
@@ -87,9 +89,7 @@ export default function UsernameScreen() {
             <Text style={styles.error}>{(setUsernameMutation.error as Error).message}</Text>
           )}
 
-          <Text style={styles.hint}>
-            3-20 characters. Lowercase letters, numbers, and underscores only.
-          </Text>
+          <Text style={styles.hint}>{t('profile.usernameHint')}</Text>
 
           <TouchableOpacity
             style={[
@@ -103,7 +103,7 @@ export default function UsernameScreen() {
             {setUsernameMutation.isPending ? (
               <ActivityIndicator size="small" color={palette.white} />
             ) : (
-              <Text style={styles.saveText}>Save Username</Text>
+              <Text style={styles.saveText}>{t('profile.saveUsername')}</Text>
             )}
           </TouchableOpacity>
         </View>

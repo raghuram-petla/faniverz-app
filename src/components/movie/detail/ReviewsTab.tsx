@@ -5,6 +5,7 @@ import { StarRating } from '@/components/ui/StarRating';
 import { formatDate } from '@/utils/formatDate';
 import type { Review } from '@/types/review';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { useTranslation } from 'react-i18next';
 
 interface ReviewsTabProps {
   rating: number;
@@ -24,6 +25,7 @@ export function ReviewsTab({
   onHelpful,
 }: ReviewsTabProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   return (
     <View style={styles.reviewsTab}>
@@ -36,7 +38,7 @@ export function ReviewsTab({
 
       <TouchableOpacity style={styles.writeReviewButton} onPress={onWriteReview}>
         <Ionicons name="create" size={20} color={colors.white} />
-        <Text style={styles.writeReviewText}>Write Review</Text>
+        <Text style={styles.writeReviewText}>{t('movie.writeReview')}</Text>
       </TouchableOpacity>
 
       {reviews.map((review) => (
@@ -59,7 +61,7 @@ export function ReviewsTab({
           )}
           {review.contains_spoiler && (
             <View style={styles.spoilerBadge}>
-              <Text style={styles.spoilerBadgeText}>Contains Spoiler</Text>
+              <Text style={styles.spoilerBadgeText}>{t('movie.containsSpoiler')}</Text>
             </View>
           )}
           <TouchableOpacity

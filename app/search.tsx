@@ -4,6 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { HomeButton } from '@/components/common/HomeButton';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +33,7 @@ type SearchFilter = 'all' | 'movies' | 'actors' | 'studios';
 
 export default function SearchScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -103,12 +105,12 @@ export default function SearchScreen() {
   const totalResults = filteredMovies.length + filteredActors.length + filteredHouses.length;
 
   const FILTERS: { key: SearchFilter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'movies', label: `Movies${movies.length ? ` (${movies.length})` : ''}` },
-    { key: 'actors', label: `Actors${actors.length ? ` (${actors.length})` : ''}` },
+    { key: 'all', label: t('common.all') },
+    { key: 'movies', label: `${t('search.movies')}${movies.length ? ` (${movies.length})` : ''}` },
+    { key: 'actors', label: `${t('search.actors')}${actors.length ? ` (${actors.length})` : ''}` },
     {
       key: 'studios',
-      label: `Studios${productionHouses.length ? ` (${productionHouses.length})` : ''}`,
+      label: `${t('search.studios')}${productionHouses.length ? ` (${productionHouses.length})` : ''}`,
     },
   ];
 
@@ -121,7 +123,7 @@ export default function SearchScreen() {
           <Ionicons name="search" size={18} color={theme.textTertiary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search movies, actors, studios..."
+            placeholder={t('search.placeholder')}
             placeholderTextColor={theme.textTertiary}
             value={query}
             onChangeText={setQuery}
@@ -134,7 +136,7 @@ export default function SearchScreen() {
           )}
         </View>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Text style={styles.cancelText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -167,9 +169,9 @@ export default function SearchScreen() {
           {recentSearches.length > 0 && (
             <View style={styles.recentSection}>
               <View style={styles.recentHeader}>
-                <Text style={styles.recentTitle}>Recent Searches</Text>
+                <Text style={styles.recentTitle}>{t('search.recentSearches')}</Text>
                 <TouchableOpacity onPress={clearSearches}>
-                  <Text style={styles.clearText}>Clear</Text>
+                  <Text style={styles.clearText}>{t('search.clear')}</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.recentPills}>
@@ -191,7 +193,7 @@ export default function SearchScreen() {
             <View style={styles.trendingSection}>
               <View style={styles.trendingHeader}>
                 <Ionicons name="trending-up" size={20} color={colors.red500} />
-                <Text style={styles.trendingTitle}>Trending Now</Text>
+                <Text style={styles.trendingTitle}>{t('search.trendingNow')}</Text>
               </View>
               {trendingMovies.map((movie, index) => (
                 <TouchableOpacity
@@ -215,7 +217,9 @@ export default function SearchScreen() {
                       <Ionicons name="star" size={12} color={colors.yellow400} />
                       <Text style={styles.trendingRating}>{movie.rating}</Text>
                       <Text style={styles.trendingDot}>•</Text>
-                      <Text style={styles.trendingReviews}>{movie.review_count} reviews</Text>
+                      <Text style={styles.trendingReviews}>
+                        {movie.review_count} {t('search.reviews')}
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -227,7 +231,9 @@ export default function SearchScreen() {
 
       {hasQuery && totalResults > 0 && (
         <Text style={styles.resultsCount}>
-          {totalResults} result{totalResults !== 1 ? 's' : ''} found
+          {totalResults === 1
+            ? t('search.resultFound', { count: totalResults })
+            : t('search.resultsFound', { count: totalResults })}
         </Text>
       )}
       {hasQuery && (
@@ -274,8 +280,8 @@ export default function SearchScreen() {
             filteredActors.length === 0 && filteredHouses.length === 0 ? (
               <EmptyState
                 icon="search"
-                title="No results found"
-                subtitle="Try a different search term"
+                title={t('common.noResults')}
+                subtitle={t('search.tryDifferent')}
               />
             ) : null
           }

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { createStyles } from '@/styles/discover.styles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -30,6 +31,7 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 export default function DiscoverScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -145,13 +147,13 @@ export default function DiscoverScreen() {
             <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
           <HomeButton />
-          <Text style={styles.screenTitle}>Discover</Text>
+          <Text style={styles.screenTitle}>{t('discover.title')}</Text>
         </View>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={18} color={theme.textTertiary} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search movies, genres, actors..."
+            placeholder={t('discover.searchPlaceholder')}
             placeholderTextColor={theme.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -186,7 +188,7 @@ export default function DiscoverScreen() {
       <View style={styles.filterBar}>
         <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
           <Ionicons name="options" size={16} color={theme.textPrimary} />
-          <Text style={styles.filterBarText}>Filters</Text>
+          <Text style={styles.filterBarText}>{t('discover.filters')}</Text>
           {activeFilterCount > 0 && (
             <View style={styles.filterCountBadge}>
               <Text style={styles.filterCountText}>{activeFilterCount}</Text>
@@ -230,7 +232,8 @@ export default function DiscoverScreen() {
       {filteredMovies.length > 0 && (
         <View style={styles.movieCountRow}>
           <Text style={styles.movieCountText}>
-            {filteredMovies.length} {filteredMovies.length === 1 ? 'movie' : 'movies'}
+            {filteredMovies.length}{' '}
+            {filteredMovies.length === 1 ? t('discover.movie') : t('discover.movies')}
           </Text>
         </View>
       )}
@@ -262,8 +265,8 @@ export default function DiscoverScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="film-outline"
-              title="No movies found"
-              subtitle="Try adjusting your filters or search terms"
+              title={t('discover.noMovies')}
+              subtitle={t('discover.noMoviesSubtitle')}
             />
           }
           ListFooterComponent={

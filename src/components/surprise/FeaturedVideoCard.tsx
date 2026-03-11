@@ -16,6 +16,7 @@ import {
   getCategoryIconName,
   formatViews,
 } from '@/constants/surpriseHelpers';
+import { useTranslation } from 'react-i18next';
 import type { SurpriseContent } from '@/types';
 
 const FALLBACK_VIDEO_ID = 'roYRXbhxhlM';
@@ -27,6 +28,7 @@ interface FeaturedVideoCardProps {
 }
 
 export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
+  const { t } = useTranslation();
   const videoId = item.youtube_id ?? FALLBACK_VIDEO_ID;
   const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
   const catColor = getCategoryColor(item.category);
@@ -107,7 +109,9 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
             <Text style={styles.categoryBadgeText}>{catLabel.toUpperCase()}</Text>
           </View>
           {item.duration ? <Text style={styles.featuredDuration}>{item.duration}</Text> : null}
-          <Text style={styles.featuredViews}>{formatViews(item.views)} views</Text>
+          <Text style={styles.featuredViews}>
+            {formatViews(item.views)} {t('common.views')}
+          </Text>
         </View>
         <Text style={styles.featuredTitle} numberOfLines={2}>
           {item.title}

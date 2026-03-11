@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(),
 }));
@@ -46,7 +53,7 @@ describe('ChangePasswordScreen', () => {
 
   it('renders "Change Password" header', () => {
     render(<ChangePasswordScreen />);
-    expect(screen.getByText('Change Password')).toBeTruthy();
+    expect(screen.getByText('settings.changePassword')).toBeTruthy();
   });
 
   it('shows user email in the email card', () => {
@@ -56,14 +63,14 @@ describe('ChangePasswordScreen', () => {
 
   it('shows "Send Reset Email" button', () => {
     render(<ChangePasswordScreen />);
-    expect(screen.getByText('Send Reset Email')).toBeTruthy();
+    expect(screen.getByText('profile.sendResetEmail')).toBeTruthy();
   });
 
   it('calls resetPassword with user email on button press', async () => {
     render(<ChangePasswordScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Email'));
+      fireEvent.press(screen.getByText('profile.sendResetEmail'));
     });
 
     expect(mockResetPassword).toHaveBeenCalledWith('fan@example.com');
@@ -73,10 +80,10 @@ describe('ChangePasswordScreen', () => {
     render(<ChangePasswordScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Email'));
+      fireEvent.press(screen.getByText('profile.sendResetEmail'));
     });
 
-    expect(screen.getByText('Check your inbox')).toBeTruthy();
+    expect(screen.getByText('auth.checkInbox')).toBeTruthy();
     expect(screen.getByText('fan@example.com')).toBeTruthy();
   });
 
@@ -101,7 +108,7 @@ describe('ChangePasswordScreen', () => {
     render(<ChangePasswordScreen />);
 
     // "Send Reset Email" text should not be visible when loading
-    expect(screen.queryByText('Send Reset Email')).toBeNull();
+    expect(screen.queryByText('profile.sendResetEmail')).toBeNull();
   });
 
   it('does not call resetPassword when email is empty (user is null)', async () => {
@@ -110,7 +117,7 @@ describe('ChangePasswordScreen', () => {
     render(<ChangePasswordScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Email'));
+      fireEvent.press(screen.getByText('profile.sendResetEmail'));
     });
 
     expect(mockResetPassword).not.toHaveBeenCalled();
@@ -118,19 +125,17 @@ describe('ChangePasswordScreen', () => {
 
   it('shows instruction text before sending', () => {
     render(<ChangePasswordScreen />);
-    expect(
-      screen.getByText("We'll send a password reset link to your registered email address."),
-    ).toBeTruthy();
+    expect(screen.getByText('profile.resetLinkDescription')).toBeTruthy();
   });
 
   it('shows follow-up hint in success state', async () => {
     render(<ChangePasswordScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Email'));
+      fireEvent.press(screen.getByText('profile.sendResetEmail'));
     });
 
-    expect(screen.getByText('Follow the link in the email to set a new password.')).toBeTruthy();
+    expect(screen.getByText('profile.followResetLink')).toBeTruthy();
   });
 
   it('handles resetPassword rejection without crashing', async () => {
@@ -144,12 +149,12 @@ describe('ChangePasswordScreen', () => {
     render(<ChangePasswordScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Email'));
+      fireEvent.press(screen.getByText('profile.sendResetEmail'));
     });
 
     expect(rejectingReset).toHaveBeenCalled();
     // Should not crash and should remain in form state (not success state)
-    expect(screen.queryByText('Check your inbox')).toBeNull();
-    expect(screen.getByText('Send Reset Email')).toBeTruthy();
+    expect(screen.queryByText('auth.checkInbox')).toBeNull();
+    expect(screen.getByText('profile.sendResetEmail')).toBeTruthy();
   });
 });

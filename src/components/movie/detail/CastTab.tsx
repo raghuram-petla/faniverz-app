@@ -3,6 +3,7 @@ import { ActorAvatar } from '@/components/common/ActorAvatar';
 import type { CastMember } from '@/types';
 import { useTheme } from '@/theme';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { useTranslation } from 'react-i18next';
 
 interface CastTabProps {
   cast: CastMember[];
@@ -12,12 +13,13 @@ interface CastTabProps {
 
 export function CastTab({ cast, crew, onActorPress }: CastTabProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   return (
     <View style={styles.castTab}>
       {cast.length > 0 && (
         <>
-          <Text style={styles.castSectionLabel}>Cast</Text>
+          <Text style={styles.castSectionLabel}>{t('movie.cast')}</Text>
           {cast.map((cm) => (
             <TouchableOpacity
               key={cm.id}
@@ -37,7 +39,7 @@ export function CastTab({ cast, crew, onActorPress }: CastTabProps) {
 
       {crew.length > 0 && (
         <>
-          <Text style={styles.castSectionLabel}>Crew</Text>
+          <Text style={styles.castSectionLabel}>{t('movie.crew')}</Text>
           {crew.map((cm) => (
             <TouchableOpacity
               key={cm.id}
@@ -56,7 +58,7 @@ export function CastTab({ cast, crew, onActorPress }: CastTabProps) {
       )}
 
       {cast.length === 0 && crew.length === 0 && (
-        <Text style={styles.emptyText}>No cast information available.</Text>
+        <Text style={styles.emptyText}>{t('movie.noCastInfo')}</Text>
       )}
     </View>
   );

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -23,6 +24,7 @@ const LANGUAGES: Language[] = [
 ];
 
 export default function LanguageScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string>(i18n.language ?? 'en');
   const { theme } = useTheme();
@@ -37,7 +39,7 @@ export default function LanguageScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
       {/* Header */}
-      <ScreenHeader title="Language" />
+      <ScreenHeader title={t('settings.language')} />
 
       {/* Language options */}
       <View style={styles.optionsList}>

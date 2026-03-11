@@ -19,6 +19,7 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 import { useAvatarUpload } from '@/features/profile/hooks/useAvatarUpload';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { createStyles } from '@/styles/profile/edit.styles';
@@ -27,6 +28,7 @@ import { getImageUrl } from '@shared/imageUrl';
 const BIO_LIMIT = 150;
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -52,7 +54,7 @@ export default function EditProfileScreen() {
 
   const handleSave = () => {
     if (bio.length > BIO_LIMIT) {
-      Alert.alert('Bio too long', `Please keep your bio under ${BIO_LIMIT} characters.`);
+      Alert.alert(t('profile.bioTooLong'), t('profile.bioTooLongMessage', { limit: BIO_LIMIT }));
       return;
     }
     updateProfile(
@@ -64,11 +66,11 @@ export default function EditProfileScreen() {
       },
       {
         onSuccess: () => {
-          Alert.alert('Saved', 'Your profile has been updated.');
+          Alert.alert(t('common.saved'), t('profile.profileUpdated'));
           router.back();
         },
         onError: () => {
-          Alert.alert('Error', 'Failed to save your profile. Please try again.');
+          Alert.alert(t('common.error'), t('profile.profileSaveFailed'));
         },
       },
     );
@@ -97,7 +99,7 @@ export default function EditProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <ScreenHeader title="Edit Profile" />
+        <ScreenHeader title={t('profile.editProfile')} />
 
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
@@ -120,7 +122,7 @@ export default function EditProfileScreen() {
           </View>
           <TouchableOpacity activeOpacity={0.7} onPress={pickAndUpload} disabled={isUploading}>
             <Text style={styles.changePhotoText}>
-              {isUploading ? 'Uploading…' : 'Change Photo'}
+              {isUploading ? t('profile.uploading') : t('profile.changePhoto')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -129,7 +131,7 @@ export default function EditProfileScreen() {
         <View style={styles.form}>
           {/* Full Name */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Full Name</Text>
+            <Text style={styles.fieldLabel}>{t('profile.fullName')}</Text>
             <View style={styles.inputWrapper}>
               <Ionicons
                 name="person-outline"
@@ -141,7 +143,7 @@ export default function EditProfileScreen() {
                 style={styles.input}
                 value={displayName}
                 onChangeText={setDisplayName}
-                placeholder="Your full name"
+                placeholder={t('profile.fullNamePlaceholder')}
                 placeholderTextColor={theme.textTertiary}
                 autoCapitalize="words"
                 returnKeyType="next"
@@ -151,7 +153,7 @@ export default function EditProfileScreen() {
 
           {/* Email (disabled) */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Email</Text>
+            <Text style={styles.fieldLabel}>{t('profile.email')}</Text>
             <View style={[styles.inputWrapper, styles.inputDisabled]}>
               <Ionicons
                 name="mail-outline"
@@ -168,12 +170,12 @@ export default function EditProfileScreen() {
               />
               <Ionicons name="lock-closed-outline" size={14} color={theme.textDisabled} />
             </View>
-            <Text style={styles.fieldHint}>Email cannot be changed here.</Text>
+            <Text style={styles.fieldHint}>{t('profile.emailHint')}</Text>
           </View>
 
           {/* Phone */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Phone</Text>
+            <Text style={styles.fieldLabel}>{t('profile.phone')}</Text>
             <View style={styles.inputWrapper}>
               <Ionicons
                 name="call-outline"
@@ -195,7 +197,7 @@ export default function EditProfileScreen() {
 
           {/* Location */}
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Location</Text>
+            <Text style={styles.fieldLabel}>{t('profile.location')}</Text>
             <View style={styles.inputWrapper}>
               <Ionicons
                 name="location-outline"
@@ -207,7 +209,7 @@ export default function EditProfileScreen() {
                 style={styles.input}
                 value={location}
                 onChangeText={setLocation}
-                placeholder="City, Country"
+                placeholder={t('profile.locationPlaceholder')}
                 placeholderTextColor={theme.textTertiary}
                 returnKeyType="next"
               />
@@ -217,7 +219,7 @@ export default function EditProfileScreen() {
           {/* Bio */}
           <View style={styles.fieldGroup}>
             <View style={styles.bioLabelRow}>
-              <Text style={styles.fieldLabel}>Bio</Text>
+              <Text style={styles.fieldLabel}>{t('profile.bio')}</Text>
               <Text style={[styles.bioCounter, bioOverLimit && styles.bioCounterOver]}>
                 {bio.length}/{BIO_LIMIT}
               </Text>
@@ -229,7 +231,7 @@ export default function EditProfileScreen() {
                 style={[styles.input, styles.bioInput]}
                 value={bio}
                 onChangeText={setBio}
-                placeholder="Tell us a bit about yourself…"
+                placeholder={t('profile.bioPlaceholder')}
                 placeholderTextColor={theme.textTertiary}
                 multiline
                 numberOfLines={4}
@@ -252,7 +254,7 @@ export default function EditProfileScreen() {
           ) : (
             <>
               <Ionicons name="checkmark" size={20} color={theme.textPrimary} />
-              <Text style={styles.saveButtonText}>Save Changes</Text>
+              <Text style={styles.saveButtonText}>{t('profile.saveChanges')}</Text>
             </>
           )}
         </TouchableOpacity>

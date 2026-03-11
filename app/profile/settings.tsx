@@ -13,14 +13,12 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import { useTranslation } from 'react-i18next';
 
 type IconName = keyof typeof Ionicons.glyphMap;
-
 interface ToggleRow {
   kind: 'toggle';
   icon: IconName;
   label: string;
   key: string;
 }
-
 interface LinkRow {
   kind: 'link';
   icon: IconName;
@@ -28,7 +26,6 @@ interface LinkRow {
   value?: string;
   onPress?: () => void;
 }
-
 interface RadioRow {
   kind: 'radio';
   icon: IconName;
@@ -37,28 +34,28 @@ interface RadioRow {
   selected: string;
   onSelect: (key: string) => void;
 }
-
 type SettingsRow = ToggleRow | LinkRow | RadioRow;
-
 interface Section {
   title: string;
   rows: SettingsRow[];
 }
-
-const THEME_OPTIONS: { key: string; label: string }[] = [
-  { key: 'system', label: 'System' },
-  { key: 'light', label: 'Light' },
-  { key: 'dark', label: 'Dark' },
-];
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
   const { theme, mode, setMode } = useTheme();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const language = i18n.language;
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const themeOptions = useMemo(
+    () => [
+      { key: 'system', label: t('settings.system') },
+      { key: 'light', label: t('settings.light') },
+      { key: 'dark', label: t('settings.dark') },
+    ],
+    [t],
+  );
 
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
@@ -97,13 +94,13 @@ export default function SettingsScreen() {
 
   const sections: Section[] = [
     {
-      title: 'Appearance',
+      title: t('settings.appearance'),
       rows: [
         {
           kind: 'radio',
           icon: 'sunny-outline',
-          label: 'Theme',
-          options: THEME_OPTIONS,
+          label: t('settings.theme'),
+          options: themeOptions,
           selected: mode,
           onSelect: (key: string) => setMode(key as 'system' | 'light' | 'dark'),
         },
@@ -112,35 +109,35 @@ export default function SettingsScreen() {
     ...(isLoggedIn
       ? [
           {
-            title: 'Notifications',
+            title: t('settings.notificationSection'),
             rows: [
               {
                 kind: 'toggle' as const,
                 icon: 'notifications-outline' as IconName,
-                label: 'Push Notifications',
+                label: t('settings.pushNotifications'),
                 key: 'push',
               },
               {
                 kind: 'toggle' as const,
                 icon: 'mail-outline' as IconName,
-                label: 'Email Notifications',
+                label: t('settings.emailNotifications'),
                 key: 'email',
               },
             ],
           },
           {
-            title: 'Privacy',
+            title: t('settings.privacySection'),
             rows: [
               {
                 kind: 'link' as const,
                 icon: 'lock-closed-outline' as IconName,
-                label: 'Change Password',
+                label: t('settings.changePassword'),
                 onPress: () => router.push('/profile/change-password'),
               },
               {
                 kind: 'link' as const,
                 icon: 'shield-outline' as IconName,
-                label: 'Privacy Settings',
+                label: t('settings.privacySettings'),
                 onPress: () => router.push('/profile/privacy'),
               },
             ],
@@ -148,42 +145,42 @@ export default function SettingsScreen() {
         ]
       : []),
     {
-      title: 'Preferences',
+      title: t('settings.preferences'),
       rows: [
         {
           kind: 'link',
           icon: 'language-outline',
-          label: 'Language',
+          label: t('settings.language'),
           value: language === 'te' ? 'Telugu' : 'English',
           onPress: () => router.push('/profile/language'),
         },
       ],
     },
     {
-      title: 'About',
+      title: t('settings.about'),
       rows: [
         {
           kind: 'link',
           icon: 'chatbubble-ellipses-outline',
-          label: 'FAQ',
+          label: t('settings.faq'),
           onPress: () => router.push('/profile/faq'),
         },
         {
           kind: 'link',
           icon: 'help-circle-outline',
-          label: 'Help & Support',
+          label: t('settings.helpSupport'),
           onPress: () => Linking.openURL('mailto:faniverz@gmail.com?subject=Faniverz%20Support'),
         },
         {
           kind: 'link',
           icon: 'document-text-outline',
-          label: 'Terms of Service',
+          label: t('settings.termsOfService'),
           onPress: () => router.push('/profile/legal?type=terms'),
         },
         {
           kind: 'link',
           icon: 'eye-outline',
-          label: 'Privacy Policy',
+          label: t('settings.privacyPolicy'),
           onPress: () => router.push('/profile/legal?type=privacy'),
         },
       ],
@@ -197,7 +194,7 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <ScreenHeader title="Settings" />
+      <ScreenHeader title={t('settings.title')} />
 
       {/* Sections */}
       {sections.map((section) => (

@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 const mockRouter = { push: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -42,7 +49,7 @@ describe('UsernameScreen', () => {
 
   it('renders header', () => {
     render(<UsernameScreen />);
-    expect(screen.getByText('Choose Username')).toBeTruthy();
+    expect(screen.getByText('profile.chooseUsername')).toBeTruthy();
   });
 
   it('renders @ prefix', () => {
@@ -57,12 +64,12 @@ describe('UsernameScreen', () => {
 
   it('renders hint text', () => {
     render(<UsernameScreen />);
-    expect(screen.getByText(/3-20 characters/)).toBeTruthy();
+    expect(screen.getByText('profile.usernameHint')).toBeTruthy();
   });
 
   it('renders save button', () => {
     render(<UsernameScreen />);
-    expect(screen.getByText('Save Username')).toBeTruthy();
+    expect(screen.getByText('profile.saveUsername')).toBeTruthy();
   });
 
   it('shows error when username is invalid', () => {

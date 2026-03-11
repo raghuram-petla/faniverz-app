@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 const mockRouter = { push: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -60,15 +67,15 @@ describe('FollowingScreen', () => {
 
   it('renders header', () => {
     render(<FollowingScreen />);
-    expect(screen.getByText('Following')).toBeTruthy();
+    expect(screen.getByText('profile.following')).toBeTruthy();
   });
 
   it('renders filter chips', () => {
     render(<FollowingScreen />);
-    expect(screen.getByText('All')).toBeTruthy();
-    expect(screen.getByText('Movies')).toBeTruthy();
-    expect(screen.getByText('Actors')).toBeTruthy();
-    expect(screen.getByText('Studios')).toBeTruthy();
+    expect(screen.getByText('common.all')).toBeTruthy();
+    expect(screen.getByText('search.movies')).toBeTruthy();
+    expect(screen.getByText('search.actors')).toBeTruthy();
+    expect(screen.getByText('search.studios')).toBeTruthy();
   });
 
   it('renders followed entities', () => {
@@ -85,7 +92,7 @@ describe('FollowingScreen', () => {
 
   it('filters by entity type', () => {
     render(<FollowingScreen />);
-    fireEvent.press(screen.getByText('Actors'));
+    fireEvent.press(screen.getByText('search.actors'));
     // Should only show actors
     expect(screen.getByText('Allu Arjun')).toBeTruthy();
     expect(screen.queryByText('Pushpa 2')).toBeNull();

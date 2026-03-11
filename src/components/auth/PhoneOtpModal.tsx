@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useTranslation } from 'react-i18next';
 import { colors as palette } from '@/theme/colors';
 
 export interface PhoneOtpModalProps {
@@ -32,6 +33,7 @@ export function PhoneOtpModal({
   error,
 }: PhoneOtpModalProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -70,7 +72,7 @@ export function PhoneOtpModal({
         <View style={[styles.sheet, { backgroundColor: theme.surfaceElevated }]}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.textPrimary }]}>
-              {step === 'phone' ? 'Enter Phone Number' : 'Enter OTP'}
+              {step === 'phone' ? t('auth.enterPhoneNumber') : t('auth.enterOtp')}
             </Text>
             <TouchableOpacity onPress={handleClose} accessibilityLabel="Close">
               <Ionicons name="close" size={24} color={theme.textPrimary} />
@@ -97,18 +99,18 @@ export function PhoneOtpModal({
                 {isLoading ? (
                   <ActivityIndicator size="small" color={palette.white} />
                 ) : (
-                  <Text style={styles.submitText}>Send OTP</Text>
+                  <Text style={styles.submitText}>{t('auth.sendOtp')}</Text>
                 )}
               </TouchableOpacity>
             </>
           ) : (
             <>
               <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                OTP sent to {phone}
+                {t('auth.otpSentTo', { phone })}
               </Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.input, color: theme.textPrimary }]}
-                placeholder="6-digit OTP"
+                placeholder={t('auth.sixDigitOtp')}
                 placeholderTextColor={theme.textTertiary}
                 value={otp}
                 onChangeText={setOtp}
@@ -125,11 +127,13 @@ export function PhoneOtpModal({
                 {isLoading ? (
                   <ActivityIndicator size="small" color={palette.white} />
                 ) : (
-                  <Text style={styles.submitText}>Verify</Text>
+                  <Text style={styles.submitText}>{t('auth.verify')}</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setStep('phone')} style={styles.backLink}>
-                <Text style={{ color: theme.textSecondary, fontSize: 14 }}>Change number</Text>
+                <Text style={{ color: theme.textSecondary, fontSize: 14 }}>
+                  {t('auth.changeNumber')}
+                </Text>
               </TouchableOpacity>
             </>
           )}

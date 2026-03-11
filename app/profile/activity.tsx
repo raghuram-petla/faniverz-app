@@ -8,20 +8,22 @@ import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 import { useUserActivity, type ActivityFilter, type UserActivity } from '@/features/profile';
 import { ActivityItem } from '@/components/profile/ActivityItem';
 
-const FILTERS: { key: ActivityFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'votes', label: 'Votes' },
-  { key: 'follows', label: 'Follows' },
-  { key: 'comments', label: 'Comments' },
+const FILTER_KEYS: { key: ActivityFilter; i18nKey: string }[] = [
+  { key: 'all', i18nKey: 'common.all' },
+  { key: 'votes', i18nKey: 'profile.filterVotes' },
+  { key: 'follows', i18nKey: 'profile.filterFollows' },
+  { key: 'comments', i18nKey: 'profile.filterComments' },
 ];
 
 export default function ActivityScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -56,17 +58,17 @@ export default function ActivityScreen() {
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-      <ScreenHeader title="Activity" />
+      <ScreenHeader title={t('profile.activity')} />
 
       <View style={styles.filterRow}>
-        {FILTERS.map((f) => (
+        {FILTER_KEYS.map((f) => (
           <TouchableOpacity
             key={f.key}
             style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
             onPress={() => setFilter(f.key)}
           >
             <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
-              {f.label}
+              {t(f.i18nKey)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -98,8 +100,8 @@ export default function ActivityScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="time-outline"
-              title="No activity yet"
-              subtitle="Your votes, follows, and comments will appear here"
+              title={t('profile.noActivity')}
+              subtitle={t('profile.noActivitySubtitle')}
             />
           }
           contentContainerStyle={activities.length === 0 ? styles.emptyList : undefined}

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Share, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import {
@@ -31,6 +32,7 @@ import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 export default function FeedScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createFeedStyles(theme);
   const insets = useSafeAreaInsets();
   const { filter, setFilter } = useFeedStore();
@@ -119,7 +121,7 @@ export default function FeedScreen() {
         if (entityId === user?.id) {
           router.push('/profile' as Parameters<typeof router.push>[0]);
         } else {
-          Alert.alert('Coming Soon', 'User profiles are not yet available.');
+          Alert.alert(t('home.comingSoon'), t('feed.userProfilesNotAvailable'));
         }
         return;
       }
@@ -194,11 +196,13 @@ export default function FeedScreen() {
         ) : allItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />
-            <Text style={styles.emptyTitle}>No updates yet</Text>
+            <Text style={styles.emptyTitle}>{t('feed.noUpdates')}</Text>
             <Text style={styles.emptySubtitle}>
               {filter !== 'all'
-                ? `No ${FEED_PILLS.find((p) => p.value === filter)?.label ?? filter} content yet`
-                : 'Check back soon for trailers, posters, and exclusive content!'}
+                ? t('feed.noFilterContent', {
+                    filter: FEED_PILLS.find((p) => p.value === filter)?.label ?? filter,
+                  })
+                : t('feed.checkBackSoon')}
             </Text>
           </View>
         ) : (

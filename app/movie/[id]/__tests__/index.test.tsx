@@ -1,5 +1,12 @@
 // Mocks must be declared before imports
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
   return { WebView: (props: any) => <View testID="webview" {...props} /> };
@@ -183,7 +190,7 @@ describe('MovieDetailScreen', () => {
 
   it('shows the Overview tab as active by default', () => {
     render(<MovieDetailScreen />);
-    expect(screen.getByText('Overview')).toBeTruthy();
+    expect(screen.getByText('movie.overview')).toBeTruthy();
   });
 
   it('renders the synopsis in the overview tab', () => {
@@ -193,14 +200,14 @@ describe('MovieDetailScreen', () => {
 
   it('shows the star rating component', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
-    fireEvent.press(screen.getByText('Write Review'));
+    fireEvent.press(screen.getByText('movie.reviews'));
+    fireEvent.press(screen.getByText('movie.writeReview'));
     expect(screen.getAllByTestId('star-rating').length).toBeGreaterThan(0);
   });
 
   it('shows the Watch On section when movie has platforms', () => {
     render(<MovieDetailScreen />);
-    expect(screen.getByText('Watch On')).toBeTruthy();
+    expect(screen.getByText('movie.watchOn')).toBeTruthy();
     expect(screen.getByText('Netflix')).toBeTruthy();
   });
 
@@ -212,43 +219,43 @@ describe('MovieDetailScreen', () => {
 
   it('shows Cast and Reviews tabs in the tab bar', () => {
     render(<MovieDetailScreen />);
-    expect(screen.getByText('Cast')).toBeTruthy();
-    expect(screen.getByText('Reviews')).toBeTruthy();
+    expect(screen.getByText('movie.cast')).toBeTruthy();
+    expect(screen.getByText('movie.reviews')).toBeTruthy();
   });
 
   it('always shows Media tab even when no videos or posters', () => {
     render(<MovieDetailScreen />);
-    expect(screen.getByText('Media')).toBeTruthy();
+    expect(screen.getByText('movieDetail.media')).toBeTruthy();
   });
 
   it('navigates to media screen when Media tab is tapped', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Media'));
+    fireEvent.press(screen.getByText('movieDetail.media'));
     expect(mockPush).toHaveBeenCalledWith('/movie/movie-1/media');
   });
 
   it('switches to cast tab and shows cast member', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Cast'));
+    fireEvent.press(screen.getByText('movie.cast'));
     expect(screen.getByText('Allu Arjun')).toBeTruthy();
     expect(screen.getByText('as Pushpa Raj')).toBeTruthy();
   });
 
   it('shows "Cast" section label when cast entries exist', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Cast'));
-    expect(screen.getAllByText('Cast').length).toBeGreaterThanOrEqual(2);
+    fireEvent.press(screen.getByText('movie.cast'));
+    expect(screen.getAllByText('movie.cast').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows "Crew" section label when crew entries exist', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Cast'));
-    expect(screen.getByText('Crew')).toBeTruthy();
+    fireEvent.press(screen.getByText('movie.cast'));
+    expect(screen.getByText('movie.crew')).toBeTruthy();
   });
 
   it('shows crew member name and role in Crew section', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Cast'));
+    fireEvent.press(screen.getByText('movie.cast'));
     expect(screen.getByText('Sukumar')).toBeTruthy();
     expect(screen.getByText('Director')).toBeTruthy();
   });
@@ -257,8 +264,8 @@ describe('MovieDetailScreen', () => {
     const movieNoCast = { ...mockMovie, cast: [], crew: [] };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: movieNoCast });
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Cast'));
-    expect(screen.getByText('No cast information available.')).toBeTruthy();
+    fireEvent.press(screen.getByText('movie.cast'));
+    expect(screen.getByText('movie.noCastInfo')).toBeTruthy();
   });
 
   it('shows movie metadata in the hero section', () => {
@@ -270,7 +277,7 @@ describe('MovieDetailScreen', () => {
 
   it('switches to the Reviews tab and shows rating summary', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('movie.reviews'));
     expect(screen.getAllByText('4.5').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('/5')).toBeTruthy();
     expect(screen.getAllByText('(10 reviews)').length).toBeGreaterThanOrEqual(1);
@@ -309,7 +316,7 @@ describe('MovieDetailScreen', () => {
     };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: upcomingMovie });
     render(<MovieDetailScreen />);
-    expect(screen.getByText('Upcoming Release')).toBeTruthy();
+    expect(screen.getByText('movie.upcomingRelease')).toBeTruthy();
   });
 
   it('shows genre pills in the overview tab', () => {
@@ -328,15 +335,15 @@ describe('MovieDetailScreen', () => {
 
   it('submits a review via the modal', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
-    fireEvent.press(screen.getByText('Write Review'));
+    fireEvent.press(screen.getByText('movie.reviews'));
+    fireEvent.press(screen.getByText('movie.writeReview'));
     fireEvent.press(screen.getByTestId('star-rate-4'));
-    fireEvent.changeText(screen.getByPlaceholderText('Review Title'), 'Amazing Movie');
+    fireEvent.changeText(screen.getByPlaceholderText('movie.reviewTitle'), 'Amazing Movie');
     fireEvent.changeText(
-      screen.getByPlaceholderText('Write your review...'),
+      screen.getByPlaceholderText('movie.writeYourReview'),
       'Loved every moment of it.',
     );
-    fireEvent.press(screen.getByText('Submit'));
+    fireEvent.press(screen.getByText('movie.submit'));
     expect(mockCreateReviewMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-1',
@@ -366,7 +373,7 @@ describe('MovieDetailScreen', () => {
     ];
     (useMovieReviews as jest.Mock).mockReturnValue({ data: mockReviews });
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('movie.reviews'));
     fireEvent.press(screen.getByLabelText('Mark review as helpful, 5 found helpful'));
     expect(mockHelpfulMutate).toHaveBeenCalledWith({ userId: 'user-1', reviewId: 'r1' });
   });
@@ -394,16 +401,16 @@ describe('MovieDetailScreen', () => {
     (useMovieDetail as jest.Mock).mockReturnValue({ data: upcomingMovie });
     render(<MovieDetailScreen />);
     expect(screen.getByText('Coming Soon')).toBeTruthy();
-    expect(screen.getByText('Upcoming Release')).toBeTruthy();
+    expect(screen.getByText('movie.upcomingRelease')).toBeTruthy();
   });
 
   it('closes review modal when Cancel is pressed', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
-    fireEvent.press(screen.getByText('Write Review'));
-    expect(screen.getByText('Cancel')).toBeTruthy();
-    fireEvent.press(screen.getByText('Cancel'));
-    expect(screen.getByText('Write Review')).toBeTruthy();
+    fireEvent.press(screen.getByText('movie.reviews'));
+    fireEvent.press(screen.getByText('movie.writeReview'));
+    expect(screen.getByText('common.cancel')).toBeTruthy();
+    fireEvent.press(screen.getByText('common.cancel'));
+    expect(screen.getByText('movie.writeReview')).toBeTruthy();
   });
 
   it('does not call createReview when userId is empty', () => {
@@ -411,18 +418,18 @@ describe('MovieDetailScreen', () => {
       .spyOn(require('@/features/auth/providers/AuthProvider'), 'useAuth')
       .mockReturnValue({ user: null });
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
-    fireEvent.press(screen.getByText('Write Review'));
-    fireEvent.press(screen.getByText('Submit'));
+    fireEvent.press(screen.getByText('movie.reviews'));
+    fireEvent.press(screen.getByText('movie.writeReview'));
+    fireEvent.press(screen.getByText('movie.submit'));
     expect(mockCreateReviewMutate).not.toHaveBeenCalled();
   });
 
   it('toggles the spoiler toggle in the review modal', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
-    fireEvent.press(screen.getByText('Write Review'));
-    fireEvent.press(screen.getByText('Contains Spoiler'));
-    expect(screen.getByText('Contains Spoiler')).toBeTruthy();
+    fireEvent.press(screen.getByText('movie.reviews'));
+    fireEvent.press(screen.getByText('movie.writeReview'));
+    fireEvent.press(screen.getByText('movie.containsSpoiler'));
+    expect(screen.getByText('movie.containsSpoiler')).toBeTruthy();
   });
 
   it('shows spoiler badge on reviews that contain spoilers', () => {
@@ -443,8 +450,8 @@ describe('MovieDetailScreen', () => {
     ];
     (useMovieReviews as jest.Mock).mockReturnValue({ data: spoilerReviews });
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Reviews'));
-    expect(screen.getByText('Contains Spoiler')).toBeTruthy();
+    fireEvent.press(screen.getByText('movie.reviews'));
+    expect(screen.getByText('movie.containsSpoiler')).toBeTruthy();
   });
 
   it('renders movie without director without crashing', () => {

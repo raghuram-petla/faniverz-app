@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
@@ -34,31 +41,31 @@ describe('AccountScreen', () => {
 
   it('renders Account Details header', () => {
     render(<AccountScreen />);
-    expect(screen.getByText('Account Details')).toBeTruthy();
+    expect(screen.getByText('profile.accountDetails')).toBeTruthy();
   });
 
   it('renders the user email', () => {
     render(<AccountScreen />);
     expect(screen.getByText('test@example.com')).toBeTruthy();
-    expect(screen.getByText('Email')).toBeTruthy();
+    expect(screen.getByText('profile.email')).toBeTruthy();
   });
 
   it('renders Log Out and Delete Account rows', () => {
     render(<AccountScreen />);
-    expect(screen.getByText('Log Out')).toBeTruthy();
-    expect(screen.getByText('Delete Account')).toBeTruthy();
+    expect(screen.getByText('profile.logOut')).toBeTruthy();
+    expect(screen.getByText('profile.deleteAccount')).toBeTruthy();
   });
 
   it('pressing Log Out shows a confirmation alert', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     render(<AccountScreen />);
-    fireEvent.press(screen.getByText('Log Out'));
+    fireEvent.press(screen.getByText('profile.logOut'));
     expect(alertSpy).toHaveBeenCalledWith(
-      'Log Out',
-      'Are you sure you want to log out?',
+      'profile.logOut',
+      'profile.logOutConfirm',
       expect.arrayContaining([
-        expect.objectContaining({ text: 'Cancel' }),
-        expect.objectContaining({ text: 'Log Out', style: 'destructive' }),
+        expect.objectContaining({ text: 'common.cancel' }),
+        expect.objectContaining({ text: 'profile.logOut', style: 'destructive' }),
       ]),
     );
     alertSpy.mockRestore();
@@ -73,7 +80,7 @@ describe('AccountScreen', () => {
     });
 
     render(<AccountScreen />);
-    fireEvent.press(screen.getByText('Log Out'));
+    fireEvent.press(screen.getByText('profile.logOut'));
 
     await capturedOnPress?.();
 
@@ -84,13 +91,13 @@ describe('AccountScreen', () => {
   it('pressing Delete Account shows a confirmation alert with warning text', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     render(<AccountScreen />);
-    fireEvent.press(screen.getByText('Delete Account'));
+    fireEvent.press(screen.getByText('profile.deleteAccount'));
     expect(alertSpy).toHaveBeenCalledWith(
-      'Delete Account',
-      'This will permanently delete your account and all associated data including watchlists, reviews, and follows. This cannot be undone.',
+      'profile.deleteAccount',
+      'profile.deleteAccountConfirm',
       expect.arrayContaining([
-        expect.objectContaining({ text: 'Cancel' }),
-        expect.objectContaining({ text: 'Delete', style: 'destructive' }),
+        expect.objectContaining({ text: 'common.cancel' }),
+        expect.objectContaining({ text: 'common.delete', style: 'destructive' }),
       ]),
     );
     alertSpy.mockRestore();
@@ -99,11 +106,11 @@ describe('AccountScreen', () => {
   it('calls deleteAccount.mutate when Delete is confirmed', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     render(<AccountScreen />);
-    fireEvent.press(screen.getByText('Delete Account'));
+    fireEvent.press(screen.getByText('profile.deleteAccount'));
 
     const alertArgs = alertSpy.mock.calls[0];
     const buttons = alertArgs[2] as Array<{ text: string; onPress?: () => void }>;
-    const deleteAction = buttons.find((b) => b.text === 'Delete');
+    const deleteAction = buttons.find((b) => b.text === 'common.delete');
     deleteAction?.onPress?.();
 
     expect(mockDeleteMutate).toHaveBeenCalledWith(

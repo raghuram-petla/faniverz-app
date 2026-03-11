@@ -12,6 +12,7 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth';
@@ -23,6 +24,7 @@ import { PhoneOtpModal } from '@/components/auth/PhoneOtpModal';
 import { createLoginStyles } from '@/styles/auth.styles';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = useMemo(() => createLoginStyles(theme), [theme]);
   const router = useRouter();
@@ -97,7 +99,7 @@ export default function LoginScreen() {
             contentFit="contain"
             accessibilityLabel="Faniverz"
           />
-          <Text style={styles.tagline}>Your Movie Companion</Text>
+          <Text style={styles.tagline}>{t('profile.tagline')}</Text>
         </View>
 
         <View style={styles.inputWrapper}>
@@ -109,7 +111,7 @@ export default function LoginScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder={t('auth.email')}
             placeholderTextColor={theme.textTertiary}
             value={email}
             onChangeText={setEmail}
@@ -128,7 +130,7 @@ export default function LoginScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder={t('auth.password')}
             placeholderTextColor={theme.textTertiary}
             value={password}
             onChangeText={setPassword}
@@ -156,7 +158,7 @@ export default function LoginScreen() {
           {isLoading ? (
             <ActivityIndicator size="small" color={theme.textPrimary} />
           ) : (
-            <Text style={styles.signInButtonText}>Sign In / Sign Up</Text>
+            <Text style={styles.signInButtonText}>{t('auth.signIn')}</Text>
           )}
         </TouchableOpacity>
 
@@ -165,12 +167,12 @@ export default function LoginScreen() {
           onPress={() => router.push('/(auth)/forgot-password')}
           activeOpacity={0.7}
         >
-          <Text style={styles.forgotText}>Forgot password?</Text>
+          <Text style={styles.forgotText}>{t('auth.forgotPassword')}</Text>
         </TouchableOpacity>
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
+          <Text style={styles.dividerText}>{t('auth.or')}</Text>
           <View style={styles.dividerLine} />
         </View>
 
@@ -186,7 +188,7 @@ export default function LoginScreen() {
         </View>
 
         <TouchableOpacity style={styles.guestButton} onPress={handleGuest} activeOpacity={0.8}>
-          <Text style={styles.guestButtonText}>Continue as Guest</Text>
+          <Text style={styles.guestButtonText}>{t('auth.continueAsGuest')}</Text>
         </TouchableOpacity>
       </ScrollView>
 

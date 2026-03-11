@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useProductionHouseDetail } from '@/features/productionHouses/hooks';
 import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
@@ -18,6 +19,7 @@ import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
 export default function ProductionHouseDetailScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createProductionHouseStyles(theme);
   const insets = useSafeAreaInsets();
@@ -116,13 +118,15 @@ export default function ProductionHouseDetailScreen() {
       }
     >
       <View style={{ paddingHorizontal: 16 }}>
-        <Text style={styles.sectionTitle}>Movies ({movies.length})</Text>
+        <Text style={styles.sectionTitle}>
+          {t('productionHouse.movies')} ({movies.length})
+        </Text>
 
         {movies.length === 0 ? (
           <EmptyState
             icon="film-outline"
-            title="No movies yet"
-            subtitle="Movies from this production house will appear here."
+            title={t('productionHouse.noMovies')}
+            subtitle={t('productionHouse.noMoviesSubtitle')}
           />
         ) : (
           <View style={styles.moviesList}>

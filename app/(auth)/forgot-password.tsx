@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import type { SemanticTheme } from '@shared/themes';
 import { colors as palette } from '@/theme/colors';
@@ -19,6 +20,7 @@ import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
 export default function ForgotPasswordScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
@@ -43,7 +45,7 @@ export default function ForgotPasswordScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Header */}
-      <ScreenHeader title="Reset Password" />
+      <ScreenHeader title={t('auth.resetPassword')} />
 
       <View style={styles.body}>
         {sent ? (
@@ -52,9 +54,10 @@ export default function ForgotPasswordScreen() {
             <View style={styles.successIcon}>
               <Ionicons name="mail-outline" size={32} color={colors.red600} />
             </View>
-            <Text style={styles.successTitle}>Check your inbox</Text>
+            <Text style={styles.successTitle}>{t('auth.checkInbox')}</Text>
             <Text style={styles.successSubtitle}>
-              We sent a reset link to{'\n'}
+              {t('auth.resetEmailSent')}
+              {'\n'}
               <Text style={styles.successEmail}>{email}</Text>
             </Text>
             <TouchableOpacity
@@ -62,15 +65,13 @@ export default function ForgotPasswordScreen() {
               onPress={() => router.back()}
               activeOpacity={0.7}
             >
-              <Text style={styles.backToSignInText}>Back to Sign In</Text>
+              <Text style={styles.backToSignInText}>{t('auth.backToSignIn')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           /* Form state */
           <>
-            <Text style={styles.subtitle}>
-              Enter your email and we'll send you a link to reset your password.
-            </Text>
+            <Text style={styles.subtitle}>{t('auth.enterEmailSubtitle')}</Text>
 
             {/* Email input */}
             <View style={styles.inputWrapper}>
@@ -82,7 +83,7 @@ export default function ForgotPasswordScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="Email address"
+                placeholder={t('auth.emailAddress')}
                 placeholderTextColor={theme.textTertiary}
                 value={email}
                 onChangeText={setEmail}
@@ -107,7 +108,7 @@ export default function ForgotPasswordScreen() {
               {isLoading ? (
                 <ActivityIndicator size="small" color={theme.textPrimary} />
               ) : (
-                <Text style={styles.sendButtonText}>Send Reset Link</Text>
+                <Text style={styles.sendButtonText}>{t('auth.sendResetLink')}</Text>
               )}
             </TouchableOpacity>
 
@@ -117,7 +118,7 @@ export default function ForgotPasswordScreen() {
               onPress={() => router.back()}
               activeOpacity={0.7}
             >
-              <Text style={styles.backToSignInText}>Back to Sign In</Text>
+              <Text style={styles.backToSignInText}>{t('auth.backToSignIn')}</Text>
             </TouchableOpacity>
           </>
         )}

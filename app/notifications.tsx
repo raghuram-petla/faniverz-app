@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
@@ -87,6 +88,7 @@ function NotificationItem({
 
 export default function NotificationsScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -122,7 +124,7 @@ export default function NotificationsScreen() {
       {/* Header */}
       <View style={[styles.headerWrapper, { paddingTop: insets.top + 12 }]}>
         <ScreenHeader
-          title="Notifications"
+          title={t('notifications.title')}
           backIcon="arrow-back"
           titleBadge={
             unreadCount > 0 && (
@@ -138,7 +140,7 @@ export default function NotificationsScreen() {
               accessibilityLabel="Mark all as read"
             >
               <Text style={[styles.markAllText, unreadCount === 0 && styles.markAllTextDisabled]}>
-                Mark all read
+                {t('notifications.markAllRead')}
               </Text>
             </TouchableOpacity>
           }
@@ -155,8 +157,8 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="notifications-outline"
-            title="No notifications yet"
-            subtitle="You'll be notified about releases and updates"
+            title={t('notifications.empty')}
+            subtitle={t('notifications.emptySubtitle')}
           />
         }
         contentContainerStyle={

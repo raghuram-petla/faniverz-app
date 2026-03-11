@@ -2,6 +2,13 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { CastTab } from '../CastTab';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('@/styles/movieDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
@@ -33,12 +40,12 @@ const baseProps = { cast: mockCast as any, crew: mockCrew as any, onActorPress: 
 describe('CastTab', () => {
   it('renders "Cast" section label when cast exists', () => {
     render(<CastTab {...baseProps} />);
-    expect(screen.getByText('Cast')).toBeTruthy();
+    expect(screen.getByText('movie.cast')).toBeTruthy();
   });
 
   it('renders "Crew" section label when crew exists', () => {
     render(<CastTab {...baseProps} />);
-    expect(screen.getByText('Crew')).toBeTruthy();
+    expect(screen.getByText('movie.crew')).toBeTruthy();
   });
 
   it('renders actor names', () => {
@@ -54,7 +61,7 @@ describe('CastTab', () => {
 
   it('shows empty message when no cast or crew', () => {
     render(<CastTab cast={[]} crew={[]} onActorPress={jest.fn()} />);
-    expect(screen.getByText(/no cast information/i)).toBeTruthy();
+    expect(screen.getByText('movie.noCastInfo')).toBeTruthy();
   });
 
   it('calls onActorPress when cast item is pressed', () => {

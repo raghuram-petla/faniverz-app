@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useActorDetail } from '@/features/actors/hooks';
 import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
 import { useAuthGate } from '@/hooks/useAuthGate';
@@ -22,6 +23,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 const GENDER_LABELS: Record<number, string> = { 1: 'Female', 2: 'Male', 3: 'Non-binary' };
 
 export default function ActorDetailScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -125,14 +127,14 @@ export default function ActorDetailScreen() {
               {actor.birth_date && (
                 <View style={styles.bioRow}>
                   <Ionicons name="calendar-outline" size={16} color={theme.textTertiary} />
-                  <Text style={styles.bioLabel}>Born</Text>
+                  <Text style={styles.bioLabel}>{t('actorDetail.born')}</Text>
                   <Text style={styles.bioValue}>{formatDate(actor.birth_date)}</Text>
                 </View>
               )}
               {actor.place_of_birth && (
                 <View style={styles.bioRow}>
                   <Ionicons name="location-outline" size={16} color={theme.textTertiary} />
-                  <Text style={styles.bioLabel}>From</Text>
+                  <Text style={styles.bioLabel}>{t('actorDetail.from')}</Text>
                   <Text style={styles.bioValue} numberOfLines={2}>
                     {actor.place_of_birth}
                   </Text>
@@ -141,7 +143,7 @@ export default function ActorDetailScreen() {
               {actor.height_cm != null && (
                 <View style={styles.bioRow}>
                   <Ionicons name="resize-outline" size={16} color={theme.textTertiary} />
-                  <Text style={styles.bioLabel}>Height</Text>
+                  <Text style={styles.bioLabel}>{t('actorDetail.height')}</Text>
                   <Text style={styles.bioValue}>{actor.height_cm} cm</Text>
                 </View>
               )}
@@ -150,12 +152,14 @@ export default function ActorDetailScreen() {
 
           {actor.biography ? (
             <View style={styles.aboutSection}>
-              <Text style={styles.aboutTitle}>About</Text>
+              <Text style={styles.aboutTitle}>{t('actorDetail.about')}</Text>
               <Text style={styles.aboutText} numberOfLines={bioExpanded ? undefined : 4}>
                 {actor.biography}
               </Text>
               <TouchableOpacity onPress={() => setBioExpanded(!bioExpanded)} testID="bio-toggle">
-                <Text style={styles.readMoreText}>{bioExpanded ? 'Show less' : 'Read more'}</Text>
+                <Text style={styles.readMoreText}>
+                  {bioExpanded ? t('actorDetail.showLess') : t('actorDetail.readMore')}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : null}

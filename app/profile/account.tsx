@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import { useDeleteAccount } from '@/features/auth/hooks/useDeleteAccount';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -20,6 +21,7 @@ interface AccountRow {
 }
 
 export default function AccountScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -29,10 +31,10 @@ export default function AccountScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('profile.logOut'), t('profile.logOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Log Out',
+        text: t('profile.logOut'),
         style: 'destructive',
         onPress: async () => {
           try {
@@ -47,29 +49,28 @@ export default function AccountScreen() {
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This will permanently delete your account and all associated data including watchlists, reviews, and follows. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            deleteAccount.mutate(undefined, {
-              onSuccess: () => router.replace('/(tabs)/profile'),
-              onError: (err) =>
-                Alert.alert('Error', err instanceof Error ? err.message : 'Delete failed'),
-            });
-          },
+    Alert.alert(t('profile.deleteAccount'), t('profile.deleteAccountConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: () => {
+          deleteAccount.mutate(undefined, {
+            onSuccess: () => router.replace('/(tabs)/profile'),
+            onError: (err) =>
+              Alert.alert(
+                t('common.error'),
+                err instanceof Error ? err.message : t('profile.deleteFailed'),
+              ),
+          });
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const rows: AccountRow[] = [
-    { icon: 'log-out-outline', label: 'Log Out', onPress: handleLogout },
-    { icon: 'trash-outline', label: 'Delete Account', onPress: handleDeleteAccount },
+    { icon: 'log-out-outline', label: t('profile.logOut'), onPress: handleLogout },
+    { icon: 'trash-outline', label: t('profile.deleteAccount'), onPress: handleDeleteAccount },
   ];
 
   return (
@@ -78,12 +79,12 @@ export default function AccountScreen() {
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
     >
-      <ScreenHeader title="Account Details" />
+      <ScreenHeader title={t('profile.accountDetails')} />
 
       {/* Account info */}
       <View style={styles.infoCard}>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Email</Text>
+          <Text style={styles.infoLabel}>{t('profile.email')}</Text>
           <Text style={styles.infoValue}>{user?.email ?? ''}</Text>
         </View>
       </View>

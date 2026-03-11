@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { useUpcomingMovies } from '@/features/movies/hooks/useUpcomingMovies';
@@ -23,6 +24,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 export default function CalendarScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch } =
@@ -115,7 +117,7 @@ export default function CalendarScreen() {
       <SafeAreaCover />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <Text style={styles.headerTitle}>Release Calendar</Text>
+        <Text style={styles.headerTitle}>{t('calendar.title')}</Text>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={toggleFilters}
@@ -149,7 +151,7 @@ export default function CalendarScreen() {
             />
           )}
           <TouchableOpacity onPress={clearFilters}>
-            <Text style={styles.clearAll}>Clear all</Text>
+            <Text style={styles.clearAll}>{t('common.clearAll')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -190,9 +192,9 @@ export default function CalendarScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="calendar-outline"
-            title="No releases found"
-            subtitle="No releases found for the selected filters."
-            actionLabel={hasUserFiltered ? 'Clear filters' : undefined}
+            title={t('calendar.noReleasesFound')}
+            subtitle={t('calendar.noReleasesSubtitle')}
+            actionLabel={hasUserFiltered ? t('calendar.clearFilters') : undefined}
             onAction={hasUserFiltered ? clearFilters : undefined}
           />
         }
@@ -258,12 +260,14 @@ export default function CalendarScreen() {
                   </Text>
                   {isToday && (
                     <View style={styles.todayBadge}>
-                      <Text style={styles.todayBadgeText}>TODAY</Text>
+                      <Text style={styles.todayBadgeText}>{t('calendar.today')}</Text>
                     </View>
                   )}
                 </View>
                 <Text style={[styles.releaseCount, isPast && { color: theme.textDisabled }]}>
-                  {item.movies.length} {item.movies.length === 1 ? 'release' : 'releases'}
+                  {item.movies.length === 1
+                    ? t('calendar.release', { count: 1 })
+                    : t('calendar.releases', { count: item.movies.length })}
                 </Text>
               </View>
 

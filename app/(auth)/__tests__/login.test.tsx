@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en' },
+  }),
+}));
+
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -70,27 +77,27 @@ describe('LoginScreen', () => {
 
   it('renders email input', () => {
     render(<LoginScreen />);
-    expect(screen.getByPlaceholderText('Email')).toBeTruthy();
+    expect(screen.getByPlaceholderText('auth.email')).toBeTruthy();
   });
 
   it('renders password input', () => {
     render(<LoginScreen />);
-    expect(screen.getByPlaceholderText('Password')).toBeTruthy();
+    expect(screen.getByPlaceholderText('auth.password')).toBeTruthy();
   });
 
   it('renders Sign In / Sign Up button', () => {
     render(<LoginScreen />);
-    expect(screen.getByText('Sign In / Sign Up')).toBeTruthy();
+    expect(screen.getByText('auth.signIn')).toBeTruthy();
   });
 
   it('renders Forgot password link', () => {
     render(<LoginScreen />);
-    expect(screen.getByText('Forgot password?')).toBeTruthy();
+    expect(screen.getByText('auth.forgotPassword')).toBeTruthy();
   });
 
   it('renders Continue as Guest button', () => {
     render(<LoginScreen />);
-    expect(screen.getByText('Continue as Guest')).toBeTruthy();
+    expect(screen.getByText('auth.continueAsGuest')).toBeTruthy();
   });
 
   it('renders close button and navigates back on press', () => {
@@ -104,7 +111,7 @@ describe('LoginScreen', () => {
   it('renders app branding', () => {
     render(<LoginScreen />);
     expect(screen.getByLabelText('Faniverz')).toBeTruthy();
-    expect(screen.getByText('Your Movie Companion')).toBeTruthy();
+    expect(screen.getByText('profile.tagline')).toBeTruthy();
   });
 
   it('shows error message when auth error exists', () => {
@@ -133,11 +140,11 @@ describe('LoginScreen', () => {
 
     render(<LoginScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Email'), 'user@test.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'user@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'password123');
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Sign In / Sign Up'));
+      fireEvent.press(screen.getByText('auth.signIn'));
     });
 
     expect(mockSignIn).toHaveBeenCalledWith('user@test.com', 'password123');
@@ -155,7 +162,7 @@ describe('LoginScreen', () => {
     render(<LoginScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Sign In / Sign Up'));
+      fireEvent.press(screen.getByText('auth.signIn'));
     });
 
     expect(mockSignIn).not.toHaveBeenCalled();
@@ -164,7 +171,7 @@ describe('LoginScreen', () => {
   it('sets guest mode and navigates when Continue as Guest is pressed', () => {
     render(<LoginScreen />);
 
-    fireEvent.press(screen.getByText('Continue as Guest'));
+    fireEvent.press(screen.getByText('auth.continueAsGuest'));
 
     expect(mockSetIsGuest).toHaveBeenCalledWith(true);
     expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
@@ -173,7 +180,7 @@ describe('LoginScreen', () => {
   it('toggles password visibility when eye icon is pressed', () => {
     render(<LoginScreen />);
 
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const passwordInput = screen.getByPlaceholderText('auth.password');
     expect(passwordInput.props.secureTextEntry).toBe(true);
 
     // The Ionicons mock renders as a View with all props; find the eye icon and press its parent
@@ -186,7 +193,7 @@ describe('LoginScreen', () => {
   it('navigates to forgot password screen', () => {
     render(<LoginScreen />);
 
-    fireEvent.press(screen.getByText('Forgot password?'));
+    fireEvent.press(screen.getByText('auth.forgotPassword'));
 
     expect(mockRouter.push).toHaveBeenCalledWith('/(auth)/forgot-password');
   });
@@ -201,7 +208,7 @@ describe('LoginScreen', () => {
     render(<LoginScreen />);
 
     // Sign In / Sign Up text should not be visible during loading
-    expect(screen.queryByText('Sign In / Sign Up')).toBeNull();
+    expect(screen.queryByText('auth.signIn')).toBeNull();
   });
 
   it('handles signIn rejection without crashing', async () => {
@@ -214,11 +221,11 @@ describe('LoginScreen', () => {
 
     render(<LoginScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Email'), 'user@test.com');
-    fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'user@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'password123');
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Sign In / Sign Up'));
+      fireEvent.press(screen.getByText('auth.signIn'));
     });
 
     expect(mockSignIn).toHaveBeenCalled();

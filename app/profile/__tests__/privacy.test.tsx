@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('@/features/auth/hooks/useProfile', () => ({
   useProfile: jest.fn(),
 }));
@@ -45,7 +52,7 @@ describe('PrivacySettingsScreen', () => {
 
   it('renders "Privacy Settings" header', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('Privacy Settings')).toBeTruthy();
+    expect(screen.getByText('settings.privacySettings')).toBeTruthy();
   });
 
   it('shows loading indicator when profile is loading', () => {
@@ -54,31 +61,31 @@ describe('PrivacySettingsScreen', () => {
     render(<PrivacySettingsScreen />);
 
     // When loading, the toggle rows should not be visible
-    expect(screen.queryByText('Show my profile publicly')).toBeNull();
-    expect(screen.queryByText('Show my watchlist')).toBeNull();
+    expect(screen.queryByText('profile.showProfilePublicly')).toBeNull();
+    expect(screen.queryByText('profile.showWatchlist')).toBeNull();
   });
 
   it('shows both toggle rows', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('Show my profile publicly')).toBeTruthy();
-    expect(screen.getByText('Show my watchlist')).toBeTruthy();
+    expect(screen.getByText('profile.showProfilePublicly')).toBeTruthy();
+    expect(screen.getByText('profile.showWatchlist')).toBeTruthy();
   });
 
   it('shows description text for profile toggle', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('Others can see your profile, bio, and activity')).toBeTruthy();
+    expect(screen.getByText('profile.showProfilePubliclyDesc')).toBeTruthy();
   });
 
   it('shows description text for watchlist toggle', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('Others can see movies on your watchlist')).toBeTruthy();
+    expect(screen.getByText('profile.showWatchlistDesc')).toBeTruthy();
   });
 
   it('calls mutate with is_profile_public when profile toggle pressed', () => {
     render(<PrivacySettingsScreen />);
 
     // The profile toggle is the first touchable after the header
-    fireEvent.press(screen.getByText('Show my profile publicly'));
+    fireEvent.press(screen.getByText('profile.showProfilePublicly'));
     // Since the ToggleRow wraps the TouchableOpacity, we need to press the toggle itself
     // The toggle is a TouchableOpacity inside ToggleRow, let's find it by pressing
     const { TouchableOpacity } = require('react-native');
@@ -132,9 +139,7 @@ describe('PrivacySettingsScreen', () => {
 
   it('shows section description text', () => {
     render(<PrivacySettingsScreen />);
-    expect(
-      screen.getByText('Control who can see your profile and activity on Faniverz.'),
-    ).toBeTruthy();
+    expect(screen.getByText('profile.privacyDescription')).toBeTruthy();
   });
 
   it('defaults to public when profile data is null', () => {

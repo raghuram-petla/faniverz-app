@@ -8,6 +8,7 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import type { WatchlistEntry } from '@/types';
 import { getImageUrl } from '@shared/imageUrl';
+import { useTranslation } from 'react-i18next';
 
 interface CardProps {
   entry: WatchlistEntry;
@@ -88,6 +89,7 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
 
 export function UpcomingCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { remove, markWatched } = useWatchlistMutations();
   const movie = entry.movie!;
 
@@ -97,7 +99,7 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
         day: 'numeric',
         year: 'numeric',
       })
-    : 'TBA';
+    : t('movie.tba');
 
   return (
     <TouchableOpacity
@@ -115,7 +117,7 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
           accessibilityLabel={`${movie.title} poster`}
         />
         <View style={[styles.posterBadge, { backgroundColor: colors.blue600 }]}>
-          <Text style={styles.posterBadgeText}>Soon</Text>
+          <Text style={styles.posterBadgeText}>{t('watchlist.soon')}</Text>
         </View>
       </View>
 

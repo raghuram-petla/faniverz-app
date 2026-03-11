@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import type { SemanticTheme } from '@shared/themes';
 import ScreenHeader from '@/components/common/ScreenHeader';
@@ -78,13 +79,14 @@ We may update this policy. We will notify you of significant changes.
 For privacy questions, contact us at faniverz@gmail.com.`;
 
 export default function LegalScreen() {
+  const { t } = useTranslation();
   const { type } = useLocalSearchParams<{ type: string }>();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
   const isTerms = type === 'terms';
-  const title = isTerms ? 'Terms of Service' : 'Privacy Policy';
+  const title = isTerms ? t('settings.termsOfService') : t('settings.privacyPolicy');
   const content = isTerms ? TERMS_TEXT : PRIVACY_TEXT;
 
   return (

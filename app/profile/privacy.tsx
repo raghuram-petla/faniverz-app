@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import type { SemanticTheme } from '@shared/themes';
 import { useProfile } from '@/features/auth/hooks/useProfile';
@@ -8,6 +9,7 @@ import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
 export default function PrivacySettingsScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -35,17 +37,15 @@ export default function PrivacySettingsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <ScreenHeader title="Privacy Settings" />
+      <ScreenHeader title={t('settings.privacySettings')} />
 
       <View style={styles.section}>
-        <Text style={styles.sectionDesc}>
-          Control who can see your profile and activity on Faniverz.
-        </Text>
+        <Text style={styles.sectionDesc}>{t('profile.privacyDescription')}</Text>
 
         <View style={styles.card}>
           <ToggleRow
-            label="Show my profile publicly"
-            description="Others can see your profile, bio, and activity"
+            label={t('profile.showProfilePublicly')}
+            description={t('profile.showProfilePubliclyDesc')}
             value={isProfilePublic}
             onToggle={handleToggleProfile}
             styles={styles}
@@ -53,8 +53,8 @@ export default function PrivacySettingsScreen() {
           />
           <View style={styles.divider} />
           <ToggleRow
-            label="Show my watchlist"
-            description="Others can see movies on your watchlist"
+            label={t('profile.showWatchlist')}
+            description={t('profile.showWatchlistDesc')}
             value={isWatchlistPublic}
             onToggle={handleToggleWatchlist}
             styles={styles}

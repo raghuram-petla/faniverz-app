@@ -14,6 +14,7 @@ import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from './MovieQuickAction';
+import { useTranslation } from 'react-i18next';
 
 interface MovieCardProps {
   movie: Movie;
@@ -31,6 +32,7 @@ export function MovieCard({
   testID,
 }: MovieCardProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const status = deriveMovieStatus(movie, platforms?.length ?? 0);
@@ -46,7 +48,7 @@ export function MovieCard({
 
   const releaseDate = movie.release_date ? new Date(movie.release_date) : null;
   const monthAbbr =
-    releaseDate?.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() ?? 'TBA';
+    releaseDate?.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() ?? t('movie.tba');
   const day = releaseDate?.getDate() ?? '';
 
   return (

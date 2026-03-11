@@ -2,6 +2,13 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { FeaturedVideoCard } from '../FeaturedVideoCard';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
   return { WebView: View };
@@ -42,7 +49,7 @@ describe('FeaturedVideoCard', () => {
 
   it('renders views text', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    expect(screen.getByText(/50000/)).toBeTruthy();
+    expect(screen.getByText(/50000.*common\.views/)).toBeTruthy();
   });
 
   it('renders description', () => {

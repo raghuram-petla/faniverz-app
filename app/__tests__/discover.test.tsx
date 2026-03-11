@@ -1,3 +1,10 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -138,7 +145,7 @@ describe('DiscoverScreen', () => {
 
   it('renders search input', () => {
     const { getByPlaceholderText } = render(<DiscoverScreen />);
-    expect(getByPlaceholderText('Search movies, genres, actors...')).toBeTruthy();
+    expect(getByPlaceholderText('discover.searchPlaceholder')).toBeTruthy();
   });
 
   it('renders movie status tab: All', () => {
@@ -176,7 +183,7 @@ describe('DiscoverScreen', () => {
 
   it('renders Filters button', () => {
     const { getByText } = render(<DiscoverScreen />);
-    expect(getByText('Filters')).toBeTruthy();
+    expect(getByText('discover.filters')).toBeTruthy();
   });
 
   it('renders movie posters (Images) when movies exist', () => {
@@ -189,12 +196,12 @@ describe('DiscoverScreen', () => {
   it('renders with empty movies list without crashing', () => {
     setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
     const { getByPlaceholderText } = render(<DiscoverScreen />);
-    expect(getByPlaceholderText('Search movies, genres, actors...')).toBeTruthy();
+    expect(getByPlaceholderText('discover.searchPlaceholder')).toBeTruthy();
   });
 
   it('opens filter modal when Filters button is pressed', () => {
     const { getByText } = render(<DiscoverScreen />);
-    fireEvent.press(getByText('Filters'));
+    fireEvent.press(getByText('discover.filters'));
     // Modal content renders "Streaming Platforms" and "Genres" headings
     expect(getByText('Streaming Platforms')).toBeTruthy();
     expect(getByText('Genres')).toBeTruthy();
@@ -216,7 +223,7 @@ describe('DiscoverScreen', () => {
   it('toggles genre filter in modal and shows active pill', () => {
     const { getByText } = render(<DiscoverScreen />);
     // Open filter modal
-    fireEvent.press(getByText('Filters'));
+    fireEvent.press(getByText('discover.filters'));
     // Toggle Action genre
     fireEvent.press(getByText('Action'));
     // Close modal
@@ -228,7 +235,7 @@ describe('DiscoverScreen', () => {
   it('toggles platform filter in modal', () => {
     const { getByText, getAllByText } = render(<DiscoverScreen />);
     // Open filter modal
-    fireEvent.press(getByText('Filters'));
+    fireEvent.press(getByText('discover.filters'));
     // The modal shows Netflix as a platform option
     const netflixOptions = getAllByText('Netflix');
     fireEvent.press(netflixOptions[netflixOptions.length - 1]);
@@ -264,7 +271,7 @@ describe('DiscoverScreen', () => {
 
   it('filters movies by search query', () => {
     const { getByPlaceholderText, getByText, queryByText } = render(<DiscoverScreen />);
-    const input = getByPlaceholderText('Search movies, genres, actors...');
+    const input = getByPlaceholderText('discover.searchPlaceholder');
 
     fireEvent.changeText(input, 'Pushpa');
 
@@ -274,7 +281,7 @@ describe('DiscoverScreen', () => {
 
   it('clears search query via store', () => {
     const { getByPlaceholderText } = render(<DiscoverScreen />);
-    const input = getByPlaceholderText('Search movies, genres, actors...');
+    const input = getByPlaceholderText('discover.searchPlaceholder');
 
     fireEvent.changeText(input, 'Pushpa');
     expect(useFilterStore.getState().searchQuery).toBe('Pushpa');
@@ -334,19 +341,19 @@ describe('DiscoverScreen', () => {
 
   it('shows movie count when movies exist', () => {
     const { getByText } = render(<DiscoverScreen />);
-    expect(getByText('2 movies')).toBeTruthy();
+    expect(getByText('2 discover.movies')).toBeTruthy();
   });
 
   it('shows "1 movie" singular when only one movie', () => {
     setupDefaultMock({ data: { pages: [[mockMovies[0]]], pageParams: [0] } });
     const { getByText } = render(<DiscoverScreen />);
-    expect(getByText('1 movie')).toBeTruthy();
+    expect(getByText('1 discover.movie')).toBeTruthy();
   });
 
   it('shows empty state when no movies match filters', () => {
     setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
     const { getByText } = render(<DiscoverScreen />);
-    expect(getByText('No movies found')).toBeTruthy();
+    expect(getByText('discover.noMovies')).toBeTruthy();
   });
 
   it('clears filters from modal via Clear Filters button', () => {
@@ -354,7 +361,7 @@ describe('DiscoverScreen', () => {
 
     const { getByText } = render(<DiscoverScreen />);
     // Open filter modal
-    fireEvent.press(getByText('Filters'));
+    fireEvent.press(getByText('discover.filters'));
     // Press "Clear Filters" in the modal
     fireEvent.press(getByText('Clear Filters'));
 
@@ -367,13 +374,14 @@ describe('DiscoverScreen', () => {
     useFilterStore.getState().togglePlatform('netflix');
 
     const { getByText } = render(<DiscoverScreen />);
-    // Filter count badge should show "2"
+    // Filter count badge should show "2" and Filters text uses translation key
     expect(getByText('2')).toBeTruthy();
+    expect(getByText('discover.filters')).toBeTruthy();
   });
 
   it('filters movies by director name in search', () => {
     const { getByPlaceholderText, getByText, queryByText } = render(<DiscoverScreen />);
-    const input = getByPlaceholderText('Search movies, genres, actors...');
+    const input = getByPlaceholderText('discover.searchPlaceholder');
 
     fireEvent.changeText(input, 'Sukumar');
 

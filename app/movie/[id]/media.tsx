@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { HomeButton } from '@/components/common/HomeButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
@@ -24,6 +25,7 @@ import type { MovieVideo } from '@/types';
 type MediaTabName = 'videos' | 'photos';
 
 export default function MediaScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
@@ -110,16 +112,16 @@ export default function MediaScreen() {
               accessibilityLabel={`Videos tab, ${videoCount} videos`}
             >
               <Text style={[styles.tabText, activeTab === 'videos' && styles.tabTextActive]}>
-                Videos ({videoCount})
+                {t('movieDetail.videos')} ({videoCount})
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'photos' && styles.tabActive]}
               onPress={() => setActiveTab('photos')}
-              accessibilityLabel={`Photos tab, ${photoCount} photos`}
+              accessibilityLabel={`${t('movieDetail.photos')} tab, ${photoCount} photos`}
             >
               <Text style={[styles.tabText, activeTab === 'photos' && styles.tabTextActive]}>
-                Photos ({photoCount})
+                {t('movieDetail.photos')} ({photoCount})
               </Text>
             </TouchableOpacity>
           </View>

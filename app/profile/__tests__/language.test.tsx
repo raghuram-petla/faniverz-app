@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 
@@ -29,7 +36,7 @@ import LanguageScreen from '../language';
 describe('LanguageScreen', () => {
   it('renders "Language" header', () => {
     render(<LanguageScreen />);
-    expect(screen.getByText('Language')).toBeTruthy();
+    expect(screen.getByText('settings.language')).toBeTruthy();
   });
 
   it('shows English and Telugu options', () => {
@@ -73,7 +80,7 @@ describe('LanguageScreen', () => {
 
     render(<LanguageScreen />);
     // Should render without crashing — covers `i18n.language ?? 'en'` null branch
-    expect(screen.getByText('Language')).toBeTruthy();
+    expect(screen.getByText('settings.language')).toBeTruthy();
 
     i18nMock.language = origLanguage;
   });

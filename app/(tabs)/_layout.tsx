@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 
 export default function TabLayout() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -28,28 +30,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="spotlight"
         options={{
-          title: 'Spotlight',
+          title: t('tabs.spotlight'),
           tabBarIcon: ({ color, size }) => <Ionicons name="star" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
-          title: 'Calendar',
+          title: t('tabs.calendar'),
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="watchlist"
         options={{
-          title: 'Watchlist',
+          title: t('tabs.watchlist'),
           tabBarIcon: ({ color, size }) => <Ionicons name="bookmark" size={size} color={color} />,
         }}
       />
@@ -68,7 +70,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-circle" size={size} color={color} />
           ),

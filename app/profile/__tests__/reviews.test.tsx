@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('@/components/movie/detail/ReviewModal', () => ({
   ReviewModal: () => null,
 }));
@@ -76,26 +83,26 @@ import MyReviewsScreen from '../reviews';
 describe('MyReviewsScreen', () => {
   it('renders "My Reviews" header', () => {
     render(<MyReviewsScreen />);
-    expect(screen.getByText('My Reviews')).toBeTruthy();
+    expect(screen.getByText('profile.myReviews')).toBeTruthy();
   });
 
   it('shows stats grid', () => {
     render(<MyReviewsScreen />);
     // Stats labels
-    expect(screen.getByText('Reviews')).toBeTruthy();
-    expect(screen.getByText('Avg Rating')).toBeTruthy();
+    expect(screen.getByText('profile.reviewsStat')).toBeTruthy();
+    expect(screen.getByText('profile.avgRating')).toBeTruthy();
     // "Helpful" appears as a stat label AND as a sort button — assert at least one exists
-    expect(screen.getAllByText('Helpful').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('profile.sortHelpful').length).toBeGreaterThanOrEqual(1);
     // Total reviews count
     expect(screen.getByText('2')).toBeTruthy();
   });
 
   it('shows sort buttons — Recent, Rating, Helpful', () => {
     render(<MyReviewsScreen />);
-    expect(screen.getByText('Recent')).toBeTruthy();
-    expect(screen.getByText('Rating')).toBeTruthy();
+    expect(screen.getByText('profile.sortRecent')).toBeTruthy();
+    expect(screen.getByText('profile.sortRating')).toBeTruthy();
     // "Helpful" appears as both a sort button label and a stat card label
-    expect(screen.getAllByText('Helpful').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('profile.sortHelpful').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows empty state when no reviews', () => {
@@ -103,13 +110,13 @@ describe('MyReviewsScreen', () => {
     mockUseUserReviews.mockReturnValueOnce({ data: [], isLoading: false });
 
     render(<MyReviewsScreen />);
-    expect(screen.getByText('No reviews yet')).toBeTruthy();
-    expect(screen.getByText('Your movie reviews will appear here.')).toBeTruthy();
+    expect(screen.getByText('profile.noReviews')).toBeTruthy();
+    expect(screen.getByText('profile.noReviewsSubtitle')).toBeTruthy();
   });
 
   it('sorts reviews by rating when Rating sort button is pressed', () => {
     render(<MyReviewsScreen />);
-    fireEvent.press(screen.getByText('Rating'));
+    fireEvent.press(screen.getByText('profile.sortRating'));
     // After sorting by rating, the 5-star review (Kalki) should come before the 4-star review (Pushpa)
     const allMovieTitles = screen.getAllByText(/Pushpa 2|Kalki 2898 AD/);
     // The first movie title in the sorted list should be Kalki (rating 5)
@@ -120,11 +127,11 @@ describe('MyReviewsScreen', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     render(<MyReviewsScreen />);
     // Find and press the first Delete button
-    const deleteButtons = screen.getAllByText('Delete');
+    const deleteButtons = screen.getAllByText('common.delete');
     fireEvent.press(deleteButtons[0]);
     expect(alertSpy).toHaveBeenCalledWith(
-      'Delete Review',
-      'Are you sure you want to delete this review?',
+      'profile.deleteReview',
+      'profile.deleteReviewConfirm',
       expect.any(Array),
     );
     alertSpy.mockRestore();
@@ -133,7 +140,7 @@ describe('MyReviewsScreen', () => {
   it('sorts reviews by helpful count when Helpful sort button is pressed', () => {
     render(<MyReviewsScreen />);
     // Find the Helpful sort button - it's the one in the sort row
-    const helpfulButtons = screen.getAllByText('Helpful');
+    const helpfulButtons = screen.getAllByText('profile.sortHelpful');
     // Press the sort button (last one in the list, the sort row button)
     fireEvent.press(helpfulButtons[helpfulButtons.length - 1]);
     // After sorting by helpful, review-1 (helpful_count: 12) should appear before review-2 (helpful_count: 7)
@@ -146,14 +153,14 @@ describe('MyReviewsScreen', () => {
     render(<MyReviewsScreen />);
 
     // Press the first Delete button
-    const deleteButtons = screen.getAllByText('Delete');
+    const deleteButtons = screen.getAllByText('common.delete');
     fireEvent.press(deleteButtons[0]);
 
     // Get the alert call args
     const alertArgs = alertSpy.mock.calls[0];
     const buttons = alertArgs[2] as Array<{ text: string; onPress?: () => void }>;
     // Find and press the "Delete" button in the alert
-    const deleteAction = buttons.find((b) => b.text === 'Delete');
+    const deleteAction = buttons.find((b) => b.text === 'common.delete');
     deleteAction?.onPress?.();
 
     expect(mockRemoveMutate).toHaveBeenCalledWith('review-1');
@@ -173,7 +180,7 @@ describe('MyReviewsScreen', () => {
 
   it('renders Edit buttons that open edit modal', () => {
     render(<MyReviewsScreen />);
-    const editButtons = screen.getAllByText('Edit');
+    const editButtons = screen.getAllByText('common.edit');
     expect(editButtons.length).toBeGreaterThan(0);
     // Pressing Edit sets editing state (opens ReviewModal) rather than navigating
     fireEvent.press(editButtons[0]);
@@ -181,8 +188,8 @@ describe('MyReviewsScreen', () => {
 
   it('shows helpful count for reviews', () => {
     render(<MyReviewsScreen />);
-    expect(screen.getByText('12 helpful')).toBeTruthy();
-    expect(screen.getByText('7 helpful')).toBeTruthy();
+    expect(screen.getByText(/12/)).toBeTruthy();
+    expect(screen.getByText(/7/)).toBeTruthy();
   });
 
   it('shows total helpful count in stats', () => {

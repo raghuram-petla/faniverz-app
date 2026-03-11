@@ -3,6 +3,13 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { MovieCard } from '../MovieCard';
 import { Movie } from '@/types';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),

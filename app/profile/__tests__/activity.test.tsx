@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 const mockRouter = { push: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -51,20 +58,20 @@ describe('ActivityScreen', () => {
 
   it('renders header', () => {
     render(<ActivityScreen />);
-    expect(screen.getByText('Activity')).toBeTruthy();
+    expect(screen.getByText('profile.activity')).toBeTruthy();
   });
 
   it('renders filter chips', () => {
     render(<ActivityScreen />);
-    expect(screen.getByText('All')).toBeTruthy();
-    expect(screen.getByText('Votes')).toBeTruthy();
-    expect(screen.getByText('Follows')).toBeTruthy();
-    expect(screen.getByText('Comments')).toBeTruthy();
+    expect(screen.getByText('common.all')).toBeTruthy();
+    expect(screen.getByText('profile.filterVotes')).toBeTruthy();
+    expect(screen.getByText('profile.filterFollows')).toBeTruthy();
+    expect(screen.getByText('profile.filterComments')).toBeTruthy();
   });
 
   it('shows empty state when no activity', () => {
     render(<ActivityScreen />);
-    expect(screen.getByText('No activity yet')).toBeTruthy();
+    expect(screen.getByText('profile.noActivity')).toBeTruthy();
   });
 
   it('renders activity items', () => {
@@ -113,7 +120,7 @@ describe('ActivityScreen', () => {
 
   it('changes filter when chip is pressed', () => {
     render(<ActivityScreen />);
-    fireEvent.press(screen.getByText('Votes'));
+    fireEvent.press(screen.getByText('profile.filterVotes'));
     expect(mockUseUserActivity).toHaveBeenCalledWith('votes');
   });
 });

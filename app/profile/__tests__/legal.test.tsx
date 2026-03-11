@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
 }));
@@ -37,7 +44,7 @@ describe('LegalScreen', () => {
 
     it('renders "Terms of Service" header', () => {
       render(<LegalScreen />);
-      expect(screen.getByText('Terms of Service')).toBeTruthy();
+      expect(screen.getByText('settings.termsOfService')).toBeTruthy();
     });
 
     it('shows terms content with "Acceptance of Terms" text', () => {
@@ -63,7 +70,7 @@ describe('LegalScreen', () => {
 
     it('renders "Privacy Policy" header', () => {
       render(<LegalScreen />);
-      expect(screen.getByText('Privacy Policy')).toBeTruthy();
+      expect(screen.getByText('settings.privacyPolicy')).toBeTruthy();
     });
 
     it('shows privacy content with "Information We Collect" text', () => {

@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useProfile } from '@/features/auth/hooks/useProfile';
@@ -25,26 +26,27 @@ import type { FeedEntityType } from '@shared/types';
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
-  label: string;
+  labelKey: string;
   route: string;
   badge?: string;
 }
 
-const MENU_ITEMS: MenuItem[] = [
-  { icon: 'create-outline', label: 'Edit Profile', route: '/profile/edit' },
-  { icon: 'at-outline', label: 'Username', route: '/profile/username' },
-  { icon: 'notifications-outline', label: 'Notifications', route: '/notifications' },
-  { icon: 'star-outline', label: 'My Reviews', route: '/profile/reviews' },
-  { icon: 'settings-outline', label: 'Settings', route: '/profile/settings' },
-  { icon: 'people-outline', label: 'Following', route: '/profile/following' },
-  { icon: 'time-outline', label: 'Activity', route: '/profile/activity' },
-  { icon: 'heart-outline', label: 'Favorite Actors', route: '/profile/favorite-actors' },
-  { icon: 'eye-outline', label: 'Watched Movies', route: '/profile/watched' },
-  { icon: 'person-outline', label: 'Account Details', route: '/profile/account' },
+const MENU_ITEM_DEFS: Omit<MenuItem, 'badge'>[] = [
+  { icon: 'create-outline', labelKey: 'profile.editProfile', route: '/profile/edit' },
+  { icon: 'at-outline', labelKey: 'profile.username', route: '/profile/username' },
+  { icon: 'notifications-outline', labelKey: 'profile.notifications', route: '/notifications' },
+  { icon: 'star-outline', labelKey: 'profile.myReviews', route: '/profile/reviews' },
+  { icon: 'settings-outline', labelKey: 'profile.settings', route: '/profile/settings' },
+  { icon: 'people-outline', labelKey: 'profile.following', route: '/profile/following' },
+  { icon: 'time-outline', labelKey: 'profile.activity', route: '/profile/activity' },
+  { icon: 'heart-outline', labelKey: 'profile.favoriteActors', route: '/profile/favorite-actors' },
+  { icon: 'eye-outline', labelKey: 'profile.watchedMovies', route: '/profile/watched' },
+  { icon: 'person-outline', labelKey: 'profile.accountDetails', route: '/profile/account' },
 ];
 
 export default function ProfileScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -77,10 +79,16 @@ export default function ProfileScreen() {
   const avgRating =
     reviewsCount > 0 ? userReviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount : 0;
 
-  const menuItems = MENU_ITEMS.map((item) =>
-    item.label === 'Notifications' && unreadCount > 0
-      ? { ...item, badge: String(unreadCount) }
-      : item,
+  const menuItems = useMemo(
+    () =>
+      MENU_ITEM_DEFS.map((item) => ({
+        ...item,
+        badge:
+          item.labelKey === 'profile.notifications' && unreadCount > 0
+            ? String(unreadCount)
+            : undefined,
+      })),
+    [unreadCount],
   );
 
   const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
@@ -99,17 +107,15 @@ export default function ProfileScreen() {
       <View style={[styles.container, styles.guestContainer, { paddingTop: insets.top + 16 }]}>
         <View style={styles.guestContent}>
           <Ionicons name="person-circle-outline" size={100} color={theme.textDisabled} />
-          <Text style={styles.guestTitle}>Sign in to Faniverz</Text>
-          <Text style={styles.guestSubtitle}>
-            Create an account to track your watchlist, write reviews, and more
-          </Text>
+          <Text style={styles.guestTitle}>{t('profile.signInTitle')}</Text>
+          <Text style={styles.guestSubtitle}>{t('profile.signInSubtitle')}</Text>
           <TouchableOpacity
             style={styles.loginButton}
             activeOpacity={0.85}
             onPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
           >
             <Ionicons name="log-in-outline" size={20} color={colors.white} />
-            <Text style={styles.loginText}>Sign In / Sign Up</Text>
+            <Text style={styles.loginText}>{t('auth.signIn')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.menuCard}>
@@ -120,7 +126,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.menuItemLeft}>
               <Ionicons name="settings-outline" size={20} color={theme.textSecondary} />
-              <Text style={styles.menuItemLabel}>Settings</Text>
+              <Text style={styles.menuItemLabel}>{t('profile.settings')}</Text>
             </View>
             <View style={styles.menuItemRight}>
               <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
@@ -130,9 +136,9 @@ export default function ProfileScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerVersion}>
-            Faniverz v{Constants.expoConfig?.version ?? '1.0.0'}
+            {t('profile.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}
           </Text>
-          <Text style={styles.footerTagline}>Your Movie Companion</Text>
+          <Text style={styles.footerTagline}>{t('profile.tagline')}</Text>
         </View>
       </View>
     );
@@ -177,12 +183,12 @@ export default function ProfileScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{watchlistCount}</Text>
-              <Text style={styles.statLabel}>Watchlist</Text>
+              <Text style={styles.statLabel}>{t('profile.watchlistStat')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{reviewsCount}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
+              <Text style={styles.statLabel}>{t('profile.reviewsStat')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
@@ -190,7 +196,7 @@ export default function ProfileScreen() {
                 <Ionicons name="star" size={14} color={colors.yellow400} />
                 <Text style={styles.statValue}>{avgRating.toFixed(1)}</Text>
               </View>
-              <Text style={styles.statLabel}>Avg Rating</Text>
+              <Text style={styles.statLabel}>{t('profile.avgRating')}</Text>
             </View>
           </View>
         </View>
@@ -202,7 +208,7 @@ export default function ProfileScreen() {
           </Text>
           {usernameDisplay && <Text style={styles.usernameText}>{usernameDisplay}</Text>}
           <Text style={styles.emailText}>{email}</Text>
-          <Text style={styles.memberSince}>Member since {memberSince}</Text>
+          <Text style={styles.memberSince}>{t('profile.memberSince', { date: memberSince })}</Text>
         </View>
       </View>
 
@@ -226,7 +232,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.menuItemLeft}>
               <Ionicons name={item.icon} size={20} color={theme.textSecondary} />
-              <Text style={styles.menuItemLabel}>{item.label}</Text>
+              <Text style={styles.menuItemLabel}>{t(item.labelKey)}</Text>
             </View>
             <View style={styles.menuItemRight}>
               {item.badge ? (
@@ -243,9 +249,9 @@ export default function ProfileScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerVersion}>
-          Faniverz v{Constants.expoConfig?.version ?? '1.0.0'}
+          {t('profile.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}
         </Text>
-        <Text style={styles.footerTagline}>Your Movie Companion</Text>
+        <Text style={styles.footerTagline}>{t('profile.tagline')}</Text>
       </View>
     </ScrollView>
   );

@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
 }));
@@ -67,7 +74,7 @@ describe('FavoriteActorsScreen', () => {
   it('renders "Favorite Actors" header', () => {
     mockUseFavoriteActors.mockReturnValue({ data: [], isLoading: false });
     render(<FavoriteActorsScreen />);
-    expect(screen.getByText('Favorite Actors')).toBeTruthy();
+    expect(screen.getByText('profile.favoriteActors')).toBeTruthy();
   });
 
   it('shows loading indicator', () => {
@@ -80,10 +87,8 @@ describe('FavoriteActorsScreen', () => {
   it('shows empty state when no favorites', () => {
     mockUseFavoriteActors.mockReturnValue({ data: [], isLoading: false });
     render(<FavoriteActorsScreen />);
-    expect(screen.getByText('No favorite actors yet')).toBeTruthy();
-    expect(
-      screen.getByText('Add actors you love to keep track of their upcoming movies.'),
-    ).toBeTruthy();
+    expect(screen.getByText('profile.noFavoriteActors')).toBeTruthy();
+    expect(screen.getByText('profile.noFavoriteActorsSubtitle')).toBeTruthy();
   });
 
   it('shows actor grid when favorites exist', () => {
@@ -152,7 +157,7 @@ describe('FavoriteActorsScreen', () => {
   it('shows "Add Actors" action in empty state', () => {
     mockUseFavoriteActors.mockReturnValue({ data: [], isLoading: false });
     render(<FavoriteActorsScreen />);
-    expect(screen.getByText('Add Actors')).toBeTruthy();
+    expect(screen.getByText('profile.addActors')).toBeTruthy();
   });
 
   it('shows count badge when actors exist', () => {

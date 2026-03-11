@@ -1,6 +1,7 @@
 import { View, TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useTranslation } from 'react-i18next';
 import { colors as palette } from '@/theme/colors';
 
 export interface SocialSignInButtonsProps {
@@ -21,6 +22,7 @@ export function SocialSignInButtons({
   showApple = true,
 }: SocialSignInButtonsProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
@@ -37,7 +39,9 @@ export function SocialSignInButtons({
         ) : (
           <>
             <Ionicons name="logo-google" size={20} color={palette.red500} />
-            <Text style={[styles.buttonText, { color: theme.textPrimary }]}>Google</Text>
+            <Text style={[styles.buttonText, { color: theme.textPrimary }]}>
+              {t('auth.google')}
+            </Text>
           </>
         )}
       </TouchableOpacity>
@@ -56,7 +60,9 @@ export function SocialSignInButtons({
           ) : (
             <>
               <Ionicons name="logo-apple" size={20} color={theme.textPrimary} />
-              <Text style={[styles.buttonText, { color: theme.textPrimary }]}>Apple</Text>
+              <Text style={[styles.buttonText, { color: theme.textPrimary }]}>
+                {t('auth.apple')}
+              </Text>
             </>
           )}
         </TouchableOpacity>
@@ -70,7 +76,7 @@ export function SocialSignInButtons({
         accessibilityLabel="Sign in with Phone"
       >
         <Ionicons name="call-outline" size={20} color={palette.green500} />
-        <Text style={[styles.buttonText, { color: theme.textPrimary }]}>Phone</Text>
+        <Text style={[styles.buttonText, { color: theme.textPrimary }]}>{t('auth.phone')}</Text>
       </TouchableOpacity>
     </View>
   );

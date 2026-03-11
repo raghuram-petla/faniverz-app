@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 import React from 'react';
 import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -71,13 +78,13 @@ describe('EditProfileScreen', () => {
 
   it('renders "Edit Profile" header', () => {
     render(<EditProfileScreen />);
-    expect(screen.getByText('Edit Profile')).toBeTruthy();
+    expect(screen.getByText('profile.editProfile')).toBeTruthy();
   });
 
   it('shows Full Name input with profile value', () => {
     render(<EditProfileScreen />);
     // The label is rendered as an uppercase styled text
-    expect(screen.getByText('Full Name')).toBeTruthy();
+    expect(screen.getByText('profile.fullName')).toBeTruthy();
     // The TextInput is populated with the profile display_name
     const input = screen.getByDisplayValue('John Doe');
     expect(input).toBeTruthy();
@@ -86,7 +93,7 @@ describe('EditProfileScreen', () => {
   it('shows bio character counter', () => {
     render(<EditProfileScreen />);
     // Bio label is present
-    expect(screen.getByText('Bio')).toBeTruthy();
+    expect(screen.getByText('profile.bio')).toBeTruthy();
     // The counter Text element renders "25/150" with BIO_LIMIT=150
     // "Big fan of Indian cinema." is 25 characters; counter uses exact combined text
     expect(screen.getByText(/25\/150/)).toBeTruthy();
@@ -94,7 +101,7 @@ describe('EditProfileScreen', () => {
 
   it('shows Save button', () => {
     render(<EditProfileScreen />);
-    expect(screen.getByText('Save Changes')).toBeTruthy();
+    expect(screen.getByText('profile.saveChanges')).toBeTruthy();
   });
 
   it('renders all form fields with initial profile values', () => {
@@ -107,7 +114,7 @@ describe('EditProfileScreen', () => {
 
   it('calls updateProfile when Save Changes is pressed', () => {
     render(<EditProfileScreen />);
-    fireEvent.press(screen.getByText('Save Changes'));
+    fireEvent.press(screen.getByText('profile.saveChanges'));
     expect(mockUpdateMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         display_name: 'John Doe',
@@ -120,14 +127,14 @@ describe('EditProfileScreen', () => {
   it('shows email field as non-editable with hint text', () => {
     render(<EditProfileScreen />);
     expect(screen.getByDisplayValue('test@example.com')).toBeTruthy();
-    expect(screen.getByText('Email cannot be changed here.')).toBeTruthy();
+    expect(screen.getByText('profile.emailHint')).toBeTruthy();
   });
 
   it('shows loading indicator when profile is loading', () => {
     mockUseProfile.mockReturnValue({ data: null, isLoading: true });
     render(<EditProfileScreen />);
     // The loading container renders ActivityIndicator, not the form
-    expect(screen.queryByText('Edit Profile')).toBeNull();
+    expect(screen.queryByText('profile.editProfile')).toBeNull();
   });
 
   it('shows validation alert when bio exceeds 150 characters', () => {
@@ -139,12 +146,9 @@ describe('EditProfileScreen', () => {
     fireEvent.changeText(screen.getByDisplayValue('Big fan of Indian cinema.'), longBio);
 
     // Press save
-    fireEvent.press(screen.getByText('Save Changes'));
+    fireEvent.press(screen.getByText('profile.saveChanges'));
 
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Bio too long',
-      'Please keep your bio under 150 characters.',
-    );
+    expect(alertSpy).toHaveBeenCalledWith('profile.bioTooLong', 'profile.bioTooLongMessage');
     // updateProfile should NOT have been called
     expect(mockUpdateMutate).not.toHaveBeenCalled();
     alertSpy.mockRestore();
@@ -154,7 +158,7 @@ describe('EditProfileScreen', () => {
     render(<EditProfileScreen />);
 
     fireEvent.changeText(screen.getByDisplayValue('John Doe'), 'Jane Doe');
-    fireEvent.press(screen.getByText('Save Changes'));
+    fireEvent.press(screen.getByText('profile.saveChanges'));
 
     expect(mockUpdateMutate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -168,7 +172,7 @@ describe('EditProfileScreen', () => {
     render(<EditProfileScreen />);
 
     fireEvent.changeText(screen.getByDisplayValue('+91 98765 43210'), '+91 12345 67890');
-    fireEvent.press(screen.getByText('Save Changes'));
+    fireEvent.press(screen.getByText('profile.saveChanges'));
 
     expect(mockUpdateMutate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -182,7 +186,7 @@ describe('EditProfileScreen', () => {
     render(<EditProfileScreen />);
 
     fireEvent.changeText(screen.getByDisplayValue('Hyderabad, India'), 'Chennai, India');
-    fireEvent.press(screen.getByText('Save Changes'));
+    fireEvent.press(screen.getByText('profile.saveChanges'));
 
     expect(mockUpdateMutate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -194,7 +198,7 @@ describe('EditProfileScreen', () => {
 
   it('calls pickAndUpload when Change Photo is pressed', () => {
     render(<EditProfileScreen />);
-    fireEvent.press(screen.getByText('Change Photo'));
+    fireEvent.press(screen.getByText('profile.changePhoto'));
     expect(mockPickAndUpload).toHaveBeenCalled();
   });
 
@@ -206,12 +210,12 @@ describe('EditProfileScreen', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
 
     render(<EditProfileScreen />);
-    fireEvent.press(screen.getByText('Save Changes'));
+    fireEvent.press(screen.getByText('profile.saveChanges'));
 
     const [, callbacks] = mockUpdateMutate.mock.calls[0];
     callbacks.onSuccess();
 
-    expect(alertSpy).toHaveBeenCalledWith('Saved', 'Your profile has been updated.');
+    expect(alertSpy).toHaveBeenCalledWith('common.saved', 'profile.profileUpdated');
     expect(mockBack).toHaveBeenCalled();
 
     alertSpy.mockRestore();
@@ -222,15 +226,12 @@ describe('EditProfileScreen', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
 
     render(<EditProfileScreen />);
-    fireEvent.press(screen.getByText('Save Changes'));
+    fireEvent.press(screen.getByText('profile.saveChanges'));
 
     const [, callbacks] = mockUpdateMutate.mock.calls[0];
     callbacks.onError();
 
-    expect(alertSpy).toHaveBeenCalledWith(
-      'Error',
-      'Failed to save your profile. Please try again.',
-    );
+    expect(alertSpy).toHaveBeenCalledWith('common.error', 'profile.profileSaveFailed');
     alertSpy.mockRestore();
   });
 
@@ -261,6 +262,6 @@ describe('EditProfileScreen', () => {
     // All fields should default to empty string (not "null")
     expect(screen.queryByDisplayValue('null')).toBeNull();
     // Save button should still be present
-    expect(screen.getByText('Save Changes')).toBeTruthy();
+    expect(screen.getByText('profile.saveChanges')).toBeTruthy();
   });
 });

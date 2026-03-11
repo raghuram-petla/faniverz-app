@@ -2,6 +2,7 @@ import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import { useMemo, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlistPaginated } from '@/features/watchlist/hooks';
@@ -50,6 +51,7 @@ function SectionTitle({
 
 export default function WatchlistScreen() {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -86,7 +88,7 @@ export default function WatchlistScreen() {
       items.push({
         type: 'section-header',
         key: 'header-available',
-        title: 'Available to Watch',
+        title: t('watchlist.availableToWatch'),
         iconName: 'play-circle-outline',
         iconColor: colors.green500,
       });
@@ -99,7 +101,7 @@ export default function WatchlistScreen() {
       items.push({
         type: 'section-header',
         key: 'header-upcoming',
-        title: 'Upcoming Releases',
+        title: t('watchlist.upcomingReleases'),
         iconName: 'calendar-outline',
         iconColor: colors.blue500,
       });
@@ -112,7 +114,7 @@ export default function WatchlistScreen() {
       items.push({
         type: 'section-header',
         key: 'header-watched',
-        title: 'Watched Movies',
+        title: t('watchlist.watchedMovies'),
         iconName: 'eye-outline',
         iconColor: colors.gray500,
       });
@@ -122,7 +124,7 @@ export default function WatchlistScreen() {
     }
 
     return items;
-  }, [available, upcoming, watched]);
+  }, [available, upcoming, watched, t]);
 
   const renderItem = ({ item }: { item: ListItem }) => {
     switch (item.type) {
@@ -161,7 +163,7 @@ export default function WatchlistScreen() {
         <SafeAreaCover />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
-            <Text style={styles.headerTitle}>My Watchlist</Text>
+            <Text style={styles.headerTitle}>{t('watchlist.title')}</Text>
           </View>
           <View style={styles.bookmarkCircle}>
             <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
@@ -170,9 +172,9 @@ export default function WatchlistScreen() {
         <View style={styles.emptyContainer}>
           <EmptyState
             icon="bookmark-outline"
-            title="Sign in to use Watchlist"
-            subtitle="Create an account or sign in to save movies and track what you watch."
-            actionLabel="Sign In / Sign Up"
+            title={t('watchlist.signInTitle')}
+            subtitle={t('watchlist.signInSubtitle')}
+            actionLabel={t('auth.signIn')}
             onAction={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
           />
         </View>
@@ -187,7 +189,7 @@ export default function WatchlistScreen() {
         <SafeAreaCover />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
-            <Text style={styles.headerTitle}>My Watchlist</Text>
+            <Text style={styles.headerTitle}>{t('watchlist.title')}</Text>
           </View>
           <View style={styles.bookmarkCircle}>
             <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
@@ -205,8 +207,8 @@ export default function WatchlistScreen() {
         <SafeAreaCover />
         <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
           <View>
-            <Text style={styles.headerTitle}>My Watchlist</Text>
-            <Text style={styles.headerSubtitle}>0 movies saved</Text>
+            <Text style={styles.headerTitle}>{t('watchlist.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('watchlist.moviesSaved', { count: 0 })}</Text>
           </View>
           <View style={styles.bookmarkCircle}>
             <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
@@ -215,9 +217,9 @@ export default function WatchlistScreen() {
         <View style={styles.emptyContainer}>
           <EmptyState
             icon="bookmark-outline"
-            title="Your watchlist is empty"
-            subtitle="Start adding movies to your watchlist to keep track of what you want to watch"
-            actionLabel="Discover Movies"
+            title={t('watchlist.empty')}
+            subtitle={t('watchlist.emptySubtitle')}
+            actionLabel={t('watchlist.discoverMovies')}
             onAction={() => router.push('/discover')}
           />
         </View>
@@ -231,9 +233,11 @@ export default function WatchlistScreen() {
       {/* Sticky Header */}
       <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
         <View>
-          <Text style={styles.headerTitle}>My Watchlist</Text>
+          <Text style={styles.headerTitle}>{t('watchlist.title')}</Text>
           <Text style={styles.headerSubtitle}>
-            {totalSaved} {totalSaved === 1 ? 'movie' : 'movies'} saved
+            {totalSaved === 1
+              ? t('watchlist.movieSaved', { count: totalSaved })
+              : t('watchlist.moviesSaved', { count: totalSaved })}
           </Text>
         </View>
         <View style={styles.bookmarkCircle}>

@@ -15,6 +15,7 @@ import { StarRating } from '@/components/ui/StarRating';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { useTranslation } from 'react-i18next';
 
 interface ReviewModalProps {
   visible: boolean;
@@ -54,6 +55,7 @@ export function ReviewModal({
   onClose,
 }: ReviewModalProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -65,7 +67,9 @@ export function ReviewModal({
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{isEditing ? 'Edit Review' : 'Write Review'}</Text>
+                <Text style={styles.modalTitle}>
+                  {isEditing ? t('movie.editReview') : t('movie.writeReview')}
+                </Text>
                 <TouchableOpacity onPress={onClose}>
                   <Ionicons name="close" size={24} color={colors.white} />
                 </TouchableOpacity>
@@ -91,7 +95,7 @@ export function ReviewModal({
 
               <TextInput
                 style={styles.modalInput}
-                placeholder="Review Title"
+                placeholder={t('movie.reviewTitle')}
                 placeholderTextColor={theme.textTertiary}
                 value={reviewTitle}
                 onChangeText={onTitleChange}
@@ -99,7 +103,7 @@ export function ReviewModal({
 
               <TextInput
                 style={[styles.modalInput, styles.modalTextArea]}
-                placeholder="Write your review..."
+                placeholder={t('movie.writeYourReview')}
                 placeholderTextColor={theme.textTertiary}
                 multiline
                 numberOfLines={6}
@@ -112,19 +116,21 @@ export function ReviewModal({
                 <View style={[styles.toggleTrack, containsSpoiler && styles.toggleTrackActive]}>
                   <View style={[styles.toggleThumb, containsSpoiler && styles.toggleThumbActive]} />
                 </View>
-                <Text style={styles.spoilerToggleText}>Contains Spoiler</Text>
+                <Text style={styles.spoilerToggleText}>{t('movie.containsSpoiler')}</Text>
               </TouchableOpacity>
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity onPress={onClose}>
-                  <Text style={styles.modalCancelText}>Cancel</Text>
+                  <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalSubmitButton, reviewRating === 0 && { opacity: 0.5 }]}
                   onPress={onSubmit}
                   disabled={reviewRating === 0}
                 >
-                  <Text style={styles.modalSubmitText}>{isEditing ? 'Update' : 'Submit'}</Text>
+                  <Text style={styles.modalSubmitText}>
+                    {isEditing ? t('movie.update') : t('movie.submit')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

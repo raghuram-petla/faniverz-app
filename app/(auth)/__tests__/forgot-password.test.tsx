@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en' },
+  }),
+}));
+
 const mockRouter = { push: jest.fn(), replace: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
@@ -42,29 +49,27 @@ describe('ForgotPasswordScreen', () => {
 
   it('renders Reset Password header', () => {
     render(<ForgotPasswordScreen />);
-    expect(screen.getByText('Reset Password')).toBeTruthy();
+    expect(screen.getByText('auth.resetPassword')).toBeTruthy();
   });
 
   it('renders email input', () => {
     render(<ForgotPasswordScreen />);
-    expect(screen.getByPlaceholderText('Email address')).toBeTruthy();
+    expect(screen.getByPlaceholderText('auth.emailAddress')).toBeTruthy();
   });
 
   it('renders Send Reset Link button', () => {
     render(<ForgotPasswordScreen />);
-    expect(screen.getByText('Send Reset Link')).toBeTruthy();
+    expect(screen.getByText('auth.sendResetLink')).toBeTruthy();
   });
 
   it('renders Back to Sign In link', () => {
     render(<ForgotPasswordScreen />);
-    expect(screen.getByText('Back to Sign In')).toBeTruthy();
+    expect(screen.getByText('auth.backToSignIn')).toBeTruthy();
   });
 
   it('renders instruction text', () => {
     render(<ForgotPasswordScreen />);
-    expect(
-      screen.getByText("Enter your email and we'll send you a link to reset your password."),
-    ).toBeTruthy();
+    expect(screen.getByText('auth.enterEmailSubtitle')).toBeTruthy();
   });
 
   it('shows success state after successful submit', async () => {
@@ -78,15 +83,15 @@ describe('ForgotPasswordScreen', () => {
     render(<ForgotPasswordScreen />);
 
     // Type email
-    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'test@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.emailAddress'), 'test@test.com');
 
     // Press send
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Link'));
+      fireEvent.press(screen.getByText('auth.sendResetLink'));
     });
 
     expect(mockResetPassword).toHaveBeenCalledWith('test@test.com');
-    expect(screen.getByText('Check your inbox')).toBeTruthy();
+    expect(screen.getByText('auth.checkInbox')).toBeTruthy();
   });
 
   it('shows error message when auth error exists', () => {
@@ -111,7 +116,7 @@ describe('ForgotPasswordScreen', () => {
     render(<ForgotPasswordScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Link'));
+      fireEvent.press(screen.getByText('auth.sendResetLink'));
     });
 
     expect(mockResetPassword).not.toHaveBeenCalled();
@@ -127,14 +132,14 @@ describe('ForgotPasswordScreen', () => {
 
     render(<ForgotPasswordScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'test@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.emailAddress'), 'test@test.com');
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Link'));
+      fireEvent.press(screen.getByText('auth.sendResetLink'));
     });
 
     // Now in success state, press "Back to Sign In"
-    fireEvent.press(screen.getByText('Back to Sign In'));
+    fireEvent.press(screen.getByText('auth.backToSignIn'));
 
     expect(mockRouter.back).toHaveBeenCalled();
   });
@@ -149,7 +154,7 @@ describe('ForgotPasswordScreen', () => {
     render(<ForgotPasswordScreen />);
 
     // "Send Reset Link" text should not be visible when loading
-    expect(screen.queryByText('Send Reset Link')).toBeNull();
+    expect(screen.queryByText('auth.sendResetLink')).toBeNull();
   });
 
   it('handles resetPassword rejection without crashing and keeps form state', async () => {
@@ -162,22 +167,22 @@ describe('ForgotPasswordScreen', () => {
 
     render(<ForgotPasswordScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'test@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.emailAddress'), 'test@test.com');
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Link'));
+      fireEvent.press(screen.getByText('auth.sendResetLink'));
     });
 
     expect(mockResetPassword).toHaveBeenCalled();
     // Should not crash and should remain in form state (not success state)
-    expect(screen.queryByText('Check your inbox')).toBeNull();
-    expect(screen.getByText('Send Reset Link')).toBeTruthy();
+    expect(screen.queryByText('auth.checkInbox')).toBeNull();
+    expect(screen.getByText('auth.sendResetLink')).toBeTruthy();
   });
 
   it('navigates back when Back to Sign In is pressed in form state', () => {
     render(<ForgotPasswordScreen />);
 
-    fireEvent.press(screen.getByText('Back to Sign In'));
+    fireEvent.press(screen.getByText('auth.backToSignIn'));
 
     expect(mockRouter.back).toHaveBeenCalled();
   });
@@ -192,10 +197,10 @@ describe('ForgotPasswordScreen', () => {
 
     render(<ForgotPasswordScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Email address'), 'hello@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.emailAddress'), 'hello@example.com');
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Send Reset Link'));
+      fireEvent.press(screen.getByText('auth.sendResetLink'));
     });
 
     expect(screen.getByText('hello@example.com')).toBeTruthy();

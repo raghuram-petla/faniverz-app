@@ -1,3 +1,10 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'en', changeLanguage: jest.fn() },
+  }),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -196,7 +203,7 @@ describe('ActorDetailScreen', () => {
 
   it('shows date of birth', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('Born')).toBeTruthy();
+    expect(screen.getByText('actorDetail.born')).toBeTruthy();
     // formatDate parses as UTC; local timezone may shift the date
     const expectedDate = new Date('1959-08-29').toLocaleDateString('en-US', {
       month: 'short',
@@ -316,19 +323,19 @@ describe('ActorDetailScreen', () => {
 
   it('shows place of birth', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('From')).toBeTruthy();
+    expect(screen.getByText('actorDetail.from')).toBeTruthy();
     expect(screen.getByText('Chennai, Tamil Nadu, India')).toBeTruthy();
   });
 
   it('shows height in cm', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('Height')).toBeTruthy();
+    expect(screen.getByText('actorDetail.height')).toBeTruthy();
     expect(screen.getByText('181 cm')).toBeTruthy();
   });
 
   it('shows biography about section', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('About')).toBeTruthy();
+    expect(screen.getByText('actorDetail.about')).toBeTruthy();
     expect(
       screen.getByText('Akkineni Nagarjuna is an Indian actor, producer, and entrepreneur.'),
     ).toBeTruthy();
@@ -337,11 +344,11 @@ describe('ActorDetailScreen', () => {
   it('toggles biography read more / show less', () => {
     render(<ActorDetailScreen />);
     const toggle = screen.getByTestId('bio-toggle');
-    expect(screen.getByText('Read more')).toBeTruthy();
+    expect(screen.getByText('actorDetail.readMore')).toBeTruthy();
     fireEvent.press(toggle);
-    expect(screen.getByText('Show less')).toBeTruthy();
+    expect(screen.getByText('actorDetail.showLess')).toBeTruthy();
     fireEvent.press(toggle);
-    expect(screen.getByText('Read more')).toBeTruthy();
+    expect(screen.getByText('actorDetail.readMore')).toBeTruthy();
   });
 
   it('does not show about section when biography is null', () => {
@@ -352,7 +359,7 @@ describe('ActorDetailScreen', () => {
       isLoading: false,
     });
     render(<ActorDetailScreen />);
-    expect(screen.queryByText('About')).toBeNull();
+    expect(screen.queryByText('actorDetail.about')).toBeNull();
   });
 
   it('opens photo modal on avatar tap', () => {
