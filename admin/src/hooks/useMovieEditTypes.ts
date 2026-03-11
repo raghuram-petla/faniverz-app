@@ -18,6 +18,9 @@ export interface MovieForm {
   synopsis: string;
   trailer_url: string;
   in_theaters: boolean;
+  director: string;
+  original_language: string;
+  is_featured: boolean;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;
 }
@@ -110,6 +113,9 @@ export interface MovieEditHandlerDeps {
     synopsis: string | null;
     trailer_url: string | null;
     in_theaters: boolean;
+    director: string | null;
+    original_language: string | null;
+    is_featured: boolean;
     backdrop_focus_x: number | null;
     backdrop_focus_y: number | null;
     spotlight_focus_x: number | null;

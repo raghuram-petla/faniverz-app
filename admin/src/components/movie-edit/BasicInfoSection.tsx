@@ -90,6 +90,47 @@ export function BasicInfoSection({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
+          <label className="block text-sm text-on-surface-muted mb-1">Director</label>
+          <input
+            type="text"
+            value={form.director}
+            onChange={(e) => updateField('director', e.target.value)}
+            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-on-surface-muted mb-1">Original Language</label>
+          <select
+            value={form.original_language}
+            onChange={(e) => updateField('original_language', e.target.value)}
+            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+          >
+            <option value="">Not set</option>
+            <option value="te">Telugu</option>
+            <option value="hi">Hindi</option>
+            <option value="ta">Tamil</option>
+            <option value="kn">Kannada</option>
+            <option value="ml">Malayalam</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm text-on-surface-muted mb-1">Featured Movie</label>
+        <label className="flex items-center gap-3 bg-input rounded-xl px-4 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.is_featured}
+            onChange={(e) => setForm((prev) => ({ ...prev, is_featured: e.target.checked }))}
+            className="w-5 h-5 rounded accent-red-600"
+          />
+          <span className="text-on-surface text-sm">
+            {form.is_featured ? 'Yes — Featured on home screen' : 'No'}
+          </span>
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
           <label className="block text-sm text-on-surface-muted mb-1">Runtime (min)</label>
           <input
             type="number"

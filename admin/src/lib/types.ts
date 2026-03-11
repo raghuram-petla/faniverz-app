@@ -113,6 +113,10 @@ interface UserProfile {
 
 export interface DashboardStats {
   totalMovies: number;
+  totalActors: number;
+  totalUsers: number;
+  totalReviews: number;
+  totalFeedItems: number;
 }
 
 // ============================================================

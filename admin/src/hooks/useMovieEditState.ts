@@ -105,6 +105,9 @@ export function useMovieEditState(id: string) {
     synopsis: '',
     trailer_url: '',
     in_theaters: false,
+    director: '',
+    original_language: '',
+    is_featured: false,
     backdrop_focus_x: null,
     backdrop_focus_y: null,
   });
@@ -133,6 +136,9 @@ export function useMovieEditState(id: string) {
         synopsis: movie.synopsis ?? '',
         trailer_url: movie.trailer_url ?? '',
         in_theaters: movie.in_theaters,
+        director: movie.director ?? '',
+        original_language: movie.original_language ?? '',
+        is_featured: movie.is_featured,
         backdrop_focus_x: movie.backdrop_focus_x ?? null,
         backdrop_focus_y: movie.backdrop_focus_y ?? null,
       };

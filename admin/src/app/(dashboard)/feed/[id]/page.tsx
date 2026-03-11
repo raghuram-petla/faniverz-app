@@ -29,20 +29,28 @@ export default function EditFeedItemPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateMutation.mutateAsync({
-      id,
-      title,
-      description: description || null,
-      is_pinned: isPinned,
-      is_featured: isFeatured,
-    } as Partial<import('@/lib/types').NewsFeedItem> & { id: string });
-    router.push('/feed');
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        title,
+        description: description || null,
+        is_pinned: isPinned,
+        is_featured: isFeatured,
+      } as Partial<import('@/lib/types').NewsFeedItem> & { id: string });
+      router.push('/feed');
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Operation failed'}`);
+    }
   };
 
   const handleDelete = async () => {
     if (!confirm('Delete this feed item?')) return;
-    await deleteMutation.mutateAsync(id);
-    router.push('/feed');
+    try {
+      await deleteMutation.mutateAsync(id);
+      router.push('/feed');
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Operation failed'}`);
+    }
   };
 
   if (isLoading) {

@@ -28,6 +28,14 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
+      const today = new Date().toISOString().split('T')[0];
+
+      // Pre-fetch platform movie IDs for streaming/released filters
+      let platformMovieIds: string[] = [];
+      if (statusFilter === 'streaming' || statusFilter === 'released') {
+        const { data: pmData } = await supabase.from('movie_platforms').select('movie_id');
+        platformMovieIds = [...new Set((pmData ?? []).map((r) => r.movie_id))];
+      }
 
       if (hasPHScope) {
         const { data: junctionData, error: jErr } = await supabase
@@ -47,9 +55,25 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
           .range(from, to);
         if (search) query = query.ilike('title', `%${search}%`);
         if (statusFilter === 'upcoming') {
-          query = query.gt('release_date', new Date().toISOString().split('T')[0]);
+          query = query.gt('release_date', today);
         } else if (statusFilter === 'in_theaters') {
           query = query.eq('in_theaters', true);
+        } else if (statusFilter === 'announced') {
+          query = query.is('release_date', null);
+        } else if (statusFilter === 'streaming') {
+          if (platformMovieIds.length === 0) return [] as Movie[];
+          query = query
+            .in('id', platformMovieIds)
+            .lte('release_date', today)
+            .eq('in_theaters', false);
+        } else if (statusFilter === 'released') {
+          query = query
+            .not('release_date', 'is', null)
+            .lte('release_date', today)
+            .eq('in_theaters', false);
+          if (platformMovieIds.length > 0) {
+            query = query.not('id', 'in', `(${platformMovieIds.join(',')})`);
+          }
         }
 
         const { data, error } = await query;

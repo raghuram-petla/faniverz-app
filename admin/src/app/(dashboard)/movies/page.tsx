@@ -65,8 +65,11 @@ export default function MoviesPage() {
             className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value="">All Status</option>
+            <option value="announced">Announced</option>
             <option value="upcoming">Upcoming</option>
             <option value="in_theaters">In Theaters</option>
+            <option value="streaming">Streaming</option>
+            <option value="released">Released</option>
           </select>
         </div>
         {search.length === 1 && (
@@ -155,7 +158,10 @@ export default function MoviesPage() {
                       {canDelete('movie') && (
                         <button
                           onClick={() => {
-                            if (confirm('Delete this movie?')) deleteMovie.mutate(movie.id);
+                            if (confirm('Delete this movie?'))
+                              deleteMovie.mutate(movie.id, {
+                                onError: (err: Error) => alert(`Error: ${err.message}`),
+                              });
                           }}
                           className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
                         >

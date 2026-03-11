@@ -5,9 +5,18 @@ import { renderHook, waitFor } from '@testing-library/react';
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn().mockResolvedValue({ count: 42, data: null, error: null }),
-    })),
+    from: vi.fn((table: string) => {
+      const counts: Record<string, number> = {
+        movies: 42,
+        actors: 15,
+        profiles: 100,
+        reviews: 30,
+        news_feed: 55,
+      };
+      return {
+        select: vi.fn().mockResolvedValue({ count: counts[table] ?? 0, data: null, error: null }),
+      };
+    }),
   },
 }));
 
@@ -32,10 +41,16 @@ describe('useDashboardStats', () => {
 
     const data = result.current.data;
     expect(data).toBeDefined();
-    expect(data).toEqual({ totalMovies: 42 });
+    expect(data).toEqual({
+      totalMovies: 42,
+      totalActors: 15,
+      totalUsers: 100,
+      totalReviews: 30,
+      totalFeedItems: 55,
+    });
   });
 
-  it('only has totalMovies in returned data', async () => {
+  it('has all stat fields in returned data', async () => {
     const { result } = renderHook(() => useDashboardStats(), {
       wrapper: createWrapper(),
     });
@@ -43,6 +58,12 @@ describe('useDashboardStats', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     const data = result.current.data!;
-    expect(Object.keys(data)).toEqual(['totalMovies']);
+    expect(Object.keys(data)).toEqual([
+      'totalMovies',
+      'totalActors',
+      'totalUsers',
+      'totalReviews',
+      'totalFeedItems',
+    ]);
   });
 });

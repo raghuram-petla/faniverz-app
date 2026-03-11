@@ -38,7 +38,7 @@ export default function FeedPage() {
 
       const reordered = arrayMove(items, oldIndex, newIndex);
       const updates = reordered.map((item, idx) => ({ id: item.id, display_order: idx }));
-      reorderMutation.mutate(updates);
+      reorderMutation.mutate(updates, { onError: (err: Error) => alert(`Error: ${err.message}`) });
     },
     [items, reorderMutation],
   );
@@ -46,18 +46,26 @@ export default function FeedPage() {
   const handleDelete = useCallback(
     (id: string) => {
       if (!confirm('Delete this feed item?')) return;
-      deleteMutation.mutate(id);
+      deleteMutation.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
     },
     [deleteMutation],
   );
 
   const handleTogglePin = useCallback(
-    (id: string, is_pinned: boolean) => pinMutation.mutate({ id, is_pinned }),
+    (id: string, is_pinned: boolean) =>
+      pinMutation.mutate(
+        { id, is_pinned },
+        { onError: (err: Error) => alert(`Error: ${err.message}`) },
+      ),
     [pinMutation],
   );
 
   const handleToggleFeature = useCallback(
-    (id: string, is_featured: boolean) => featureMutation.mutate({ id, is_featured }),
+    (id: string, is_featured: boolean) =>
+      featureMutation.mutate(
+        { id, is_featured },
+        { onError: (err: Error) => alert(`Error: ${err.message}`) },
+      ),
     [featureMutation],
   );
 

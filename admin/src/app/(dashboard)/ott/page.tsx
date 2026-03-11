@@ -2,7 +2,7 @@
 
 import { useAdminOttReleases, useDeleteOttRelease } from '@/hooks/useAdminOtt';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Tv, Trash2, Plus, Loader2 } from 'lucide-react';
+import { Tv, Trash2, Plus, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OttReleasesPage() {
@@ -14,7 +14,10 @@ export default function OttReleasesPage() {
 
   const handleDelete = (movieId: string, platformId: string) => {
     if (!confirm('Remove this OTT release?')) return;
-    deleteRelease.mutate({ movieId, platformId });
+    deleteRelease.mutate(
+      { movieId, platformId },
+      { onError: (err: Error) => alert(`Error: ${err.message}`) },
+    );
   };
 
   return (
@@ -98,16 +101,25 @@ export default function OttReleasesPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    {canDelete('ott_release') && (
-                      <button
-                        onClick={() => handleDelete(release.movie_id, release.platform_id)}
-                        disabled={deleteRelease.isPending}
-                        className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                        title="Delete release"
+                    <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/ott/${release.movie_id}~${release.platform_id}`}
+                        className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
+                        title="Edit"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                        <Pencil className="w-4 h-4" />
+                      </Link>
+                      {canDelete('ott_release') && (
+                        <button
+                          onClick={() => handleDelete(release.movie_id, release.platform_id)}
+                          disabled={deleteRelease.isPending}
+                          className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                          title="Delete release"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

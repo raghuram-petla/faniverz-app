@@ -148,10 +148,12 @@ function PreviewFeedCard({ item }: { item: NewsFeedItem }) {
         </div>
       ) : null}
 
-      {/* Vote counts */}
+      {/* Action bar */}
       <div style={previewStyles.actionBar}>
         <span style={{ fontSize: 8, color: '#888' }}>▲ {item.upvote_count ?? 0}</span>
         <span style={{ fontSize: 8, color: '#888' }}>▼ {item.downvote_count ?? 0}</span>
+        <span style={{ fontSize: 8, color: '#888' }}>👁 {item.view_count ?? 0}</span>
+        <span style={{ fontSize: 8, color: '#888' }}>💬 {item.comment_count ?? 0}</span>
       </div>
 
       {/* Separator */}

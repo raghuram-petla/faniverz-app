@@ -32,8 +32,16 @@ export default function AuditLogPage() {
   // Non-super admins only see their own audit entries
   if (!isSuperAdmin && user?.id) filters.adminUserId = user.id;
 
-  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAdminAuditLog(Object.keys(filters).length ? filters : undefined);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useAdminAuditLog(Object.keys(filters).length ? filters : undefined);
   const entries = data?.pages.flat() ?? [];
 
   const toggleRow = (id: string) => {
@@ -127,6 +135,12 @@ export default function AuditLogPage() {
           </p>
         )}
       </div>
+
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-400">
+          Error loading audit log: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

@@ -21,15 +21,30 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         if (jErr) throw jErr;
 
         const movieIds = [...new Set((junctionData ?? []).map((r) => r.movie_id))];
-        return { totalMovies: movieIds.length };
+        return {
+          totalMovies: movieIds.length,
+          totalActors: 0,
+          totalUsers: 0,
+          totalReviews: 0,
+          totalFeedItems: 0,
+        };
       }
 
-      // Use estimated count to avoid full table scan (reads pg_class.reltuples)
-      const { count } = await supabase
-        .from('movies')
-        .select('id', { count: 'estimated', head: true });
+      const [movies, actors, users, reviews, feedItems] = await Promise.all([
+        supabase.from('movies').select('id', { count: 'estimated', head: true }),
+        supabase.from('actors').select('id', { count: 'estimated', head: true }),
+        supabase.from('profiles').select('id', { count: 'estimated', head: true }),
+        supabase.from('reviews').select('id', { count: 'estimated', head: true }),
+        supabase.from('news_feed').select('id', { count: 'estimated', head: true }),
+      ]);
 
-      return { totalMovies: count ?? 0 };
+      return {
+        totalMovies: movies.count ?? 0,
+        totalActors: actors.count ?? 0,
+        totalUsers: users.count ?? 0,
+        totalReviews: reviews.count ?? 0,
+        totalFeedItems: feedItems.count ?? 0,
+      };
     },
     staleTime: 5 * 60_000,
   });

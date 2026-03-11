@@ -117,7 +117,10 @@ export default function CastPage() {
               {canDelete('actor', actor.created_by) && (
                 <button
                   onClick={() => {
-                    if (confirm('Delete this actor?')) deleteActor.mutate(actor.id);
+                    if (confirm('Delete this actor?'))
+                      deleteActor.mutate(actor.id, {
+                        onError: (err: Error) => alert(`Error: ${err.message}`),
+                      });
                   }}
                   className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
                 >

@@ -24,6 +24,9 @@ const defaultForm: MovieForm = {
   synopsis: '',
   trailer_url: '',
   in_theaters: false,
+  director: '',
+  original_language: '',
+  is_featured: false,
   backdrop_focus_x: null,
   backdrop_focus_y: null,
 };
@@ -114,6 +117,43 @@ describe('BasicInfoSection', () => {
   it('renders "Currently In Theaters" checkbox', () => {
     renderBasicInfo();
     expect(screen.getByText('Currently In Theaters')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
+    const checkboxes = screen.getAllByRole('checkbox');
+    // First checkbox is in_theaters, second is is_featured
+    expect(checkboxes[0]).not.toBeChecked();
+  });
+
+  it('renders Director input', () => {
+    renderBasicInfo({ director: 'S.S. Rajamouli' });
+    expect(getFieldByLabel('Director')).toHaveValue('S.S. Rajamouli');
+  });
+
+  it('calls updateField when director changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Director'), { target: { value: 'Trivikram' } });
+    expect(props.updateField).toHaveBeenCalledWith('director', 'Trivikram');
+  });
+
+  it('renders Original Language select', () => {
+    renderBasicInfo({ original_language: 'te' });
+    expect(getFieldByLabel('Original Language')).toHaveValue('te');
+  });
+
+  it('calls updateField when original language changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Original Language'), { target: { value: 'hi' } });
+    expect(props.updateField).toHaveBeenCalledWith('original_language', 'hi');
+  });
+
+  it('renders Featured Movie checkbox unchecked by default', () => {
+    renderBasicInfo();
+    expect(screen.getByText('Featured Movie')).toBeInTheDocument();
+    const checkboxes = screen.getAllByRole('checkbox');
+    // is_featured is the second checkbox
+    expect(checkboxes[1]).not.toBeChecked();
+  });
+
+  it('renders Featured Movie checkbox checked when is_featured is true', () => {
+    renderBasicInfo({ is_featured: true });
+    expect(screen.getByText(/Yes — Featured on home screen/)).toBeInTheDocument();
   });
 });

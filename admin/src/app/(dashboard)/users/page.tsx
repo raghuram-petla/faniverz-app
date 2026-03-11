@@ -5,9 +5,10 @@ import {
   useAdminInvitations,
   useRevokeAdmin,
   useRevokeInvitation,
+  useUpdateAdminRole,
 } from '@/hooks/useAdminUsers';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
-import type { AdminUserWithDetails } from '@/lib/types';
+import type { AdminUserWithDetails, AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import {
   Shield,
@@ -34,6 +35,7 @@ export default function UsersPage() {
   const { data: invitations, isLoading: invitesLoading } = useAdminInvitations();
   const revokeAdmin = useRevokeAdmin();
   const revokeInvitation = useRevokeInvitation();
+  const updateRole = useUpdateAdminRole();
 
   const superAdminCount = users?.filter((u) => u.role_id === 'super_admin').length ?? 0;
 
@@ -43,7 +45,7 @@ export default function UsersPage() {
       return;
     }
     if (!confirm('Revoke admin access for this user?')) return;
-    revokeAdmin.mutate(userId);
+    revokeAdmin.mutate(userId, { onError: (err: Error) => alert(`Error: ${err.message}`) });
   }
 
   return (
@@ -126,9 +128,30 @@ export default function UsersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-600/10 text-red-500">
-                          {ADMIN_ROLE_LABELS[u.role_id]}
-                        </span>
+                        {u.id === realUser?.id ? (
+                          <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-600/10 text-red-500">
+                            {ADMIN_ROLE_LABELS[u.role_id]}
+                          </span>
+                        ) : (
+                          <select
+                            value={u.role_id}
+                            onChange={(e) => {
+                              const newRole = e.target.value as AdminRoleId;
+                              if (confirm(`Change role to ${ADMIN_ROLE_LABELS[newRole]}?`)) {
+                                updateRole.mutate(
+                                  { userId: u.id, roleId: newRole },
+                                  { onError: (err: Error) => alert(`Error: ${err.message}`) },
+                                );
+                              }
+                            }}
+                            disabled={updateRole.isPending}
+                            className="bg-input rounded-lg px-2 py-1 text-xs text-on-surface outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-50"
+                          >
+                            <option value="super_admin">Super Admin</option>
+                            <option value="admin">Admin</option>
+                            <option value="production_house_admin">PH Admin</option>
+                          </select>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-on-surface-muted">
                         {u.ph_assignments.length > 0
@@ -242,7 +265,9 @@ export default function UsersPage() {
                           <button
                             onClick={() => {
                               if (confirm('Revoke this invitation?'))
-                                revokeInvitation.mutate(inv.id);
+                                revokeInvitation.mutate(inv.id, {
+                                  onError: (err: Error) => alert(`Error: ${err.message}`),
+                                });
                             }}
                             disabled={revokeInvitation.isPending}
                             className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"

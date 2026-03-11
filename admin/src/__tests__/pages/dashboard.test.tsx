@@ -68,16 +68,18 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
-  it('renders Total Movies stat card', () => {
+  it('renders Movies stat card', () => {
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Total Movies')).toBeInTheDocument();
+    expect(screen.getByText('Movies')).toBeInTheDocument();
   });
 
-  it('does not render removed stat cards', () => {
+  it('renders all 5 stat cards', () => {
     renderWithProviders(<DashboardPage />);
-    expect(screen.queryByText('Total Users')).not.toBeInTheDocument();
-    expect(screen.queryByText('Reviews Today')).not.toBeInTheDocument();
-    expect(screen.queryByText('Active Notifications')).not.toBeInTheDocument();
+    expect(screen.getByText('Movies')).toBeInTheDocument();
+    expect(screen.getByText('Actors')).toBeInTheDocument();
+    expect(screen.getByText('Users')).toBeInTheDocument();
+    expect(screen.getByText('Reviews')).toBeInTheDocument();
+    expect(screen.getByText('Feed Items')).toBeInTheDocument();
   });
 
   it('renders quick action links', () => {

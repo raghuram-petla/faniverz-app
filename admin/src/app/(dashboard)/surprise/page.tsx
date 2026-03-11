@@ -18,7 +18,7 @@ export default function SurpriseContentPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this surprise content?')) return;
-    deleteItem.mutate(id);
+    deleteItem.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
   };
 
   return (

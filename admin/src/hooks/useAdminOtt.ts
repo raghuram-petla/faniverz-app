@@ -64,6 +64,36 @@ export function useCreateOttRelease() {
   });
 }
 
+export function useUpdateOttRelease() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      movieId,
+      platformId,
+      available_from,
+      streaming_url,
+    }: {
+      movieId: string;
+      platformId: string;
+      available_from: string | null;
+      streaming_url: string | null;
+    }) => {
+      const { data, error } = await supabase
+        .from('movie_platforms')
+        .update({ available_from, streaming_url })
+        .eq('movie_id', movieId)
+        .eq('platform_id', platformId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as MoviePlatform;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+    },
+  });
+}
+
 export function useDeleteOttRelease() {
   const qc = useQueryClient();
   return useMutation({
