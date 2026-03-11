@@ -1,22 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, ViewToken } from 'react-native';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, TouchableOpacity, FlatList, ViewToken } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
-import { colors as palette } from '@/theme/colors';
-import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
-import { deriveMovieStatus } from '@shared/movieStatus';
-import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
-import { getImageUrl } from '@shared/imageUrl';
+import { HeroSlide } from './HeroSlide';
 import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
 import { useWatchlistSet, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useAuthGate } from '@/hooks/useAuthGate';
-import { getMovieActionType } from '@/hooks/useMovieAction';
 
 const AUTO_PLAY_INTERVAL = 5000;
 
@@ -117,157 +109,15 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
 
   const renderSlide = ({ item }: { item: Movie }) => {
     const platforms_ = platformMap?.[item.id] ?? [];
-    const releaseYear = item.release_date ? new Date(item.release_date).getFullYear() : null;
-    const status = deriveMovieStatus(item, platforms_.length);
-    const actionType = getMovieActionType(status);
-    const isActionActive =
-      actionType === 'follow' ? followSet.has(`movie:${item.id}`) : watchlistSet.has(item.id);
-
     return (
-      <View style={styles.slide}>
-        <Image
-          source={{
-            uri:
-              getImageUrl(item.backdrop_url, 'md') ??
-              getImageUrl(item.poster_url, 'md') ??
-              undefined,
-          }}
-          style={styles.backdrop}
-          contentFit="cover"
-          contentPosition={
-            (item.spotlight_focus_x ?? item.backdrop_focus_x) != null &&
-            (item.spotlight_focus_y ?? item.backdrop_focus_y) != null
-              ? {
-                  left: `${Math.round(((item.spotlight_focus_x ?? item.backdrop_focus_x) as number) * 100)}%`,
-                  top: `${Math.round(((item.spotlight_focus_y ?? item.backdrop_focus_y) as number) * 100)}%`,
-                }
-              : undefined
-          }
-        />
-
-        <LinearGradient
-          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,1)']}
-          style={StyleSheet.absoluteFill}
-        />
-
-        <View style={styles.content}>
-          {/* Badges row */}
-          <View style={styles.badgeRow}>
-            {(status === 'in_theaters' || status === 'streaming') && (
-              <View style={[styles.typeBadge, { backgroundColor: getMovieStatusColor(status) }]}>
-                <Text style={styles.typeBadgeText}>{getMovieStatusLabel(status)}</Text>
-              </View>
-            )}
-            {item.rating > 0 && (
-              <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={14} color={colors.yellow400} />
-                <Text style={styles.ratingText}>{item.rating}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Title */}
-          <Text style={styles.title} numberOfLines={2}>
-            {item.title}
-          </Text>
-
-          {/* Meta info */}
-          <View style={styles.metaRow}>
-            <Text style={styles.metaText}>{releaseYear}</Text>
-            <Text style={styles.metaDot}>•</Text>
-            {item.runtime ? (
-              <>
-                <Text style={styles.metaText}>{item.runtime}m</Text>
-                <Text style={styles.metaDot}>•</Text>
-              </>
-            ) : null}
-            {item.certification && (
-              <View style={styles.certBadge}>
-                <Text style={styles.certText}>{item.certification}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* OTT Platforms */}
-          {platforms_.length > 0 && (
-            <View style={styles.platformRow}>
-              <Text style={styles.platformLabel}>Watch on:</Text>
-              {platforms_.map((p) => (
-                <PlatformBadge key={p.id} platform={p} size={28} />
-              ))}
-            </View>
-          )}
-
-          {/* Buttons */}
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.watchButton}
-              onPress={() => handleWatchNow(item)}
-              accessibilityRole="button"
-              accessibilityLabel={status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
-            >
-              <Ionicons
-                name={status === 'in_theaters' ? 'ticket-outline' : 'play'}
-                size={20}
-                color="#000000"
-              />
-              <Text style={styles.watchButtonText}>
-                {status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleActionToggle(item.id, actionType)}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isActionActive
-                  ? actionType === 'follow'
-                    ? `Following ${item.title}, tap to unfollow`
-                    : `${item.title} saved, tap to remove`
-                  : actionType === 'follow'
-                    ? `Follow ${item.title}`
-                    : `Save ${item.title}`
-              }
-            >
-              <Ionicons
-                name={
-                  isActionActive
-                    ? actionType === 'follow'
-                      ? 'heart'
-                      : 'bookmark'
-                    : actionType === 'follow'
-                      ? 'heart-outline'
-                      : 'bookmark-outline'
-                }
-                size={16}
-                color={isActionActive ? palette.green500 : '#000000'}
-              />
-              <Text
-                style={[
-                  styles.actionButtonText,
-                  { color: isActionActive ? palette.green500 : '#000000' },
-                ]}
-              >
-                {isActionActive
-                  ? actionType === 'follow'
-                    ? 'Following'
-                    : 'Saved'
-                  : actionType === 'follow'
-                    ? 'Follow'
-                    : 'Save'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.infoButton}
-              onPress={() => handleWatchNow(item)}
-              accessibilityRole="button"
-              accessibilityLabel="More Info"
-            >
-              <Ionicons name="chevron-forward" size={22} color="#000000" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+      <HeroSlide
+        movie={item}
+        platforms={platforms_}
+        isFollowed={followSet.has(`movie:${item.id}`)}
+        isInWatchlist={watchlistSet.has(item.id)}
+        onWatchNow={() => handleWatchNow(item)}
+        onActionToggle={(actionType) => handleActionToggle(item.id, actionType)}
+      />
     );
   };
 

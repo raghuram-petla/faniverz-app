@@ -42,6 +42,7 @@ export default function PostDetailScreen() {
       movie: `/movie/${entityId}`,
       actor: `/actor/${entityId}`,
       production_house: `/production-house/${entityId}`,
+      user: `/profile/${entityId}`,
     };
     router.push(routes[entityType] as Parameters<typeof router.push>[0]);
   };
