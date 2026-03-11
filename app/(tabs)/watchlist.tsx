@@ -172,7 +172,7 @@ export default function WatchlistScreen() {
             icon="bookmark-outline"
             title="Sign in to use Watchlist"
             subtitle="Create an account or sign in to save movies and track what you watch."
-            actionLabel="Sign In"
+            actionLabel="Sign In / Sign Up"
             onAction={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
           />
         </View>

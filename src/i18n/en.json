@@ -88,7 +88,7 @@
     "tagline": "Your Movie Companion"
   },
   "auth": {
-    "signIn": "Sign In",
+    "signIn": "Sign In / Sign Up",
     "signUp": "Sign Up",
     "createAccount": "Create Account",
     "forgotPassword": "Forgot Password?",

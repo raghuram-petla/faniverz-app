@@ -185,7 +185,7 @@ describe('WatchlistScreen', () => {
     render(<WatchlistScreen />);
 
     expect(screen.getByText('Sign in to use Watchlist')).toBeTruthy();
-    expect(screen.getByText('Sign In')).toBeTruthy();
+    expect(screen.getByText('Sign In / Sign Up')).toBeTruthy();
   });
 
   it('displays movie count text for multiple movies', () => {
