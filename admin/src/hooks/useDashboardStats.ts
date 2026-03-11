@@ -27,15 +27,19 @@ export function useDashboardStats(productionHouseIds?: string[]) {
           totalUsers: 0,
           totalReviews: 0,
           totalFeedItems: 0,
+          totalWatchlistEntries: 0,
+          totalFollows: 0,
         };
       }
 
-      const [movies, actors, users, reviews, feedItems] = await Promise.all([
+      const [movies, actors, users, reviews, feedItems, watchlist, follows] = await Promise.all([
         supabase.from('movies').select('id', { count: 'estimated', head: true }),
         supabase.from('actors').select('id', { count: 'estimated', head: true }),
         supabase.from('profiles').select('id', { count: 'estimated', head: true }),
         supabase.from('reviews').select('id', { count: 'estimated', head: true }),
         supabase.from('news_feed').select('id', { count: 'estimated', head: true }),
+        supabase.from('watchlist').select('id', { count: 'estimated', head: true }),
+        supabase.from('follows').select('id', { count: 'estimated', head: true }),
       ]);
 
       return {
@@ -44,6 +48,8 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         totalUsers: users.count ?? 0,
         totalReviews: reviews.count ?? 0,
         totalFeedItems: feedItems.count ?? 0,
+        totalWatchlistEntries: watchlist.count ?? 0,
+        totalFollows: follows.count ?? 0,
       };
     },
     staleTime: 5 * 60_000,

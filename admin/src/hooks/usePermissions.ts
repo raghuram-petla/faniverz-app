@@ -13,6 +13,8 @@ export type AdminPage =
   | 'surprise'
   | 'feed'
   | 'notifications'
+  | 'reviews'
+  | 'comments'
   | 'sync'
   | 'audit'
   | 'users';
@@ -41,6 +43,8 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'surprise',
     'feed',
     'notifications',
+    'reviews',
+    'comments',
     'sync',
     'audit',
     'users',
@@ -55,6 +59,8 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'surprise',
     'feed',
     'notifications',
+    'reviews',
+    'comments',
     'sync',
     'audit',
   ]),

@@ -117,6 +117,33 @@ export interface DashboardStats {
   totalUsers: number;
   totalReviews: number;
   totalFeedItems: number;
+  totalWatchlistEntries: number;
+  totalFollows: number;
+}
+
+export interface Review {
+  id: string;
+  movie_id: string;
+  user_id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  contains_spoiler: boolean;
+  helpful_count: number;
+  created_at: string;
+  updated_at: string;
+  movie?: { id: string; title: string; poster_url: string | null };
+  profile?: { id: string; display_name: string | null; email: string | null };
+}
+
+export interface FeedComment {
+  id: string;
+  feed_item_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  feed_item?: { id: string; title: string | null };
+  profile?: { id: string; display_name: string | null; email: string | null };
 }
 
 // ============================================================

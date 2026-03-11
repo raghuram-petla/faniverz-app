@@ -31,6 +31,17 @@ export function useCreateNotification() {
         .select()
         .single();
       if (error) throw error;
+
+      // Trigger push delivery for immediate sends
+      const isImmediate =
+        !notification.scheduled_for ||
+        new Date(notification.scheduled_for).getTime() <= Date.now() + 60_000;
+      if (isImmediate && data) {
+        await supabase.functions.invoke('send-push', {
+          body: { notification_id: data.id },
+        });
+      }
+
       return data as Notification;
     },
     onSuccess: () => {

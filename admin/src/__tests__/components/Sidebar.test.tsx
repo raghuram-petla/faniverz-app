@@ -63,7 +63,7 @@ vi.mock('@/hooks/usePermissions', () => ({
 }));
 
 describe('Sidebar', () => {
-  it('renders all nav items for super admin (11 items)', () => {
+  it('renders all nav items for super admin', () => {
     render(<Sidebar />);
 
     const navLabels = [
@@ -74,6 +74,8 @@ describe('Sidebar', () => {
       'Platforms',
       'Surprise Content',
       'Notifications',
+      'Reviews',
+      'Comments',
       'Sync',
       'Audit Log',
       'User Management',

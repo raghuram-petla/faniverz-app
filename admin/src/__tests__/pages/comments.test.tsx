@@ -1,0 +1,360 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import CommentsPage from '@/app/(dashboard)/comments/page';
+
+const mockMutate = vi.fn();
+
+vi.mock('@/hooks/useAdminComments', () => ({
+  useAdminComments: vi.fn(),
+  useDeleteComment: vi.fn(),
+}));
+
+import { useAdminComments, useDeleteComment } from '@/hooks/useAdminComments';
+
+const mockUseAdminComments = vi.mocked(useAdminComments);
+const mockUseDeleteComment = vi.mocked(useDeleteComment);
+
+const mockComments = [
+  {
+    id: 'com-1',
+    feed_item_id: 'feed-1',
+    user_id: 'usr-1',
+    body: 'Great post!',
+    created_at: '2024-01-01T00:00:00Z',
+    feed_item: { id: 'feed-1', title: 'Breaking News' },
+    profile: { id: 'usr-1', display_name: 'Test User', email: 'test@example.com' },
+  },
+  {
+    id: 'com-2',
+    feed_item_id: 'feed-2',
+    user_id: 'usr-2',
+    body: 'Nice analysis!',
+    created_at: '2024-01-02T00:00:00Z',
+    feed_item: { id: 'feed-2', title: 'Movie Review' },
+    profile: { id: 'usr-2', display_name: null, email: 'another@example.com' },
+  },
+];
+
+function renderWithProviders(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
+
+beforeEach(() => {
+  vi.restoreAllMocks();
+
+  mockMutate.mockReset();
+
+  mockUseDeleteComment.mockReturnValue({
+    mutate: mockMutate,
+    isPending: false,
+  } as unknown as ReturnType<typeof useDeleteComment>);
+});
+
+describe('CommentsPage', () => {
+  describe('header', () => {
+    it('renders "Comments" heading', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: mockComments,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Comments')).toBeInTheDocument();
+    });
+
+    it('shows comment count when data is loaded', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: mockComments,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('(2)')).toBeInTheDocument();
+    });
+
+    it('does not show count when data is undefined', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.queryByText(/\(\d+\)/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('loading state', () => {
+    it('shows loading spinner when isLoading is true', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      const { container } = renderWithProviders(<CommentsPage />);
+
+      const spinner = container.querySelector('.animate-spin');
+      expect(spinner).toBeInTheDocument();
+    });
+
+    it('does not show table when loading', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('empty state', () => {
+    it('shows "No comments found." when comments array is empty', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: [],
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('No comments found.')).toBeInTheDocument();
+    });
+
+    it('does not show table when no comments', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: [],
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('data rendering', () => {
+    beforeEach(() => {
+      mockUseAdminComments.mockReturnValue({
+        data: mockComments,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+    });
+
+    it('renders table with correct column headers', () => {
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Post')).toBeInTheDocument();
+      expect(screen.getByText('User')).toBeInTheDocument();
+      expect(screen.getByText('Comment')).toBeInTheDocument();
+      expect(screen.getByText('Date')).toBeInTheDocument();
+      expect(screen.getByText('Actions')).toBeInTheDocument();
+    });
+
+    it('renders comment body text', () => {
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Great post!')).toBeInTheDocument();
+      expect(screen.getByText('Nice analysis!')).toBeInTheDocument();
+    });
+
+    it('renders post titles from feed_item', () => {
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Breaking News')).toBeInTheDocument();
+      expect(screen.getByText('Movie Review')).toBeInTheDocument();
+    });
+
+    it('renders user display_name', () => {
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Test User')).toBeInTheDocument();
+    });
+
+    it('falls back to email when display_name is null', () => {
+      renderWithProviders(<CommentsPage />);
+
+      // com-2 has display_name: null, email: 'another@example.com'
+      expect(screen.getByText('another@example.com')).toBeInTheDocument();
+    });
+
+    it('shows "Untitled post" when feed_item title is null', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: [
+          {
+            ...mockComments[0],
+            feed_item: { id: 'feed-1', title: null },
+          },
+        ],
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Untitled post')).toBeInTheDocument();
+    });
+
+    it('shows "Untitled post" when feed_item is undefined', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: [
+          {
+            ...mockComments[0],
+            feed_item: undefined,
+          },
+        ],
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Untitled post')).toBeInTheDocument();
+    });
+
+    it('shows "Unknown" when profile is undefined', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: [
+          {
+            ...mockComments[0],
+            profile: undefined,
+          },
+        ],
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      renderWithProviders(<CommentsPage />);
+
+      expect(screen.getByText('Unknown')).toBeInTheDocument();
+    });
+
+    it('renders formatted date', () => {
+      renderWithProviders(<CommentsPage />);
+
+      // new Date('2024-01-01T00:00:00Z').toLocaleDateString() varies by locale
+      // Just verify the date cell is rendered
+      const dateCells = screen.getAllByText(new Date('2024-01-01T00:00:00Z').toLocaleDateString());
+      expect(dateCells.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('renders a delete button for each comment', () => {
+      renderWithProviders(<CommentsPage />);
+
+      const deleteButtons = screen.getAllByTitle('Delete comment');
+      expect(deleteButtons).toHaveLength(2);
+    });
+  });
+
+  describe('delete confirmation', () => {
+    beforeEach(() => {
+      mockUseAdminComments.mockReturnValue({
+        data: mockComments,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+    });
+
+    it('calls confirm() when delete button is clicked', () => {
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      renderWithProviders(<CommentsPage />);
+
+      const deleteButtons = screen.getAllByTitle('Delete comment');
+      fireEvent.click(deleteButtons[0]);
+
+      expect(confirmSpy).toHaveBeenCalledWith('Delete this comment? This cannot be undone.');
+    });
+
+    it('calls mutate with comment id when confirm returns true', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      renderWithProviders(<CommentsPage />);
+
+      const deleteButtons = screen.getAllByTitle('Delete comment');
+      fireEvent.click(deleteButtons[0]);
+
+      expect(mockMutate).toHaveBeenCalledWith(
+        'com-1',
+        expect.objectContaining({
+          onError: expect.any(Function),
+        }),
+      );
+    });
+
+    it('does not call mutate when confirm returns false', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+      renderWithProviders(<CommentsPage />);
+
+      const deleteButtons = screen.getAllByTitle('Delete comment');
+      fireEvent.click(deleteButtons[0]);
+
+      expect(mockMutate).not.toHaveBeenCalled();
+    });
+
+    it('deletes the correct comment when second button is clicked', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      renderWithProviders(<CommentsPage />);
+
+      const deleteButtons = screen.getAllByTitle('Delete comment');
+      fireEvent.click(deleteButtons[1]);
+
+      expect(mockMutate).toHaveBeenCalledWith(
+        'com-2',
+        expect.objectContaining({
+          onError: expect.any(Function),
+        }),
+      );
+    });
+  });
+
+  describe('delete error handling', () => {
+    beforeEach(() => {
+      mockUseAdminComments.mockReturnValue({
+        data: mockComments,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+    });
+
+    it('calls alert with error message on delete failure', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+      renderWithProviders(<CommentsPage />);
+
+      const deleteButtons = screen.getAllByTitle('Delete comment');
+      fireEvent.click(deleteButtons[0]);
+
+      // Extract the onError callback and call it
+      const onError = mockMutate.mock.calls[0][1].onError;
+      onError(new Error('Network failure'));
+
+      expect(alertSpy).toHaveBeenCalledWith('Error: Network failure');
+    });
+  });
+
+  describe('pending state', () => {
+    it('disables delete buttons when mutation is pending', () => {
+      mockUseAdminComments.mockReturnValue({
+        data: mockComments,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+
+      mockUseDeleteComment.mockReturnValue({
+        mutate: mockMutate,
+        isPending: true,
+      } as unknown as ReturnType<typeof useDeleteComment>);
+
+      renderWithProviders(<CommentsPage />);
+
+      const deleteButtons = screen.getAllByTitle('Delete comment');
+      deleteButtons.forEach((button) => {
+        expect(button).toBeDisabled();
+      });
+    });
+  });
+});

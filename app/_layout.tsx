@@ -9,11 +9,15 @@ import { queryClient } from '@/lib/queryClient';
 import { AuthProvider } from '@/features/auth/providers/AuthProvider';
 import { ImageViewerProvider } from '@/providers/ImageViewerProvider';
 import { ThemeProvider, useTheme } from '@/theme';
+import { usePushToken } from '@/features/notifications/usePushToken';
+import { useNotificationHandler } from '@/features/notifications/useNotificationHandler';
 
 SplashScreen.preventAutoHideAsync();
 
 function ThemedStack() {
   const { theme, isDark } = useTheme();
+  usePushToken();
+  useNotificationHandler();
 
   return (
     <>

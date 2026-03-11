@@ -34,6 +34,14 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+jest.mock('@/features/notifications/usePushToken', () => ({
+  usePushToken: jest.fn(),
+}));
+
+jest.mock('@/features/notifications/useNotificationHandler', () => ({
+  useNotificationHandler: jest.fn(),
+}));
+
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import RootLayout from '../_layout';

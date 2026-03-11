@@ -11,6 +11,8 @@ import {
   Users,
   Star,
   MessageSquare,
+  Bookmark,
+  Heart,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -65,7 +67,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-on-surface">Dashboard</h1>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {[
           {
             label: isPHAdmin ? 'My Movies' : 'Movies',
@@ -101,6 +103,20 @@ export default function DashboardPage() {
             icon: MessageSquare,
             color: 'text-purple-500',
             bg: 'bg-purple-600/20',
+          },
+          {
+            label: 'Watchlist',
+            value: stats?.totalWatchlistEntries,
+            icon: Bookmark,
+            color: 'text-orange-500',
+            bg: 'bg-orange-600/20',
+          },
+          {
+            label: 'Follows',
+            value: stats?.totalFollows,
+            icon: Heart,
+            color: 'text-pink-500',
+            bg: 'bg-pink-600/20',
           },
         ].map((card) => {
           const Icon = card.icon;

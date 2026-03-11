@@ -8,5 +8,5 @@
       "@shared/*": ["shared/*"]
     }
   },
-  "exclude": ["node_modules", "figma-design", "admin", "scripts"]
+  "exclude": ["node_modules", "figma-design", "admin", "scripts", "supabase/functions"]
 }
