@@ -108,7 +108,7 @@ export default function ProfileScreen() {
             onPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
           >
             <Ionicons name="log-in-outline" size={20} color={colors.white} />
-            <Text style={styles.loginText}>Login / Sign Up</Text>
+            <Text style={styles.loginText}>Sign In / Sign Up</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.menuCard}>

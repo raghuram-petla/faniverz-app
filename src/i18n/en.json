@@ -82,7 +82,7 @@
     "favoriteActors": "Favorite Actors",
     "watchedMovies": "Watched Movies",
     "logout": "Logout",
-    "loginSignUp": "Login / Sign Up",
+    "loginSignUp": "Sign In / Sign Up",
     "memberSince": "Member since {{date}}",
     "version": "Faniverz v1.0.0",
     "tagline": "Your Movie Companion"

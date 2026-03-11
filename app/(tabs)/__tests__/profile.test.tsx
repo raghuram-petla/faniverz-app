@@ -94,7 +94,7 @@ describe('ProfileScreen', () => {
     expect(
       screen.getByText('Create an account to track your watchlist, write reviews, and more'),
     ).toBeTruthy();
-    expect(screen.getByText('Login / Sign Up')).toBeTruthy();
+    expect(screen.getByText('Sign In / Sign Up')).toBeTruthy();
   });
 
   it('does not show menu items when guest', () => {
@@ -130,12 +130,12 @@ describe('ProfileScreen', () => {
     expect(screen.queryByText('Avg Rating')).toBeNull();
   });
 
-  it('navigates to login when Login / Sign Up button is pressed', () => {
+  it('navigates to login when Sign In / Sign Up button is pressed', () => {
     setupGuest();
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('Login / Sign Up'));
+    fireEvent.press(screen.getByText('Sign In / Sign Up'));
     expect(mockPush).toHaveBeenCalledWith('/(auth)/login');
   });
 
