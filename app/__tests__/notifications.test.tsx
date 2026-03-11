@@ -23,6 +23,10 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 const mockMarkRead = { mutate: jest.fn() };
 const mockMarkAllRead = { mutate: jest.fn() };
 
+jest.mock('@/components/ui/PlatformBadge', () => ({
+  PlatformBadge: () => null,
+}));
+
 jest.mock('@/features/notifications/hooks', () => ({
   useNotifications: jest.fn(),
   useUnreadCount: jest.fn(),

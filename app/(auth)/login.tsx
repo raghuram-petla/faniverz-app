@@ -8,34 +8,59 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { colors as palette } from '@/theme/colors';
-import type { SemanticTheme } from '@shared/themes';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
+import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth';
+import { useAppleAuth } from '@/features/auth/hooks/useAppleAuth';
+import { usePhoneAuth } from '@/features/auth/hooks/usePhoneAuth';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { SocialSignInButtons } from '@/components/auth/SocialSignInButtons';
+import { PhoneOtpModal } from '@/components/auth/PhoneOtpModal';
+import { createLoginStyles } from '@/styles/auth.styles';
 
 export default function LoginScreen() {
   const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useMemo(() => createLoginStyles(theme), [theme]);
   const router = useRouter();
   const { signIn, isLoading, error } = useEmailAuth();
+  const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
+  const { signInWithApple, isLoading: appleLoading, isAvailable: appleAvailable } = useAppleAuth();
+  const { sendOtp, verifyOtp, isLoading: phoneLoading, error: phoneError } = usePhoneAuth();
   const { setIsGuest } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   const handleSignIn = async () => {
     if (!email.trim() || !password) return;
     try {
       await signIn(email.trim(), password);
-      router.back();
+      router.replace('/(tabs)');
     } catch {
       // error is surfaced via the hook
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      router.replace('/(tabs)');
+    } catch {
+      // error handled by hook
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      await signInWithApple();
+      router.replace('/(tabs)');
+    } catch {
+      // error handled by hook
     }
   };
 
@@ -54,7 +79,17 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo */}
+        <View style={styles.closeRow}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => router.back()}
+            accessibilityLabel="Close"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close" size={24} color={theme.textPrimary} />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.logoContainer}>
           <Image
             source={require('../../assets/logo-full.png')}
@@ -62,10 +97,9 @@ export default function LoginScreen() {
             contentFit="contain"
             accessibilityLabel="Faniverz"
           />
-          <Text style={styles.tagline}>Your Telugu Cinema Companion</Text>
+          <Text style={styles.tagline}>Your Movie Companion</Text>
         </View>
 
-        {/* Email input */}
         <View style={styles.inputWrapper}>
           <Ionicons
             name="mail-outline"
@@ -85,7 +119,6 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* Password input */}
         <View style={styles.inputWrapper}>
           <Ionicons
             name="lock-closed-outline"
@@ -112,10 +145,8 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Error */}
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {/* Sign In button */}
         <TouchableOpacity
           style={[styles.signInButton, isLoading && styles.buttonDisabled]}
           onPress={handleSignIn}
@@ -125,11 +156,10 @@ export default function LoginScreen() {
           {isLoading ? (
             <ActivityIndicator size="small" color={theme.textPrimary} />
           ) : (
-            <Text style={styles.signInButtonText}>Sign In</Text>
+            <Text style={styles.signInButtonText}>Sign In / Sign Up</Text>
           )}
         </TouchableOpacity>
 
-        {/* Forgot password */}
         <TouchableOpacity
           style={styles.forgotButton}
           onPress={() => router.push('/(auth)/forgot-password')}
@@ -138,160 +168,37 @@ export default function LoginScreen() {
           <Text style={styles.forgotText}>Forgot password?</Text>
         </TouchableOpacity>
 
-        {/* OR divider */}
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Continue as Guest */}
+        <View style={styles.socialSection}>
+          <SocialSignInButtons
+            onGoogle={handleGoogleSignIn}
+            onApple={appleAvailable ? handleAppleSignIn : undefined}
+            onPhone={() => setShowPhoneModal(true)}
+            isGoogleLoading={googleLoading}
+            isAppleLoading={appleLoading}
+            showApple={appleAvailable}
+          />
+        </View>
+
         <TouchableOpacity style={styles.guestButton} onPress={handleGuest} activeOpacity={0.8}>
           <Text style={styles.guestButtonText}>Continue as Guest</Text>
         </TouchableOpacity>
-
-        {/* Sign Up link */}
-        <View style={styles.signUpRow}>
-          <Text style={styles.signUpLabel}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/register')} activeOpacity={0.7}>
-            <Text style={styles.signUpLink}>Sign Up</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
+
+      <PhoneOtpModal
+        visible={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        onSuccess={() => router.replace('/(tabs)')}
+        onSendOtp={sendOtp}
+        onVerifyOtp={verifyOtp}
+        isLoading={phoneLoading}
+        error={phoneError}
+      />
     </KeyboardAvoidingView>
   );
 }
-
-const createStyles = (t: SemanticTheme) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: t.background,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingHorizontal: 24,
-      paddingTop: 80,
-      paddingBottom: 40,
-    },
-
-    // Logo
-    logoContainer: {
-      alignItems: 'center',
-      marginBottom: 40,
-    },
-    logoFull: {
-      height: 60,
-      width: 167,
-      marginBottom: 16,
-    },
-    tagline: {
-      fontSize: 14,
-      color: t.textTertiary,
-      marginTop: 8,
-    },
-
-    // Inputs
-    inputWrapper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: t.input,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      marginBottom: 12,
-      height: 52,
-    },
-    inputIcon: {
-      marginRight: 10,
-    },
-    input: {
-      flex: 1,
-      fontSize: 15,
-      color: t.textPrimary,
-    },
-
-    // Error
-    errorText: {
-      fontSize: 13,
-      color: palette.red500,
-      marginBottom: 8,
-      paddingHorizontal: 4,
-    },
-
-    // Sign In
-    signInButton: {
-      height: 52,
-      backgroundColor: palette.red600,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 8,
-    },
-    buttonDisabled: {
-      opacity: 0.6,
-    },
-    signInButtonText: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: t.textPrimary,
-    },
-
-    // Forgot
-    forgotButton: {
-      alignItems: 'center',
-      paddingVertical: 12,
-    },
-    forgotText: {
-      fontSize: 14,
-      color: t.textSecondary,
-    },
-
-    // Divider
-    divider: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginVertical: 16,
-    },
-    dividerLine: {
-      flex: 1,
-      height: 1,
-      backgroundColor: t.textDisabled,
-    },
-    dividerText: {
-      fontSize: 12,
-      color: t.textTertiary,
-      marginHorizontal: 16,
-      fontWeight: '600',
-    },
-
-    // Guest
-    guestButton: {
-      height: 52,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: t.textDisabled,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    guestButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: t.textPrimary,
-    },
-
-    // Sign Up
-    signUpRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      marginTop: 24,
-    },
-    signUpLabel: {
-      fontSize: 14,
-      color: t.textSecondary,
-    },
-    signUpLink: {
-      fontSize: 14,
-      color: palette.red500,
-      fontWeight: '600',
-    },
-  });

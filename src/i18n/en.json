@@ -85,7 +85,7 @@
     "loginSignUp": "Login / Sign Up",
     "memberSince": "Member since {{date}}",
     "version": "Faniverz v1.0.0",
-    "tagline": "Your Telugu Cinema Companion"
+    "tagline": "Your Movie Companion"
   },
   "auth": {
     "signIn": "Sign In",

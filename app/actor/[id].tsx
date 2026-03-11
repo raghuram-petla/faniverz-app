@@ -1,34 +1,26 @@
-import { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Pressable,
-  ActivityIndicator,
-  Modal,
-} from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, TouchableOpacity, Pressable, ActivityIndicator, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActorAvatar } from '@/components/common/ActorAvatar';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { HomeButton } from '@/components/common/HomeButton';
+import { useSharedValue } from 'react-native-reanimated';
 import { useActorDetail } from '@/features/actors/hooks';
+import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { useTheme } from '@/theme';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/actorDetail.styles';
-import { getImageUrl } from '@shared/imageUrl';
+import { ActorCollapsibleHeader } from '@/components/actor/ActorCollapsibleHeader';
+import { ActorFilmography } from '@/components/actor/ActorFilmography';
+import { ActorKnownFor } from '@/components/actor/ActorKnownFor';
+import { FollowButton } from '@/components/feed/FollowButton';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import Animated from 'react-native-reanimated';
 
-const GENDER_LABELS: Record<number, string> = {
-  1: 'Female',
-  2: 'Male',
-  3: 'Non-binary',
-};
+const GENDER_LABELS: Record<number, string> = { 1: 'Female', 2: 'Male', 3: 'Non-binary' };
 
 export default function ActorDetailScreen() {
   const { theme, colors } = useTheme();
@@ -39,10 +31,30 @@ export default function ActorDetailScreen() {
   const { actor, filmography, isLoading, refetch } = useActorDetail(id ?? '');
   const [showPhoto, setShowPhoto] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
+  const scrollOffset = useSharedValue(0);
+  const { followSet } = useEntityFollows();
+  const followMutation = useFollowEntity();
+  const unfollowMutation = useUnfollowEntity();
+  const { gate } = useAuthGate();
   const { refreshing, onRefresh } = useRefresh(refetch);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
     onRefresh,
     refreshing,
+  );
+
+  const isFollowing = followSet.has(`actor:${id}`);
+
+  const handleFollowToggle = gate(() => {
+    if (isFollowing) {
+      unfollowMutation.mutate({ entityType: 'actor', entityId: id ?? '' });
+    } else {
+      followMutation.mutate({ entityType: 'actor', entityId: id ?? '' });
+    }
+  });
+
+  const handleMoviePress = useCallback(
+    (movieId: string) => router.push(`/movie/${movieId}`),
+    [router],
   );
 
   if (isLoading) {
@@ -74,11 +86,14 @@ export default function ActorDetailScreen() {
   const hasBioInfo = actor.birth_date || actor.place_of_birth || actor.height_cm;
 
   return (
-    <ScrollView
+    <Animated.ScrollView
       style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      contentContainerStyle={[styles.content, { paddingTop: 0 }]}
       showsVerticalScrollIndicator={false}
-      onScroll={handlePullScroll}
+      onScroll={(e) => {
+        scrollOffset.value = e.nativeEvent.contentOffset.y;
+        handlePullScroll(e);
+      }}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
     >
@@ -87,153 +102,80 @@ export default function ActorDetailScreen() {
         isRefreshing={isRefreshing}
         refreshing={refreshing}
       />
-      {/* Navigation buttons — absolute left, avatar centered */}
-      <View style={styles.headerSection}>
-        <View style={styles.navRow}>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
-          </TouchableOpacity>
-          <HomeButton />
+
+      <ActorCollapsibleHeader
+        name={actor.name}
+        photoUrl={actor.photo_url}
+        scrollOffset={scrollOffset}
+        insetTop={insets.top}
+        onBack={() => router.back()}
+        onPhotoPress={actor.photo_url ? () => setShowPhoto(true) : undefined}
+        rightContent={
+          <FollowButton
+            isFollowing={isFollowing}
+            onPress={handleFollowToggle}
+            entityName={actor.name}
+          />
+        }
+      />
+
+      <View style={{ paddingHorizontal: 16 }}>
+        <Text style={styles.actorName}>{actor.name}</Text>
+        <View style={styles.badgeRow}>
+          <View style={styles.typeBadge}>
+            <Text style={styles.typeBadgeText}>{personTypeLabel}</Text>
+          </View>
+          {genderLabel && (
+            <View style={styles.genderBadge}>
+              <Text style={styles.genderBadgeText}>{genderLabel}</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.avatarCenter}>
-          {actor.photo_url ? (
-            <TouchableOpacity
-              onPress={() => setShowPhoto(true)}
-              activeOpacity={0.8}
-              testID="avatar-tap"
-            >
-              <ActorAvatar actor={actor} size={120} />
+        {hasBioInfo && (
+          <View style={styles.bioCard}>
+            {actor.birth_date && (
+              <View style={styles.bioRow}>
+                <Ionicons name="calendar-outline" size={16} color={theme.textTertiary} />
+                <Text style={styles.bioLabel}>Born</Text>
+                <Text style={styles.bioValue}>{formatDate(actor.birth_date)}</Text>
+              </View>
+            )}
+            {actor.place_of_birth && (
+              <View style={styles.bioRow}>
+                <Ionicons name="location-outline" size={16} color={theme.textTertiary} />
+                <Text style={styles.bioLabel}>From</Text>
+                <Text style={styles.bioValue} numberOfLines={2}>
+                  {actor.place_of_birth}
+                </Text>
+              </View>
+            )}
+            {actor.height_cm != null && (
+              <View style={styles.bioRow}>
+                <Ionicons name="resize-outline" size={16} color={theme.textTertiary} />
+                <Text style={styles.bioLabel}>Height</Text>
+                <Text style={styles.bioValue}>{actor.height_cm} cm</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {actor.biography ? (
+          <View style={styles.aboutSection}>
+            <Text style={styles.aboutTitle}>About</Text>
+            <Text style={styles.aboutText} numberOfLines={bioExpanded ? undefined : 4}>
+              {actor.biography}
+            </Text>
+            <TouchableOpacity onPress={() => setBioExpanded(!bioExpanded)} testID="bio-toggle">
+              <Text style={styles.readMoreText}>{bioExpanded ? 'Show less' : 'Read more'}</Text>
             </TouchableOpacity>
-          ) : (
-            <ActorAvatar actor={actor} size={120} />
-          )}
-        </View>
-      </View>
-
-      <Text style={styles.actorName}>{actor.name}</Text>
-      <View style={styles.badgeRow}>
-        <View style={styles.typeBadge}>
-          <Text style={styles.typeBadgeText}>{personTypeLabel}</Text>
-        </View>
-        {genderLabel && (
-          <View style={styles.genderBadge}>
-            <Text style={styles.genderBadgeText}>{genderLabel}</Text>
           </View>
-        )}
+        ) : null}
+
+        <ActorKnownFor credits={filmography} onMoviePress={handleMoviePress} />
+        <ActorFilmography credits={filmography} onMoviePress={handleMoviePress} />
       </View>
 
-      {/* Bio info card */}
-      {hasBioInfo && (
-        <View style={styles.bioCard}>
-          {actor.birth_date && (
-            <View style={styles.bioRow}>
-              <Ionicons name="calendar-outline" size={16} color={theme.textTertiary} />
-              <Text style={styles.bioLabel}>Born</Text>
-              <Text style={styles.bioValue}>{formatDate(actor.birth_date)}</Text>
-            </View>
-          )}
-          {actor.place_of_birth && (
-            <View style={styles.bioRow}>
-              <Ionicons name="location-outline" size={16} color={theme.textTertiary} />
-              <Text style={styles.bioLabel}>From</Text>
-              <Text style={styles.bioValue} numberOfLines={2}>
-                {actor.place_of_birth}
-              </Text>
-            </View>
-          )}
-          {actor.height_cm != null && (
-            <View style={styles.bioRow}>
-              <Ionicons name="resize-outline" size={16} color={theme.textTertiary} />
-              <Text style={styles.bioLabel}>Height</Text>
-              <Text style={styles.bioValue}>{actor.height_cm} cm</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Biography / About */}
-      {actor.biography ? (
-        <View style={styles.aboutSection}>
-          <Text style={styles.aboutTitle}>About</Text>
-          <Text style={styles.aboutText} numberOfLines={bioExpanded ? undefined : 4}>
-            {actor.biography}
-          </Text>
-          <TouchableOpacity onPress={() => setBioExpanded(!bioExpanded)} testID="bio-toggle">
-            <Text style={styles.readMoreText}>{bioExpanded ? 'Show less' : 'Read more'}</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-
-      {/* Filmography */}
-      <View style={styles.filmographyHeader}>
-        <Text style={styles.filmographyTitle}>Filmography</Text>
-        {filmography.length > 0 && (
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>{filmography.length}</Text>
-          </View>
-        )}
-      </View>
-
-      {filmography.length === 0 ? (
-        <EmptyState
-          icon="film-outline"
-          title="No movies found"
-          subtitle="This person's filmography will appear here."
-        />
-      ) : (
-        <View style={styles.filmographyList}>
-          {filmography.map((credit) => {
-            const movie = credit.movie;
-            if (!movie) return null;
-            const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
-            const roleText =
-              credit.credit_type === 'cast' && credit.role_name
-                ? `as ${credit.role_name}`
-                : credit.role_name;
-            return (
-              <TouchableOpacity
-                key={credit.id}
-                style={styles.filmCard}
-                onPress={() => router.push(`/movie/${movie.id}`)}
-                activeOpacity={0.7}
-                testID={`film-card-${movie.id}`}
-              >
-                <Image
-                  source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
-                  style={styles.filmPoster}
-                  contentFit="cover"
-                  transition={200}
-                />
-                <View style={styles.filmInfo}>
-                  <Text style={styles.filmTitle} numberOfLines={2}>
-                    {movie.title}
-                  </Text>
-                  <Text style={styles.filmYear}>{year}</Text>
-                  {roleText && (
-                    <Text style={styles.filmRole} numberOfLines={1}>
-                      {roleText}
-                    </Text>
-                  )}
-                  {movie.rating > 0 && (
-                    <View style={styles.filmRatingRow}>
-                      <Ionicons name="star" size={12} color={colors.yellow400} />
-                      <Text style={styles.filmRatingValue}>{movie.rating}</Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
-
-      {/* Full-screen photo modal */}
       <Modal visible={showPhoto} animationType="fade" transparent testID="photo-modal">
         <Pressable
           style={styles.photoOverlay}
@@ -257,6 +199,6 @@ export default function ActorDetailScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }

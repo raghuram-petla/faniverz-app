@@ -10,7 +10,7 @@ jest.mock('@shared/imageUrl', () => ({
 }));
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import { FeedAvatar } from '../FeedAvatar';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,5 +97,24 @@ describe('FeedAvatar', () => {
     const styles = root?.props?.style;
     const hasSize = styles?.some((s: AnyStyle) => s.width === 60 && s.height === 60);
     expect(hasSize).toBe(true);
+  });
+
+  it('wraps in TouchableOpacity when onPress is provided', () => {
+    const onPress = jest.fn();
+    render(<FeedAvatar imageUrl={null} entityType="movie" label="Test" onPress={onPress} />);
+    fireEvent.press(screen.getByRole('button'));
+    expect(onPress).toHaveBeenCalled();
+  });
+
+  it('shows navigate accessibility label when onPress is provided', () => {
+    render(
+      <FeedAvatar imageUrl={null} entityType="movie" label="Test Movie" onPress={jest.fn()} />,
+    );
+    expect(screen.getByLabelText('Navigate to Test Movie')).toBeTruthy();
+  });
+
+  it('does not wrap in TouchableOpacity when onPress is not provided', () => {
+    render(<FeedAvatar imageUrl={null} entityType="movie" label="Test" />);
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

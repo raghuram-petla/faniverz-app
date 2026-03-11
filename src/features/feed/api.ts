@@ -109,6 +109,20 @@ export async function fetchPersonalizedFeed(
   }));
 }
 
+export async function fetchFeedItemById(id: string): Promise<NewsFeedItem | null> {
+  const { data, error } = await supabase
+    .from('news_feed')
+    .select('*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, release_date)')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null; // not found
+    throw error;
+  }
+  return data as unknown as NewsFeedItem;
+}
+
 export async function voteFeedItem(
   feedItemId: string,
   userId: string,

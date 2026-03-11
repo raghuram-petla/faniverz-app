@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import {
@@ -22,13 +23,10 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import { deriveEntityType, getEntityId } from '@/constants/feedHelpers';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
-
-function handleFeedItemPress(_item: NewsFeedItem) {
-  // TODO: Navigate to content detail (video player, poster view, etc.)
-}
 
 export default function FeedScreen() {
   const { theme, colors } = useTheme();
@@ -44,6 +42,8 @@ export default function FeedScreen() {
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
+  const { gate } = useAuthGate();
+  const router = useRouter();
 
   const allItems = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page) ?? [];
@@ -111,6 +111,33 @@ export default function FeedScreen() {
     [unfollowMutation],
   );
 
+  const handleEntityPress = useCallback(
+    (entityType: FeedEntityType, entityId: string) => {
+      const routes: Record<FeedEntityType, string> = {
+        movie: `/movie/${entityId}`,
+        actor: `/actor/${entityId}`,
+        production_house: `/production-house/${entityId}`,
+        user: `/profile/${entityId}`,
+      };
+      router.push(routes[entityType] as Parameters<typeof router.push>[0]);
+    },
+    [router],
+  );
+
+  const handleFeedItemPress = useCallback(
+    (item: NewsFeedItem) => {
+      router.push(`/post/${item.id}` as Parameters<typeof router.push>[0]);
+    },
+    [router],
+  );
+
+  const handleComment = useCallback(
+    (itemId: string) => {
+      router.push(`/post/${itemId}` as Parameters<typeof router.push>[0]);
+    },
+    [router],
+  );
+
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
@@ -170,15 +197,17 @@ export default function FeedScreen() {
                 key={item.id}
                 item={item}
                 onPress={handleFeedItemPress}
+                onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
-                onUpvote={handleUpvote}
-                onDownvote={handleDownvote}
+                onUpvote={gate(handleUpvote)}
+                onDownvote={gate(handleDownvote)}
+                onComment={handleComment}
                 onShare={handleShare}
                 isVideoActive={activeVideoId === item.id}
                 onVideoLayout={item.youtube_id ? registerVideoLayout : undefined}
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
-                onFollow={handleFollow}
-                onUnfollow={handleUnfollow}
+                onFollow={gate(handleFollow)}
+                onUnfollow={gate(handleUnfollow)}
               />
             ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}

@@ -16,4 +16,5 @@ export interface Notification {
   status: NotificationStatus;
   created_at: string;
   movie?: Pick<Movie, 'id' | 'title' | 'poster_url'>;
+  platform?: { id: string; name: string; logo: string; color: string } | null;
 }

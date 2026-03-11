@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
-import { fetchUserFollows, followEntity, unfollowEntity } from './followApi';
-import type { EntityFollow, FeedEntityType } from '@shared/types';
+import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from './followApi';
+import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
 
 export function useEntityFollows() {
   const { user } = useAuth();
@@ -63,6 +63,18 @@ export function useFollowEntity() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['entity-follows'] });
     },
+  });
+}
+
+export function useEnrichedFollows() {
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useQuery<EnrichedFollow[]>({
+    queryKey: ['enriched-follows', userId],
+    queryFn: () => fetchEnrichedFollows(userId!),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

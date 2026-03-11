@@ -48,6 +48,15 @@ jest.mock('@/components/feed/FeedFilterPills', () => ({
   FeedFilterPills: () => null,
 }));
 
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
+jest.mock('@/hooks/useAuthGate', () => ({
+  useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
+}));
+
 jest.mock('@/hooks/useActiveVideo', () => ({
   useActiveVideo: () => ({
     activeVideoId: null,

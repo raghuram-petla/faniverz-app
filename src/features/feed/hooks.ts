@@ -3,6 +3,7 @@ import {
   fetchNewsFeed,
   fetchFeaturedFeedItems,
   fetchPersonalizedFeed,
+  fetchFeedItemById,
   voteFeedItem,
   removeFeedVote,
   fetchUserVotes,
@@ -42,6 +43,15 @@ export function usePersonalizedFeed(filter: FeedFilterOption = 'all') {
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useFeedItem(id: string) {
+  return useQuery({
+    queryKey: ['feed-item', id],
+    queryFn: () => fetchFeedItemById(id),
+    enabled: !!id,
     staleTime: 5 * 60 * 1000,
   });
 }

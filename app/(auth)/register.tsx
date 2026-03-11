@@ -8,30 +8,37 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import type { SemanticTheme } from '@shared/themes';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
+import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth';
+import { useAppleAuth } from '@/features/auth/hooks/useAppleAuth';
+import { usePhoneAuth } from '@/features/auth/hooks/usePhoneAuth';
+import { SocialSignInButtons } from '@/components/auth/SocialSignInButtons';
+import { PhoneOtpModal } from '@/components/auth/PhoneOtpModal';
+import { createRegisterStyles } from '@/styles/auth.styles';
 
 export default function RegisterScreen() {
   const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  const styles = useMemo(() => createRegisterStyles(theme), [theme]);
   const router = useRouter();
   const { signUp, isLoading, error } = useEmailAuth();
-  const [fullName, setFullName] = useState('');
+  const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
+  const { signInWithApple, isLoading: appleLoading, isAvailable: appleAvailable } = useAppleAuth();
+  const { sendOtp, verifyOtp, isLoading: phoneLoading, error: phoneError } = usePhoneAuth();
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   const handleSignUp = async () => {
     setValidationError(null);
-
-    if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
+    if (!username.trim() || !email.trim() || !password || !confirmPassword) {
       setValidationError('All fields are required');
       return;
     }
@@ -43,12 +50,29 @@ export default function RegisterScreen() {
       setValidationError('Passwords do not match');
       return;
     }
-
     try {
-      await signUp(email.trim(), password, fullName.trim());
+      await signUp(email.trim(), password, username.trim());
       router.replace('/(tabs)');
     } catch {
       // error is surfaced via the hook
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+      router.replace('/(tabs)');
+    } catch {
+      // error handled by hook
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      await signInWithApple();
+      router.replace('/(tabs)');
+    } catch {
+      // error handled by hook
     }
   };
 
@@ -64,7 +88,6 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
@@ -76,27 +99,26 @@ export default function RegisterScreen() {
         </View>
 
         <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join the Telugu cinema community</Text>
+        <Text style={styles.subtitle}>Join the movie community</Text>
 
-        {/* Full Name */}
         <View style={styles.inputWrapper}>
           <Ionicons
-            name="person-outline"
+            name="at-outline"
             size={18}
             color={theme.textTertiary}
             style={styles.inputIcon}
           />
           <TextInput
             style={styles.input}
-            placeholder="Full Name"
+            placeholder="Username"
             placeholderTextColor={theme.textTertiary}
-            value={fullName}
-            onChangeText={setFullName}
-            autoCapitalize="words"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
         </View>
 
-        {/* Email */}
         <View style={styles.inputWrapper}>
           <Ionicons
             name="mail-outline"
@@ -116,7 +138,6 @@ export default function RegisterScreen() {
           />
         </View>
 
-        {/* Password */}
         <View style={styles.inputWrapper}>
           <Ionicons
             name="lock-closed-outline"
@@ -141,7 +162,6 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Confirm Password */}
         <View style={styles.inputWrapper}>
           <Ionicons
             name="lock-closed-outline"
@@ -161,10 +181,8 @@ export default function RegisterScreen() {
           />
         </View>
 
-        {/* Error */}
         {displayError ? <Text style={styles.errorText}>{displayError}</Text> : null}
 
-        {/* Create Account button */}
         <TouchableOpacity
           style={[styles.createButton, isLoading && styles.buttonDisabled]}
           onPress={handleSignUp}
@@ -178,7 +196,23 @@ export default function RegisterScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Sign In link */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <View style={styles.socialSection}>
+          <SocialSignInButtons
+            onGoogle={handleGoogleSignIn}
+            onApple={appleAvailable ? handleAppleSignIn : undefined}
+            onPhone={() => setShowPhoneModal(true)}
+            isGoogleLoading={googleLoading}
+            isAppleLoading={appleLoading}
+            showApple={appleAvailable}
+          />
+        </View>
+
         <View style={styles.signInRow}>
           <Text style={styles.signInLabel}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
@@ -186,106 +220,16 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <PhoneOtpModal
+        visible={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        onSuccess={() => router.replace('/(tabs)')}
+        onSendOtp={sendOtp}
+        onVerifyOtp={verifyOtp}
+        isLoading={phoneLoading}
+        error={phoneError}
+      />
     </KeyboardAvoidingView>
   );
 }
-
-const createStyles = (t: SemanticTheme) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: t.background,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      paddingHorizontal: 24,
-      paddingTop: 56,
-      paddingBottom: 40,
-    },
-
-    // Header
-    header: {
-      marginBottom: 24,
-    },
-    backButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: t.input,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    title: {
-      fontSize: 28,
-      fontWeight: '800',
-      color: t.textPrimary,
-      marginBottom: 8,
-    },
-    subtitle: {
-      fontSize: 15,
-      color: t.textSecondary,
-      marginBottom: 32,
-    },
-
-    // Inputs
-    inputWrapper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: t.input,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      marginBottom: 12,
-      height: 52,
-    },
-    inputIcon: {
-      marginRight: 10,
-    },
-    input: {
-      flex: 1,
-      fontSize: 15,
-      color: t.textPrimary,
-    },
-
-    // Error
-    errorText: {
-      fontSize: 13,
-      color: '#EF4444',
-      marginBottom: 8,
-      paddingHorizontal: 4,
-    },
-
-    // Create
-    createButton: {
-      height: 52,
-      backgroundColor: '#DC2626',
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: 8,
-    },
-    buttonDisabled: {
-      opacity: 0.6,
-    },
-    createButtonText: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: t.textPrimary,
-    },
-
-    // Sign In
-    signInRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      marginTop: 24,
-    },
-    signInLabel: {
-      fontSize: 14,
-      color: t.textSecondary,
-    },
-    signInLink: {
-      fontSize: 14,
-      color: '#EF4444',
-      fontWeight: '600',
-    },
-  });

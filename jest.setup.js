@@ -86,10 +86,13 @@ jest.mock('expo-linear-gradient', () => {
 
 // Mock react-native-reanimated
 jest.mock('react-native-reanimated', () => {
-  const { View } = require('react-native');
+  const { View, ScrollView } = require('react-native');
   const React = require('react');
   const AnimatedView = React.forwardRef((props, ref) =>
     React.createElement(View, { ...props, ref }),
+  );
+  const AnimatedScrollView = React.forwardRef((props, ref) =>
+    React.createElement(ScrollView, { ...props, ref }),
   );
   return {
     __esModule: true,
@@ -99,6 +102,7 @@ jest.mock('react-native-reanimated', () => {
       addWhitelistedNativeProps: jest.fn(),
       addWhitelistedUIProps: jest.fn(),
       View: AnimatedView,
+      ScrollView: AnimatedScrollView,
     },
     useSharedValue: jest.fn(() => ({ value: 0 })),
     useAnimatedStyle: jest.fn(() => ({})),

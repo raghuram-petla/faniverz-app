@@ -69,7 +69,7 @@ export function FeedMobilePreview({ items }: FeedMobilePreviewProps) {
             </div>
             <div>
               <div style={{ color: '#fff', fontSize: 18, fontWeight: 700 }}>Faniverz</div>
-              <div style={{ color: '#888', fontSize: 10 }}>Telugu Cinema Updates</div>
+              <div style={{ color: '#888', fontSize: 10 }}>Movie Updates</div>
             </div>
           </div>
 

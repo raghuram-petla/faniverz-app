@@ -28,7 +28,9 @@ describe('notifications api', () => {
 
       await fetchNotifications('user-1');
       expect(supabase.from).toHaveBeenCalledWith('notifications');
-      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(title, poster_url)');
+      expect(mockSelect).toHaveBeenCalledWith(
+        '*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)',
+      );
       expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
       expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
     });

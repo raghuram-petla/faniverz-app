@@ -16,6 +16,7 @@ import {
   useNotificationMutations,
 } from '@/features/notifications/hooks';
 import { Notification } from '@/types';
+import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { formatRelativeTime } from '@/utils/formatDate';
 import { getImageUrl } from '@shared/imageUrl';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
@@ -69,13 +70,9 @@ function NotificationItem({
         <Text style={styles.itemMessage} numberOfLines={2}>
           {item.message}
         </Text>
-        {/* TODO: Add PlatformBadge here when Notification type includes platform object (name, color, logo).
-           Currently Notification only has platform_id (string | null) but no joined platform data.
-           When the API/query is updated to join the platforms table, import PlatformBadge from
-           '@/components/ui/PlatformBadge' and render it for release-type notifications:
-           {item.type === 'release' && item.platform && (
-             <PlatformBadge platform={item.platform} size={20} />
-           )} */}
+        {item.type === 'release' && item.platform && (
+          <PlatformBadge platform={item.platform} size={20} />
+        )}
         <Text style={styles.itemTimestamp}>{formatRelativeTime(item.created_at)}</Text>
       </View>
 

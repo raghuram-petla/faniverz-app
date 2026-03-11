@@ -13,10 +13,18 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '../followHooks';
-import { fetchUserFollows, followEntity, unfollowEntity } from '../followApi';
+import {
+  useEntityFollows,
+  useEnrichedFollows,
+  useFollowEntity,
+  useUnfollowEntity,
+} from '../followHooks';
+import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from '../followApi';
 
 const mockFetchUserFollows = fetchUserFollows as jest.MockedFunction<typeof fetchUserFollows>;
+const mockFetchEnrichedFollows = fetchEnrichedFollows as jest.MockedFunction<
+  typeof fetchEnrichedFollows
+>;
 const mockFollowEntity = followEntity as jest.MockedFunction<typeof followEntity>;
 const mockUnfollowEntity = unfollowEntity as jest.MockedFunction<typeof unfollowEntity>;
 
@@ -69,6 +77,29 @@ describe('useFollowEntity', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockFollowEntity).toHaveBeenCalledWith('user-123', 'movie', 'm1');
+  });
+});
+
+describe('useEnrichedFollows', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('fetches enriched follows for authenticated user', async () => {
+    const enriched = [
+      {
+        entity_type: 'movie' as const,
+        entity_id: 'm1',
+        name: 'Movie',
+        image_url: null,
+        created_at: '',
+      },
+    ];
+    mockFetchEnrichedFollows.mockResolvedValue(enriched);
+
+    const { result } = renderHook(() => useEnrichedFollows(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchEnrichedFollows).toHaveBeenCalledWith('user-123');
+    expect(result.current.data).toEqual(enriched);
   });
 });
 

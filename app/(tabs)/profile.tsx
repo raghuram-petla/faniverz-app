@@ -16,8 +16,11 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { formatMemberSince } from '@/utils/formatDate';
+import { useEnrichedFollows } from '@/features/feed';
+import { FollowingSection } from '@/components/profile/FollowingSection';
 import { createStyles } from '@/styles/tabs/profile.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import type { FeedEntityType } from '@shared/types';
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -28,9 +31,12 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { icon: 'create-outline', label: 'Edit Profile', route: '/profile/edit' },
+  { icon: 'at-outline', label: 'Username', route: '/profile/username' },
   { icon: 'notifications-outline', label: 'Notifications', route: '/notifications' },
   { icon: 'star-outline', label: 'My Reviews', route: '/profile/reviews' },
   { icon: 'settings-outline', label: 'Settings', route: '/profile/settings' },
+  { icon: 'people-outline', label: 'Following', route: '/profile/following' },
+  { icon: 'time-outline', label: 'Activity', route: '/profile/activity' },
   { icon: 'heart-outline', label: 'Favorite Actors', route: '/profile/favorite-actors' },
   { icon: 'eye-outline', label: 'Watched Movies', route: '/profile/watched' },
   { icon: 'person-outline', label: 'Account Details', route: '/profile/account' },
@@ -47,6 +53,7 @@ export default function ProfileScreen() {
   const isLoggedIn = !!user;
 
   const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Guest';
+  const usernameDisplay = profile?.username ? `@${profile.username}` : null;
   const email = user?.email ?? '';
   const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md') ?? PLACEHOLDER_AVATAR;
   const memberSince = formatMemberSince(user?.created_at);
@@ -54,6 +61,7 @@ export default function ProfileScreen() {
   const userId = user?.id ?? '';
   const { data: watchlistItems = [], refetch: refetchWatchlist } = useWatchlist(userId);
   const { data: userReviews = [], refetch: refetchReviews } = useUserReviews(userId);
+  const { data: enrichedFollows = [] } = useEnrichedFollows();
   const unreadCount = useUnreadCount(userId);
   const { refreshing, onRefresh } = useRefresh(refetchProfile, refetchWatchlist, refetchReviews);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
@@ -73,6 +81,16 @@ export default function ProfileScreen() {
       ? { ...item, badge: String(unreadCount) }
       : item,
   );
+
+  const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
+    const routes: Record<FeedEntityType, string> = {
+      movie: `/movie/${entityId}`,
+      actor: `/actor/${entityId}`,
+      production_house: `/production-house/${entityId}`,
+      user: `/profile`,
+    };
+    router.push(routes[entityType] as Parameters<typeof router.push>[0]);
+  };
 
   // Guest view — login/signup prompt only
   if (!isLoggedIn) {
@@ -111,7 +129,7 @@ export default function ProfileScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerVersion}>Faniverz v1.0.0</Text>
-          <Text style={styles.footerTagline}>Your Telugu Cinema Companion</Text>
+          <Text style={styles.footerTagline}>Your Movie Companion</Text>
         </View>
       </View>
     );
@@ -177,10 +195,20 @@ export default function ProfileScreen() {
         {/* User info */}
         <View style={styles.userInfo}>
           <Text style={styles.displayName}>{displayName}</Text>
+          {usernameDisplay && <Text style={styles.usernameText}>{usernameDisplay}</Text>}
           <Text style={styles.emailText}>{email}</Text>
           <Text style={styles.memberSince}>Member since {memberSince}</Text>
         </View>
       </View>
+
+      {/* Following Section */}
+      {enrichedFollows.length > 0 && (
+        <FollowingSection
+          follows={enrichedFollows}
+          onEntityPress={handleEntityPress}
+          onViewAll={() => router.push('/profile/following' as Parameters<typeof router.push>[0])}
+        />
+      )}
 
       {/* Menu Items */}
       <View style={styles.menuCard}>
@@ -210,7 +238,7 @@ export default function ProfileScreen() {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerVersion}>Faniverz v1.0.0</Text>
-        <Text style={styles.footerTagline}>Your Telugu Cinema Companion</Text>
+        <Text style={styles.footerTagline}>Your Movie Companion</Text>
       </View>
     </ScrollView>
   );

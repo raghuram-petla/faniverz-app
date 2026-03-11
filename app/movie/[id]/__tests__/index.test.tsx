@@ -57,6 +57,10 @@ jest.mock('@/features/reviews/hooks', () => ({
   })),
 }));
 
+jest.mock('@/hooks/useAuthGate', () => ({
+  useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
+}));
+
 jest.mock('@/components/ui/StarRating', () => {
   const { View, TouchableOpacity, Text } = require('react-native');
   return {

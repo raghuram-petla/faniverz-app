@@ -1,3 +1,8 @@
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 import React from 'react';
 import { Linking } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -121,5 +126,28 @@ describe('OverviewTab', () => {
     render(<OverviewTab movie={noMediaMovie} onExploreMedia={onExploreMedia} />);
     expect(screen.queryByText('Explore All Media')).toBeNull();
     expect(screen.queryByText('Watch Trailer')).toBeNull();
+  });
+
+  it('renders production house chips', () => {
+    const movieWithPH = {
+      ...mockMovie,
+      productionHouses: [
+        { id: 'ph1', name: 'Mythri', logo_url: 'logo.jpg', description: null, created_at: '' },
+      ],
+    };
+    render(<OverviewTab movie={movieWithPH} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('Mythri')).toBeTruthy();
+  });
+
+  it('navigates to production house on chip press', () => {
+    const movieWithPH = {
+      ...mockMovie,
+      productionHouses: [
+        { id: 'ph1', name: 'Mythri', logo_url: null, description: null, created_at: '' },
+      ],
+    };
+    render(<OverviewTab movie={movieWithPH} onExploreMedia={onExploreMedia} />);
+    fireEvent.press(screen.getByLabelText('Go to Mythri'));
+    expect(mockPush).toHaveBeenCalledWith('/production-house/ph1');
   });
 });

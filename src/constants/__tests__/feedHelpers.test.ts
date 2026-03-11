@@ -10,6 +10,7 @@ import {
   getEntityAvatarUrl,
   getEntityName,
   getEntityId,
+  getEntityRoute,
 } from '../feedHelpers';
 import type { NewsFeedItem } from '@shared/types';
 
@@ -190,18 +191,32 @@ describe('deriveEntityType', () => {
     expect(deriveEntityType(makeFeedItem({ movie_id: 'm1' }))).toBe('movie');
   });
 
+  it('returns actor when source_table is actors', () => {
+    expect(deriveEntityType(makeFeedItem({ movie_id: null, source_table: 'actors' }))).toBe(
+      'actor',
+    );
+  });
+
+  it('returns production_house when source_table is production_houses', () => {
+    expect(
+      deriveEntityType(makeFeedItem({ movie_id: null, source_table: 'production_houses' })),
+    ).toBe('production_house');
+  });
+
   it('returns movie as default when no entity IDs set', () => {
     expect(deriveEntityType(makeFeedItem({ movie_id: null }))).toBe('movie');
+  });
+
+  it('prioritizes movie_id over source_table', () => {
+    expect(deriveEntityType(makeFeedItem({ movie_id: 'm1', source_table: 'actors' }))).toBe(
+      'movie',
+    );
   });
 });
 
 describe('getEntityAvatarUrl', () => {
-  it('returns movie poster_url when available', () => {
+  it('returns movie poster_url when movie_id is set', () => {
     expect(getEntityAvatarUrl(makeFeedItem())).toBe('poster.jpg');
-  });
-
-  it('returns null when no movie', () => {
-    expect(getEntityAvatarUrl(makeFeedItem({ movie: undefined }))).toBeNull();
   });
 
   it('returns null when movie has no poster', () => {
@@ -210,15 +225,47 @@ describe('getEntityAvatarUrl', () => {
     });
     expect(getEntityAvatarUrl(item)).toBeNull();
   });
+
+  it('returns thumbnail_url for actor items', () => {
+    const item = makeFeedItem({
+      movie_id: null,
+      movie: undefined,
+      source_table: 'actors',
+      source_id: 'a1',
+      thumbnail_url: 'actor-photo.jpg',
+    });
+    expect(getEntityAvatarUrl(item)).toBe('actor-photo.jpg');
+  });
+
+  it('returns null for non-movie items without thumbnail', () => {
+    const item = makeFeedItem({
+      movie_id: null,
+      movie: undefined,
+      source_table: 'actors',
+      source_id: 'a1',
+      thumbnail_url: null,
+    });
+    expect(getEntityAvatarUrl(item)).toBeNull();
+  });
 });
 
 describe('getEntityName', () => {
-  it('returns movie title when available', () => {
+  it('returns movie title when movie_id is set', () => {
     expect(getEntityName(makeFeedItem())).toBe('Test Movie');
   });
 
-  it('returns Unknown when no movie', () => {
+  it('returns Unknown when movie_id is set but movie is missing', () => {
     expect(getEntityName(makeFeedItem({ movie: undefined }))).toBe('Unknown');
+  });
+
+  it('returns item title for non-movie items', () => {
+    const item = makeFeedItem({
+      movie_id: null,
+      movie: undefined,
+      source_table: 'actors',
+      title: 'Allu Arjun',
+    });
+    expect(getEntityName(item)).toBe('Allu Arjun');
   });
 });
 
@@ -227,7 +274,45 @@ describe('getEntityId', () => {
     expect(getEntityId(makeFeedItem({ movie_id: 'm1' }))).toBe('m1');
   });
 
-  it('returns null when no movie_id', () => {
+  it('returns source_id for actor items', () => {
+    expect(
+      getEntityId(makeFeedItem({ movie_id: null, source_table: 'actors', source_id: 'a1' })),
+    ).toBe('a1');
+  });
+
+  it('returns source_id for production_house items', () => {
+    expect(
+      getEntityId(
+        makeFeedItem({ movie_id: null, source_table: 'production_houses', source_id: 'ph1' }),
+      ),
+    ).toBe('ph1');
+  });
+
+  it('returns null when no movie_id and no source_id', () => {
     expect(getEntityId(makeFeedItem({ movie_id: null }))).toBeNull();
+  });
+});
+
+describe('getEntityRoute', () => {
+  it('returns movie route for movie items', () => {
+    expect(getEntityRoute(makeFeedItem({ movie_id: 'm1' }))).toBe('/movie/m1');
+  });
+
+  it('returns actor route for actor items', () => {
+    expect(
+      getEntityRoute(makeFeedItem({ movie_id: null, source_table: 'actors', source_id: 'a1' })),
+    ).toBe('/actor/a1');
+  });
+
+  it('returns production-house route for studio items', () => {
+    expect(
+      getEntityRoute(
+        makeFeedItem({ movie_id: null, source_table: 'production_houses', source_id: 'ph1' }),
+      ),
+    ).toBe('/production-house/ph1');
+  });
+
+  it('returns null when no entity ID', () => {
+    expect(getEntityRoute(makeFeedItem({ movie_id: null }))).toBeNull();
   });
 });

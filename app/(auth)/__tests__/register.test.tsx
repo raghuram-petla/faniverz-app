@@ -11,6 +11,35 @@ jest.mock('@/features/auth/hooks/useEmailAuth', () => ({
   useEmailAuth: jest.fn(),
 }));
 
+jest.mock('@/features/auth/hooks/useGoogleAuth', () => ({
+  useGoogleAuth: () => ({ signInWithGoogle: jest.fn(), isLoading: false, error: null }),
+}));
+
+jest.mock('@/features/auth/hooks/useAppleAuth', () => ({
+  useAppleAuth: () => ({
+    signInWithApple: jest.fn(),
+    isLoading: false,
+    error: null,
+    isAvailable: false,
+  }),
+}));
+
+jest.mock('@/features/auth/hooks/usePhoneAuth', () => ({
+  usePhoneAuth: () => ({ sendOtp: jest.fn(), verifyOtp: jest.fn(), isLoading: false, error: null }),
+}));
+
+jest.mock('@/components/auth/SocialSignInButtons', () => ({
+  SocialSignInButtons: () => null,
+}));
+
+jest.mock('@/components/auth/PhoneOtpModal', () => ({
+  PhoneOtpModal: () => null,
+}));
+
+jest.mock('@/styles/auth.styles', () => ({
+  createRegisterStyles: () => new Proxy({}, { get: () => ({}) }),
+}));
+
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import RegisterScreen from '../register';
@@ -28,9 +57,9 @@ describe('RegisterScreen', () => {
     });
   });
 
-  it('renders Full Name input', () => {
+  it('renders Username input', () => {
     render(<RegisterScreen />);
-    expect(screen.getByPlaceholderText('Full Name')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Username')).toBeTruthy();
   });
 
   it('renders Email input', () => {
@@ -64,7 +93,7 @@ describe('RegisterScreen', () => {
   it('renders page title and subtitle', () => {
     render(<RegisterScreen />);
     expect(screen.getAllByText('Create Account').length).toBeGreaterThan(0);
-    expect(screen.getByText('Join the Telugu cinema community')).toBeTruthy();
+    expect(screen.getByText('Join the movie community')).toBeTruthy();
   });
 
   it('shows validation error when submitting with empty fields', () => {
@@ -97,7 +126,7 @@ describe('RegisterScreen', () => {
 
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Full Name'), 'John Doe');
+    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
     fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
     fireEvent.changeText(screen.getByPlaceholderText('Password'), 'secret123');
     fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'secret123');
@@ -107,14 +136,14 @@ describe('RegisterScreen', () => {
       fireEvent.press(buttons[buttons.length - 1]);
     });
 
-    expect(mockSignUp).toHaveBeenCalledWith('john@test.com', 'secret123', 'John Doe');
+    expect(mockSignUp).toHaveBeenCalledWith('john@test.com', 'secret123', 'johndoe');
     expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
   });
 
   it('shows validation error when password is too short', async () => {
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Full Name'), 'John Doe');
+    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
     fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
     fireEvent.changeText(screen.getByPlaceholderText('Password'), 'ab');
     fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'ab');
@@ -130,7 +159,7 @@ describe('RegisterScreen', () => {
   it('shows validation error when passwords do not match', async () => {
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Full Name'), 'John Doe');
+    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
     fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
     fireEvent.changeText(screen.getByPlaceholderText('Password'), 'secret123');
     fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'different');
@@ -199,7 +228,7 @@ describe('RegisterScreen', () => {
 
     render(<RegisterScreen />);
 
-    fireEvent.changeText(screen.getByPlaceholderText('Full Name'), 'John Doe');
+    fireEvent.changeText(screen.getByPlaceholderText('Username'), 'johndoe');
     fireEvent.changeText(screen.getByPlaceholderText('Email'), 'john@test.com');
     fireEvent.changeText(screen.getByPlaceholderText('Password'), 'secret123');
     fireEvent.changeText(screen.getByPlaceholderText('Confirm Password'), 'secret123');

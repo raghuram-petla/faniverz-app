@@ -17,6 +17,7 @@ import {
   useNewsFeed,
   useFeaturedFeed,
   usePersonalizedFeed,
+  useFeedItem,
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
@@ -25,6 +26,7 @@ import {
   fetchNewsFeed,
   fetchFeaturedFeedItems,
   fetchPersonalizedFeed,
+  fetchFeedItemById,
   voteFeedItem,
   removeFeedVote,
   fetchUserVotes,
@@ -39,6 +41,7 @@ const mockFetchPersonalized = fetchPersonalizedFeed as jest.MockedFunction<
 >;
 const mockVoteFeedItem = voteFeedItem as jest.MockedFunction<typeof voteFeedItem>;
 const mockRemoveFeedVote = removeFeedVote as jest.MockedFunction<typeof removeFeedVote>;
+const mockFetchFeedItemById = fetchFeedItemById as jest.MockedFunction<typeof fetchFeedItemById>;
 const mockFetchUserVotes = fetchUserVotes as jest.MockedFunction<typeof fetchUserVotes>;
 
 function createWrapper() {
@@ -260,5 +263,25 @@ describe('useUserVotes', () => {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useFeedItem', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFetchFeedItemById.mockResolvedValue(mockItem);
+  });
+
+  it('fetches a single feed item by id', async () => {
+    const { result } = renderHook(() => useFeedItem('1'), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetchFeedItemById).toHaveBeenCalledWith('1');
+    expect(result.current.data).toEqual(mockItem);
+  });
+
+  it('does not fetch when id is empty', async () => {
+    const { result } = renderHook(() => useFeedItem(''), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
+    expect(mockFetchFeedItemById).not.toHaveBeenCalled();
   });
 });

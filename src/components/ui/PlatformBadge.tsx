@@ -1,10 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { OTTPlatform } from '@/types';
 import { getPlatformLogo } from '@/constants/platformLogos';
 
 interface PlatformBadgeProps {
-  platform: OTTPlatform;
+  platform: { id: string; color: string; logo: string };
   size?: number;
 }
 

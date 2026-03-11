@@ -15,9 +15,20 @@ jest.mock('react-native-safe-area-context', () => ({
 
 jest.mock('@/features/feed', () => ({
   useNewsFeed: jest.fn(),
+  useVoteFeedItem: jest.fn(),
+  useRemoveFeedVote: jest.fn(),
+  useUserVotes: jest.fn(),
   useEntityFollows: jest.fn(() => ({ followSet: new Set(), data: [], isSuccess: true })),
   useFollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
   useUnfollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
+}));
+
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
+
+jest.mock('@/hooks/useAuthGate', () => ({
+  useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
 }));
 
 jest.mock('@/stores/useFeedStore', () => ({
@@ -25,24 +36,45 @@ jest.mock('@/stores/useFeedStore', () => ({
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
-  FeedCard: ({ item }: any) => {
-    const { View, Text } = require('react-native');
+  FeedCard: ({ item, onUpvote, onDownvote }: any) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
         <Text>{item.title}</Text>
+        {onUpvote && (
+          <TouchableOpacity
+            onPress={() => onUpvote(item.id)}
+            accessibilityLabel={`Upvote ${item.title}`}
+          >
+            <Text>Upvote</Text>
+          </TouchableOpacity>
+        )}
+        {onDownvote && (
+          <TouchableOpacity
+            onPress={() => onDownvote(item.id)}
+            accessibilityLabel={`Downvote ${item.title}`}
+          >
+            <Text>Downvote</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   },
 }));
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, screen } from '@testing-library/react-native';
 import FeedScreen from '../feed';
-import { useNewsFeed } from '@/features/feed';
+import { useNewsFeed, useVoteFeedItem, useRemoveFeedVote, useUserVotes } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 
 const mockSetFilter = jest.fn();
+const mockVoteMutate = jest.fn();
+const mockRemoveMutate = jest.fn();
 const mockUseNewsFeed = useNewsFeed as jest.MockedFunction<typeof useNewsFeed>;
+const mockUseVoteFeedItem = useVoteFeedItem as jest.MockedFunction<typeof useVoteFeedItem>;
+const mockUseRemoveFeedVote = useRemoveFeedVote as jest.MockedFunction<typeof useRemoveFeedVote>;
+const mockUseUserVotes = useUserVotes as jest.MockedFunction<typeof useUserVotes>;
 const mockUseFeedStore = useFeedStore as jest.MockedFunction<typeof useFeedStore>;
 
 const mockItem = {
@@ -82,6 +114,9 @@ function setupMocks(overrides: any = {}) {
     isFetchingNextPage: false,
     ...overrides.feed,
   } as any);
+  mockUseVoteFeedItem.mockReturnValue({ mutate: mockVoteMutate } as any);
+  mockUseRemoveFeedVote.mockReturnValue({ mutate: mockRemoveMutate } as any);
+  mockUseUserVotes.mockReturnValue({ data: overrides.votes ?? {} } as any);
 }
 
 describe('FeedScreen', () => {
@@ -125,5 +160,47 @@ describe('FeedScreen', () => {
     const { getByLabelText } = render(<FeedScreen />);
     fireEvent.press(getByLabelText('Filter by Trailers'));
     expect(mockSetFilter).toHaveBeenCalledWith('trailers');
+  });
+
+  it('upvote triggers vote mutation when no existing vote', () => {
+    setupMocks({ votes: {} });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Upvote Test Trailer'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: '1',
+      voteType: 'up',
+      previousVote: null,
+    });
+  });
+
+  it('upvote triggers remove mutation when already upvoted', () => {
+    setupMocks({ votes: { '1': 'up' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Upvote Test Trailer'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({
+      feedItemId: '1',
+      previousVote: 'up',
+    });
+  });
+
+  it('downvote triggers vote mutation when no existing vote', () => {
+    setupMocks({ votes: {} });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Downvote Test Trailer'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: '1',
+      voteType: 'down',
+      previousVote: null,
+    });
+  });
+
+  it('downvote triggers remove mutation when already downvoted', () => {
+    setupMocks({ votes: { '1': 'down' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Downvote Test Trailer'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({
+      feedItemId: '1',
+      previousVote: 'down',
+    });
   });
 });

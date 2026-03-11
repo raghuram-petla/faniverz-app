@@ -11,6 +11,35 @@ jest.mock('@/features/auth/hooks/useEmailAuth', () => ({
   useEmailAuth: jest.fn(),
 }));
 
+jest.mock('@/features/auth/hooks/useGoogleAuth', () => ({
+  useGoogleAuth: () => ({ signInWithGoogle: jest.fn(), isLoading: false, error: null }),
+}));
+
+jest.mock('@/features/auth/hooks/useAppleAuth', () => ({
+  useAppleAuth: () => ({
+    signInWithApple: jest.fn(),
+    isLoading: false,
+    error: null,
+    isAvailable: false,
+  }),
+}));
+
+jest.mock('@/features/auth/hooks/usePhoneAuth', () => ({
+  usePhoneAuth: () => ({ sendOtp: jest.fn(), verifyOtp: jest.fn(), isLoading: false, error: null }),
+}));
+
+jest.mock('@/components/auth/SocialSignInButtons', () => ({
+  SocialSignInButtons: () => null,
+}));
+
+jest.mock('@/components/auth/PhoneOtpModal', () => ({
+  PhoneOtpModal: () => null,
+}));
+
+jest.mock('@/styles/auth.styles', () => ({
+  createLoginStyles: () => new Proxy({}, { get: () => ({}) }),
+}));
+
 const mockSetIsGuest = jest.fn();
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: () => ({
@@ -49,14 +78,9 @@ describe('LoginScreen', () => {
     expect(screen.getByPlaceholderText('Password')).toBeTruthy();
   });
 
-  it('renders Sign In button', () => {
+  it('renders Sign In / Sign Up button', () => {
     render(<LoginScreen />);
-    expect(screen.getByText('Sign In')).toBeTruthy();
-  });
-
-  it('renders Sign Up link', () => {
-    render(<LoginScreen />);
-    expect(screen.getByText('Sign Up')).toBeTruthy();
+    expect(screen.getByText('Sign In / Sign Up')).toBeTruthy();
   });
 
   it('renders Forgot password link', () => {
@@ -69,10 +93,18 @@ describe('LoginScreen', () => {
     expect(screen.getByText('Continue as Guest')).toBeTruthy();
   });
 
+  it('renders close button and navigates back on press', () => {
+    render(<LoginScreen />);
+    const closeBtn = screen.getByLabelText('Close');
+    expect(closeBtn).toBeTruthy();
+    fireEvent.press(closeBtn);
+    expect(mockRouter.back).toHaveBeenCalled();
+  });
+
   it('renders app branding', () => {
     render(<LoginScreen />);
     expect(screen.getByLabelText('Faniverz')).toBeTruthy();
-    expect(screen.getByText('Your Telugu Cinema Companion')).toBeTruthy();
+    expect(screen.getByText('Your Movie Companion')).toBeTruthy();
   });
 
   it('shows error message when auth error exists', () => {
@@ -105,11 +137,11 @@ describe('LoginScreen', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Sign In'));
+      fireEvent.press(screen.getByText('Sign In / Sign Up'));
     });
 
     expect(mockSignIn).toHaveBeenCalledWith('user@test.com', 'password123');
-    expect(mockRouter.back).toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
   });
 
   it('does not call signIn when fields are empty', async () => {
@@ -123,7 +155,7 @@ describe('LoginScreen', () => {
     render(<LoginScreen />);
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Sign In'));
+      fireEvent.press(screen.getByText('Sign In / Sign Up'));
     });
 
     expect(mockSignIn).not.toHaveBeenCalled();
@@ -159,14 +191,6 @@ describe('LoginScreen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/(auth)/forgot-password');
   });
 
-  it('navigates to register screen when Sign Up is pressed', () => {
-    render(<LoginScreen />);
-
-    fireEvent.press(screen.getByText('Sign Up'));
-
-    expect(mockRouter.push).toHaveBeenCalledWith('/(auth)/register');
-  });
-
   it('shows loading indicator when isLoading is true', () => {
     mockUseEmailAuth.mockReturnValue({
       signIn: jest.fn(),
@@ -176,8 +200,8 @@ describe('LoginScreen', () => {
 
     render(<LoginScreen />);
 
-    // Sign In text should not be visible during loading
-    expect(screen.queryByText('Sign In')).toBeNull();
+    // Sign In / Sign Up text should not be visible during loading
+    expect(screen.queryByText('Sign In / Sign Up')).toBeNull();
   });
 
   it('handles signIn rejection without crashing', async () => {
@@ -194,11 +218,11 @@ describe('LoginScreen', () => {
     fireEvent.changeText(screen.getByPlaceholderText('Password'), 'password123');
 
     await act(async () => {
-      fireEvent.press(screen.getByText('Sign In'));
+      fireEvent.press(screen.getByText('Sign In / Sign Up'));
     });
 
     expect(mockSignIn).toHaveBeenCalled();
-    // Should not crash — router.back should NOT be called on error
-    expect(mockRouter.back).not.toHaveBeenCalledTimes(2);
+    // Should not crash — router.replace should NOT be called on error
+    expect(mockRouter.replace).not.toHaveBeenCalledWith('/(tabs)');
   });
 });

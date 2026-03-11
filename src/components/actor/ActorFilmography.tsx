@@ -1,0 +1,96 @@
+import { View, Text, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/theme';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { createStyles } from '@/styles/actorDetail.styles';
+import { getImageUrl } from '@shared/imageUrl';
+
+export interface FilmCredit {
+  id: string;
+  credit_type: string;
+  role_name: string | null;
+  movie?: {
+    id: string;
+    title: string;
+    poster_url: string | null;
+    release_date: string | null;
+    rating: number;
+  } | null;
+}
+
+export interface ActorFilmographyProps {
+  credits: FilmCredit[];
+  onMoviePress: (movieId: string) => void;
+}
+
+export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProps) {
+  const { theme, colors } = useTheme();
+  const styles = createStyles(theme);
+
+  return (
+    <>
+      <View style={styles.filmographyHeader}>
+        <Text style={styles.filmographyTitle}>Filmography</Text>
+        {credits.length > 0 && (
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{credits.length}</Text>
+          </View>
+        )}
+      </View>
+
+      {credits.length === 0 ? (
+        <EmptyState
+          icon="film-outline"
+          title="No movies found"
+          subtitle="This person's filmography will appear here."
+        />
+      ) : (
+        <View style={styles.filmographyList}>
+          {credits.map((credit) => {
+            const movie = credit.movie;
+            if (!movie) return null;
+            const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+            const roleText =
+              credit.credit_type === 'cast' && credit.role_name
+                ? `as ${credit.role_name}`
+                : credit.role_name;
+            return (
+              <TouchableOpacity
+                key={credit.id}
+                style={styles.filmCard}
+                onPress={() => onMoviePress(movie.id)}
+                activeOpacity={0.7}
+                testID={`film-card-${movie.id}`}
+              >
+                <Image
+                  source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+                  style={styles.filmPoster}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <View style={styles.filmInfo}>
+                  <Text style={styles.filmTitle} numberOfLines={2}>
+                    {movie.title}
+                  </Text>
+                  {year && <Text style={styles.filmYear}>{year}</Text>}
+                  {roleText && (
+                    <Text style={styles.filmRole} numberOfLines={1}>
+                      {roleText}
+                    </Text>
+                  )}
+                  {movie.rating > 0 && (
+                    <View style={styles.filmRatingRow}>
+                      <Ionicons name="star" size={12} color={colors.yellow400} />
+                      <Text style={styles.filmRatingValue}>{movie.rating}</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </>
+  );
+}

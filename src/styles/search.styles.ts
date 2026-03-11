@@ -44,6 +44,7 @@ export const createStyles = (t: SemanticTheme) =>
       paddingVertical: 8,
       borderRadius: 20,
     },
+    recentPillInner: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     recentPillText: { color: t.textPrimary, fontSize: 14 },
     resultsCount: {
       fontSize: 14,
@@ -119,4 +120,21 @@ export const createStyles = (t: SemanticTheme) =>
       justifyContent: 'center',
     },
     platformBadgeText: { fontSize: 10, fontWeight: '700', color: t.textPrimary },
+    filterRow: { maxHeight: 44, marginBottom: 8 },
+    filterRowContent: { paddingHorizontal: 16, gap: 8 },
+    filterChip: {
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: 16,
+      backgroundColor: t.input,
+    },
+    filterChipActive: { backgroundColor: colors.red600 },
+    filterChipText: { fontSize: 13, fontWeight: '600', color: t.textSecondary },
+    filterChipTextActive: { color: colors.white },
+    sectionDivider: {
+      height: 1,
+      backgroundColor: t.border,
+      marginVertical: 8,
+      marginHorizontal: 16,
+    },
   });

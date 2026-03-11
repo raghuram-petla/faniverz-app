@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
 import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
@@ -15,6 +16,7 @@ export interface OverviewTabProps {
 export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
+  const router = useRouter();
   const hasMedia = movie.videos.length > 0 || movie.posters.length > 0;
 
   return (
@@ -51,7 +53,13 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
           <Text style={styles.productionHousesLabel}>Production</Text>
           <View style={styles.productionHousesList}>
             {movie.productionHouses.map((ph) => (
-              <View key={ph.id} style={styles.productionHouseChip}>
+              <TouchableOpacity
+                key={ph.id}
+                style={styles.productionHouseChip}
+                onPress={() => router.push(`/production-house/${ph.id}`)}
+                activeOpacity={0.7}
+                accessibilityLabel={`Go to ${ph.name}`}
+              >
                 {ph.logo_url && (
                   <Image
                     source={{ uri: getImageUrl(ph.logo_url, 'sm')! }}
@@ -60,7 +68,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
                   />
                 )}
                 <Text style={styles.productionHouseName}>{ph.name}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>

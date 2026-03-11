@@ -98,6 +98,12 @@ export const createStyles = (t: SemanticTheme) =>
       fontWeight: '700',
       color: t.textPrimary,
     },
+    usernameText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: t.textSecondary,
+      marginTop: 2,
+    },
     emailText: {
       fontSize: 13,
       color: t.textSecondary,

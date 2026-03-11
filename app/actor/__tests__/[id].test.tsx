@@ -14,6 +14,16 @@ jest.mock('@/features/actors/hooks', () => ({
   useActorDetail: jest.fn(),
 }));
 
+jest.mock('@/features/feed', () => ({
+  useEntityFollows: () => ({ followSet: new Set() }),
+  useFollowEntity: () => ({ mutate: jest.fn() }),
+  useUnfollowEntity: () => ({ mutate: jest.fn() }),
+}));
+
+jest.mock('@/hooks/useAuthGate', () => ({
+  useAuthGate: () => ({ gate: (fn: () => void) => fn }),
+}));
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import ActorDetailScreen from '../[id]';
@@ -120,9 +130,9 @@ describe('ActorDetailScreen', () => {
     });
   });
 
-  it('renders actor name in header', () => {
+  it('renders actor name', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('Nagarjuna Akkineni')).toBeTruthy();
+    expect(screen.getAllByText('Nagarjuna Akkineni').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows person type badge', () => {
@@ -155,8 +165,8 @@ describe('ActorDetailScreen', () => {
 
   it('renders filmography movie cards', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('Naa Saami Ranga')).toBeTruthy();
-    expect(screen.getByText('Another Movie')).toBeTruthy();
+    expect(screen.getAllByText('Naa Saami Ranga').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Another Movie').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows role name with "as" prefix for cast credits', () => {
@@ -252,7 +262,7 @@ describe('ActorDetailScreen', () => {
 
   it('shows movie rating when available', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('3.5')).toBeTruthy();
+    expect(screen.getAllByText('3.5').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows place of birth', () => {

@@ -35,18 +35,28 @@ jest.mock('../FeedAvatar', () => ({
     imageUrl,
     entityType,
     label,
+    onPress,
   }: {
     imageUrl: string | null;
     entityType: string;
     label?: string;
+    onPress?: () => void;
   }) => {
-    const { View, Text } = require('react-native');
-    return (
+    const { View, Text, TouchableOpacity } = require('react-native');
+    const content = (
       <View testID="feed-avatar" accessibilityLabel={label}>
         <Text testID="avatar-entity-type">{entityType}</Text>
         {imageUrl ? <Text testID="avatar-image-url">{imageUrl}</Text> : null}
       </View>
     );
+    if (onPress) {
+      return (
+        <TouchableOpacity testID="avatar-press" onPress={onPress}>
+          {content}
+        </TouchableOpacity>
+      );
+    }
+    return content;
   },
 }));
 
@@ -183,10 +193,15 @@ describe('FeedCard', () => {
   });
 
   it('renders without movie reference', () => {
-    const item = makeItem({ movie: undefined, movie_id: null });
+    const item = makeItem({
+      movie: undefined,
+      movie_id: null,
+      source_id: null,
+      source_table: null,
+    });
     render(<FeedCard item={item} onPress={jest.fn()} />);
-    expect(screen.getByText('Test Trailer')).toBeTruthy();
-    expect(screen.getByText('Unknown')).toBeTruthy();
+    // Title appears as both entity name and card title
+    expect(screen.getAllByText('Test Trailer')).toHaveLength(2);
   });
 
   it('renders duration when present', () => {
@@ -430,8 +445,33 @@ describe('FeedCard', () => {
   });
 
   it('does not render FollowButton when entity has no ID', () => {
-    const item = makeItem({ movie_id: null, movie: undefined });
+    const item = makeItem({
+      movie_id: null,
+      movie: undefined,
+      source_id: null,
+      source_table: null,
+    });
     render(<FeedCard item={item} onPress={jest.fn()} onFollow={jest.fn()} />);
     expect(screen.queryByTestId('follow-button')).toBeNull();
+  });
+
+  // Entity navigation tests
+  it('makes avatar tappable when onEntityPress is provided', () => {
+    const onEntityPress = jest.fn();
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} onEntityPress={onEntityPress} />);
+    fireEvent.press(screen.getByTestId('avatar-press'));
+    expect(onEntityPress).toHaveBeenCalledWith('movie', 'm1');
+  });
+
+  it('does not make avatar tappable when onEntityPress is not provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('avatar-press')).toBeNull();
+  });
+
+  it('makes entity name tappable when onEntityPress is provided', () => {
+    const onEntityPress = jest.fn();
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} onEntityPress={onEntityPress} />);
+    fireEvent.press(screen.getByLabelText('Go to Test Movie'));
+    expect(onEntityPress).toHaveBeenCalledWith('movie', 'm1');
   });
 });

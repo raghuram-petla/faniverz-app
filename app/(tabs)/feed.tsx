@@ -1,9 +1,18 @@
 import { useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { useNewsFeed, useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
+import {
+  useNewsFeed,
+  useVoteFeedItem,
+  useRemoveFeedVote,
+  useUserVotes,
+  useEntityFollows,
+  useFollowEntity,
+  useUnfollowEntity,
+} from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { FEED_PILLS, deriveEntityType, getEntityId } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
@@ -11,13 +20,10 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
-
-function handleFeedItemPress(_item: NewsFeedItem) {
-  // TODO: Navigate to content detail (video player, poster view, etc.)
-}
 
 export default function FeedScreen() {
   const { theme, colors } = useTheme();
@@ -26,20 +32,50 @@ export default function FeedScreen() {
   const { filter, setFilter } = useFeedStore();
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     useNewsFeed(filter);
-  const { refreshing, onRefresh } = useRefresh(refetch);
+  const voteMutation = useVoteFeedItem();
+  const removeMutation = useRemoveFeedVote();
+  const { followSet } = useEntityFollows();
+  const followMutation = useFollowEntity();
+  const unfollowMutation = useUnfollowEntity();
+  const { gate } = useAuthGate();
+  const router = useRouter();
+
+  const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
+  const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
+  const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
+  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
     onRefresh,
     refreshing,
   );
-  const { followSet } = useEntityFollows();
-  const followMutation = useFollowEntity();
-  const unfollowMutation = useUnfollowEntity();
-
-  const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const handleUpvote = useCallback(
+    (itemId: string) => {
+      const prev = userVotes[itemId] ?? null;
+      if (prev === 'up') {
+        removeMutation.mutate({ feedItemId: itemId, previousVote: prev });
+      } else {
+        voteMutation.mutate({ feedItemId: itemId, voteType: 'up', previousVote: prev });
+      }
+    },
+    [userVotes, voteMutation, removeMutation],
+  );
+
+  const handleDownvote = useCallback(
+    (itemId: string) => {
+      const prev = userVotes[itemId] ?? null;
+      if (prev === 'down') {
+        removeMutation.mutate({ feedItemId: itemId, previousVote: prev });
+      } else {
+        voteMutation.mutate({ feedItemId: itemId, voteType: 'down', previousVote: prev });
+      }
+    },
+    [userVotes, voteMutation, removeMutation],
+  );
 
   const handleShare = useCallback(
     (itemId: string) => {
@@ -62,6 +98,33 @@ export default function FeedScreen() {
       unfollowMutation.mutate({ entityType, entityId });
     },
     [unfollowMutation],
+  );
+
+  const handleEntityPress = useCallback(
+    (entityType: FeedEntityType, entityId: string) => {
+      const routes: Record<FeedEntityType, string> = {
+        movie: `/movie/${entityId}`,
+        actor: `/actor/${entityId}`,
+        production_house: `/production-house/${entityId}`,
+        user: `/profile/${entityId}`,
+      };
+      router.push(routes[entityType] as Parameters<typeof router.push>[0]);
+    },
+    [router],
+  );
+
+  const handleFeedItemPress = useCallback(
+    (item: NewsFeedItem) => {
+      router.push(`/post/${item.id}` as Parameters<typeof router.push>[0]);
+    },
+    [router],
+  );
+
+  const handleComment = useCallback(
+    (itemId: string) => {
+      router.push(`/post/${itemId}` as Parameters<typeof router.push>[0]);
+    },
+    [router],
   );
 
   return (
@@ -121,10 +184,15 @@ export default function FeedScreen() {
                 key={item.id}
                 item={item}
                 onPress={handleFeedItemPress}
+                onEntityPress={handleEntityPress}
+                userVote={userVotes[item.id] ?? null}
+                onUpvote={gate(handleUpvote)}
+                onDownvote={gate(handleDownvote)}
+                onComment={handleComment}
                 onShare={handleShare}
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
-                onFollow={handleFollow}
-                onUnfollow={handleUnfollow}
+                onFollow={gate(handleFollow)}
+                onUnfollow={gate(handleUnfollow)}
               />
             ))}
             {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}

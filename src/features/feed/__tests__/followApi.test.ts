@@ -21,7 +21,7 @@ jest.mock('@/lib/supabase', () => {
 });
 
 import { supabase } from '@/lib/supabase';
-import { fetchUserFollows, followEntity, unfollowEntity } from '../followApi';
+import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from '../followApi';
 
 const mockFrom = supabase.from as jest.Mock;
 
@@ -110,5 +110,103 @@ describe('unfollowEntity', () => {
     mockFrom.mockReturnValue({ delete: mockDelete });
 
     await expect(unfollowEntity('u1', 'movie', 'm1')).rejects.toEqual({ message: 'Not found' });
+  });
+});
+
+describe('fetchEnrichedFollows', () => {
+  it('returns empty array when user has no follows', async () => {
+    const mockOrder = jest.fn().mockResolvedValue({ data: [], error: null });
+    const mockEq = jest.fn(() => ({ order: mockOrder }));
+    const mockSelect = jest.fn(() => ({ eq: mockEq }));
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    const result = await fetchEnrichedFollows('u1');
+    expect(result).toEqual([]);
+  });
+
+  it('enriches follows with entity names and images', async () => {
+    const follows = [
+      { id: '1', user_id: 'u1', entity_type: 'movie', entity_id: 'm1', created_at: '2026-01-01' },
+      { id: '2', user_id: 'u1', entity_type: 'actor', entity_id: 'a1', created_at: '2026-01-02' },
+    ];
+
+    // First call: fetchUserFollows
+    const mockOrder = jest.fn().mockResolvedValue({ data: follows, error: null });
+    const mockEq = jest.fn(() => ({ order: mockOrder }));
+    const mockSelect = jest.fn(() => ({ eq: mockEq }));
+
+    // Subsequent calls: enrichment queries
+    const mockMovieIn = jest.fn().mockResolvedValue({
+      data: [{ id: 'm1', title: 'Movie One', poster_url: 'poster.jpg' }],
+      error: null,
+    });
+    const mockActorIn = jest.fn().mockResolvedValue({
+      data: [{ id: 'a1', name: 'Actor One', photo_url: 'photo.jpg' }],
+      error: null,
+    });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'entity_follows') {
+        return { select: mockSelect };
+      }
+      if (table === 'movies') {
+        return { select: jest.fn(() => ({ in: mockMovieIn })) };
+      }
+      if (table === 'actors') {
+        return { select: jest.fn(() => ({ in: mockActorIn })) };
+      }
+      // production_houses — not called since no PH follows
+      return {
+        select: jest.fn(() => ({ in: jest.fn().mockResolvedValue({ data: [], error: null }) })),
+      };
+    });
+
+    const result = await fetchEnrichedFollows('u1');
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({
+      entity_type: 'movie',
+      entity_id: 'm1',
+      name: 'Movie One',
+      image_url: 'poster.jpg',
+      created_at: '2026-01-01',
+    });
+    expect(result[1]).toEqual({
+      entity_type: 'actor',
+      entity_id: 'a1',
+      name: 'Actor One',
+      image_url: 'photo.jpg',
+      created_at: '2026-01-02',
+    });
+  });
+
+  it('filters out follows for deleted entities', async () => {
+    const follows = [
+      { id: '1', user_id: 'u1', entity_type: 'movie', entity_id: 'm1', created_at: '2026-01-01' },
+      {
+        id: '2',
+        user_id: 'u1',
+        entity_type: 'movie',
+        entity_id: 'm-deleted',
+        created_at: '2026-01-02',
+      },
+    ];
+
+    const mockOrder = jest.fn().mockResolvedValue({ data: follows, error: null });
+    const mockEq = jest.fn(() => ({ order: mockOrder }));
+    const mockSelect = jest.fn(() => ({ eq: mockEq }));
+
+    const mockMovieIn = jest.fn().mockResolvedValue({
+      data: [{ id: 'm1', title: 'Movie One', poster_url: null }],
+      error: null,
+    });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'entity_follows') return { select: mockSelect };
+      return { select: jest.fn(() => ({ in: mockMovieIn })) };
+    });
+
+    const result = await fetchEnrichedFollows('u1');
+    expect(result).toHaveLength(1);
+    expect(result[0].entity_id).toBe('m1');
   });
 });

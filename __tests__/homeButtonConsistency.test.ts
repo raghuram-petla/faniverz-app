@@ -15,6 +15,7 @@ const EXEMPT_PATTERNS = [
   '(tabs)/',
   '(auth)/login.tsx',
   '(auth)/register.tsx',
+  'post/',
 ];
 
 function isExempt(filePath: string): boolean {
@@ -47,7 +48,11 @@ describe('Home button consistency', () => {
       const hasScreenHeader = content.includes('ScreenHeader');
       const hasHomeButton = content.includes('HomeButton');
       const hasMovieDetailHeader = content.includes('MovieDetailHeader');
-      expect(hasScreenHeader || hasHomeButton || hasMovieDetailHeader).toBe(true);
+      // Components that internally contain HomeButton
+      const hasActorCollapsibleHeader = content.includes('ActorCollapsibleHeader');
+      expect(
+        hasScreenHeader || hasHomeButton || hasMovieDetailHeader || hasActorCollapsibleHeader,
+      ).toBe(true);
     },
   );
 });

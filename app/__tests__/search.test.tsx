@@ -44,11 +44,33 @@ const mockResults: Movie[] = [
   },
 ];
 
-const mockUseMovieSearch = jest.fn();
+const mockUseUniversalSearch = jest.fn();
 
-jest.mock('@/features/movies/hooks/useMovieSearch', () => ({
-  useMovieSearch: (...args: unknown[]) => mockUseMovieSearch(...args),
+jest.mock('@/features/search', () => ({
+  useUniversalSearch: (...args: unknown[]) => mockUseUniversalSearch(...args),
 }));
+
+jest.mock('@/components/search/SearchResultActor', () => {
+  const { Text } = require('react-native');
+  return {
+    SearchResultActor: ({ actor, onPress }: { actor: { name: string }; onPress: () => void }) => (
+      <Text onPress={onPress}>{actor.name}</Text>
+    ),
+  };
+});
+
+jest.mock('@/components/search/SearchResultProductionHouse', () => {
+  const { Text } = require('react-native');
+  return {
+    SearchResultProductionHouse: ({
+      house,
+      onPress,
+    }: {
+      house: { name: string };
+      onPress: () => void;
+    }) => <Text onPress={onPress}>{house.name}</Text>,
+  };
+});
 
 const mockUseMovies = jest.fn().mockReturnValue({ data: [] });
 jest.mock('@/features/movies/hooks/useMovies', () => ({
@@ -61,15 +83,19 @@ jest.mock('@/features/ott/hooks', () => ({
 
 import SearchScreen from '../search';
 
+const PLACEHOLDER = 'Search movies, actors, studios...';
+
 describe('SearchScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseMovieSearch.mockReturnValue({ data: [] });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: [], actors: [], productionHouses: [] },
+    });
   });
 
   it('renders search input with autoFocus', () => {
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     expect(input).toBeTruthy();
     expect(input.props.autoFocus).toBe(true);
   });
@@ -81,19 +107,12 @@ describe('SearchScreen', () => {
 
   it('clears the query when the X button is pressed', () => {
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
 
     fireEvent.changeText(input, 'push');
     expect(input.props.value).toBe('push');
 
-    // The close-circle button appears only when query.length > 0
-    // Ionicons is mocked as View; find the touchable that wraps it after the input
-    // Use testID-less approach: press the clear button by finding it
-    // The clear button is the TouchableOpacity that wraps the close-circle icon
-    // We can find the clear (X) button as the one directly adjacent to the input inside the container
     const clearButtons = screen.UNSAFE_queryAllByType(require('react-native').TouchableOpacity);
-    // First TouchableOpacity inside the search container is the clear button;
-    // second is the Cancel button. Pressing the first should clear the input.
     const clearButton = clearButtons[0];
     fireEvent.press(clearButton);
     expect(input.props.value).toBe('');
@@ -109,10 +128,12 @@ describe('SearchScreen', () => {
   });
 
   it('shows search results when query is >= 2 characters', () => {
-    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: mockResults, actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
@@ -120,14 +141,16 @@ describe('SearchScreen', () => {
   });
 
   it('shows empty state when results are empty and query is >= 2 characters', () => {
-    mockUseMovieSearch.mockReturnValue({ data: [] });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: [], actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'zzz');
 
     expect(screen.getByText('No results found')).toBeTruthy();
-    expect(screen.getByText('Try searching for another movie')).toBeTruthy();
+    expect(screen.getByText('Try a different search term')).toBeTruthy();
   });
 
   it('renders Trending Now section when movies exist', () => {
@@ -145,7 +168,6 @@ describe('SearchScreen', () => {
     const { findByText } = render(<SearchScreen />);
     await findByText('Pushpa');
 
-    // The Clear button removes all recent searches
     fireEvent.press(screen.getByText('Clear'));
     expect(AsyncStorage.removeItem).toHaveBeenCalled();
   });
@@ -158,7 +180,7 @@ describe('SearchScreen', () => {
 
   it('clears the query when the X button is pressed and shows no results', () => {
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pushpa');
     expect(input.props.value).toBe('pushpa');
 
@@ -169,13 +191,14 @@ describe('SearchScreen', () => {
 
   it('saves search and navigates when a search result is pressed', () => {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: mockResults, actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'push');
 
-    // Press the search result item
     fireEvent.press(screen.getByText('Pushpa 2'));
 
     expect(mockPush).toHaveBeenCalledWith('/movie/1');
@@ -189,7 +212,6 @@ describe('SearchScreen', () => {
     render(<SearchScreen />);
     fireEvent.press(screen.getByText('Top Movie'));
 
-    // query is empty, so no search is saved, but navigation still happens
     expect(mockPush).toHaveBeenCalledWith('/movie/t1');
   });
 
@@ -200,8 +222,6 @@ describe('SearchScreen', () => {
     const { findByText } = render(<SearchScreen />);
     await findByText('Pushpa');
 
-    // DOM structure when query is empty and recent searches are loaded:
-    // Touchables in order: Cancel(0), Clear(1), Pushpa-text(2), Pushpa-close(3), RRR-text(4), RRR-close(5)
     const { TouchableOpacity } = require('react-native');
     const allTouchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
 
@@ -230,8 +250,7 @@ describe('SearchScreen', () => {
 
     render(<SearchScreen />);
 
-    // Should not crash — the component still renders
-    expect(screen.getByPlaceholderText('Search movies, actors, directors...')).toBeTruthy();
+    expect(screen.getByPlaceholderText(PLACEHOLDER)).toBeTruthy();
   });
 
   it('handles null AsyncStorage data gracefully', async () => {
@@ -240,16 +259,17 @@ describe('SearchScreen', () => {
 
     render(<SearchScreen />);
 
-    expect(screen.getByPlaceholderText('Search movies, actors, directors...')).toBeTruthy();
-    // No "Recent Searches" heading should appear with no data
+    expect(screen.getByPlaceholderText(PLACEHOLDER)).toBeTruthy();
     expect(screen.queryByText('Recent Searches')).toBeNull();
   });
 
   it('shows results count when results are found', () => {
-    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: mockResults, actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('1 result found')).toBeTruthy();
@@ -257,10 +277,12 @@ describe('SearchScreen', () => {
 
   it('shows plural results count for multiple results', () => {
     const multiResults = [...mockResults, { ...mockResults[0], id: '2', title: 'Pushpa 3' }];
-    mockUseMovieSearch.mockReturnValue({ data: multiResults });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: multiResults, actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('2 results found')).toBeTruthy();
@@ -273,18 +295,19 @@ describe('SearchScreen', () => {
     const { findByText } = render(<SearchScreen />);
     const pushpaPill = await findByText('Pushpa');
 
-    // Press the text part of the pill to set query
     fireEvent.press(pushpaPill);
 
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     expect(input.props.value).toBe('Pushpa');
   });
 
   it('renders result movie metadata including genres and badges', () => {
-    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: mockResults, actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('In Theaters')).toBeTruthy();
@@ -293,7 +316,9 @@ describe('SearchScreen', () => {
 
   it('shows Streaming badge for ott movie in results', () => {
     const ottResult = { ...mockResults[0], id: 'ott-1', in_theaters: false };
-    mockUseMovieSearch.mockReturnValue({ data: [ottResult] });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: [ottResult], actors: [], productionHouses: [] },
+    });
     const ottHooks = require('@/features/ott/hooks');
     ottHooks.useMoviePlatformMap.mockReturnValue({
       data: {
@@ -304,7 +329,7 @@ describe('SearchScreen', () => {
     });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('Streaming')).toBeTruthy();
@@ -317,10 +342,12 @@ describe('SearchScreen', () => {
       in_theaters: false,
       release_date: '2099-01-01',
     };
-    mockUseMovieSearch.mockReturnValue({ data: [upcomingResult] });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: [upcomingResult], actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('Coming Soon')).toBeTruthy();
@@ -333,12 +360,100 @@ describe('SearchScreen', () => {
         '1': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
       },
     });
-    mockUseMovieSearch.mockReturnValue({ data: mockResults });
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: mockResults, actors: [], productionHouses: [] },
+    });
 
     render(<SearchScreen />);
-    const input = screen.getByPlaceholderText('Search movies, actors, directors...');
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
     fireEvent.changeText(input, 'pu');
 
     expect(screen.getByText('N')).toBeTruthy();
+  });
+
+  it('shows actor results in search', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: [],
+        actors: [{ id: 'a1', name: 'Allu Arjun', photo_url: null }],
+        productionHouses: [],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'allu');
+
+    expect(screen.getByText('Allu Arjun')).toBeTruthy();
+  });
+
+  it('shows production house results in search', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: [],
+        actors: [],
+        productionHouses: [{ id: 'ph1', name: 'Mythri Movie Makers', logo_url: null }],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'myth');
+
+    expect(screen.getByText('Mythri Movie Makers')).toBeTruthy();
+  });
+
+  it('counts total results across all entity types', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: mockResults,
+        actors: [{ id: 'a1', name: 'Actor 1', photo_url: null }],
+        productionHouses: [{ id: 'ph1', name: 'Studio 1', logo_url: null }],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'te');
+
+    expect(screen.getByText('3 results found')).toBeTruthy();
+  });
+
+  it('navigates to actor detail when actor result is pressed', () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: [],
+        actors: [{ id: 'a1', name: 'Allu Arjun', photo_url: null }],
+        productionHouses: [],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'allu');
+
+    fireEvent.press(screen.getByText('Allu Arjun'));
+    expect(mockPush).toHaveBeenCalledWith('/actor/a1');
+    expect(AsyncStorage.setItem).toHaveBeenCalled();
+  });
+
+  it('navigates to production house detail when house result is pressed', () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: [],
+        actors: [],
+        productionHouses: [{ id: 'ph1', name: 'Mythri', logo_url: null }],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'myth');
+
+    fireEvent.press(screen.getByText('Mythri'));
+    expect(mockPush).toHaveBeenCalledWith('/production-house/ph1');
+    expect(AsyncStorage.setItem).toHaveBeenCalled();
   });
 });

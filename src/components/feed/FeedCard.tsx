@@ -26,6 +26,7 @@ import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 export interface FeedCardProps {
   item: NewsFeedItem;
   onPress: (item: NewsFeedItem) => void;
+  onEntityPress?: (entityType: FeedEntityType, entityId: string) => void;
   userVote?: 'up' | 'down' | null;
   onUpvote?: (itemId: string) => void;
   onDownvote?: (itemId: string) => void;
@@ -41,6 +42,7 @@ export interface FeedCardProps {
 function FeedCardInner({
   item,
   onPress,
+  onEntityPress,
   userVote,
   onUpvote,
   onDownvote,
@@ -95,7 +97,14 @@ function FeedCardInner({
     <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
       {/* Left column: avatar */}
       <View style={styles.avatarColumn}>
-        <FeedAvatar imageUrl={entityAvatarUrl} entityType={entityType} label={entityName} />
+        <FeedAvatar
+          imageUrl={entityAvatarUrl}
+          entityType={entityType}
+          label={entityName}
+          onPress={
+            entityId && onEntityPress ? () => onEntityPress(entityType, entityId) : undefined
+          }
+        />
       </View>
 
       {/* Right column: all content */}
@@ -109,9 +118,21 @@ function FeedCardInner({
           {/* Name row */}
           <View style={styles.nameRow}>
             <View style={styles.nameRowLeft}>
-              <Text style={styles.entityName} numberOfLines={1}>
-                {entityName}
-              </Text>
+              {entityId && onEntityPress ? (
+                <TouchableOpacity
+                  onPress={() => onEntityPress(entityType, entityId)}
+                  activeOpacity={0.7}
+                  accessibilityLabel={`Go to ${entityName}`}
+                >
+                  <Text style={styles.entityName} numberOfLines={1}>
+                    {entityName}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.entityName} numberOfLines={1}>
+                  {entityName}
+                </Text>
+              )}
               {item.is_featured ? (
                 <Ionicons name="star" size={12} color={colors.yellow400} />
               ) : null}

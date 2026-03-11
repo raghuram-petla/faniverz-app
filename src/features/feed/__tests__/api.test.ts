@@ -3,7 +3,13 @@ jest.mock('@/lib/supabase', () => {
   const mockLimit = jest.fn();
   const mockIn = jest.fn(() => ({ range: mockRange }));
   const mockEq2 = jest.fn(() => ({ in: mockIn, range: mockRange }));
-  const mockEq = jest.fn(() => ({ eq: mockEq2, in: mockIn, range: mockRange }));
+  const mockFeedSingle = jest.fn();
+  const mockEq = jest.fn(() => ({
+    eq: mockEq2,
+    in: mockIn,
+    range: mockRange,
+    single: mockFeedSingle,
+  }));
   const mockOrder2 = jest.fn(() => ({ eq: mockEq, in: mockIn, range: mockRange }));
   const mockOrder = jest.fn(() => ({
     order: mockOrder2,
@@ -61,6 +67,7 @@ jest.mock('@/lib/supabase', () => {
         mockVoteSelect,
         mockVoteEq,
         mockVoteIn,
+        mockFeedSingle,
       },
     },
   };
@@ -70,6 +77,7 @@ import {
   fetchNewsFeed,
   fetchFeaturedFeedItems,
   fetchPersonalizedFeed,
+  fetchFeedItemById,
   voteFeedItem,
   removeFeedVote,
   fetchUserVotes,
@@ -447,5 +455,31 @@ describe('fetchUserVotes', () => {
   it('throws on supabase error', async () => {
     mocks.mockVoteIn.mockResolvedValue({ data: null, error: new Error('Fetch votes failed') });
     await expect(fetchUserVotes('user-123', ['item-1'])).rejects.toThrow('Fetch votes failed');
+  });
+});
+
+describe('fetchFeedItemById', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mocks.mockEq.mockReturnValue({ single: mocks.mockFeedSingle });
+  });
+
+  it('fetches a single feed item by id', async () => {
+    mocks.mockFeedSingle.mockResolvedValue({ data: mockItem, error: null });
+    const result = await fetchFeedItemById('1');
+    expect(mocks.mockFrom).toHaveBeenCalledWith('news_feed');
+    expect(mocks.mockEq).toHaveBeenCalledWith('id', '1');
+    expect(result).toEqual(mockItem);
+  });
+
+  it('returns null when item not found (PGRST116)', async () => {
+    mocks.mockFeedSingle.mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
+    const result = await fetchFeedItemById('missing');
+    expect(result).toBeNull();
+  });
+
+  it('throws on other errors', async () => {
+    mocks.mockFeedSingle.mockResolvedValue({ data: null, error: new Error('DB error') });
+    await expect(fetchFeedItemById('1')).rejects.toThrow('DB error');
   });
 });

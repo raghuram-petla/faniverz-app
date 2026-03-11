@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useMovieSearch } from '@/features/movies/hooks/useMovieSearch';
+import { useUniversalSearch } from '@/features/search';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { Movie } from '@/types';
@@ -19,6 +19,8 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { createStyles } from '@/styles/search.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { SearchResultActor } from '@/components/search/SearchResultActor';
+import { SearchResultProductionHouse } from '@/components/search/SearchResultProductionHouse';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -26,23 +28,32 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 const MAX_RECENT = 10;
 
+type SearchFilter = 'all' | 'movies' | 'actors' | 'studios';
+
 export default function SearchScreen() {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<SearchFilter>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  const { data: results = [], refetch: refetchResults } = useMovieSearch(query);
+  const { data: searchResults, refetch: refetchResults } = useUniversalSearch(query);
+  const movies = searchResults?.movies ?? [];
+  const actors = searchResults?.actors ?? [];
+  const productionHouses = searchResults?.productionHouses ?? [];
+
   const { data: allMovies = [], refetch: refetchMovies } = useMovies();
   const trendingMovies = useMemo(
     () => [...allMovies].sort((a, b) => b.rating - a.rating).slice(0, 5),
     [allMovies],
   );
-  const resultIds = results.map((m) => m.id);
+  const resultIds = movies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(resultIds);
-  const { refreshing, onRefresh } = useRefresh(refetchResults, refetchMovies);
+  const { refreshing, onRefresh } = useRefresh(async () => {
+    await refetchResults();
+  }, refetchMovies);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
     onRefresh,
     refreshing,
@@ -58,7 +69,7 @@ export default function SearchScreen() {
       try {
         setRecentSearches(JSON.parse(stored));
       } catch {
-        /* ignore corrupted data */
+        /* ignore */
       }
     }
   };
@@ -86,18 +97,31 @@ export default function SearchScreen() {
   };
 
   const hasQuery = query.length >= 2;
+  const filteredMovies = filter === 'all' || filter === 'movies' ? movies : [];
+  const filteredActors = filter === 'all' || filter === 'actors' ? actors : [];
+  const filteredHouses = filter === 'all' || filter === 'studios' ? productionHouses : [];
+  const totalResults = filteredMovies.length + filteredActors.length + filteredHouses.length;
+
+  const FILTERS: { key: SearchFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'movies', label: `Movies${movies.length ? ` (${movies.length})` : ''}` },
+    { key: 'actors', label: `Actors${actors.length ? ` (${actors.length})` : ''}` },
+    {
+      key: 'studios',
+      label: `Studios${productionHouses.length ? ` (${productionHouses.length})` : ''}`,
+    },
+  ];
 
   return (
     <View style={styles.screen}>
       <SafeAreaCover />
-      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <HomeButton />
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={18} color={theme.textTertiary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search movies, actors, directors..."
+            placeholder="Search movies, actors, studios..."
             placeholderTextColor={theme.textTertiary}
             value={query}
             onChangeText={setQuery}
@@ -114,7 +138,30 @@ export default function SearchScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* No query — show recent searches */}
+      {/* Filter chips */}
+      {hasQuery && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterRow}
+          contentContainerStyle={styles.filterRowContent}
+        >
+          {FILTERS.map((f) => (
+            <TouchableOpacity
+              key={f.key}
+              style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
+              onPress={() => setFilter(f.key)}
+            >
+              <Text
+                style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}
+              >
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
       {!hasQuery && (
         <View style={styles.noQuery}>
           {recentSearches.length > 0 && (
@@ -128,10 +175,7 @@ export default function SearchScreen() {
               <View style={styles.recentPills}>
                 {recentSearches.map((term) => (
                   <View key={term} style={styles.recentPill}>
-                    <TouchableOpacity
-                      onPress={() => setQuery(term)}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                    >
+                    <TouchableOpacity onPress={() => setQuery(term)} style={styles.recentPillInner}>
                       <Ionicons name="time-outline" size={14} color={theme.textTertiary} />
                       <Text style={styles.recentPillText}>{term}</Text>
                     </TouchableOpacity>
@@ -143,8 +187,6 @@ export default function SearchScreen() {
               </View>
             </View>
           )}
-
-          {/* Trending Now */}
           {trendingMovies.length > 0 && (
             <View style={styles.trendingSection}>
               <View style={styles.trendingHeader}>
@@ -183,15 +225,14 @@ export default function SearchScreen() {
         </View>
       )}
 
-      {/* Results */}
-      {hasQuery && results.length > 0 && (
+      {hasQuery && totalResults > 0 && (
         <Text style={styles.resultsCount}>
-          {results.length} result{results.length !== 1 ? 's' : ''} found
+          {totalResults} result{totalResults !== 1 ? 's' : ''} found
         </Text>
       )}
       {hasQuery && (
         <FlashList
-          data={results}
+          data={filteredMovies}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
@@ -199,18 +240,44 @@ export default function SearchScreen() {
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
           ListHeaderComponent={
-            <PullToRefreshIndicator
-              pullDistance={pullDistance}
-              isRefreshing={isRefreshing}
-              refreshing={refreshing}
-            />
+            <View>
+              <PullToRefreshIndicator
+                pullDistance={pullDistance}
+                isRefreshing={isRefreshing}
+                refreshing={refreshing}
+              />
+              {filteredActors.map((actor) => (
+                <SearchResultActor
+                  key={actor.id}
+                  actor={actor}
+                  onPress={() => {
+                    if (query.length >= 2) saveSearch(query);
+                    router.push(`/actor/${actor.id}`);
+                  }}
+                />
+              ))}
+              {filteredHouses.map((house) => (
+                <SearchResultProductionHouse
+                  key={house.id}
+                  house={house}
+                  onPress={() => {
+                    if (query.length >= 2) saveSearch(query);
+                    router.push(`/production-house/${house.id}`);
+                  }}
+                />
+              ))}
+              {(filteredActors.length > 0 || filteredHouses.length > 0) &&
+                filteredMovies.length > 0 && <View style={styles.sectionDivider} />}
+            </View>
           }
           ListEmptyComponent={
-            <EmptyState
-              icon="search"
-              title="No results found"
-              subtitle="Try searching for another movie"
-            />
+            filteredActors.length === 0 && filteredHouses.length === 0 ? (
+              <EmptyState
+                icon="search"
+                title="No results found"
+                subtitle="Try a different search term"
+              />
+            ) : null
           }
           renderItem={({ item }) => {
             const itemPlatforms = platformMap[item.id] ?? [];

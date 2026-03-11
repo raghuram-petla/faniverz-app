@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
@@ -10,6 +10,7 @@ export interface FeedAvatarProps {
   entityType: FeedEntityType;
   size?: number;
   label?: string;
+  onPress?: () => void;
 }
 
 const FALLBACK_ICONS: Record<FeedEntityType, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -19,79 +20,99 @@ const FALLBACK_ICONS: Record<FeedEntityType, React.ComponentProps<typeof Ionicon
   production_house: 'business',
 };
 
-export function FeedAvatar({ imageUrl, entityType, size = 52, label }: FeedAvatarProps) {
+export function FeedAvatar({ imageUrl, entityType, size = 52, label, onPress }: FeedAvatarProps) {
   const { theme } = useTheme();
   const resolvedUrl = getImageUrl(imageUrl, 'sm');
 
-  if (entityType === 'movie') {
-    const height = Math.round(size * 1.5); // 2:3 poster aspect ratio
+  const accessLabel = onPress ? `Navigate to ${label ?? 'entity'}` : label;
+
+  const renderContent = () => {
+    if (entityType === 'movie') {
+      const height = Math.round(size * 1.5);
+      return (
+        <View
+          style={[
+            styles.base,
+            { width: size, height, borderRadius: 6, backgroundColor: theme.surfaceElevated },
+          ]}
+          accessibilityLabel={accessLabel}
+        >
+          {resolvedUrl ? (
+            <Image
+              source={{ uri: resolvedUrl }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+            />
+          ) : (
+            <Ionicons name="film" size={size * 0.5} color={theme.textTertiary} />
+          )}
+        </View>
+      );
+    }
+
+    if (entityType === 'actor') {
+      const outerSize = size;
+      const innerSize = Math.round(size * 1.42);
+      return (
+        <View
+          style={[
+            styles.base,
+            styles.diamondOuter,
+            {
+              width: outerSize,
+              height: outerSize,
+              borderRadius: outerSize * 0.2,
+              backgroundColor: theme.surfaceElevated,
+            },
+          ]}
+          accessibilityLabel={accessLabel}
+        >
+          {resolvedUrl ? (
+            <Image
+              source={{ uri: resolvedUrl }}
+              style={[styles.diamondImage, { width: innerSize, height: innerSize }]}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={styles.diamondFallback}>
+              <Ionicons name="person" size={size * 0.45} color={theme.textTertiary} />
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    const borderRadius = entityType === 'user' ? size / 2 : size * 0.2;
     return (
       <View
         style={[
           styles.base,
-          { width: size, height, borderRadius: 6, backgroundColor: theme.surfaceElevated },
+          { width: size, height: size, borderRadius, backgroundColor: theme.surfaceElevated },
         ]}
-        accessibilityLabel={label}
+        accessibilityLabel={accessLabel}
       >
         {resolvedUrl ? (
           <Image source={{ uri: resolvedUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
         ) : (
-          <Ionicons name="film" size={size * 0.5} color={theme.textTertiary} />
-        )}
-      </View>
-    );
-  }
-
-  if (entityType === 'actor') {
-    const outerSize = size;
-    const innerSize = Math.round(size * 1.42); // sqrt(2) ≈ 1.414 to fill rotated square
-    return (
-      <View
-        style={[
-          styles.base,
-          styles.diamondOuter,
-          {
-            width: outerSize,
-            height: outerSize,
-            borderRadius: outerSize * 0.2,
-            backgroundColor: theme.surfaceElevated,
-          },
-        ]}
-        accessibilityLabel={label}
-      >
-        {resolvedUrl ? (
-          <Image
-            source={{ uri: resolvedUrl }}
-            style={[styles.diamondImage, { width: innerSize, height: innerSize }]}
-            contentFit="cover"
+          <Ionicons
+            name={FALLBACK_ICONS[entityType]}
+            size={size * 0.5}
+            color={theme.textTertiary}
           />
-        ) : (
-          <View style={styles.diamondFallback}>
-            <Ionicons name="person" size={size * 0.45} color={theme.textTertiary} />
-          </View>
         )}
       </View>
     );
+  };
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7} accessibilityRole="button">
+        {renderContent()}
+      </TouchableOpacity>
+    );
   }
 
-  // user = circle, production_house = square
-  const borderRadius = entityType === 'user' ? size / 2 : size * 0.2;
-
-  return (
-    <View
-      style={[
-        styles.base,
-        { width: size, height: size, borderRadius, backgroundColor: theme.surfaceElevated },
-      ]}
-      accessibilityLabel={label}
-    >
-      {resolvedUrl ? (
-        <Image source={{ uri: resolvedUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
-      ) : (
-        <Ionicons name={FALLBACK_ICONS[entityType]} size={size * 0.5} color={theme.textTertiary} />
-      )}
-    </View>
-  );
+  return renderContent();
 }
 
 const styles = StyleSheet.create({

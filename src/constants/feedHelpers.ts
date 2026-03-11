@@ -150,18 +150,39 @@ export function formatRelativeTime(dateStr: string): string {
 
 export function deriveEntityType(item: NewsFeedItem): FeedEntityType {
   if (item.movie_id) return 'movie';
-  return 'movie'; // default until actor/user/production_house support is added
+  if (item.source_table === 'actors') return 'actor';
+  if (item.source_table === 'production_houses') return 'production_house';
+  return 'movie';
 }
 
 export function getEntityAvatarUrl(item: NewsFeedItem): string | null {
-  return item.movie?.poster_url ?? null;
+  if (item.movie_id) return item.movie?.poster_url ?? null;
+  return item.thumbnail_url ?? null;
 }
 
 export function getEntityName(item: NewsFeedItem): string {
-  return item.movie?.title ?? 'Unknown';
+  if (item.movie_id) return item.movie?.title ?? 'Unknown';
+  return item.title ?? 'Unknown';
 }
 
 export function getEntityId(item: NewsFeedItem): string | null {
   if (item.movie_id) return item.movie_id;
+  if (item.source_id && item.source_table) return item.source_id;
   return null;
+}
+
+export function getEntityRoute(item: NewsFeedItem): string | null {
+  const entityType = deriveEntityType(item);
+  const entityId = getEntityId(item);
+  if (!entityId) return null;
+  switch (entityType) {
+    case 'movie':
+      return `/movie/${entityId}`;
+    case 'actor':
+      return `/actor/${entityId}`;
+    case 'production_house':
+      return `/production-house/${entityId}`;
+    default:
+      return null;
+  }
 }

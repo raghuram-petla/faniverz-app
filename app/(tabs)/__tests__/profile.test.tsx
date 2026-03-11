@@ -22,6 +22,14 @@ jest.mock('@/features/notifications/hooks', () => ({
   useUnreadCount: jest.fn(() => 0),
 }));
 
+jest.mock('@/features/feed', () => ({
+  useEnrichedFollows: jest.fn(() => ({ data: [] })),
+}));
+
+jest.mock('@/components/profile/FollowingSection', () => ({
+  FollowingSection: () => null,
+}));
+
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
@@ -137,7 +145,7 @@ describe('ProfileScreen', () => {
     render(<ProfileScreen />);
 
     expect(screen.getByText('Faniverz v1.0.0')).toBeTruthy();
-    expect(screen.getByText('Your Telugu Cinema Companion')).toBeTruthy();
+    expect(screen.getByText('Your Movie Companion')).toBeTruthy();
   });
 
   // ── Logged in ─────────────────────────────────────────────────────────
@@ -156,9 +164,12 @@ describe('ProfileScreen', () => {
     render(<ProfileScreen />);
 
     expect(screen.getByText('Edit Profile')).toBeTruthy();
+    expect(screen.getByText('Username')).toBeTruthy();
     expect(screen.getByText('My Reviews')).toBeTruthy();
     expect(screen.getByText('Settings')).toBeTruthy();
     expect(screen.getByText('Notifications')).toBeTruthy();
+    expect(screen.getByText('Following')).toBeTruthy();
+    expect(screen.getByText('Activity')).toBeTruthy();
     expect(screen.getByText('Favorite Actors')).toBeTruthy();
     expect(screen.getByText('Watched Movies')).toBeTruthy();
     expect(screen.getByText('Account Details')).toBeTruthy();
@@ -215,6 +226,24 @@ describe('ProfileScreen', () => {
 
     fireEvent.press(screen.getByText('Notifications'));
     expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('navigates to Following when menu item is pressed', () => {
+    setupLoggedIn();
+
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Following'));
+    expect(mockPush).toHaveBeenCalledWith('/profile/following');
+  });
+
+  it('navigates to Activity when menu item is pressed', () => {
+    setupLoggedIn();
+
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Activity'));
+    expect(mockPush).toHaveBeenCalledWith('/profile/activity');
   });
 
   it('navigates to Favorite Actors when menu item is pressed', () => {
@@ -328,6 +357,6 @@ describe('ProfileScreen', () => {
     render(<ProfileScreen />);
 
     expect(screen.getByText('Faniverz v1.0.0')).toBeTruthy();
-    expect(screen.getByText('Your Telugu Cinema Companion')).toBeTruthy();
+    expect(screen.getByText('Your Movie Companion')).toBeTruthy();
   });
 });

@@ -13,7 +13,7 @@ const exo2 = Exo_2({
 
 export const metadata: Metadata = {
   title: 'Faniverz Admin',
-  description: 'Admin panel for Faniverz Telugu cinema app',
+  description: 'Admin panel for Faniverz movie app',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

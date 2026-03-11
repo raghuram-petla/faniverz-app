@@ -1,0 +1,131 @@
+import { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ScreenHeader from '@/components/common/ScreenHeader';
+import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import type { SemanticTheme } from '@shared/themes';
+import { useCheckUsername, useSetUsername } from '@/features/auth/hooks/useUsername';
+import { useProfile } from '@/features/auth/hooks/useProfile';
+
+export default function UsernameScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { theme } = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
+  const { data: profile } = useProfile();
+  const [username, setUsername] = useState(profile?.username ?? '');
+  const { isAvailable, isChecking, error: checkError } = useCheckUsername(username);
+  const setUsernameMutation = useSetUsername();
+
+  const handleSave = async () => {
+    if (!isAvailable) return;
+    try {
+      await setUsernameMutation.mutateAsync(username);
+      router.back();
+    } catch {
+      // error is surfaced via mutation
+    }
+  };
+
+  const statusIcon = isChecking
+    ? null
+    : isAvailable === true
+      ? 'checkmark-circle'
+      : isAvailable === false
+        ? 'close-circle'
+        : null;
+
+  const statusColor = isAvailable ? palette.green500 : palette.red500;
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+      <View style={styles.headerWrapper}>
+        <ScreenHeader title="Choose Username" />
+      </View>
+
+      <View style={styles.content}>
+        <Text style={styles.label}>Username</Text>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.prefix}>@</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="username"
+            placeholderTextColor={theme.textTertiary}
+            value={username}
+            onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={20}
+          />
+          {isChecking && <ActivityIndicator size="small" color={theme.textTertiary} />}
+          {statusIcon && <Ionicons name={statusIcon} size={20} color={statusColor} />}
+        </View>
+
+        {checkError && <Text style={styles.error}>{checkError}</Text>}
+        {setUsernameMutation.error && (
+          <Text style={styles.error}>{(setUsernameMutation.error as Error).message}</Text>
+        )}
+
+        <Text style={styles.hint}>
+          3-20 characters. Lowercase letters, numbers, and underscores only.
+        </Text>
+
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            (!isAvailable || setUsernameMutation.isPending) && styles.saveButtonDisabled,
+          ]}
+          onPress={handleSave}
+          disabled={!isAvailable || setUsernameMutation.isPending}
+          activeOpacity={0.8}
+        >
+          {setUsernameMutation.isPending ? (
+            <ActivityIndicator size="small" color={palette.white} />
+          ) : (
+            <Text style={styles.saveText}>Save Username</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const createStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.background, paddingHorizontal: 16 },
+    headerWrapper: { marginBottom: 24 },
+    content: { gap: 12 },
+    label: { fontSize: 14, fontWeight: '600', color: t.textSecondary },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: t.input,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      gap: 4,
+    },
+    prefix: { fontSize: 16, fontWeight: '600', color: t.textTertiary },
+    input: { flex: 1, fontSize: 16, color: t.textPrimary },
+    error: { fontSize: 13, color: palette.red500 },
+    hint: { fontSize: 12, color: t.textTertiary },
+    saveButton: {
+      backgroundColor: palette.red600,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    saveButtonDisabled: { opacity: 0.5 },
+    saveText: { fontSize: 16, fontWeight: '700', color: palette.white },
+  });

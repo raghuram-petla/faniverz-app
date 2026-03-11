@@ -21,6 +21,7 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useAuthGate } from '@/hooks/useAuthGate';
 
 type TabName = 'overview' | 'cast' | 'reviews';
 type DisplayTab = TabName | 'media';
@@ -39,6 +40,7 @@ export default function MovieDetailScreen() {
   const { add: addWatchlist, remove: removeWatchlist } = useWatchlistMutations();
   const { data: reviews = [], refetch: refetchReviews } = useMovieReviews(id ?? '');
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
+  const { gate } = useAuthGate();
   const { refreshing, onRefresh } = useRefresh(refetchMovie, refetchReviews);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
     onRefresh,
@@ -61,17 +63,16 @@ export default function MovieDetailScreen() {
     await Share.share({ message: text });
   };
 
-  const handleToggleWatchlist = () => {
-    if (!userId) return;
+  const handleToggleWatchlist = gate(() => {
     if (isWatchlisted) {
       removeWatchlist.mutate({ userId, movieId: movie.id });
     } else {
       addWatchlist.mutate({ userId, movieId: movie.id });
     }
-  };
+  });
 
-  const handleSubmitReview = () => {
-    if (!userId || reviewRating === 0) return;
+  const handleSubmitReview = gate(() => {
+    if (reviewRating === 0) return;
     createReview.mutate({
       user_id: userId,
       movie_id: movie.id,
@@ -85,7 +86,7 @@ export default function MovieDetailScreen() {
     setReviewTitle('');
     setReviewBody('');
     setContainsSpoiler(false);
-  };
+  });
 
   const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
@@ -159,8 +160,8 @@ export default function MovieDetailScreen() {
               reviewCount={movie.review_count}
               reviews={reviews}
               userId={userId}
-              onWriteReview={() => setShowReviewModal(true)}
-              onHelpful={(reviewId) => helpfulMutation.mutate({ userId, reviewId })}
+              onWriteReview={gate(() => setShowReviewModal(true))}
+              onHelpful={gate((reviewId: string) => helpfulMutation.mutate({ userId, reviewId }))}
             />
           )}
         </View>

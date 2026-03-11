@@ -32,6 +32,8 @@ function ThemedStack() {
         <Stack.Screen name="actor/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="discover" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="search" options={{ animation: 'fade' }} />
+        <Stack.Screen name="post/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="production-house/[id]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="profile" />
       </Stack>

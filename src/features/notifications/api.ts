@@ -4,7 +4,7 @@ import { Notification } from '@/types';
 export async function fetchNotifications(userId: string): Promise<Notification[]> {
   const { data, error } = await supabase
     .from('notifications')
-    .select('*, movie:movies(title, poster_url)')
+    .select('*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 

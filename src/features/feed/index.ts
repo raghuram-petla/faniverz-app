@@ -2,8 +2,15 @@ export {
   useNewsFeed,
   useFeaturedFeed,
   usePersonalizedFeed,
+  useFeedItem,
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
 } from './hooks';
-export { useEntityFollows, useFollowEntity, useUnfollowEntity } from './followHooks';
+export {
+  useEntityFollows,
+  useEnrichedFollows,
+  useFollowEntity,
+  useUnfollowEntity,
+} from './followHooks';
+export { useComments, useAddComment, useDeleteComment } from './commentsHooks';
