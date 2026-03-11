@@ -68,7 +68,7 @@ beforeEach(() => {
 describe('DiscoverTab', () => {
   it('renders the discover form with year and month selects', () => {
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Discover Telugu Movies')).toBeInTheDocument();
+    expect(screen.getByText('Discover Movies')).toBeInTheDocument();
     expect(screen.getByText('Year')).toBeInTheDocument();
     expect(screen.getByText('Month')).toBeInTheDocument();
     expect(screen.getByText('Discover')).toBeInTheDocument();

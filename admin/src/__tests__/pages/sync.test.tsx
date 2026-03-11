@@ -74,7 +74,7 @@ describe('SyncPage', () => {
 
   it('defaults to Discover tab active', () => {
     renderWithProviders(<SyncPage />);
-    expect(screen.getByText('Discover Telugu Movies')).toBeInTheDocument();
+    expect(screen.getByText('Discover Movies')).toBeInTheDocument();
   });
 
   it('switches to Import tab on click', () => {

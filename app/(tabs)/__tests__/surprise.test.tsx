@@ -140,7 +140,7 @@ describe('SurpriseScreen', () => {
     const shortFilmContent = [
       {
         id: 'sf-1',
-        title: 'Telugu Short Film',
+        title: 'Indie Short Film',
         description: 'A compelling short film',
         youtube_id: 'xyz789',
         category: 'short-film' as const,
@@ -153,7 +153,7 @@ describe('SurpriseScreen', () => {
 
     render(<SurpriseScreen />);
 
-    expect(screen.getByText('Telugu Short Film')).toBeTruthy();
+    expect(screen.getByText('Indie Short Film')).toBeTruthy();
     expect(screen.getByText('SHORT FILM')).toBeTruthy();
   });
 

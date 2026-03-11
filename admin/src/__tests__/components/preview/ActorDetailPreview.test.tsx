@@ -9,7 +9,7 @@ const defaultProps = {
   birthDate: '1983-04-08',
   placeOfBirth: 'Chennai, India',
   heightCm: 175,
-  biography: 'Allu Arjun is a renowned Indian actor known for his work in Telugu cinema.',
+  biography: 'Allu Arjun is a renowned Indian actor known for his work in Indian cinema.',
 };
 
 describe('ActorDetailPreview', () => {

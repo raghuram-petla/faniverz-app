@@ -28,7 +28,7 @@ const stableProfile = {
   email: 'test@example.com',
   phone: '+91 98765 43210',
   location: 'Hyderabad, India',
-  bio: 'Big fan of Telugu cinema.',
+  bio: 'Big fan of Indian cinema.',
   avatar_url: null,
   preferred_lang: 'te',
   is_admin: false,
@@ -78,7 +78,7 @@ describe('EditProfileScreen', () => {
     // Bio label is present
     expect(screen.getByText('Bio')).toBeTruthy();
     // The counter Text element renders "25/150" with BIO_LIMIT=150
-    // "Big fan of Telugu cinema." is 25 characters; counter uses exact combined text
+    // "Big fan of Indian cinema." is 25 characters; counter uses exact combined text
     expect(screen.getByText(/25\/150/)).toBeTruthy();
   });
 
@@ -92,7 +92,7 @@ describe('EditProfileScreen', () => {
     expect(screen.getByDisplayValue('John Doe')).toBeTruthy();
     expect(screen.getByDisplayValue('+91 98765 43210')).toBeTruthy();
     expect(screen.getByDisplayValue('Hyderabad, India')).toBeTruthy();
-    expect(screen.getByDisplayValue('Big fan of Telugu cinema.')).toBeTruthy();
+    expect(screen.getByDisplayValue('Big fan of Indian cinema.')).toBeTruthy();
   });
 
   it('calls updateProfile when Save Changes is pressed', () => {
@@ -101,7 +101,7 @@ describe('EditProfileScreen', () => {
     expect(mockUpdateMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         display_name: 'John Doe',
-        bio: 'Big fan of Telugu cinema.',
+        bio: 'Big fan of Indian cinema.',
       }),
       expect.any(Object),
     );
@@ -126,7 +126,7 @@ describe('EditProfileScreen', () => {
 
     // Type a bio that's over 150 characters
     const longBio = 'A'.repeat(151);
-    fireEvent.changeText(screen.getByDisplayValue('Big fan of Telugu cinema.'), longBio);
+    fireEvent.changeText(screen.getByDisplayValue('Big fan of Indian cinema.'), longBio);
 
     // Press save
     fireEvent.press(screen.getByText('Save Changes'));

@@ -142,7 +142,7 @@ function DiscoverForm({
 }: DiscoverFormProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">
-      <h2 className="text-lg font-semibold text-on-surface mb-4">Discover Telugu Movies</h2>
+      <h2 className="text-lg font-semibold text-on-surface mb-4">Discover Movies</h2>
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <label className="block text-xs text-on-surface-muted mb-1">Year</label>

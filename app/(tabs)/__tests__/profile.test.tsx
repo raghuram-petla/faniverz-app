@@ -59,7 +59,7 @@ function setupLoggedIn(profileOverrides: object = {}) {
   mockUseProfile.mockReturnValue({
     data: {
       id: 'user-1',
-      display_name: 'Telugu Fan',
+      display_name: 'Movie Fan',
       avatar_url: null,
       created_at: '2024-01-01T00:00:00Z',
       ...profileOverrides,
@@ -151,11 +151,11 @@ describe('ProfileScreen', () => {
   // ── Logged in ─────────────────────────────────────────────────────────
 
   it('renders user display name', () => {
-    setupLoggedIn({ display_name: 'Telugu Fan' });
+    setupLoggedIn({ display_name: 'Movie Fan' });
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('Telugu Fan')).toBeTruthy();
+    expect(screen.getByText('Movie Fan')).toBeTruthy();
   });
 
   it('shows menu items when logged in', () => {
