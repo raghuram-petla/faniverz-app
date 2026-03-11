@@ -26,9 +26,15 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: () => ({ user: mockUser }),
 }));
 
+jest.mock('@/hooks/useAuthGate', () => ({
+  useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
+}));
+
 const mockMutate = jest.fn();
 const mockDeleteMutate = jest.fn();
 const mockFetchNextPage = jest.fn();
+const mockVoteMutate = jest.fn();
+const mockRemoveMutate = jest.fn();
 
 jest.mock('@/features/feed', () => ({
   useFeedItem: () => ({
@@ -56,6 +62,7 @@ jest.mock('@/features/feed', () => ({
       movie: { id: 'm1', title: 'Movie', poster_url: null, release_date: null },
     },
     isLoading: false,
+    refetch: jest.fn(),
   }),
   useComments: () => ({
     data: {
@@ -75,28 +82,50 @@ jest.mock('@/features/feed', () => ({
     isLoading: false,
     hasNextPage: false,
     fetchNextPage: mockFetchNextPage,
+    refetch: jest.fn(),
   }),
   useAddComment: () => ({ mutate: mockMutate }),
   useDeleteComment: () => ({ mutate: mockDeleteMutate }),
+  useVoteFeedItem: () => ({ mutate: mockVoteMutate }),
+  useRemoveFeedVote: () => ({ mutate: mockRemoveMutate }),
+  useUserVotes: () => ({ data: {}, refetch: jest.fn() }),
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
   FeedCard: ({
     item,
     onEntityPress,
+    onUpvote,
+    onDownvote,
   }: {
-    item: { title: string };
+    item: { id: string; title: string };
     onEntityPress?: (type: string, id: string) => void;
+    onUpvote?: (id: string) => void;
+    onDownvote?: (id: string) => void;
   }) => {
     const { Text, TouchableOpacity } = require('react-native');
     return (
       <>
         <Text testID="feed-card">{item.title}</Text>
         {onEntityPress && (
-          <TouchableOpacity
-            testID="entity-press-btn"
-            onPress={() => onEntityPress('movie', 'm1')}
-          />
+          <>
+            <TouchableOpacity
+              testID="entity-press-btn"
+              onPress={() => onEntityPress('movie', 'm1')}
+            />
+            <TouchableOpacity
+              testID="user-entity-own"
+              onPress={() => onEntityPress('user', 'u1')}
+            />
+            <TouchableOpacity
+              testID="user-entity-other"
+              onPress={() => onEntityPress('user', 'other-user')}
+            />
+          </>
+        )}
+        {onUpvote && <TouchableOpacity testID="upvote-btn" onPress={() => onUpvote(item.id)} />}
+        {onDownvote && (
+          <TouchableOpacity testID="downvote-btn" onPress={() => onDownvote(item.id)} />
         )}
       </>
     );
@@ -142,8 +171,11 @@ jest.mock('@/components/common/SafeAreaCover', () => ({
 }));
 
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import PostDetailScreen from '../[id]';
+
+jest.spyOn(Alert, 'alert');
 
 describe('PostDetailScreen', () => {
   beforeEach(() => {
@@ -199,5 +231,38 @@ describe('PostDetailScreen', () => {
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('entity-press-btn'));
     expect(mockPush).toHaveBeenCalledWith('/movie/m1');
+  });
+
+  it('calls vote mutation on upvote', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('upvote-btn'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'post-1',
+      voteType: 'up',
+      previousVote: null,
+    });
+  });
+
+  it('calls vote mutation on downvote', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('downvote-btn'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'post-1',
+      voteType: 'down',
+      previousVote: null,
+    });
+  });
+
+  it('navigates to own profile when user entity is own ID', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('user-entity-own'));
+    expect(mockPush).toHaveBeenCalledWith('/profile');
+  });
+
+  it('shows alert when user entity is another user', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('user-entity-other'));
+    expect(Alert.alert).toHaveBeenCalledWith('Coming Soon', 'User profiles are not yet available.');
+    expect(mockPush).not.toHaveBeenCalled();
   });
 });

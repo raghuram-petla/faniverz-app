@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,8 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const handleSignUp = async () => {
     setValidationError(null);
@@ -93,6 +95,7 @@ export default function RegisterScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
+            accessibilityLabel="Go back"
           >
             <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
           </TouchableOpacity>
@@ -116,6 +119,8 @@ export default function RegisterScreen() {
             onChangeText={setUsername}
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => emailRef.current?.focus()}
           />
         </View>
 
@@ -127,6 +132,7 @@ export default function RegisterScreen() {
             style={styles.inputIcon}
           />
           <TextInput
+            ref={emailRef}
             style={styles.input}
             placeholder="Email"
             placeholderTextColor={theme.textTertiary}
@@ -135,6 +141,8 @@ export default function RegisterScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
         </View>
 
@@ -146,12 +154,14 @@ export default function RegisterScreen() {
             style={styles.inputIcon}
           />
           <TextInput
+            ref={passwordRef}
             style={styles.input}
             placeholder="Password"
             placeholderTextColor={theme.textTertiary}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
+            returnKeyType="done"
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
             <Ionicons

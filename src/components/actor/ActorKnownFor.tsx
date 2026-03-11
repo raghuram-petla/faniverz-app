@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { createStyles } from '@/styles/actorDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { FilmCredit } from './ActorFilmography';
 
 export interface ActorKnownForProps {
@@ -42,7 +43,7 @@ export function ActorKnownFor({ credits, onMoviePress }: ActorKnownForProps) {
               style={{ width: 110 }}
             >
               <Image
-                source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+                source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
                 style={{ width: 110, height: 165, borderRadius: 10 }}
                 contentFit="cover"
                 transition={200}

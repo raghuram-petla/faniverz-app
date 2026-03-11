@@ -19,6 +19,7 @@ import { Notification } from '@/types';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { formatRelativeTime } from '@/utils/formatDate';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -55,7 +56,7 @@ function NotificationItem({
       {/* Poster with type icon overlay */}
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(item.movie?.poster_url ?? null, 'sm') ?? undefined }}
+          source={{ uri: getImageUrl(item.movie?.poster_url ?? null, 'sm') ?? PLACEHOLDER_POSTER }}
           style={styles.poster}
           contentFit="cover"
         />
@@ -66,7 +67,9 @@ function NotificationItem({
 
       {/* Text content */}
       <View style={styles.itemContent}>
-        <Text style={styles.itemTitle}>{item.title}</Text>
+        <Text style={styles.itemTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
         <Text style={styles.itemMessage} numberOfLines={2}>
           {item.message}
         </Text>

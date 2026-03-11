@@ -197,7 +197,9 @@ export default function ProfileScreen() {
 
         {/* User info */}
         <View style={styles.userInfo}>
-          <Text style={styles.displayName}>{displayName}</Text>
+          <Text style={styles.displayName} numberOfLines={1}>
+            {displayName}
+          </Text>
           {usernameDisplay && <Text style={styles.usernameText}>{usernameDisplay}</Text>}
           <Text style={styles.emailText}>{email}</Text>
           <Text style={styles.memberSince}>Member since {memberSince}</Text>

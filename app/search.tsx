@@ -17,6 +17,7 @@ import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { createStyles } from '@/styles/search.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { SearchResultActor } from '@/components/search/SearchResultActor';
 import { SearchResultProductionHouse } from '@/components/search/SearchResultProductionHouse';
 import { SearchResultMovie } from '@/components/search/SearchResultMovie';
@@ -202,7 +203,7 @@ export default function SearchScreen() {
                     <Text style={styles.trendingRankText}>{index + 1}</Text>
                   </View>
                   <Image
-                    source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+                    source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
                     style={styles.trendingPoster}
                     contentFit="cover"
                   />

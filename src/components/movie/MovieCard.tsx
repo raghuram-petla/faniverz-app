@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from './MovieQuickAction';
 
@@ -59,7 +60,7 @@ export function MovieCard({
     >
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
           style={styles.poster}
           contentFit="cover"
           transition={200}

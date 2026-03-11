@@ -10,6 +10,7 @@ import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from './MovieQuickAction';
 
@@ -47,7 +48,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
       {/* Poster */}
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
           style={[styles.poster, isPast && styles.posterPast]}
           contentFit="cover"
           transition={200}

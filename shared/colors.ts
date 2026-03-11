@@ -16,6 +16,7 @@ export const colors = {
   purple600: '#9333EA',
   blue600: '#2563EB',
   blue500: '#3B82F6',
+  violet400: '#A78BFA',
   blue400: '#60A5FA',
   yellow400: '#FACC15',
   green500: '#22C55E',

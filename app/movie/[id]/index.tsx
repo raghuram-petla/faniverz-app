@@ -141,6 +141,8 @@ export default function MovieDetailScreen() {
               key={tab}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
               onPress={() => handleTabPress(tab)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === tab }}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}

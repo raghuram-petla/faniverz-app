@@ -15,6 +15,7 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createProductionHouseStyles } from '@/styles/productionHouseDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
 export default function ProductionHouseDetailScreen() {
   const { theme, colors } = useTheme();
@@ -136,7 +137,7 @@ export default function ProductionHouseDetailScreen() {
                   testID={`movie-card-${movie.id}`}
                 >
                   <Image
-                    source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+                    source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
                     style={styles.moviePoster}
                     contentFit="cover"
                     transition={200}

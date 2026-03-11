@@ -8,6 +8,7 @@ import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie, OTTPlatform } from '@/types';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from '@/components/movie/MovieQuickAction';
 
@@ -31,7 +32,7 @@ export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemPr
     >
       <View style={styles.gridPoster}>
         <Image
-          source={{ uri: getImageUrl(item.poster_url, 'md') ?? undefined }}
+          source={{ uri: getImageUrl(item.poster_url, 'md') ?? PLACEHOLDER_POSTER }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
         />

@@ -6,6 +6,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,61 +51,71 @@ export default function UsernameScreen() {
   const statusColor = isAvailable ? palette.green500 : palette.red500;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.headerWrapper}>
-        <ScreenHeader title="Choose Username" />
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.label}>Username</Text>
-        <View style={styles.inputWrapper}>
-          <Text style={styles.prefix}>@</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="username"
-            placeholderTextColor={theme.textTertiary}
-            value={username}
-            onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={20}
-          />
-          {isChecking && <ActivityIndicator size="small" color={theme.textTertiary} />}
-          {statusIcon && <Ionicons name={statusIcon} size={20} color={statusColor} />}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 12 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.headerWrapper}>
+          <ScreenHeader title="Choose Username" />
         </View>
 
-        {checkError && <Text style={styles.error}>{checkError}</Text>}
-        {setUsernameMutation.error && (
-          <Text style={styles.error}>{(setUsernameMutation.error as Error).message}</Text>
-        )}
+        <View style={styles.content}>
+          <Text style={styles.label}>Username</Text>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.prefix}>@</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="username"
+              placeholderTextColor={theme.textTertiary}
+              value={username}
+              onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={20}
+            />
+            {isChecking && <ActivityIndicator size="small" color={theme.textTertiary} />}
+            {statusIcon && <Ionicons name={statusIcon} size={20} color={statusColor} />}
+          </View>
 
-        <Text style={styles.hint}>
-          3-20 characters. Lowercase letters, numbers, and underscores only.
-        </Text>
-
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            (!isAvailable || setUsernameMutation.isPending) && styles.saveButtonDisabled,
-          ]}
-          onPress={handleSave}
-          disabled={!isAvailable || setUsernameMutation.isPending}
-          activeOpacity={0.8}
-        >
-          {setUsernameMutation.isPending ? (
-            <ActivityIndicator size="small" color={palette.white} />
-          ) : (
-            <Text style={styles.saveText}>Save Username</Text>
+          {checkError && <Text style={styles.error}>{checkError}</Text>}
+          {setUsernameMutation.error && (
+            <Text style={styles.error}>{(setUsernameMutation.error as Error).message}</Text>
           )}
-        </TouchableOpacity>
-      </View>
-    </View>
+
+          <Text style={styles.hint}>
+            3-20 characters. Lowercase letters, numbers, and underscores only.
+          </Text>
+
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              (!isAvailable || setUsernameMutation.isPending) && styles.saveButtonDisabled,
+            ]}
+            onPress={handleSave}
+            disabled={!isAvailable || setUsernameMutation.isPending}
+            activeOpacity={0.8}
+          >
+            {setUsernameMutation.isPending ? (
+              <ActivityIndicator size="small" color={palette.white} />
+            ) : (
+              <Text style={styles.saveText}>Save Username</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: t.background, paddingHorizontal: 16 },
+    container: { flex: 1, backgroundColor: t.background },
+    scrollContent: { paddingHorizontal: 16 },
     headerWrapper: { marginBottom: 24 },
     content: { gap: 12 },
     label: { fontSize: 14, fontWeight: '600', color: t.textSecondary },

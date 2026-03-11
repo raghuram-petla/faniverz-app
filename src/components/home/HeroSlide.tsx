@@ -8,6 +8,7 @@ import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { getMovieActionType } from '@/hooks/useMovieAction';
 import { createStyles } from './HeroCarousel.styles';
 import type { Movie, OTTPlatform } from '@/types';
@@ -44,7 +45,7 @@ export function HeroSlide({
           uri:
             getImageUrl(movie.backdrop_url, 'md') ??
             getImageUrl(movie.poster_url, 'md') ??
-            undefined,
+            PLACEHOLDER_POSTER,
         }}
         style={styles.backdrop}
         contentFit="cover"

@@ -90,7 +90,9 @@ describe('SurpriseScreen', () => {
     expect(screen.getByText('Director Interview')).toBeTruthy();
   });
 
-  it('shows fun fact box', () => {
+  it('shows fun fact box when content exists', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
     render(<SurpriseScreen />);
 
     expect(screen.getByText('Did you know?')).toBeTruthy();
@@ -122,7 +124,15 @@ describe('SurpriseScreen', () => {
 
     render(<SurpriseScreen />);
 
-    expect(screen.getByText('Loading...')).toBeTruthy();
+    expect(screen.UNSAFE_getByType(require('react-native').ActivityIndicator)).toBeTruthy();
+  });
+
+  it('shows empty state when no content and not loading', () => {
+    mockUseSurpriseContent.mockReturnValue({ data: [], isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    expect(screen.getByText('No content yet')).toBeTruthy();
   });
 
   it('renders featured video with description and duration', () => {

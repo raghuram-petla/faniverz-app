@@ -18,6 +18,7 @@ import { MovieCard } from '@/components/movie/MovieCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PlatformSquare } from '@/components/ui/PlatformSquare';
 import { SpotlightSkeleton } from '@/components/spotlight/SpotlightSkeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
@@ -126,6 +127,11 @@ export default function SpotlightScreen() {
         />
         {isLoading ? (
           <SpotlightSkeleton />
+        ) : featuredMovies.length === 0 &&
+          theatricalMovies.length === 0 &&
+          streamingMovies.length === 0 &&
+          upcomingMovies.length === 0 ? (
+          <EmptyState icon="film-outline" title="No movies yet" subtitle="Check back soon!" />
         ) : (
           <>
             {featuredMovies.length > 0 && (

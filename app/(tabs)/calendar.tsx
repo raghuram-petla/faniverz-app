@@ -16,6 +16,7 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
 import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { createStyles } from '@/styles/tabs/calendar.styles';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -187,14 +188,13 @@ export default function CalendarScreen() {
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No releases found for the selected filters.</Text>
-            {hasUserFiltered && (
-              <TouchableOpacity onPress={clearFilters}>
-                <Text style={styles.clearFiltersLink}>Clear filters</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <EmptyState
+            icon="calendar-outline"
+            title="No releases found"
+            subtitle="No releases found for the selected filters."
+            actionLabel={hasUserFiltered ? 'Clear filters' : undefined}
+            onAction={hasUserFiltered ? clearFilters : undefined}
+          />
         }
         ListFooterComponent={
           isFetchingNextPage ? (
@@ -224,7 +224,7 @@ export default function CalendarScreen() {
                       styles.dateBoxMonth,
                       isToday && { color: colors.white },
                       isPast && { color: theme.textTertiary },
-                      !isToday && !isPast && { color: '#A78BFA' },
+                      !isToday && !isPast && { color: colors.violet400 },
                     ]}
                   >
                     {item.movieDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}

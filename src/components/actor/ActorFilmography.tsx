@@ -5,6 +5,7 @@ import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createStyles } from '@/styles/actorDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
 export interface FilmCredit {
   id: string;
@@ -64,7 +65,7 @@ export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProp
                 testID={`film-card-${movie.id}`}
               >
                 <Image
-                  source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+                  source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
                   style={styles.filmPoster}
                   contentFit="cover"
                   transition={200}

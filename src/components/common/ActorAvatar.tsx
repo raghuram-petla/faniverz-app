@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useTheme } from '@/theme';
 import { Actor } from '@/types';
 import { getImageUrl, ImageSize } from '@shared/imageUrl';
 
@@ -26,7 +27,7 @@ function isMinor(birthDate: string): boolean {
 
 type AvatarConfig = {
   icon: React.ComponentProps<typeof Ionicons>['name'];
-  bg: string;
+  bgKey: 'default' | 'female' | 'minorMale' | 'minorFemale';
 };
 
 function resolveConfig(actor: Actor | undefined): AvatarConfig {
@@ -34,16 +35,24 @@ function resolveConfig(actor: Actor | undefined): AvatarConfig {
   const minor = actor?.birth_date ? isMinor(actor.birth_date) : false;
 
   if (!minor) {
-    // Adults
-    if (gender === GENDER_MALE) return { icon: 'man-outline', bg: '#27272A' }; // zinc-800
-    if (gender === GENDER_FEMALE) return { icon: 'woman-outline', bg: '#2D1F3A' }; // dark purple
-    return { icon: 'person-outline', bg: '#27272A' }; // unknown
+    if (gender === GENDER_MALE) return { icon: 'man-outline', bgKey: 'default' };
+    if (gender === GENDER_FEMALE) return { icon: 'woman-outline', bgKey: 'female' };
+    return { icon: 'person-outline', bgKey: 'default' };
   } else {
-    // Minors — differentiated by background colour; slightly smaller icon handled via size prop
-    if (gender === GENDER_MALE) return { icon: 'person-outline', bg: '#1A2F46' }; // dark blue
-    if (gender === GENDER_FEMALE) return { icon: 'person-outline', bg: '#46151F' }; // dark rose
-    return { icon: 'person-outline', bg: '#27272A' }; // unknown minor
+    if (gender === GENDER_MALE) return { icon: 'person-outline', bgKey: 'minorMale' };
+    if (gender === GENDER_FEMALE) return { icon: 'person-outline', bgKey: 'minorFemale' };
+    return { icon: 'person-outline', bgKey: 'default' };
   }
+}
+
+function resolveBgColor(bgKey: AvatarConfig['bgKey'], isDark: boolean): string {
+  const map = {
+    default: isDark ? '#27272A' : '#E4E4E7', // zinc-800 / zinc-200
+    female: isDark ? '#2D1F3A' : '#EDE9FE', // dark purple / violet-100
+    minorMale: isDark ? '#1A2F46' : '#DBEAFE', // dark blue / blue-100
+    minorFemale: isDark ? '#46151F' : '#FFE4E6', // dark rose / rose-100
+  };
+  return map[bgKey];
 }
 
 interface Props {
@@ -52,6 +61,8 @@ interface Props {
 }
 
 export function ActorAvatar({ actor, size = 64 }: Props) {
+  const { colors, isDark } = useTheme();
+
   if (actor?.photo_url) {
     return (
       <Image
@@ -62,10 +73,11 @@ export function ActorAvatar({ actor, size = 64 }: Props) {
     );
   }
 
-  const { icon, bg } = resolveConfig(actor);
+  const { icon, bgKey } = resolveConfig(actor);
+  const bg = resolveBgColor(bgKey, isDark);
   const minor = actor?.birth_date ? isMinor(actor.birth_date) : false;
-  // Minors get a slightly smaller icon to hint at smaller stature
   const iconSize = Math.round(size * (minor ? 0.42 : 0.5));
+  const iconColor = isDark ? colors.white50 : colors.black50;
 
   return (
     <View
@@ -78,7 +90,7 @@ export function ActorAvatar({ actor, size = 64 }: Props) {
         justifyContent: 'center',
       }}
     >
-      <Ionicons name={icon} size={iconSize} color="rgba(255,255,255,0.5)" />
+      <Ionicons name={icon} size={iconSize} color={iconColor} />
     </View>
   );
 }

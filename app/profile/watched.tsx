@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,8 +19,7 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
-// Avg runtime assumption for watch time estimate (90 min)
-const AVG_RUNTIME_MINUTES = 90;
+const FALLBACK_RUNTIME_MINUTES = 90;
 
 type SortKey = 'recent' | 'rating' | 'title';
 
@@ -33,6 +33,7 @@ export default function WatchedMoviesScreen() {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuth();
   const { watched, isLoading, refetch } = useWatchlist(user?.id ?? '');
 
@@ -65,7 +66,10 @@ export default function WatchedMoviesScreen() {
     count > 0
       ? (sorted.reduce((sum, e) => sum + (e.movie?.rating ?? 0), 0) / count).toFixed(1)
       : '—';
-  const watchTimeMinutes = count * AVG_RUNTIME_MINUTES;
+  const watchTimeMinutes = sorted.reduce(
+    (sum, e) => sum + (e.movie?.runtime ?? FALLBACK_RUNTIME_MINUTES),
+    0,
+  );
   const watchTimeLabel = count > 0 ? formatWatchTime(watchTimeMinutes) : '—';
 
   const activeSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? 'Sort';
@@ -185,7 +189,13 @@ export default function WatchedMoviesScreen() {
                 const title = movie?.title ?? 'Unknown';
                 const rating = movie?.rating ?? 0;
                 return (
-                  <View key={entry.id} style={styles.movieCard}>
+                  <TouchableOpacity
+                    key={entry.id}
+                    style={styles.movieCard}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(`/movie/${movie?.id}`)}
+                    accessibilityLabel={title}
+                  >
                     <View style={styles.posterWrapper}>
                       <Image
                         source={{ uri: posterUrl }}
@@ -208,7 +218,7 @@ export default function WatchedMoviesScreen() {
                     <Text style={styles.movieTitle} numberOfLines={2}>
                       {title}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
               {/* Odd padding */}

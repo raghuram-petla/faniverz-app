@@ -111,7 +111,13 @@ export default function FavoriteActorsScreen() {
                 const photoUrl = getImageUrl(actor?.photo_url ?? null, 'sm') ?? PLACEHOLDER_PHOTO;
                 const name = actor?.name ?? 'Unknown';
                 return (
-                  <View key={fav.actor_id} style={styles.actorCard}>
+                  <TouchableOpacity
+                    key={fav.actor_id}
+                    style={styles.actorCard}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(`/actor/${fav.actor_id}`)}
+                    accessibilityLabel={name}
+                  >
                     {/* Poster */}
                     <View style={styles.posterWrapper}>
                       <Image
@@ -139,7 +145,7 @@ export default function FavoriteActorsScreen() {
                         <Ionicons name="close" size={14} color={palette.white} />
                       </TouchableOpacity>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
               {/* If odd number, pad with empty slot */}

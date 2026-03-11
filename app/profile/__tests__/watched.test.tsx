@@ -149,8 +149,40 @@ describe('WatchedMoviesScreen', () => {
     expect(screen.getByText('Watch Time')).toBeTruthy();
     // 2 movies: avg rating = (4.0 + 3.0) / 2 = 3.5
     expect(screen.getByText('3.5')).toBeTruthy();
-    // Watch time: 2 * 90 = 180 min = 3h
+    // Watch time: no runtime set → fallback 90 each → 2 * 90 = 180 min = 3h
     expect(screen.getByText('3h')).toBeTruthy();
+  });
+
+  it('uses actual movie runtime for watch time when available', () => {
+    const watchedEntries = [
+      {
+        id: 'w1',
+        user_id: 'user-1',
+        movie_id: 'm1',
+        status: 'watched',
+        watched_at: '2025-03-01T00:00:00Z',
+        movie: { id: 'm1', title: 'Long Movie', poster_url: null, rating: 4.0, runtime: 150 },
+      },
+      {
+        id: 'w2',
+        user_id: 'user-1',
+        movie_id: 'm2',
+        status: 'watched',
+        watched_at: '2025-02-15T00:00:00Z',
+        movie: { id: 'm2', title: 'Short Movie', poster_url: null, rating: 3.0, runtime: 120 },
+      },
+    ];
+    mockUseWatchlist.mockReturnValue({
+      watched: watchedEntries,
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+
+    render(<WatchedMoviesScreen />);
+
+    // 150 + 120 = 270 min = 4h (formatWatchTime truncates)
+    // Without runtime, fallback 90*2 = 180 min = 3h — so 4h proves actual runtimes are used
+    expect(screen.getByText('4h')).toBeTruthy();
   });
 
   it('shows sort dropdown with default "Recently Watched"', () => {

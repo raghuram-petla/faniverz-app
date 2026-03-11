@@ -1,5 +1,13 @@
 import { useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Share,
+  Alert,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,13 +22,14 @@ import {
   useUnfollowEntity,
 } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
-import { FEED_PILLS, deriveEntityType, getEntityId } from '@/constants/feedHelpers';
+import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAuthGate } from '@/hooks/useAuthGate';
+import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
@@ -38,6 +47,7 @@ export default function FeedScreen() {
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
   const { gate } = useAuthGate();
+  const { user } = useAuth();
   const router = useRouter();
 
   const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
@@ -102,15 +112,22 @@ export default function FeedScreen() {
 
   const handleEntityPress = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
-      const routes: Record<FeedEntityType, string> = {
+      if (entityType === 'user') {
+        if (entityId === user?.id) {
+          router.push('/profile' as Parameters<typeof router.push>[0]);
+        } else {
+          Alert.alert('Coming Soon', 'User profiles are not yet available.');
+        }
+        return;
+      }
+      const routes: Record<string, string> = {
         movie: `/movie/${entityId}`,
         actor: `/actor/${entityId}`,
         production_house: `/production-house/${entityId}`,
-        user: `/profile/${entityId}`,
       };
       router.push(routes[entityType] as Parameters<typeof router.push>[0]);
     },
-    [router],
+    [router, user?.id],
   );
 
   const handleFeedItemPress = useCallback(
@@ -174,7 +191,9 @@ export default function FeedScreen() {
             <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />
             <Text style={styles.emptyTitle}>No updates yet</Text>
             <Text style={styles.emptySubtitle}>
-              Check back soon for trailers, posters, and exclusive content!
+              {filter !== 'all'
+                ? `No ${FEED_PILLS.find((p) => p.value === filter)?.label ?? filter} content yet`
+                : 'Check back soon for trailers, posters, and exclusive content!'}
             </Text>
           </View>
         ) : (

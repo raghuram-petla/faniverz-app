@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import type { SemanticTheme } from '@shared/themes';
+import { colors as palette } from '@/theme/colors';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
@@ -168,7 +169,7 @@ const createStyles = (t: SemanticTheme) =>
     // Error
     errorText: {
       fontSize: 13,
-      color: '#EF4444',
+      color: palette.red500,
       marginBottom: 12,
       paddingHorizontal: 4,
     },
@@ -176,7 +177,7 @@ const createStyles = (t: SemanticTheme) =>
     // Send button
     sendButton: {
       height: 52,
-      backgroundColor: '#DC2626',
+      backgroundColor: palette.red600,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
@@ -212,7 +213,7 @@ const createStyles = (t: SemanticTheme) =>
       width: 72,
       height: 72,
       borderRadius: 36,
-      backgroundColor: 'rgba(220, 38, 38, 0.2)',
+      backgroundColor: palette.red600_20,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 8,

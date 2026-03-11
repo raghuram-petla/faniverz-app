@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import type { Movie } from '@/types';
@@ -27,7 +28,7 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
     <TouchableOpacity style={s.row} onPress={onPress} accessibilityLabel={movie.title}>
       <View style={s.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
           style={s.poster}
           contentFit="cover"
         />

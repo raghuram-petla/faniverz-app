@@ -31,6 +31,10 @@ jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
 }));
 
+jest.mock('@/features/auth/providers/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'current-user-id' } }),
+}));
+
 jest.mock('@/stores/useFeedStore', () => ({
   useFeedStore: jest.fn(),
 }));
