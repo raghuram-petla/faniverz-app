@@ -8,6 +8,8 @@ import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import type { Movie } from '@/types';
 import type { OTTPlatform } from '@/types/ott';
 import type { SemanticTheme } from '@shared/themes';
+import { useMovieAction } from '@/hooks/useMovieAction';
+import { MovieQuickAction } from '@/components/movie/MovieQuickAction';
 
 export interface SearchResultMovieProps {
   movie: Movie;
@@ -19,10 +21,11 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
   const { theme, colors } = useTheme();
   const s = createStyles(theme);
   const status = deriveMovieStatus(movie, platforms.length);
+  const { actionType, isActive, onPress: handleAction } = useMovieAction(movie, platforms.length);
 
   return (
     <TouchableOpacity style={s.row} onPress={onPress} accessibilityLabel={movie.title}>
-      <View>
+      <View style={s.posterContainer}>
         <Image
           source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
           style={s.poster}
@@ -33,6 +36,12 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
             <Text style={s.platformBadgeText}>{platforms[0].logo}</Text>
           </View>
         )}
+        <MovieQuickAction
+          actionType={actionType}
+          isActive={isActive}
+          onPress={handleAction}
+          movieTitle={movie.title}
+        />
       </View>
       <View style={s.info}>
         <Text style={s.title} numberOfLines={1}>
@@ -68,6 +77,7 @@ const createStyles = (t: SemanticTheme) =>
       paddingVertical: 10,
       paddingHorizontal: 16,
     },
+    posterContainer: { position: 'relative' as const },
     poster: { width: 64, height: 96, borderRadius: 8 },
     info: { flex: 1, justifyContent: 'center', gap: 4 },
     title: { fontSize: 16, fontWeight: '600', color: t.textPrimary },

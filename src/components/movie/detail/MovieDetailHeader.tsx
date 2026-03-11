@@ -7,27 +7,42 @@ import { createStyles } from '@/styles/movieDetail.styles';
 
 interface MovieDetailHeaderProps {
   insetsTop: number;
-  isWatchlisted: boolean;
-  isFollowing: boolean;
+  actionType: 'follow' | 'watchlist';
+  isActionActive: boolean;
   onBack: () => void;
   onShare: () => void;
-  onToggleWatchlist: () => void;
-  onToggleFollow: () => void;
+  onToggleAction: () => void;
   movieTitle?: string;
 }
 
 export function MovieDetailHeader({
   insetsTop,
-  isWatchlisted,
-  isFollowing,
+  actionType,
+  isActionActive,
   onBack,
   onShare,
-  onToggleWatchlist,
-  onToggleFollow,
+  onToggleAction,
   movieTitle,
 }: MovieDetailHeaderProps) {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
+
+  const iconName = isActionActive
+    ? actionType === 'follow'
+      ? 'heart'
+      : 'bookmark'
+    : actionType === 'follow'
+      ? 'heart-outline'
+      : 'bookmark-outline';
+
+  const accessibilityLabel = isActionActive
+    ? actionType === 'follow'
+      ? `Following ${movieTitle ?? 'movie'}, tap to unfollow`
+      : `${movieTitle ?? 'movie'} saved, tap to remove`
+    : actionType === 'follow'
+      ? `Follow ${movieTitle ?? 'movie'}`
+      : `Save ${movieTitle ?? 'movie'}`;
+
   return (
     <View style={[styles.heroHeader, { paddingTop: insetsTop + 8 }]}>
       <View style={styles.heroHeaderLeft}>
@@ -38,29 +53,14 @@ export function MovieDetailHeader({
       </View>
       <View style={styles.heroHeaderRight}>
         <TouchableOpacity
-          style={[styles.heroButton, isFollowing && styles.heroButtonActive]}
-          onPress={onToggleFollow}
-          accessibilityLabel={
-            isFollowing
-              ? `Following ${movieTitle ?? 'movie'}, tap to unfollow`
-              : `Follow ${movieTitle ?? 'movie'}`
-          }
+          style={[styles.heroButton, isActionActive && styles.heroButtonActive]}
+          onPress={onToggleAction}
+          accessibilityLabel={accessibilityLabel}
         >
           <Ionicons
-            name={isFollowing ? 'checkmark-circle' : 'person-add-outline'}
+            name={iconName}
             size={22}
-            color={isFollowing ? palette.green500 : colors.white}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.heroButton, isWatchlisted && styles.heroButtonActive]}
-          onPress={onToggleWatchlist}
-          accessibilityLabel={isWatchlisted ? 'Remove from watchlist' : 'Add to watchlist'}
-        >
-          <Ionicons
-            name={isWatchlisted ? 'bookmark' : 'bookmark-outline'}
-            size={22}
-            color={colors.white}
+            color={isActionActive ? palette.green500 : colors.white}
           />
         </TouchableOpacity>
         <TouchableOpacity style={styles.heroButton} onPress={onShare} accessibilityLabel="Share">

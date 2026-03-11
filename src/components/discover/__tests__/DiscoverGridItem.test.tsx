@@ -32,6 +32,15 @@ jest.mock('@shared/imageUrl', () => ({
   getImageUrl: (url: string) => url,
 }));
 
+const mockActionPress = jest.fn();
+jest.mock('@/hooks/useMovieAction', () => ({
+  useMovieAction: () => ({
+    actionType: 'follow',
+    isActive: false,
+    onPress: mockActionPress,
+  }),
+}));
+
 const mockStyles = new Proxy({}, { get: () => ({}) });
 
 const baseMovie: Movie = {
@@ -116,5 +125,10 @@ describe('DiscoverGridItem', () => {
     );
     const tree = JSON.stringify(toJSON());
     expect(tree).not.toContain('Aha');
+  });
+
+  it('renders action button', () => {
+    render(<DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />);
+    expect(screen.getByLabelText('Follow Test Movie')).toBeTruthy();
   });
 });

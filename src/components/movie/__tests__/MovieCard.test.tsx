@@ -8,18 +8,16 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-const mockFollowMutate = jest.fn();
-const mockUnfollowMutate = jest.fn();
-const mockFollowSet = new Set<string>();
+const mockOnPress = jest.fn();
+let mockActionType = 'follow';
+let mockIsActive = false;
 
-jest.mock('@/features/feed', () => ({
-  useEntityFollows: () => ({ followSet: mockFollowSet }),
-  useFollowEntity: () => ({ mutate: mockFollowMutate }),
-  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate }),
-}));
-
-jest.mock('@/hooks/useAuthGate', () => ({
-  useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
+jest.mock('@/hooks/useMovieAction', () => ({
+  useMovieAction: () => ({
+    actionType: mockActionType,
+    isActive: mockIsActive,
+    onPress: mockOnPress,
+  }),
 }));
 
 const mockMovie: Movie = {
@@ -54,7 +52,8 @@ const mockMovie: Movie = {
 describe('MovieCard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFollowSet.clear();
+    mockActionType = 'follow';
+    mockIsActive = false;
   });
 
   it('renders movie title', () => {
@@ -75,7 +74,6 @@ describe('MovieCard', () => {
       rating: 0,
     };
     const { getByText } = render(<MovieCard movie={upcomingMovie} showReleaseDate />);
-    // Date parsing may vary by timezone; just check a month abbreviation appears
     expect(getByText(/Dec/)).toBeTruthy();
   });
 
@@ -92,7 +90,6 @@ describe('MovieCard', () => {
     ];
     const ottMovie = { ...mockMovie, in_theaters: false };
     const { UNSAFE_queryAllByType } = render(<MovieCard movie={ottMovie} platforms={platforms} />);
-    // PlatformBadge renders inside the card
     expect(UNSAFE_queryAllByType).toBeTruthy();
   });
 
@@ -119,27 +116,26 @@ describe('MovieCard', () => {
     expect(getByText('Pushpa 2: The Rule')).toBeTruthy();
   });
 
-  it('renders follow overlay on poster', () => {
+  it('renders action overlay on poster', () => {
     const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
     expect(getByLabelText('Follow Pushpa 2: The Rule')).toBeTruthy();
   });
 
-  it('shows following state when movie is followed', () => {
-    mockFollowSet.add('movie:1');
+  it('shows active state when action is active', () => {
+    mockIsActive = true;
     const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
     expect(getByLabelText(/Following Pushpa 2: The Rule/)).toBeTruthy();
   });
 
-  it('calls follow mutation when follow overlay is pressed', () => {
+  it('calls action handler when overlay is pressed', () => {
     const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
     fireEvent.press(getByLabelText('Follow Pushpa 2: The Rule'));
-    expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: '1' });
+    expect(mockOnPress).toHaveBeenCalled();
   });
 
-  it('calls unfollow mutation when already following', () => {
-    mockFollowSet.add('movie:1');
+  it('shows watchlist label for streaming movies', () => {
+    mockActionType = 'watchlist';
     const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
-    fireEvent.press(getByLabelText(/Following Pushpa 2: The Rule/));
-    expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: '1' });
+    expect(getByLabelText('Save Pushpa 2: The Rule')).toBeTruthy();
   });
 });

@@ -2,6 +2,14 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('@/hooks/useMovieAction', () => ({
+  useMovieAction: () => ({
+    actionType: 'follow',
+    isActive: false,
+    onPress: jest.fn(),
+  }),
+}));
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { Movie } from '@/types';

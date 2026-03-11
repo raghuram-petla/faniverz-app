@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchWatchlist,
@@ -10,6 +11,7 @@ import {
 } from './api';
 import { WatchlistEntry } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
+import { useAuth } from '@/features/auth/providers/AuthProvider';
 
 const PAGE_SIZE = 10;
 
@@ -140,4 +142,28 @@ export function useWatchlistMutations() {
   });
 
   return { add, remove, markWatched, moveBack };
+}
+
+export function useWatchlistSet() {
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
+
+  const query = useQuery({
+    queryKey: ['watchlist', userId],
+    queryFn: () => fetchWatchlist(userId),
+    enabled: !!userId,
+    staleTime: 0,
+  });
+
+  const watchlistSet = useMemo(() => {
+    const set = new Set<string>();
+    if (query.data) {
+      for (const e of query.data) {
+        if (e.status === 'watchlist') set.add(e.movie_id);
+      }
+    }
+    return set;
+  }, [query.data]);
+
+  return { ...query, watchlistSet };
 }

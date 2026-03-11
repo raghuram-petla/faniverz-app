@@ -22,7 +22,7 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
       }
     >
       <Ionicons
-        name={isFollowing ? 'checkmark-circle' : 'person-add-outline'}
+        name={isFollowing ? 'heart' : 'heart-outline'}
         size={14}
         color={isFollowing ? colors.green500 : colors.gray500}
       />

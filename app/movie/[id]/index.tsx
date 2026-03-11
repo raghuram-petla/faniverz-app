@@ -5,9 +5,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
-import { useIsWatchlisted, useWatchlistMutations } from '@/features/watchlist/hooks';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
-import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
+import { useMovieAction } from '@/hooks/useMovieAction';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { MovieHeroSection } from '@/components/movie/detail/MovieHeroSection';
 import { WatchOnSection } from '@/components/movie/detail/WatchOnSection';
@@ -37,19 +36,22 @@ export default function MovieDetailScreen() {
   const userId = user?.id ?? '';
 
   const { data: movie, refetch: refetchMovie } = useMovieDetail(id ?? '');
-  const { data: watchlistEntry } = useIsWatchlisted(userId, id ?? '');
-  const { add: addWatchlist, remove: removeWatchlist } = useWatchlistMutations();
   const { data: reviews = [], refetch: refetchReviews } = useMovieReviews(id ?? '');
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
   const { gate } = useAuthGate();
-  const { followSet } = useEntityFollows();
-  const followMutation = useFollowEntity();
-  const unfollowMutation = useUnfollowEntity();
   const { refreshing, onRefresh } = useRefresh(refetchMovie, refetchReviews);
   const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
     onRefresh,
     refreshing,
   );
+
+  // useMovieAction must be called unconditionally (rules of hooks)
+  const movieForAction = movie ?? { id: id ?? '', release_date: null, in_theaters: false };
+  const {
+    actionType,
+    isActive: isActionActive,
+    onPress: handleAction,
+  } = useMovieAction(movieForAction, movie?.platforms.length ?? 0);
 
   const [activeTab, setActiveTab] = useState<TabName>('overview');
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -58,31 +60,12 @@ export default function MovieDetailScreen() {
   const [reviewBody, setReviewBody] = useState('');
   const [containsSpoiler, setContainsSpoiler] = useState(false);
 
-  const isWatchlisted = !!watchlistEntry;
-  const isFollowing = followSet.has(`movie:${id}`);
-
-  const handleFollowToggle = gate(() => {
-    if (isFollowing) {
-      unfollowMutation.mutate({ entityType: 'movie', entityId: id ?? '' });
-    } else {
-      followMutation.mutate({ entityType: 'movie', entityId: id ?? '' });
-    }
-  });
-
   if (!movie) return null;
 
   const handleShare = async () => {
     const text = `${movie.title}${movie.release_date ? ` (${new Date(movie.release_date).getFullYear()})` : ''} — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;
     await Share.share({ message: text });
   };
-
-  const handleToggleWatchlist = gate(() => {
-    if (isWatchlisted) {
-      removeWatchlist.mutate({ userId, movieId: movie.id });
-    } else {
-      addWatchlist.mutate({ userId, movieId: movie.id });
-    }
-  });
 
   const handleSubmitReview = gate(() => {
     if (reviewRating === 0) return;
@@ -179,12 +162,11 @@ export default function MovieDetailScreen() {
 
       <MovieDetailHeader
         insetsTop={insets.top}
-        isWatchlisted={isWatchlisted}
-        isFollowing={isFollowing}
+        actionType={actionType}
+        isActionActive={isActionActive}
         onBack={() => router.back()}
         onShare={handleShare}
-        onToggleWatchlist={handleToggleWatchlist}
-        onToggleFollow={handleFollowToggle}
+        onToggleAction={handleAction}
         movieTitle={movie.title}
       />
 

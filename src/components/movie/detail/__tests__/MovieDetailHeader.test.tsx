@@ -20,12 +20,11 @@ jest.mock('expo-router', () => ({
 
 const baseProps = {
   insetsTop: 44,
-  isWatchlisted: false,
-  isFollowing: false,
+  actionType: 'follow' as const,
+  isActionActive: false,
   onBack: jest.fn(),
   onShare: jest.fn(),
-  onToggleWatchlist: jest.fn(),
-  onToggleFollow: jest.fn(),
+  onToggleAction: jest.fn(),
   movieTitle: 'Test Movie',
 };
 
@@ -43,11 +42,6 @@ describe('MovieDetailHeader', () => {
   it('renders share button', () => {
     render(<MovieDetailHeader {...baseProps} />);
     expect(screen.getByLabelText(/share/i)).toBeTruthy();
-  });
-
-  it('renders watchlist button', () => {
-    render(<MovieDetailHeader {...baseProps} />);
-    expect(screen.getByLabelText(/watchlist/i)).toBeTruthy();
   });
 
   it('shows home button when stack depth >= 2', () => {
@@ -76,32 +70,30 @@ describe('MovieDetailHeader', () => {
     expect(onBack).toHaveBeenCalled();
   });
 
-  it('calls onToggleWatchlist when watchlist button pressed', () => {
-    const onToggleWatchlist = jest.fn();
-    render(<MovieDetailHeader {...baseProps} onToggleWatchlist={onToggleWatchlist} />);
-    fireEvent.press(screen.getByLabelText(/watchlist/i));
-    expect(onToggleWatchlist).toHaveBeenCalled();
-  });
-
-  it('shows correct accessibility label for watchlisted state', () => {
-    render(<MovieDetailHeader {...baseProps} isWatchlisted={true} />);
-    expect(screen.getByLabelText(/remove.*watchlist/i)).toBeTruthy();
-  });
-
-  it('renders Follow button when not following', () => {
-    render(<MovieDetailHeader {...baseProps} isFollowing={false} />);
+  it('renders follow button when actionType is follow', () => {
+    render(<MovieDetailHeader {...baseProps} />);
     expect(screen.getByLabelText('Follow Test Movie')).toBeTruthy();
   });
 
-  it('renders Following state when following', () => {
-    render(<MovieDetailHeader {...baseProps} isFollowing={true} />);
+  it('renders following state when follow is active', () => {
+    render(<MovieDetailHeader {...baseProps} isActionActive />);
     expect(screen.getByLabelText(/Following Test Movie/)).toBeTruthy();
   });
 
-  it('calls onToggleFollow when follow button pressed', () => {
-    const onToggleFollow = jest.fn();
-    render(<MovieDetailHeader {...baseProps} onToggleFollow={onToggleFollow} />);
+  it('renders save button when actionType is watchlist', () => {
+    render(<MovieDetailHeader {...baseProps} actionType="watchlist" />);
+    expect(screen.getByLabelText('Save Test Movie')).toBeTruthy();
+  });
+
+  it('renders saved state when watchlist is active', () => {
+    render(<MovieDetailHeader {...baseProps} actionType="watchlist" isActionActive />);
+    expect(screen.getByLabelText(/saved, tap to remove/i)).toBeTruthy();
+  });
+
+  it('calls onToggleAction when action button pressed', () => {
+    const onToggleAction = jest.fn();
+    render(<MovieDetailHeader {...baseProps} onToggleAction={onToggleAction} />);
     fireEvent.press(screen.getByLabelText('Follow Test Movie'));
-    expect(onToggleFollow).toHaveBeenCalled();
+    expect(onToggleAction).toHaveBeenCalled();
   });
 });

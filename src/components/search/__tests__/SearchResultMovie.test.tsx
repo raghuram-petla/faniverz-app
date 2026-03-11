@@ -17,6 +17,15 @@ jest.mock('@/constants', () => ({
   getMovieStatusColor: () => '#ff0000',
 }));
 
+const mockActionPress = jest.fn();
+jest.mock('@/hooks/useMovieAction', () => ({
+  useMovieAction: () => ({
+    actionType: 'follow',
+    isActive: false,
+    onPress: mockActionPress,
+  }),
+}));
+
 const mockMovie: Movie = {
   id: 'm1',
   tmdb_id: null,
@@ -116,5 +125,10 @@ describe('SearchResultMovie', () => {
       <SearchResultMovie movie={{ ...mockMovie, genres: [] }} platforms={[]} onPress={jest.fn()} />,
     );
     expect(screen.queryByText('Action • Drama')).toBeNull();
+  });
+
+  it('renders action button on poster', () => {
+    render(<SearchResultMovie movie={mockMovie} platforms={[]} onPress={jest.fn()} />);
+    expect(screen.getByLabelText('Follow Pushpa 2')).toBeTruthy();
   });
 });

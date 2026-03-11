@@ -83,3 +83,39 @@ Run these after every change:
 - Admin tests: Vitest + `@testing-library/react`, use `vi.mock()`
 - Mock styles with: `jest.mock('<path>.styles', () => ({ styles: new Proxy({}, { get: () => ({}) }) }))`
 - Components use named exports — always import with `{ Component }` not default imports
+
+## Behavioral Rules (Learned from Session History)
+
+These rules were extracted from 60+ sessions and 160+ commits. They address recurring mistakes. **Follow all of them for every task.**
+
+### Before Declaring "Done"
+
+1. **Wire up real functionality, not just UI.** Every button, toggle, and action must have a working handler connected to actual backend/state logic. A Follow button that doesn't call an API is not done. A form that doesn't save is not done.
+2. **Apply pending DB migrations** before testing features that depend on new tables/columns. Run `supabase migration up` and verify the schema exists.
+3. **Search the ENTIRE codebase** when making a "global" change (renaming text, adding a feature to all screens, updating a pattern). Use `grep -r` to find ALL instances. Missing even one screen is a failure.
+4. **Include admin panel in scope.** Unless explicitly told "mobile only," every feature/fix applies to both `app/` + `src/` AND `admin/src/`. Always ask if unsure.
+5. **Run quality gates automatically** after every change — don't wait to be asked.
+6. **Check file line counts** on every modified file. If any exceed 300 lines, refactor before moving on.
+7. **Commit ALL changed files.** Before finishing, run `git status` and ensure no orphaned uncommitted changes are left behind. If changes shouldn't be committed, explicitly say so.
+
+### During Implementation
+
+8. **Don't make unasked-for changes.** If asked to increase avatar size, change ONLY the avatar size. Don't adjust margins, spacing, colors, or add features that weren't requested. Collateral changes break things.
+9. **Don't add features that weren't requested.** No pinned posts, no extra buttons, no "improvements" beyond the ask.
+10. **Plan before executing** when the user says "plan" or "let's think about this." Present the plan, wait for confirmation. Never jump ahead to coding.
+11. **Handle null/undefined/empty states.** Every image must have a placeholder fallback. Every number must default to 0. Every list must have an empty state. Never show broken images, "undefined", or black screens.
+12. **Respect safe area constraints** on every screen. Use `useSafeAreaInsets()` consistently. Test that content doesn't enter the status bar zone.
+13. **Support both themes.** Every UI change must look correct in both dark and light themes. Check both before declaring done.
+14. **Never hardcode localhost URLs.** Always use environment variables for service endpoints.
+15. **Check migration numbering** before creating new migration files. Look at existing files to avoid version conflicts.
+
+### When Fixing Issues
+
+16. **Don't repeat failed approaches.** If "clear cache and reload" didn't work the first time, dig deeper into root cause (check DB state, check props being passed, check API responses).
+17. **Verify fixes end-to-end** before declaring them done. If the fix involves a backend change, verify the frontend actually receives the new data.
+18. **When the user says "still not working," investigate differently.** Don't apply the same fix again. Check a different layer (DB vs API vs component vs props chain).
+
+### Visual/UI Changes
+
+19. **Expect 2-3 rounds of UI feedback.** For sizing/spacing changes, make conservative first attempts. Don't overshoot — it's easier to go bigger than to revert.
+20. **Ensure consistency across all screens.** If a component looks one way on the spotlight page, it must look the same on the movie detail page, search results, and feed cards.

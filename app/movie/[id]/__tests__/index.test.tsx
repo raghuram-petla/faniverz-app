@@ -31,16 +31,12 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
   }),
 }));
 
-const mockAddMutate = jest.fn();
-const mockRemoveMutate = jest.fn();
-
-jest.mock('@/features/watchlist/hooks', () => ({
-  useIsWatchlisted: jest.fn(() => ({ data: false })),
-  useWatchlistMutations: jest.fn(() => ({
-    add: { mutate: mockAddMutate },
-    remove: { mutate: mockRemoveMutate },
-    markWatched: { mutate: jest.fn() },
-    moveBack: { mutate: jest.fn() },
+const mockActionPress = jest.fn();
+jest.mock('@/hooks/useMovieAction', () => ({
+  useMovieAction: jest.fn(() => ({
+    actionType: 'follow',
+    isActive: false,
+    onPress: mockActionPress,
   })),
 }));
 
@@ -59,16 +55,6 @@ jest.mock('@/features/reviews/hooks', () => ({
 
 jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
-}));
-
-const mockFollowMutate = jest.fn();
-const mockUnfollowMutate = jest.fn();
-const mockFollowSet = new Set<string>();
-
-jest.mock('@/features/feed', () => ({
-  useEntityFollows: () => ({ followSet: mockFollowSet }),
-  useFollowEntity: () => ({ mutate: mockFollowMutate }),
-  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate }),
 }));
 
 jest.mock('@/components/ui/StarRating', () => {
@@ -99,7 +85,6 @@ import { Share, Linking } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import MovieDetailScreen from '../index';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
-import { useIsWatchlisted } from '@/features/watchlist/hooks';
 import { useMovieReviews } from '@/features/reviews/hooks';
 
 const mockMovie = {
@@ -181,7 +166,6 @@ const mockMovie = {
 describe('MovieDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFollowSet.clear();
     (useMovieDetail as jest.Mock).mockReturnValue({ data: mockMovie });
   });
 
@@ -290,19 +274,15 @@ describe('MovieDetailScreen', () => {
     expect(screen.getAllByText('(10 reviews)').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('toggles watchlist from not-watchlisted to add', () => {
+  it('renders smart action button in header', () => {
     render(<MovieDetailScreen />);
-    const addButton = screen.getByLabelText('Add to watchlist');
-    fireEvent.press(addButton);
-    expect(mockAddMutate).toHaveBeenCalledWith({ userId: 'user-1', movieId: 'movie-1' });
+    expect(screen.getByLabelText('Follow Pushpa 2')).toBeTruthy();
   });
 
-  it('toggles watchlist from watchlisted to remove', () => {
-    (useIsWatchlisted as jest.Mock).mockReturnValue({ data: { id: 'w1' } });
+  it('calls action onPress when action button is pressed', () => {
     render(<MovieDetailScreen />);
-    const removeButton = screen.getByLabelText('Remove from watchlist');
-    fireEvent.press(removeButton);
-    expect(mockRemoveMutate).toHaveBeenCalledWith({ userId: 'user-1', movieId: 'movie-1' });
+    fireEvent.press(screen.getByLabelText('Follow Pushpa 2'));
+    expect(mockActionPress).toHaveBeenCalled();
   });
 
   it('calls Share.share when the share button is pressed', async () => {
@@ -486,22 +466,17 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Streaming')).toBeTruthy();
   });
 
-  it('renders Follow button in header', () => {
+  it('renders smart action button with watchlist type for streaming movie', () => {
+    const { useMovieAction: mockHook } = require('@/hooks/useMovieAction');
+    mockHook.mockReturnValueOnce({
+      actionType: 'watchlist',
+      isActive: false,
+      onPress: mockActionPress,
+    });
+    const ottMovie = { ...mockMovie, in_theaters: false };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: ottMovie });
     render(<MovieDetailScreen />);
-    expect(screen.getByLabelText('Follow Pushpa 2')).toBeTruthy();
-  });
-
-  it('calls follow mutation when Follow is pressed', () => {
-    render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByLabelText('Follow Pushpa 2'));
-    expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
-  });
-
-  it('calls unfollow mutation when Following is pressed', () => {
-    mockFollowSet.add('movie:movie-1');
-    render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByLabelText(/Following Pushpa 2/));
-    expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
+    expect(screen.getByLabelText('Save Pushpa 2')).toBeTruthy();
   });
 
   it('shows MediaSummaryCard when movie has videos', () => {

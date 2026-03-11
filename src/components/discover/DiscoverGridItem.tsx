@@ -8,6 +8,8 @@ import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie, OTTPlatform } from '@/types';
 import { getImageUrl } from '@shared/imageUrl';
+import { useMovieAction } from '@/hooks/useMovieAction';
+import { MovieQuickAction } from '@/components/movie/MovieQuickAction';
 
 interface DiscoverGridItemProps {
   item: Movie;
@@ -19,6 +21,7 @@ interface DiscoverGridItemProps {
 export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemProps) {
   const router = useRouter();
   const status = deriveMovieStatus(item, platforms.length);
+  const { actionType, isActive, onPress: handleAction } = useMovieAction(item, platforms.length);
 
   return (
     <TouchableOpacity
@@ -48,6 +51,12 @@ export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemPr
             <Text style={styles.gridRatingText}>{item.rating}</Text>
           </View>
         )}
+        <MovieQuickAction
+          actionType={actionType}
+          isActive={isActive}
+          onPress={handleAction}
+          movieTitle={item.title}
+        />
       </View>
       <Text style={styles.gridTitle} numberOfLines={2}>
         {item.title}

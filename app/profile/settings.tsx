@@ -133,6 +133,12 @@ export default function SettingsScreen() {
       rows: [
         {
           kind: 'link',
+          icon: 'chatbubble-ellipses-outline',
+          label: 'FAQ',
+          onPress: () => router.push('/profile/faq'),
+        },
+        {
+          kind: 'link',
           icon: 'help-circle-outline',
           label: 'Help & Support',
           onPress: () => Alert.alert('Coming Soon', 'This feature is not yet available.'),

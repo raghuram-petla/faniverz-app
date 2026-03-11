@@ -10,6 +10,8 @@ import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { Movie, OTTPlatform } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getImageUrl } from '@shared/imageUrl';
+import { useMovieAction } from '@/hooks/useMovieAction';
+import { MovieQuickAction } from './MovieQuickAction';
 
 interface MovieListItemProps {
   movie: Movie;
@@ -23,6 +25,11 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const status = deriveMovieStatus(movie, platforms?.length ?? 0);
+  const {
+    actionType,
+    isActive,
+    onPress: handleAction,
+  } = useMovieAction(movie, platforms?.length ?? 0);
 
   const handlePress = () => {
     router.push(`/movie/${movie.id}`);
@@ -57,6 +64,12 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
             <PlatformBadge platform={platforms[0]} size={24} />
           </View>
         )}
+        <MovieQuickAction
+          actionType={actionType}
+          isActive={isActive}
+          onPress={handleAction}
+          movieTitle={movie.title}
+        />
       </View>
 
       {/* Info */}

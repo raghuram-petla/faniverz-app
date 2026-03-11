@@ -130,6 +130,7 @@ describe('SettingsScreen', () => {
   it('renders the About section with all items', () => {
     render(<SettingsScreen />);
     expect(screen.getByText('About')).toBeTruthy();
+    expect(screen.getByText('FAQ')).toBeTruthy();
     expect(screen.getByText('Help & Support')).toBeTruthy();
     expect(screen.getByText('Terms of Service')).toBeTruthy();
     expect(screen.getByText('Privacy Policy')).toBeTruthy();
@@ -145,6 +146,12 @@ describe('SettingsScreen', () => {
   it('renders Preferences section', () => {
     render(<SettingsScreen />);
     expect(screen.getByText('Preferences')).toBeTruthy();
+  });
+
+  it('navigates to FAQ screen when FAQ is pressed', () => {
+    render(<SettingsScreen />);
+    fireEvent.press(screen.getByText('FAQ'));
+    expect(mockPush).toHaveBeenCalledWith('/profile/faq');
   });
 
   it('toggles email notifications', () => {

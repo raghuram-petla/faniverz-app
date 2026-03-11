@@ -11,8 +11,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getImageUrl } from '@shared/imageUrl';
-import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
-import { useAuthGate } from '@/hooks/useAuthGate';
+import { useMovieAction } from '@/hooks/useMovieAction';
+import { MovieQuickAction } from './MovieQuickAction';
 
 interface MovieCardProps {
   movie: Movie;
@@ -33,24 +33,15 @@ export function MovieCard({
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const status = deriveMovieStatus(movie, platforms?.length ?? 0);
-  const { followSet } = useEntityFollows();
-  const followMutation = useFollowEntity();
-  const unfollowMutation = useUnfollowEntity();
-  const { gate } = useAuthGate();
-
-  const isFollowing = followSet.has(`movie:${movie.id}`);
+  const {
+    actionType,
+    isActive,
+    onPress: handleAction,
+  } = useMovieAction(movie, platforms?.length ?? 0);
 
   const handlePress = () => {
     router.push(`/movie/${movie.id}`);
   };
-
-  const handleFollowToggle = gate(() => {
-    if (isFollowing) {
-      unfollowMutation.mutate({ entityType: 'movie', entityId: movie.id });
-    } else {
-      followMutation.mutate({ entityType: 'movie', entityId: movie.id });
-    }
-  });
 
   const releaseDate = movie.release_date ? new Date(movie.release_date) : null;
   const monthAbbr =
@@ -107,22 +98,12 @@ export function MovieCard({
           </View>
         )}
 
-        {/* Follow overlay — bottom-right */}
-        <TouchableOpacity
-          style={[styles.followOverlay, isFollowing && styles.followOverlayActive]}
-          onPress={handleFollowToggle}
-          activeOpacity={0.7}
-          accessibilityLabel={
-            isFollowing ? `Following ${movie.title}, tap to unfollow` : `Follow ${movie.title}`
-          }
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons
-            name={isFollowing ? 'checkmark-circle' : 'person-add-outline'}
-            size={14}
-            color={isFollowing ? palette.green500 : '#FFFFFF'}
-          />
-        </TouchableOpacity>
+        <MovieQuickAction
+          actionType={actionType}
+          isActive={isActive}
+          onPress={handleAction}
+          movieTitle={movie.title}
+        />
       </View>
 
       <Text style={styles.title} numberOfLines={2}>
@@ -213,19 +194,5 @@ const createStyles = (t: SemanticTheme) =>
       fontSize: 12,
       color: t.textTertiary,
       marginTop: 4,
-    },
-    followOverlay: {
-      position: 'absolute',
-      bottom: 6,
-      right: 6,
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    followOverlayActive: {
-      backgroundColor: 'rgba(34,197,94,0.25)',
     },
   });

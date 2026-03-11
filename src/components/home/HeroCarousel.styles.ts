@@ -114,7 +114,7 @@ export const createStyles = (_t: SemanticTheme) =>
       fontSize: 16,
       fontWeight: '600',
     },
-    followButton: {
+    actionButton: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -124,7 +124,7 @@ export const createStyles = (_t: SemanticTheme) =>
       backgroundColor: 'rgba(240,240,240,0.7)',
       gap: 6,
     },
-    followButtonText: {
+    actionButtonText: {
       fontSize: 14,
       fontWeight: '600',
     },

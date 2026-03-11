@@ -13,7 +13,10 @@ import { Movie, OTTPlatform } from '@/types';
 import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
+import { useWatchlistSet, useWatchlistMutations } from '@/features/watchlist/hooks';
+import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useAuthGate } from '@/hooks/useAuthGate';
+import { getMovieActionType } from '@/hooks/useMovieAction';
 
 const AUTO_PLAY_INTERVAL = 5000;
 
@@ -32,6 +35,10 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
+  const { watchlistSet } = useWatchlistSet();
+  const { add: addWatchlist, remove: removeWatchlist } = useWatchlistMutations();
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
   const { gate } = useAuthGate();
 
   // Track visible item via onViewableItemsChanged
@@ -79,23 +86,42 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
 
   if (movies.length === 0) return null;
 
-  const handleFollowToggle = useCallback(
-    (movieId: string) =>
+  const handleActionToggle = useCallback(
+    (movieId: string, actionType: 'follow' | 'watchlist') =>
       gate(() => {
-        if (followSet.has(`movie:${movieId}`)) {
-          unfollowMutation.mutate({ entityType: 'movie', entityId: movieId });
+        if (actionType === 'follow') {
+          if (followSet.has(`movie:${movieId}`)) {
+            unfollowMutation.mutate({ entityType: 'movie', entityId: movieId });
+          } else {
+            followMutation.mutate({ entityType: 'movie', entityId: movieId });
+          }
         } else {
-          followMutation.mutate({ entityType: 'movie', entityId: movieId });
+          if (watchlistSet.has(movieId)) {
+            removeWatchlist.mutate({ userId, movieId });
+          } else {
+            addWatchlist.mutate({ userId, movieId });
+          }
         }
       })(),
-    [gate, followSet, followMutation, unfollowMutation],
+    [
+      gate,
+      followSet,
+      followMutation,
+      unfollowMutation,
+      watchlistSet,
+      addWatchlist,
+      removeWatchlist,
+      userId,
+    ],
   );
 
   const renderSlide = ({ item }: { item: Movie }) => {
     const platforms_ = platformMap?.[item.id] ?? [];
     const releaseYear = item.release_date ? new Date(item.release_date).getFullYear() : null;
     const status = deriveMovieStatus(item, platforms_.length);
-    const isItemFollowing = followSet.has(`movie:${item.id}`);
+    const actionType = getMovieActionType(status);
+    const isActionActive =
+      actionType === 'follow' ? followSet.has(`movie:${item.id}`) : watchlistSet.has(item.id);
 
     return (
       <View style={styles.slide}>
@@ -190,27 +216,45 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.followButton}
-              onPress={() => handleFollowToggle(item.id)}
+              style={styles.actionButton}
+              onPress={() => handleActionToggle(item.id, actionType)}
               accessibilityRole="button"
               accessibilityLabel={
-                isItemFollowing
-                  ? `Following ${item.title}, tap to unfollow`
-                  : `Follow ${item.title}`
+                isActionActive
+                  ? actionType === 'follow'
+                    ? `Following ${item.title}, tap to unfollow`
+                    : `${item.title} saved, tap to remove`
+                  : actionType === 'follow'
+                    ? `Follow ${item.title}`
+                    : `Save ${item.title}`
               }
             >
               <Ionicons
-                name={isItemFollowing ? 'checkmark-circle' : 'person-add-outline'}
+                name={
+                  isActionActive
+                    ? actionType === 'follow'
+                      ? 'heart'
+                      : 'bookmark'
+                    : actionType === 'follow'
+                      ? 'heart-outline'
+                      : 'bookmark-outline'
+                }
                 size={16}
-                color={isItemFollowing ? palette.green500 : '#000000'}
+                color={isActionActive ? palette.green500 : '#000000'}
               />
               <Text
                 style={[
-                  styles.followButtonText,
-                  { color: isItemFollowing ? palette.green500 : '#000000' },
+                  styles.actionButtonText,
+                  { color: isActionActive ? palette.green500 : '#000000' },
                 ]}
               >
-                {isItemFollowing ? 'Following' : 'Follow'}
+                {isActionActive
+                  ? actionType === 'follow'
+                    ? 'Following'
+                    : 'Saved'
+                  : actionType === 'follow'
+                    ? 'Follow'
+                    : 'Save'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity

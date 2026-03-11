@@ -8,6 +8,15 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+const mockActionPress = jest.fn();
+jest.mock('@/hooks/useMovieAction', () => ({
+  useMovieAction: () => ({
+    actionType: 'follow',
+    isActive: false,
+    onPress: mockActionPress,
+  }),
+}));
+
 const mockMovie: Movie = {
   id: '1',
   tmdb_id: null,
@@ -83,5 +92,10 @@ describe('MovieListItem', () => {
     const { getByRole } = render(<MovieListItem movie={mockMovie} />);
     fireEvent.press(getByRole('button'));
     expect(mockPush).toHaveBeenCalledWith('/movie/1');
+  });
+
+  it('renders action button on poster', () => {
+    const { getByLabelText } = render(<MovieListItem movie={mockMovie} />);
+    expect(getByLabelText('Follow Thandel')).toBeTruthy();
   });
 });

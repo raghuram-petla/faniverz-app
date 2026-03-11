@@ -6,10 +6,15 @@ import {
   useWatchlistPaginated,
   useIsWatchlisted,
   useWatchlistMutations,
+  useWatchlistSet,
 } from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
+
+jest.mock('@/features/auth/providers/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'u1' } }),
+}));
 
 const mockWatchlistEntries = [
   {
@@ -252,5 +257,38 @@ describe('useWatchlistMutations', () => {
 
     await waitFor(() => expect(result.current.moveBack.isSuccess).toBe(true));
     expect(api.moveBackToWatchlist).toHaveBeenCalledWith('u1', 'm1');
+  });
+});
+
+describe('useWatchlistSet', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns set of movie IDs with watchlist status', async () => {
+    (api.fetchWatchlist as jest.Mock).mockResolvedValue(mockWatchlistEntries);
+
+    const { result } = renderHook(() => useWatchlistSet(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.watchlistSet.has('m1')).toBe(true);
+    expect(result.current.watchlistSet.has('m2')).toBe(true);
+  });
+
+  it('excludes entries with watched status', async () => {
+    (api.fetchWatchlist as jest.Mock).mockResolvedValue(mockWatchlistEntries);
+
+    const { result } = renderHook(() => useWatchlistSet(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.watchlistSet.has('m3')).toBe(false);
+  });
+
+  it('returns empty set when no data', () => {
+    (api.fetchWatchlist as jest.Mock).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useWatchlistSet(), { wrapper: createWrapper() });
+
+    expect(result.current.watchlistSet.size).toBe(0);
   });
 });

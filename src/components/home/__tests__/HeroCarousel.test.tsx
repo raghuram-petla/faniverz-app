@@ -15,6 +15,9 @@ jest.mock('@/theme/colors', () => ({
 const mockFollowMutate = jest.fn();
 const mockUnfollowMutate = jest.fn();
 const mockFollowSet = new Set<string>();
+const mockAddMutate = jest.fn();
+const mockRemoveMutate = jest.fn();
+const mockWatchlistSet = new Set<string>();
 
 jest.mock('@/features/feed', () => ({
   useEntityFollows: () => ({ followSet: mockFollowSet }),
@@ -22,8 +25,26 @@ jest.mock('@/features/feed', () => ({
   useUnfollowEntity: () => ({ mutate: mockUnfollowMutate }),
 }));
 
+jest.mock('@/features/watchlist/hooks', () => ({
+  useWatchlistSet: () => ({ watchlistSet: mockWatchlistSet }),
+  useWatchlistMutations: () => ({
+    add: { mutate: mockAddMutate },
+    remove: { mutate: mockRemoveMutate },
+  }),
+}));
+
+jest.mock('@/features/auth/providers/AuthProvider', () => ({
+  useAuth: () => ({ user: { id: 'u1' } }),
+}));
+
 jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
+}));
+
+jest.mock('@/hooks/useMovieAction', () => ({
+  getMovieActionType: jest.fn((status: string) =>
+    status === 'streaming' ? 'watchlist' : 'follow',
+  ),
 }));
 
 const mockPlatformMap: Record<string, OTTPlatform[]> = {
@@ -102,6 +123,7 @@ describe('HeroCarousel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFollowSet.clear();
+    mockWatchlistSet.clear();
   });
 
   it('renders all movie titles in the FlatList', () => {
@@ -321,7 +343,7 @@ describe('HeroCarousel', () => {
     expect(imageWithPosition?.props.contentPosition).toEqual({ left: '30%', top: '70%' });
   });
 
-  it('renders Follow button in each carousel slide', () => {
+  it('renders Follow button for pre-OTT movie', () => {
     const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
     expect(getByLabelText('Follow Pushpa 2')).toBeTruthy();
   });
@@ -343,5 +365,20 @@ describe('HeroCarousel', () => {
     const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
     fireEvent.press(getByLabelText(/Following Pushpa 2/));
     expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: '1' });
+  });
+
+  it('renders Save button for streaming movie', () => {
+    const { getByLabelText } = render(
+      <HeroCarousel movies={[mockMovies[1]]} platformMap={mockPlatformMap} />,
+    );
+    expect(getByLabelText('Save Kalki')).toBeTruthy();
+  });
+
+  it('calls watchlist add when Save button is pressed', () => {
+    const { getByLabelText } = render(
+      <HeroCarousel movies={[mockMovies[1]]} platformMap={mockPlatformMap} />,
+    );
+    fireEvent.press(getByLabelText('Save Kalki'));
+    expect(mockAddMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: '2' });
   });
 });
