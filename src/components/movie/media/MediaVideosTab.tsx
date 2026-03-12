@@ -38,7 +38,11 @@ export function MediaVideosTab({ videosByType, activeCategory }: MediaVideosTabP
   if (filteredGroups.length === 0) {
     return (
       <View style={styles.emptyState}>
-        <Text style={styles.emptyStateText}>No videos available yet</Text>
+        <Text style={styles.emptyStateText}>
+          {activeCategory === ALL_CATEGORY
+            ? 'No videos available yet'
+            : 'No videos in this category'}
+        </Text>
       </View>
     );
   }

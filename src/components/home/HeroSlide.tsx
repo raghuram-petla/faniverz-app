@@ -11,6 +11,7 @@ import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { getMovieActionType } from '@/hooks/useMovieAction';
 import { extractReleaseYear } from '@/utils/formatDate';
+import { useTranslation } from 'react-i18next';
 import { createStyles } from './HeroCarousel.styles';
 import type { Movie, OTTPlatform } from '@/types';
 
@@ -31,6 +32,7 @@ export function HeroSlide({
   onWatchNow,
   onActionToggle,
 }: HeroSlideProps) {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
 
@@ -107,7 +109,7 @@ export function HeroSlide({
         {/* OTT Platforms */}
         {platforms.length > 0 && (
           <View style={styles.platformRow}>
-            <Text style={styles.platformLabel}>Watch on:</Text>
+            <Text style={styles.platformLabel}>{t('home.watchOnLabel')}</Text>
             {platforms.map((p) => (
               <PlatformBadge key={p.id} platform={p} size={28} />
             ))}
@@ -120,7 +122,9 @@ export function HeroSlide({
             style={styles.watchButton}
             onPress={onWatchNow}
             accessibilityRole="button"
-            accessibilityLabel={status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
+            accessibilityLabel={
+              status === 'in_theaters' ? t('home.getTickets') : t('home.watchNow')
+            }
           >
             <Ionicons
               name={status === 'in_theaters' ? 'ticket-outline' : 'play'}
@@ -128,7 +132,7 @@ export function HeroSlide({
               color={palette.black}
             />
             <Text style={styles.watchButtonText}>
-              {status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
+              {status === 'in_theaters' ? t('home.getTickets') : t('home.watchNow')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -166,11 +170,11 @@ export function HeroSlide({
             >
               {isActionActive
                 ? actionType === 'follow'
-                  ? 'Following'
-                  : 'Saved'
+                  ? t('common.following')
+                  : t('common.saved')
                 : actionType === 'follow'
-                  ? 'Follow'
-                  : 'Save'}
+                  ? t('common.follow')
+                  : t('common.save')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity

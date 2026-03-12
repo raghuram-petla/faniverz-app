@@ -3,9 +3,11 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { createStyles } from '@/styles/movieMedia.styles';
 import { useTheme } from '@/theme';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { MovieWithDetails } from '@/types/movie';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -24,11 +26,14 @@ export function MediaHeroHeader({
   photoCount,
   scrollOffset,
 }: MediaHeroHeaderProps) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
   const imageUri =
-    getImageUrl(movie.backdrop_url, 'md') ?? getImageUrl(movie.poster_url, 'md') ?? undefined;
+    getImageUrl(movie.backdrop_url, 'md') ??
+    getImageUrl(movie.poster_url, 'md') ??
+    PLACEHOLDER_POSTER;
 
   const contentPosition =
     (movie.detail_focus_x ?? movie.backdrop_focus_x) != null &&
@@ -79,7 +84,8 @@ export function MediaHeroHeader({
           {movie.title}
         </Text>
         <Text style={styles.heroSubtitle}>
-          {videoCount} Videos · {photoCount} Photos
+          {videoCount} {videoCount !== 1 ? t('movieDetail.videos') : t('movieDetail.video')} ·{' '}
+          {photoCount} {photoCount !== 1 ? t('movieDetail.photos') : t('movieDetail.photo')}
         </Text>
       </Animated.View>
     </View>

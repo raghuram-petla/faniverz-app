@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Linking, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { getPlatformLogo } from '@/constants/platformLogos';
 import { formatDate } from '@/utils/formatDate';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { MoviePlatform, MovieStatus } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +35,10 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                   style={[styles.watchOnButton, { backgroundColor: p.color }]}
                   onPress={
                     mp.streaming_url?.startsWith('http')
-                      ? () => Linking.openURL(mp.streaming_url!).catch(() => {})
+                      ? () =>
+                          Linking.openURL(mp.streaming_url!).catch(() =>
+                            Alert.alert(t('common.error'), t('common.openLinkFailed')),
+                          )
                       : undefined
                   }
                   activeOpacity={mp.streaming_url ? 0.7 : 1}
@@ -44,7 +48,7 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                     <Image source={logo} style={styles.watchOnLogo} contentFit="contain" />
                   ) : p.logo_url ? (
                     <Image
-                      source={{ uri: p.logo_url }}
+                      source={{ uri: p.logo_url ?? PLACEHOLDER_POSTER }}
                       style={styles.watchOnLogo}
                       contentFit="contain"
                     />

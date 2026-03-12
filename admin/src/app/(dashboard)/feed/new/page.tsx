@@ -54,19 +54,23 @@ export default function NewFeedItemPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await createMutation.mutateAsync({
-      feed_type: feedType,
-      content_type: contentType,
-      title,
-      description: description || null,
-      youtube_id: youtubeId || null,
-      thumbnail_url:
-        thumbnailUrl ||
-        (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : null),
-      is_pinned: isPinned,
-      is_featured: isFeatured,
-    } as Partial<import('@/lib/types').NewsFeedItem>);
-    router.push('/feed');
+    try {
+      await createMutation.mutateAsync({
+        feed_type: feedType,
+        content_type: contentType,
+        title,
+        description: description || null,
+        youtube_id: youtubeId || null,
+        thumbnail_url:
+          thumbnailUrl ||
+          (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : null),
+        is_pinned: isPinned,
+        is_featured: isFeatured,
+      } as Partial<import('@/lib/types').NewsFeedItem>);
+      router.push('/feed');
+    } catch (error) {
+      window.alert((error as Error).message || 'Operation failed');
+    }
   };
 
   const contentTypes = CONTENT_TYPES[feedType] ?? [];

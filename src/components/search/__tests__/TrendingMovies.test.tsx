@@ -98,12 +98,12 @@ describe('TrendingMovies', () => {
     const movies = [mockMovie('1', 'Movie')];
     render(<TrendingMovies movies={movies} onMoviePress={jest.fn()} />);
     expect(screen.getByText('4.5')).toBeTruthy();
-    expect(screen.getByText('10 search.reviews')).toBeTruthy();
+    expect(screen.getByText('10 reviews')).toBeTruthy();
   });
 
   it('renders trending header', () => {
     const movies = [mockMovie('1', 'Movie')];
     render(<TrendingMovies movies={movies} onMoviePress={jest.fn()} />);
-    expect(screen.getByText('search.trendingNow')).toBeTruthy();
+    expect(screen.getByText('Trending Now')).toBeTruthy();
   });
 });

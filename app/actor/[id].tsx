@@ -22,6 +22,7 @@ import { useActorDetail } from '@/features/actors/hooks';
 import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useTheme } from '@/theme';
+import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/actorDetail.styles';
 import { CollapsibleProfileLayout } from '@/components/common/CollapsibleProfileLayout';
@@ -34,8 +35,13 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { ActorDetailSkeleton } from '@/components/actor/ActorDetailSkeleton';
+import ScreenHeader from '@/components/common/ScreenHeader';
 
-const GENDER_LABELS: Record<number, string> = { 1: 'Female', 2: 'Male', 3: 'Non-binary' };
+const GENDER_LABEL_KEYS: Record<number, string> = {
+  1: 'actorDetail.female',
+  2: 'actorDetail.male',
+  3: 'actorDetail.nonBinary',
+};
 
 export default function ActorDetailScreen() {
   const { t } = useTranslation();
@@ -89,13 +95,28 @@ export default function ActorDetailScreen() {
     );
   }
 
-  if (!actor) return null;
+  if (!actor) {
+    return (
+      <View style={styles.screen}>
+        <View style={{ paddingTop: insets.top, paddingHorizontal: 16 }}>
+          <ScreenHeader title="" />
+          <View style={{ alignItems: 'center', paddingTop: 40 }}>
+            <Ionicons name="alert-circle-outline" size={48} color={theme.textTertiary} />
+            <Text style={{ color: theme.textTertiary, marginTop: 8, fontSize: 16 }}>
+              {t('common.noResults')}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
-  const genderLabel = actor.gender ? GENDER_LABELS[actor.gender] : null;
+  const genderLabel = actor.gender ? t(GENDER_LABEL_KEYS[actor.gender]) : null;
   const personTypeLabel =
     actor.person_type === 'technician'
-      ? (filmography.find((c) => c.credit_type === 'crew')?.role_name ?? 'Technician')
-      : 'Actor';
+      ? (filmography.find((c) => c.credit_type === 'crew')?.role_name ??
+        t('actorDetail.technician'))
+      : t('actorDetail.actor');
   const hasBioInfo = actor.birth_date || actor.place_of_birth || actor.height_cm;
 
   return (
@@ -199,7 +220,7 @@ export default function ActorDetailScreen() {
           </TouchableOpacity>
           <Pressable onPress={(e) => e.stopPropagation()}>
             <Image
-              source={{ uri: actor.photo_url ?? undefined }}
+              source={{ uri: actor.photo_url ?? PLACEHOLDER_PHOTO }}
               style={styles.photoFull}
               contentFit="contain"
             />

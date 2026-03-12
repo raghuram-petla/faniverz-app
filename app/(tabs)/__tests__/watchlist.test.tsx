@@ -105,7 +105,7 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.title')).toBeTruthy();
+    expect(screen.getByText('My Watchlist')).toBeTruthy();
   });
 
   it('shows empty state when no movies', () => {
@@ -114,8 +114,8 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.empty')).toBeTruthy();
-    expect(screen.getByText('watchlist.discoverMovies')).toBeTruthy();
+    expect(screen.getByText('Your watchlist is empty')).toBeTruthy();
+    expect(screen.getByText('Discover Movies')).toBeTruthy();
   });
 
   it('renders "Available to Watch" section with movies', () => {
@@ -126,7 +126,7 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.availableToWatch')).toBeTruthy();
+    expect(screen.getByText('Available to Watch')).toBeTruthy();
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
   });
 
@@ -144,7 +144,7 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.upcomingReleases')).toBeTruthy();
+    expect(screen.getByText('Upcoming Releases')).toBeTruthy();
     expect(screen.getByText('Kalki 2898 AD')).toBeTruthy();
   });
 
@@ -156,7 +156,7 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.watchedMovies')).toBeTruthy();
+    expect(screen.getByText('Watched Movies')).toBeTruthy();
     expect(screen.getByText('RRR')).toBeTruthy();
   });
 
@@ -168,7 +168,7 @@ describe('WatchlistScreen', () => {
 
     expect(screen.getByTestId('watchlist-skeleton')).toBeTruthy();
     // Should not show empty state or content when loading
-    expect(screen.queryByText('watchlist.empty')).toBeNull();
+    expect(screen.queryByText('Your watchlist is empty')).toBeNull();
   });
 
   it('shows guest/unauthenticated state when user is null', () => {
@@ -184,8 +184,8 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.signInTitle')).toBeTruthy();
-    expect(screen.getByText('auth.signIn')).toBeTruthy();
+    expect(screen.getByText('Sign in to use Watchlist')).toBeTruthy();
+    expect(screen.getByText('Sign In / Sign Up')).toBeTruthy();
   });
 
   it('displays movie count text for multiple movies', () => {
@@ -206,7 +206,7 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.moviesSaved')).toBeTruthy();
+    expect(screen.getByText(/movies saved/)).toBeTruthy();
   });
 
   it('displays "1 movie saved" for a single movie', () => {
@@ -217,7 +217,7 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.movieSaved')).toBeTruthy();
+    expect(screen.getByText(/movie saved/)).toBeTruthy();
   });
 
   it('calls remove.mutate when trash icon is pressed in Available section', () => {
@@ -311,7 +311,7 @@ describe('WatchlistScreen', () => {
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.moviesSaved')).toBeTruthy();
+    expect(screen.getByText(/movies saved/)).toBeTruthy();
   });
 
   it('shows footer loader when fetching next page', () => {

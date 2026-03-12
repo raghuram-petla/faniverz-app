@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,6 +18,7 @@ export interface FollowButtonProps {
 }
 
 export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonProps) {
+  const { t } = useTranslation();
   const iconScale = useSharedValue(1);
   const prevFollowing = useRef(isFollowing);
   const animationsEnabled = useAnimationsEnabled();
@@ -56,7 +58,7 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
         />
       </Animated.View>
       <Text style={[styles.text, { color: isFollowing ? colors.green500 : colors.gray500 }]}>
-        {isFollowing ? 'Following' : 'Follow'}
+        {isFollowing ? t('common.following') : t('common.follow')}
       </Text>
     </TouchableOpacity>
   );

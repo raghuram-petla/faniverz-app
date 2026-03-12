@@ -1,3 +1,34 @@
+// Mock react-i18next — load actual English translations so tests can assert on English text
+jest.mock('react-i18next', () => {
+  const en = require('./src/i18n/en.json');
+  const flatten = (obj, prefix = '') =>
+    Object.keys(obj).reduce((acc, key) => {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        Object.assign(acc, flatten(obj[key], fullKey));
+      } else {
+        acc[fullKey] = obj[key];
+      }
+      return acc;
+    }, {});
+  const translations = flatten(en);
+  return {
+    useTranslation: () => ({
+      t: (key, params) => {
+        let str = translations[key] || key;
+        if (params && typeof params === 'object') {
+          Object.entries(params).forEach(([k, v]) => {
+            str = str.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v));
+          });
+        }
+        return str;
+      },
+      i18n: { language: 'en', changeLanguage: jest.fn() },
+    }),
+    Trans: ({ children }) => children,
+  };
+});
+
 // Mock @supabase/supabase-js
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({

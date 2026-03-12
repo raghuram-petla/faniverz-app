@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { useProductionHouseDetail } from '@/features/productionHouses/hooks';
 import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
@@ -18,11 +19,13 @@ import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { extractReleaseYear } from '@/utils/formatDate';
 import { ProductionHouseDetailSkeleton } from '@/components/productionHouse/ProductionHouseDetailSkeleton';
+import ScreenHeader from '@/components/common/ScreenHeader';
 
 export default function ProductionHouseDetailScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createProductionHouseStyles(theme);
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { house, movies, isLoading, refetch } = useProductionHouseDetail(id ?? '');
@@ -59,7 +62,21 @@ export default function ProductionHouseDetailScreen() {
     );
   }
 
-  if (!house) return null;
+  if (!house) {
+    return (
+      <View style={styles.screen}>
+        <View style={{ paddingTop: insets.top, paddingHorizontal: 16 }}>
+          <ScreenHeader title="" />
+          <View style={{ alignItems: 'center', paddingTop: 40 }}>
+            <Ionicons name="alert-circle-outline" size={48} color={theme.textTertiary} />
+            <Text style={{ color: theme.textTertiary, marginTop: 8, fontSize: 16 }}>
+              {t('common.noResults')}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   const renderLogo = (size: number) =>
     house.logo_url ? (

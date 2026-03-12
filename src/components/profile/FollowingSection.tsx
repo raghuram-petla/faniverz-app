@@ -5,6 +5,7 @@ import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { PLACEHOLDER_POSTER, PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { getImageUrl } from '@shared/imageUrl';
+import { useTranslation } from 'react-i18next';
 import type { EnrichedFollow, FeedEntityType } from '@shared/types';
 import type { SemanticTheme } from '@shared/themes';
 
@@ -14,16 +15,17 @@ export interface FollowingSectionProps {
   onViewAll: () => void;
 }
 
-const ENTITY_LABELS: Record<FeedEntityType, string> = {
-  movie: 'Movies',
-  actor: 'Actors',
-  production_house: 'Studios',
-  user: 'Users',
+const ENTITY_LABEL_KEYS: Record<FeedEntityType, string> = {
+  movie: 'profile.followingMovies',
+  actor: 'profile.followingActors',
+  production_house: 'profile.followingStudios',
+  user: 'profile.followingUsers',
 };
 
 const MAX_PREVIEW = 6;
 
 export function FollowingSection({ follows, onEntityPress, onViewAll }: FollowingSectionProps) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
@@ -38,9 +40,9 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Following</Text>
+        <Text style={styles.title}>{t('profile.following')}</Text>
         <TouchableOpacity onPress={onViewAll} accessibilityLabel="View all following">
-          <Text style={styles.viewAll}>View All ({follows.length})</Text>
+          <Text style={styles.viewAll}>{t('profile.viewAll', { count: follows.length })}</Text>
         </TouchableOpacity>
       </View>
 
@@ -49,7 +51,7 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
         {Array.from(grouped.entries()).map(([type, count]) => (
           <View key={type} style={styles.chip}>
             <Text style={styles.chipText}>
-              {count} {ENTITY_LABELS[type]}
+              {count} {t(ENTITY_LABEL_KEYS[type])}
             </Text>
           </View>
         ))}
@@ -87,7 +89,9 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
       {follows.length > MAX_PREVIEW && (
         <TouchableOpacity style={styles.moreButton} onPress={onViewAll}>
           <Ionicons name="chevron-forward" size={16} color={palette.red500} />
-          <Text style={styles.moreText}>See {follows.length - MAX_PREVIEW} more</Text>
+          <Text style={styles.moreText}>
+            {t('profile.seeMore', { count: follows.length - MAX_PREVIEW })}
+          </Text>
         </TouchableOpacity>
       )}
     </View>

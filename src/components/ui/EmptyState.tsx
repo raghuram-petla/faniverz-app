@@ -102,7 +102,7 @@ const createStyles = (t: SemanticTheme) =>
       borderRadius: 9999,
     },
     buttonText: {
-      color: '#FFFFFF',
+      color: palette.white,
       fontSize: 16,
       fontWeight: '600',
     },

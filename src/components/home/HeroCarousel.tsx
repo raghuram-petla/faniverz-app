@@ -3,6 +3,7 @@ import { View, TouchableOpacity, FlatList, ViewToken } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { Movie, OTTPlatform } from '@/types';
 import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
@@ -210,7 +211,7 @@ function CarouselDot({ isActive, onPress }: { isActive: boolean; onPress: () => 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
       <Animated.View
-        style={[{ height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' }, animatedStyle]}
+        style={[{ height: 6, borderRadius: 3, backgroundColor: palette.white }, animatedStyle]}
       />
     </TouchableOpacity>
   );

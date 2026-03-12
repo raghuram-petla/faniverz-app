@@ -79,7 +79,7 @@ describe('DiscoverSearchHeader', () => {
 
   it('calls onSearchChange when text changes', () => {
     render(<DiscoverSearchHeader {...mockProps} />);
-    fireEvent.changeText(screen.getByPlaceholderText('discover.searchPlaceholder'), 'test');
+    fireEvent.changeText(screen.getByPlaceholderText('Search movies, genres, actors...'), 'test');
     expect(mockProps.onSearchChange).toHaveBeenCalledWith('test');
   });
 

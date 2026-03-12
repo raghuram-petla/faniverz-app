@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Alert } from 'react-native';
 import {
   fetchFavoriteActors,
   addFavoriteActor,
@@ -62,6 +63,9 @@ export function useFavoriteActorMutations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['actors', 'favorites'] });
     },
+    onError: () => {
+      Alert.alert('Error', 'Failed to add favorite actor. Please try again.');
+    },
   });
 
   const remove = useMutation({
@@ -69,6 +73,9 @@ export function useFavoriteActorMutations() {
       removeFavoriteActor(userId, actorId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['actors', 'favorites'] });
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to remove favorite actor. Please try again.');
     },
   });
 

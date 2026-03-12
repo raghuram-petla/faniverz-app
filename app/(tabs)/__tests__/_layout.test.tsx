@@ -50,31 +50,31 @@ describe('TabLayout', () => {
   it('renders Home tab first with home icon', () => {
     render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-index')).toBeTruthy();
-    expect(screen.getByText('tabs.home')).toBeTruthy();
+    expect(screen.getByText('Home')).toBeTruthy();
   });
 
   it('renders Spotlight tab with star icon', () => {
     render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-spotlight')).toBeTruthy();
-    expect(screen.getByText('tabs.spotlight')).toBeTruthy();
+    expect(screen.getByText('Spotlight')).toBeTruthy();
   });
 
   it('renders Calendar tab', () => {
     render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-calendar')).toBeTruthy();
-    expect(screen.getByText('tabs.calendar')).toBeTruthy();
+    expect(screen.getByText('Calendar')).toBeTruthy();
   });
 
   it('renders Watchlist tab', () => {
     render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-watchlist')).toBeTruthy();
-    expect(screen.getByText('tabs.watchlist')).toBeTruthy();
+    expect(screen.getByText('Watchlist')).toBeTruthy();
   });
 
   it('renders Profile tab', () => {
     render(<TabLayout />);
     expect(screen.getByTestId('tab-screen-profile')).toBeTruthy();
-    expect(screen.getByText('tabs.profile')).toBeTruthy();
+    expect(screen.getByText('Profile')).toBeTruthy();
   });
 
   it('renders all tab screens including hidden ones', () => {
@@ -97,11 +97,11 @@ describe('TabLayout', () => {
 
   it('displays tab titles for all visible tabs', () => {
     render(<TabLayout />);
-    expect(screen.getByText('tabs.home')).toBeTruthy();
-    expect(screen.getByText('tabs.spotlight')).toBeTruthy();
-    expect(screen.getByText('tabs.calendar')).toBeTruthy();
-    expect(screen.getByText('tabs.watchlist')).toBeTruthy();
-    expect(screen.getByText('tabs.profile')).toBeTruthy();
+    expect(screen.getByText('Home')).toBeTruthy();
+    expect(screen.getByText('Spotlight')).toBeTruthy();
+    expect(screen.getByText('Calendar')).toBeTruthy();
+    expect(screen.getByText('Watchlist')).toBeTruthy();
+    expect(screen.getByText('Profile')).toBeTruthy();
   });
 
   it('renders tab bar icons for each visible screen', () => {

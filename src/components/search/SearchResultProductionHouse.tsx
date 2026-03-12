@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { getImageUrl } from '@shared/imageUrl';
+import { useTranslation } from 'react-i18next';
 import type { ProductionHouse } from '@shared/types';
 import type { SemanticTheme } from '@shared/themes';
 
@@ -13,6 +14,7 @@ export interface SearchResultProductionHouseProps {
 }
 
 export function SearchResultProductionHouse({ house, onPress }: SearchResultProductionHouseProps) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const logoUrl = getImageUrl(house.logo_url, 'sm') ?? PLACEHOLDER_POSTER;
@@ -25,7 +27,8 @@ export function SearchResultProductionHouse({ house, onPress }: SearchResultProd
           {house.name}
         </Text>
         <Text style={styles.type}>
-          <Ionicons name="business" size={12} color={theme.textTertiary} /> Production House
+          <Ionicons name="business" size={12} color={theme.textTertiary} />{' '}
+          {t('search.productionHouse')}
         </Text>
       </View>
     </TouchableOpacity>

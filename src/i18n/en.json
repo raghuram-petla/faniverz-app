@@ -16,8 +16,11 @@
     "views": "views",
     "error": "Error",
     "saved": "Saved",
+    "follow": "Follow",
+    "following": "Following",
     "somethingWentWrong": "Something went wrong",
-    "clear": "Clear"
+    "clear": "Clear",
+    "openLinkFailed": "Could not open this link. Please try again."
   },
   "tabs": {
     "home": "Home",
@@ -35,14 +38,21 @@
     "toStreaming": "To Streaming",
     "browseByPlatform": "Browse by Platform",
     "watchNow": "Watch Now",
-    "moreInfo": "More Info"
+    "moreInfo": "More Info",
+    "getTickets": "Get Tickets",
+    "watchOnLabel": "Watch on:"
   },
   "feed": {
     "addComment": "Add a comment...",
     "noUpdates": "No updates yet",
     "noFilterContent": "No {{filter}} content yet",
     "checkBackSoon": "Check back soon for trailers, posters, and exclusive content!",
-    "userProfilesNotAvailable": "User profiles are not yet available."
+    "userProfilesNotAvailable": "User profiles are not yet available.",
+    "newsFeed": "News Feed",
+    "latestUpdates": "Latest Updates & Content",
+    "noComments": "No comments yet. Be the first!",
+    "loadMore": "Load more",
+    "anonymous": "Anonymous"
   },
   "spotlight": {
     "title": "Spotlight",
@@ -75,12 +85,25 @@
     "releaseDateTba": "Release date TBA",
     "tba": "TBA",
     "crew": "Crew",
-    "noCastInfo": "No cast information available."
+    "noCastInfo": "No cast information available.",
+    "production": "Production",
+    "asRole": "as {{role}}",
+    "outOf5": "/5",
+    "reviewCountLabel": "({{count}} reviews)",
+    "userFallback": "User"
   },
   "movieDetail": {
     "media": "Media",
     "videos": "Videos",
-    "photos": "Photos"
+    "photos": "Photos",
+    "video": "Video",
+    "photo": "Photo",
+    "videoCount": "{{count}} Video",
+    "videoCount_plural": "{{count}} Videos",
+    "photoCount": "{{count}} Photo",
+    "photoCount_plural": "{{count}} Photos",
+    "exploreAllMedia": "Explore All Media",
+    "mediaSummary": "{{videos}} . {{photos}}"
   },
   "actorDetail": {
     "born": "Born",
@@ -88,7 +111,12 @@
     "height": "Height",
     "about": "About",
     "readMore": "Read more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "female": "Female",
+    "male": "Male",
+    "nonBinary": "Non-binary",
+    "technician": "Technician",
+    "actor": "Actor"
   },
   "postDetail": {
     "title": "Post",
@@ -227,7 +255,23 @@
     "showProfilePublicly": "Show my profile publicly",
     "showProfilePubliclyDesc": "Allow others to see your profile page.",
     "showWatchlist": "Show my watchlist",
-    "showWatchlistDesc": "Allow others to see your watchlist."
+    "showWatchlistDesc": "Allow others to see your watchlist.",
+    "viewAll": "View All ({{count}})",
+    "seeMore": "See {{count}} more",
+    "followingMovies": "Movies",
+    "followingActors": "Actors",
+    "followingStudios": "Studios",
+    "followingUsers": "Users",
+    "votedOnPost": "Voted on a post",
+    "followedEntity": "Followed",
+    "unfollowedEntity": "Unfollowed",
+    "commentedOnPost": "Commented on a post",
+    "wroteReview": "Wrote a review",
+    "entityMovie": "a movie",
+    "entityActor": "an actor",
+    "entityStudio": "a studio",
+    "entityPost": "a post",
+    "updateFailed": "Update failed"
   },
   "auth": {
     "signIn": "Sign In / Sign Up",
@@ -284,7 +328,9 @@
     "movies": "Movies",
     "actors": "Actors",
     "studios": "Studios",
-    "reviews": "reviews"
+    "reviews": "reviews",
+    "actor": "Actor",
+    "productionHouse": "Production House"
   },
   "settings": {
     "title": "Settings",
@@ -310,6 +356,12 @@
     "preferences": "Preferences",
     "animations": "Animations",
     "about": "About",
-    "faq": "FAQ"
+    "faq": "FAQ",
+    "faqQ1": "Why do I see a heart icon sometimes and a bookmark icon other times?",
+    "faqA1": "The heart icon appears for movies that haven't released on OTT yet — tapping it follows the movie so you get updates about trailers, release dates, and streaming availability. Once a movie is available on a streaming platform, the icon switches to a bookmark so you can save it to your watchlist.",
+    "faqQ2": "What does following a movie do?",
+    "faqA2": "Following a movie keeps you in the loop. You'll get notified when a new trailer drops, when the release date changes, or when the movie becomes available on a streaming platform.",
+    "faqQ3": "What is the watchlist?",
+    "faqA3": "The watchlist is your personal collection of movies you want to watch. When a movie is streaming on OTT, you can save it to your watchlist and mark it as watched once you've seen it."
   }
 }

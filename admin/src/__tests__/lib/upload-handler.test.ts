@@ -2,9 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockSend = vi.fn();
 const mockGetR2Client = vi.fn<() => { send: typeof mockSend } | null>(() => ({ send: mockSend }));
+const mockGetUser = vi.fn();
 
 vi.mock('@/lib/r2-client', () => ({
   getR2Client: () => mockGetR2Client(),
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    auth: { getUser: mockGetUser },
+  }),
 }));
 
 vi.mock('@aws-sdk/client-s3', () => ({
@@ -65,8 +72,13 @@ function makeFormData(file?: File): FormData {
   return fd;
 }
 
-function makeRequest(formData: FormData) {
-  return { formData: () => Promise.resolve(formData) } as never;
+function makeRequest(formData: FormData, authHeader = 'Bearer valid-token') {
+  return {
+    formData: () => Promise.resolve(formData),
+    headers: {
+      get: (name: string) => (name === 'authorization' ? authHeader : null),
+    },
+  } as never;
 }
 
 describe('createUploadHandler', () => {
@@ -75,8 +87,30 @@ describe('createUploadHandler', () => {
   beforeEach(() => {
     mockSend.mockReset();
     mockGetR2Client.mockReset();
+    mockGetUser.mockReset();
     mockGetR2Client.mockReturnValue({ send: mockSend });
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'admin@test.com' } },
+      error: null,
+    });
     vi.unstubAllEnvs();
+  });
+
+  it('returns 401 when authorization header is missing', async () => {
+    const res = await handler(makeRequest(makeFormData(), ''));
+    expect(res.status).toBe(401);
+    const data = await res.json();
+    expect(data.error).toBe('Unauthorized');
+  });
+
+  it('returns 401 when token is invalid', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'Invalid token' },
+    });
+
+    const res = await handler(makeRequest(makeFormData()));
+    expect(res.status).toBe(401);
   });
 
   it('returns 503 when R2 is not configured', async () => {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { SemanticTheme } from '@shared/themes';
 
 export interface FaqItem {
@@ -10,19 +11,16 @@ export interface FaqItem {
 
 export const FAQ_ITEMS: FaqItem[] = [
   {
-    question: 'Why do I see a heart icon sometimes and a bookmark icon other times?',
-    answer:
-      "The heart icon appears for movies that haven't released on OTT yet — tapping it follows the movie so you get updates about trailers, release dates, and streaming availability. Once a movie is available on a streaming platform, the icon switches to a bookmark so you can save it to your watchlist.",
+    question: 'settings.faqQ1',
+    answer: 'settings.faqA1',
   },
   {
-    question: 'What does following a movie do?',
-    answer:
-      "Following a movie keeps you in the loop. You'll get notified when a new trailer drops, when the release date changes, or when the movie becomes available on a streaming platform.",
+    question: 'settings.faqQ2',
+    answer: 'settings.faqA2',
   },
   {
-    question: 'What is the watchlist?',
-    answer:
-      "The watchlist is your personal collection of movies you want to watch. When a movie is streaming on OTT, you can save it to your watchlist and mark it as watched once you've seen it.",
+    question: 'settings.faqQ3',
+    answer: 'settings.faqA3',
   },
 ];
 
@@ -32,6 +30,7 @@ export interface FaqAccordionProps {
 }
 
 export function FaqAccordion({ items, theme }: FaqAccordionProps) {
+  const { t } = useTranslation();
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const styles = createStyles(theme);
 
@@ -51,10 +50,10 @@ export function FaqAccordion({ items, theme }: FaqAccordionProps) {
               onPress={() => toggle(index)}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={item.question}
+              accessibilityLabel={t(item.question)}
             >
               <Text style={styles.questionText} numberOfLines={2}>
-                {item.question}
+                {t(item.question)}
               </Text>
               <Ionicons
                 name={isExpanded ? 'chevron-up' : 'chevron-down'}
@@ -64,7 +63,7 @@ export function FaqAccordion({ items, theme }: FaqAccordionProps) {
             </TouchableOpacity>
             {isExpanded && (
               <View style={[styles.answerContainer, !isLast && styles.rowBorder]}>
-                <Text style={styles.answerText}>{item.answer}</Text>
+                <Text style={styles.answerText}>{t(item.answer)}</Text>
               </View>
             )}
           </View>

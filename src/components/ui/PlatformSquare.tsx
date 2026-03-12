@@ -4,6 +4,7 @@ import { OTTPlatform } from '@/types';
 import { getPlatformLogo } from '@/constants/platformLogos';
 import { isDark } from '@/utils/colorUtils';
 import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
 
 interface PlatformSquareProps {
   platform: OTTPlatform;
@@ -54,6 +55,6 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: palette.white,
   },
 });

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Alert } from 'react-native';
 import {
   fetchMovieReviews,
   fetchUserReviews,
@@ -36,6 +37,9 @@ export function useReviewMutations() {
       queryClient.invalidateQueries({ queryKey: ['reviews', variables.movie_id] });
       queryClient.invalidateQueries({ queryKey: ['movie', variables.movie_id] });
     },
+    onError: () => {
+      Alert.alert('Error', 'Failed to submit review. Please try again.');
+    },
   });
 
   const update = useMutation({
@@ -44,12 +48,18 @@ export function useReviewMutations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
     },
+    onError: () => {
+      Alert.alert('Error', 'Failed to update review. Please try again.');
+    },
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => deleteReview(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to delete review. Please try again.');
     },
   });
 
@@ -58,6 +68,9 @@ export function useReviewMutations() {
       toggleHelpful(userId, reviewId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
+    },
+    onError: () => {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     },
   });
 

@@ -14,9 +14,13 @@ vi.mock('@/components/preview/DeviceSelector', () => ({
   DeviceSelector: () => <div data-testid="device-selector" />,
 }));
 
-vi.mock('@shared/constants', () => ({
-  DEVICES: [{ name: 'iPhone 15', width: 393, height: 852, safeAreaTop: 59, platform: 'ios' }],
-}));
+vi.mock('@shared/constants', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shared/constants')>();
+  return {
+    ...actual,
+    DEVICES: [{ name: 'iPhone 15', width: 393, height: 852, safeAreaTop: 59, platform: 'ios' }],
+  };
+});
 
 const makeItem = (
   id: string,

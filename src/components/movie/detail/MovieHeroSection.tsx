@@ -7,6 +7,7 @@ import { getMovieStatusLabel } from '@/constants';
 import type { MovieStatus } from '@/types';
 import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
+import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
@@ -17,6 +18,7 @@ interface MovieHeroSectionProps {
 }
 
 export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroSectionProps) {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   return (
@@ -66,7 +68,9 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
               <View style={styles.heroRatingRow}>
                 <Ionicons name="star" size={20} color={colors.yellow400} />
                 <Text style={styles.heroRatingValue}>{movie.rating}</Text>
-                <Text style={styles.heroReviewCount}>({movie.review_count} reviews)</Text>
+                <Text style={styles.heroReviewCount}>
+                  {t('movie.reviewCountLabel', { count: movie.review_count })}
+                </Text>
               </View>
             )}
             <View style={styles.heroMetaRow}>

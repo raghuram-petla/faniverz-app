@@ -55,6 +55,9 @@ export function useAddCast() {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -68,6 +71,9 @@ export function useRemoveCast() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movieId] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }
@@ -96,6 +102,9 @@ export function useUpdateCastOrder() {
     },
     onSuccess: (movieId) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', movieId] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }

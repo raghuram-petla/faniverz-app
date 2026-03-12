@@ -2,13 +2,6 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'en', changeLanguage: jest.fn() },
-  }),
-}));
-
 jest.mock('@/features/auth/hooks/useProfile', () => ({
   useProfile: jest.fn(),
 }));
@@ -53,7 +46,7 @@ describe('PrivacySettingsScreen', () => {
 
   it('renders "Privacy Settings" header', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('settings.privacySettings')).toBeTruthy();
+    expect(screen.getByText('Privacy Settings')).toBeTruthy();
   });
 
   it('shows loading indicator when profile is loading', () => {
@@ -62,24 +55,24 @@ describe('PrivacySettingsScreen', () => {
     render(<PrivacySettingsScreen />);
 
     // When loading, the toggle rows should not be visible
-    expect(screen.queryByText('profile.showProfilePublicly')).toBeNull();
-    expect(screen.queryByText('profile.showWatchlist')).toBeNull();
+    expect(screen.queryByText('Show my profile publicly')).toBeNull();
+    expect(screen.queryByText('Show my watchlist')).toBeNull();
   });
 
   it('shows both toggle rows', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('profile.showProfilePublicly')).toBeTruthy();
-    expect(screen.getByText('profile.showWatchlist')).toBeTruthy();
+    expect(screen.getByText('Show my profile publicly')).toBeTruthy();
+    expect(screen.getByText('Show my watchlist')).toBeTruthy();
   });
 
   it('shows description text for profile toggle', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('profile.showProfilePubliclyDesc')).toBeTruthy();
+    expect(screen.getByText('Allow others to see your profile page.')).toBeTruthy();
   });
 
   it('shows description text for watchlist toggle', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('profile.showWatchlistDesc')).toBeTruthy();
+    expect(screen.getByText('Allow others to see your watchlist.')).toBeTruthy();
   });
 
   it('calls mutate with is_profile_public and onError when profile toggle pressed', () => {
@@ -148,7 +141,7 @@ describe('PrivacySettingsScreen', () => {
 
   it('shows section description text', () => {
     render(<PrivacySettingsScreen />);
-    expect(screen.getByText('profile.privacyDescription')).toBeTruthy();
+    expect(screen.getByText('Control who can see your profile and activity.')).toBeTruthy();
   });
 
   it('defaults to public when profile data is null', () => {

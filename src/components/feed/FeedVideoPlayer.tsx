@@ -3,6 +3,8 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import {
   buildYouTubeEmbedHtml,
   shareYouTubeVideo,
@@ -10,6 +12,7 @@ import {
   handleYouTubeOpenWindow,
 } from '@/utils/youtubeNavigation';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
+import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 
 export interface FeedVideoPlayerProps {
   youtubeId: string;
@@ -29,7 +32,7 @@ export function FeedVideoPlayer({
   const thumb = thumbnailUrl ?? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 
   const onNavRequest = useCallback(
-    (request: { url: string }) => handleYouTubeNavigation(request as any, youtubeId),
+    (request: ShouldStartLoadRequest) => handleYouTubeNavigation(request, youtubeId),
     [youtubeId],
   );
 
@@ -70,7 +73,7 @@ export function FeedVideoPlayer({
 
   return (
     <View style={styles.mediaContainer}>
-      <Image source={{ uri: thumb }} style={styles.media} />
+      <Image source={{ uri: thumb || PLACEHOLDER_POSTER }} style={styles.media} />
       <View style={styles.playBtn}>
         <Ionicons name="play" size={24} color={colors.white} style={styles.playIcon} />
       </View>
@@ -86,7 +89,7 @@ export function FeedVideoPlayer({
 const videoStyles = StyleSheet.create({
   player: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
+    backgroundColor: palette.black,
   },
   shareOverlay: {
     ...StyleSheet.absoluteFillObject,

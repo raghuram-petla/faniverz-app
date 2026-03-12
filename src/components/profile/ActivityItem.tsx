@@ -2,6 +2,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
+import { useTranslation } from 'react-i18next';
 import { formatRelativeTime } from '@/utils/formatDate';
 import type { UserActivity } from '@/features/profile';
 import type { SemanticTheme } from '@shared/themes';
@@ -11,38 +12,31 @@ export interface ActivityItemProps {
   onPress: () => void;
 }
 
-const ACTION_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
-  vote: { icon: 'arrow-up', label: 'Voted on a post', color: palette.blue500 },
-  follow: { icon: 'heart', label: 'Followed', color: palette.red500 },
-  unfollow: { icon: 'heart-dislike', label: 'Unfollowed', color: palette.gray500 },
-  comment: { icon: 'chatbubble', label: 'Commented on a post', color: palette.violet500 },
-  review: { icon: 'star', label: 'Wrote a review', color: palette.amber500 },
+const ACTION_CONFIG: Record<string, { icon: string; labelKey: string; color: string }> = {
+  vote: { icon: 'arrow-up', labelKey: 'profile.votedOnPost', color: palette.blue500 },
+  follow: { icon: 'heart', labelKey: 'profile.followedEntity', color: palette.red500 },
+  unfollow: { icon: 'heart-dislike', labelKey: 'profile.unfollowedEntity', color: palette.gray500 },
+  comment: { icon: 'chatbubble', labelKey: 'profile.commentedOnPost', color: palette.violet500 },
+  review: { icon: 'star', labelKey: 'profile.wroteReview', color: palette.amber500 },
 };
 
-function getEntityLabel(entityType: string): string {
-  switch (entityType) {
-    case 'movie':
-      return 'a movie';
-    case 'actor':
-      return 'an actor';
-    case 'production_house':
-      return 'a studio';
-    case 'feed_item':
-      return 'a post';
-    default:
-      return '';
-  }
-}
+const ENTITY_LABEL_KEYS: Record<string, string> = {
+  movie: 'profile.entityMovie',
+  actor: 'profile.entityActor',
+  production_house: 'profile.entityStudio',
+  feed_item: 'profile.entityPost',
+};
 
 export function ActivityItem({ activity, onPress }: ActivityItemProps) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const config = ACTION_CONFIG[activity.action_type] ?? ACTION_CONFIG.vote;
 
   const label =
     activity.action_type === 'follow' || activity.action_type === 'unfollow'
-      ? `${config.label} ${getEntityLabel(activity.entity_type)}`
-      : config.label;
+      ? `${t(config.labelKey)} ${t(ENTITY_LABEL_KEYS[activity.entity_type] ?? '')}`
+      : t(config.labelKey);
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} accessibilityLabel={label}>

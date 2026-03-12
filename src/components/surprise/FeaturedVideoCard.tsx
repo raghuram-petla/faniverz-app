@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { WebView } from 'react-native-webview';
 import { colors } from '@/theme/colors';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import {
   buildYouTubeEmbedHtml,
   shareYouTubeVideo,
@@ -18,6 +19,7 @@ import {
 } from '@/constants/surpriseHelpers';
 import { useTranslation } from 'react-i18next';
 import type { SurpriseContent } from '@/types';
+import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 
 const FALLBACK_VIDEO_ID = 'roYRXbhxhlM';
 
@@ -30,7 +32,9 @@ interface FeaturedVideoCardProps {
 export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   const { t } = useTranslation();
   const videoId = item.youtube_id ?? FALLBACK_VIDEO_ID;
-  const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  const thumbnailUrl = videoId
+    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+    : PLACEHOLDER_POSTER;
   const catColor = getCategoryColor(item.category);
   const catLabel = getCategoryLabel(item.category);
   const iconName = getCategoryIconName(item.category);
@@ -41,7 +45,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   }, []);
 
   const onNavRequest = useCallback(
-    (request: { url: string }) => handleYouTubeNavigation(request as any, videoId),
+    (request: ShouldStartLoadRequest) => handleYouTubeNavigation(request, videoId),
     [videoId],
   );
 

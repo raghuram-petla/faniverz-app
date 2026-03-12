@@ -61,6 +61,9 @@ export function useCreateOttRelease() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -91,6 +94,9 @@ export function useUpdateOttRelease() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -107,6 +113,9 @@ export function useDeleteOttRelease() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }
@@ -147,6 +156,9 @@ export function useAddMoviePlatform() {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', data.movie_id] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -165,6 +177,9 @@ export function useRemoveMoviePlatform() {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', variables.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }

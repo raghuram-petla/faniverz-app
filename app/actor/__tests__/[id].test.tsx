@@ -1,10 +1,3 @@
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'en', changeLanguage: jest.fn() },
-  }),
-}));
-
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -80,6 +73,19 @@ jest.mock('@/hooks/usePullToRefresh', () => ({
 jest.mock('@/components/common/PullToRefreshIndicator', () => ({
   PullToRefreshIndicator: () => null,
 }));
+
+jest.mock('@/components/common/ScreenHeader', () => {
+  const { View, Text, TouchableOpacity } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ title }: { title: string }) => (
+      <View>
+        <TouchableOpacity accessibilityLabel="Go back" />
+        <Text>{title}</Text>
+      </View>
+    ),
+  };
+});
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -204,7 +210,7 @@ describe('ActorDetailScreen', () => {
 
   it('shows date of birth', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('actorDetail.born')).toBeTruthy();
+    expect(screen.getByText('Born')).toBeTruthy();
     // formatDate parses as UTC; local timezone may shift the date
     const expectedDate = new Date('1959-08-29').toLocaleDateString('en-US', {
       month: 'short',
@@ -263,14 +269,15 @@ describe('ActorDetailScreen', () => {
     expect(screen.getByTestId('actor-detail-skeleton')).toBeTruthy();
   });
 
-  it('renders null when actor is not found and not loading', () => {
+  it('shows not-found state when actor is not found and not loading', () => {
     (useActorDetail as jest.Mock).mockReturnValue({
       actor: null,
       filmography: [],
       isLoading: false,
     });
-    const { toJSON } = render(<ActorDetailScreen />);
-    expect(toJSON()).toBeNull();
+    render(<ActorDetailScreen />);
+    expect(screen.getByText('No results found')).toBeTruthy();
+    expect(screen.getByLabelText('Go back')).toBeTruthy();
   });
 
   it('shows empty state when filmography is empty', () => {
@@ -324,19 +331,19 @@ describe('ActorDetailScreen', () => {
 
   it('shows place of birth', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('actorDetail.from')).toBeTruthy();
+    expect(screen.getByText('From')).toBeTruthy();
     expect(screen.getByText('Chennai, Tamil Nadu, India')).toBeTruthy();
   });
 
   it('shows height in cm', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('actorDetail.height')).toBeTruthy();
+    expect(screen.getByText('Height')).toBeTruthy();
     expect(screen.getByText('181 cm')).toBeTruthy();
   });
 
   it('shows biography about section', () => {
     render(<ActorDetailScreen />);
-    expect(screen.getByText('actorDetail.about')).toBeTruthy();
+    expect(screen.getByText('About')).toBeTruthy();
     expect(
       screen.getByText('Akkineni Nagarjuna is an Indian actor, producer, and entrepreneur.'),
     ).toBeTruthy();
@@ -345,11 +352,11 @@ describe('ActorDetailScreen', () => {
   it('toggles biography read more / show less', () => {
     render(<ActorDetailScreen />);
     const toggle = screen.getByTestId('bio-toggle');
-    expect(screen.getByText('actorDetail.readMore')).toBeTruthy();
+    expect(screen.getByText('Read more')).toBeTruthy();
     fireEvent.press(toggle);
-    expect(screen.getByText('actorDetail.showLess')).toBeTruthy();
+    expect(screen.getByText('Show less')).toBeTruthy();
     fireEvent.press(toggle);
-    expect(screen.getByText('actorDetail.readMore')).toBeTruthy();
+    expect(screen.getByText('Read more')).toBeTruthy();
   });
 
   it('does not show about section when biography is null', () => {
@@ -360,7 +367,7 @@ describe('ActorDetailScreen', () => {
       isLoading: false,
     });
     render(<ActorDetailScreen />);
-    expect(screen.queryByText('actorDetail.about')).toBeNull();
+    expect(screen.queryByText('About')).toBeNull();
   });
 
   it('opens photo modal on avatar tap', () => {

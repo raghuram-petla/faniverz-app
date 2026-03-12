@@ -30,7 +30,9 @@ export function CastTab({ cast, crew, onActorPress }: CastTabProps) {
               <ActorAvatar actor={cm.actor} size={64} />
               <View style={styles.castInfo}>
                 <Text style={styles.castName}>{cm.actor?.name}</Text>
-                {cm.role_name && <Text style={styles.castRole}>as {cm.role_name}</Text>}
+                {cm.role_name && (
+                  <Text style={styles.castRole}>{t('movie.asRole', { role: cm.role_name })}</Text>
+                )}
               </View>
             </TouchableOpacity>
           ))}

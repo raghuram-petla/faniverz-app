@@ -23,12 +23,18 @@ export function useNotificationMutations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
+    onError: () => {
+      console.warn('Failed to mark notification as read');
+    },
   });
 
   const markAllRead = useMutation({
     mutationFn: (userId: string) => markAllAsRead(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    onError: () => {
+      console.warn('Failed to mark all notifications as read');
     },
   });
 

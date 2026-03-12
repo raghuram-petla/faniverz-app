@@ -159,7 +159,7 @@ describe('SpotlightScreen', () => {
 
   it('renders "Spotlight" title', () => {
     render(<SpotlightScreen />);
-    expect(screen.getByText('spotlight.title')).toBeTruthy();
+    expect(screen.getByText('Spotlight')).toBeTruthy();
   });
 
   it('renders hero carousel when featured movies exist', () => {
@@ -175,7 +175,7 @@ describe('SpotlightScreen', () => {
 
   it('renders "In Theaters" section when theatrical movies exist', () => {
     render(<SpotlightScreen />);
-    expect(screen.getByText('spotlight.inTheaters')).toBeTruthy();
+    expect(screen.getByText('In Theaters')).toBeTruthy();
   });
 
   it('renders theatrical movie titles in the "In Theaters" section', () => {
@@ -185,7 +185,7 @@ describe('SpotlightScreen', () => {
 
   it('renders "Streaming Now" section when streaming movies exist', () => {
     render(<SpotlightScreen />);
-    expect(screen.getByText('home.streamingNow')).toBeTruthy();
+    expect(screen.getByText('Streaming Now')).toBeTruthy();
   });
 
   it('renders streaming movie titles in the "Streaming Now" section', () => {
@@ -195,7 +195,7 @@ describe('SpotlightScreen', () => {
 
   it('renders "Coming Soon" section when upcoming movies exist', () => {
     render(<SpotlightScreen />);
-    expect(screen.getByText('home.comingSoon')).toBeTruthy();
+    expect(screen.getByText('Coming Soon')).toBeTruthy();
   });
 
   it('renders upcoming movie titles in the "Coming Soon" section', () => {
@@ -205,7 +205,7 @@ describe('SpotlightScreen', () => {
 
   it('renders "Browse by Platform" section when platforms exist', () => {
     render(<SpotlightScreen />);
-    expect(screen.getByText('home.browseByPlatform')).toBeTruthy();
+    expect(screen.getByText('Browse by Platform')).toBeTruthy();
   });
 
   it('renders platform squares with accessible labels', () => {
@@ -218,7 +218,7 @@ describe('SpotlightScreen', () => {
     const nonTheatrical = mockMovies.filter((m) => !m.in_theaters);
     mockUseMovies.mockReturnValue({ data: nonTheatrical });
     render(<SpotlightScreen />);
-    expect(screen.queryByText('spotlight.inTheaters')).toBeNull();
+    expect(screen.queryByText('In Theaters')).toBeNull();
   });
 
   it('does not render "Streaming Now" section when no streaming movies', () => {
@@ -226,27 +226,27 @@ describe('SpotlightScreen', () => {
     mockUseMovies.mockReturnValue({ data: noStreaming });
     mockUseMoviePlatformMap.mockReturnValue({ data: {} });
     render(<SpotlightScreen />);
-    expect(screen.queryByText('home.streamingNow')).toBeNull();
+    expect(screen.queryByText('Streaming Now')).toBeNull();
   });
 
   it('does not render "Coming Soon" section when no upcoming movies', () => {
     const nonUpcoming = mockMovies.filter((m) => m.release_date !== '2099-06-01');
     mockUseMovies.mockReturnValue({ data: nonUpcoming });
     render(<SpotlightScreen />);
-    expect(screen.queryByText('home.comingSoon')).toBeNull();
+    expect(screen.queryByText('Coming Soon')).toBeNull();
   });
 
   it('does not render "Browse by Platform" section when no platforms', () => {
     mockUsePlatforms.mockReturnValue({ data: [] });
     render(<SpotlightScreen />);
-    expect(screen.queryByText('home.browseByPlatform')).toBeNull();
+    expect(screen.queryByText('Browse by Platform')).toBeNull();
   });
 
   it('renders correctly with empty movie and platform data', () => {
     mockUseMovies.mockReturnValue({ data: [] });
     mockUsePlatforms.mockReturnValue({ data: [] });
     render(<SpotlightScreen />);
-    expect(screen.getByText('spotlight.title')).toBeTruthy();
+    expect(screen.getByText('Spotlight')).toBeTruthy();
   });
 
   it('navigates to discover with platform filter when a platform square is pressed', () => {
@@ -259,7 +259,7 @@ describe('SpotlightScreen', () => {
   it('renders "To Theaters" subsection when upcoming movies have no platforms', () => {
     mockUseMoviePlatformMap.mockReturnValue({ data: {} });
     render(<SpotlightScreen />);
-    expect(screen.getByText('home.toTheaters')).toBeTruthy();
+    expect(screen.getByText('To Theaters')).toBeTruthy();
   });
 
   it('renders "To Streaming" subsection when upcoming movies have platforms', () => {
@@ -269,7 +269,7 @@ describe('SpotlightScreen', () => {
       },
     });
     render(<SpotlightScreen />);
-    expect(screen.getByText('home.toStreaming')).toBeTruthy();
+    expect(screen.getByText('To Streaming')).toBeTruthy();
   });
 
   it('navigates to discover when search button is pressed', () => {
@@ -281,21 +281,21 @@ describe('SpotlightScreen', () => {
 
   it('navigates to discover with theatrical filter when In Theaters "See All" is pressed', () => {
     render(<SpotlightScreen />);
-    const seeAllButtons = screen.getAllByText('common.seeAll');
+    const seeAllButtons = screen.getAllByText('See All');
     fireEvent.press(seeAllButtons[0]);
     expect(mockPush).toHaveBeenCalledWith('/discover?filter=in_theaters');
   });
 
   it('navigates to discover with streaming filter when Streaming Now "See All" is pressed', () => {
     render(<SpotlightScreen />);
-    const seeAllButtons = screen.getAllByText('common.seeAll');
+    const seeAllButtons = screen.getAllByText('See All');
     fireEvent.press(seeAllButtons[1]);
     expect(mockPush).toHaveBeenCalledWith('/discover?filter=streaming');
   });
 
   it('navigates to discover with upcoming filter when Coming Soon "See All" is pressed', () => {
     render(<SpotlightScreen />);
-    const seeAllButtons = screen.getAllByText('common.seeAll');
+    const seeAllButtons = screen.getAllByText('See All');
     fireEvent.press(seeAllButtons[2]);
     expect(mockPush).toHaveBeenCalledWith('/discover?filter=upcoming');
   });
@@ -304,14 +304,14 @@ describe('SpotlightScreen', () => {
     mockUseMovies.mockReturnValue({ data: [], isLoading: true });
     render(<SpotlightScreen />);
     expect(screen.getByTestId('spotlight-skeleton')).toBeTruthy();
-    expect(screen.queryByText('spotlight.inTheaters')).toBeNull();
-    expect(screen.queryByText('home.browseByPlatform')).toBeNull();
+    expect(screen.queryByText('In Theaters')).toBeNull();
+    expect(screen.queryByText('Browse by Platform')).toBeNull();
   });
 
   it('hides skeleton when data has loaded', () => {
     render(<SpotlightScreen />);
     expect(screen.queryByTestId('spotlight-skeleton')).toBeNull();
-    expect(screen.getByText('spotlight.inTheaters')).toBeTruthy();
+    expect(screen.getByText('In Theaters')).toBeTruthy();
   });
 
   it('renders both To Theaters and To Streaming when both types of upcoming exist', () => {
@@ -340,8 +340,8 @@ describe('SpotlightScreen', () => {
     });
 
     render(<SpotlightScreen />);
-    expect(screen.getByText('home.toTheaters')).toBeTruthy();
-    expect(screen.getByText('home.toStreaming')).toBeTruthy();
+    expect(screen.getByText('To Theaters')).toBeTruthy();
+    expect(screen.getByText('To Streaming')).toBeTruthy();
     expect(screen.getByText('Upcoming Movie')).toBeTruthy();
     expect(screen.getByText('Upcoming OTT Film')).toBeTruthy();
   });

@@ -25,7 +25,10 @@ export default function PrivacySettingsScreen() {
       { is_profile_public: !isProfilePublic },
       {
         onError: (err) =>
-          Alert.alert('Error', err instanceof Error ? err.message : 'Update failed'),
+          Alert.alert(
+            t('common.error'),
+            err instanceof Error ? err.message : t('profile.updateFailed'),
+          ),
       },
     );
   };
@@ -35,7 +38,10 @@ export default function PrivacySettingsScreen() {
       { is_watchlist_public: !isWatchlistPublic },
       {
         onError: (err) =>
-          Alert.alert('Error', err instanceof Error ? err.message : 'Update failed'),
+          Alert.alert(
+            t('common.error'),
+            err instanceof Error ? err.message : t('profile.updateFailed'),
+          ),
       },
     );
   };

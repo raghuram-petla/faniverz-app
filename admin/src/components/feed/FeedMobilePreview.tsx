@@ -1,49 +1,16 @@
 'use client';
 import { useState } from 'react';
-import { DEVICES, type DeviceConfig } from '@shared/constants';
+import {
+  DEVICES,
+  FEED_CONTENT_TYPE_COLORS,
+  FEED_CONTENT_TYPE_LABELS,
+  type DeviceConfig,
+} from '@shared/constants';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import type { NewsFeedItem } from '@/lib/types';
 
 const FEED_TABS = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'];
-
-const TYPE_COLORS: Record<string, string> = {
-  trailer: '#2563EB',
-  teaser: '#3B82F6',
-  glimpse: '#60A5FA',
-  promo: '#60A5FA',
-  song: '#9333EA',
-  poster: '#22C55E',
-  bts: '#F97316',
-  interview: '#F97316',
-  event: '#EA580C',
-  making: '#EA580C',
-  'short-film': '#DB2777',
-  update: '#6B7280',
-  new_movie: '#DC2626',
-  theatrical_release: '#DC2626',
-  ott_release: '#9333EA',
-  rating_milestone: '#FACC15',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  trailer: 'Trailer',
-  teaser: 'Teaser',
-  glimpse: 'Glimpse',
-  promo: 'Promo',
-  song: 'Song',
-  poster: 'Poster',
-  bts: 'BTS',
-  interview: 'Interview',
-  event: 'Event',
-  making: 'Making',
-  'short-film': 'Short Film',
-  update: 'Update',
-  new_movie: 'New Movie',
-  theatrical_release: 'In Theaters',
-  ott_release: 'Now Streaming',
-  rating_milestone: 'Milestone',
-};
 
 export interface FeedMobilePreviewProps {
   items: NewsFeedItem[];
@@ -103,8 +70,8 @@ export function FeedMobilePreview({ items }: FeedMobilePreviewProps) {
 }
 
 function PreviewFeedCard({ item }: { item: NewsFeedItem }) {
-  const color = TYPE_COLORS[item.content_type] ?? '#DC2626';
-  const label = TYPE_LABELS[item.content_type] ?? item.content_type;
+  const color = FEED_CONTENT_TYPE_COLORS[item.content_type] ?? '#DC2626';
+  const label = FEED_CONTENT_TYPE_LABELS[item.content_type] ?? item.content_type;
   const movieName = item.movie?.title;
 
   return (

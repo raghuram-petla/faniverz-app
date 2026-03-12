@@ -32,14 +32,24 @@ export function ReviewsTab({
       <View style={styles.ratingSummary}>
         <Ionicons name="star" size={32} color={colors.yellow400} />
         <Text style={styles.ratingSummaryValue}>{rating}</Text>
-        <Text style={styles.ratingSummaryMax}>/5</Text>
-        <Text style={styles.ratingSummaryCount}>({reviewCount} reviews)</Text>
+        <Text style={styles.ratingSummaryMax}>{t('movie.outOf5')}</Text>
+        <Text style={styles.ratingSummaryCount}>
+          {t('movie.reviewCountLabel', { count: reviewCount })}
+        </Text>
       </View>
 
       <TouchableOpacity style={styles.writeReviewButton} onPress={onWriteReview}>
         <Ionicons name="create" size={20} color={colors.white} />
         <Text style={styles.writeReviewText}>{t('movie.writeReview')}</Text>
       </TouchableOpacity>
+
+      {reviews.length === 0 && (
+        <Text
+          style={{ color: theme.textTertiary, textAlign: 'center', marginTop: 24, fontSize: 14 }}
+        >
+          {t('movie.noReviewsYet', 'No reviews yet. Be the first to share your thoughts!')}
+        </Text>
+      )}
 
       {reviews.map((review) => (
         <View key={review.id} style={styles.reviewCard}>
@@ -48,7 +58,9 @@ export function ReviewsTab({
               <Ionicons name="person" size={16} color={theme.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.reviewUserName}>{review.profile?.display_name ?? 'User'}</Text>
+              <Text style={styles.reviewUserName} numberOfLines={1}>
+                {review.profile?.display_name ?? t('movie.userFallback')}
+              </Text>
               <StarRating rating={review.rating} size={12} />
             </View>
             <Text style={styles.reviewDate}>{formatDate(review.created_at)}</Text>

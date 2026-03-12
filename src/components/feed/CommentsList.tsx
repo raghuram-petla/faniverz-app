@@ -1,6 +1,7 @@
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useTranslation } from 'react-i18next';
 import { CommentItem } from './CommentItem';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import type { FeedComment } from '@shared/types';
@@ -22,6 +23,7 @@ export function CommentsList({
   onLoadMore,
   onDelete,
 }: CommentsListProps) {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createPostDetailStyles(theme);
 
@@ -37,7 +39,7 @@ export function CommentsList({
     return (
       <View style={styles.emptyComments}>
         <Ionicons name="chatbubble-outline" size={32} color={colors.gray500} />
-        <Text style={styles.emptyCommentsText}>No comments yet. Be the first!</Text>
+        <Text style={styles.emptyCommentsText}>{t('feed.noComments')}</Text>
       </View>
     );
   }
@@ -55,7 +57,7 @@ export function CommentsList({
       {hasNextPage && onLoadMore ? (
         <TouchableOpacity onPress={onLoadMore} accessibilityLabel="Load more comments">
           <Text style={{ color: colors.red600, textAlign: 'center', paddingVertical: 8 }}>
-            Load more
+            {t('feed.loadMore')}
           </Text>
         </TouchableOpacity>
       ) : null}

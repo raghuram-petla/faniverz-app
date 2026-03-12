@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { Linking, Alert } from 'react-native';
 import { WatchOnSection } from '../WatchOnSection';
 
 jest.mock('react-i18next', () => ({
@@ -65,5 +66,25 @@ describe('WatchOnSection', () => {
   it('does not show upcoming alert for other statuses', () => {
     render(<WatchOnSection platforms={[]} movieStatus="in_theaters" releaseDate="2024-12-05" />);
     expect(screen.queryByText('movie.upcomingRelease')).toBeNull();
+  });
+
+  it('shows alert when Linking.openURL fails', async () => {
+    jest.spyOn(Linking, 'openURL').mockRejectedValueOnce(new Error('Cannot open'));
+    jest.spyOn(Alert, 'alert').mockImplementation(jest.fn());
+    const platformWithUrl = {
+      ...mockPlatform,
+      streaming_url: 'https://aha.video/movie/123',
+    };
+    render(
+      <WatchOnSection
+        platforms={[platformWithUrl] as any}
+        movieStatus="streaming"
+        releaseDate="2024-12-05"
+      />,
+    );
+    fireEvent.press(screen.getByLabelText('Watch on Aha'));
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith('common.error', 'common.openLinkFailed');
+    });
   });
 });

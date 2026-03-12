@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import type { NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { HomeButton } from '@/components/common/HomeButton';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
+import ScreenHeader from '@/components/common/ScreenHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { VIDEO_TYPES } from '@shared/constants';
@@ -32,7 +33,7 @@ export default function MediaScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: movie } = useMovieDetail(id ?? '');
+  const { data: movie, isLoading } = useMovieDetail(id ?? '');
 
   const [activeTab, setActiveTab] = useState<MediaTabName>('videos');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -66,7 +67,28 @@ export default function MediaScreen() {
     opacity: interpolate(scrollOffset.value, [80, 160], [0, 1], Extrapolation.CLAMP),
   }));
 
-  if (!movie) return null;
+  if (isLoading) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <ScreenHeader title={t('movieDetail.media')} />
+        <ActivityIndicator size="large" color={theme.textPrimary} style={{ marginTop: 40 }} />
+      </View>
+    );
+  }
+
+  if (!movie) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <ScreenHeader title={t('movieDetail.media')} />
+        <View style={{ alignItems: 'center', paddingTop: 40 }}>
+          <Ionicons name="alert-circle-outline" size={48} color={theme.textTertiary} />
+          <Text style={{ color: theme.textTertiary, marginTop: 8, fontSize: 16 }}>
+            {t('common.noResults')}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   const videoCount = movie.videos.length;
   const photoCount = movie.posters.length;

@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyBearer } from '@/lib/sync-helpers';
 
 const MAX_URLS = 10;
 
+const ALLOWED_URL_PATTERNS = ['r2.cloudflarestorage.com', 'image.tmdb.org', 'pub-'];
+
+function isAllowedUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ALLOWED_URL_PATTERNS.some((pattern) => parsed.hostname.includes(pattern));
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const user = await verifyBearer(request.headers.get('authorization'));
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { urls } = body;
 
@@ -20,6 +37,18 @@ export async function POST(request: NextRequest) {
 
     if (urls.length > MAX_URLS) {
       return NextResponse.json({ error: `Maximum ${MAX_URLS} URLs per request` }, { status: 400 });
+    }
+
+    // Validate all URLs are from allowed domains
+    const disallowedUrls = urls.filter((url: string) => !isAllowedUrl(url));
+    if (disallowedUrls.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            'URLs must be from allowed CDN domains (r2.cloudflarestorage.com, image.tmdb.org, or app CDN)',
+        },
+        { status: 400 },
+      );
     }
 
     const results = await Promise.all(

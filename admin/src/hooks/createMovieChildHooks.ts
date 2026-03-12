@@ -58,6 +58,9 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
         const movieId = (variables as Record<string, unknown>).movie_id as string;
         qc.invalidateQueries({ queryKey: queryKey(movieId) });
       },
+      onError: (error: Error) => {
+        window.alert(error.message || 'Operation failed');
+      },
     });
   }
 
@@ -81,6 +84,9 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
       onSuccess: (data: T & { movieId: string }) => {
         qc.invalidateQueries({ queryKey: queryKey(data.movieId) });
       },
+      onError: (error: Error) => {
+        window.alert(error.message || 'Operation failed');
+      },
     });
   }
 
@@ -94,6 +100,9 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
       },
       onSuccess: (_data: string, variables: { id: string; movieId: string }) => {
         qc.invalidateQueries({ queryKey: queryKey(variables.movieId) });
+      },
+      onError: (error: Error) => {
+        window.alert(error.message || 'Operation failed');
       },
     });
   }

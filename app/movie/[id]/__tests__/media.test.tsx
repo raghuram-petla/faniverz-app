@@ -1,10 +1,3 @@
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'en', changeLanguage: jest.fn() },
-  }),
-}));
-
 jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
   return { WebView: (props: any) => <View testID="webview" {...props} /> };
@@ -31,6 +24,19 @@ jest.mock('@/features/movies/hooks/useMovieDetail', () => ({
 jest.mock('@/providers/ImageViewerProvider', () => ({
   useImageViewer: () => ({ openImage: jest.fn(), closeImage: jest.fn() }),
 }));
+
+jest.mock('@/components/common/ScreenHeader', () => {
+  const { View, Text, TouchableOpacity } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ title }: { title: string }) => (
+      <View>
+        <TouchableOpacity accessibilityLabel="Go back" />
+        <Text>{title}</Text>
+      </View>
+    ),
+  };
+});
 
 jest.mock('@/styles/movieMedia.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
@@ -98,7 +104,7 @@ const mockMovie = {
 describe('MediaScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: mockMovie });
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: mockMovie, isLoading: false });
   });
 
   it('renders movie title in hero and sticky header', () => {
@@ -108,13 +114,13 @@ describe('MediaScreen', () => {
 
   it('shows media stats in hero header', () => {
     render(<MediaScreen />);
-    expect(screen.getByText('2 Videos · 1 Photos')).toBeTruthy();
+    expect(screen.getByText(/2 Videos.*1 Photo/)).toBeTruthy();
   });
 
   it('shows Videos and Photos tabs with counts', () => {
     render(<MediaScreen />);
-    expect(screen.getByText('movieDetail.videos (2)')).toBeTruthy();
-    expect(screen.getByText('movieDetail.photos (1)')).toBeTruthy();
+    expect(screen.getByText('Videos (2)')).toBeTruthy();
+    expect(screen.getByText('Photos (1)')).toBeTruthy();
   });
 
   it('defaults to Videos tab', () => {
@@ -125,15 +131,22 @@ describe('MediaScreen', () => {
 
   it('switches to Photos tab on press', () => {
     render(<MediaScreen />);
-    fireEvent.press(screen.getByText('movieDetail.photos (1)'));
+    fireEvent.press(screen.getByText('Photos (1)'));
     expect(screen.getByLabelText('View First Look')).toBeTruthy();
     expect(screen.getByText('Main')).toBeTruthy();
   });
 
-  it('renders nothing when movie data is unavailable', () => {
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined });
-    const { toJSON } = render(<MediaScreen />);
-    expect(toJSON()).toBeNull();
+  it('shows loading spinner when data is loading', () => {
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
+    render(<MediaScreen />);
+    expect(screen.getByLabelText('Go back')).toBeTruthy();
+  });
+
+  it('shows not-found state when movie is unavailable and not loading', () => {
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined, isLoading: false });
+    render(<MediaScreen />);
+    expect(screen.getByText('No results found')).toBeTruthy();
+    expect(screen.getByLabelText('Go back')).toBeTruthy();
   });
 
   it('shows back button in sticky section', () => {
@@ -154,7 +167,7 @@ describe('MediaScreen', () => {
 
   it('hides filter pills in photos tab', () => {
     render(<MediaScreen />);
-    fireEvent.press(screen.getByText('movieDetail.photos (1)'));
+    fireEvent.press(screen.getByText('Photos (1)'));
     expect(screen.queryByText('Trailer (1)')).toBeNull();
     expect(screen.queryByText('Song (1)')).toBeNull();
   });

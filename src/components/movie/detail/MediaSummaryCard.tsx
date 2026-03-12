@@ -2,6 +2,8 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { useTranslation } from 'react-i18next';
 import type { MovieVideo, MoviePoster } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
 
@@ -12,6 +14,7 @@ export interface MediaSummaryCardProps {
 }
 
 export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSummaryCardProps) {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
 
@@ -22,8 +25,14 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
     null;
 
   const parts: string[] = [];
-  if (videos.length > 0) parts.push(`${videos.length} Video${videos.length !== 1 ? 's' : ''}`);
-  if (posters.length > 0) parts.push(`${posters.length} Photo${posters.length !== 1 ? 's' : ''}`);
+  if (videos.length > 0)
+    parts.push(
+      `${videos.length} ${videos.length !== 1 ? t('movieDetail.videos') : t('movieDetail.video')}`,
+    );
+  if (posters.length > 0)
+    parts.push(
+      `${posters.length} ${posters.length !== 1 ? t('movieDetail.photos') : t('movieDetail.photo')}`,
+    );
   const summaryText = parts.join(' · ');
 
   return (
@@ -36,7 +45,11 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
       {featured && (
         <View style={styles.mediaSummaryThumb}>
           <Image
-            source={{ uri: `https://img.youtube.com/vi/${featured.youtube_id}/mqdefault.jpg` }}
+            source={{
+              uri: featured.youtube_id
+                ? `https://img.youtube.com/vi/${featured.youtube_id}/mqdefault.jpg`
+                : PLACEHOLDER_POSTER,
+            }}
             style={styles.mediaSummaryImage}
             contentFit="cover"
           />
@@ -48,7 +61,7 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
       <View style={styles.mediaSummaryInfo}>
         <Text style={styles.mediaSummaryText}>{summaryText}</Text>
         <View style={styles.mediaSummaryCtaRow}>
-          <Text style={styles.mediaSummaryCtaText}>Explore All Media</Text>
+          <Text style={styles.mediaSummaryCtaText}>{t('movieDetail.exploreAllMedia')}</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.red400} />
         </View>
       </View>

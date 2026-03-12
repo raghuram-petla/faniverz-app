@@ -1,5 +1,11 @@
 import { useMemo } from 'react';
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  InfiniteData,
+} from '@tanstack/react-query';
 import {
   fetchWatchlist,
   fetchWatchlistPaginated,
@@ -9,6 +15,7 @@ import {
   moveBackToWatchlist,
   isMovieWatchlisted,
 } from './api';
+import { Alert } from 'react-native';
 import { WatchlistEntry } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
@@ -90,6 +97,9 @@ export function useWatchlistMutations() {
     onSuccess: (_data, { userId }) => {
       invalidateAll(userId);
     },
+    onError: () => {
+      Alert.alert('Error', 'Failed to add to watchlist. Please try again.');
+    },
   });
 
   const remove = useMutation({
@@ -103,16 +113,16 @@ export function useWatchlistMutations() {
         old?.filter((e) => e.movie_id !== movieId),
       );
       // Also optimistically update the paginated query
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      queryClient.setQueryData<any>(['watchlist-paginated', userId], (old: any) => {
-        if (!old?.pages) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page: WatchlistEntry[]) =>
-            page.filter((e) => e.movie_id !== movieId),
-          ),
-        };
-      });
+      queryClient.setQueryData<InfiniteData<WatchlistEntry[], number>>(
+        ['watchlist-paginated', userId],
+        (old) => {
+          if (!old?.pages) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => page.filter((e) => e.movie_id !== movieId)),
+          };
+        },
+      );
       return { prev };
     },
     onError: (_err, { userId }, context) => {
@@ -131,6 +141,9 @@ export function useWatchlistMutations() {
     onSuccess: (_data, { userId }) => {
       invalidateAll(userId);
     },
+    onError: () => {
+      Alert.alert('Error', 'Failed to mark as watched. Please try again.');
+    },
   });
 
   const moveBack = useMutation({
@@ -138,6 +151,9 @@ export function useWatchlistMutations() {
       moveBackToWatchlist(userId, movieId),
     onSuccess: (_data, { userId }) => {
       invalidateAll(userId);
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to move back to watchlist. Please try again.');
     },
   });
 

@@ -45,7 +45,7 @@ export function handleYouTubeNavigation(
 ): boolean {
   const { url } = request;
 
-  if (url === 'about:blank' || url.includes('example.com') || url.includes('/embed/')) {
+  if (url === 'about:blank' || url === 'https://example.com/' || url.includes('/embed/')) {
     return true;
   }
 

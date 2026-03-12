@@ -107,9 +107,11 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('profile.signInTitle')).toBeTruthy();
-    expect(screen.getByText('profile.signInSubtitle')).toBeTruthy();
-    expect(screen.getByText('auth.signIn')).toBeTruthy();
+    expect(screen.getByText('Sign in to Faniverz')).toBeTruthy();
+    expect(
+      screen.getByText('Create an account to track your watchlist, write reviews, and more'),
+    ).toBeTruthy();
+    expect(screen.getByText('Sign In / Sign Up')).toBeTruthy();
   });
 
   it('does not show menu items when guest', () => {
@@ -117,12 +119,12 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.queryByText('profile.editProfile')).toBeNull();
-    expect(screen.queryByText('profile.myReviews')).toBeNull();
-    expect(screen.queryByText('profile.notifications')).toBeNull();
-    expect(screen.queryByText('profile.favoriteActors')).toBeNull();
-    expect(screen.queryByText('profile.watchedMovies')).toBeNull();
-    expect(screen.queryByText('profile.accountDetails')).toBeNull();
+    expect(screen.queryByText('Edit Profile')).toBeNull();
+    expect(screen.queryByText('My Reviews')).toBeNull();
+    expect(screen.queryByText('Notifications')).toBeNull();
+    expect(screen.queryByText('Favorite Actors')).toBeNull();
+    expect(screen.queryByText('Watched Movies')).toBeNull();
+    expect(screen.queryByText('Account Details')).toBeNull();
   });
 
   it('shows Settings navigation row in guest view', () => {
@@ -130,8 +132,8 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('profile.settings')).toBeTruthy();
-    fireEvent.press(screen.getByText('profile.settings'));
+    expect(screen.getByText('Settings')).toBeTruthy();
+    fireEvent.press(screen.getByText('Settings'));
     expect(mockPush).toHaveBeenCalledWith('/profile/settings');
   });
 
@@ -140,9 +142,9 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.queryByText('profile.watchlistStat')).toBeNull();
-    expect(screen.queryByText('profile.reviewsStat')).toBeNull();
-    expect(screen.queryByText('profile.avgRating')).toBeNull();
+    expect(screen.queryByText('Watchlist')).toBeNull();
+    expect(screen.queryByText('Reviews')).toBeNull();
+    expect(screen.queryByText('Avg Rating')).toBeNull();
   });
 
   it('navigates to login when Sign In / Sign Up button is pressed', () => {
@@ -150,7 +152,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('auth.signIn'));
+    fireEvent.press(screen.getByText('Sign In / Sign Up'));
     expect(mockPush).toHaveBeenCalledWith('/(auth)/login');
   });
 
@@ -159,8 +161,8 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('profile.version')).toBeTruthy();
-    expect(screen.getByText('profile.tagline')).toBeTruthy();
+    expect(screen.getByText('Faniverz v2.3.1')).toBeTruthy();
+    expect(screen.getByText('Your Movie Companion')).toBeTruthy();
   });
 
   // ── Logged in ─────────────────────────────────────────────────────────
@@ -178,16 +180,16 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('profile.editProfile')).toBeTruthy();
-    expect(screen.getByText('profile.username')).toBeTruthy();
-    expect(screen.getByText('profile.myReviews')).toBeTruthy();
-    expect(screen.getByText('profile.settings')).toBeTruthy();
-    expect(screen.getByText('profile.notifications')).toBeTruthy();
-    expect(screen.getByText('profile.following')).toBeTruthy();
-    expect(screen.getByText('profile.activity')).toBeTruthy();
-    expect(screen.getByText('profile.favoriteActors')).toBeTruthy();
-    expect(screen.getByText('profile.watchedMovies')).toBeTruthy();
-    expect(screen.getByText('profile.accountDetails')).toBeTruthy();
+    expect(screen.getByText('Edit Profile')).toBeTruthy();
+    expect(screen.getByText('Username')).toBeTruthy();
+    expect(screen.getByText('My Reviews')).toBeTruthy();
+    expect(screen.getByText('Settings')).toBeTruthy();
+    expect(screen.getByText('Notifications')).toBeTruthy();
+    expect(screen.getByText('Following')).toBeTruthy();
+    expect(screen.getByText('Activity')).toBeTruthy();
+    expect(screen.getByText('Favorite Actors')).toBeTruthy();
+    expect(screen.getByText('Watched Movies')).toBeTruthy();
+    expect(screen.getByText('Account Details')).toBeTruthy();
   });
 
   it('does not show logout button on profile screen', () => {
@@ -204,7 +206,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('profile.memberSince')).toBeTruthy();
+    expect(screen.getByText(/Member since/)).toBeTruthy();
   });
 
   it('navigates to Edit Profile when menu item is pressed', () => {
@@ -212,7 +214,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.editProfile'));
+    fireEvent.press(screen.getByText('Edit Profile'));
     expect(mockPush).toHaveBeenCalledWith('/profile/edit');
   });
 
@@ -221,7 +223,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.settings'));
+    fireEvent.press(screen.getByText('Settings'));
     expect(mockPush).toHaveBeenCalledWith('/profile/settings');
   });
 
@@ -230,7 +232,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.myReviews'));
+    fireEvent.press(screen.getByText('My Reviews'));
     expect(mockPush).toHaveBeenCalledWith('/profile/reviews');
   });
 
@@ -239,7 +241,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.notifications'));
+    fireEvent.press(screen.getByText('Notifications'));
     expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
 
@@ -248,7 +250,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.following'));
+    fireEvent.press(screen.getByText('Following'));
     expect(mockPush).toHaveBeenCalledWith('/profile/following');
   });
 
@@ -257,7 +259,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.activity'));
+    fireEvent.press(screen.getByText('Activity'));
     expect(mockPush).toHaveBeenCalledWith('/profile/activity');
   });
 
@@ -266,7 +268,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.favoriteActors'));
+    fireEvent.press(screen.getByText('Favorite Actors'));
     expect(mockPush).toHaveBeenCalledWith('/profile/favorite-actors');
   });
 
@@ -275,7 +277,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.watchedMovies'));
+    fireEvent.press(screen.getByText('Watched Movies'));
     expect(mockPush).toHaveBeenCalledWith('/profile/watched');
   });
 
@@ -284,7 +286,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByText('profile.accountDetails'));
+    fireEvent.press(screen.getByText('Account Details'));
     expect(mockPush).toHaveBeenCalledWith('/profile/account');
   });
 
@@ -305,7 +307,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('profile.notifications')).toBeTruthy();
+    expect(screen.getByText('Notifications')).toBeTruthy();
     expect(screen.queryByText('5')).toBeNull();
   });
 
@@ -371,7 +373,7 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    expect(screen.getByText('profile.version')).toBeTruthy();
-    expect(screen.getByText('profile.tagline')).toBeTruthy();
+    expect(screen.getByText('Faniverz v2.3.1')).toBeTruthy();
+    expect(screen.getByText('Your Movie Companion')).toBeTruthy();
   });
 });

@@ -69,6 +69,9 @@ export function useTogglePinFeed() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -81,6 +84,9 @@ export function useToggleFeatureFeed() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }
@@ -98,6 +104,9 @@ export function useReorderFeed() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }

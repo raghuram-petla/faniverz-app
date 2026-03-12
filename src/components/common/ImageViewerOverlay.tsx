@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ImageViewerGestures } from './ImageViewerGestures';
 import { colors as palette } from '@/theme/colors';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { overlayStyles as styles } from './ImageViewerOverlay.styles';
 import { measureView } from '@/utils/measureView';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
@@ -236,9 +237,13 @@ export function ImageViewerOverlay({
       >
         <Animated.View style={[styles.gestureArea]}>
           <Animated.View style={animatedContainerStyle}>
-            <Image source={{ uri: feedUrl }} style={styles.imageFill} contentFit="cover" />
             <Image
-              source={{ uri: fullUrl }}
+              source={{ uri: feedUrl || PLACEHOLDER_POSTER }}
+              style={styles.imageFill}
+              contentFit="cover"
+            />
+            <Image
+              source={{ uri: fullUrl || PLACEHOLDER_POSTER }}
               style={styles.imageFill}
               contentFit="cover"
               transition={300}

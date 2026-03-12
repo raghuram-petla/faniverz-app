@@ -52,6 +52,9 @@ export function useCreateNotification() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -68,6 +71,9 @@ export function useCancelNotification() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }
@@ -86,6 +92,9 @@ export function useRetryNotification() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -102,6 +111,9 @@ export function useBulkRetryFailed() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -117,6 +129,9 @@ export function useBulkCancelPending() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }

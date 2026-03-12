@@ -221,8 +221,10 @@ describe('FeedScreen', () => {
   it('renders empty state when no items', () => {
     setupMocks({ feed: { data: { pages: [[]], pageParams: [0] }, isLoading: false } });
     render(<FeedScreen />);
-    expect(screen.getByText('feed.noUpdates')).toBeTruthy();
-    expect(screen.getByText('feed.checkBackSoon')).toBeTruthy();
+    expect(screen.getByText('No updates yet')).toBeTruthy();
+    expect(
+      screen.getByText('Check back soon for trailers, posters, and exclusive content!'),
+    ).toBeTruthy();
   });
 
   it('renders feed items when data exists', () => {
@@ -351,7 +353,7 @@ describe('FeedScreen', () => {
   it('handles empty pages array gracefully', () => {
     setupMocks({ feed: { data: { pages: [], pageParams: [] }, isLoading: false } });
     render(<FeedScreen />);
-    expect(screen.getByText('feed.noUpdates')).toBeTruthy();
+    expect(screen.getByText('No updates yet')).toBeTruthy();
   });
 
   it('deduplicates items across paginated pages', () => {

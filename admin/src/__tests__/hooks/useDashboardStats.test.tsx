@@ -12,8 +12,8 @@ vi.mock('@/lib/supabase-browser', () => ({
         profiles: 100,
         reviews: 30,
         news_feed: 55,
-        watchlist: 200,
-        follows: 75,
+        watchlists: 200,
+        entity_follows: 75,
       };
       return {
         select: vi.fn().mockResolvedValue({ count: counts[table] ?? 0, data: null, error: null }),

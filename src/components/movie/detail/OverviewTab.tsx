@@ -7,6 +7,7 @@ import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { useTranslation } from 'react-i18next';
 import { MediaSummaryCard } from './MediaSummaryCard';
 
 export interface OverviewTabProps {
@@ -15,6 +16,7 @@ export interface OverviewTabProps {
 }
 
 export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
@@ -36,14 +38,14 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
         {movie.director && (
           <View style={styles.infoCard}>
             <Ionicons name="videocam" size={20} color={theme.textSecondary} />
-            <Text style={styles.infoLabel}>Director</Text>
+            <Text style={styles.infoLabel}>{t('movie.director')}</Text>
             <Text style={styles.infoValue}>{movie.director}</Text>
           </View>
         )}
         {movie.certification && (
           <View style={styles.infoCard}>
             <Ionicons name="shield-checkmark" size={20} color={theme.textSecondary} />
-            <Text style={styles.infoLabel}>Certification</Text>
+            <Text style={styles.infoLabel}>{t('movie.certification')}</Text>
             <Text style={styles.infoValue}>{movie.certification}</Text>
           </View>
         )}
@@ -51,7 +53,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
 
       {movie.productionHouses.length > 0 && (
         <View style={styles.productionHousesRow}>
-          <Text style={styles.productionHousesLabel}>Production</Text>
+          <Text style={styles.productionHousesLabel}>{t('movie.production')}</Text>
           <View style={styles.productionHousesList}>
             {movie.productionHouses.map((ph) => (
               <TouchableOpacity
@@ -87,7 +89,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
           onPress={() => Linking.openURL(movie.trailer_url!)}
         >
           <Ionicons name="play" size={20} color={colors.red400} />
-          <Text style={styles.trailerButtonText}>Watch Trailer</Text>
+          <Text style={styles.trailerButtonText}>{t('movie.watchTrailer')}</Text>
         </TouchableOpacity>
       ) : null}
     </View>

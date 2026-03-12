@@ -81,6 +81,46 @@ export const DEVICES: readonly DeviceConfig[] = [
   },
 ] as const;
 
+// Feed content type colors — hex values used in admin preview and can derive Tailwind classes
+export const FEED_CONTENT_TYPE_COLORS: Record<string, string> = {
+  trailer: '#2563EB',
+  teaser: '#3B82F6',
+  glimpse: '#60A5FA',
+  promo: '#60A5FA',
+  song: '#9333EA',
+  poster: '#22C55E',
+  bts: '#F97316',
+  interview: '#F97316',
+  event: '#EA580C',
+  making: '#EA580C',
+  'short-film': '#DB2777',
+  update: '#6B7280',
+  new_movie: '#DC2626',
+  theatrical_release: '#DC2626',
+  ott_release: '#9333EA',
+  rating_milestone: '#FACC15',
+};
+
+// Feed content type labels
+export const FEED_CONTENT_TYPE_LABELS: Record<string, string> = {
+  trailer: 'Trailer',
+  teaser: 'Teaser',
+  glimpse: 'Glimpse',
+  promo: 'Promo',
+  song: 'Song',
+  poster: 'Poster',
+  bts: 'BTS',
+  interview: 'Interview',
+  event: 'Event',
+  making: 'Making',
+  'short-film': 'Short Film',
+  update: 'Update',
+  new_movie: 'New Movie',
+  theatrical_release: 'In Theaters',
+  ott_release: 'Now Streaming',
+  rating_milestone: 'Milestone',
+};
+
 // Gradient stops used in mobile screens (shared so admin preview can replicate exactly)
 export const SPOTLIGHT_GRADIENT = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,1)'];
 export const DETAIL_GRADIENT = {

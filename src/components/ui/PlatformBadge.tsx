@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { getPlatformLogo } from '@/constants/platformLogos';
+import { colors as palette } from '@/theme/colors';
 
 interface PlatformBadgeProps {
   platform: { id: string; color: string; logo: string };
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    color: '#FFFFFF',
+    color: palette.white,
     fontWeight: '700',
   },
 });

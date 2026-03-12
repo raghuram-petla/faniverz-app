@@ -47,7 +47,7 @@ export function useFollowEntity() {
         ...(old ?? []),
         {
           id: `temp-${Date.now()}`,
-          user_id: user!.id,
+          user_id: user?.id ?? '',
           entity_type: entityType,
           entity_id: entityId,
           created_at: new Date().toISOString(),

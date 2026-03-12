@@ -110,6 +110,9 @@ export function useInviteAdmin() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'invitations'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -126,6 +129,9 @@ export function useRevokeInvitation() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'invitations'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }
@@ -144,6 +150,9 @@ export function useRevokeAdmin() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -160,6 +169,9 @@ export function useUpdateAdminRole() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }
@@ -190,6 +202,9 @@ export function useBlockAdmin() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
+    },
   });
 }
 
@@ -206,6 +221,9 @@ export function useUnblockAdmin() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Operation failed');
     },
   });
 }

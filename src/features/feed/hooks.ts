@@ -74,6 +74,15 @@ export function useVoteFeedItem() {
     },
     onMutate: async ({ feedItemId, voteType, previousVote }) => {
       await queryClient.cancelQueries({ queryKey: ['personalized-feed'] });
+      const previousFeedData: {
+        queryKey: readonly unknown[];
+        data: { pages: NewsFeedItem[][] };
+      }[] = [];
+      queryClient
+        .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: ['personalized-feed'] })
+        .forEach(([queryKey, data]) => {
+          if (data) previousFeedData.push({ queryKey, data });
+        });
       queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>(
         { queryKey: ['personalized-feed'] },
         (old) => {
@@ -100,6 +109,14 @@ export function useVoteFeedItem() {
           };
         },
       );
+      return { previousFeedData };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousFeedData) {
+        for (const { queryKey, data } of context.previousFeedData) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
@@ -119,6 +136,15 @@ export function useRemoveFeedVote() {
     },
     onMutate: async ({ feedItemId, previousVote }) => {
       await queryClient.cancelQueries({ queryKey: ['personalized-feed'] });
+      const previousFeedData: {
+        queryKey: readonly unknown[];
+        data: { pages: NewsFeedItem[][] };
+      }[] = [];
+      queryClient
+        .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: ['personalized-feed'] })
+        .forEach(([queryKey, data]) => {
+          if (data) previousFeedData.push({ queryKey, data });
+        });
       queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>(
         { queryKey: ['personalized-feed'] },
         (old) => {
@@ -142,6 +168,14 @@ export function useRemoveFeedVote() {
           };
         },
       );
+      return { previousFeedData };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousFeedData) {
+        for (const { queryKey, data } of context.previousFeedData) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });

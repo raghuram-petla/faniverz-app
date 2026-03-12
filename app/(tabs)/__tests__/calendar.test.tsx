@@ -108,7 +108,7 @@ beforeEach(() => {
 describe('CalendarScreen', () => {
   it('renders "Release Calendar" header', () => {
     const { getByText } = render(<CalendarScreen />);
-    expect(getByText('calendar.title')).toBeTruthy();
+    expect(getByText('Release Calendar')).toBeTruthy();
   });
 
   it('renders filter toggle button', () => {
@@ -149,7 +149,7 @@ describe('CalendarScreen', () => {
 
     const { getByText } = render(<CalendarScreen />);
 
-    expect(getByText('calendar.noReleasesSubtitle')).toBeTruthy();
+    expect(getByText('No releases found for the selected filters.')).toBeTruthy();
   });
 
   it('shows empty state with clear filters link when active filters are set and no movies match', () => {
@@ -165,8 +165,8 @@ describe('CalendarScreen', () => {
 
     const { getByText } = render(<CalendarScreen />);
 
-    expect(getByText('calendar.noReleasesSubtitle')).toBeTruthy();
-    expect(getByText('calendar.clearFilters')).toBeTruthy();
+    expect(getByText('No releases found for the selected filters.')).toBeTruthy();
+    expect(getByText('Clear filters')).toBeTruthy();
   });
 
   it('selects a month in the filter panel', () => {
@@ -284,10 +284,10 @@ describe('CalendarScreen', () => {
     expect(getByText('2025')).toBeTruthy();
     expect(getByText('Mar')).toBeTruthy();
     expect(getByText('Day 15')).toBeTruthy();
-    expect(getByText('common.clearAll')).toBeTruthy();
+    expect(getByText('Clear All')).toBeTruthy();
 
     // Press "Clear all"
-    fireEvent.press(getByText('common.clearAll'));
+    fireEvent.press(getByText('Clear All'));
 
     const state = useCalendarStore.getState();
     expect(state.selectedYear).toBeNull();
@@ -334,7 +334,7 @@ describe('CalendarScreen', () => {
     });
 
     const { getByText } = render(<CalendarScreen />);
-    fireEvent.press(getByText('calendar.clearFilters'));
+    fireEvent.press(getByText('Clear filters'));
 
     const state = useCalendarStore.getState();
     expect(state.hasUserFiltered).toBe(false);
@@ -373,7 +373,7 @@ describe('CalendarScreen', () => {
     const { getByText, queryByText } = render(<CalendarScreen />);
     expect(queryByText('Pushpa 2')).toBeNull();
     expect(queryByText('Kalki')).toBeNull();
-    expect(getByText('calendar.noReleasesSubtitle')).toBeTruthy();
+    expect(getByText('No releases found for the selected filters.')).toBeTruthy();
   });
 
   it('shows the filter dot indicator when hasUserFiltered is true', () => {
@@ -399,7 +399,7 @@ describe('CalendarScreen', () => {
     setupDefaultMock({ isLoading: true });
 
     render(<CalendarScreen />);
-    expect(screen.queryByText('calendar.title')).toBeNull();
+    expect(screen.queryByText('Release Calendar')).toBeNull();
   });
 
   it('shows footer loading indicator when fetching next page', () => {

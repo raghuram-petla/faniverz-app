@@ -10,8 +10,10 @@ import {
   handleYouTubeNavigation,
   handleYouTubeOpenWindow,
 } from '@/utils/youtubeNavigation';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { MovieVideo } from '@/types';
 import type { SemanticTheme } from '@shared/themes';
+import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -28,7 +30,7 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
   const styles = createCardStyles(theme);
 
   const onNavRequest = useCallback(
-    (request: { url: string }) => handleYouTubeNavigation(request as any, video.youtube_id),
+    (request: ShouldStartLoadRequest) => handleYouTubeNavigation(request, video.youtube_id),
     [video.youtube_id],
   );
 
@@ -84,7 +86,11 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
     >
       <View style={styles.thumbnailWrapper}>
         <Image
-          source={{ uri: `https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg` }}
+          source={{
+            uri: video.youtube_id
+              ? `https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`
+              : PLACEHOLDER_POSTER,
+          }}
           style={styles.thumbnail}
           contentFit="cover"
         />
@@ -130,17 +136,17 @@ const createCardStyles = (t: SemanticTheme) =>
       paddingVertical: 3,
       borderRadius: 4,
     },
-    durationText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+    durationText: { fontSize: 12, fontWeight: '600', color: colors.white },
     playerWrapper: {
       width: CARD_WIDTH,
       height: THUMB_HEIGHT,
       borderRadius: 12,
       overflow: 'hidden',
-      backgroundColor: '#000',
+      backgroundColor: colors.black,
     },
     player: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: '#000',
+      backgroundColor: colors.black,
     },
     shareOverlay: {
       ...StyleSheet.absoluteFillObject,

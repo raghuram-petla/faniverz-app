@@ -35,6 +35,9 @@ export default function SettingsScreen() {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
 
+  // Notification preferences are stored locally via AsyncStorage only.
+  // There is no backend table for these settings. Push delivery is controlled
+  // server-side; these toggles control the client's local filtering behavior.
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS).then((v) => {
       if (v !== null) setPushEnabled(v === 'true');

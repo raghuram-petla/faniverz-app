@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { discoverTeluguMovies, discoverTeluguMoviesByMonth } from '@/lib/tmdb';
-import { ensureTmdbApiKey, errorResponse } from '@/lib/sync-helpers';
+import { ensureTmdbApiKey, errorResponse, verifyBearer } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/discover
@@ -11,6 +11,11 @@ import { ensureTmdbApiKey, errorResponse } from '@/lib/sync-helpers';
  */
 export async function POST(request: NextRequest) {
   try {
+    const user = await verifyBearer(request.headers.get('authorization'));
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const tmdb = ensureTmdbApiKey();
     if (!tmdb.ok) return tmdb.response;
 

@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTheme } from '@/theme';
+import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { Actor } from '@/types';
 import { getImageUrl, ImageSize } from '@shared/imageUrl';
 
@@ -15,6 +16,14 @@ function photoVariant(displaySize: number): ImageSize {
 // TMDB gender encoding
 const GENDER_FEMALE = 1;
 const GENDER_MALE = 2;
+
+/** Design tokens for gender-based placeholder backgrounds */
+const GENDER_COLORS = {
+  default: { dark: '#27272A', light: '#E4E4E7' }, // zinc-800 / zinc-200
+  female: { dark: '#2D1F3A', light: '#EDE9FE' }, // dark purple / violet-100
+  minorMale: { dark: '#1A2F46', light: '#DBEAFE' }, // dark blue / blue-100
+  minorFemale: { dark: '#46151F', light: '#FFE4E6' }, // dark rose / rose-100
+} as const;
 
 function isMinor(birthDate: string): boolean {
   const birth = new Date(birthDate);
@@ -46,13 +55,8 @@ function resolveConfig(actor: Actor | undefined): AvatarConfig {
 }
 
 function resolveBgColor(bgKey: AvatarConfig['bgKey'], isDark: boolean): string {
-  const map = {
-    default: isDark ? '#27272A' : '#E4E4E7', // zinc-800 / zinc-200
-    female: isDark ? '#2D1F3A' : '#EDE9FE', // dark purple / violet-100
-    minorMale: isDark ? '#1A2F46' : '#DBEAFE', // dark blue / blue-100
-    minorFemale: isDark ? '#46151F' : '#FFE4E6', // dark rose / rose-100
-  };
-  return map[bgKey];
+  const entry = GENDER_COLORS[bgKey];
+  return isDark ? entry.dark : entry.light;
 }
 
 interface Props {
@@ -66,7 +70,7 @@ export function ActorAvatar({ actor, size = 64 }: Props) {
   if (actor?.photo_url) {
     return (
       <Image
-        source={{ uri: getImageUrl(actor.photo_url, photoVariant(size)) ?? undefined }}
+        source={{ uri: getImageUrl(actor.photo_url, photoVariant(size)) ?? PLACEHOLDER_AVATAR }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"
       />

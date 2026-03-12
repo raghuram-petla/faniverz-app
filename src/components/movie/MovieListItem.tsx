@@ -167,7 +167,7 @@ const createStyles = (t: SemanticTheme) =>
       borderRadius: 4,
     },
     theaterBadgeText: {
-      color: '#FFFFFF',
+      color: palette.white,
       fontSize: 10,
       fontWeight: '700',
     },
@@ -224,7 +224,7 @@ const createStyles = (t: SemanticTheme) =>
     platformName: {
       fontSize: 12,
       fontWeight: '700',
-      color: '#FFFFFF',
+      color: palette.white,
     },
     ratingRow: {
       flexDirection: 'row',

@@ -60,7 +60,11 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
             textStyle={s.ratingText}
           />
         </View>
-        {movie.director && <Text style={s.director}>{movie.director}</Text>}
+        {movie.director && (
+          <Text style={s.director} numberOfLines={1}>
+            {movie.director}
+          </Text>
+        )}
         {movie.genres.length > 0 && (
           <Text style={s.genres} numberOfLines={1}>
             {movie.genres.join(' • ')}

@@ -160,8 +160,8 @@ export default function FeedScreen() {
           <Ionicons name="newspaper" size={20} color={colors.white} />
         </View>
         <View style={styles.headerTextBlock}>
-          <Text style={styles.headerTitle}>News Feed</Text>
-          <Text style={styles.headerSubtitle}>Latest Updates &amp; Content</Text>
+          <Text style={styles.headerTitle}>{t('feed.newsFeed')}</Text>
+          <Text style={styles.headerSubtitle}>{t('feed.latestUpdates')}</Text>
         </View>
       </View>
 
@@ -194,11 +194,13 @@ export default function FeedScreen() {
         ) : allItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />
-            <Text style={styles.emptyTitle}>No updates yet</Text>
+            <Text style={styles.emptyTitle}>{t('feed.noUpdates')}</Text>
             <Text style={styles.emptySubtitle}>
               {filter !== 'all'
-                ? `No ${FEED_PILLS.find((p) => p.value === filter)?.label ?? filter} content yet`
-                : 'Check back soon for trailers, posters, and exclusive content!'}
+                ? t('feed.noFilterContent', {
+                    filter: FEED_PILLS.find((p) => p.value === filter)?.label ?? filter,
+                  })
+                : t('feed.checkBackSoon')}
             </Text>
           </View>
         ) : (

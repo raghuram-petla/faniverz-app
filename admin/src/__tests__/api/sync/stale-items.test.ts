@@ -1,0 +1,127 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { NextRequest } from 'next/server';
+
+const mockGetUser = vi.fn();
+const mockLimit = vi.fn();
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => ({
+    auth: { getUser: mockGetUser },
+  }),
+}));
+
+vi.mock('@/lib/supabase-admin', () => ({
+  getSupabaseAdmin: () => ({
+    from: () => ({
+      select: () => ({
+        not: () => ({
+          or: () => ({
+            order: () => ({
+              limit: mockLimit,
+            }),
+          }),
+          is: () => ({
+            order: () => ({
+              limit: mockLimit,
+            }),
+          }),
+        }),
+      }),
+    }),
+  }),
+}));
+
+vi.mock('next/server', () => ({
+  NextResponse: {
+    json: (body: unknown, init?: { status?: number }) => ({
+      body,
+      status: init?.status ?? 200,
+      async json() {
+        return body;
+      },
+    }),
+  },
+}));
+
+import { GET } from '@/app/api/sync/stale-items/route';
+
+function makeRequest(queryString: string, authHeader = 'Bearer valid-token') {
+  return {
+    url: `http://localhost/api/sync/stale-items${queryString}`,
+    headers: {
+      get: (name: string) => (name === 'authorization' ? authHeader : null),
+    },
+  } as unknown as NextRequest;
+}
+
+describe('GET /api/sync/stale-items', () => {
+  beforeEach(() => {
+    mockGetUser.mockReset();
+    mockLimit.mockReset();
+
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'admin@test.com' } },
+      error: null,
+    });
+  });
+
+  it('returns 401 when authorization header is missing', async () => {
+    const res = await GET(makeRequest('?type=movies', ''));
+    expect(res.status).toBe(401);
+    const data = await res.json();
+    expect(data.error).toBe('Unauthorized');
+  });
+
+  it('returns 401 when token is invalid', async () => {
+    mockGetUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { message: 'Invalid token' },
+    });
+    const res = await GET(makeRequest('?type=movies'));
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 for invalid type parameter', async () => {
+    const res = await GET(makeRequest('?type=invalid'));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain('Invalid type');
+  });
+
+  it('returns stale movies', async () => {
+    mockLimit.mockResolvedValue({
+      data: [{ id: 'movie-1', title: 'Test', tmdb_id: 100, tmdb_last_synced_at: null }],
+      error: null,
+    });
+
+    const res = await GET(makeRequest('?type=movies&days=30'));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.type).toBe('movies');
+    expect(data.items).toHaveLength(1);
+    expect(data.days).toBe(30);
+  });
+
+  it('returns actors missing bios', async () => {
+    mockLimit.mockResolvedValue({
+      data: [{ id: 'actor-1', name: 'Test Actor', tmdb_person_id: 500 }],
+      error: null,
+    });
+
+    const res = await GET(makeRequest('?type=actors-missing-bios'));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.type).toBe('actors-missing-bios');
+    expect(data.items).toHaveLength(1);
+  });
+
+  it('returns 500 when database query fails', async () => {
+    mockLimit.mockResolvedValue({
+      data: null,
+      error: new Error('DB error'),
+    });
+
+    const res = await GET(makeRequest('?type=movies'));
+    expect(res.status).toBe(500);
+  });
+});

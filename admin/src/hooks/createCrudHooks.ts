@@ -110,6 +110,9 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: [...listKey] });
       },
+      onError: (error: Error) => {
+        window.alert(error.message || 'Operation failed');
+      },
     });
   }
 
@@ -130,6 +133,9 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
         qc.invalidateQueries({ queryKey: [...listKey] });
         qc.invalidateQueries({ queryKey: singleKey(data.id) });
       },
+      onError: (error: Error) => {
+        window.alert(error.message || 'Operation failed');
+      },
     });
   }
 
@@ -144,6 +150,9 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
       onSuccess: (id: string) => {
         qc.invalidateQueries({ queryKey: [...listKey] });
         qc.invalidateQueries({ queryKey: singleKey(id) });
+      },
+      onError: (error: Error) => {
+        window.alert(error.message || 'Operation failed');
       },
     });
   }

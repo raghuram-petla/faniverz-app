@@ -28,28 +28,9 @@ jest.mock('@/styles/productionHouseDetail.styles', () => ({
   createProductionHouseStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
+const mockUseProductionHouseDetail = jest.fn();
 jest.mock('@/features/productionHouses/hooks', () => ({
-  useProductionHouseDetail: () => ({
-    house: {
-      id: 'ph1',
-      name: 'Mythri Entertainments',
-      logo_url: 'logo.jpg',
-      description: 'A great studio',
-      created_at: '2026-01-01T00:00:00Z',
-    },
-    movies: [
-      {
-        id: 'm1',
-        title: 'Pushpa 2',
-        poster_url: 'poster.jpg',
-        release_date: '2025-12-05',
-        rating: 8.5,
-      },
-      { id: 'm2', title: 'Movie 2', poster_url: null, release_date: null, rating: 0 },
-    ],
-    isLoading: false,
-    refetch: jest.fn(),
-  }),
+  useProductionHouseDetail: (...args: unknown[]) => mockUseProductionHouseDetail(...args),
 }));
 
 jest.mock('@/features/feed', () => ({
@@ -116,13 +97,49 @@ jest.mock('@shared/imageUrl', () => ({
   getImageUrl: (url: string | null) => url,
 }));
 
+jest.mock('@/components/common/ScreenHeader', () => {
+  const { View, Text, TouchableOpacity } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ title }: { title: string }) => (
+      <View>
+        <TouchableOpacity accessibilityLabel="Go back" />
+        <Text>{title}</Text>
+      </View>
+    ),
+  };
+});
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import ProductionHouseDetailScreen from '../[id]';
 
+const defaultHookReturn = {
+  house: {
+    id: 'ph1',
+    name: 'Mythri Entertainments',
+    logo_url: 'logo.jpg',
+    description: 'A great studio',
+    created_at: '2026-01-01T00:00:00Z',
+  },
+  movies: [
+    {
+      id: 'm1',
+      title: 'Pushpa 2',
+      poster_url: 'poster.jpg',
+      release_date: '2025-12-05',
+      rating: 8.5,
+    },
+    { id: 'm2', title: 'Movie 2', poster_url: null, release_date: null, rating: 0 },
+  ],
+  isLoading: false,
+  refetch: jest.fn(),
+};
+
 describe('ProductionHouseDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseProductionHouseDetail.mockReturnValue(defaultHookReturn);
   });
 
   it('renders production house name', () => {
@@ -166,5 +183,17 @@ describe('ProductionHouseDetailScreen', () => {
   it('renders movie year when available', () => {
     render(<ProductionHouseDetailScreen />);
     expect(screen.getByText('2025')).toBeTruthy();
+  });
+
+  it('shows not-found state when house is null and not loading', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      house: null,
+      movies: [],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByText('common.noResults')).toBeTruthy();
+    expect(screen.getByLabelText('Go back')).toBeTruthy();
   });
 });

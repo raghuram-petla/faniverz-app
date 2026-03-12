@@ -2,13 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { ReviewsTab } from '../ReviewsTab';
 
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    i18n: { language: 'en', changeLanguage: jest.fn() },
-  }),
-}));
-
 jest.mock('@/styles/movieDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
@@ -66,13 +59,13 @@ describe('ReviewsTab', () => {
 
   it('renders "Write Review" button', () => {
     render(<ReviewsTab {...baseProps} />);
-    expect(screen.getByText('movie.writeReview')).toBeTruthy();
+    expect(screen.getByText('Write Review')).toBeTruthy();
   });
 
   it('calls onWriteReview when button pressed', () => {
     const onWriteReview = jest.fn();
     render(<ReviewsTab {...baseProps} onWriteReview={onWriteReview} />);
-    fireEvent.press(screen.getByText('movie.writeReview'));
+    fireEvent.press(screen.getByText('Write Review'));
     expect(onWriteReview).toHaveBeenCalled();
   });
 
@@ -83,7 +76,7 @@ describe('ReviewsTab', () => {
 
   it('renders spoiler badge when review has spoiler', () => {
     render(<ReviewsTab {...baseProps} reviews={[spoilerReview] as any} />);
-    expect(screen.getByText('movie.containsSpoiler')).toBeTruthy();
+    expect(screen.getByText('Contains Spoiler')).toBeTruthy();
   });
 
   it('calls onHelpful with review id when helpful button pressed', () => {

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { getImageUrl } from '@shared/imageUrl';
+import { useTranslation } from 'react-i18next';
 import type { Actor } from '@shared/types';
 import type { SemanticTheme } from '@shared/themes';
 
@@ -13,6 +14,7 @@ export interface SearchResultActorProps {
 }
 
 export function SearchResultActor({ actor, onPress }: SearchResultActorProps) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const photoUrl = getImageUrl(actor.photo_url, 'sm') ?? PLACEHOLDER_PHOTO;
@@ -25,7 +27,7 @@ export function SearchResultActor({ actor, onPress }: SearchResultActorProps) {
           {actor.name}
         </Text>
         <Text style={styles.type}>
-          <Ionicons name="person" size={12} color={theme.textTertiary} /> Actor
+          <Ionicons name="person" size={12} color={theme.textTertiary} /> {t('search.actor')}
         </Text>
       </View>
     </TouchableOpacity>

@@ -38,8 +38,8 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         supabase.from('profiles').select('id', { count: 'estimated', head: true }),
         supabase.from('reviews').select('id', { count: 'estimated', head: true }),
         supabase.from('news_feed').select('id', { count: 'estimated', head: true }),
-        supabase.from('watchlist').select('id', { count: 'estimated', head: true }),
-        supabase.from('follows').select('id', { count: 'estimated', head: true }),
+        supabase.from('watchlists').select('id', { count: 'estimated', head: true }),
+        supabase.from('entity_follows').select('id', { count: 'estimated', head: true }),
       ]);
 
       return {

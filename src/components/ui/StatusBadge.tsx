@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { MovieStatus } from '@/types';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
+import { colors as palette } from '@/theme/colors';
 
 interface StatusBadgeProps {
   type: MovieStatus;
@@ -21,7 +22,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   text: {
-    color: '#FFFFFF',
+    color: palette.white,
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',

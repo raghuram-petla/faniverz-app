@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useTranslation } from 'react-i18next';
 import { formatRelativeTime } from '@/constants/feedHelpers';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import type { FeedComment } from '@shared/types';
@@ -12,9 +13,10 @@ export interface CommentItemProps {
 }
 
 export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createPostDetailStyles(theme);
-  const displayName = comment.profile?.display_name ?? 'Anonymous';
+  const displayName = comment.profile?.display_name ?? t('feed.anonymous');
 
   return (
     <View style={styles.commentItem}>
@@ -23,7 +25,9 @@ export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
       </View>
       <View style={styles.commentContent}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.commentName}>{displayName}</Text>
+          <Text style={styles.commentName} numberOfLines={1}>
+            {displayName}
+          </Text>
           <Text style={styles.commentTime}>{formatRelativeTime(comment.created_at)}</Text>
         </View>
         <Text style={styles.commentBody}>{comment.body}</Text>
@@ -33,7 +37,7 @@ export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
             onPress={() => onDelete(comment.id)}
             accessibilityLabel="Delete comment"
           >
-            <Text style={styles.commentDeleteText}>Delete</Text>
+            <Text style={styles.commentDeleteText}>{t('common.delete')}</Text>
           </TouchableOpacity>
         ) : null}
       </View>
