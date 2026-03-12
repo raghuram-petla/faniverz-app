@@ -30,5 +30,8 @@ export function useUpdateProfile() {
 
       return res.json();
     },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Profile update failed');
+    },
   });
 }

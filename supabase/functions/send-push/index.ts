@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { BROADCAST_USER_ID } from '../../../shared/constants.ts';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const EXPO_BATCH_LIMIT = 100;
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Notification not found' }), { status: 404 });
     }
 
-    const isBroadcast = notification.user_id === '00000000-0000-0000-0000-000000000000';
+    const isBroadcast = notification.user_id === BROADCAST_USER_ID;
 
     let tokenQuery = supabase.from('push_tokens').select('token').eq('is_active', true);
     if (!isBroadcast) {

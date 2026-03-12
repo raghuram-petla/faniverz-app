@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import type { OTTPlatform, ProductionHouse } from '@/types';
@@ -66,19 +67,20 @@ export function DiscoverFilterModal({
   styles,
 }: DiscoverFilterModalProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Filters</Text>
+            <Text style={styles.modalTitle}>{t('discover.filters')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <Text style={styles.modalSectionTitle}>Streaming Platforms</Text>
+            <Text style={styles.modalSectionTitle}>{t('discover.streamingPlatforms')}</Text>
             <View style={styles.platformGrid}>
               {platforms.map((p) => {
                 const isSelected = selectedPlatforms.includes(p.id);
@@ -103,7 +105,9 @@ export function DiscoverFilterModal({
               })}
             </View>
 
-            <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>Genres</Text>
+            <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>
+              {t('discover.genres')}
+            </Text>
             <View style={styles.genreGrid}>
               {GENRES.map((g) => {
                 const isSelected = selectedGenres.includes(g);
@@ -123,7 +127,9 @@ export function DiscoverFilterModal({
 
             {productionHouses.length > 0 && (
               <>
-                <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>Production Houses</Text>
+                <Text style={[styles.modalSectionTitle, { marginTop: 24 }]}>
+                  {t('discover.productionHouses')}
+                </Text>
                 <View style={styles.genreGrid}>
                   {productionHouses.map((ph) => {
                     const isSelected = selectedProductionHouses.includes(ph.id);
@@ -148,10 +154,12 @@ export function DiscoverFilterModal({
 
           <View style={styles.modalActions}>
             <TouchableOpacity onPress={onClearAll}>
-              <Text style={styles.clearFiltersText}>Clear Filters</Text>
+              <Text style={styles.clearFiltersText}>{t('discover.clearFilters')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.showResultsButton} onPress={onClose}>
-              <Text style={styles.showResultsText}>Show {filteredCount} Movies</Text>
+              <Text style={styles.showResultsText}>
+                {t('discover.showMovies', { count: filteredCount })}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

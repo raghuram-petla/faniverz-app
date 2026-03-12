@@ -10,6 +10,7 @@ import {
   handleYouTubeNavigation,
   handleYouTubeOpenWindow,
 } from '@/utils/youtubeNavigation';
+import { WEBVIEW_BASE_URL } from '@/constants/webview';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { MovieVideo } from '@/types';
 import type { SemanticTheme } from '@shared/themes';
@@ -49,7 +50,7 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
           <WebView
             source={{
               html: buildYouTubeEmbedHtml(video.youtube_id),
-              baseUrl: 'https://example.com',
+              baseUrl: WEBVIEW_BASE_URL,
             }}
             style={styles.player}
             allowsInlineMediaPlayback

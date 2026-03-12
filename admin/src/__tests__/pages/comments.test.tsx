@@ -4,16 +4,42 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CommentsPage from '@/app/(dashboard)/comments/page';
 
 const mockMutate = vi.fn();
+const mockSetSearch = vi.fn();
 
 vi.mock('@/hooks/useAdminComments', () => ({
   useAdminComments: vi.fn(),
   useDeleteComment: vi.fn(),
 }));
 
+vi.mock('@/hooks/useDebouncedSearch', () => ({
+  useDebouncedSearch: vi.fn(),
+}));
+
+vi.mock('@/components/common/SearchInput', () => ({
+  SearchInput: ({
+    value,
+    onChange,
+    placeholder,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+  }) => (
+    <input
+      data-testid="search-input"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
+  ),
+}));
+
 import { useAdminComments, useDeleteComment } from '@/hooks/useAdminComments';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
 const mockUseAdminComments = vi.mocked(useAdminComments);
 const mockUseDeleteComment = vi.mocked(useDeleteComment);
+const mockUseDebouncedSearch = vi.mocked(useDebouncedSearch);
 
 const mockComments = [
   {
@@ -47,6 +73,13 @@ beforeEach(() => {
   vi.restoreAllMocks();
 
   mockMutate.mockReset();
+  mockSetSearch.mockReset();
+
+  mockUseDebouncedSearch.mockReturnValue({
+    search: '',
+    setSearch: mockSetSearch,
+    debouncedSearch: '',
+  });
 
   mockUseDeleteComment.mockReturnValue({
     mutate: mockMutate,
@@ -55,11 +88,79 @@ beforeEach(() => {
 });
 
 describe('CommentsPage', () => {
+  describe('search UI', () => {
+    beforeEach(() => {
+      mockUseAdminComments.mockReturnValue({
+        data: mockComments,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminComments>);
+    });
+
+    it('renders search input with correct placeholder', () => {
+      renderWithProviders(<CommentsPage />);
+      expect(
+        screen.getByPlaceholderText('Search by comment text or commenter name...'),
+      ).toBeInTheDocument();
+    });
+
+    it('calls setSearch when typing in search input', () => {
+      renderWithProviders(<CommentsPage />);
+      const input = screen.getByTestId('search-input');
+      fireEvent.change(input, { target: { value: 'hello' } });
+      expect(mockSetSearch).toHaveBeenCalledWith('hello');
+    });
+
+    it('passes debouncedSearch to useAdminComments', () => {
+      mockUseDebouncedSearch.mockReturnValue({
+        search: 'test',
+        setSearch: mockSetSearch,
+        debouncedSearch: 'test',
+      });
+
+      renderWithProviders(<CommentsPage />);
+      expect(mockUseAdminComments).toHaveBeenCalledWith('test');
+    });
+
+    it('shows "Type at least 2 characters" hint when search has 1 character', () => {
+      mockUseDebouncedSearch.mockReturnValue({
+        search: 'a',
+        setSearch: mockSetSearch,
+        debouncedSearch: '',
+      });
+
+      renderWithProviders(<CommentsPage />);
+      expect(screen.getByText('Type at least 2 characters to search')).toBeInTheDocument();
+    });
+
+    it('does not show hint when search is empty', () => {
+      renderWithProviders(<CommentsPage />);
+      expect(screen.queryByText('Type at least 2 characters to search')).not.toBeInTheDocument();
+    });
+
+    it('shows result count summary when comments are loaded', () => {
+      renderWithProviders(<CommentsPage />);
+      expect(screen.getByText('Showing 2 comments')).toBeInTheDocument();
+    });
+
+    it('shows search term in result summary when searching', () => {
+      mockUseDebouncedSearch.mockReturnValue({
+        search: 'Great',
+        setSearch: mockSetSearch,
+        debouncedSearch: 'Great',
+      });
+
+      renderWithProviders(<CommentsPage />);
+      expect(screen.getByText(/matching "Great"/)).toBeInTheDocument();
+    });
+  });
+
   describe('header', () => {
     it('renders "Comments" heading', () => {
       mockUseAdminComments.mockReturnValue({
         data: mockComments,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -71,6 +172,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: mockComments,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -82,6 +184,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: undefined,
         isLoading: true,
+        isFetching: true,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -95,6 +198,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: undefined,
         isLoading: true,
+        isFetching: true,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       const { container } = renderWithProviders(<CommentsPage />);
@@ -107,6 +211,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: undefined,
         isLoading: true,
+        isFetching: true,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -120,6 +225,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: [],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -131,6 +237,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: [],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -144,6 +251,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: mockComments,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
     });
 
@@ -180,7 +288,6 @@ describe('CommentsPage', () => {
     it('falls back to email when display_name is null', () => {
       renderWithProviders(<CommentsPage />);
 
-      // com-2 has display_name: null, email: 'another@example.com'
       expect(screen.getByText('another@example.com')).toBeInTheDocument();
     });
 
@@ -193,6 +300,7 @@ describe('CommentsPage', () => {
           },
         ],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -209,6 +317,7 @@ describe('CommentsPage', () => {
           },
         ],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -225,6 +334,7 @@ describe('CommentsPage', () => {
           },
         ],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       renderWithProviders(<CommentsPage />);
@@ -235,8 +345,6 @@ describe('CommentsPage', () => {
     it('renders formatted date', () => {
       renderWithProviders(<CommentsPage />);
 
-      // new Date('2024-01-01T00:00:00Z').toLocaleDateString() varies by locale
-      // Just verify the date cell is rendered
       const dateCells = screen.getAllByText(new Date('2024-01-01T00:00:00Z').toLocaleDateString());
       expect(dateCells.length).toBeGreaterThanOrEqual(1);
     });
@@ -254,6 +362,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: mockComments,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
     });
 
@@ -317,6 +426,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: mockComments,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
     });
 
@@ -329,7 +439,6 @@ describe('CommentsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete comment');
       fireEvent.click(deleteButtons[0]);
 
-      // Extract the onError callback and call it
       const onError = mockMutate.mock.calls[0][1].onError;
       onError(new Error('Network failure'));
 
@@ -342,6 +451,7 @@ describe('CommentsPage', () => {
       mockUseAdminComments.mockReturnValue({
         data: mockComments,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminComments>);
 
       mockUseDeleteComment.mockReturnValue({

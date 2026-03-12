@@ -1,10 +1,19 @@
 'use client';
 
 import { useAdminComments, useDeleteComment } from '@/hooks/useAdminComments';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
+import { SearchInput } from '@/components/common/SearchInput';
 import { MessageSquare, Trash2, Loader2 } from 'lucide-react';
 
 export default function CommentsPage() {
-  const { data: comments, isLoading, isError, error } = useAdminComments();
+  const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+  const {
+    data: comments,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useAdminComments(debouncedSearch);
   const deleteComment = useDeleteComment();
 
   const handleDelete = (id: string) => {
@@ -20,6 +29,24 @@ export default function CommentsPage() {
         </div>
         <h1 className="text-2xl font-bold text-on-surface">Comments</h1>
         {comments && <span className="text-sm text-on-surface-muted">({comments.length})</span>}
+      </div>
+
+      <div className="space-y-2">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search by comment text or commenter name..."
+          isLoading={isFetching}
+        />
+        {search.length === 1 && (
+          <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
+        )}
+        {!isLoading && comments && comments.length > 0 && (
+          <p className="text-xs text-on-surface-subtle">
+            Showing {comments.length} comment{comments.length !== 1 ? 's' : ''}
+            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
+          </p>
+        )}
       </div>
 
       {isError && (

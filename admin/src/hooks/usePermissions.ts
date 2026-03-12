@@ -17,6 +17,7 @@ export type AdminPage =
   | 'comments'
   | 'sync'
   | 'audit'
+  | 'app-users'
   | 'users';
 
 /** Entity types that support CRUD */
@@ -47,6 +48,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'comments',
     'sync',
     'audit',
+    'app-users',
     'users',
   ]),
   admin: new Set([
@@ -63,6 +65,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'comments',
     'sync',
     'audit',
+    'app-users',
     'users',
   ]),
   production_house_admin: new Set([

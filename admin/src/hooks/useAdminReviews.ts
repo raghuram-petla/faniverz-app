@@ -3,18 +3,44 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { Review } from '@/lib/types';
 
-export function useAdminReviews() {
+export function useAdminReviews(search = '', ratingFilter = 0) {
   return useQuery({
-    queryKey: ['admin', 'reviews'],
+    queryKey: ['admin', 'reviews', search, ratingFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('reviews')
         .select('*, movie:movies(id, title, poster_url), profile:profiles(id, display_name, email)')
         .order('created_at', { ascending: false })
         .limit(200);
+
+      if (ratingFilter > 0) {
+        query = query.eq('rating', ratingFilter);
+      }
+
+      if (search) {
+        query = query.or(`title.ilike.%${search}%,body.ilike.%${search}%`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      return data as Review[];
+      const reviews = data as Review[];
+
+      // Also match on joined movie title and profile display_name client-side
+      // (PostgREST cannot OR across foreign table columns in a single .or())
+      if (search) {
+        const lower = search.toLowerCase();
+        return reviews.filter(
+          (r) =>
+            r.title?.toLowerCase().includes(lower) ||
+            r.body?.toLowerCase().includes(lower) ||
+            r.movie?.title?.toLowerCase().includes(lower) ||
+            r.profile?.display_name?.toLowerCase().includes(lower),
+        );
+      }
+
+      return reviews;
     },
+    enabled: search.length >= 2 || search === '',
   });
 }
 

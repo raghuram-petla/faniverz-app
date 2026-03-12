@@ -5,6 +5,7 @@ import { useMovieReviews, useUserReviews, useReviewMutations } from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
 
 const mockMovieReviews = [
   { id: 'r1', movie_id: 'm1', user_id: 'u1', rating: 4, content: 'Great movie' },

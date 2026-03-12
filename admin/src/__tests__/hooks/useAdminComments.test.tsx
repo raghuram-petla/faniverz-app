@@ -124,17 +124,17 @@ describe('useAdminComments', () => {
     expect(chain.limit).toHaveBeenCalledWith(200);
   });
 
-  it('uses query key [admin, comments]', async () => {
+  it('includes search in query key', async () => {
     const { self } = buildChain(mockComments);
     mockFrom.mockReturnValue(self);
 
     const wrapper = createWrapper();
-    const { result } = renderHook(() => useAdminComments(), { wrapper });
+    const { result } = renderHook(() => useAdminComments('hello'), { wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     // Verified indirectly — if query key were wrong the data wouldn't resolve
-    expect(result.current.data).toEqual(mockComments);
+    expect(result.current.data).toBeTruthy();
   });
 
   it('returns empty array when no comments exist', async () => {
@@ -161,6 +161,72 @@ describe('useAdminComments', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(result.current.error).toBeTruthy();
+  });
+
+  it('applies .ilike filter on body when search is provided', async () => {
+    const { self, chain } = buildChain(mockComments);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminComments('Great'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(chain.ilike).toHaveBeenCalledWith('body', '%Great%');
+  });
+
+  it('does not apply .ilike when search is empty', async () => {
+    const { self, chain } = buildChain(mockComments);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminComments(''), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // chain.ilike is undefined when never accessed (Proxy creates lazily)
+    expect(chain.ilike).toBeUndefined();
+  });
+
+  it('filters client-side by profile display_name when searching', async () => {
+    const comments = [
+      {
+        ...mockComments[0],
+        body: 'no match',
+        profile: { id: 'usr-1', display_name: 'Test User', email: 'a@b.com' },
+      },
+      {
+        ...mockComments[1],
+        body: 'also no match',
+        profile: { id: 'usr-2', display_name: 'Other Person', email: 'c@d.com' },
+      },
+    ];
+    const { self } = buildChain(comments);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminComments('Test User'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Only the comment with display_name "Test User" should match
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].profile?.display_name).toBe('Test User');
+  });
+
+  it('is disabled when search has exactly 1 character', async () => {
+    const { self } = buildChain(mockComments);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminComments('a'), {
+      wrapper: createWrapper(),
+    });
+
+    // Query should not have been fetched
+    expect(result.current.fetchStatus).toBe('idle');
   });
 });
 

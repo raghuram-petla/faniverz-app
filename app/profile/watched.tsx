@@ -78,7 +78,7 @@ export default function WatchedMoviesScreen() {
   const watchTimeLabel = count > 0 ? formatWatchTime(watchTimeMinutes) : '—';
 
   const activeSortLabel = SORT_OPTION_KEYS.find((o) => o.key === sortKey)
-    ? t(SORT_OPTION_KEYS.find((o) => o.key === sortKey)!.i18nKey)
+    ? t(SORT_OPTION_KEYS.find((o) => o.key === sortKey)?.i18nKey ?? '')
     : t('profile.sort');
 
   // Build rows for the 2-col grid

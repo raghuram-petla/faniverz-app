@@ -3,18 +3,38 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { FeedComment } from '@/lib/types';
 
-export function useAdminComments() {
+export function useAdminComments(search = '') {
   return useQuery({
-    queryKey: ['admin', 'comments'],
+    queryKey: ['admin', 'comments', search],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('feed_comments')
         .select('*, feed_item:news_feed(id, title), profile:profiles(id, display_name, email)')
         .order('created_at', { ascending: false })
         .limit(200);
+
+      if (search) {
+        query = query.ilike('body', `%${search}%`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      return data as FeedComment[];
+      const comments = data as FeedComment[];
+
+      // Also match on profile display_name client-side
+      // (PostgREST cannot OR across foreign table columns)
+      if (search) {
+        const lower = search.toLowerCase();
+        return comments.filter(
+          (c) =>
+            c.body?.toLowerCase().includes(lower) ||
+            c.profile?.display_name?.toLowerCase().includes(lower),
+        );
+      }
+
+      return comments;
     },
+    enabled: search.length >= 2 || search === '',
   });
 }
 

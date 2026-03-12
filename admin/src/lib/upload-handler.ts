@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { generateVariants, type ImageVariant } from '@/lib/image-resize';
 import { getR2Client } from '@/lib/r2-client';
 import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/upload-config';
-import { verifyBearer } from '@/lib/sync-helpers';
+import { verifyAdmin } from '@/lib/sync-helpers';
 
 export interface UploadConfig {
   bucket: string;
@@ -16,7 +16,7 @@ export interface UploadConfig {
 export function createUploadHandler(config: UploadConfig) {
   return async function POST(request: NextRequest) {
     try {
-      const user = await verifyBearer(request.headers.get('authorization'));
+      const user = await verifyAdmin(request.headers.get('authorization'));
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }

@@ -9,6 +9,14 @@ const mockMaybeSingle = vi.fn();
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     auth: { getUser: mockGetUser },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+        }),
+      }),
+    }),
   }),
 }));
 
@@ -18,6 +26,8 @@ vi.mock('@/lib/supabase-admin', () => ({
       select: () => ({
         eq: () => ({
           maybeSingle: mockMaybeSingle,
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
         }),
       }),
     }),

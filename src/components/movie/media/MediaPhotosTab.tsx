@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useImageViewer } from '@/providers/ImageViewerProvider';
 import type { MoviePoster } from '@/types';
@@ -16,6 +17,7 @@ export interface MediaPhotosTabProps {
 
 export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
   const { openImage } = useImageViewer();
 
@@ -50,7 +52,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
   if (posters.length === 0) {
     return (
       <View style={styles.emptyState}>
-        <Text style={styles.emptyStateText}>No photos available yet</Text>
+        <Text style={styles.emptyStateText}>{t('discover.noPhotosYet')}</Text>
       </View>
     );
   }

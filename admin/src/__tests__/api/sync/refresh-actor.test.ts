@@ -10,15 +10,26 @@ const mockSingle = vi.fn();
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     auth: { getUser: mockGetUser },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+        }),
+      }),
+    }),
   }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
-    from: () => ({
+    from: (table: string) => ({
       select: () => ({
         eq: () => ({
-          single: mockSingle,
+          single:
+            table === 'admin_user_roles'
+              ? () => Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null })
+              : mockSingle,
         }),
       }),
     }),

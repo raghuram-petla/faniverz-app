@@ -7,27 +7,47 @@ const mockLimit = vi.fn();
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     auth: { getUser: mockGetUser },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+        }),
+      }),
+    }),
   }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
-    from: () => ({
-      select: () => ({
-        not: () => ({
-          or: () => ({
-            order: () => ({
-              limit: mockLimit,
+    from: (table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
             }),
           }),
-          is: () => ({
-            order: () => ({
-              limit: mockLimit,
+        };
+      }
+      return {
+        select: () => ({
+          not: () => ({
+            or: () => ({
+              order: () => ({
+                limit: mockLimit,
+              }),
+            }),
+            is: () => ({
+              order: () => ({
+                limit: mockLimit,
+              }),
             }),
           }),
         }),
-      }),
-    }),
+      };
+    },
   }),
 }));
 

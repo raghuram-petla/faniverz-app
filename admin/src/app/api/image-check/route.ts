@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyBearer } from '@/lib/sync-helpers';
+import { verifyAdmin } from '@/lib/sync-helpers';
 
 const MAX_URLS = 10;
 
@@ -16,7 +16,7 @@ function isAllowedUrl(url: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyBearer(request.headers.get('authorization'));
+    const user = await verifyAdmin(request.headers.get('authorization'));
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

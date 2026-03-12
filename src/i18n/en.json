@@ -20,7 +20,17 @@
     "following": "Following",
     "somethingWentWrong": "Something went wrong",
     "clear": "Clear",
-    "openLinkFailed": "Could not open this link. Please try again."
+    "openLinkFailed": "Could not open this link. Please try again.",
+    "failedToSubmitReview": "Failed to submit review. Please try again.",
+    "failedToUpdateReview": "Failed to update review. Please try again.",
+    "failedToDeleteReview": "Failed to delete review. Please try again.",
+    "failedToAddWatchlist": "Failed to add to watchlist. Please try again.",
+    "failedToMarkWatched": "Failed to mark as watched. Please try again.",
+    "failedToMoveWatchlist": "Failed to move back to watchlist. Please try again.",
+    "failedToAddFavorite": "Failed to add favorite actor. Please try again.",
+    "failedToRemoveFavorite": "Failed to remove favorite actor. Please try again.",
+    "failedToAddComment": "Failed to add comment. Please try again.",
+    "failedToDeleteComment": "Failed to delete comment. Please try again."
   },
   "tabs": {
     "home": "Home",
@@ -134,7 +144,13 @@
     "movie": "movie",
     "movies": "movies",
     "noMovies": "No movies found",
-    "noMoviesSubtitle": "Try adjusting your filters or search term"
+    "noMoviesSubtitle": "Try adjusting your filters or search term",
+    "streamingPlatforms": "Streaming Platforms",
+    "genres": "Genres",
+    "productionHouses": "Production Houses",
+    "clearFilters": "Clear Filters",
+    "showMovies": "Show {{count}} Movies",
+    "noPhotosYet": "No photos available yet"
   },
   "productionHouse": {
     "movies": "Movies",

@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useAdminReviews, useDeleteReview } from '@/hooks/useAdminReviews';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
+import { SearchInput } from '@/components/common/SearchInput';
 import { Star, Trash2, Loader2 } from 'lucide-react';
 
 function RatingStars({ rating }: { rating: number }) {
@@ -17,7 +20,15 @@ function RatingStars({ rating }: { rating: number }) {
 }
 
 export default function ReviewsPage() {
-  const { data: reviews, isLoading, isError, error } = useAdminReviews();
+  const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+  const [ratingFilter, setRatingFilter] = useState(0);
+  const {
+    data: reviews,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useAdminReviews(debouncedSearch, ratingFilter);
   const deleteReview = useDeleteReview();
 
   const handleDelete = (id: string) => {
@@ -33,6 +44,40 @@ export default function ReviewsPage() {
         </div>
         <h1 className="text-2xl font-bold text-on-surface">Reviews</h1>
         {reviews && <span className="text-sm text-on-surface-muted">({reviews.length})</span>}
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex gap-3">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by movie, reviewer, or review text..."
+            isLoading={isFetching}
+            className="flex-1"
+          />
+          <select
+            value={ratingFilter}
+            onChange={(e) => setRatingFilter(Number(e.target.value))}
+            className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+          >
+            <option value={0}>All Ratings</option>
+            <option value={1}>1 Star</option>
+            <option value={2}>2 Stars</option>
+            <option value={3}>3 Stars</option>
+            <option value={4}>4 Stars</option>
+            <option value={5}>5 Stars</option>
+          </select>
+        </div>
+        {search.length === 1 && (
+          <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
+        )}
+        {!isLoading && reviews && reviews.length > 0 && (
+          <p className="text-xs text-on-surface-subtle">
+            Showing {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
+            {ratingFilter > 0 ? ` (${ratingFilter} star${ratingFilter !== 1 ? 's' : ''})` : ''}
+          </p>
+        )}
       </div>
 
       {isError && (

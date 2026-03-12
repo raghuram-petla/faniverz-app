@@ -21,14 +21,50 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         if (jErr) throw jErr;
 
         const movieIds = [...new Set((junctionData ?? []).map((r) => r.movie_id))];
+
+        if (movieIds.length === 0) {
+          return {
+            totalMovies: 0,
+            totalActors: 0,
+            totalUsers: 0,
+            totalReviews: 0,
+            totalFeedItems: 0,
+            totalWatchlistEntries: 0,
+            totalFollows: 0,
+          };
+        }
+
+        const [castData, reviews, feedItems, watchlist, follows] = await Promise.all([
+          supabase.from('movie_cast').select('actor_id').in('movie_id', movieIds),
+          supabase
+            .from('reviews')
+            .select('id', { count: 'estimated', head: true })
+            .in('movie_id', movieIds),
+          supabase
+            .from('news_feed')
+            .select('id', { count: 'estimated', head: true })
+            .in('movie_id', movieIds),
+          supabase
+            .from('watchlists')
+            .select('id', { count: 'estimated', head: true })
+            .in('movie_id', movieIds),
+          supabase
+            .from('entity_follows')
+            .select('id', { count: 'estimated', head: true })
+            .eq('entity_type', 'movie')
+            .in('entity_id', movieIds),
+        ]);
+
+        const uniqueActorIds = new Set((castData.data ?? []).map((r) => r.actor_id));
+
         return {
           totalMovies: movieIds.length,
-          totalActors: 0,
-          totalUsers: 0,
-          totalReviews: 0,
-          totalFeedItems: 0,
-          totalWatchlistEntries: 0,
-          totalFollows: 0,
+          totalActors: uniqueActorIds.size,
+          totalUsers: 0, // PH admins don't have access to total user count
+          totalReviews: reviews.count ?? 0,
+          totalFeedItems: feedItems.count ?? 0,
+          totalWatchlistEntries: watchlist.count ?? 0,
+          totalFollows: follows.count ?? 0,
         };
       }
 

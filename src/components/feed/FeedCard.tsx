@@ -21,6 +21,7 @@ import {
   getEntityId,
 } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 export interface FeedCardProps {
@@ -194,7 +195,9 @@ function FeedCardInner({
               >
                 {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
                 <Image
-                  source={{ uri: getImageUrl(imageUrl!, 'md') ?? imageUrl! }}
+                  source={{
+                    uri: getImageUrl(imageUrl ?? '', 'md') ?? imageUrl ?? PLACEHOLDER_POSTER,
+                  }}
                   style={styles.media}
                   contentFit="cover"
                   onLoad={() => setMediaLoaded(true)}

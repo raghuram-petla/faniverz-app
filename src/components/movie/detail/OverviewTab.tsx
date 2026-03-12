@@ -39,7 +39,9 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
           <View style={styles.infoCard}>
             <Ionicons name="videocam" size={20} color={theme.textSecondary} />
             <Text style={styles.infoLabel}>{t('movie.director')}</Text>
-            <Text style={styles.infoValue}>{movie.director}</Text>
+            <Text style={styles.infoValue} numberOfLines={1}>
+              {movie.director}
+            </Text>
           </View>
         )}
         {movie.certification && (

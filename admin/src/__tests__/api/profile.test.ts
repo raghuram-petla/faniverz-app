@@ -8,12 +8,26 @@ const mockUpdateEq = vi.fn();
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     auth: { getUser: mockGetUser },
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+        }),
+      }),
+    }),
   }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
     from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+        }),
+      }),
       update: (...args: unknown[]) => {
         mockUpdate(...args);
         return { eq: mockUpdateEq };

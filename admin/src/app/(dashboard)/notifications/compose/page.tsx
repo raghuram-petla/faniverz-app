@@ -8,6 +8,7 @@ import { Bell, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import { MovieSearchField } from '@/components/notifications/MovieSearchField';
+import { BROADCAST_USER_ID } from '@shared/constants';
 
 const notificationTypes = ['release', 'watchlist', 'trending', 'reminder'] as const;
 const inputClass =
@@ -63,10 +64,7 @@ export default function ComposeNotificationPage() {
     e.preventDefault();
     if (targetMode === 'user' && !resolvedUserId) return;
     const now = new Date().toISOString();
-    const userId =
-      targetMode === 'user' && resolvedUserId
-        ? resolvedUserId
-        : '00000000-0000-0000-0000-000000000000';
+    const userId = targetMode === 'user' && resolvedUserId ? resolvedUserId : BROADCAST_USER_ID;
     createNotification.mutate(
       {
         type: type as (typeof notificationTypes)[number],

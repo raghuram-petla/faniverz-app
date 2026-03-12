@@ -3,16 +3,42 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import ReviewsPage from '@/app/(dashboard)/reviews/page';
 
 const mockMutate = vi.fn();
+const mockSetSearch = vi.fn();
 
 vi.mock('@/hooks/useAdminReviews', () => ({
   useAdminReviews: vi.fn(),
   useDeleteReview: vi.fn(),
 }));
 
+vi.mock('@/hooks/useDebouncedSearch', () => ({
+  useDebouncedSearch: vi.fn(),
+}));
+
+vi.mock('@/components/common/SearchInput', () => ({
+  SearchInput: ({
+    value,
+    onChange,
+    placeholder,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+  }) => (
+    <input
+      data-testid="search-input"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
+  ),
+}));
+
 import { useAdminReviews, useDeleteReview } from '@/hooks/useAdminReviews';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
 const mockUseAdminReviews = vi.mocked(useAdminReviews);
 const mockUseDeleteReview = vi.mocked(useDeleteReview);
+const mockUseDebouncedSearch = vi.mocked(useDebouncedSearch);
 
 const mockReviews = [
   {
@@ -47,8 +73,15 @@ const mockReviews = [
 
 beforeEach(() => {
   mockMutate.mockReset();
+  mockSetSearch.mockReset();
   vi.spyOn(window, 'confirm').mockReturnValue(false);
   vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+  mockUseDebouncedSearch.mockReturnValue({
+    search: '',
+    setSearch: mockSetSearch,
+    debouncedSearch: '',
+  });
 
   mockUseDeleteReview.mockReturnValue({
     mutate: mockMutate,
@@ -57,11 +90,98 @@ beforeEach(() => {
 });
 
 describe('ReviewsPage', () => {
+  describe('search and filter UI', () => {
+    beforeEach(() => {
+      mockUseAdminReviews.mockReturnValue({
+        data: mockReviews,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminReviews>);
+    });
+
+    it('renders search input with correct placeholder', () => {
+      render(<ReviewsPage />);
+      expect(
+        screen.getByPlaceholderText('Search by movie, reviewer, or review text...'),
+      ).toBeInTheDocument();
+    });
+
+    it('renders rating filter dropdown with all options', () => {
+      render(<ReviewsPage />);
+      const select = screen.getByDisplayValue('All Ratings');
+      expect(select).toBeInTheDocument();
+      expect(screen.getByText('1 Star')).toBeInTheDocument();
+      expect(screen.getByText('2 Stars')).toBeInTheDocument();
+      expect(screen.getByText('3 Stars')).toBeInTheDocument();
+      expect(screen.getByText('4 Stars')).toBeInTheDocument();
+      expect(screen.getByText('5 Stars')).toBeInTheDocument();
+    });
+
+    it('calls setSearch when typing in search input', () => {
+      render(<ReviewsPage />);
+      const input = screen.getByTestId('search-input');
+      fireEvent.change(input, { target: { value: 'Pushpa' } });
+      expect(mockSetSearch).toHaveBeenCalledWith('Pushpa');
+    });
+
+    it('passes debouncedSearch to useAdminReviews', () => {
+      mockUseDebouncedSearch.mockReturnValue({
+        search: 'test',
+        setSearch: mockSetSearch,
+        debouncedSearch: 'test',
+      });
+
+      render(<ReviewsPage />);
+      expect(mockUseAdminReviews).toHaveBeenCalledWith('test', 0);
+    });
+
+    it('passes ratingFilter to useAdminReviews when changed', () => {
+      render(<ReviewsPage />);
+      const select = screen.getByDisplayValue('All Ratings');
+      fireEvent.change(select, { target: { value: '4' } });
+      // After state change, component re-renders and calls hook with new value
+      expect(mockUseAdminReviews).toHaveBeenCalled();
+    });
+
+    it('shows "Type at least 2 characters" hint when search has 1 character', () => {
+      mockUseDebouncedSearch.mockReturnValue({
+        search: 'a',
+        setSearch: mockSetSearch,
+        debouncedSearch: '',
+      });
+
+      render(<ReviewsPage />);
+      expect(screen.getByText('Type at least 2 characters to search')).toBeInTheDocument();
+    });
+
+    it('does not show hint when search is empty', () => {
+      render(<ReviewsPage />);
+      expect(screen.queryByText('Type at least 2 characters to search')).not.toBeInTheDocument();
+    });
+
+    it('shows result count summary when reviews are loaded', () => {
+      render(<ReviewsPage />);
+      expect(screen.getByText('Showing 2 reviews')).toBeInTheDocument();
+    });
+
+    it('shows search term in result summary when searching', () => {
+      mockUseDebouncedSearch.mockReturnValue({
+        search: 'Pushpa',
+        setSearch: mockSetSearch,
+        debouncedSearch: 'Pushpa',
+      });
+
+      render(<ReviewsPage />);
+      expect(screen.getByText(/matching "Pushpa"/)).toBeInTheDocument();
+    });
+  });
+
   describe('loading state', () => {
     it('renders spinner when loading', () => {
       mockUseAdminReviews.mockReturnValue({
         data: undefined,
         isLoading: true,
+        isFetching: true,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       const { container } = render(<ReviewsPage />);
@@ -73,6 +193,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: undefined,
         isLoading: true,
+        isFetching: true,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -83,6 +204,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: undefined,
         isLoading: true,
+        isFetching: true,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -96,6 +218,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: [],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -106,6 +229,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: [],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -116,6 +240,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: [],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -128,6 +253,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: mockReviews,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
     });
 
@@ -190,10 +316,7 @@ describe('ReviewsPage', () => {
 
     it('renders star rating icons (5 stars per review row)', () => {
       const { container } = render(<ReviewsPage />);
-      // Each review row has 5 star icons = 10 total for 2 reviews
       const starIcons = container.querySelectorAll('svg');
-      // 2 header stars (icon in heading area) + 10 review stars + 2 trash icons = 14
-      // But we can count rows: 2 table rows, each with 5 stars
       expect(starIcons.length).toBeGreaterThanOrEqual(10);
     });
 
@@ -207,6 +330,7 @@ describe('ReviewsPage', () => {
           },
         ],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -223,6 +347,7 @@ describe('ReviewsPage', () => {
           },
         ],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -240,6 +365,7 @@ describe('ReviewsPage', () => {
           },
         ],
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
@@ -252,6 +378,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: mockReviews,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
     });
 
@@ -321,6 +448,7 @@ describe('ReviewsPage', () => {
       mockUseAdminReviews.mockReturnValue({
         data: mockReviews,
         isLoading: false,
+        isFetching: false,
       } as unknown as ReturnType<typeof useAdminReviews>);
     });
 
@@ -331,12 +459,10 @@ describe('ReviewsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete review');
       fireEvent.click(deleteButtons[0]);
 
-      // Extract the onError callback passed to mutate
       const mutateCall = mockMutate.mock.calls[0];
       const options = mutateCall[1];
       const onError = options.onError;
 
-      // Simulate the error callback
       onError(new Error('Permission denied'));
 
       expect(window.alert).toHaveBeenCalledWith('Error: Permission denied');

@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
+import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { fetchComments, addComment, deleteComment } from './commentsApi';
 import type { FeedComment } from '@shared/types';
@@ -39,7 +40,7 @@ export function useAddComment(feedItemId: string) {
       );
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to add comment. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToAddComment'));
     },
   });
 }
@@ -66,7 +67,7 @@ export function useDeleteComment(feedItemId: string) {
       );
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to delete comment. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToDeleteComment'));
     },
   });
 }

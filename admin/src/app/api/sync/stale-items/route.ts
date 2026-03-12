@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyBearer } from '@/lib/sync-helpers';
+import { verifyAdmin } from '@/lib/sync-helpers';
 
 /**
  * GET /api/sync/stale-items?type=movies&days=30
@@ -10,7 +10,7 @@ import { verifyBearer } from '@/lib/sync-helpers';
  */
 export async function GET(request: NextRequest) {
   try {
-    const user = await verifyBearer(request.headers.get('authorization'));
+    const user = await verifyAdmin(request.headers.get('authorization'));
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

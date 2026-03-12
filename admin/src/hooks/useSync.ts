@@ -105,6 +105,9 @@ export function useDiscoverMovies() {
   return useMutation({
     mutationFn: (params: { year: number; month?: number }) =>
       syncApi<DiscoverResult>('discover', params),
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Operation failed');
+    },
   });
 }
 
@@ -113,6 +116,9 @@ export function useTmdbLookup() {
   return useMutation({
     mutationFn: (params: { tmdbId: number; type: 'movie' | 'person' }) =>
       syncApi<LookupResult>('lookup', params),
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Operation failed');
+    },
   });
 }
 
@@ -124,6 +130,9 @@ export function useImportMovies() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Operation failed');
     },
   });
 }
@@ -138,6 +147,9 @@ export function useRefreshMovie() {
       qc.invalidateQueries({ queryKey: ['admin', 'movie', movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
     },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Operation failed');
+    },
   });
 }
 
@@ -150,6 +162,9 @@ export function useRefreshActor() {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
       qc.invalidateQueries({ queryKey: ['admin', 'actor', actorId] });
       qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Operation failed');
     },
   });
 }

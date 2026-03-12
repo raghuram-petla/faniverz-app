@@ -42,21 +42,30 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
           .from('movies')
           .select('id, title, poster_url')
           .in('id', grouped.movie)
-          .then((r) => r.data ?? [])
+          .then((r) => {
+            if (r.error) throw r.error;
+            return r.data ?? [];
+          })
       : [],
     grouped.actor.length > 0
       ? supabase
           .from('actors')
           .select('id, name, photo_url')
           .in('id', grouped.actor)
-          .then((r) => r.data ?? [])
+          .then((r) => {
+            if (r.error) throw r.error;
+            return r.data ?? [];
+          })
       : [],
     grouped.production_house.length > 0
       ? supabase
           .from('production_houses')
           .select('id, name, logo_url')
           .in('id', grouped.production_house)
-          .then((r) => r.data ?? [])
+          .then((r) => {
+            if (r.error) throw r.error;
+            return r.data ?? [];
+          })
       : [],
   ]);
 

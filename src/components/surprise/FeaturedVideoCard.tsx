@@ -11,6 +11,7 @@ import {
   handleYouTubeNavigation,
   handleYouTubeOpenWindow,
 } from '@/utils/youtubeNavigation';
+import { WEBVIEW_BASE_URL } from '@/constants/webview';
 import {
   getCategoryColor,
   getCategoryLabel,
@@ -82,7 +83,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
             <WebView
               source={{
                 html: buildYouTubeEmbedHtml(videoId),
-                baseUrl: 'https://example.com',
+                baseUrl: WEBVIEW_BASE_URL,
               }}
               style={StyleSheet.absoluteFill}
               allowsInlineMediaPlayback

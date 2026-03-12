@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyBearer } from '@/lib/sync-helpers';
+import { verifyAdmin } from '@/lib/sync-helpers';
 
 const ALLOWED_FIELDS = ['avatar_url', 'display_name'] as const;
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await verifyBearer(req.headers.get('authorization'));
+    const user = await verifyAdmin(req.headers.get('authorization'));
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await verifyBearer(req.headers.get('authorization'));
+    const user = await verifyAdmin(req.headers.get('authorization'));
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

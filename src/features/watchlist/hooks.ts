@@ -16,6 +16,7 @@ import {
   isMovieWatchlisted,
 } from './api';
 import { Alert } from 'react-native';
+import i18n from '@/i18n';
 import { WatchlistEntry } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
@@ -98,7 +99,7 @@ export function useWatchlistMutations() {
       invalidateAll(userId);
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to add to watchlist. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToAddWatchlist'));
     },
   });
 
@@ -142,7 +143,7 @@ export function useWatchlistMutations() {
       invalidateAll(userId);
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to mark as watched. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToMarkWatched'));
     },
   });
 
@@ -153,7 +154,7 @@ export function useWatchlistMutations() {
       invalidateAll(userId);
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to move back to watchlist. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToMoveWatchlist'));
     },
   });
 

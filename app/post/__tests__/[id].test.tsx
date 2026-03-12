@@ -5,6 +5,8 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
+
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 
@@ -266,13 +268,9 @@ describe('PostDetailScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/profile');
   });
 
-  it('shows alert when user entity is another user', () => {
+  it('navigates to user profile when user entity is another user', () => {
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('user-entity-other'));
-    expect(Alert.alert).toHaveBeenCalledWith(
-      'postDetail.comingSoon',
-      'feed.userProfilesNotAvailable',
-    );
-    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith('/user/other-user');
   });
 });

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient, type User } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 
 /**
  * Validate that TMDB_API_KEY is configured. Returns the key or an error response.
@@ -35,6 +36,25 @@ export async function verifyBearer(authHeader: string | null): Promise<User | nu
   } = await supabaseAuth.auth.getUser(token);
 
   return error || !user ? null : user;
+}
+
+/**
+ * Verify a Bearer token AND check that the user has an admin role.
+ * Returns the authenticated admin user or null.
+ */
+export async function verifyAdmin(authHeader: string | null): Promise<User | null> {
+  const user = await verifyBearer(authHeader);
+  if (!user) return null;
+
+  const supabase = getSupabaseAdmin();
+  const { data: adminRole } = await supabase
+    .from('admin_user_roles')
+    .select('role_id, status')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!adminRole || adminRole.status === 'blocked') return null;
+  return user;
 }
 
 /**

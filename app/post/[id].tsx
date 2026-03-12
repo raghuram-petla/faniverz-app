@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -104,7 +103,7 @@ export default function PostDetailScreen() {
       if (entityId === user?.id) {
         router.push('/profile' as Parameters<typeof router.push>[0]);
       } else {
-        Alert.alert(t('postDetail.comingSoon'), t('feed.userProfilesNotAvailable'));
+        router.push(`/user/${entityId}` as Parameters<typeof router.push>[0]);
       }
       return;
     }

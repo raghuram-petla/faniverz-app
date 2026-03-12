@@ -11,6 +11,7 @@ import {
   handleYouTubeNavigation,
   handleYouTubeOpenWindow,
 } from '@/utils/youtubeNavigation';
+import { WEBVIEW_BASE_URL } from '@/constants/webview';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 
@@ -48,7 +49,7 @@ export function FeedVideoPlayer({
     return (
       <View style={styles.mediaContainer}>
         <WebView
-          source={{ html: buildYouTubeEmbedHtml(youtubeId, true), baseUrl: 'https://example.com' }}
+          source={{ html: buildYouTubeEmbedHtml(youtubeId, true), baseUrl: WEBVIEW_BASE_URL }}
           style={videoStyles.player}
           allowsInlineMediaPlayback
           allowsFullscreenVideo

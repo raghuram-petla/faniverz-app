@@ -21,6 +21,7 @@ const ALL_PAGES: AdminPage[] = [
   'notifications',
   'sync',
   'audit',
+  'app-users',
   'users',
 ];
 
@@ -119,7 +120,14 @@ describe('usePermissions', () => {
         'ott',
         'audit',
       ];
-      const denied: AdminPage[] = ['platforms', 'surprise', 'notifications', 'sync', 'users'];
+      const denied: AdminPage[] = [
+        'platforms',
+        'surprise',
+        'notifications',
+        'sync',
+        'app-users',
+        'users',
+      ];
 
       for (const page of allowed) {
         expect(result.current.canViewPage(page)).toBe(true);

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
+import i18n from '@/i18n';
 import {
   fetchMovieReviews,
   fetchUserReviews,
@@ -38,7 +39,7 @@ export function useReviewMutations() {
       queryClient.invalidateQueries({ queryKey: ['movie', variables.movie_id] });
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to submit review. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToSubmitReview'));
     },
   });
 
@@ -49,7 +50,7 @@ export function useReviewMutations() {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to update review. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToUpdateReview'));
     },
   });
 
@@ -59,7 +60,7 @@ export function useReviewMutations() {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
     },
     onError: () => {
-      Alert.alert('Error', 'Failed to delete review. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToDeleteReview'));
     },
   });
 
@@ -70,7 +71,7 @@ export function useReviewMutations() {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
     },
     onError: () => {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Alert.alert(i18n.t('common.error'), i18n.t('common.somethingWentWrong'));
     },
   });
 

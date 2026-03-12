@@ -40,6 +40,9 @@ export function useAddMovieProductionHouse() {
         queryKey: ['admin', 'movie-production-houses', data.movieId],
       });
     },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Operation failed');
+    },
   });
 }
 
@@ -65,6 +68,9 @@ export function useRemoveMovieProductionHouse() {
       qc.invalidateQueries({
         queryKey: ['admin', 'movie-production-houses', data.movieId],
       });
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Operation failed');
     },
   });
 }

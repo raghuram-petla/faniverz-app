@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
@@ -30,6 +31,7 @@ export function ActiveFilterPills({
   styles,
 }: ActiveFilterPillsProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const animationsEnabled = useAnimationsEnabled();
 
   const entering = animationsEnabled ? FadeIn.duration(200) : undefined;
@@ -80,7 +82,7 @@ export function ActiveFilterPills({
         );
       })}
       <TouchableOpacity onPress={onClearAll}>
-        <Text style={styles.clearAllLink}>Clear All</Text>
+        <Text style={styles.clearAllLink}>{t('common.clearAll')}</Text>
       </TouchableOpacity>
     </View>
   );

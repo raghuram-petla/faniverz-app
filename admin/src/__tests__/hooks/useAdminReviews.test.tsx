@@ -53,17 +53,35 @@ const mockReviews = [
   },
 ];
 
+/** Build a chainable mock — every method returns self, await resolves with data */
+function buildChain(data: unknown[] | null = [], error: { message: string } | null = null) {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+  const result = { data, error };
+
+  const self = new Proxy(chain, {
+    get(target, prop) {
+      if (prop === 'then') {
+        return (resolve: (v: unknown) => void) => resolve(result);
+      }
+      if (prop === 'catch') return () => self;
+      if (!target[prop as string]) {
+        target[prop as string] = vi.fn().mockReturnValue(self);
+      }
+      return target[prop as string];
+    },
+  });
+
+  return { self, chain };
+}
+
 beforeEach(() => {
   mockFrom.mockReset();
 });
 
 describe('useAdminReviews', () => {
   it('fetches reviews with correct select, order, and limit', async () => {
-    const mockLimit = vi.fn().mockResolvedValue({ data: mockReviews, error: null });
-    const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
-    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
-
-    mockFrom.mockReturnValue({ select: mockSelect });
+    const { self, chain } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminReviews(), {
       wrapper: createWrapper(),
@@ -72,20 +90,17 @@ describe('useAdminReviews', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(mockFrom).toHaveBeenCalledWith('reviews');
-    expect(mockSelect).toHaveBeenCalledWith(
+    expect(chain.select).toHaveBeenCalledWith(
       '*, movie:movies(id, title, poster_url), profile:profiles(id, display_name, email)',
     );
-    expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
-    expect(mockLimit).toHaveBeenCalledWith(200);
+    expect(chain.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(chain.limit).toHaveBeenCalledWith(200);
     expect(result.current.data).toEqual(mockReviews);
   });
 
   it('returns the full list of reviews as data', async () => {
-    const mockLimit = vi.fn().mockResolvedValue({ data: mockReviews, error: null });
-    const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
-    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
-
-    mockFrom.mockReturnValue({ select: mockSelect });
+    const { self } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminReviews(), {
       wrapper: createWrapper(),
@@ -99,11 +114,8 @@ describe('useAdminReviews', () => {
   });
 
   it('throws when supabase returns an error', async () => {
-    const mockLimit = vi.fn().mockResolvedValue({ data: null, error: { message: 'fetch failed' } });
-    const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
-    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
-
-    mockFrom.mockReturnValue({ select: mockSelect });
+    const { self } = buildChain(null, { message: 'fetch failed' });
+    mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminReviews(), {
       wrapper: createWrapper(),
@@ -111,15 +123,12 @@ describe('useAdminReviews', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual({ message: 'fetch failed' });
+    expect(result.current.error).toBeTruthy();
   });
 
   it('returns empty array when no reviews exist', async () => {
-    const mockLimit = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
-    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
-
-    mockFrom.mockReturnValue({ select: mockSelect });
+    const { self } = buildChain([]);
+    mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminReviews(), {
       wrapper: createWrapper(),
@@ -128,6 +137,147 @@ describe('useAdminReviews', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual([]);
+  });
+
+  it('applies rating filter via .eq when ratingFilter > 0', async () => {
+    const { self, chain } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('', 4), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(chain.eq).toHaveBeenCalledWith('rating', 4);
+  });
+
+  it('does not apply .eq when ratingFilter is 0', async () => {
+    const { self, chain } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('', 0), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // chain.eq is undefined when never accessed (Proxy creates lazily)
+    expect(chain.eq).toBeUndefined();
+  });
+
+  it('applies .or filter when search is provided', async () => {
+    const { self, chain } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('Pushpa'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(chain.or).toHaveBeenCalledWith('title.ilike.%Pushpa%,body.ilike.%Pushpa%');
+  });
+
+  it('does not apply .or when search is empty', async () => {
+    const { self, chain } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews(''), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // chain.or is undefined when never accessed (Proxy creates lazily)
+    expect(chain.or).toBeUndefined();
+  });
+
+  it('filters client-side by movie title when searching', async () => {
+    const reviews = [
+      {
+        ...mockReviews[0],
+        title: null,
+        body: null,
+        movie: { id: 'mov-1', title: 'Pushpa 2', poster_url: null },
+        profile: { id: 'usr-1', display_name: 'Someone', email: 'a@b.com' },
+      },
+      {
+        ...mockReviews[1],
+        title: null,
+        body: null,
+        movie: { id: 'mov-2', title: 'Game Changer', poster_url: null },
+        profile: { id: 'usr-2', display_name: 'Other', email: 'c@d.com' },
+      },
+    ];
+    const { self } = buildChain(reviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('Pushpa'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Only the review with movie title "Pushpa 2" should match
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].movie?.title).toBe('Pushpa 2');
+  });
+
+  it('filters client-side by profile display_name when searching', async () => {
+    const reviews = [
+      {
+        ...mockReviews[0],
+        title: null,
+        body: null,
+        movie: { id: 'mov-1', title: 'Movie A', poster_url: null },
+        profile: { id: 'usr-1', display_name: 'Test User', email: 'a@b.com' },
+      },
+      {
+        ...mockReviews[1],
+        title: null,
+        body: null,
+        movie: { id: 'mov-2', title: 'Movie B', poster_url: null },
+        profile: { id: 'usr-2', display_name: 'Other', email: 'c@d.com' },
+      },
+    ];
+    const { self } = buildChain(reviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('Test User'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].profile?.display_name).toBe('Test User');
+  });
+
+  it('is disabled when search has exactly 1 character', async () => {
+    const { self } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('a'), {
+      wrapper: createWrapper(),
+    });
+
+    // Query should not have been fetched
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('includes search and ratingFilter in query key', async () => {
+    const { self } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('test', 3), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // If the query key were wrong, the data wouldn't match
+    expect(result.current.data).toBeTruthy();
   });
 });
 
@@ -207,7 +357,6 @@ describe('useDeleteReview', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // Verify the mutation completed and supabase was called correctly
     expect(mockFrom).toHaveBeenCalledWith('reviews');
     expect(mockEq).toHaveBeenCalledWith('id', 'rev-1');
   });

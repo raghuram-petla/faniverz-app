@@ -34,5 +34,8 @@ export function useTriggerSync() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
     },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Sync failed');
+    },
   });
 }

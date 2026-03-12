@@ -3,6 +3,9 @@
 
 import type { MovieStatus, VideoType } from './types';
 
+// Broadcast notification sentinel — used when a notification targets all users
+export const BROADCAST_USER_ID = '00000000-0000-0000-0000-000000000000';
+
 // Layout dimensions (used by both mobile components and admin preview replicas)
 export const HERO_HEIGHT = 600;
 export const ACTOR_AVATAR_SIZE = 120;

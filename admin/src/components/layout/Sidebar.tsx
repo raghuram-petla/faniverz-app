@@ -17,6 +17,7 @@ import {
   RefreshCw,
   FileText,
   Shield,
+  UsersRound,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { AdminPage } from '@/hooks/usePermissions';
@@ -48,6 +49,7 @@ const navItems: NavItem[] = [
   { href: '/comments', label: 'Comments', icon: MessageSquare, page: 'comments' },
   { href: '/sync', label: 'Sync', icon: RefreshCw, page: 'sync' },
   { href: '/audit', label: 'Audit Log', icon: FileText, page: 'audit' },
+  { href: '/app-users', label: 'App Users', icon: UsersRound, page: 'app-users' },
   { href: '/users', label: 'User Management', icon: Shield, page: 'users' },
 ];
 

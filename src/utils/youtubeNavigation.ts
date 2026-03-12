@@ -1,5 +1,6 @@
 import { Linking, Share } from 'react-native';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
+import { WEBVIEW_BASE_URL } from '@/constants/webview';
 
 /**
  * Builds the HTML wrapper for embedding a YouTube video.
@@ -45,7 +46,7 @@ export function handleYouTubeNavigation(
 ): boolean {
   const { url } = request;
 
-  if (url === 'about:blank' || url === 'https://example.com/' || url.includes('/embed/')) {
+  if (url === 'about:blank' || url === `${WEBVIEW_BASE_URL}/` || url.includes('/embed/')) {
     return true;
   }
 

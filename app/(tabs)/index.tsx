@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Share, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -125,7 +125,7 @@ export default function FeedScreen() {
         if (entityId === user?.id) {
           router.push('/profile' as Parameters<typeof router.push>[0]);
         } else {
-          Alert.alert(t('home.comingSoon'), t('feed.userProfilesNotAvailable'));
+          router.push(`/user/${entityId}` as Parameters<typeof router.push>[0]);
         }
         return;
       }

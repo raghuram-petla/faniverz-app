@@ -25,6 +25,7 @@ const ROUTE_PAGE_MAP: Record<string, AdminPage> = {
   '/notifications': 'notifications',
   '/sync': 'sync',
   '/audit': 'audit',
+  '/app-users': 'app-users',
   '/users': 'users',
 };
 

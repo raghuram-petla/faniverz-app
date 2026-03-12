@@ -82,7 +82,7 @@ export default function CalendarScreen() {
     for (const movie of filteredMovies) {
       const key = movie.release_date ?? '';
       if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(movie);
+      map.get(key)?.push(movie);
     }
 
     for (const [dateStr, movies] of map) {

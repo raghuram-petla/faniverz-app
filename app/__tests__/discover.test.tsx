@@ -5,6 +5,8 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -202,9 +204,9 @@ describe('DiscoverScreen', () => {
   it('opens filter modal when Filters button is pressed', () => {
     const { getByText } = render(<DiscoverScreen />);
     fireEvent.press(getByText('discover.filters'));
-    // Modal content renders "Streaming Platforms" and "Genres" headings
-    expect(getByText('Streaming Platforms')).toBeTruthy();
-    expect(getByText('Genres')).toBeTruthy();
+    // Modal content renders streaming platforms and genres headings
+    expect(getByText('discover.streamingPlatforms')).toBeTruthy();
+    expect(getByText('discover.genres')).toBeTruthy();
   });
 
   it('toggles sort dropdown and selects Rating sort option', () => {
@@ -227,7 +229,7 @@ describe('DiscoverScreen', () => {
     // Toggle Action genre
     fireEvent.press(getByText('Action'));
     // Close modal
-    fireEvent.press(getByText(/Show.*Movies/));
+    fireEvent.press(getByText('discover.showMovies'));
     // Active pill should appear
     expect(useFilterStore.getState().selectedGenres).toContain('Action');
   });
@@ -249,7 +251,7 @@ describe('DiscoverScreen', () => {
 
     const { getByText } = render(<DiscoverScreen />);
     // Active pills and Clear All link should appear
-    fireEvent.press(getByText('Clear All'));
+    fireEvent.press(getByText('common.clearAll'));
     const state = useFilterStore.getState();
     expect(state.selectedGenres).toEqual([]);
     expect(state.selectedPlatforms).toEqual([]);
@@ -363,7 +365,7 @@ describe('DiscoverScreen', () => {
     // Open filter modal
     fireEvent.press(getByText('discover.filters'));
     // Press "Clear Filters" in the modal
-    fireEvent.press(getByText('Clear Filters'));
+    fireEvent.press(getByText('discover.clearFilters'));
 
     const state = useFilterStore.getState();
     expect(state.selectedGenres).toEqual([]);

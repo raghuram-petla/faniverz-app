@@ -6,6 +6,8 @@ import * as api from '../api';
 
 jest.mock('../api');
 
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
+
 const mockFavorites = [
   { id: 'f1', user_id: 'u1', actor_id: 'a1', actor: { id: 'a1', name: 'Mahesh Babu' } },
   { id: 'f2', user_id: 'u1', actor_id: 'a2', actor: { id: 'a2', name: 'Prabhas' } },

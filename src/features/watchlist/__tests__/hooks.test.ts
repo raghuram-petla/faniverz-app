@@ -12,6 +12,8 @@ import * as api from '../api';
 
 jest.mock('../api');
 
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: () => ({ user: { id: 'u1' } }),
 }));
