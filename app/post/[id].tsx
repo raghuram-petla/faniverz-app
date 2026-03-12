@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
+import { PostContentSkeleton } from '@/components/feed/PostContentSkeleton';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 export default function PostDetailScreen() {
@@ -54,10 +55,13 @@ export default function PostDetailScreen() {
   const deleteMutation = useDeleteComment(id ?? '');
 
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchComments);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
 
@@ -125,6 +129,7 @@ export default function PostDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >
@@ -134,9 +139,7 @@ export default function PostDetailScreen() {
           refreshing={refreshing}
         />
         {feedLoading ? (
-          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={colors.red600} />
-          </View>
+          <PostContentSkeleton />
         ) : post ? (
           <>
             <FeedCard

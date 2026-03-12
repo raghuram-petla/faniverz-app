@@ -11,34 +11,8 @@ import ScreenHeader from '@/components/common/ScreenHeader';
 import { createStyles } from '@/styles/profile/settings.styles';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { useTranslation } from 'react-i18next';
-
-type IconName = keyof typeof Ionicons.glyphMap;
-interface ToggleRow {
-  kind: 'toggle';
-  icon: IconName;
-  label: string;
-  key: string;
-}
-interface LinkRow {
-  kind: 'link';
-  icon: IconName;
-  label: string;
-  value?: string;
-  onPress?: () => void;
-}
-interface RadioRow {
-  kind: 'radio';
-  icon: IconName;
-  label: string;
-  options: { key: string; label: string }[];
-  selected: string;
-  onSelect: (key: string) => void;
-}
-type SettingsRow = ToggleRow | LinkRow | RadioRow;
-interface Section {
-  title: string;
-  rows: SettingsRow[];
-}
+import { useAnimationStore } from '@/stores/useAnimationStore';
+import type { IconName, Section } from '@/components/profile/settingsTypes';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -57,6 +31,7 @@ export default function SettingsScreen() {
     [t],
   );
 
+  const { animationsEnabled, setAnimationsEnabled } = useAnimationStore();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
 
@@ -88,6 +63,10 @@ export default function SettingsScreen() {
   const toggleMap: Record<string, { value: boolean; setter: () => void }> = {
     push: { value: pushEnabled, setter: togglePush },
     email: { value: emailEnabled, setter: toggleEmail },
+    animations: {
+      value: animationsEnabled,
+      setter: () => setAnimationsEnabled(!animationsEnabled),
+    },
   };
 
   const isLoggedIn = !!user;
@@ -103,6 +82,12 @@ export default function SettingsScreen() {
           options: themeOptions,
           selected: mode,
           onSelect: (key: string) => setMode(key as 'system' | 'light' | 'dark'),
+        },
+        {
+          kind: 'toggle' as const,
+          icon: 'sparkles-outline' as IconName,
+          label: t('settings.animations'),
+          key: 'animations',
         },
       ],
     },

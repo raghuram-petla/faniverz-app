@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { HomeButton } from '@/components/common/HomeButton';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
 import { VIDEO_TYPES } from '@shared/constants';
@@ -69,6 +70,11 @@ export default function MediaScreen() {
 
   const videoCount = movie.videos.length;
   const photoCount = movie.posters.length;
+  const mediaTabs: MediaTabName[] = ['videos', 'photos'];
+  const mediaTabLabels: Record<MediaTabName, string> = {
+    videos: `${t('movieDetail.videos')} (${videoCount})`,
+    photos: `${t('movieDetail.photos')} (${photoCount})`,
+  };
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -105,25 +111,13 @@ export default function MediaScreen() {
             <View style={styles.stickyNavRight} />
           </View>
 
-          <View style={styles.tabBar}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'videos' && styles.tabActive]}
-              onPress={() => setActiveTab('videos')}
-              accessibilityLabel={`Videos tab, ${videoCount} videos`}
-            >
-              <Text style={[styles.tabText, activeTab === 'videos' && styles.tabTextActive]}>
-                {t('movieDetail.videos')} ({videoCount})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'photos' && styles.tabActive]}
-              onPress={() => setActiveTab('photos')}
-              accessibilityLabel={`${t('movieDetail.photos')} tab, ${photoCount} photos`}
-            >
-              <Text style={[styles.tabText, activeTab === 'photos' && styles.tabTextActive]}>
-                {t('movieDetail.photos')} ({photoCount})
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.tabBarWrap}>
+            <AnimatedTabBar
+              tabs={mediaTabs}
+              labels={mediaTabLabels}
+              activeTab={activeTab}
+              onTabPress={setActiveTab}
+            />
           </View>
 
           {activeTab === 'videos' && videosByType.length > 0 && (

@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, TouchableOpacity, FlatList, ViewToken } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { Movie, OTTPlatform } from '@/types';
 import { createStyles, SCREEN_WIDTH } from './HeroCarousel.styles';
 import { HeroSlide } from './HeroSlide';
@@ -11,6 +13,7 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useAuthGate } from '@/hooks/useAuthGate';
 
 const AUTO_PLAY_INTERVAL = 5000;
+const CLONE_RESET_DELAY = 400;
 
 interface HeroCarouselProps {
   movies: Movie[];
@@ -18,7 +21,7 @@ interface HeroCarouselProps {
 }
 
 export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -33,10 +36,27 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   const userId = user?.id ?? '';
   const { gate } = useAuthGate();
 
+  // Append clone of first item for seamless loop
+  const extendedMovies = useMemo(() => {
+    if (movies.length <= 1) return movies;
+    return [...movies, movies[0]];
+  }, [movies]);
+
+  const moviesLenRef = useRef(movies.length);
+  moviesLenRef.current = movies.length;
+
   // Track visible item via onViewableItemsChanged
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
-      setActiveIndex(viewableItems[0].index);
+      const idx = viewableItems[0].index;
+      setActiveIndex(idx);
+      // If viewing the clone, silently jump back to real first
+      if (idx >= moviesLenRef.current && moviesLenRef.current > 1) {
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({ index: 0, animated: false });
+          setActiveIndex(0);
+        }, CLONE_RESET_DELAY);
+      }
     }
   }).current;
 
@@ -48,7 +68,13 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
     if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     autoPlayRef.current = setInterval(() => {
       setActiveIndex((prev) => {
-        const next = (prev + 1) % movies.length;
+        // Always scroll forward; clone at end handles wrap-around
+        const next = prev + 1;
+        if (next >= movies.length + 1) {
+          // Already past clone (shouldn't happen normally), jump to 0
+          flatListRef.current?.scrollToIndex({ index: 0, animated: false });
+          return 0;
+        }
         flatListRef.current?.scrollToIndex({ index: next, animated: true });
         return next;
       });
@@ -125,11 +151,11 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
-        data={movies}
+        data={extendedMovies}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => (index === movies.length ? `${item.id}-clone` : item.id)}
         renderItem={renderSlide}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
@@ -148,18 +174,44 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
         }}
       />
 
-      {/* Pagination dots — overlaid at the bottom */}
+      {/* Pagination dots — animated width transition */}
       {movies.length > 1 && (
         <View style={styles.dotsRow}>
           {movies.map((_, index) => (
-            <TouchableOpacity
+            <CarouselDot
               key={index}
+              isActive={index === activeIndex % movies.length}
               onPress={() => scrollToDot(index)}
-              style={[styles.dot, index === activeIndex ? styles.dotActive : styles.dotInactive]}
             />
           ))}
         </View>
       )}
     </View>
+  );
+}
+
+function CarouselDot({ isActive, onPress }: { isActive: boolean; onPress: () => void }) {
+  const animationsEnabled = useAnimationsEnabled();
+  const width = useSharedValue(isActive ? 32 : 6);
+  const opacity = useSharedValue(isActive ? 1 : 0.3);
+
+  useEffect(() => {
+    const w = isActive ? 32 : 6;
+    const o = isActive ? 1 : 0.3;
+    width.value = animationsEnabled ? withTiming(w, { duration: 300 }) : w;
+    opacity.value = animationsEnabled ? withTiming(o, { duration: 300 }) : o;
+  }, [isActive, width, opacity, animationsEnabled]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: width.value,
+    opacity: opacity.value,
+  }));
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <Animated.View
+        style={[{ height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' }, animatedStyle]}
+      />
+    </TouchableOpacity>
   );
 }

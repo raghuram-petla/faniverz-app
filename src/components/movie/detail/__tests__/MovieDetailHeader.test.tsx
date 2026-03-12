@@ -56,7 +56,7 @@ describe('MovieDetailHeader', () => {
     expect(screen.queryByLabelText(/home/i)).toBeNull();
   });
 
-  it('home button calls dismissAll on press', () => {
+  it('home button dismisses all screens on press', () => {
     mockState.index = 2;
     render(<MovieDetailHeader {...baseProps} />);
     fireEvent.press(screen.getByTestId('home-button'));

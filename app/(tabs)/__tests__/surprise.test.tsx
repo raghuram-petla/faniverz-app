@@ -126,12 +126,12 @@ describe('SurpriseScreen', () => {
     expect(screen.getByLabelText('Play Director Interview')).toBeTruthy();
   });
 
-  it('shows loading state when data is loading', () => {
+  it('shows skeleton when data is loading', () => {
     mockUseSurpriseContent.mockReturnValue({ data: [], isLoading: true });
 
     render(<SurpriseScreen />);
 
-    expect(screen.UNSAFE_getByType(require('react-native').ActivityIndicator)).toBeTruthy();
+    expect(screen.getByTestId('surprise-content-skeleton')).toBeTruthy();
   });
 
   it('shows empty state when no content and not loading', () => {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { createStyles } from '@/styles/discover.styles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AnimatedListItem } from '@/components/ui/AnimatedListItem';
 import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { useFilterStore } from '@/stores/useFilterStore';
@@ -24,11 +26,12 @@ import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
 import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
 import { SortDropdown } from '@/components/discover/SortDropdown';
 import { HomeButton } from '@/components/common/HomeButton';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { DiscoverContentSkeleton } from '@/components/discover/DiscoverContentSkeleton';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
 export default function DiscoverScreen() {
   const { t } = useTranslation();
@@ -54,33 +57,42 @@ export default function DiscoverScreen() {
     clearAll,
   } = useFilterStore();
 
+  const animationsEnabled = useAnimationsEnabled();
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const chevronRotate = useSharedValue(0);
+  useEffect(() => {
+    const deg = showSortDropdown ? 180 : 0;
+    chevronRotate.value = animationsEnabled ? withTiming(deg, { duration: 200 }) : deg;
+  }, [showSortDropdown, chevronRotate, animationsEnabled]);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronRotate.value}deg` }],
+  }));
 
   useEffect(() => {
-    if (params.filter) {
-      setFilter(params.filter as 'all' | MovieStatus);
-    }
-    if (params.platform) {
-      togglePlatform(params.platform);
-    }
+    if (params.filter) setFilter(params.filter as 'all' | MovieStatus);
+    if (params.platform) togglePlatform(params.platform);
   }, []);
 
-  const filters = useMemo(() => {
-    const f: { movieStatus?: MovieStatus; sortBy?: typeof sortBy } = {};
-    if (selectedFilter !== 'all') f.movieStatus = selectedFilter;
-    f.sortBy = sortBy;
-    return f;
-  }, [selectedFilter, sortBy]);
+  const filters = useMemo(
+    () => ({
+      ...(selectedFilter !== 'all' && { movieStatus: selectedFilter }),
+      sortBy,
+    }),
+    [selectedFilter, sortBy],
+  );
 
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch } =
     useMoviesPaginated(filters);
 
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
   const { data: platforms = [] } = usePlatforms();
@@ -202,7 +214,9 @@ export default function DiscoverScreen() {
           <Text style={styles.filterBarText}>
             {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
           </Text>
-          <Ionicons name="chevron-down" size={16} color={theme.textSecondary} />
+          <Animated.View style={chevronStyle}>
+            <Ionicons name="chevron-down" size={16} color={theme.textSecondary} />
+          </Animated.View>
         </TouchableOpacity>
       </View>
 
@@ -239,7 +253,7 @@ export default function DiscoverScreen() {
       )}
 
       {isLoading ? (
-        <LoadingCenter />
+        <DiscoverContentSkeleton />
       ) : (
         <FlatList
           data={filteredMovies}
@@ -248,6 +262,7 @@ export default function DiscoverScreen() {
           columnWrapperStyle={filteredMovies.length > 0 ? styles.gridRow : undefined}
           contentContainerStyle={styles.gridContent}
           onScroll={handlePullScroll}
+          onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
           ListHeaderComponent={
@@ -257,8 +272,14 @@ export default function DiscoverScreen() {
               refreshing={refreshing}
             />
           }
-          renderItem={({ item }: { item: Movie }) => (
-            <DiscoverGridItem item={item} platforms={platformMap[item.id] ?? []} styles={styles} />
+          renderItem={({ item, index }: { item: Movie; index: number }) => (
+            <AnimatedListItem index={index} stagger={50}>
+              <DiscoverGridItem
+                item={item}
+                platforms={platformMap[item.id] ?? []}
+                styles={styles}
+              />
+            </AnimatedListItem>
           )}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.5}

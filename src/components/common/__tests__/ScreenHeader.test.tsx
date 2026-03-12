@@ -17,7 +17,6 @@ jest.mock('expo-router', () => ({
 describe('ScreenHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Default: 1 screen pushed (index 1 = tabs at 0, movie at 1)
     mockState.index = 1;
   });
 
@@ -80,7 +79,7 @@ describe('ScreenHeader', () => {
     expect(getByTestId('home-button')).toBeTruthy();
   });
 
-  it('home button calls router.dismissAll()', () => {
+  it('home button dismisses all screens', () => {
     mockState.index = 3;
     const { getByTestId } = render(<ScreenHeader title="Test" />);
     fireEvent.press(getByTestId('home-button'));

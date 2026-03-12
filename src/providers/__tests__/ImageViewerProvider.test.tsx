@@ -1,10 +1,34 @@
 jest.mock('@/components/common/ImageViewerOverlay', () => ({
-  ImageViewerOverlay: ({ feedUrl, onClose }: { feedUrl: string; onClose: () => void }) => {
+  ImageViewerOverlay: ({
+    feedUrl,
+    onClose,
+    onSourceHide,
+    onSourceShow,
+  }: {
+    feedUrl: string;
+    onClose: () => void;
+    onSourceHide?: () => void;
+    onSourceShow?: () => void;
+  }) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View testID="image-viewer-overlay">
         <Text>{feedUrl}</Text>
-        <TouchableOpacity onPress={onClose} accessibilityLabel="Close overlay">
+        <TouchableOpacity
+          onPress={() => {
+            onSourceHide?.();
+          }}
+          accessibilityLabel="Hide source"
+        >
+          <Text>Hide</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            onSourceShow?.();
+            onClose();
+          }}
+          accessibilityLabel="Close overlay"
+        >
           <Text>Close</Text>
         </TouchableOpacity>
       </View>
@@ -93,6 +117,44 @@ describe('ImageViewerProvider', () => {
     fireEvent.press(screen.getByLabelText('Open'));
     fireEvent.press(screen.getByLabelText('Close overlay'));
     expect(screen.queryByTestId('image-viewer-overlay')).toBeNull();
+  });
+
+  it('passes onSourceHide and onSourceShow callbacks through to overlay', () => {
+    const onSourceHide = jest.fn();
+    const onSourceShow = jest.fn();
+    function CallbackConsumer() {
+      const { openImage } = useImageViewer();
+      return (
+        <TouchableOpacity
+          accessibilityLabel="Open with callbacks"
+          onPress={() =>
+            openImage({
+              feedUrl: 'https://example.com/feed.jpg',
+              fullUrl: 'https://example.com/full.jpg',
+              sourceLayout: { x: 0, y: 0, width: 100, height: 150 },
+              sourceRef: { current: null } as never,
+              borderRadius: 8,
+              onSourceHide,
+              onSourceShow,
+            })
+          }
+        >
+          <Text>Open</Text>
+        </TouchableOpacity>
+      );
+    }
+    render(
+      <ImageViewerProvider>
+        <CallbackConsumer />
+      </ImageViewerProvider>,
+    );
+    fireEvent.press(screen.getByLabelText('Open with callbacks'));
+    // Simulate overlay calling onSourceHide
+    fireEvent.press(screen.getByLabelText('Hide source'));
+    expect(onSourceHide).toHaveBeenCalled();
+    // Simulate overlay calling onSourceShow + close
+    fireEvent.press(screen.getByLabelText('Close overlay'));
+    expect(onSourceShow).toHaveBeenCalled();
   });
 
   it('provides default context values outside provider', () => {

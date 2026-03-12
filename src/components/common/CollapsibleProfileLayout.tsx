@@ -36,6 +36,8 @@ export interface CollapsibleProfileLayoutProps {
   children?: React.ReactNode;
   /** Forwarded scroll handler (for pull-to-refresh) */
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** Forwarded scroll-begin handler (for pull-to-refresh) */
+  onScrollBeginDrag?: () => void;
   /** Forwarded scroll-end handler (for pull-to-refresh) */
   onScrollEndDrag?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /** Content at the very top of the scroll area (e.g., PullToRefreshIndicator) */
@@ -51,6 +53,7 @@ export function CollapsibleProfileLayout({
   heroContent,
   children,
   onScroll,
+  onScrollBeginDrag,
   onScrollEndDrag,
   scrollHeader,
 }: CollapsibleProfileLayoutProps) {
@@ -180,6 +183,7 @@ export function CollapsibleProfileLayout({
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
+        onScrollBeginDrag={onScrollBeginDrag}
         onScrollEndDrag={onScrollEndDrag}
         scrollEventThrottle={16}
       >

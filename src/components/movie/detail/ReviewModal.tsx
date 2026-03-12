@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,9 +9,11 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { StarRating } from '@/components/ui/StarRating';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
@@ -57,6 +60,23 @@ export function ReviewModal({
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
+  const animationsEnabled = useAnimationsEnabled();
+
+  const contentScale = useSharedValue(1);
+  useEffect(() => {
+    if (visible) {
+      if (animationsEnabled) {
+        contentScale.value = 0.95;
+        contentScale.value = withSpring(1, { damping: 12, stiffness: 180 });
+      } else {
+        contentScale.value = 1;
+      }
+    }
+  }, [visible, contentScale, animationsEnabled]);
+  const springStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: contentScale.value }],
+  }));
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <KeyboardAvoidingView
@@ -65,7 +85,7 @@ export function ReviewModal({
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <Animated.View style={[styles.modalContent, springStyle]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>
                   {isEditing ? t('movie.editReview') : t('movie.writeReview')}
@@ -135,7 +155,7 @@ export function ReviewModal({
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </Animated.View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -127,24 +127,26 @@ describe('HeroCarousel', () => {
   });
 
   it('renders all movie titles in the FlatList', () => {
-    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    expect(getByText('Pushpa 2')).toBeTruthy();
-    expect(getByText('Kalki')).toBeTruthy();
+    const { getAllByText } = render(<HeroCarousel movies={mockMovies} />);
+    // Clone of first movie appended for seamless loop → 2 "Pushpa 2"
+    expect(getAllByText('Pushpa 2').length).toBe(2);
+    expect(getAllByText('Kalki').length).toBe(1);
   });
 
   it('renders context-aware CTA buttons per movie status', () => {
-    const { getByText } = render(
+    const { getAllByText } = render(
       <HeroCarousel movies={mockMovies} platformMap={mockPlatformMap} />,
     );
-    // in_theaters → Get Tickets, streaming → Watch Now
-    expect(getByText('Get Tickets')).toBeTruthy();
-    expect(getByText('Watch Now')).toBeTruthy();
+    // in_theaters → Get Tickets (×2 due to clone), streaming → Watch Now
+    expect(getAllByText('Get Tickets').length).toBe(2);
+    expect(getAllByText('Watch Now').length).toBe(1);
   });
 
   it('shows rating when rating > 0', () => {
-    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    expect(getByText('4.5')).toBeTruthy();
-    expect(getByText('4')).toBeTruthy();
+    const { getAllByText } = render(<HeroCarousel movies={mockMovies} />);
+    // First movie appears twice (clone), so "4.5" appears twice
+    expect(getAllByText('4.5').length).toBe(2);
+    expect(getAllByText('4').length).toBe(1);
   });
 
   it('does not show rating when rating is 0', () => {
@@ -154,8 +156,9 @@ describe('HeroCarousel', () => {
   });
 
   it('shows "In Theaters" badge for theatrical movies', () => {
-    const { getByText } = render(<HeroCarousel movies={mockMovies} />);
-    expect(getByText('In Theaters')).toBeTruthy();
+    const { getAllByText } = render(<HeroCarousel movies={mockMovies} />);
+    // Clone of first movie also shows "In Theaters"
+    expect(getAllByText('In Theaters').length).toBe(2);
   });
 
   it('shows "Streaming" badge for OTT movies', () => {
@@ -169,8 +172,8 @@ describe('HeroCarousel', () => {
     const { UNSAFE_getAllByType } = render(<HeroCarousel movies={mockMovies} />);
     const { TouchableOpacity } = require('react-native');
     const touchables = UNSAFE_getAllByType(TouchableOpacity);
-    // 2 slides x (Watch Now + Follow + More Info) + 2 pagination dots = 8
-    expect(touchables.length).toBe(8);
+    // 3 slides (2 + clone) x (Watch Now + Follow + More Info) + 2 pagination dots = 11
+    expect(touchables.length).toBe(11);
   });
 
   it('does not render pagination dots for a single movie', () => {
@@ -200,10 +203,11 @@ describe('HeroCarousel', () => {
         },
       ],
     };
-    const { getByText, UNSAFE_getAllByType } = render(
+    const { getAllByText, UNSAFE_getAllByType } = render(
       <HeroCarousel movies={mockMovies} platformMap={platformMap} />,
     );
-    expect(getByText('Watch on:')).toBeTruthy();
+    // Clone of first movie also shows "Watch on:"
+    expect(getAllByText('Watch on:').length).toBe(2);
     // PlatformBadge renders an Image for known platforms
     const { Image } = require('expo-image');
     const images = UNSAFE_getAllByType(Image);
@@ -212,8 +216,8 @@ describe('HeroCarousel', () => {
   });
 
   it('navigates to movie detail when Get Tickets is pressed (theatrical)', () => {
-    const { getByLabelText } = render(<HeroCarousel movies={mockMovies} />);
-    fireEvent.press(getByLabelText('Get Tickets'));
+    const { getAllByLabelText } = render(<HeroCarousel movies={mockMovies} />);
+    fireEvent.press(getAllByLabelText('Get Tickets')[0]);
     expect(mockPush).toHaveBeenCalledWith('/movie/1');
   });
 

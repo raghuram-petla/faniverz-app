@@ -59,6 +59,7 @@ function FeedCardInner({
   const { openImage } = useImageViewer();
   const posterRef = useRef<View>(null);
   const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [posterHidden, setPosterHidden] = useState(false);
   const hasVideo = !!item.youtube_id;
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
   const hasThumbnail = !!imageUrl;
@@ -89,6 +90,8 @@ function FeedCardInner({
         sourceLayout: layout,
         sourceRef: posterRef,
         borderRadius: 12,
+        onSourceHide: () => setPosterHidden(true),
+        onSourceShow: () => setPosterHidden(false),
       });
     });
   }, [imageUrl, openImage]);
@@ -184,7 +187,11 @@ function FeedCardInner({
               onPress={handlePosterPress}
               accessibilityLabel={`View ${item.title} poster`}
             >
-              <View ref={posterRef} collapsable={false} style={styles.posterMediaContainer}>
+              <View
+                ref={posterRef}
+                collapsable={false}
+                style={[styles.posterMediaContainer, posterHidden && { opacity: 0 }]}
+              >
                 {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
                 <Image
                   source={{ uri: getImageUrl(imageUrl!, 'md') ?? imageUrl! }}

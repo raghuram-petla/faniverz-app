@@ -15,6 +15,7 @@ import { ImageViewerGestures } from './ImageViewerGestures';
 import { colors as palette } from '@/theme/colors';
 import { overlayStyles as styles } from './ImageViewerOverlay.styles';
 import { measureView } from '@/utils/measureView';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import type { ImageSourceLayout } from '@/providers/ImageViewerProvider';
 
 export interface ImageViewerOverlayProps {
@@ -23,11 +24,13 @@ export interface ImageViewerOverlayProps {
   sourceLayout: ImageSourceLayout;
   sourceRef: React.RefObject<View | null>;
   borderRadius: number;
+  onSourceHide?: () => void;
+  onSourceShow?: () => void;
   onClose: () => void;
 }
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const POSTER_ASPECT = 3 / 2; // 2:3 poster (height / width)
+const POSTER_ASPECT = 3 / 2;
 const OPEN_DURATION = 300;
 const CLOSE_DURATION = 250;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
@@ -40,13 +43,21 @@ export function ImageViewerOverlay({
   sourceLayout,
   sourceRef,
   borderRadius: srcRadius,
+  onSourceHide,
+  onSourceShow,
   onClose,
 }: ImageViewerOverlayProps) {
-  const progress = useSharedValue(0);
-  const backdropOpacity = useSharedValue(0);
+  const animationsEnabled = useAnimationsEnabled();
+  const progress = useSharedValue(animationsEnabled ? 0 : 1);
+  const backdropOpacity = useSharedValue(animationsEnabled ? 0 : 1);
   const closingRef = useRef(false);
 
-  // Shared values for source position — can be updated on close for scroll-aware fly-back
+  // Gesture shared values — owned here so we can animate zoom-out on close
+  const gestureScale = useSharedValue(1);
+  const gestureTranslateX = useSharedValue(0);
+  const gestureTranslateY = useSharedValue(0);
+
+  // Source position — updated on close for scroll-aware fly-back
   const srcX = useSharedValue(sourceLayout.x);
   const srcY = useSharedValue(sourceLayout.y);
   const srcW = useSharedValue(sourceLayout.width);
@@ -64,6 +75,7 @@ export function ImageViewerOverlay({
 
   // Start indeterminate animation after the open transition finishes
   useEffect(() => {
+    if (!animationsEnabled) return;
     const delay = setTimeout(() => {
       if (!fullResLoaded) {
         progressBarOpacity.value = withTiming(1, { duration: 200 });
@@ -77,14 +89,14 @@ export function ImageViewerOverlay({
       }
     }, OPEN_DURATION);
     return () => clearTimeout(delay);
-  }, [fullResLoaded, progressX, progressBarOpacity]);
+  }, [fullResLoaded, progressX, progressBarOpacity, animationsEnabled]);
 
   // Fade out progress bar when full-res loads
   useEffect(() => {
     if (fullResLoaded) {
-      progressBarOpacity.value = withTiming(0, { duration: 300 });
+      progressBarOpacity.value = animationsEnabled ? withTiming(0, { duration: 300 }) : 0;
     }
-  }, [fullResLoaded, progressBarOpacity]);
+  }, [fullResLoaded, progressBarOpacity, animationsEnabled]);
 
   const progressBarContainerStyle = useAnimatedStyle(() => ({
     position: 'absolute' as const,
@@ -107,15 +119,23 @@ export function ImageViewerOverlay({
     transform: [{ translateX: progressX.value * SCREEN_W * 0.6 + SCREEN_W * 0.3 }],
   }));
 
-  // Animate open on mount
+  // Animate open on mount, then hide source thumbnail once backdrop is opaque
   useEffect(() => {
-    progress.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });
-    backdropOpacity.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });
-  }, [progress, backdropOpacity]);
+    if (animationsEnabled) {
+      progress.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });
+      backdropOpacity.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });
+      const timer = setTimeout(() => onSourceHide?.(), OPEN_DURATION);
+      return () => clearTimeout(timer);
+    }
+    // Animations disabled — already at final values, hide source immediately
+    onSourceHide?.();
+    return undefined;
+  }, [progress, backdropOpacity, onSourceHide, animationsEnabled]);
 
   const cleanup = useCallback(() => {
+    onSourceShow?.();
     onClose();
-  }, [onClose]);
+  }, [onClose, onSourceShow]);
 
   const animateClose = useCallback(
     (dur: number) => {
@@ -127,11 +147,8 @@ export function ImageViewerOverlay({
     [progress, backdropOpacity, cleanup],
   );
 
-  // Close button / back button: re-measure card, fly back
-  const handleCloseButton = useCallback(() => {
-    if (closingRef.current) return;
-    closingRef.current = true;
-
+  // Fly back to thumbnail (re-measure, then animate)
+  const doFlyBack = useCallback(() => {
     measureView(
       sourceRef,
       (layout) => {
@@ -145,12 +162,34 @@ export function ImageViewerOverlay({
     );
   }, [sourceRef, srcX, srcY, srcW, srcH, animateClose]);
 
-  // Swipe dismiss: fly back to card (gesture resets its transforms simultaneously)
+  // Close: reset gesture transforms and fly back simultaneously (no jerk)
+  const handleCloseButton = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+
+    if (!animationsEnabled) {
+      cleanup();
+      return;
+    }
+
+    if (gestureScale.value > 1.05) {
+      gestureScale.value = withTiming(1, { duration: CLOSE_DURATION, easing: EASING });
+      gestureTranslateX.value = withTiming(0, { duration: CLOSE_DURATION, easing: EASING });
+      gestureTranslateY.value = withTiming(0, { duration: CLOSE_DURATION, easing: EASING });
+    }
+    doFlyBack();
+  }, [gestureScale, gestureTranslateX, gestureTranslateY, doFlyBack, animationsEnabled, cleanup]);
+
+  // Swipe dismiss: gesture resets its own transforms simultaneously
   const handleSwipeDismiss = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
+    if (!animationsEnabled) {
+      cleanup();
+      return;
+    }
     animateClose(CLOSE_DURATION);
-  }, [animateClose]);
+  }, [animateClose, animationsEnabled, cleanup]);
 
   // Android back button
   useEffect(() => {
@@ -180,7 +219,7 @@ export function ImageViewerOverlay({
   }));
 
   const animatedCloseBtnStyle = useAnimatedStyle(() => ({
-    opacity: backdropOpacity.value < 1 ? 0 : 1,
+    opacity: progress.value,
   }));
 
   return (
@@ -188,18 +227,16 @@ export function ImageViewerOverlay({
       <StatusBar barStyle="light-content" />
       <Animated.View style={[styles.backdrop, animatedBackdropStyle]} />
 
-      <Animated.View style={[styles.closeBtnWrapper, animatedCloseBtnStyle]}>
-        <TouchableOpacity onPress={handleCloseButton} accessibilityLabel="Close image">
-          <Ionicons name="close" size={28} color={palette.white} />
-        </TouchableOpacity>
-      </Animated.View>
-
-      <ImageViewerGestures onDismiss={handleSwipeDismiss} backdropOpacity={backdropOpacity}>
+      <ImageViewerGestures
+        onDismiss={handleSwipeDismiss}
+        backdropOpacity={backdropOpacity}
+        scale={gestureScale}
+        translateX={gestureTranslateX}
+        translateY={gestureTranslateY}
+      >
         <Animated.View style={[styles.gestureArea]}>
           <Animated.View style={animatedContainerStyle}>
-            {/* Feed-quality image — already cached, shows instantly */}
             <Image source={{ uri: feedUrl }} style={styles.imageFill} contentFit="cover" />
-            {/* Full-resolution crossfades in when loaded */}
             <Image
               source={{ uri: fullUrl }}
               style={styles.imageFill}
@@ -207,13 +244,18 @@ export function ImageViewerOverlay({
               transition={300}
               onLoad={() => setFullResLoaded(true)}
             />
-            {/* Indeterminate progress bar while full-res loads */}
             <Animated.View style={progressBarContainerStyle}>
               <Animated.View style={progressBarFillStyle} />
             </Animated.View>
           </Animated.View>
         </Animated.View>
       </ImageViewerGestures>
+
+      <Animated.View style={[styles.closeBtnWrapper, animatedCloseBtnStyle]}>
+        <TouchableOpacity onPress={handleCloseButton} accessibilityLabel="Close image">
+          <Ionicons name="close" size={28} color={palette.white} />
+        </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 }

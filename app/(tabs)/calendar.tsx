@@ -16,7 +16,7 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { CalendarSkeleton } from '@/components/calendar/CalendarSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FilterPill } from '@/components/calendar/FilterPill';
 import { createStyles } from '@/styles/tabs/calendar.styles';
@@ -35,10 +35,13 @@ export default function CalendarScreen() {
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {}, refetch: refetchPlatforms } = useMoviePlatformMap(movieIds);
   const { refreshing, onRefresh } = useRefresh(refetch, refetchPlatforms);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef(null);
   useScrollToTop(listRef);
 
@@ -106,11 +109,7 @@ export default function CalendarScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (isLoading) {
-    return (
-      <View style={styles.screen}>
-        <LoadingCenter />
-      </View>
-    );
+    return <CalendarSkeleton />;
   }
 
   return (
@@ -176,9 +175,11 @@ export default function CalendarScreen() {
         ref={listRef}
         data={groupedMovies}
         keyExtractor={(item) => item.date}
+        drawDistance={500}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
         ListHeaderComponent={

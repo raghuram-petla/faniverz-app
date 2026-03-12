@@ -211,10 +211,10 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Netflix')).toBeTruthy();
   });
 
-  it('shows loading indicator when movie data is not available', () => {
+  it('shows skeleton when movie data is not available', () => {
     (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
     render(<MovieDetailScreen />);
-    expect(screen.getByTestId('loading-indicator')).toBeTruthy();
+    expect(screen.getByTestId('movie-detail-skeleton')).toBeTruthy();
   });
 
   it('shows Cast and Reviews tabs in the tab bar', () => {

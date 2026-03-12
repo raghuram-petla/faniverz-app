@@ -27,6 +27,7 @@ import { useScrollToTop } from '@react-navigation/native';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
+import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
 import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpers';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
@@ -61,10 +62,13 @@ export default function FeedScreen() {
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
@@ -177,6 +181,7 @@ export default function FeedScreen() {
           }
           handleScrollForVideo(contentOffset.y, layoutMeasurement.height);
         }}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >
@@ -190,9 +195,7 @@ export default function FeedScreen() {
         <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
 
         {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.red600} />
-          </View>
+          <FeedContentSkeleton />
         ) : allItems.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />

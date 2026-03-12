@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { ProfileListSkeleton } from '@/components/profile/ProfileListSkeleton';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
@@ -42,10 +42,13 @@ export default function FollowingScreen() {
   const { refreshing, onRefresh } = useRefresh(async () => {
     await refetch();
   });
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const filtered = useMemo(
     () => (filter === 'all' ? follows : follows.filter((f) => f.entity_type === filter)),
@@ -127,7 +130,7 @@ export default function FollowingScreen() {
       </View>
 
       {isLoading ? (
-        <LoadingCenter style={styles.centered} />
+        <ProfileListSkeleton testID="following-skeleton" />
       ) : (
         <FlatList
           data={filtered}
@@ -144,6 +147,7 @@ export default function FollowingScreen() {
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           onScroll={handlePullScroll}
+          onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
           ListHeaderComponent={

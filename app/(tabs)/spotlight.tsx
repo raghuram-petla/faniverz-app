@@ -50,10 +50,13 @@ export default function SpotlightScreen() {
   const movieIds = allMovies.map((m) => m.id);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
   const { refreshing, onRefresh } = useRefresh(refetchMovies, refetchPlatforms);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
@@ -119,6 +122,7 @@ export default function SpotlightScreen() {
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >

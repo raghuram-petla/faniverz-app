@@ -198,12 +198,11 @@ describe('MyReviewsScreen', () => {
     expect(screen.getByText('19')).toBeTruthy();
   });
 
-  it('shows loading indicator when reviews are loading', () => {
+  it('shows skeleton when reviews are loading', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockUseUserReviews.mockReturnValueOnce({ data: undefined as any, isLoading: true });
-    const { UNSAFE_getByType } = render(<MyReviewsScreen />);
-    const { ActivityIndicator } = require('react-native');
-    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    render(<MyReviewsScreen />);
+    expect(screen.getByTestId('reviews-content-skeleton')).toBeTruthy();
   });
 
   it('does not render body text when review body is null', () => {

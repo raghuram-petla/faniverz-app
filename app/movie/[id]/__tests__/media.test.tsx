@@ -19,7 +19,6 @@ jest.mock('expo-router', () => ({
     push: jest.fn(),
     back: jest.fn(),
     dismissAll: jest.fn(),
-    navigate: jest.fn(),
   }),
   useLocalSearchParams: () => ({ id: 'movie-1' }),
   useNavigation: () => ({ getState: () => ({ index: 1 }) }),
@@ -126,7 +125,7 @@ describe('MediaScreen', () => {
 
   it('switches to Photos tab on press', () => {
     render(<MediaScreen />);
-    fireEvent.press(screen.getByLabelText('movieDetail.photos tab, 1 photos'));
+    fireEvent.press(screen.getByText('movieDetail.photos (1)'));
     expect(screen.getByLabelText('View First Look')).toBeTruthy();
     expect(screen.getByText('Main')).toBeTruthy();
   });
@@ -155,7 +154,7 @@ describe('MediaScreen', () => {
 
   it('hides filter pills in photos tab', () => {
     render(<MediaScreen />);
-    fireEvent.press(screen.getByLabelText('movieDetail.photos tab, 1 photos'));
+    fireEvent.press(screen.getByText('movieDetail.photos (1)'));
     expect(screen.queryByText('Trailer (1)')).toBeNull();
     expect(screen.queryByText('Song (1)')).toBeNull();
   });

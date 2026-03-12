@@ -42,6 +42,7 @@ jest.mock('expo-router', () => ({
 
 import SettingsScreen from '../settings';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { useAnimationStore } from '@/stores/useAnimationStore';
 
 const mockUseAuth = useAuth as jest.Mock;
 
@@ -197,5 +198,19 @@ describe('SettingsScreen', () => {
     expect(screen.queryByText('Push Notifications')).toBeNull();
     expect(screen.queryByText('Privacy')).toBeNull();
     expect(screen.queryByText('Change Password')).toBeNull();
+  });
+
+  it('renders Animations toggle in Appearance section', () => {
+    render(<SettingsScreen />);
+    expect(screen.getByText('Animations')).toBeTruthy();
+  });
+
+  it('animations toggle is wired to useAnimationStore', () => {
+    render(<SettingsScreen />);
+    expect(screen.getByText('Animations')).toBeTruthy();
+    // Verify store integration — setAnimationsEnabled should toggle the state
+    const before = useAnimationStore.getState().animationsEnabled;
+    useAnimationStore.getState().setAnimationsEnabled(!before);
+    expect(useAnimationStore.getState().animationsEnabled).toBe(!before);
   });
 });

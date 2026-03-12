@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { ProfileListSkeleton } from '@/components/profile/ProfileListSkeleton';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -36,10 +36,13 @@ export default function ActivityScreen() {
   const { refreshing, onRefresh } = useRefresh(async () => {
     await refetch();
   });
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const handleActivityPress = useCallback(
     (activity: UserActivity) => {
@@ -75,7 +78,7 @@ export default function ActivityScreen() {
       </View>
 
       {isLoading ? (
-        <LoadingCenter />
+        <ProfileListSkeleton testID="activity-skeleton" />
       ) : (
         <FlatList
           data={activities}
@@ -88,6 +91,7 @@ export default function ActivityScreen() {
           }}
           onEndReachedThreshold={0.5}
           onScroll={handlePullScroll}
+          onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
           ListHeaderComponent={

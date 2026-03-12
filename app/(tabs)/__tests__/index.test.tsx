@@ -212,12 +212,10 @@ describe('FeedScreen', () => {
     setupMocks();
   });
 
-  it('renders loading spinner when loading', () => {
+  it('renders skeleton when loading', () => {
     setupMocks({ feed: { data: undefined, isLoading: true } });
-    const { UNSAFE_getAllByType } = render(<FeedScreen />);
-    const { ActivityIndicator } = require('react-native');
-    const indicators = UNSAFE_getAllByType(ActivityIndicator);
-    expect(indicators.length).toBeGreaterThan(0);
+    render(<FeedScreen />);
+    expect(screen.getByTestId('feed-content-skeleton')).toBeTruthy();
   });
 
   it('renders empty state when no items', () => {

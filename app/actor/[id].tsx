@@ -1,5 +1,18 @@
 import { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, Pressable, ActivityIndicator, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  Modal,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,12 +32,14 @@ import { FollowButton } from '@/components/feed/FollowButton';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
+import { ActorDetailSkeleton } from '@/components/actor/ActorDetailSkeleton';
 
 const GENDER_LABELS: Record<number, string> = { 1: 'Female', 2: 'Male', 3: 'Non-binary' };
 
 export default function ActorDetailScreen() {
   const { t } = useTranslation();
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,10 +52,13 @@ export default function ActorDetailScreen() {
   const unfollowMutation = useUnfollowEntity();
   const { gate } = useAuthGate();
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const isFollowing = followSet.has(`actor:${id}`);
 
@@ -52,6 +70,12 @@ export default function ActorDetailScreen() {
     }
   });
 
+  const animationsEnabled = useAnimationsEnabled();
+  const toggleBio = useCallback(() => {
+    if (animationsEnabled) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setBioExpanded((prev) => !prev);
+  }, [animationsEnabled]);
+
   const handleMoviePress = useCallback(
     (movieId: string) => router.push(`/movie/${movieId}`),
     [router],
@@ -59,19 +83,8 @@ export default function ActorDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top + 12, paddingHorizontal: 16 }]}>
-        <View style={styles.navRow}>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() => router.back()}
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.red600} testID="loading-indicator" />
-        </View>
+      <View style={styles.screen}>
+        <ActorDetailSkeleton />
       </View>
     );
   }
@@ -112,6 +125,7 @@ export default function ActorDetailScreen() {
           </View>
         }
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollHeader={
           <PullToRefreshIndicator
@@ -156,7 +170,7 @@ export default function ActorDetailScreen() {
               <Text style={styles.aboutText} numberOfLines={bioExpanded ? undefined : 4}>
                 {actor.biography}
               </Text>
-              <TouchableOpacity onPress={() => setBioExpanded(!bioExpanded)} testID="bio-toggle">
+              <TouchableOpacity onPress={toggleBio} testID="bio-toggle">
                 <Text style={styles.readMoreText}>
                   {bioExpanded ? t('actorDetail.showLess') : t('actorDetail.readMore')}
                 </Text>

@@ -1,8 +1,7 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useProductionHouseDetail } from '@/features/productionHouses/hooks';
@@ -17,12 +16,12 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createProductionHouseStyles } from '@/styles/productionHouseDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { ProductionHouseDetailSkeleton } from '@/components/productionHouse/ProductionHouseDetailSkeleton';
 
 export default function ProductionHouseDetailScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createProductionHouseStyles(theme);
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { house, movies, isLoading, refetch } = useProductionHouseDetail(id ?? '');
@@ -33,10 +32,13 @@ export default function ProductionHouseDetailScreen() {
   const { refreshing, onRefresh } = useRefresh(async () => {
     await refetch();
   });
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const isFollowing = followSet.has(`production_house:${id}`);
 
@@ -50,19 +52,8 @@ export default function ProductionHouseDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.navRow}>
-          <TouchableOpacity
-            style={styles.navButton}
-            onPress={() => router.back()}
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={colors.red600} testID="loading-indicator" />
-        </View>
+      <View style={styles.screen}>
+        <ProductionHouseDetailSkeleton />
       </View>
     );
   }
@@ -108,6 +99,7 @@ export default function ProductionHouseDetailScreen() {
         house.description ? <Text style={styles.description}>{house.description}</Text> : null
       }
       onScroll={handlePullScroll}
+      onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollHeader={
         <PullToRefreshIndicator

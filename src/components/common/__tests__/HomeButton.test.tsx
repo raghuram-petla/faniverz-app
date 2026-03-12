@@ -51,7 +51,7 @@ describe('HomeButton', () => {
     expect(getByTestId('home-button')).toBeTruthy();
   });
 
-  it('calls router.dismissAll() on press', () => {
+  it('dismisses all screens when pressed', () => {
     mockState.index = 2;
     const { getByTestId } = render(<HomeButton />);
     fireEvent.press(getByTestId('home-button'));
@@ -66,8 +66,7 @@ describe('HomeButton', () => {
 
   it('applies custom style prop', () => {
     mockState.index = 2;
-    const customStyle = { backgroundColor: 'red' };
-    const { getByTestId } = render(<HomeButton style={customStyle} />);
+    const { getByTestId } = render(<HomeButton style={{ backgroundColor: 'red' }} />);
     expect(getByTestId('home-button')).toBeTruthy();
   });
 
@@ -78,7 +77,6 @@ describe('HomeButton', () => {
   });
 
   it('uses parent navigator index for nested stacks', () => {
-    // Nested stack: local index 0, parent index 3
     mockState.index = 0;
     mockParent = () => ({ getState: () => ({ index: 3 }) });
     const { getByTestId } = render(<HomeButton />);

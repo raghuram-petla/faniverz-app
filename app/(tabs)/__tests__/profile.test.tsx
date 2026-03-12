@@ -2,6 +2,18 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('@/components/ui/AnimatedNumber', () => {
+  const { Text } = require('react-native');
+  return {
+    AnimatedNumber: ({ value, decimals, prefix, suffix, ...props }: Record<string, unknown>) => {
+      const v = Number(value);
+      const d = Number(decimals ?? 0);
+      const formatted = d > 0 ? v.toFixed(d) : String(Math.round(v));
+      return <Text {...props}>{`${prefix ?? ''}${formatted}${suffix ?? ''}`}</Text>;
+    },
+  };
+});
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(),
 }));

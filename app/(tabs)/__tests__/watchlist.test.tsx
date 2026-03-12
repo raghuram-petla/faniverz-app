@@ -160,13 +160,13 @@ describe('WatchlistScreen', () => {
     expect(screen.getByText('RRR')).toBeTruthy();
   });
 
-  it('shows loading state with ActivityIndicator', () => {
+  it('shows skeleton when loading', () => {
     setupLoggedIn();
     setupWatchlistMock({ isLoading: true });
 
     render(<WatchlistScreen />);
 
-    expect(screen.getByText('watchlist.title')).toBeTruthy();
+    expect(screen.getByTestId('watchlist-skeleton')).toBeTruthy();
     // Should not show empty state or content when loading
     expect(screen.queryByText('watchlist.empty')).toBeNull();
   });

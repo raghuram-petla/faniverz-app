@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { AnimatedListItem } from '@/components/ui/AnimatedListItem';
 import { useUniversalSearch } from '@/features/search';
 import { useMovies } from '@/features/movies/hooks/useMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
@@ -56,10 +57,13 @@ export default function SearchScreen() {
   const { refreshing, onRefresh } = useRefresh(async () => {
     await refetchResults();
   }, refetchMovies);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   useEffect(() => {
     loadRecentSearches();
@@ -243,6 +247,7 @@ export default function SearchScreen() {
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
           onScroll={handlePullScroll}
+          onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
           ListHeaderComponent={
@@ -285,12 +290,14 @@ export default function SearchScreen() {
               />
             ) : null
           }
-          renderItem={({ item }) => (
-            <SearchResultMovie
-              movie={item}
-              platforms={platformMap[item.id] ?? []}
-              onPress={() => handleMoviePress(item)}
-            />
+          renderItem={({ item, index }) => (
+            <AnimatedListItem index={index} direction="right" distance={20} stagger={50}>
+              <SearchResultMovie
+                movie={item}
+                platforms={platformMap[item.id] ?? []}
+                onPress={() => handleMoviePress(item)}
+              />
+            </AnimatedListItem>
           )}
         />
       )}

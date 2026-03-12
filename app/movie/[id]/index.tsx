@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity, ScrollView, Share, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -16,21 +16,22 @@ import { CastTab } from '@/components/movie/detail/CastTab';
 import { ReviewsTab } from '@/components/movie/detail/ReviewsTab';
 import { ReviewModal } from '@/components/movie/detail/ReviewModal';
 import { MovieDetailHeader } from '@/components/movie/detail/MovieDetailHeader';
-import { Ionicons } from '@expo/vector-icons';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTheme } from '@/theme';
+import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAuthGate } from '@/hooks/useAuthGate';
+import { MovieDetailSkeleton } from '@/components/movie/detail/MovieDetailSkeleton';
 
 type TabName = 'overview' | 'cast' | 'reviews';
 type DisplayTab = TabName | 'media';
 
 export default function MovieDetailScreen() {
   const { t } = useTranslation();
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,10 +44,13 @@ export default function MovieDetailScreen() {
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
   const { gate } = useAuthGate();
   const { refreshing, onRefresh } = useRefresh(refetchMovie, refetchReviews);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   // useMovieAction must be called unconditionally (rules of hooks)
   const movieForAction = movie ?? { id: id ?? '', release_date: null, in_theaters: false };
@@ -63,19 +67,10 @@ export default function MovieDetailScreen() {
   const [reviewBody, setReviewBody] = useState('');
   const [containsSpoiler, setContainsSpoiler] = useState(false);
 
+  const tabs: DisplayTab[] = ['overview', 'media', 'cast', 'reviews'];
+
   if (movieLoading || !movie) {
-    return (
-      <View style={[styles.screen, { paddingTop: insets.top + 12 }]}>
-        <View style={{ flexDirection: 'row', paddingHorizontal: 16 }}>
-          <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Go back">
-            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
-          </TouchableOpacity>
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.red600} testID="loading-indicator" />
-        </View>
-      </View>
-    );
+    return <MovieDetailSkeleton />;
   }
 
   const handleShare = async () => {
@@ -108,8 +103,6 @@ export default function MovieDetailScreen() {
     cast: t('movie.cast'),
     reviews: t('movie.reviews'),
   };
-  const tabs: DisplayTab[] = ['overview', 'media', 'cast', 'reviews'];
-
   const handleTabPress = (tab: DisplayTab) => {
     if (tab === 'media') {
       router.push(`/movie/${id}/media`);
@@ -126,6 +119,7 @@ export default function MovieDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top }}
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >
@@ -143,20 +137,13 @@ export default function MovieDetailScreen() {
         />
 
         {/* Tabs */}
-        <View style={styles.tabBar}>
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
-              onPress={() => handleTabPress(tab)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: activeTab === tab }}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-                {tabLabels[tab]}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={{ marginTop: 24 }}>
+          <AnimatedTabBar
+            tabs={tabs}
+            labels={tabLabels}
+            activeTab={activeTab}
+            onTabPress={handleTabPress}
+          />
         </View>
 
         {/* Tab Content */}

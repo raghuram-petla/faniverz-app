@@ -106,6 +106,7 @@ jest.mock('@/hooks/usePullToRefresh', () => ({
   usePullToRefresh: () => ({
     pullDistance: { value: 0 },
     isRefreshing: { value: false },
+    handleScrollBeginDrag: jest.fn(),
     handlePullScroll: jest.fn(),
     handleScrollEndDrag: jest.fn(),
   }),

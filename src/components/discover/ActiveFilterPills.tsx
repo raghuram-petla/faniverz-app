@@ -1,6 +1,8 @@
 import { View, Text, TouchableOpacity, ViewStyle, TextStyle } from 'react-native';
+import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
 export interface ActiveFilterPillsProps {
   selectedGenres: string[];
@@ -28,6 +30,11 @@ export function ActiveFilterPills({
   styles,
 }: ActiveFilterPillsProps) {
   const { colors } = useTheme();
+  const animationsEnabled = useAnimationsEnabled();
+
+  const entering = animationsEnabled ? FadeIn.duration(200) : undefined;
+  const exiting = animationsEnabled ? FadeOut.duration(150) : undefined;
+  const layout = animationsEnabled ? Layout.springify() : undefined;
 
   if (
     selectedGenres.length === 0 &&
@@ -40,31 +47,36 @@ export function ActiveFilterPills({
   return (
     <View style={styles.activePills}>
       {selectedGenres.map((g) => (
-        <TouchableOpacity key={g} style={styles.activePill} onPress={() => onToggleGenre(g)}>
-          <Text style={styles.activePillText}>{g}</Text>
-          <Ionicons name="close" size={14} color={colors.red400} />
-        </TouchableOpacity>
+        <Animated.View key={g} entering={entering} exiting={exiting} layout={layout}>
+          <TouchableOpacity style={styles.activePill} onPress={() => onToggleGenre(g)}>
+            <Text style={styles.activePillText}>{g}</Text>
+            <Ionicons name="close" size={14} color={colors.red400} />
+          </TouchableOpacity>
+        </Animated.View>
       ))}
       {selectedPlatforms.map((p) => {
         const platform = platforms.find((pl) => pl.id === p);
         return (
-          <TouchableOpacity key={p} style={styles.activePill} onPress={() => onTogglePlatform(p)}>
-            <Text style={styles.activePillText}>{platform?.name ?? p}</Text>
-            <Ionicons name="close" size={14} color={colors.red400} />
-          </TouchableOpacity>
+          <Animated.View key={p} entering={entering} exiting={exiting} layout={layout}>
+            <TouchableOpacity style={styles.activePill} onPress={() => onTogglePlatform(p)}>
+              <Text style={styles.activePillText}>{platform?.name ?? p}</Text>
+              <Ionicons name="close" size={14} color={colors.red400} />
+            </TouchableOpacity>
+          </Animated.View>
         );
       })}
       {selectedProductionHouses.map((phId) => {
         const ph = productionHouses.find((p) => p.id === phId);
         return (
-          <TouchableOpacity
-            key={phId}
-            style={styles.activePill}
-            onPress={() => onToggleProductionHouse(phId)}
-          >
-            <Text style={styles.activePillText}>{ph?.name ?? phId}</Text>
-            <Ionicons name="close" size={14} color={colors.red400} />
-          </TouchableOpacity>
+          <Animated.View key={phId} entering={entering} exiting={exiting} layout={layout}>
+            <TouchableOpacity
+              style={styles.activePill}
+              onPress={() => onToggleProductionHouse(phId)}
+            >
+              <Text style={styles.activePillText}>{ph?.name ?? phId}</Text>
+              <Ionicons name="close" size={14} color={colors.red400} />
+            </TouchableOpacity>
+          </Animated.View>
         );
       })}
       <TouchableOpacity onPress={onClearAll}>

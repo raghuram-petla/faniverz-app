@@ -24,12 +24,17 @@ import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { ImageViewerOverlay } from '../ImageViewerOverlay';
 
+const mockOnSourceHide = jest.fn();
+const mockOnSourceShow = jest.fn();
+
 const defaultProps = {
   feedUrl: 'https://example.com/feed_md.jpg',
   fullUrl: 'https://example.com/full.jpg',
   sourceLayout: { x: 16, y: 200, width: 200, height: 255 },
   sourceRef: { current: null } as never,
   borderRadius: 12,
+  onSourceHide: mockOnSourceHide,
+  onSourceShow: mockOnSourceShow,
   onClose: jest.fn(),
 };
 
@@ -56,11 +61,21 @@ describe('ImageViewerOverlay', () => {
     const onClose = jest.fn();
     render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
     fireEvent.press(screen.getByLabelText('Close image'));
-    // The close triggers an animation that calls onClose on completion.
-    // In tests, withTiming is mocked to return immediately, so measure() gets called.
-    // Since measure is mocked to return layout values, the close animation runs.
-    // The onClose callback is invoked via runOnJS after animation completes.
-    // With mocked reanimated, the callback chain fires synchronously.
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('calls onSourceHide after open animation completes', () => {
+    jest.useFakeTimers();
+    render(<ImageViewerOverlay {...defaultProps} />);
+    expect(mockOnSourceHide).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+    expect(mockOnSourceHide).toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  it('calls onSourceShow when close button is pressed', () => {
+    render(<ImageViewerOverlay {...defaultProps} />);
+    fireEvent.press(screen.getByLabelText('Close image'));
+    expect(mockOnSourceShow).toHaveBeenCalled();
   });
 });

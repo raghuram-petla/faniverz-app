@@ -1,6 +1,14 @@
+import { useCallback, useEffect } from 'react';
 import { TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { colors as palette } from '@/theme/colors';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import type { MovieActionType } from '@/hooks/useMovieAction';
 
 export interface MovieQuickActionProps {
@@ -11,6 +19,12 @@ export interface MovieQuickActionProps {
   style?: ViewStyle;
 }
 
+const BOUNCE_SEQUENCE = [
+  { value: 0.6, duration: 100 },
+  { value: 1.2, duration: 150 },
+  { value: 1.0, duration: 100 },
+];
+
 export function MovieQuickAction({
   actionType,
   isActive,
@@ -18,6 +32,27 @@ export function MovieQuickAction({
   movieTitle,
   style,
 }: MovieQuickActionProps) {
+  const iconScale = useSharedValue(1);
+  const prevActive = useSharedValue(isActive ? 1 : 0);
+  const animationsEnabled = useAnimationsEnabled();
+
+  // Bounce on activation (not on initial render)
+  useEffect(() => {
+    const wasActive = prevActive.value === 1;
+    prevActive.value = isActive ? 1 : 0;
+    if (isActive && !wasActive && animationsEnabled) {
+      iconScale.value = withSequence(
+        withTiming(BOUNCE_SEQUENCE[0].value, { duration: BOUNCE_SEQUENCE[0].duration }),
+        withTiming(BOUNCE_SEQUENCE[1].value, { duration: BOUNCE_SEQUENCE[1].duration }),
+        withTiming(BOUNCE_SEQUENCE[2].value, { duration: BOUNCE_SEQUENCE[2].duration }),
+      );
+    }
+  }, [isActive, iconScale, prevActive, animationsEnabled]);
+
+  const animatedIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+  }));
+
   const icon = isActive
     ? actionType === 'follow'
       ? 'heart'
@@ -32,15 +67,21 @@ export function MovieQuickAction({
       : `${movieTitle} saved, tap to remove`;
   const inactiveLabel = actionType === 'follow' ? `Follow ${movieTitle}` : `Save ${movieTitle}`;
 
+  const handlePress = useCallback(() => {
+    onPress();
+  }, [onPress]);
+
   return (
     <TouchableOpacity
       style={[styles.overlay, isActive && styles.overlayActive, style]}
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.7}
       accessibilityLabel={isActive ? activeLabel : inactiveLabel}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      <Ionicons name={icon} size={14} color={isActive ? palette.green500 : palette.white} />
+      <Animated.View style={animatedIconStyle}>
+        <Ionicons name={icon} size={14} color={isActive ? palette.green500 : palette.white} />
+      </Animated.View>
     </TouchableOpacity>
   );
 }

@@ -11,7 +11,7 @@ import { useWatchlist } from '@/features/watchlist/hooks';
 import { WatchlistEntry } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { ProfileGridSkeleton } from '@/components/profile/ProfileGridSkeleton';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatWatchTime } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/watched.styles';
@@ -42,10 +42,13 @@ export default function WatchedMoviesScreen() {
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const sorted = useMemo(() => {
     const copy = [...(watched ?? [])];
@@ -90,6 +93,7 @@ export default function WatchedMoviesScreen() {
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
+      onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
     >
@@ -175,7 +179,7 @@ export default function WatchedMoviesScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <LoadingCenter style={styles.centered} />
+        <ProfileGridSkeleton testID="watched-skeleton" />
       ) : sorted.length === 0 ? (
         <EmptyState
           icon="eye-outline"

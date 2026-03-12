@@ -45,13 +45,26 @@ export function PullToRefreshIndicator({
     ),
   }));
 
+  // Arrow rotates 0° → 180° as pull distance crosses threshold
+  const arrowRotateStyle = useAnimatedStyle(() => {
+    const rotation = interpolate(
+      pullDistance.value,
+      [0, PULL_THRESHOLD],
+      [0, 180],
+      Extrapolation.CLAMP,
+    );
+    return { transform: [{ rotate: `${rotation}deg` }] };
+  });
+
   return (
     <Animated.View style={[styles.container, containerStyle]}>
       {refreshing ? (
         <ActivityIndicator size="small" color={theme.textPrimary} testID="refresh-spinner" />
       ) : (
         <Animated.View style={[styles.content, contentStyle]}>
-          <Feather name="arrow-up" size={16} color={theme.textPrimary} testID="pull-arrow" />
+          <Animated.View style={arrowRotateStyle}>
+            <Feather name="arrow-up" size={16} color={theme.textPrimary} testID="pull-arrow" />
+          </Animated.View>
           <Text style={[styles.text, { color: theme.textSecondary }]}>Release to refresh</Text>
         </Animated.View>
       )}

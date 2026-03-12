@@ -1,6 +1,21 @@
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
-import { useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,8 +26,8 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
+import { WatchlistSkeleton } from '@/components/watchlist/WatchlistSkeleton';
 import { useTheme } from '@/theme';
 import { WatchlistEntry } from '@/types';
 import { AvailableCard, UpcomingCard, WatchedCard } from '@/components/watchlist/WatchlistCards';
@@ -22,6 +37,7 @@ type ListItem =
   | {
       type: 'section-header';
       key: string;
+      sectionKey: string;
       title: string;
       iconName: React.ComponentProps<typeof Ionicons>['name'];
       iconColor: string;
@@ -34,18 +50,32 @@ function SectionTitle({
   iconName,
   iconColor,
   title,
+  collapsed,
+  onToggle,
 }: {
   iconName: React.ComponentProps<typeof Ionicons>['name'];
   iconColor: string;
   title: string;
+  collapsed?: boolean;
+  onToggle?: () => void;
 }) {
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  const animationsEnabled = useAnimationsEnabled();
+  const rot = useSharedValue(collapsed ? 0 : 90);
+  useEffect(() => {
+    const deg = collapsed ? 0 : 90;
+    rot.value = animationsEnabled ? withTiming(deg, { duration: 200 }) : deg;
+  }, [collapsed, rot, animationsEnabled]);
+  const chevStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rot.value}deg` }] }));
   return (
-    <View style={styles.sectionHeader}>
+    <TouchableOpacity style={styles.sectionHeader} onPress={onToggle} activeOpacity={0.7}>
       <Ionicons name={iconName} size={20} color={iconColor} />
-      <Text style={styles.sectionTitle}>{title}</Text>
-    </View>
+      <Text style={[styles.sectionTitle, { flex: 1 }]}>{title}</Text>
+      <Animated.View style={chevStyle}>
+        <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+      </Animated.View>
+    </TouchableOpacity>
   );
 }
 
@@ -70,15 +100,24 @@ export default function WatchlistScreen() {
   } = useWatchlistPaginated(userId);
 
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef<FlatList>(null);
   useScrollToTop(listRef);
 
   const totalSaved = available.length + upcoming.length;
   const hasContent = totalSaved > 0 || watched.length > 0;
+  const animationsEnabled = useAnimationsEnabled();
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const toggleSection = (sectionKey: string) => {
+    if (animationsEnabled) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCollapsedSections((prev) => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
+  };
 
   // Build a flat list of items with section headers
   const listItems = useMemo<ListItem[]>(() => {
@@ -88,49 +127,64 @@ export default function WatchlistScreen() {
       items.push({
         type: 'section-header',
         key: 'header-available',
+        sectionKey: 'available',
         title: t('watchlist.availableToWatch'),
         iconName: 'play-circle-outline',
         iconColor: colors.green500,
       });
-      available.forEach((entry) => {
-        items.push({ type: 'available', key: `available-${entry.id}`, entry });
-      });
+      if (!collapsedSections.available) {
+        available.forEach((entry) =>
+          items.push({ type: 'available', key: `available-${entry.id}`, entry }),
+        );
+      }
     }
 
     if (upcoming.length > 0) {
       items.push({
         type: 'section-header',
         key: 'header-upcoming',
+        sectionKey: 'upcoming',
         title: t('watchlist.upcomingReleases'),
         iconName: 'calendar-outline',
         iconColor: colors.blue500,
       });
-      upcoming.forEach((entry) => {
-        items.push({ type: 'upcoming', key: `upcoming-${entry.id}`, entry });
-      });
+      if (!collapsedSections.upcoming) {
+        upcoming.forEach((entry) =>
+          items.push({ type: 'upcoming', key: `upcoming-${entry.id}`, entry }),
+        );
+      }
     }
 
     if (watched.length > 0) {
       items.push({
         type: 'section-header',
         key: 'header-watched',
+        sectionKey: 'watched',
         title: t('watchlist.watchedMovies'),
         iconName: 'eye-outline',
         iconColor: colors.gray500,
       });
-      watched.forEach((entry) => {
-        items.push({ type: 'watched', key: `watched-${entry.id}`, entry });
-      });
+      if (!collapsedSections.watched) {
+        watched.forEach((entry) =>
+          items.push({ type: 'watched', key: `watched-${entry.id}`, entry }),
+        );
+      }
     }
 
     return items;
-  }, [available, upcoming, watched, t]);
+  }, [available, upcoming, watched, t, collapsedSections]);
 
   const renderItem = ({ item }: { item: ListItem }) => {
     switch (item.type) {
       case 'section-header':
         return (
-          <SectionTitle iconName={item.iconName} iconColor={item.iconColor} title={item.title} />
+          <SectionTitle
+            iconName={item.iconName}
+            iconColor={item.iconColor}
+            title={item.title}
+            collapsed={collapsedSections[item.sectionKey]}
+            onToggle={() => toggleSection(item.sectionKey)}
+          />
         );
       case 'available':
         return <AvailableCard entry={item.entry} userId={userId} styles={styles} />;
@@ -187,15 +241,7 @@ export default function WatchlistScreen() {
     return (
       <View style={styles.screen}>
         <SafeAreaCover />
-        <View style={[styles.stickyHeader, { paddingTop: insets.top + 12 }]}>
-          <View>
-            <Text style={styles.headerTitle}>{t('watchlist.title')}</Text>
-          </View>
-          <View style={styles.bookmarkCircle}>
-            <Ionicons name="bookmark-outline" size={24} color={colors.red500} />
-          </View>
-        </View>
-        <LoadingCenter />
+        <WatchlistSkeleton />
       </View>
     );
   }
@@ -256,6 +302,7 @@ export default function WatchlistScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
         ListHeaderComponent={

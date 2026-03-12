@@ -130,10 +130,10 @@ describe('EditProfileScreen', () => {
     expect(screen.getByText('profile.emailHint')).toBeTruthy();
   });
 
-  it('shows loading indicator when profile is loading', () => {
+  it('shows skeleton when profile is loading', () => {
     mockUseProfile.mockReturnValue({ data: null, isLoading: true });
     render(<EditProfileScreen />);
-    // The loading container renders ActivityIndicator, not the form
+    expect(screen.getByTestId('edit-profile-skeleton')).toBeTruthy();
     expect(screen.queryByText('profile.editProfile')).toBeNull();
   });
 

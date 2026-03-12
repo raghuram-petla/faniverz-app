@@ -371,7 +371,7 @@ describe('FeedCard', () => {
   });
 
   // Poster viewer tests
-  it('tapping poster calls openImage on context', () => {
+  it('tapping poster calls openImage on context with source callbacks', () => {
     const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
     render(<FeedCard item={item} onPress={jest.fn()} />);
     fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
@@ -380,8 +380,24 @@ describe('FeedCard', () => {
         fullUrl: 'https://example.com/thumb.jpg',
         borderRadius: 12,
         sourceLayout: expect.objectContaining({ width: 200, height: 255 }),
+        onSourceHide: expect.any(Function),
+        onSourceShow: expect.any(Function),
       }),
     );
+  });
+
+  it('hides poster when onSourceHide is called and shows on onSourceShow', () => {
+    const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
+    const { rerender } = render(<FeedCard item={item} onPress={jest.fn()} />);
+    fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
+    const { onSourceHide, onSourceShow } = mockOpenImage.mock.calls[0][0];
+    const { act } = require('@testing-library/react-native');
+    // Hide poster
+    act(() => onSourceHide());
+    rerender(<FeedCard item={item} onPress={jest.fn()} />);
+    // Show poster
+    act(() => onSourceShow());
+    rerender(<FeedCard item={item} onPress={jest.fn()} />);
   });
 
   it('uses movie poster_url as fallback when thumbnail_url is null', () => {

@@ -23,6 +23,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { createStyles } from '@/styles/profile/edit.styles';
+import { EditProfileSkeleton } from '@/components/profile/EditProfileSkeleton';
 import { getImageUrl } from '@shared/imageUrl';
 
 const BIO_LIMIT = 150;
@@ -83,7 +84,7 @@ export default function EditProfileScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.red600} />
+        <EditProfileSkeleton />
       </View>
     );
   }

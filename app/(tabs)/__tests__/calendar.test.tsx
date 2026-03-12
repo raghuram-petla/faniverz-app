@@ -24,7 +24,7 @@ jest.mock('expo-router', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, screen } from '@testing-library/react-native';
 import CalendarScreen from '../calendar';
 import { useUpcomingMovies } from '@/features/movies/hooks/useUpcomingMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
@@ -388,19 +388,18 @@ describe('CalendarScreen', () => {
 
   // ── Infinite scroll tests ─────────────────────────────────────
 
-  it('shows loading spinner on initial load', () => {
+  it('shows skeleton on initial load', () => {
     setupDefaultMock({ isLoading: true });
 
-    const { UNSAFE_getByType } = render(<CalendarScreen />);
-    const { ActivityIndicator } = require('react-native');
-    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    render(<CalendarScreen />);
+    expect(screen.getByTestId('calendar-skeleton')).toBeTruthy();
   });
 
   it('does not show header during initial loading', () => {
     setupDefaultMock({ isLoading: true });
 
-    const { queryByText } = render(<CalendarScreen />);
-    expect(queryByText('calendar.title')).toBeNull();
+    render(<CalendarScreen />);
+    expect(screen.queryByText('calendar.title')).toBeNull();
   });
 
   it('shows footer loading indicator when fetching next page', () => {

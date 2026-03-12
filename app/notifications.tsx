@@ -99,10 +99,13 @@ export default function NotificationsScreen() {
   const unreadCount = useUnreadCount(userId);
   const { markRead, markAllRead } = useNotificationMutations();
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const handleNotificationPress = (notification: Notification) => {
     if (!notification.read) {
@@ -167,6 +170,7 @@ export default function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
         ListHeaderComponent={

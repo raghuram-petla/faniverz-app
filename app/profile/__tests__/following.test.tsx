@@ -46,8 +46,8 @@ jest.mock('@/components/ui/EmptyState', () => ({
   EmptyState: () => null,
 }));
 
-jest.mock('@/components/common/LoadingCenter', () => ({
-  LoadingCenter: () => null,
+jest.mock('@/components/profile/ProfileListSkeleton', () => ({
+  ProfileListSkeleton: () => null,
 }));
 
 jest.mock('@shared/imageUrl', () => ({

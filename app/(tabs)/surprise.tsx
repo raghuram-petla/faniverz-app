@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ import {
 } from '@/constants/surpriseHelpers';
 import { FeaturedVideoCard } from '@/components/surprise/FeaturedVideoCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { SurpriseContentSkeleton } from '@/components/surprise/SurpriseContentSkeleton';
 import { createStyles } from '@/styles/tabs/surprise.styles';
 
 type FilterOption = 'all' | SurpriseCategory;
@@ -105,10 +106,13 @@ export default function SurpriseScreen() {
   const category = filter === 'all' ? undefined : filter;
   const { data: items = [], isLoading, refetch } = useSurpriseContent(category);
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const featured = items[0] ?? null;
   const gridItems = items.slice(1);
@@ -163,6 +167,7 @@ export default function SurpriseScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
       >
@@ -172,9 +177,7 @@ export default function SurpriseScreen() {
           refreshing={refreshing}
         />
         {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.red600} />
-          </View>
+          <SurpriseContentSkeleton />
         ) : !isLoading && items.length === 0 ? (
           <EmptyState icon="sparkles-outline" title={t('surprise.noContent')} />
         ) : (

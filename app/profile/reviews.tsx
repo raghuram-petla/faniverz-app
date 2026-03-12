@@ -12,7 +12,7 @@ import { ReviewModal } from '@/components/movie/detail/ReviewModal';
 import { Review } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { ReviewsContentSkeleton } from '@/components/profile/ReviewsContentSkeleton';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/reviews.styles';
@@ -49,10 +49,13 @@ export default function MyReviewsScreen() {
   const { data: reviews, isLoading, refetch } = useUserReviews(user?.id ?? '');
   const { update, remove } = useReviewMutations();
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const [sortKey, setSortKey] = useState<SortKey>('recent');
   const [editingReview, setEditingReview] = useState<Review | null>(null);
@@ -130,6 +133,7 @@ export default function MyReviewsScreen() {
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
+      onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
     >
@@ -180,7 +184,7 @@ export default function MyReviewsScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <LoadingCenter style={styles.centered} />
+        <ReviewsContentSkeleton />
       ) : sorted.length === 0 ? (
         <EmptyState
           icon="star-outline"

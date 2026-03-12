@@ -11,6 +11,7 @@ import { ImageViewerProvider } from '@/providers/ImageViewerProvider';
 import { ThemeProvider, useTheme } from '@/theme';
 import { usePushToken } from '@/features/notifications/usePushToken';
 import { useNotificationHandler } from '@/features/notifications/useNotificationHandler';
+import { useAnimationStore } from '@/stores/useAnimationStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,19 +27,19 @@ function ThemedStack() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: theme.background },
-          animation: 'fade',
+          animation: 'none',
         }}
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="movie/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="actor/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="discover" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="search" options={{ animation: 'fade' }} />
-        <Stack.Screen name="post/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="production-house/[id]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="movie/[id]" />
+        <Stack.Screen name="actor/[id]" />
+        <Stack.Screen name="discover" />
+        <Stack.Screen name="search" />
+        <Stack.Screen name="post/[id]" />
+        <Stack.Screen name="production-house/[id]" />
+        <Stack.Screen name="notifications" />
         <Stack.Screen name="profile" />
       </Stack>
     </>
@@ -50,6 +51,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
+    useAnimationStore.getState().loadFromStorage();
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;

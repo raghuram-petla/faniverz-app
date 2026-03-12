@@ -15,6 +15,8 @@ export interface ImageViewerState {
   sourceLayout: ImageSourceLayout;
   sourceRef: React.RefObject<View | null>;
   borderRadius: number;
+  onSourceHide?: () => void;
+  onSourceShow?: () => void;
 }
 
 interface ImageViewerContextType {
@@ -58,6 +60,8 @@ export function ImageViewerProvider({ children }: ImageViewerProviderProps) {
           sourceLayout={viewerState.sourceLayout}
           sourceRef={viewerState.sourceRef}
           borderRadius={viewerState.borderRadius}
+          onSourceHide={viewerState.onSourceHide}
+          onSourceShow={viewerState.onSourceShow}
           onClose={closeImage}
         />
       ) : null}

@@ -77,11 +77,10 @@ describe('FavoriteActorsScreen', () => {
     expect(screen.getByText('profile.favoriteActors')).toBeTruthy();
   });
 
-  it('shows loading indicator', () => {
+  it('shows skeleton when loading', () => {
     mockUseFavoriteActors.mockReturnValue({ data: undefined, isLoading: true });
-    const { toJSON } = render(<FavoriteActorsScreen />);
-    // ActivityIndicator is rendered when isLoading is true
-    expect(toJSON()).toBeTruthy();
+    render(<FavoriteActorsScreen />);
+    expect(screen.getByTestId('favorite-actors-skeleton')).toBeTruthy();
   });
 
   it('shows empty state when no favorites', () => {

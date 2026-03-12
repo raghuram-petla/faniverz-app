@@ -21,18 +21,31 @@ describe('usePullToRefresh', () => {
     const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
     expect(result.current.pullDistance).toHaveProperty('value');
     expect(result.current.isRefreshing).toHaveProperty('value');
+    expect(typeof result.current.handleScrollBeginDrag).toBe('function');
     expect(typeof result.current.handlePullScroll).toBe('function');
     expect(typeof result.current.handleScrollEndDrag).toBe('function');
   });
 
-  it('handlePullScroll tracks negative contentOffset as positive pullDistance', () => {
+  it('handlePullScroll tracks negative contentOffset as positive pullDistance when dragging', () => {
     const onRefresh = jest.fn();
     const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
 
     act(() => {
+      result.current.handleScrollBeginDrag();
       result.current.handlePullScroll(makeScrollEvent(-50));
     });
     expect(result.current.pullDistance.value).toBe(50);
+  });
+
+  it('handlePullScroll ignores scroll events when not dragging (bounce-back)', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    act(() => {
+      // No handleScrollBeginDrag called — simulates bounce-back
+      result.current.handlePullScroll(makeScrollEvent(-30));
+    });
+    expect(result.current.pullDistance.value).toBe(0);
   });
 
   it('handlePullScroll clamps positive offsets to 0', () => {
@@ -40,6 +53,7 @@ describe('usePullToRefresh', () => {
     const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
 
     act(() => {
+      result.current.handleScrollBeginDrag();
       result.current.handlePullScroll(makeScrollEvent(100));
     });
     expect(result.current.pullDistance.value).toBe(0);
@@ -50,19 +64,27 @@ describe('usePullToRefresh', () => {
     const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
 
     act(() => {
+      result.current.handleScrollBeginDrag();
       result.current.handleScrollEndDrag(makeScrollEvent(-(PULL_THRESHOLD + 1)));
     });
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(result.current.isRefreshing.value).toBe(true);
   });
 
-  it('handleScrollEndDrag does NOT trigger when above threshold', () => {
+  it('handleScrollEndDrag resets pullDistance when below threshold', () => {
     const onRefresh = jest.fn();
     const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
 
     act(() => {
-      result.current.handleScrollEndDrag(makeScrollEvent(-(PULL_THRESHOLD + 1) + 10));
+      result.current.handleScrollBeginDrag();
+      result.current.handlePullScroll(makeScrollEvent(-30));
     });
+    expect(result.current.pullDistance.value).toBe(30);
+
+    act(() => {
+      result.current.handleScrollEndDrag(makeScrollEvent(-30));
+    });
+    expect(result.current.pullDistance.value).toBe(0);
     expect(onRefresh).not.toHaveBeenCalled();
   });
 
@@ -71,9 +93,29 @@ describe('usePullToRefresh', () => {
     const { result } = renderHook(() => usePullToRefresh(onRefresh, true));
 
     act(() => {
+      result.current.handleScrollBeginDrag();
       result.current.handleScrollEndDrag(makeScrollEvent(-(PULL_THRESHOLD + 1)));
     });
     expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('resets pullDistance to 0 when refreshing becomes false', () => {
+    const onRefresh = jest.fn();
+    const { result, rerender } = renderHook(
+      ({ refreshing }: { refreshing: boolean }) => usePullToRefresh(onRefresh, refreshing),
+      { initialProps: { refreshing: true } },
+    );
+
+    // Simulate pull distance accumulated during drag
+    act(() => {
+      result.current.handleScrollBeginDrag();
+      result.current.handlePullScroll(makeScrollEvent(-80));
+    });
+    expect(result.current.pullDistance.value).toBe(80);
+
+    // When refresh completes, pullDistance should reset
+    rerender({ refreshing: false });
+    expect(result.current.pullDistance.value).toBe(0);
   });
 
   it('syncs isRefreshing shared value with refreshing prop', () => {

@@ -15,22 +15,28 @@ export interface ImageViewerGesturesProps {
   onDismiss: () => void;
   /** Backdrop opacity driven by drag-to-dismiss (0–1). */
   backdropOpacity: SharedValue<number>;
+  /** Gesture scale — owned by parent (ImageViewerOverlay) so it can animate zoom-out on close. */
+  scale: SharedValue<number>;
+  /** Gesture translateX — owned by parent. */
+  translateX: SharedValue<number>;
+  /** Gesture translateY — owned by parent. */
+  translateY: SharedValue<number>;
 }
 
-const MAX_SCALE = 4;
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-const IMG_W = SCREEN_W;
-const IMG_H = SCREEN_W * 1.5; // 2:3 poster
-const Y_OVERSCROLL = 150;
+export const MAX_SCALE = 4;
+export const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+export const IMG_W = SCREEN_W;
+export const IMG_H = SCREEN_W * 1.5; // 2:3 poster
+export const Y_OVERSCROLL = 150;
 const DISMISS_THRESHOLD = 100;
 
-function clampX(x: number, s: number): number {
+export function clampX(x: number, s: number): number {
   'worklet';
   const maxX = Math.max(0, (IMG_W * s - SCREEN_W) / 2);
   return Math.min(maxX, Math.max(-maxX, x));
 }
 
-function clampY(y: number, s: number): number {
+export function clampY(y: number, s: number): number {
   'worklet';
   const maxY = Math.max(0, (IMG_H * s - SCREEN_H) / 2) + Y_OVERSCROLL;
   return Math.min(maxY, Math.max(-maxY, y));
@@ -40,11 +46,12 @@ export function ImageViewerGestures({
   children,
   onDismiss,
   backdropOpacity,
+  scale,
+  translateX,
+  translateY,
 }: ImageViewerGesturesProps) {
-  const scale = useSharedValue(1);
+  // Saved values stay internal — synced from current values at gesture start
   const savedScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
 
@@ -86,6 +93,8 @@ export function ImageViewerGestures({
   const pan = Gesture.Pan()
     .minPointers(1)
     .onStart(() => {
+      // Sync saved values from current — handles external reset (zoom-out on close)
+      savedScale.value = scale.value;
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
     })
@@ -132,12 +141,21 @@ export function ImageViewerGestures({
 
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
-    .onEnd(() => {
+    .onEnd((e) => {
       if (scale.value > 1) {
         resetTransforms();
       } else {
+        // Zoom into the tap position: translate so the tapped point stays in place
+        const focalX = e.x - SCREEN_W / 2;
+        const focalY = e.y - SCREEN_H / 2;
+        const tx = clampX(focalX * (1 - MAX_SCALE), MAX_SCALE);
+        const ty = clampY(focalY * (1 - MAX_SCALE), MAX_SCALE);
         scale.value = withTiming(MAX_SCALE);
+        translateX.value = withTiming(tx);
+        translateY.value = withTiming(ty);
         savedScale.value = MAX_SCALE;
+        savedTranslateX.value = tx;
+        savedTranslateY.value = ty;
       }
     });
 

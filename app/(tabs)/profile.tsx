@@ -20,6 +20,7 @@ import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { formatMemberSince } from '@/utils/formatDate';
 import { useEnrichedFollows } from '@/features/feed';
 import { FollowingSection } from '@/components/profile/FollowingSection';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import { createStyles } from '@/styles/tabs/profile.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import type { FeedEntityType } from '@shared/types';
@@ -67,10 +68,13 @@ export default function ProfileScreen() {
   const { data: enrichedFollows = [] } = useEnrichedFollows();
   const unreadCount = useUnreadCount(userId);
   const { refreshing, onRefresh } = useRefresh(refetchProfile, refetchWatchlist, refetchReviews);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
@@ -151,6 +155,7 @@ export default function ProfileScreen() {
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16 }]}
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
+      onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
     >
@@ -182,19 +187,19 @@ export default function ProfileScreen() {
           {/* Stats row */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{watchlistCount}</Text>
+              <AnimatedNumber style={styles.statValue} value={watchlistCount} />
               <Text style={styles.statLabel}>{t('profile.watchlistStat')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{reviewsCount}</Text>
+              <AnimatedNumber style={styles.statValue} value={reviewsCount} />
               <Text style={styles.statLabel}>{t('profile.reviewsStat')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={14} color={colors.yellow400} />
-                <Text style={styles.statValue}>{avgRating.toFixed(1)}</Text>
+                <AnimatedNumber style={styles.statValue} value={avgRating} decimals={1} />
               </View>
               <Text style={styles.statLabel}>{t('profile.avgRating')}</Text>
             </View>

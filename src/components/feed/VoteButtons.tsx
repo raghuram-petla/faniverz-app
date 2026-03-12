@@ -1,6 +1,15 @@
+import { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { useTheme } from '@/theme';
+import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
 export interface VoteButtonsProps {
   upvoteCount: number;
@@ -8,6 +17,14 @@ export interface VoteButtonsProps {
   userVote: 'up' | 'down' | null;
   onUpvote: () => void;
   onDownvote: () => void;
+}
+
+function bounceScale(sv: SharedValue<number>) {
+  sv.value = withSequence(
+    withTiming(0.7, { duration: 80 }),
+    withTiming(1.15, { duration: 120 }),
+    withTiming(1.0, { duration: 80 }),
+  );
 }
 
 export function VoteButtons({
@@ -18,6 +35,27 @@ export function VoteButtons({
   onDownvote,
 }: VoteButtonsProps) {
   const { theme, colors } = useTheme();
+  const upScale = useSharedValue(1);
+  const downScale = useSharedValue(1);
+  const prevVote = useRef(userVote);
+  const animationsEnabled = useAnimationsEnabled();
+
+  useEffect(() => {
+    if (userVote !== prevVote.current) {
+      if (animationsEnabled) {
+        if (userVote === 'up') bounceScale(upScale);
+        if (userVote === 'down') bounceScale(downScale);
+      }
+      prevVote.current = userVote;
+    }
+  }, [userVote, upScale, downScale, animationsEnabled]);
+
+  const upIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: upScale.value }],
+  }));
+  const downIconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: downScale.value }],
+  }));
 
   return (
     <View style={styles.container}>
@@ -28,11 +66,13 @@ export function VoteButtons({
         accessibilityRole="button"
         accessibilityLabel={`Upvote, ${upvoteCount} upvotes`}
       >
-        <Ionicons
-          name={userVote === 'up' ? 'arrow-up' : 'arrow-up-outline'}
-          size={16}
-          color={userVote === 'up' ? colors.green500 : theme.textSecondary}
-        />
+        <Animated.View style={upIconStyle}>
+          <Ionicons
+            name={userVote === 'up' ? 'arrow-up' : 'arrow-up-outline'}
+            size={16}
+            color={userVote === 'up' ? colors.green500 : theme.textSecondary}
+          />
+        </Animated.View>
         <Text
           style={[
             styles.voteCount,
@@ -50,11 +90,13 @@ export function VoteButtons({
         accessibilityRole="button"
         accessibilityLabel={`Downvote, ${downvoteCount} downvotes`}
       >
-        <Ionicons
-          name={userVote === 'down' ? 'arrow-down' : 'arrow-down-outline'}
-          size={16}
-          color={userVote === 'down' ? colors.red500 : theme.textSecondary}
-        />
+        <Animated.View style={downIconStyle}>
+          <Ionicons
+            name={userVote === 'down' ? 'arrow-down' : 'arrow-down-outline'}
+            size={16}
+            color={userVote === 'down' ? colors.red500 : theme.textSecondary}
+          />
+        </Animated.View>
         <Text
           style={[
             styles.voteCount,

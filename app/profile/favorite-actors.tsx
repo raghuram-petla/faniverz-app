@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
-import { LoadingCenter } from '@/components/common/LoadingCenter';
+import { ProfileGridSkeleton } from '@/components/profile/ProfileGridSkeleton';
 import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { getImageUrl } from '@shared/imageUrl';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
@@ -39,10 +39,13 @@ export default function FavoriteActorsScreen() {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { refreshing, onRefresh } = useRefresh(refetch);
-  const { pullDistance, isRefreshing, handlePullScroll, handleScrollEndDrag } = usePullToRefresh(
-    onRefresh,
-    refreshing,
-  );
+  const {
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+  } = usePullToRefresh(onRefresh, refreshing);
 
   const actorList = (favorites ?? []) as FavoriteActorWithActor[];
   const count = actorList.length;
@@ -64,6 +67,7 @@ export default function FavoriteActorsScreen() {
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
+      onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
     >
@@ -95,7 +99,7 @@ export default function FavoriteActorsScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <LoadingCenter style={styles.centered} />
+        <ProfileGridSkeleton testID="favorite-actors-skeleton" />
       ) : actorList.length === 0 ? (
         <EmptyState
           icon="heart-outline"

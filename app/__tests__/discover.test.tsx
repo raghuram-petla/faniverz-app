@@ -18,7 +18,7 @@ jest.mock('@/hooks/useMovieAction', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, screen } from '@testing-library/react-native';
 import { Movie } from '@/types';
 import { useFilterStore } from '@/stores/useFilterStore';
 
@@ -413,12 +413,11 @@ describe('DiscoverScreen', () => {
 
   // ── Infinite scroll tests ─────────────────────────────────────
 
-  it('shows loading spinner on initial load', () => {
+  it('shows skeleton on initial load', () => {
     setupDefaultMock({ isLoading: true });
 
-    const { UNSAFE_getByType } = render(<DiscoverScreen />);
-    const { ActivityIndicator } = require('react-native');
-    expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+    render(<DiscoverScreen />);
+    expect(screen.getByTestId('discover-content-skeleton')).toBeTruthy();
   });
 
   it('renders movies from multiple pages', () => {

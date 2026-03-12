@@ -122,11 +122,12 @@ jest.mock('react-native-reanimated', () => {
     FadeOut: { duration: jest.fn() },
     SlideInRight: { duration: jest.fn() },
     SlideOutLeft: { duration: jest.fn() },
-    Layout: { duration: jest.fn() },
+    Layout: { duration: jest.fn(), springify: jest.fn(() => ({})) },
     Easing: {
       bezier: jest.fn(() => (t) => t),
       bezierFn: jest.fn(() => (t) => t),
       inOut: jest.fn((fn) => fn),
+      out: jest.fn((fn) => fn),
       ease: (t) => t,
     },
     runOnJS: jest.fn((fn) => fn),
@@ -162,6 +163,11 @@ jest.mock('expo-notifications', () => ({
 // Mock expo-device
 jest.mock('expo-device', () => ({
   isDevice: true,
+}));
+
+// Mock useAnimationsEnabled — animations ON by default in tests
+jest.mock('@/hooks/useAnimationsEnabled', () => ({
+  useAnimationsEnabled: () => true,
 }));
 
 // Mock theme context — always dark in tests

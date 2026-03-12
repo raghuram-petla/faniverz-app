@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
   const { openImage } = useImageViewer();
 
   const posterRefs = useRef<Map<string, React.RefObject<View | null>>>(new Map());
+  const [hiddenId, setHiddenId] = useState<string | null>(null);
 
   const getRef = useCallback((id: string) => {
     if (!posterRefs.current.has(id)) {
@@ -38,6 +39,8 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
           sourceLayout: { x, y, width, height },
           sourceRef: ref,
           borderRadius: 8,
+          onSourceHide: () => setHiddenId(poster.id),
+          onSourceShow: () => setHiddenId(null),
         });
       });
     },
@@ -61,7 +64,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
             <TouchableOpacity
               key={poster.id}
               ref={ref as React.RefObject<View>}
-              style={styles.photoCard}
+              style={[styles.photoCard, hiddenId === poster.id && { opacity: 0 }]}
               onPress={() => handlePosterPress(poster, ref)}
               activeOpacity={0.8}
               accessibilityLabel={`View ${poster.title}`}

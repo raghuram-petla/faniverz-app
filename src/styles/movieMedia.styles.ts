@@ -58,19 +58,8 @@ export const createStyles = (t: SemanticTheme) =>
     stickyNavRight: { width: 88 },
     filterPillsContainer: { paddingHorizontal: 16, paddingBottom: 4 },
 
-    // Tab bar
-    tabBar: {
-      flexDirection: 'row',
-      marginHorizontal: 16,
-      backgroundColor: t.surfaceElevated,
-      borderRadius: 12,
-      padding: 4,
-      marginBottom: 12,
-    },
-    tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-    tabActive: { backgroundColor: colors.red600 },
-    tabText: { fontSize: 14, fontWeight: '600', color: t.textSecondary },
-    tabTextActive: { color: colors.white },
+    // Tab bar wrapper
+    tabBarWrap: { marginBottom: 12 },
 
     // Videos tab
     videosTab: { gap: 20 },
