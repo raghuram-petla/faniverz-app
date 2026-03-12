@@ -12,7 +12,7 @@ export default function FollowsPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this follow? This cannot be undone.')) return;
-    deleteFollow.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
+    deleteFollow.mutate(id);
   };
 
   return (

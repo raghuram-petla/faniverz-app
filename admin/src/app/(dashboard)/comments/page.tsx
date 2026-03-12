@@ -22,7 +22,7 @@ export default function CommentsPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this comment? This cannot be undone.')) return;
-    deleteComment.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
+    deleteComment.mutate(id);
   };
 
   const startEdit = (id: string, body: string) => {

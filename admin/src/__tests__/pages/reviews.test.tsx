@@ -413,12 +413,7 @@ describe('ReviewsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete review');
       fireEvent.click(deleteButtons[0]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'rev-1',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
+      expect(mockMutate).toHaveBeenCalledWith('rev-1');
     });
 
     it('calls deleteReview.mutate with correct id for second review', () => {
@@ -428,12 +423,7 @@ describe('ReviewsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete review');
       fireEvent.click(deleteButtons[1]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'rev-2',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
+      expect(mockMutate).toHaveBeenCalledWith('rev-2');
     });
 
     it('disables delete buttons when mutation is pending', () => {
@@ -447,47 +437,6 @@ describe('ReviewsPage', () => {
       deleteButtons.forEach((btn) => {
         expect(btn).toBeDisabled();
       });
-    });
-  });
-
-  describe('delete error handling', () => {
-    beforeEach(() => {
-      mockUseAdminReviews.mockReturnValue({
-        data: mockReviews,
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminReviews>);
-    });
-
-    it('calls alert with error message when delete fails', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-      render(<ReviewsPage />);
-      const deleteButtons = screen.getAllByTitle('Delete review');
-      fireEvent.click(deleteButtons[0]);
-
-      const mutateCall = mockMutate.mock.calls[0];
-      const options = mutateCall[1];
-      const onError = options.onError;
-
-      onError(new Error('Permission denied'));
-
-      expect(window.alert).toHaveBeenCalledWith('Error: Permission denied');
-    });
-
-    it('calls alert with correct message for different errors', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-      render(<ReviewsPage />);
-      const deleteButtons = screen.getAllByTitle('Delete review');
-      fireEvent.click(deleteButtons[0]);
-
-      const mutateCall = mockMutate.mock.calls[0];
-      const onError = mutateCall[1].onError;
-
-      onError(new Error('Network error'));
-
-      expect(window.alert).toHaveBeenCalledWith('Error: Network error');
     });
   });
 });

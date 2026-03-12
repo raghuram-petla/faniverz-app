@@ -120,6 +120,7 @@ export interface DashboardStats {
   totalWatchlistEntries: number;
   totalFollows: number;
   totalComments: number;
+  totalFavorites: number;
 }
 
 export interface Review {

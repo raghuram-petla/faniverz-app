@@ -392,12 +392,7 @@ describe('CommentsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete comment');
       fireEvent.click(deleteButtons[0]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'com-1',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
+      expect(mockMutate).toHaveBeenCalledWith('com-1');
     });
 
     it('does not call mutate when confirm returns false', () => {
@@ -419,37 +414,7 @@ describe('CommentsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete comment');
       fireEvent.click(deleteButtons[1]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'com-2',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
-    });
-  });
-
-  describe('delete error handling', () => {
-    beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
-    });
-
-    it('calls alert with error message on delete failure', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-
-      renderWithProviders(<CommentsPage />);
-
-      const deleteButtons = screen.getAllByTitle('Delete comment');
-      fireEvent.click(deleteButtons[0]);
-
-      const onError = mockMutate.mock.calls[0][1].onError;
-      onError(new Error('Network failure'));
-
-      expect(alertSpy).toHaveBeenCalledWith('Error: Network failure');
+      expect(mockMutate).toHaveBeenCalledWith('com-2');
     });
   });
 

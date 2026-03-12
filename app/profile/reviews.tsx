@@ -80,7 +80,7 @@ export default function MyReviewsScreen() {
   const totalReviews = reviews?.length ?? 0;
   const avgRating =
     totalReviews > 0
-      ? (reviews!.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
+      ? ((reviews?.reduce((sum, r) => sum + r.rating, 0) ?? 0) / totalReviews).toFixed(1)
       : '—';
   const totalHelpful = reviews?.reduce((sum, r) => sum + r.helpful_count, 0) ?? 0;
 

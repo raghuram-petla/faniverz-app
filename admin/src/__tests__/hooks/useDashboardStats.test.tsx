@@ -36,6 +36,7 @@ function setupGlobalAdminMock() {
     watchlists: 200,
     entity_follows: 75,
     feed_comments: 18,
+    favorite_actors: 42,
   };
   fromSpy.mockImplementation((table: string) =>
     chainable({ count: counts[table] ?? 0, data: null, error: null }),
@@ -104,6 +105,7 @@ describe('useDashboardStats', () => {
         totalWatchlistEntries: 200,
         totalFollows: 75,
         totalComments: 18,
+        totalFavorites: 42,
       });
     });
 
@@ -123,6 +125,7 @@ describe('useDashboardStats', () => {
         'totalWatchlistEntries',
         'totalFollows',
         'totalComments',
+        'totalFavorites',
       ]);
     });
   });
@@ -144,6 +147,7 @@ describe('useDashboardStats', () => {
         totalWatchlistEntries: 12,
         totalFollows: 3,
         totalComments: 7,
+        totalFavorites: 0,
       });
     });
 
@@ -174,6 +178,7 @@ describe('useDashboardStats', () => {
         totalWatchlistEntries: 0,
         totalFollows: 0,
         totalComments: 0,
+        totalFavorites: 0,
       });
     });
 

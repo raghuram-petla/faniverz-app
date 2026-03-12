@@ -14,10 +14,7 @@ export default function OttReleasesPage() {
 
   const handleDelete = (movieId: string, platformId: string) => {
     if (!confirm('Remove this OTT release?')) return;
-    deleteRelease.mutate(
-      { movieId, platformId },
-      { onError: (err: Error) => alert(`Error: ${err.message}`) },
-    );
+    deleteRelease.mutate({ movieId, platformId });
   };
 
   return (

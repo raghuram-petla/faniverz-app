@@ -126,6 +126,13 @@ export default function DashboardPage() {
             color: 'text-pink-500',
             bg: 'bg-pink-600/20',
           },
+          {
+            label: 'Favorites',
+            value: stats?.totalFavorites,
+            icon: Star,
+            color: 'text-amber-500',
+            bg: 'bg-amber-600/20',
+          },
         ].map((card) => {
           const Icon = card.icon;
           return (

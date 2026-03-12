@@ -32,6 +32,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
             totalWatchlistEntries: 0,
             totalFollows: 0,
             totalComments: 0,
+            totalFavorites: 0,
           };
         }
 
@@ -80,10 +81,11 @@ export function useDashboardStats(productionHouseIds?: string[]) {
           totalWatchlistEntries: watchlist.count ?? 0,
           totalFollows: follows.count ?? 0,
           totalComments: comments.count ?? 0,
+          totalFavorites: 0, // PH admins: favorites are not scoped to movies
         };
       }
 
-      const [movies, actors, users, reviews, feedItems, watchlist, follows, comments] =
+      const [movies, actors, users, reviews, feedItems, watchlist, follows, comments, favorites] =
         await Promise.all([
           supabase.from('movies').select('id', { count: 'estimated', head: true }),
           supabase.from('actors').select('id', { count: 'estimated', head: true }),
@@ -93,6 +95,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
           supabase.from('watchlists').select('id', { count: 'estimated', head: true }),
           supabase.from('entity_follows').select('id', { count: 'estimated', head: true }),
           supabase.from('feed_comments').select('id', { count: 'estimated', head: true }),
+          supabase.from('favorite_actors').select('id', { count: 'estimated', head: true }),
         ]);
 
       return {
@@ -104,6 +107,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         totalWatchlistEntries: watchlist.count ?? 0,
         totalFollows: follows.count ?? 0,
         totalComments: comments.count ?? 0,
+        totalFavorites: favorites.count ?? 0,
       };
     },
     staleTime: 5 * 60_000,

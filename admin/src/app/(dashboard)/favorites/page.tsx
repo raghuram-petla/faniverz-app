@@ -18,7 +18,7 @@ export default function FavoritesPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Remove this favorite? This cannot be undone.')) return;
-    deleteFavorite.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
+    deleteFavorite.mutate(id);
   };
 
   return (

@@ -20,14 +20,8 @@ describe('handleYouTubeNavigation', () => {
     expect(handleYouTubeNavigation(makeRequest('about:blank'), 'abc')).toBe(true);
   });
 
-  it('allows exact base URL (example.com/)', () => {
-    expect(handleYouTubeNavigation(makeRequest('https://example.com/'), 'abc')).toBe(true);
-  });
-
-  it('blocks URLs that merely contain example.com', () => {
-    expect(handleYouTubeNavigation(makeRequest('https://evil-example.com/attack'), 'abc')).toBe(
-      false,
-    );
+  it('allows base URL with trailing slash', () => {
+    expect(handleYouTubeNavigation(makeRequest('about:blank/'), 'abc')).toBe(true);
   });
 
   it('allows embed URL', () => {

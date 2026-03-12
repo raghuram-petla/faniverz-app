@@ -394,12 +394,7 @@ describe('WatchlistPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       fireEvent.click(deleteButtons[0]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'wl-1',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
+      expect(mockMutate).toHaveBeenCalledWith('wl-1');
     });
 
     it('does not call mutate when confirm returns false', () => {
@@ -421,37 +416,7 @@ describe('WatchlistPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       fireEvent.click(deleteButtons[1]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'wl-2',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
-    });
-  });
-
-  describe('delete error handling', () => {
-    beforeEach(() => {
-      mockUseAdminWatchlist.mockReturnValue({
-        data: mockEntries,
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminWatchlist>);
-    });
-
-    it('calls alert with error message on delete failure', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-
-      renderWithProviders(<WatchlistPage />);
-
-      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
-      fireEvent.click(deleteButtons[0]);
-
-      const onError = mockMutate.mock.calls[0][1].onError;
-      onError(new Error('Network failure'));
-
-      expect(alertSpy).toHaveBeenCalledWith('Error: Network failure');
+      expect(mockMutate).toHaveBeenCalledWith('wl-2');
     });
   });
 

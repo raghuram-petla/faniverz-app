@@ -88,7 +88,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
       ) : movie.trailer_url ? (
         <TouchableOpacity
           style={styles.trailerButton}
-          onPress={() => Linking.openURL(movie.trailer_url!)}
+          onPress={() => Linking.openURL(movie.trailer_url ?? '')}
         >
           <Ionicons name="play" size={20} color={colors.red400} />
           <Text style={styles.trailerButtonText}>{t('movie.watchTrailer')}</Text>

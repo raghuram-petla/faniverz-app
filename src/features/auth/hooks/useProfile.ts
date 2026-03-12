@@ -15,7 +15,7 @@ export function useProfile() {
 
   return useQuery({
     queryKey: ['profile', user?.id],
-    queryFn: () => fetchProfile(user!.id),
+    queryFn: () => fetchProfile(user?.id ?? ''),
     enabled: !!user?.id,
     staleTime: 30 * 60 * 1000, // 30 minutes
   });

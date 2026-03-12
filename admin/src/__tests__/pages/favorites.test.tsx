@@ -375,12 +375,7 @@ describe('FavoritesPage', () => {
       const deleteButtons = screen.getAllByTitle('Remove favorite');
       fireEvent.click(deleteButtons[0]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'fav-1',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
+      expect(mockMutate).toHaveBeenCalledWith('fav-1');
     });
 
     it('does not call mutate when confirm returns false', () => {
@@ -402,37 +397,7 @@ describe('FavoritesPage', () => {
       const deleteButtons = screen.getAllByTitle('Remove favorite');
       fireEvent.click(deleteButtons[1]);
 
-      expect(mockMutate).toHaveBeenCalledWith(
-        'fav-2',
-        expect.objectContaining({
-          onError: expect.any(Function),
-        }),
-      );
-    });
-  });
-
-  describe('delete error handling', () => {
-    beforeEach(() => {
-      mockUseAdminFavorites.mockReturnValue({
-        data: mockFavorites,
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminFavorites>);
-    });
-
-    it('calls alert with error message on delete failure', () => {
-      vi.spyOn(window, 'confirm').mockReturnValue(true);
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-
-      renderWithProviders(<FavoritesPage />);
-
-      const deleteButtons = screen.getAllByTitle('Remove favorite');
-      fireEvent.click(deleteButtons[0]);
-
-      const onError = mockMutate.mock.calls[0][1].onError;
-      onError(new Error('Network failure'));
-
-      expect(alertSpy).toHaveBeenCalledWith('Error: Network failure');
+      expect(mockMutate).toHaveBeenCalledWith('fav-2');
     });
   });
 

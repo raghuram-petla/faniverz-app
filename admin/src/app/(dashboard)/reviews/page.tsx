@@ -37,7 +37,7 @@ export default function ReviewsPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this review? This cannot be undone.')) return;
-    deleteReview.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
+    deleteReview.mutate(id);
   };
 
   const startEdit = (review: Review) => {

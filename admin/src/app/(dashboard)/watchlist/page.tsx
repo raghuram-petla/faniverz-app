@@ -18,7 +18,7 @@ export default function WatchlistPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this watchlist entry? This cannot be undone.')) return;
-    deleteEntry.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
+    deleteEntry.mutate(id);
   };
 
   return (

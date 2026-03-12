@@ -98,7 +98,7 @@ export default function CalendarScreen() {
         new Set(
           allMovies
             .filter((m) => m.release_date)
-            .map((m) => new Date(m.release_date!).getFullYear()),
+            .map((m) => new Date(m.release_date ?? '').getFullYear()),
         ),
       ).sort((a, b) => b - a),
     [allMovies],
