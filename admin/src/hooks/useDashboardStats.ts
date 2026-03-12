@@ -31,10 +31,18 @@ export function useDashboardStats(productionHouseIds?: string[]) {
             totalFeedItems: 0,
             totalWatchlistEntries: 0,
             totalFollows: 0,
+            totalComments: 0,
           };
         }
 
-        const [castData, reviews, feedItems, watchlist, follows] = await Promise.all([
+        // Get feed item IDs for these movies to count comments
+        const { data: feedItemData } = await supabase
+          .from('news_feed')
+          .select('id')
+          .in('movie_id', movieIds);
+        const feedItemIds = (feedItemData ?? []).map((f) => f.id);
+
+        const [castData, reviews, feedItems, watchlist, follows, comments] = await Promise.all([
           supabase.from('movie_cast').select('actor_id').in('movie_id', movieIds),
           supabase
             .from('reviews')
@@ -53,6 +61,12 @@ export function useDashboardStats(productionHouseIds?: string[]) {
             .select('id', { count: 'estimated', head: true })
             .eq('entity_type', 'movie')
             .in('entity_id', movieIds),
+          feedItemIds.length > 0
+            ? supabase
+                .from('feed_comments')
+                .select('id', { count: 'estimated', head: true })
+                .in('feed_item_id', feedItemIds)
+            : Promise.resolve({ count: 0 }),
         ]);
 
         const uniqueActorIds = new Set((castData.data ?? []).map((r) => r.actor_id));
@@ -65,18 +79,21 @@ export function useDashboardStats(productionHouseIds?: string[]) {
           totalFeedItems: feedItems.count ?? 0,
           totalWatchlistEntries: watchlist.count ?? 0,
           totalFollows: follows.count ?? 0,
+          totalComments: comments.count ?? 0,
         };
       }
 
-      const [movies, actors, users, reviews, feedItems, watchlist, follows] = await Promise.all([
-        supabase.from('movies').select('id', { count: 'estimated', head: true }),
-        supabase.from('actors').select('id', { count: 'estimated', head: true }),
-        supabase.from('profiles').select('id', { count: 'estimated', head: true }),
-        supabase.from('reviews').select('id', { count: 'estimated', head: true }),
-        supabase.from('news_feed').select('id', { count: 'estimated', head: true }),
-        supabase.from('watchlists').select('id', { count: 'estimated', head: true }),
-        supabase.from('entity_follows').select('id', { count: 'estimated', head: true }),
-      ]);
+      const [movies, actors, users, reviews, feedItems, watchlist, follows, comments] =
+        await Promise.all([
+          supabase.from('movies').select('id', { count: 'estimated', head: true }),
+          supabase.from('actors').select('id', { count: 'estimated', head: true }),
+          supabase.from('profiles').select('id', { count: 'estimated', head: true }),
+          supabase.from('reviews').select('id', { count: 'estimated', head: true }),
+          supabase.from('news_feed').select('id', { count: 'estimated', head: true }),
+          supabase.from('watchlists').select('id', { count: 'estimated', head: true }),
+          supabase.from('entity_follows').select('id', { count: 'estimated', head: true }),
+          supabase.from('feed_comments').select('id', { count: 'estimated', head: true }),
+        ]);
 
       return {
         totalMovies: movies.count ?? 0,
@@ -86,6 +103,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         totalFeedItems: feedItems.count ?? 0,
         totalWatchlistEntries: watchlist.count ?? 0,
         totalFollows: follows.count ?? 0,
+        totalComments: comments.count ?? 0,
       };
     },
     staleTime: 5 * 60_000,

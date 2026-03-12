@@ -1,15 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import CommentsPage from '@/app/(dashboard)/comments/page';
+import FavoritesPage from '@/app/(dashboard)/favorites/page';
 
 const mockMutate = vi.fn();
 const mockSetSearch = vi.fn();
 
-vi.mock('@/hooks/useAdminComments', () => ({
-  useAdminComments: vi.fn(),
-  useDeleteComment: vi.fn(),
-  useUpdateComment: vi.fn(),
+vi.mock('@/hooks/useAdminFavorites', () => ({
+  useAdminFavorites: vi.fn(),
+  useDeleteFavorite: vi.fn(),
 }));
 
 vi.mock('@/hooks/useDebouncedSearch', () => ({
@@ -35,31 +34,28 @@ vi.mock('@/components/common/SearchInput', () => ({
   ),
 }));
 
-import { useAdminComments, useDeleteComment, useUpdateComment } from '@/hooks/useAdminComments';
+import { useAdminFavorites, useDeleteFavorite } from '@/hooks/useAdminFavorites';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
-const mockUseAdminComments = vi.mocked(useAdminComments);
-const mockUseDeleteComment = vi.mocked(useDeleteComment);
-const mockUseUpdateComment = vi.mocked(useUpdateComment);
+const mockUseAdminFavorites = vi.mocked(useAdminFavorites);
+const mockUseDeleteFavorite = vi.mocked(useDeleteFavorite);
 const mockUseDebouncedSearch = vi.mocked(useDebouncedSearch);
 
-const mockComments = [
+const mockFavorites = [
   {
-    id: 'com-1',
-    feed_item_id: 'feed-1',
+    id: 'fav-1',
     user_id: 'usr-1',
-    body: 'Great post!',
+    actor_id: 'act-1',
     created_at: '2024-01-01T00:00:00Z',
-    feed_item: { id: 'feed-1', title: 'Breaking News' },
+    actor: { id: 'act-1', name: 'Mahesh Babu', photo_url: 'https://example.com/mb.jpg' },
     profile: { id: 'usr-1', display_name: 'Test User', email: 'test@example.com' },
   },
   {
-    id: 'com-2',
-    feed_item_id: 'feed-2',
+    id: 'fav-2',
     user_id: 'usr-2',
-    body: 'Nice analysis!',
+    actor_id: 'act-2',
     created_at: '2024-01-02T00:00:00Z',
-    feed_item: { id: 'feed-2', title: 'Movie Review' },
+    actor: { id: 'act-2', name: 'Prabhas', photo_url: null },
     profile: { id: 'usr-2', display_name: null, email: 'another@example.com' },
   },
 ];
@@ -83,50 +79,45 @@ beforeEach(() => {
     debouncedSearch: '',
   });
 
-  mockUseDeleteComment.mockReturnValue({
+  mockUseDeleteFavorite.mockReturnValue({
     mutate: mockMutate,
     isPending: false,
-  } as unknown as ReturnType<typeof useDeleteComment>);
-
-  mockUseUpdateComment.mockReturnValue({
-    mutate: vi.fn(),
-    isPending: false,
-  } as unknown as ReturnType<typeof useUpdateComment>);
+  } as unknown as ReturnType<typeof useDeleteFavorite>);
 });
 
-describe('CommentsPage', () => {
+describe('FavoritesPage', () => {
   describe('search UI', () => {
     beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminFavorites.mockReturnValue({
+        data: mockFavorites,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
     });
 
     it('renders search input with correct placeholder', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
       expect(
-        screen.getByPlaceholderText('Search by comment text or commenter name...'),
+        screen.getByPlaceholderText('Search by actor name or user name...'),
       ).toBeInTheDocument();
     });
 
     it('calls setSearch when typing in search input', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
       const input = screen.getByTestId('search-input');
-      fireEvent.change(input, { target: { value: 'hello' } });
-      expect(mockSetSearch).toHaveBeenCalledWith('hello');
+      fireEvent.change(input, { target: { value: 'Mahesh' } });
+      expect(mockSetSearch).toHaveBeenCalledWith('Mahesh');
     });
 
-    it('passes debouncedSearch to useAdminComments', () => {
+    it('passes debouncedSearch to useAdminFavorites', () => {
       mockUseDebouncedSearch.mockReturnValue({
         search: 'test',
         setSearch: mockSetSearch,
         debouncedSearch: 'test',
       });
 
-      renderWithProviders(<CommentsPage />);
-      expect(mockUseAdminComments).toHaveBeenCalledWith('test');
+      renderWithProviders(<FavoritesPage />);
+      expect(mockUseAdminFavorites).toHaveBeenCalledWith('test');
     });
 
     it('shows "Type at least 2 characters" hint when search has 1 character', () => {
@@ -136,65 +127,65 @@ describe('CommentsPage', () => {
         debouncedSearch: '',
       });
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
       expect(screen.getByText('Type at least 2 characters to search')).toBeInTheDocument();
     });
 
     it('does not show hint when search is empty', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
       expect(screen.queryByText('Type at least 2 characters to search')).not.toBeInTheDocument();
     });
 
-    it('shows result count summary when comments are loaded', () => {
-      renderWithProviders(<CommentsPage />);
-      expect(screen.getByText('Showing 2 comments')).toBeInTheDocument();
+    it('shows result count summary when favorites are loaded', () => {
+      renderWithProviders(<FavoritesPage />);
+      expect(screen.getByText('Showing 2 favorites')).toBeInTheDocument();
     });
 
     it('shows search term in result summary when searching', () => {
       mockUseDebouncedSearch.mockReturnValue({
-        search: 'Great',
+        search: 'Mahesh',
         setSearch: mockSetSearch,
-        debouncedSearch: 'Great',
+        debouncedSearch: 'Mahesh',
       });
 
-      renderWithProviders(<CommentsPage />);
-      expect(screen.getByText(/matching "Great"/)).toBeInTheDocument();
+      renderWithProviders(<FavoritesPage />);
+      expect(screen.getByText(/matching "Mahesh"/)).toBeInTheDocument();
     });
   });
 
   describe('header', () => {
-    it('renders "Comments" heading', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+    it('renders "Favorite Actors" heading', () => {
+      mockUseAdminFavorites.mockReturnValue({
+        data: mockFavorites,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      expect(screen.getByText('Comments')).toBeInTheDocument();
+      expect(screen.getByText('Favorite Actors')).toBeInTheDocument();
     });
 
-    it('shows comment count when data is loaded', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+    it('shows favorite count when data is loaded', () => {
+      mockUseAdminFavorites.mockReturnValue({
+        data: mockFavorites,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       expect(screen.getByText('(2)')).toBeInTheDocument();
     });
 
     it('does not show count when data is undefined', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminFavorites.mockReturnValue({
         data: undefined,
         isLoading: true,
         isFetching: true,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       expect(screen.queryByText(/\(\d+\)/)).not.toBeInTheDocument();
     });
@@ -202,198 +193,190 @@ describe('CommentsPage', () => {
 
   describe('loading state', () => {
     it('shows loading spinner when isLoading is true', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminFavorites.mockReturnValue({
         data: undefined,
         isLoading: true,
         isFetching: true,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      const { container } = renderWithProviders(<CommentsPage />);
+      const { container } = renderWithProviders(<FavoritesPage />);
 
       const spinner = container.querySelector('.animate-spin');
       expect(spinner).toBeInTheDocument();
     });
 
     it('does not show table when loading', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminFavorites.mockReturnValue({
         data: undefined,
         isLoading: true,
         isFetching: true,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
   });
 
   describe('empty state', () => {
-    it('shows "No comments found." when comments array is empty', () => {
-      mockUseAdminComments.mockReturnValue({
+    it('shows "No favorite actors found." when favorites array is empty', () => {
+      mockUseAdminFavorites.mockReturnValue({
         data: [],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      expect(screen.getByText('No comments found.')).toBeInTheDocument();
+      expect(screen.getByText('No favorite actors found.')).toBeInTheDocument();
     });
 
-    it('does not show table when no comments', () => {
-      mockUseAdminComments.mockReturnValue({
+    it('does not show table when no favorites', () => {
+      mockUseAdminFavorites.mockReturnValue({
         data: [],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
   });
 
-  describe('data rendering', () => {
-    beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+  describe('error state', () => {
+    it('shows error message when isError is true', () => {
+      mockUseAdminFavorites.mockReturnValue({
+        data: undefined,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+        isError: true,
+        error: new Error('Network failure'),
+      } as unknown as ReturnType<typeof useAdminFavorites>);
+
+      renderWithProviders(<FavoritesPage />);
+
+      expect(screen.getByText(/Error loading favorites/)).toBeInTheDocument();
+      expect(screen.getByText(/Network failure/)).toBeInTheDocument();
+    });
+  });
+
+  describe('data rendering', () => {
+    beforeEach(() => {
+      mockUseAdminFavorites.mockReturnValue({
+        data: mockFavorites,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminFavorites>);
     });
 
     it('renders table with correct column headers', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      expect(screen.getByText('Post')).toBeInTheDocument();
+      expect(screen.getByText('Actor')).toBeInTheDocument();
       expect(screen.getByText('User')).toBeInTheDocument();
-      expect(screen.getByText('Comment')).toBeInTheDocument();
-      expect(screen.getByText('Date')).toBeInTheDocument();
+      expect(screen.getByText('Added')).toBeInTheDocument();
       expect(screen.getByText('Actions')).toBeInTheDocument();
     });
 
-    it('renders comment body text', () => {
-      renderWithProviders(<CommentsPage />);
+    it('renders actor names', () => {
+      renderWithProviders(<FavoritesPage />);
 
-      expect(screen.getByText('Great post!')).toBeInTheDocument();
-      expect(screen.getByText('Nice analysis!')).toBeInTheDocument();
-    });
-
-    it('renders post titles from feed_item', () => {
-      renderWithProviders(<CommentsPage />);
-
-      expect(screen.getByText('Breaking News')).toBeInTheDocument();
-      expect(screen.getByText('Movie Review')).toBeInTheDocument();
+      expect(screen.getByText('Mahesh Babu')).toBeInTheDocument();
+      expect(screen.getByText('Prabhas')).toBeInTheDocument();
     });
 
     it('renders user display_name', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       expect(screen.getByText('Test User')).toBeInTheDocument();
     });
 
     it('falls back to email when display_name is null', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       expect(screen.getByText('another@example.com')).toBeInTheDocument();
     });
 
-    it('shows "Untitled post" when feed_item title is null', () => {
-      mockUseAdminComments.mockReturnValue({
+    it('shows "Unknown actor" when actor is undefined', () => {
+      mockUseAdminFavorites.mockReturnValue({
         data: [
           {
-            ...mockComments[0],
-            feed_item: { id: 'feed-1', title: null },
+            ...mockFavorites[0],
+            actor: undefined,
           },
         ],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      expect(screen.getByText('Untitled post')).toBeInTheDocument();
-    });
-
-    it('shows "Untitled post" when feed_item is undefined', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: [
-          {
-            ...mockComments[0],
-            feed_item: undefined,
-          },
-        ],
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
-
-      renderWithProviders(<CommentsPage />);
-
-      expect(screen.getByText('Untitled post')).toBeInTheDocument();
+      expect(screen.getByText('Unknown actor')).toBeInTheDocument();
     });
 
     it('shows "Unknown" when profile is undefined', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminFavorites.mockReturnValue({
         data: [
           {
-            ...mockComments[0],
+            ...mockFavorites[0],
             profile: undefined,
           },
         ],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       expect(screen.getByText('Unknown')).toBeInTheDocument();
     });
 
     it('renders formatted date', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
       const dateCells = screen.getAllByText(new Date('2024-01-01T00:00:00Z').toLocaleDateString());
       expect(dateCells.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders a delete button for each comment', () => {
-      renderWithProviders(<CommentsPage />);
+    it('renders a delete button for each favorite', () => {
+      renderWithProviders(<FavoritesPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Remove favorite');
       expect(deleteButtons).toHaveLength(2);
     });
   });
 
   describe('delete confirmation', () => {
     beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminFavorites.mockReturnValue({
+        data: mockFavorites,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
     });
 
     it('calls confirm() when delete button is clicked', () => {
       const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Remove favorite');
       fireEvent.click(deleteButtons[0]);
 
-      expect(confirmSpy).toHaveBeenCalledWith('Delete this comment? This cannot be undone.');
+      expect(confirmSpy).toHaveBeenCalledWith('Remove this favorite? This cannot be undone.');
     });
 
-    it('calls mutate with comment id when confirm returns true', () => {
+    it('calls mutate with favorite id when confirm returns true', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Remove favorite');
       fireEvent.click(deleteButtons[0]);
 
       expect(mockMutate).toHaveBeenCalledWith(
-        'com-1',
+        'fav-1',
         expect.objectContaining({
           onError: expect.any(Function),
         }),
@@ -403,24 +386,24 @@ describe('CommentsPage', () => {
     it('does not call mutate when confirm returns false', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Remove favorite');
       fireEvent.click(deleteButtons[0]);
 
       expect(mockMutate).not.toHaveBeenCalled();
     });
 
-    it('deletes the correct comment when second button is clicked', () => {
+    it('deletes the correct favorite when second button is clicked', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Remove favorite');
       fireEvent.click(deleteButtons[1]);
 
       expect(mockMutate).toHaveBeenCalledWith(
-        'com-2',
+        'fav-2',
         expect.objectContaining({
           onError: expect.any(Function),
         }),
@@ -430,20 +413,20 @@ describe('CommentsPage', () => {
 
   describe('delete error handling', () => {
     beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminFavorites.mockReturnValue({
+        data: mockFavorites,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
     });
 
     it('calls alert with error message on delete failure', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Remove favorite');
       fireEvent.click(deleteButtons[0]);
 
       const onError = mockMutate.mock.calls[0][1].onError;
@@ -455,20 +438,20 @@ describe('CommentsPage', () => {
 
   describe('pending state', () => {
     it('disables delete buttons when mutation is pending', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminFavorites.mockReturnValue({
+        data: mockFavorites,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminFavorites>);
 
-      mockUseDeleteComment.mockReturnValue({
+      mockUseDeleteFavorite.mockReturnValue({
         mutate: mockMutate,
         isPending: true,
-      } as unknown as ReturnType<typeof useDeleteComment>);
+      } as unknown as ReturnType<typeof useDeleteFavorite>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<FavoritesPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Remove favorite');
       deleteButtons.forEach((button) => {
         expect(button).toBeDisabled();
       });

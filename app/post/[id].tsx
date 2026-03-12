@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -176,7 +177,12 @@ export default function PostDetailScreen() {
                 isLoading={commentsLoading}
                 hasNextPage={hasNextPage}
                 onLoadMore={fetchNextPage}
-                onDelete={(commentId) => deleteMutation.mutate(commentId)}
+                onDelete={(commentId) =>
+                  deleteMutation.mutate(commentId, {
+                    onError: () =>
+                      Alert.alert(t('common.error'), t('common.failedToDeleteComment')),
+                  })
+                }
               />
             </View>
           </>
@@ -191,7 +197,11 @@ export default function PostDetailScreen() {
       {/* Comment input */}
       <CommentInput
         isAuthenticated={!!user}
-        onSubmit={(body) => addMutation.mutate(body)}
+        onSubmit={(body) =>
+          addMutation.mutate(body, {
+            onError: () => Alert.alert(t('common.error'), t('common.failedToAddComment')),
+          })
+        }
         onLoginPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
         bottomInset={insets.bottom}
       />

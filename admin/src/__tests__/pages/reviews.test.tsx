@@ -8,6 +8,7 @@ const mockSetSearch = vi.fn();
 vi.mock('@/hooks/useAdminReviews', () => ({
   useAdminReviews: vi.fn(),
   useDeleteReview: vi.fn(),
+  useUpdateReview: vi.fn(),
 }));
 
 vi.mock('@/hooks/useDebouncedSearch', () => ({
@@ -33,11 +34,12 @@ vi.mock('@/components/common/SearchInput', () => ({
   ),
 }));
 
-import { useAdminReviews, useDeleteReview } from '@/hooks/useAdminReviews';
+import { useAdminReviews, useDeleteReview, useUpdateReview } from '@/hooks/useAdminReviews';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
 const mockUseAdminReviews = vi.mocked(useAdminReviews);
 const mockUseDeleteReview = vi.mocked(useDeleteReview);
+const mockUseUpdateReview = vi.mocked(useUpdateReview);
 const mockUseDebouncedSearch = vi.mocked(useDebouncedSearch);
 
 const mockReviews = [
@@ -87,6 +89,11 @@ beforeEach(() => {
     mutate: mockMutate,
     isPending: false,
   } as unknown as ReturnType<typeof useDeleteReview>);
+
+  mockUseUpdateReview.mockReturnValue({
+    mutate: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useUpdateReview>);
 });
 
 describe('ReviewsPage', () => {

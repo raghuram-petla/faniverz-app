@@ -222,7 +222,10 @@ describe('PostDetailScreen', () => {
   it('calls addComment mutation on submit', () => {
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('submit-btn'));
-    expect(mockMutate).toHaveBeenCalledWith('hello');
+    expect(mockMutate).toHaveBeenCalledWith(
+      'hello',
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 
   it('navigates to login on login press', () => {

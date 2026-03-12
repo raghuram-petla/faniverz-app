@@ -1,5 +1,5 @@
 'use client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 
 export interface EndUserProfile {
@@ -55,6 +55,70 @@ export function useAdminEndUsers({
         users: (data ?? []) as EndUserProfile[],
         totalCount: count ?? 0,
       };
+    },
+  });
+}
+
+async function callManageUser(action: string, userId: string, extra?: Record<string, unknown>) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const res = await fetch('/api/manage-user', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session?.access_token}`,
+    },
+    body: JSON.stringify({ action, userId, ...extra }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Failed to ${action} user`);
+  }
+  return res.json();
+}
+
+export function useBanUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => callManageUser('ban', userId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'end-users'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to ban user');
+    },
+  });
+}
+
+export function useUnbanUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => callManageUser('unban', userId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'end-users'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to unban user');
+    },
+  });
+}
+
+export function useUpdateEndUserProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      fields,
+    }: {
+      userId: string;
+      fields: { display_name?: string; bio?: string; location?: string };
+    }) => callManageUser('update-profile', userId, { fields }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'end-users'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to update profile');
     },
   });
 }

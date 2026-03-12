@@ -38,6 +38,23 @@ export function useAdminComments(search = '') {
   });
 }
 
+export function useUpdateComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: string }) => {
+      const { error } = await supabase.from('feed_comments').update({ body }).eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'comments'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to update comment');
+    },
+  });
+}
+
 export function useDeleteComment() {
   const qc = useQueryClient();
   return useMutation({

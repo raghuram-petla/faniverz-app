@@ -44,6 +44,30 @@ export function useAdminReviews(search = '', ratingFilter = 0) {
   });
 }
 
+export interface UpdateReviewPayload {
+  id: string;
+  title?: string | null;
+  body?: string | null;
+  contains_spoiler?: boolean;
+}
+
+export function useUpdateReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...fields }: UpdateReviewPayload) => {
+      const { error } = await supabase.from('reviews').update(fields).eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'reviews'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to update review');
+    },
+  });
+}
+
 export function useDeleteReview() {
   const qc = useQueryClient();
   return useMutation({

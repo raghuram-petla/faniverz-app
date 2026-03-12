@@ -5,16 +5,20 @@ import AppUsersPage from '@/app/(dashboard)/app-users/page';
 
 vi.mock('@/hooks/useAdminEndUsers', () => ({
   useAdminEndUsers: vi.fn(),
+  useBanUser: vi.fn(),
+  useUpdateEndUserProfile: vi.fn(),
 }));
 
 vi.mock('@/hooks/useDebouncedSearch', () => ({
   useDebouncedSearch: vi.fn(),
 }));
 
-import { useAdminEndUsers } from '@/hooks/useAdminEndUsers';
+import { useAdminEndUsers, useBanUser, useUpdateEndUserProfile } from '@/hooks/useAdminEndUsers';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
 const mockUseAdminEndUsers = vi.mocked(useAdminEndUsers);
+const mockUseBanUser = vi.mocked(useBanUser);
+const mockUseUpdateEndUserProfile = vi.mocked(useUpdateEndUserProfile);
 const mockUseDebouncedSearch = vi.mocked(useDebouncedSearch);
 
 const mockUsers = [
@@ -51,15 +55,29 @@ function renderWithProviders(ui: React.ReactElement) {
 
 const mockSetSearch = vi.fn();
 
+const mockBanMutate = vi.fn();
+
 beforeEach(() => {
   vi.restoreAllMocks();
 
   mockSetSearch.mockReset();
+  mockBanMutate.mockReset();
+
   mockUseDebouncedSearch.mockReturnValue({
     search: '',
     setSearch: mockSetSearch as React.Dispatch<React.SetStateAction<string>>,
     debouncedSearch: '',
   });
+
+  mockUseBanUser.mockReturnValue({
+    mutate: mockBanMutate,
+    isPending: false,
+  } as unknown as ReturnType<typeof useBanUser>);
+
+  mockUseUpdateEndUserProfile.mockReturnValue({
+    mutate: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useUpdateEndUserProfile>);
 });
 
 describe('AppUsersPage', () => {
@@ -309,9 +327,7 @@ describe('AppUsersPage', () => {
   });
 
   describe('ban action', () => {
-    it('shows alert when ban button is clicked', () => {
-      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-
+    beforeEach(() => {
       mockUseAdminEndUsers.mockReturnValue({
         data: { users: mockUsers, totalCount: 2 },
         isLoading: false,
@@ -319,15 +335,39 @@ describe('AppUsersPage', () => {
         error: null,
         isFetching: false,
       } as unknown as ReturnType<typeof useAdminEndUsers>);
+    });
+
+    it('shows confirm dialog when ban button is clicked', () => {
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
       renderWithProviders(<AppUsersPage />);
 
       const banButtons = screen.getAllByTitle('Ban user');
       fireEvent.click(banButtons[0]);
 
-      expect(alertSpy).toHaveBeenCalledWith(
-        'Banning users is not yet supported. This feature is coming soon.',
-      );
+      expect(confirmSpy).toHaveBeenCalledWith('Ban John Doe? They will not be able to log in.');
+    });
+
+    it('calls banUser.mutate when confirm returns true', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      renderWithProviders(<AppUsersPage />);
+
+      const banButtons = screen.getAllByTitle('Ban user');
+      fireEvent.click(banButtons[0]);
+
+      expect(mockBanMutate).toHaveBeenCalledWith('usr-1');
+    });
+
+    it('does not call banUser.mutate when confirm returns false', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+      renderWithProviders(<AppUsersPage />);
+
+      const banButtons = screen.getAllByTitle('Ban user');
+      fireEvent.click(banButtons[0]);
+
+      expect(mockBanMutate).not.toHaveBeenCalled();
     });
   });
 

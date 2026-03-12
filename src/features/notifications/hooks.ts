@@ -24,7 +24,7 @@ export function useNotificationMutations() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
     onError: () => {
-      console.warn('Failed to mark notification as read');
+      // Silent — background operation; unread dot persists on next load
     },
   });
 
@@ -34,7 +34,7 @@ export function useNotificationMutations() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
     onError: () => {
-      console.warn('Failed to mark all notifications as read');
+      // Silent — caller provides onError override for user feedback
     },
   });
 

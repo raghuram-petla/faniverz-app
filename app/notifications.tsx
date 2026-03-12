@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -118,7 +118,9 @@ export default function NotificationsScreen() {
 
   const handleMarkAllRead = () => {
     if (userId && unreadCount > 0) {
-      markAllRead.mutate(userId);
+      markAllRead.mutate(userId, {
+        onError: () => Alert.alert(t('common.error'), t('common.somethingWentWrong')),
+      });
     }
   };
 

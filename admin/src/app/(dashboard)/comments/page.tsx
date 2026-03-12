@@ -1,12 +1,15 @@
 'use client';
 
-import { useAdminComments, useDeleteComment } from '@/hooks/useAdminComments';
+import { useState } from 'react';
+import { useAdminComments, useDeleteComment, useUpdateComment } from '@/hooks/useAdminComments';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
-import { MessageSquare, Trash2, Loader2 } from 'lucide-react';
+import { MessageSquare, Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
 
 export default function CommentsPage() {
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState('');
   const {
     data: comments,
     isLoading,
@@ -15,10 +18,26 @@ export default function CommentsPage() {
     error,
   } = useAdminComments(debouncedSearch);
   const deleteComment = useDeleteComment();
+  const updateComment = useUpdateComment();
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this comment? This cannot be undone.')) return;
     deleteComment.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
+  };
+
+  const startEdit = (id: string, body: string) => {
+    setEditingId(id);
+    setEditBody(body);
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    updateComment.mutate(
+      { id: editingId, body: editBody },
+      { onSuccess: () => setEditingId(null) },
+    );
   };
 
   return (
@@ -97,21 +116,61 @@ export default function CommentsPage() {
                   <td className="px-6 py-4 text-sm text-on-surface-muted">
                     {comment.profile?.display_name ?? comment.profile?.email ?? 'Unknown'}
                   </td>
-                  <td className="px-6 py-4 text-sm text-on-surface-muted max-w-md truncate">
-                    {comment.body}
+                  <td className="px-6 py-4 text-sm text-on-surface-muted max-w-md">
+                    {editingId === comment.id ? (
+                      <textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        className="w-full bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600 min-h-[60px]"
+                        rows={3}
+                      />
+                    ) : (
+                      <span className="truncate block">{comment.body}</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-on-surface-muted">
                     {new Date(comment.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(comment.id)}
-                      disabled={deleteComment.isPending}
-                      className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                      title="Delete comment"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      {editingId === comment.id ? (
+                        <>
+                          <button
+                            onClick={saveEdit}
+                            disabled={updateComment.isPending}
+                            className="p-2 text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
+                            title="Save"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="p-2 text-on-surface-subtle hover:text-on-surface transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEdit(comment.id, comment.body)}
+                            className="p-2 text-on-surface-subtle hover:text-blue-500 transition-colors"
+                            title="Edit comment"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(comment.id)}
+                            disabled={deleteComment.isPending}
+                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            title="Delete comment"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

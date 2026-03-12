@@ -1,0 +1,66 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { verifyAdmin, errorResponse } from '@/lib/sync-helpers';
+
+/**
+ * POST /api/manage-user
+ * Admin-only endpoint for banning/unbanning app users and updating profiles.
+ *
+ * Actions:
+ * - { action: 'ban', userId, reason? } — Bans a user (sets ban_duration to 87600h = 10 years)
+ * - { action: 'unban', userId }         — Removes the ban
+ * - { action: 'update-profile', userId, fields: { display_name?, bio?, location? } }
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const admin = await verifyAdmin(req.headers.get('authorization'));
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { action, userId } = body;
+
+    if (!action || !userId) {
+      return NextResponse.json({ error: 'Missing action or userId' }, { status: 400 });
+    }
+
+    const supabase = getSupabaseAdmin();
+
+    if (action === 'ban') {
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        ban_duration: '87600h',
+      });
+      if (error) throw error;
+      return NextResponse.json({ success: true, action: 'banned' });
+    }
+
+    if (action === 'unban') {
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        ban_duration: 'none',
+      });
+      if (error) throw error;
+      return NextResponse.json({ success: true, action: 'unbanned' });
+    }
+
+    if (action === 'update-profile') {
+      const { fields } = body;
+      if (!fields || typeof fields !== 'object') {
+        return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
+      }
+      // Only allow safe fields
+      const allowed = ['display_name', 'bio', 'location'] as const;
+      const safeFields: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (key in fields) safeFields[key] = fields[key];
+      }
+      const { error } = await supabase.from('profiles').update(safeFields).eq('id', userId);
+      if (error) throw error;
+      return NextResponse.json({ success: true, action: 'updated' });
+    }
+
+    return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
+  } catch (err) {
+    return errorResponse('manage-user', err);
+  }
+}

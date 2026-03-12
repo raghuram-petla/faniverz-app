@@ -125,7 +125,10 @@ describe('NotificationsScreen', () => {
   it('calls markAllRead when "Mark all read" is pressed and there are unread notifications', () => {
     render(<NotificationsScreen />);
     fireEvent.press(screen.getByLabelText('Mark all as read'));
-    expect(mockMarkAllRead.mutate).toHaveBeenCalledWith('user-1');
+    expect(mockMarkAllRead.mutate).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 
   it('calls markRead when an unread notification is pressed', () => {

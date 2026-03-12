@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useAdminReviews, useDeleteReview } from '@/hooks/useAdminReviews';
+import { useAdminReviews, useDeleteReview, useUpdateReview } from '@/hooks/useAdminReviews';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
-import { Star, Trash2, Loader2 } from 'lucide-react';
+import { Star, Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
+import type { Review } from '@/lib/types';
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -22,6 +23,8 @@ function RatingStars({ rating }: { rating: number }) {
 export default function ReviewsPage() {
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [ratingFilter, setRatingFilter] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState('');
   const {
     data: reviews,
     isLoading,
@@ -30,10 +33,23 @@ export default function ReviewsPage() {
     error,
   } = useAdminReviews(debouncedSearch, ratingFilter);
   const deleteReview = useDeleteReview();
+  const updateReview = useUpdateReview();
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this review? This cannot be undone.')) return;
     deleteReview.mutate(id, { onError: (err: Error) => alert(`Error: ${err.message}`) });
+  };
+
+  const startEdit = (review: Review) => {
+    setEditingId(review.id);
+    setEditBody(review.body ?? '');
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    updateReview.mutate({ id: editingId, body: editBody }, { onSuccess: () => setEditingId(null) });
   };
 
   return (
@@ -134,26 +150,66 @@ export default function ReviewsPage() {
                   <td className="px-6 py-4">
                     <RatingStars rating={review.rating} />
                   </td>
-                  <td className="px-6 py-4 text-sm text-on-surface-muted max-w-xs truncate">
+                  <td className="px-6 py-4 text-sm text-on-surface-muted max-w-xs">
                     {review.contains_spoiler && (
                       <span className="inline-block px-1.5 py-0.5 rounded text-xs bg-red-600/20 text-red-400 mr-2">
                         Spoiler
                       </span>
                     )}
-                    {review.title ?? review.body ?? '--'}
+                    {editingId === review.id ? (
+                      <textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        className="w-full bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600 min-h-[60px]"
+                        rows={3}
+                      />
+                    ) : (
+                      <span className="truncate block">{review.title ?? review.body ?? '--'}</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-on-surface-muted">
                     {new Date(review.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(review.id)}
-                      disabled={deleteReview.isPending}
-                      className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                      title="Delete review"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      {editingId === review.id ? (
+                        <>
+                          <button
+                            onClick={saveEdit}
+                            disabled={updateReview.isPending}
+                            className="p-2 text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
+                            title="Save"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="p-2 text-on-surface-subtle hover:text-on-surface transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEdit(review)}
+                            className="p-2 text-on-surface-subtle hover:text-blue-500 transition-colors"
+                            title="Edit review"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(review.id)}
+                            disabled={deleteReview.isPending}
+                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            title="Delete review"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

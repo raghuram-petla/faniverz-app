@@ -35,6 +35,7 @@ function setupGlobalAdminMock() {
     news_feed: 55,
     watchlists: 200,
     entity_follows: 75,
+    feed_comments: 18,
   };
   fromSpy.mockImplementation((table: string) =>
     chainable({ count: counts[table] ?? 0, data: null, error: null }),
@@ -44,17 +45,29 @@ function setupGlobalAdminMock() {
 function setupPHAdminMock(movieIds: string[], actorIds: string[]) {
   const junctionData = movieIds.map((id) => ({ movie_id: id }));
   const castData = actorIds.map((id) => ({ actor_id: id }));
+  const feedItemData = movieIds.map((id) => ({ id: `feed-${id}` }));
 
+  // news_feed is called twice: once to get feed item IDs (returns data), once for count
+  let newsFeedCallCount = 0;
   const tableResults: Record<string, MockResult> = {
     movie_production_houses: { count: null, data: junctionData, error: null },
     movie_cast: { count: null, data: castData, error: null },
     reviews: { count: 5, data: null, error: null },
-    news_feed: { count: 8, data: null, error: null },
     watchlists: { count: 12, data: null, error: null },
     entity_follows: { count: 3, data: null, error: null },
+    feed_comments: { count: 7, data: null, error: null },
   };
 
   fromSpy.mockImplementation((table: string) => {
+    if (table === 'news_feed') {
+      newsFeedCallCount++;
+      // First call: get feed item IDs (returns data array)
+      // Second call: count query (returns count)
+      if (newsFeedCallCount === 1) {
+        return chainable({ count: null, data: feedItemData, error: null });
+      }
+      return chainable({ count: 8, data: null, error: null });
+    }
     const result = tableResults[table] ?? { count: 0, data: null, error: null };
     return chainable(result);
   });
@@ -90,6 +103,7 @@ describe('useDashboardStats', () => {
         totalFeedItems: 55,
         totalWatchlistEntries: 200,
         totalFollows: 75,
+        totalComments: 18,
       });
     });
 
@@ -108,6 +122,7 @@ describe('useDashboardStats', () => {
         'totalFeedItems',
         'totalWatchlistEntries',
         'totalFollows',
+        'totalComments',
       ]);
     });
   });
@@ -128,6 +143,7 @@ describe('useDashboardStats', () => {
         totalFeedItems: 8,
         totalWatchlistEntries: 12,
         totalFollows: 3,
+        totalComments: 7,
       });
     });
 
@@ -157,6 +173,7 @@ describe('useDashboardStats', () => {
         totalFeedItems: 0,
         totalWatchlistEntries: 0,
         totalFollows: 0,
+        totalComments: 0,
       });
     });
 

@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Bookmark,
   Heart,
+  MessageCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -103,6 +104,13 @@ export default function DashboardPage() {
             icon: MessageSquare,
             color: 'text-purple-500',
             bg: 'bg-purple-600/20',
+          },
+          {
+            label: 'Comments',
+            value: stats?.totalComments,
+            icon: MessageCircle,
+            color: 'text-cyan-500',
+            bg: 'bg-cyan-600/20',
           },
           {
             label: 'Watchlist',

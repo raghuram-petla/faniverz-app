@@ -1,15 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import CommentsPage from '@/app/(dashboard)/comments/page';
+import WatchlistPage from '@/app/(dashboard)/watchlist/page';
 
 const mockMutate = vi.fn();
 const mockSetSearch = vi.fn();
 
-vi.mock('@/hooks/useAdminComments', () => ({
-  useAdminComments: vi.fn(),
-  useDeleteComment: vi.fn(),
-  useUpdateComment: vi.fn(),
+vi.mock('@/hooks/useAdminWatchlist', () => ({
+  useAdminWatchlist: vi.fn(),
+  useDeleteWatchlistEntry: vi.fn(),
 }));
 
 vi.mock('@/hooks/useDebouncedSearch', () => ({
@@ -35,31 +34,32 @@ vi.mock('@/components/common/SearchInput', () => ({
   ),
 }));
 
-import { useAdminComments, useDeleteComment, useUpdateComment } from '@/hooks/useAdminComments';
+import { useAdminWatchlist, useDeleteWatchlistEntry } from '@/hooks/useAdminWatchlist';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
-const mockUseAdminComments = vi.mocked(useAdminComments);
-const mockUseDeleteComment = vi.mocked(useDeleteComment);
-const mockUseUpdateComment = vi.mocked(useUpdateComment);
+const mockUseAdminWatchlist = vi.mocked(useAdminWatchlist);
+const mockUseDeleteWatchlistEntry = vi.mocked(useDeleteWatchlistEntry);
 const mockUseDebouncedSearch = vi.mocked(useDebouncedSearch);
 
-const mockComments = [
+const mockEntries = [
   {
-    id: 'com-1',
-    feed_item_id: 'feed-1',
+    id: 'wl-1',
     user_id: 'usr-1',
-    body: 'Great post!',
-    created_at: '2024-01-01T00:00:00Z',
-    feed_item: { id: 'feed-1', title: 'Breaking News' },
+    movie_id: 'mov-1',
+    status: 'watchlist' as const,
+    added_at: '2024-01-01T00:00:00Z',
+    watched_at: null,
+    movie: { id: 'mov-1', title: 'Pushpa 2', poster_url: null },
     profile: { id: 'usr-1', display_name: 'Test User', email: 'test@example.com' },
   },
   {
-    id: 'com-2',
-    feed_item_id: 'feed-2',
+    id: 'wl-2',
     user_id: 'usr-2',
-    body: 'Nice analysis!',
-    created_at: '2024-01-02T00:00:00Z',
-    feed_item: { id: 'feed-2', title: 'Movie Review' },
+    movie_id: 'mov-2',
+    status: 'watched' as const,
+    added_at: '2024-01-02T00:00:00Z',
+    watched_at: '2024-01-05T00:00:00Z',
+    movie: { id: 'mov-2', title: 'Salaar', poster_url: null },
     profile: { id: 'usr-2', display_name: null, email: 'another@example.com' },
   },
 ];
@@ -83,50 +83,45 @@ beforeEach(() => {
     debouncedSearch: '',
   });
 
-  mockUseDeleteComment.mockReturnValue({
+  mockUseDeleteWatchlistEntry.mockReturnValue({
     mutate: mockMutate,
     isPending: false,
-  } as unknown as ReturnType<typeof useDeleteComment>);
-
-  mockUseUpdateComment.mockReturnValue({
-    mutate: vi.fn(),
-    isPending: false,
-  } as unknown as ReturnType<typeof useUpdateComment>);
+  } as unknown as ReturnType<typeof useDeleteWatchlistEntry>);
 });
 
-describe('CommentsPage', () => {
+describe('WatchlistPage', () => {
   describe('search UI', () => {
     beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminWatchlist.mockReturnValue({
+        data: mockEntries,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
     });
 
     it('renders search input with correct placeholder', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
       expect(
-        screen.getByPlaceholderText('Search by comment text or commenter name...'),
+        screen.getByPlaceholderText('Search by movie title or user name...'),
       ).toBeInTheDocument();
     });
 
     it('calls setSearch when typing in search input', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
       const input = screen.getByTestId('search-input');
       fireEvent.change(input, { target: { value: 'hello' } });
       expect(mockSetSearch).toHaveBeenCalledWith('hello');
     });
 
-    it('passes debouncedSearch to useAdminComments', () => {
+    it('passes debouncedSearch to useAdminWatchlist', () => {
       mockUseDebouncedSearch.mockReturnValue({
         search: 'test',
         setSearch: mockSetSearch,
         debouncedSearch: 'test',
       });
 
-      renderWithProviders(<CommentsPage />);
-      expect(mockUseAdminComments).toHaveBeenCalledWith('test');
+      renderWithProviders(<WatchlistPage />);
+      expect(mockUseAdminWatchlist).toHaveBeenCalledWith('test');
     });
 
     it('shows "Type at least 2 characters" hint when search has 1 character', () => {
@@ -136,65 +131,65 @@ describe('CommentsPage', () => {
         debouncedSearch: '',
       });
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
       expect(screen.getByText('Type at least 2 characters to search')).toBeInTheDocument();
     });
 
     it('does not show hint when search is empty', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
       expect(screen.queryByText('Type at least 2 characters to search')).not.toBeInTheDocument();
     });
 
-    it('shows result count summary when comments are loaded', () => {
-      renderWithProviders(<CommentsPage />);
-      expect(screen.getByText('Showing 2 comments')).toBeInTheDocument();
+    it('shows result count summary when entries are loaded', () => {
+      renderWithProviders(<WatchlistPage />);
+      expect(screen.getByText('Showing 2 entries')).toBeInTheDocument();
     });
 
     it('shows search term in result summary when searching', () => {
       mockUseDebouncedSearch.mockReturnValue({
-        search: 'Great',
+        search: 'Pushpa',
         setSearch: mockSetSearch,
-        debouncedSearch: 'Great',
+        debouncedSearch: 'Pushpa',
       });
 
-      renderWithProviders(<CommentsPage />);
-      expect(screen.getByText(/matching "Great"/)).toBeInTheDocument();
+      renderWithProviders(<WatchlistPage />);
+      expect(screen.getByText(/matching "Pushpa"/)).toBeInTheDocument();
     });
   });
 
   describe('header', () => {
-    it('renders "Comments" heading', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+    it('renders "Watchlist" heading', () => {
+      mockUseAdminWatchlist.mockReturnValue({
+        data: mockEntries,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      expect(screen.getByText('Comments')).toBeInTheDocument();
+      expect(screen.getByText('Watchlist')).toBeInTheDocument();
     });
 
-    it('shows comment count when data is loaded', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+    it('shows entry count when data is loaded', () => {
+      mockUseAdminWatchlist.mockReturnValue({
+        data: mockEntries,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       expect(screen.getByText('(2)')).toBeInTheDocument();
     });
 
     it('does not show count when data is undefined', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminWatchlist.mockReturnValue({
         data: undefined,
         isLoading: true,
         isFetching: true,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       expect(screen.queryByText(/\(\d+\)/)).not.toBeInTheDocument();
     });
@@ -202,198 +197,205 @@ describe('CommentsPage', () => {
 
   describe('loading state', () => {
     it('shows loading spinner when isLoading is true', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminWatchlist.mockReturnValue({
         data: undefined,
         isLoading: true,
         isFetching: true,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      const { container } = renderWithProviders(<CommentsPage />);
+      const { container } = renderWithProviders(<WatchlistPage />);
 
       const spinner = container.querySelector('.animate-spin');
       expect(spinner).toBeInTheDocument();
     });
 
     it('does not show table when loading', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminWatchlist.mockReturnValue({
         data: undefined,
         isLoading: true,
         isFetching: true,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
   });
 
   describe('empty state', () => {
-    it('shows "No comments found." when comments array is empty', () => {
-      mockUseAdminComments.mockReturnValue({
+    it('shows "No watchlist entries found." when array is empty', () => {
+      mockUseAdminWatchlist.mockReturnValue({
         data: [],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      expect(screen.getByText('No comments found.')).toBeInTheDocument();
+      expect(screen.getByText('No watchlist entries found.')).toBeInTheDocument();
     });
 
-    it('does not show table when no comments', () => {
-      mockUseAdminComments.mockReturnValue({
+    it('does not show table when no entries', () => {
+      mockUseAdminWatchlist.mockReturnValue({
         data: [],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       expect(screen.queryByRole('table')).not.toBeInTheDocument();
     });
   });
 
-  describe('data rendering', () => {
-    beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+  describe('error state', () => {
+    it('shows error message when isError is true', () => {
+      mockUseAdminWatchlist.mockReturnValue({
+        data: undefined,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+        isError: true,
+        error: new Error('Network error'),
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
+
+      renderWithProviders(<WatchlistPage />);
+
+      expect(screen.getByText(/Error loading watchlist/)).toBeInTheDocument();
+      expect(screen.getByText(/Network error/)).toBeInTheDocument();
+    });
+  });
+
+  describe('data rendering', () => {
+    beforeEach(() => {
+      mockUseAdminWatchlist.mockReturnValue({
+        data: mockEntries,
+        isLoading: false,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
     });
 
     it('renders table with correct column headers', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      expect(screen.getByText('Post')).toBeInTheDocument();
+      expect(screen.getByText('Movie')).toBeInTheDocument();
       expect(screen.getByText('User')).toBeInTheDocument();
-      expect(screen.getByText('Comment')).toBeInTheDocument();
-      expect(screen.getByText('Date')).toBeInTheDocument();
+      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.getByText('Added')).toBeInTheDocument();
       expect(screen.getByText('Actions')).toBeInTheDocument();
     });
 
-    it('renders comment body text', () => {
-      renderWithProviders(<CommentsPage />);
+    it('renders movie titles', () => {
+      renderWithProviders(<WatchlistPage />);
 
-      expect(screen.getByText('Great post!')).toBeInTheDocument();
-      expect(screen.getByText('Nice analysis!')).toBeInTheDocument();
-    });
-
-    it('renders post titles from feed_item', () => {
-      renderWithProviders(<CommentsPage />);
-
-      expect(screen.getByText('Breaking News')).toBeInTheDocument();
-      expect(screen.getByText('Movie Review')).toBeInTheDocument();
+      expect(screen.getByText('Pushpa 2')).toBeInTheDocument();
+      expect(screen.getByText('Salaar')).toBeInTheDocument();
     });
 
     it('renders user display_name', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       expect(screen.getByText('Test User')).toBeInTheDocument();
     });
 
     it('falls back to email when display_name is null', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       expect(screen.getByText('another@example.com')).toBeInTheDocument();
     });
 
-    it('shows "Untitled post" when feed_item title is null', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: [
-          {
-            ...mockComments[0],
-            feed_item: { id: 'feed-1', title: null },
-          },
-        ],
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+    it('shows "To Watch" for watchlist status', () => {
+      renderWithProviders(<WatchlistPage />);
 
-      renderWithProviders(<CommentsPage />);
-
-      expect(screen.getByText('Untitled post')).toBeInTheDocument();
+      expect(screen.getByText('To Watch')).toBeInTheDocument();
     });
 
-    it('shows "Untitled post" when feed_item is undefined', () => {
-      mockUseAdminComments.mockReturnValue({
+    it('shows "Watched" for watched status', () => {
+      renderWithProviders(<WatchlistPage />);
+
+      expect(screen.getByText('Watched')).toBeInTheDocument();
+    });
+
+    it('shows "Unknown movie" when movie is undefined', () => {
+      mockUseAdminWatchlist.mockReturnValue({
         data: [
           {
-            ...mockComments[0],
-            feed_item: undefined,
+            ...mockEntries[0],
+            movie: undefined,
           },
         ],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      expect(screen.getByText('Untitled post')).toBeInTheDocument();
+      expect(screen.getByText('Unknown movie')).toBeInTheDocument();
     });
 
     it('shows "Unknown" when profile is undefined', () => {
-      mockUseAdminComments.mockReturnValue({
+      mockUseAdminWatchlist.mockReturnValue({
         data: [
           {
-            ...mockComments[0],
+            ...mockEntries[0],
             profile: undefined,
           },
         ],
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       expect(screen.getByText('Unknown')).toBeInTheDocument();
     });
 
     it('renders formatted date', () => {
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
       const dateCells = screen.getAllByText(new Date('2024-01-01T00:00:00Z').toLocaleDateString());
       expect(dateCells.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders a delete button for each comment', () => {
-      renderWithProviders(<CommentsPage />);
+    it('renders a delete button for each entry', () => {
+      renderWithProviders(<WatchlistPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       expect(deleteButtons).toHaveLength(2);
     });
   });
 
   describe('delete confirmation', () => {
     beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminWatchlist.mockReturnValue({
+        data: mockEntries,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
     });
 
     it('calls confirm() when delete button is clicked', () => {
       const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       fireEvent.click(deleteButtons[0]);
 
-      expect(confirmSpy).toHaveBeenCalledWith('Delete this comment? This cannot be undone.');
+      expect(confirmSpy).toHaveBeenCalledWith(
+        'Delete this watchlist entry? This cannot be undone.',
+      );
     });
 
-    it('calls mutate with comment id when confirm returns true', () => {
+    it('calls mutate with entry id when confirm returns true', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       fireEvent.click(deleteButtons[0]);
 
       expect(mockMutate).toHaveBeenCalledWith(
-        'com-1',
+        'wl-1',
         expect.objectContaining({
           onError: expect.any(Function),
         }),
@@ -403,24 +405,24 @@ describe('CommentsPage', () => {
     it('does not call mutate when confirm returns false', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       fireEvent.click(deleteButtons[0]);
 
       expect(mockMutate).not.toHaveBeenCalled();
     });
 
-    it('deletes the correct comment when second button is clicked', () => {
+    it('deletes the correct entry when second button is clicked', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       fireEvent.click(deleteButtons[1]);
 
       expect(mockMutate).toHaveBeenCalledWith(
-        'com-2',
+        'wl-2',
         expect.objectContaining({
           onError: expect.any(Function),
         }),
@@ -430,20 +432,20 @@ describe('CommentsPage', () => {
 
   describe('delete error handling', () => {
     beforeEach(() => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminWatchlist.mockReturnValue({
+        data: mockEntries,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
     });
 
     it('calls alert with error message on delete failure', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
       const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       fireEvent.click(deleteButtons[0]);
 
       const onError = mockMutate.mock.calls[0][1].onError;
@@ -455,20 +457,20 @@ describe('CommentsPage', () => {
 
   describe('pending state', () => {
     it('disables delete buttons when mutation is pending', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
+      mockUseAdminWatchlist.mockReturnValue({
+        data: mockEntries,
         isLoading: false,
         isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
+      } as unknown as ReturnType<typeof useAdminWatchlist>);
 
-      mockUseDeleteComment.mockReturnValue({
+      mockUseDeleteWatchlistEntry.mockReturnValue({
         mutate: mockMutate,
         isPending: true,
-      } as unknown as ReturnType<typeof useDeleteComment>);
+      } as unknown as ReturnType<typeof useDeleteWatchlistEntry>);
 
-      renderWithProviders(<CommentsPage />);
+      renderWithProviders(<WatchlistPage />);
 
-      const deleteButtons = screen.getAllByTitle('Delete comment');
+      const deleteButtons = screen.getAllByTitle('Delete watchlist entry');
       deleteButtons.forEach((button) => {
         expect(button).toBeDisabled();
       });
