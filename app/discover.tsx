@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,15 +17,11 @@ import {
   useProductionHouses,
   useMovieIdsByProductionHouse,
 } from '@/features/productionHouses/hooks';
-import {
-  DiscoverFilterModal,
-  SORT_OPTIONS,
-  FILTER_TABS,
-} from '@/components/discover/DiscoverFilterModal';
+import { DiscoverFilterModal, SORT_OPTIONS } from '@/components/discover/DiscoverFilterModal';
 import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
+import { DiscoverSearchHeader } from '@/components/discover/DiscoverSearchHeader';
 import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
 import { SortDropdown } from '@/components/discover/SortDropdown';
-import { HomeButton } from '@/components/common/HomeButton';
 import { DiscoverContentSkeleton } from '@/components/discover/DiscoverContentSkeleton';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
@@ -149,53 +145,14 @@ export default function DiscoverScreen() {
   return (
     <View style={styles.screen}>
       <SafeAreaCover />
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.headerTitleRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
-          </TouchableOpacity>
-          <HomeButton />
-          <Text style={styles.screenTitle}>{t('discover.title')}</Text>
-        </View>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={18} color={theme.textTertiary} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('discover.searchPlaceholder')}
-            placeholderTextColor={theme.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={theme.textTertiary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.tabRow}>
-        {FILTER_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab.value}
-            style={[styles.tabButton, selectedFilter === tab.value && styles.tabButtonActive]}
-            onPress={() => setFilter(tab.value)}
-          >
-            <Text
-              style={[
-                styles.tabButtonText,
-                selectedFilter === tab.value && styles.tabButtonTextActive,
-              ]}
-            >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <DiscoverSearchHeader
+        insetTop={insets.top}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        selectedFilter={selectedFilter}
+        onFilterChange={setFilter}
+        onBack={() => router.back()}
+      />
 
       <View style={styles.filterBar}>
         <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>

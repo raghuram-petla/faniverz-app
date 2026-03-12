@@ -1,15 +1,13 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   FlatList,
   ActivityIndicator,
-  TouchableOpacity,
   LayoutAnimation,
   Platform,
   UIManager,
 } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
@@ -28,56 +26,10 @@ import { useScrollToTop } from '@react-navigation/native';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { WatchlistSkeleton } from '@/components/watchlist/WatchlistSkeleton';
+import { SectionTitle, type WatchlistListItem } from '@/components/watchlist/WatchlistSectionTitle';
 import { useTheme } from '@/theme';
-import { WatchlistEntry } from '@/types';
 import { AvailableCard, UpcomingCard, WatchedCard } from '@/components/watchlist/WatchlistCards';
 import { createStyles } from '@/styles/tabs/watchlist.styles';
-
-type ListItem =
-  | {
-      type: 'section-header';
-      key: string;
-      sectionKey: string;
-      title: string;
-      iconName: React.ComponentProps<typeof Ionicons>['name'];
-      iconColor: string;
-    }
-  | { type: 'available'; key: string; entry: WatchlistEntry }
-  | { type: 'upcoming'; key: string; entry: WatchlistEntry }
-  | { type: 'watched'; key: string; entry: WatchlistEntry };
-
-function SectionTitle({
-  iconName,
-  iconColor,
-  title,
-  collapsed,
-  onToggle,
-}: {
-  iconName: React.ComponentProps<typeof Ionicons>['name'];
-  iconColor: string;
-  title: string;
-  collapsed?: boolean;
-  onToggle?: () => void;
-}) {
-  const { theme } = useTheme();
-  const styles = createStyles(theme);
-  const animationsEnabled = useAnimationsEnabled();
-  const rot = useSharedValue(collapsed ? 0 : 90);
-  useEffect(() => {
-    const deg = collapsed ? 0 : 90;
-    rot.value = animationsEnabled ? withTiming(deg, { duration: 200 }) : deg;
-  }, [collapsed, rot, animationsEnabled]);
-  const chevStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rot.value}deg` }] }));
-  return (
-    <TouchableOpacity style={styles.sectionHeader} onPress={onToggle} activeOpacity={0.7}>
-      <Ionicons name={iconName} size={20} color={iconColor} />
-      <Text style={[styles.sectionTitle, { flex: 1 }]}>{title}</Text>
-      <Animated.View style={chevStyle}>
-        <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
-      </Animated.View>
-    </TouchableOpacity>
-  );
-}
 
 export default function WatchlistScreen() {
   const { theme, colors } = useTheme();
@@ -120,8 +72,8 @@ export default function WatchlistScreen() {
   };
 
   // Build a flat list of items with section headers
-  const listItems = useMemo<ListItem[]>(() => {
-    const items: ListItem[] = [];
+  const listItems = useMemo<WatchlistListItem[]>(() => {
+    const items: WatchlistListItem[] = [];
 
     if (available.length > 0) {
       items.push({
@@ -174,7 +126,7 @@ export default function WatchlistScreen() {
     return items;
   }, [available, upcoming, watched, t, collapsedSections]);
 
-  const renderItem = ({ item }: { item: ListItem }) => {
+  const renderItem = ({ item }: { item: WatchlistListItem }) => {
     switch (item.type) {
       case 'section-header':
         return (

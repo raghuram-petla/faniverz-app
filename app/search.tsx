@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -18,11 +17,10 @@ import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { createStyles } from '@/styles/search.styles';
-import { getImageUrl } from '@shared/imageUrl';
-import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { SearchResultActor } from '@/components/search/SearchResultActor';
 import { SearchResultProductionHouse } from '@/components/search/SearchResultProductionHouse';
 import { SearchResultMovie } from '@/components/search/SearchResultMovie';
+import { TrendingMovies } from '@/components/search/TrendingMovies';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -193,43 +191,7 @@ export default function SearchScreen() {
               </View>
             </View>
           )}
-          {trendingMovies.length > 0 && (
-            <View style={styles.trendingSection}>
-              <View style={styles.trendingHeader}>
-                <Ionicons name="trending-up" size={20} color={colors.red500} />
-                <Text style={styles.trendingTitle}>{t('search.trendingNow')}</Text>
-              </View>
-              {trendingMovies.map((movie, index) => (
-                <TouchableOpacity
-                  key={movie.id}
-                  style={styles.trendingItem}
-                  onPress={() => handleMoviePress(movie)}
-                >
-                  <View style={styles.trendingRank}>
-                    <Text style={styles.trendingRankText}>{index + 1}</Text>
-                  </View>
-                  <Image
-                    source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
-                    style={styles.trendingPoster}
-                    contentFit="cover"
-                  />
-                  <View style={styles.trendingInfo}>
-                    <Text style={styles.trendingMovieTitle} numberOfLines={1}>
-                      {movie.title}
-                    </Text>
-                    <View style={styles.trendingMeta}>
-                      <Ionicons name="star" size={12} color={colors.yellow400} />
-                      <Text style={styles.trendingRating}>{movie.rating}</Text>
-                      <Text style={styles.trendingDot}>•</Text>
-                      <Text style={styles.trendingReviews}>
-                        {movie.review_count} {t('search.reviews')}
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          <TrendingMovies movies={trendingMovies} onMoviePress={handleMoviePress} />
         </View>
       )}
 
