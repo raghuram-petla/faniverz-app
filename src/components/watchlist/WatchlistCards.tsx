@@ -8,6 +8,7 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import type { WatchlistEntry } from '@/types';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
 
 interface CardProps {
@@ -36,7 +37,7 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
     >
       <View style={styles.posterWrapper}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
           style={styles.poster}
           contentFit="cover"
           accessibilityLabel={`${movie.title} poster`}
@@ -111,7 +112,7 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
     >
       <View style={styles.posterWrapper}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
           style={styles.poster}
           contentFit="cover"
           accessibilityLabel={`${movie.title} poster`}
@@ -175,7 +176,7 @@ export function WatchedCard({ entry, userId, styles }: CardProps) {
     >
       <View style={styles.posterWrapper}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? undefined }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
           style={[styles.poster, styles.posterWatched]}
           contentFit="cover"
           accessibilityLabel={`${movie.title} poster`}

@@ -6,6 +6,7 @@ import { useTheme } from '@/theme';
 import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { MediaSummaryCard } from './MediaSummaryCard';
 
 export interface OverviewTabProps {
@@ -62,7 +63,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
               >
                 {ph.logo_url && (
                   <Image
-                    source={{ uri: getImageUrl(ph.logo_url, 'sm')! }}
+                    source={{ uri: getImageUrl(ph.logo_url, 'sm') ?? PLACEHOLDER_POSTER }}
                     style={styles.productionHouseLogo}
                     contentFit="cover"
                   />

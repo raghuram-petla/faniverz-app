@@ -9,23 +9,27 @@ import te from './te.json';
 const deviceLanguage = getLocales()[0]?.languageCode ?? 'en';
 const supportedLanguage = deviceLanguage === 'te' ? 'te' : 'en';
 
-i18n.use(initReactI18next).init({
-  resources: {
-    en: { translation: en },
-    te: { translation: te },
-  },
-  lng: supportedLanguage,
-  fallbackLng: 'en',
-  interpolation: {
-    escapeValue: false,
-  },
-});
-
-// Restore user's preferred language from AsyncStorage (overrides device default)
-AsyncStorage.getItem(STORAGE_KEYS.PREFERRED_LANG).then((stored) => {
-  if (stored && (stored === 'en' || stored === 'te')) {
-    i18n.changeLanguage(stored);
-  }
-});
+/** Resolves when stored language preference has been loaded */
+export const languageReady: Promise<void> = AsyncStorage.getItem(STORAGE_KEYS.PREFERRED_LANG)
+  .then((stored) => {
+    if (stored && (stored === 'en' || stored === 'te')) {
+      return stored;
+    }
+    return supportedLanguage;
+  })
+  .catch(() => supportedLanguage)
+  .then((lng) => {
+    i18n.use(initReactI18next).init({
+      resources: {
+        en: { translation: en },
+        te: { translation: te },
+      },
+      lng,
+      fallbackLng: 'en',
+      interpolation: {
+        escapeValue: false,
+      },
+    });
+  });
 
 export default i18n;

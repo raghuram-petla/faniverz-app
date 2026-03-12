@@ -2,6 +2,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { deriveMovieStatus } from '@shared/movieStatus';
@@ -91,7 +92,7 @@ const createStyles = (t: SemanticTheme) =>
     badgeText: {
       fontSize: 11,
       fontWeight: '700',
-      color: '#fff',
+      color: palette.white,
       textTransform: 'uppercase',
     },
     rating: { flexDirection: 'row', alignItems: 'center', gap: 4 },

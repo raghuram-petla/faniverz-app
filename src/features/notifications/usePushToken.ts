@@ -9,6 +9,14 @@ import { upsertPushToken } from './pushApi';
 async function registerForPushNotifications(): Promise<string | null> {
   if (!Device.isDevice) return null;
 
+  // Create Android notification channel before requesting permissions
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Default',
+      importance: Notifications.AndroidImportance.HIGH,
+    });
+  }
+
   const { status: existing } = await Notifications.getPermissionsAsync();
   let finalStatus = existing;
 
@@ -24,13 +32,6 @@ async function registerForPushNotifications(): Promise<string | null> {
     projectId,
   });
 
-  if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('default', {
-      name: 'Default',
-      importance: Notifications.AndroidImportance.HIGH,
-    });
-  }
-
   return token;
 }
 
@@ -44,8 +45,9 @@ export function usePushToken() {
     registerForPushNotifications()
       .then((token) => {
         if (token && user.id) {
-          registeredRef.current = true;
-          return upsertPushToken(user.id, token);
+          return upsertPushToken(user.id, token).then(() => {
+            registeredRef.current = true;
+          });
         }
       })
       .catch(() => {

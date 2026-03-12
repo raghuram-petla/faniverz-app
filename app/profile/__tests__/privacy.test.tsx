@@ -30,6 +30,7 @@ jest.mock('@/components/common/ScreenHeader', () => {
 });
 
 import React from 'react';
+import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import PrivacySettingsScreen from '../privacy';
 import { useProfile } from '@/features/auth/hooks/useProfile';
@@ -81,22 +82,21 @@ describe('PrivacySettingsScreen', () => {
     expect(screen.getByText('profile.showWatchlistDesc')).toBeTruthy();
   });
 
-  it('calls mutate with is_profile_public when profile toggle pressed', () => {
+  it('calls mutate with is_profile_public and onError when profile toggle pressed', () => {
     render(<PrivacySettingsScreen />);
 
-    // The profile toggle is the first touchable after the header
-    fireEvent.press(screen.getByText('profile.showProfilePublicly'));
-    // Since the ToggleRow wraps the TouchableOpacity, we need to press the toggle itself
-    // The toggle is a TouchableOpacity inside ToggleRow, let's find it by pressing
     const { TouchableOpacity } = require('react-native');
     const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
-    // First touchable is profile toggle, second is watchlist toggle
+    // First touchable is profile toggle
     fireEvent.press(touchables[0]);
 
-    expect(mockMutate).toHaveBeenCalledWith({ is_profile_public: false });
+    expect(mockMutate).toHaveBeenCalledWith(
+      { is_profile_public: false },
+      { onError: expect.any(Function) },
+    );
   });
 
-  it('calls mutate with is_watchlist_public when watchlist toggle pressed', () => {
+  it('calls mutate with is_watchlist_public and onError when watchlist toggle pressed', () => {
     render(<PrivacySettingsScreen />);
 
     const { TouchableOpacity } = require('react-native');
@@ -104,7 +104,10 @@ describe('PrivacySettingsScreen', () => {
     // Second touchable is watchlist toggle
     fireEvent.press(touchables[1]);
 
-    expect(mockMutate).toHaveBeenCalledWith({ is_watchlist_public: false });
+    expect(mockMutate).toHaveBeenCalledWith(
+      { is_watchlist_public: false },
+      { onError: expect.any(Function) },
+    );
   });
 
   it('toggles profile from false to true', () => {
@@ -119,7 +122,10 @@ describe('PrivacySettingsScreen', () => {
     const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
     fireEvent.press(touchables[0]);
 
-    expect(mockMutate).toHaveBeenCalledWith({ is_profile_public: true });
+    expect(mockMutate).toHaveBeenCalledWith(
+      { is_profile_public: true },
+      { onError: expect.any(Function) },
+    );
   });
 
   it('toggles watchlist from false to true', () => {
@@ -134,7 +140,10 @@ describe('PrivacySettingsScreen', () => {
     const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
     fireEvent.press(touchables[1]);
 
-    expect(mockMutate).toHaveBeenCalledWith({ is_watchlist_public: true });
+    expect(mockMutate).toHaveBeenCalledWith(
+      { is_watchlist_public: true },
+      { onError: expect.any(Function) },
+    );
   });
 
   it('shows section description text', () => {
@@ -155,6 +164,43 @@ describe('PrivacySettingsScreen', () => {
     fireEvent.press(touchables[0]);
 
     // Defaults to true via ?? true, so toggling should set to false
-    expect(mockMutate).toHaveBeenCalledWith({ is_profile_public: false });
+    expect(mockMutate).toHaveBeenCalledWith(
+      { is_profile_public: false },
+      { onError: expect.any(Function) },
+    );
+  });
+
+  it('shows Alert when onError callback is invoked with Error instance', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[0]);
+
+    // Extract the onError callback from the mutate call
+    const onErrorCallback = mockMutate.mock.calls[0][1].onError;
+    onErrorCallback(new Error('Network failure'));
+
+    expect(alertSpy).toHaveBeenCalledWith('Error', 'Network failure');
+    alertSpy.mockRestore();
+  });
+
+  it('shows Alert with fallback message when onError receives non-Error', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[1]);
+
+    // Extract the onError callback from the watchlist mutate call
+    const onErrorCallback = mockMutate.mock.calls[0][1].onError;
+    onErrorCallback('string error');
+
+    expect(alertSpy).toHaveBeenCalledWith('Error', 'Update failed');
+    alertSpy.mockRestore();
   });
 });

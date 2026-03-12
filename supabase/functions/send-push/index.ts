@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_BATCH_LIMIT = 100;
 
 interface PushMessage {
   to: string;
@@ -12,15 +13,42 @@ interface PushMessage {
 
 Deno.serve(async (req) => {
   try {
+    // Verify caller is authorized (service role or admin JWT)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // If not using service role key, verify the JWT belongs to an admin
+    if (token !== serviceKey) {
+      const supabaseAuth = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
+      const {
+        data: { user },
+        error: authErr,
+      } = await supabaseAuth.auth.getUser(token);
+      if (authErr || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+      }
+      const { data: role } = await supabaseAuth
+        .from('admin_user_roles')
+        .select('role_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!role) {
+        return new Response(JSON.stringify({ error: 'Forbidden: admin role required' }), {
+          status: 403,
+        });
+      }
+    }
+
     const { notification_id } = await req.json();
     if (!notification_id) {
       return new Response(JSON.stringify({ error: 'notification_id required' }), { status: 400 });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
 
     const { data: notification, error: nErr } = await supabase
       .from('notifications')
@@ -53,20 +81,54 @@ Deno.serve(async (req) => {
       sound: 'default',
     }));
 
-    const response = await fetch(EXPO_PUSH_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(messages),
-    });
+    // Send in batches of 100 (Expo API limit)
+    let allSuccess = true;
+    const failedTokens: string[] = [];
 
-    const result = await response.json();
+    for (let i = 0; i < messages.length; i += EXPO_BATCH_LIMIT) {
+      const batch = messages.slice(i, i + EXPO_BATCH_LIMIT);
+      const response = await fetch(EXPO_PUSH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batch),
+      });
+
+      if (!response.ok) {
+        allSuccess = false;
+        continue;
+      }
+
+      const result = await response.json();
+      // Check individual ticket statuses for DeviceNotRegistered
+      if (result.data && Array.isArray(result.data)) {
+        result.data.forEach(
+          (ticket: { status: string; details?: { error?: string } }, idx: number) => {
+            if (ticket.status === 'error' && ticket.details?.error === 'DeviceNotRegistered') {
+              failedTokens.push(batch[idx].to);
+            }
+          },
+        );
+      }
+    }
+
+    // Deactivate tokens for unregistered devices
+    if (failedTokens.length > 0) {
+      await supabase.from('push_tokens').update({ is_active: false }).in('token', failedTokens);
+    }
 
     await supabase
       .from('notifications')
-      .update({ status: response.ok ? 'sent' : 'failed' })
+      .update({ status: allSuccess ? 'sent' : 'failed' })
       .eq('id', notification_id);
 
-    return new Response(JSON.stringify({ success: response.ok, result }), { status: 200 });
+    return new Response(
+      JSON.stringify({
+        success: allSuccess,
+        sent: messages.length,
+        deactivated: failedTokens.length,
+      }),
+      { status: 200 },
+    );
   } catch (error) {
     return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500 });
   }

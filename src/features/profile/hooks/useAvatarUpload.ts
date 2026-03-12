@@ -1,13 +1,28 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 
+const MIME_MAP: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+};
+
 export function useAvatarUpload() {
   const { user } = useAuth();
   const updateProfile = useUpdateProfile();
   const [isUploading, setIsUploading] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const pickAndUpload = async () => {
     if (!user) return;
@@ -24,8 +39,9 @@ export function useAvatarUpload() {
     setIsUploading(true);
     try {
       const asset = result.assets[0];
-      const ext = asset.uri.split('.').pop() ?? 'jpg';
+      const ext = (asset.uri.split('.').pop() ?? 'jpg').toLowerCase();
       const filePath = `${user.id}/avatar.${ext}`;
+      const contentType = MIME_MAP[ext] ?? 'image/jpeg';
 
       // Read file as blob
       const response = await fetch(asset.uri);
@@ -33,7 +49,7 @@ export function useAvatarUpload() {
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob, { upsert: true, contentType: `image/${ext}` });
+        .upload(filePath, blob, { upsert: true, contentType });
 
       if (uploadError) throw uploadError;
 
@@ -43,7 +59,9 @@ export function useAvatarUpload() {
 
       await updateProfile.mutateAsync({ avatar_url: publicUrl });
     } finally {
-      setIsUploading(false);
+      if (mountedRef.current) {
+        setIsUploading(false);
+      }
     }
   };
 

@@ -40,7 +40,7 @@ export function MovieQuickAction({
       accessibilityLabel={isActive ? activeLabel : inactiveLabel}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      <Ionicons name={icon} size={14} color={isActive ? palette.green500 : '#FFFFFF'} />
+      <Ionicons name={icon} size={14} color={isActive ? palette.green500 : palette.white} />
     </TouchableOpacity>
   );
 }

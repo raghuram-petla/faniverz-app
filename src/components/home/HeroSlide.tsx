@@ -124,7 +124,7 @@ export function HeroSlide({
             <Ionicons
               name={status === 'in_theaters' ? 'ticket-outline' : 'play'}
               size={20}
-              color="#000000"
+              color={palette.black}
             />
             <Text style={styles.watchButtonText}>
               {status === 'in_theaters' ? 'Get Tickets' : 'Watch Now'}
@@ -155,12 +155,12 @@ export function HeroSlide({
                     : 'bookmark-outline'
               }
               size={16}
-              color={isActionActive ? palette.green500 : '#000000'}
+              color={isActionActive ? palette.green500 : palette.black}
             />
             <Text
               style={[
                 styles.actionButtonText,
-                { color: isActionActive ? palette.green500 : '#000000' },
+                { color: isActionActive ? palette.green500 : palette.black },
               ]}
             >
               {isActionActive
@@ -178,7 +178,7 @@ export function HeroSlide({
             accessibilityRole="button"
             accessibilityLabel="More Info"
           >
-            <Ionicons name="chevron-forward" size={22} color="#000000" />
+            <Ionicons name="chevron-forward" size={22} color={palette.black} />
           </TouchableOpacity>
         </View>
       </View>

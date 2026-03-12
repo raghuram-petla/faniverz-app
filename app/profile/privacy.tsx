@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
@@ -7,6 +7,7 @@ import type { SemanticTheme } from '@shared/themes';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import { colors as palette } from '@shared/colors';
 
 export default function PrivacySettingsScreen() {
   const { t } = useTranslation();
@@ -20,11 +21,23 @@ export default function PrivacySettingsScreen() {
   const isWatchlistPublic = profile?.is_watchlist_public ?? true;
 
   const handleToggleProfile = () => {
-    updateProfile.mutate({ is_profile_public: !isProfilePublic });
+    updateProfile.mutate(
+      { is_profile_public: !isProfilePublic },
+      {
+        onError: (err) =>
+          Alert.alert('Error', err instanceof Error ? err.message : 'Update failed'),
+      },
+    );
   };
 
   const handleToggleWatchlist = () => {
-    updateProfile.mutate({ is_watchlist_public: !isWatchlistPublic });
+    updateProfile.mutate(
+      { is_watchlist_public: !isWatchlistPublic },
+      {
+        onError: (err) =>
+          Alert.alert('Error', err instanceof Error ? err.message : 'Update failed'),
+      },
+    );
   };
 
   if (isLoading) {
@@ -49,7 +62,6 @@ export default function PrivacySettingsScreen() {
             value={isProfilePublic}
             onToggle={handleToggleProfile}
             styles={styles}
-            theme={theme}
           />
           <View style={styles.divider} />
           <ToggleRow
@@ -58,7 +70,6 @@ export default function PrivacySettingsScreen() {
             value={isWatchlistPublic}
             onToggle={handleToggleWatchlist}
             styles={styles}
-            theme={theme}
           />
         </View>
       </View>
@@ -73,10 +84,9 @@ interface ToggleRowProps {
   onToggle: () => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   styles: Record<string, any>;
-  theme: SemanticTheme;
 }
 
-function ToggleRow({ label, description, value, onToggle, styles, theme }: ToggleRowProps) {
+function ToggleRow({ label, description, value, onToggle, styles }: ToggleRowProps) {
   return (
     <View style={styles.row}>
       <View style={styles.rowText}>
@@ -119,9 +129,9 @@ const createStyles = (t: SemanticTheme) =>
       justifyContent: 'center',
       paddingHorizontal: 2,
     },
-    toggleOn: { backgroundColor: '#DC2626' },
+    toggleOn: { backgroundColor: palette.red600 },
     toggleOff: { backgroundColor: t.border },
-    toggleThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF' },
-    toggleThumbOn: { alignSelf: 'flex-end' },
-    toggleThumbOff: { alignSelf: 'flex-start' },
+    toggleThumb: { width: 24, height: 24, borderRadius: 12, backgroundColor: palette.white },
+    toggleThumbOn: { alignSelf: 'flex-end' as const },
+    toggleThumbOff: { alignSelf: 'flex-start' as const },
   });

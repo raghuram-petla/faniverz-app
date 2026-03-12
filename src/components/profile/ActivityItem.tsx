@@ -1,6 +1,7 @@
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { colors as palette } from '@/theme/colors';
 import { formatRelativeTime } from '@/utils/formatDate';
 import type { UserActivity } from '@/features/profile';
 import type { SemanticTheme } from '@shared/themes';
@@ -11,11 +12,11 @@ export interface ActivityItemProps {
 }
 
 const ACTION_CONFIG: Record<string, { icon: string; label: string; color: string }> = {
-  vote: { icon: 'arrow-up', label: 'Voted on a post', color: '#3b82f6' },
-  follow: { icon: 'heart', label: 'Followed', color: '#ef4444' },
-  unfollow: { icon: 'heart-dislike', label: 'Unfollowed', color: '#6b7280' },
-  comment: { icon: 'chatbubble', label: 'Commented on a post', color: '#8b5cf6' },
-  review: { icon: 'star', label: 'Wrote a review', color: '#f59e0b' },
+  vote: { icon: 'arrow-up', label: 'Voted on a post', color: palette.blue500 },
+  follow: { icon: 'heart', label: 'Followed', color: palette.red500 },
+  unfollow: { icon: 'heart-dislike', label: 'Unfollowed', color: palette.gray500 },
+  comment: { icon: 'chatbubble', label: 'Commented on a post', color: palette.violet500 },
+  review: { icon: 'star', label: 'Wrote a review', color: palette.amber500 },
 };
 
 function getEntityLabel(entityType: string): string {

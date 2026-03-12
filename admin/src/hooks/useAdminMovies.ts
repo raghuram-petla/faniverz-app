@@ -88,9 +88,25 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
         .range(from, to);
       if (search) query = query.ilike('title', `%${search}%`);
       if (statusFilter === 'upcoming') {
-        query = query.gt('release_date', new Date().toISOString().split('T')[0]);
+        query = query.gt('release_date', today);
       } else if (statusFilter === 'in_theaters') {
         query = query.eq('in_theaters', true);
+      } else if (statusFilter === 'announced') {
+        query = query.is('release_date', null);
+      } else if (statusFilter === 'streaming') {
+        if (platformMovieIds.length === 0) return [] as Movie[];
+        query = query
+          .in('id', platformMovieIds)
+          .lte('release_date', today)
+          .eq('in_theaters', false);
+      } else if (statusFilter === 'released') {
+        query = query
+          .not('release_date', 'is', null)
+          .lte('release_date', today)
+          .eq('in_theaters', false);
+        if (platformMovieIds.length > 0) {
+          query = query.not('id', 'in', `(${platformMovieIds.join(',')})`);
+        }
       }
 
       const { data, error } = await query;

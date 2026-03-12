@@ -88,7 +88,7 @@ export default function ProfileScreen() {
             ? String(unreadCount)
             : undefined,
       })),
-    [unreadCount],
+    [unreadCount, t],
   );
 
   const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {

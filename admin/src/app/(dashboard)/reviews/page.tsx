@@ -17,7 +17,7 @@ function RatingStars({ rating }: { rating: number }) {
 }
 
 export default function ReviewsPage() {
-  const { data: reviews, isLoading } = useAdminReviews();
+  const { data: reviews, isLoading, isError, error } = useAdminReviews();
   const deleteReview = useDeleteReview();
 
   const handleDelete = (id: string) => {
@@ -34,6 +34,12 @@ export default function ReviewsPage() {
         <h1 className="text-2xl font-bold text-on-surface">Reviews</h1>
         {reviews && <span className="text-sm text-on-surface-muted">({reviews.length})</span>}
       </div>
+
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-400">
+          Error loading reviews: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

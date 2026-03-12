@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotification } from '@/hooks/useAdminNotifications';
 import { useAllMovies } from '@/hooks/useAdminMovies';
@@ -30,10 +30,9 @@ export default function ComposeNotificationPage() {
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [userLookupError, setUserLookupError] = useState('');
 
-  const handleUserLookup = async (email: string) => {
-    setUserEmail(email);
-    setResolvedUserId(null);
-    setUserLookupError('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const doLookup = useCallback(async (email: string) => {
     if (!email.includes('@')) return;
     const { data, error } = await supabase
       .from('profiles')
@@ -49,6 +48,15 @@ export default function ComposeNotificationPage() {
     } else {
       setUserLookupError('No user found with this email');
     }
+  }, []);
+
+  const handleUserLookup = (email: string) => {
+    setUserEmail(email);
+    setResolvedUserId(null);
+    setUserLookupError('');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!email.includes('@')) return;
+    debounceRef.current = setTimeout(() => doLookup(email), 400);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

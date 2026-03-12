@@ -72,7 +72,7 @@ export default function ProductionHouseDetailScreen() {
   const renderLogo = (size: number) =>
     house.logo_url ? (
       <Image
-        source={{ uri: getImageUrl(house.logo_url, 'sm')! }}
+        source={{ uri: getImageUrl(house.logo_url, 'sm') ?? PLACEHOLDER_POSTER }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"
         transition={200}

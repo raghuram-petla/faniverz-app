@@ -18,6 +18,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useScrollToTop } from '@react-navigation/native';
 import { LoadingCenter } from '@/components/common/LoadingCenter';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { FilterPill } from '@/components/calendar/FilterPill';
 import { createStyles } from '@/styles/tabs/calendar.styles';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -284,19 +285,6 @@ export default function CalendarScreen() {
           );
         }}
       />
-    </View>
-  );
-}
-
-function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }) {
-  const { theme, colors } = useTheme();
-  const styles = createStyles(theme);
-  return (
-    <View style={styles.pill}>
-      <Text style={styles.pillText}>{label}</Text>
-      <TouchableOpacity onPress={onRemove}>
-        <Ionicons name="close" size={14} color={colors.red400} />
-      </TouchableOpacity>
     </View>
   );
 }

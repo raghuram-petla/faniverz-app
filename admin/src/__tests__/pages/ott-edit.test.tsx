@@ -152,7 +152,6 @@ describe('EditOttReleasePage', () => {
         },
         expect.objectContaining({
           onSuccess: expect.any(Function),
-          onError: expect.any(Function),
         }),
       );
     });

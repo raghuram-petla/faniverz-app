@@ -37,7 +37,6 @@ export default function EditOttReleasePage() {
       },
       {
         onSuccess: () => router.push('/ott'),
-        onError: (err) => alert(`Error: ${err instanceof Error ? err.message : 'Update failed'}`),
       },
     );
   };

@@ -168,13 +168,13 @@ const createStyles = (t: SemanticTheme) =>
     dateBadgeMonth: {
       fontSize: 10,
       fontWeight: '700',
-      color: '#FFFFFF',
+      color: palette.white,
       lineHeight: 12,
     },
     dateBadgeDay: {
       fontSize: 14,
       fontWeight: '700',
-      color: '#FFFFFF',
+      color: palette.white,
       lineHeight: 16,
       marginTop: 2,
     },

@@ -197,7 +197,7 @@ export default function WatchedMoviesScreen() {
                     key={entry.id}
                     style={styles.movieCard}
                     activeOpacity={0.8}
-                    onPress={() => router.push(`/movie/${movie?.id}`)}
+                    onPress={() => movie?.id && router.push(`/movie/${movie.id}`)}
                     accessibilityLabel={title}
                   >
                     <View style={styles.posterWrapper}>

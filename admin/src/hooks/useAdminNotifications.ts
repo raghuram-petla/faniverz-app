@@ -32,14 +32,19 @@ export function useCreateNotification() {
         .single();
       if (error) throw error;
 
-      // Trigger push delivery for immediate sends
+      // Trigger push delivery for immediate sends (fire-and-forget — don't fail the mutation)
       const isImmediate =
         !notification.scheduled_for ||
         new Date(notification.scheduled_for).getTime() <= Date.now() + 60_000;
       if (isImmediate && data) {
-        await supabase.functions.invoke('send-push', {
-          body: { notification_id: data.id },
-        });
+        try {
+          const { error: pushError } = await supabase.functions.invoke('send-push', {
+            body: { notification_id: data.id },
+          });
+          if (pushError) console.error('Push delivery failed:', pushError);
+        } catch (pushErr) {
+          console.error('Push delivery error:', pushErr);
+        }
       }
 
       return data as Notification;

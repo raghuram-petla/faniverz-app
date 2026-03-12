@@ -26,7 +26,7 @@ export function CalendarFilterPanel({
   onSetDate,
   styles,
 }: CalendarFilterPanelProps) {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const daysInMonth =
     selectedMonth !== null && selectedYear !== null
       ? new Date(selectedYear, selectedMonth + 1, 0).getDate()
@@ -47,7 +47,7 @@ export function CalendarFilterPanel({
         <Ionicons
           name="chevron-down"
           size={16}
-          color={selectedYear !== null ? '#FFFFFF' : theme.textSecondary}
+          color={selectedYear !== null ? colors.white : theme.textSecondary}
         />
       </TouchableOpacity>
       {showYearPicker && (

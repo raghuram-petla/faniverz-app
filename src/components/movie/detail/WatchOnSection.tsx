@@ -32,7 +32,11 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                 <TouchableOpacity
                   key={p.id}
                   style={[styles.watchOnButton, { backgroundColor: p.color }]}
-                  onPress={mp.streaming_url ? () => Linking.openURL(mp.streaming_url!) : undefined}
+                  onPress={
+                    mp.streaming_url?.startsWith('http')
+                      ? () => Linking.openURL(mp.streaming_url!).catch(() => {})
+                      : undefined
+                  }
                   activeOpacity={mp.streaming_url ? 0.7 : 1}
                   accessibilityLabel={`Watch on ${p.name}`}
                 >

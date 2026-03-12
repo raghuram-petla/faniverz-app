@@ -4,7 +4,7 @@ import { useAdminComments, useDeleteComment } from '@/hooks/useAdminComments';
 import { MessageSquare, Trash2, Loader2 } from 'lucide-react';
 
 export default function CommentsPage() {
-  const { data: comments, isLoading } = useAdminComments();
+  const { data: comments, isLoading, isError, error } = useAdminComments();
   const deleteComment = useDeleteComment();
 
   const handleDelete = (id: string) => {
@@ -21,6 +21,12 @@ export default function CommentsPage() {
         <h1 className="text-2xl font-bold text-on-surface">Comments</h1>
         {comments && <span className="text-sm text-on-surface-muted">({comments.length})</span>}
       </div>
+
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-400">
+          Error loading comments: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

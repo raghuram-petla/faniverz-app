@@ -12,6 +12,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { ImageViewerGestures } from './ImageViewerGestures';
+import { colors as palette } from '@/theme/colors';
 import { overlayStyles as styles } from './ImageViewerOverlay.styles';
 import { measureView } from '@/utils/measureView';
 import type { ImageSourceLayout } from '@/providers/ImageViewerProvider';
@@ -31,7 +32,7 @@ const OPEN_DURATION = 300;
 const CLOSE_DURATION = 250;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 const PROGRESS_BAR_H = 2;
-const PROGRESS_BAR_COLOR = '#dc2626'; // red-600 theme accent
+const PROGRESS_BAR_COLOR = palette.red600;
 
 export function ImageViewerOverlay({
   feedUrl,
@@ -189,7 +190,7 @@ export function ImageViewerOverlay({
 
       <Animated.View style={[styles.closeBtnWrapper, animatedCloseBtnStyle]}>
         <TouchableOpacity onPress={handleCloseButton} accessibilityLabel="Close image">
-          <Ionicons name="close" size={28} color="#fff" />
+          <Ionicons name="close" size={28} color={palette.white} />
         </TouchableOpacity>
       </Animated.View>
 

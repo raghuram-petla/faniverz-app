@@ -40,10 +40,8 @@ export default function UsersPage() {
   const superAdminCount = users?.filter((u) => u.role_id === 'super_admin').length ?? 0;
 
   function handleRevoke(userId: string, roleId: string) {
-    if (roleId === 'super_admin' && superAdminCount <= 1) {
-      alert('Cannot revoke the last super admin.');
-      return;
-    }
+    if (roleId === 'super_admin' && superAdminCount <= 1)
+      return void alert('Cannot revoke the last super admin.');
     if (!confirm('Revoke admin access for this user?')) return;
     revokeAdmin.mutate(userId, { onError: (err: Error) => alert(`Error: ${err.message}`) });
   }

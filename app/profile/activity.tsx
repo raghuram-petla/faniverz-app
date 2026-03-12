@@ -125,6 +125,6 @@ const createStyles = (t: SemanticTheme) =>
     },
     filterChipActive: { backgroundColor: palette.red600, borderColor: palette.red600 },
     filterText: { fontSize: 13, fontWeight: '500', color: t.textSecondary },
-    filterTextActive: { color: '#fff' },
+    filterTextActive: { color: palette.white },
     emptyList: { flexGrow: 1, justifyContent: 'center' },
   });

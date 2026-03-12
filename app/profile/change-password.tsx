@@ -8,6 +8,7 @@ import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import { useTheme } from '@/theme';
 import type { SemanticTheme } from '@shared/themes';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import { colors as palette } from '@shared/colors';
 
 export default function ChangePasswordScreen() {
   const { t } = useTranslation();
@@ -66,7 +67,7 @@ export default function ChangePasswordScreen() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <ActivityIndicator size="small" color={palette.white} />
               ) : (
                 <Text style={styles.sendButtonText}>{t('profile.sendResetEmail')}</Text>
               )}
@@ -80,21 +81,9 @@ export default function ChangePasswordScreen() {
 
 const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: t.background,
-      paddingHorizontal: 16,
-    },
-    body: {
-      flex: 1,
-      paddingTop: 8,
-    },
-    subtitle: {
-      fontSize: 15,
-      color: t.textSecondary,
-      lineHeight: 22,
-      marginBottom: 24,
-    },
+    container: { flex: 1, backgroundColor: t.background, paddingHorizontal: 16 },
+    body: { flex: 1, paddingTop: 8 },
+    subtitle: { fontSize: 15, color: t.textSecondary, lineHeight: 22, marginBottom: 24 },
     emailCard: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -107,64 +96,29 @@ const createStyles = (t: SemanticTheme) =>
       marginBottom: 16,
       gap: 10,
     },
-    emailText: {
-      fontSize: 15,
-      color: t.textPrimary,
-    },
-    errorText: {
-      fontSize: 13,
-      color: '#EF4444',
-      marginBottom: 12,
-      paddingHorizontal: 4,
-    },
+    emailText: { fontSize: 15, color: t.textPrimary },
+    errorText: { fontSize: 13, color: palette.red500, marginBottom: 12, paddingHorizontal: 4 },
     sendButton: {
       height: 52,
-      backgroundColor: '#DC2626',
+      backgroundColor: palette.red600,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    sendButtonDisabled: {
-      opacity: 0.6,
-    },
-    sendButtonText: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: '#FFFFFF',
-    },
-    successCard: {
-      alignItems: 'center',
-      paddingTop: 32,
-      gap: 12,
-    },
+    sendButtonDisabled: { opacity: 0.6 },
+    sendButtonText: { fontSize: 16, fontWeight: '700', color: palette.white },
+    successCard: { alignItems: 'center', paddingTop: 32, gap: 12 },
     successIcon: {
       width: 72,
       height: 72,
       borderRadius: 36,
-      backgroundColor: 'rgba(220, 38, 38, 0.2)',
+      backgroundColor: palette.red600_20,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 8,
     },
-    successTitle: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: t.textPrimary,
-    },
-    successSubtitle: {
-      fontSize: 15,
-      color: t.textSecondary,
-      textAlign: 'center',
-      lineHeight: 22,
-    },
-    successEmail: {
-      color: t.textPrimary,
-      fontWeight: '600',
-    },
-    successHint: {
-      fontSize: 13,
-      color: t.textTertiary,
-      textAlign: 'center',
-      marginTop: 4,
-    },
+    successTitle: { fontSize: 22, fontWeight: '700', color: t.textPrimary },
+    successSubtitle: { fontSize: 15, color: t.textSecondary, textAlign: 'center', lineHeight: 22 },
+    successEmail: { color: t.textPrimary, fontWeight: '600' },
+    successHint: { fontSize: 13, color: t.textTertiary, textAlign: 'center', marginTop: 4 },
   });

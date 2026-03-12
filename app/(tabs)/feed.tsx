@@ -28,6 +28,7 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useTranslation } from 'react-i18next';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
@@ -35,6 +36,7 @@ import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
 
 export default function FeedScreen() {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createFeedStyles(theme);
   const insets = useSafeAreaInsets();
@@ -116,7 +118,7 @@ export default function FeedScreen() {
         if (entityId === user?.id) {
           router.push('/profile' as Parameters<typeof router.push>[0]);
         } else {
-          Alert.alert('Coming Soon', 'User profiles are not yet available.');
+          Alert.alert(t('home.comingSoon'), t('feed.userProfilesNotAvailable'));
         }
         return;
       }

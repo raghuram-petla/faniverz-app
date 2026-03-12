@@ -8,6 +8,7 @@ import { useImageViewer } from '@/providers/ImageViewerProvider';
 import type { MoviePoster } from '@/types';
 import { createStyles } from '@/styles/movieMedia.styles';
 import { getImageUrl } from '@shared/imageUrl';
+import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
 export interface MediaPhotosTabProps {
   posters: MoviePoster[];
@@ -66,7 +67,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
               accessibilityLabel={`View ${poster.title}`}
             >
               <Image
-                source={{ uri: getImageUrl(poster.image_url, 'sm') ?? undefined }}
+                source={{ uri: getImageUrl(poster.image_url, 'sm') ?? PLACEHOLDER_POSTER }}
                 style={styles.photoImage}
                 contentFit="cover"
               />
