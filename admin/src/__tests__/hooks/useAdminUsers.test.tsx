@@ -276,7 +276,7 @@ describe('useUpdateAdminRole', () => {
 });
 
 describe('useBlockAdmin', () => {
-  it('calls update with status=blocked, blocked_by, blocked_at, blocked_reason', async () => {
+  it('calls update with status=blocked, blocked_by, blocked_reason (blocked_at set by DB trigger)', async () => {
     const mockEq = vi.fn().mockResolvedValue({ error: null });
     const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
 
@@ -300,7 +300,6 @@ describe('useBlockAdmin', () => {
     expect(mockUpdate).toHaveBeenCalledWith({
       status: 'blocked',
       blocked_by: 'admin-1',
-      blocked_at: expect.any(String),
       blocked_reason: 'Violated policy',
     });
     expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
@@ -308,7 +307,7 @@ describe('useBlockAdmin', () => {
 });
 
 describe('useUnblockAdmin', () => {
-  it('calls update with status=active and nulled block fields', async () => {
+  it('calls update with status=active (DB trigger clears block fields)', async () => {
     const mockEq = vi.fn().mockResolvedValue({ error: null });
     const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
 
@@ -325,12 +324,7 @@ describe('useUnblockAdmin', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(mockFrom).toHaveBeenCalledWith('admin_user_roles');
-    expect(mockUpdate).toHaveBeenCalledWith({
-      status: 'active',
-      blocked_by: null,
-      blocked_at: null,
-      blocked_reason: null,
-    });
+    expect(mockUpdate).toHaveBeenCalledWith({ status: 'active' });
     expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
   });
 });

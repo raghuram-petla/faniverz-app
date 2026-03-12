@@ -182,7 +182,6 @@ export function useBlockAdmin() {
         .update({
           status: 'blocked',
           blocked_by: blockedBy,
-          blocked_at: new Date().toISOString(),
           blocked_reason: reason,
         })
         .eq('user_id', userId);
@@ -201,12 +200,7 @@ export function useUnblockAdmin() {
     mutationFn: async (userId: string) => {
       const { error } = await supabase
         .from('admin_user_roles')
-        .update({
-          status: 'active',
-          blocked_by: null,
-          blocked_at: null,
-          blocked_reason: null,
-        })
+        .update({ status: 'active' })
         .eq('user_id', userId);
       if (error) throw error;
     },

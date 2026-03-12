@@ -56,6 +56,8 @@ export default function UsersPage() {
 
   function handleBlock(reason: string) {
     if (!blockTarget || !realUser) return;
+    if (blockTarget.role_id === 'super_admin' && activeSuperAdminCount <= 1)
+      return void alert('Cannot block the last active super admin.');
     blockAdminMut.mutate(
       { userId: blockTarget.id, blockedBy: realUser.id, reason },
       {
