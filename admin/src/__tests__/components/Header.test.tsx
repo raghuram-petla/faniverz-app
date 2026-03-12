@@ -46,6 +46,7 @@ function setUser(user: AdminUser | null) {
     user,
     isLoading: false,
     isAccessDenied: false,
+    blockedReason: null,
     signInWithGoogle: vi.fn(),
     signOut: mockSignOut,
     refreshUser: vi.fn(),

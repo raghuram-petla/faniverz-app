@@ -6,8 +6,10 @@ import type { AdminUser, AdminRoleId } from '@/lib/types';
 interface AuthContextValue {
   user: AdminUser | null;
   isLoading: boolean;
-  /** True when user is authenticated but has no admin role */
+  /** True when user is authenticated but has no admin role or is blocked */
   isAccessDenied: boolean;
+  /** Reason the admin was blocked, if applicable */
+  blockedReason: string | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   /** Re-fetch the profile from Supabase and update user state */
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   isLoading: true,
   isAccessDenied: false,
+  blockedReason: null,
   signInWithGoogle: async () => {},
   signOut: async () => {},
   refreshUser: async () => {},
@@ -31,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
+  const [blockedReason, setBlockedReason] = useState<string | null>(null);
 
   useEffect(() => {
     let initialLoadDone = false;
@@ -79,21 +83,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Fetch admin role
         const roleRes = await fetch(
-          `${supabaseUrl}/rest/v1/admin_user_roles?user_id=eq.${userId}&select=role_id`,
+          `${supabaseUrl}/rest/v1/admin_user_roles?user_id=eq.${userId}&select=role_id,status,blocked_reason`,
           { headers },
         );
         if (!roleRes.ok) {
           setUser(null);
           setIsAccessDenied(true);
+          setBlockedReason(null);
           return;
         }
         const roles = await roleRes.json();
         if (!roles[0]?.role_id) {
           setUser(null);
           setIsAccessDenied(true);
+          setBlockedReason(null);
           return;
         }
 
+        // Check if blocked
+        if (roles[0].status === 'blocked') {
+          setUser(null);
+          setIsAccessDenied(true);
+          setBlockedReason(roles[0].blocked_reason ?? 'Your access has been blocked.');
+          return;
+        }
+
+        setBlockedReason(null);
         const role = roles[0].role_id as AdminRoleId;
 
         // Fetch PH assignments (only needed for PH admins, but cheap to always fetch)
@@ -168,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
         setIsAccessDenied(false);
+        setBlockedReason(null);
       }
       finish();
     });
@@ -215,6 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     setUser(null);
     setIsAccessDenied(false);
+    setBlockedReason(null);
     try {
       const ref = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split('.')[0];
       localStorage.removeItem(`sb-${ref}-auth-token`);
@@ -226,7 +243,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isAccessDenied, signInWithGoogle, signOut, refreshUser }}
+      value={{
+        user,
+        isLoading,
+        isAccessDenied,
+        blockedReason,
+        signInWithGoogle,
+        signOut,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

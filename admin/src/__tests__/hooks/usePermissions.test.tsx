@@ -87,7 +87,7 @@ describe('usePermissions', () => {
 
   // 3. Admin — page access
   describe('admin page access', () => {
-    it('isAdmin is true and canViewPage returns true for all except users', () => {
+    it('isAdmin is true and canViewPage returns true for all pages including users', () => {
       setUser(makeUser({ role: 'admin' }));
       const { result } = renderHook(() => usePermissions());
 
@@ -95,11 +95,9 @@ describe('usePermissions', () => {
       expect(result.current.isSuperAdmin).toBe(false);
       expect(result.current.isPHAdmin).toBe(false);
 
-      const pagesExceptUsers = ALL_PAGES.filter((p) => p !== 'users');
-      for (const page of pagesExceptUsers) {
+      for (const page of ALL_PAGES) {
         expect(result.current.canViewPage(page)).toBe(true);
       }
-      expect(result.current.canViewPage('users')).toBe(false);
     });
   });
 
@@ -293,6 +291,45 @@ describe('usePermissions', () => {
 
       expect(result.current.canDelete('actor', 'user-1')).toBe(true);
       expect(result.current.canDelete('actor', 'other-user')).toBe(false);
+    });
+  });
+
+  // canManageAdmin
+  describe('canManageAdmin', () => {
+    it('super_admin can manage admin and production_house_admin but not super_admin', () => {
+      setUser(makeUser({ role: 'super_admin' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canManageAdmin('admin')).toBe(true);
+      expect(result.current.canManageAdmin('production_house_admin')).toBe(true);
+      expect(result.current.canManageAdmin('super_admin')).toBe(false);
+    });
+
+    it('admin can manage production_house_admin but not admin or super_admin', () => {
+      setUser(makeUser({ role: 'admin' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canManageAdmin('production_house_admin')).toBe(true);
+      expect(result.current.canManageAdmin('admin')).toBe(false);
+      expect(result.current.canManageAdmin('super_admin')).toBe(false);
+    });
+
+    it('production_house_admin cannot manage any role', () => {
+      setUser(makeUser({ role: 'production_house_admin' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canManageAdmin('admin')).toBe(false);
+      expect(result.current.canManageAdmin('production_house_admin')).toBe(false);
+      expect(result.current.canManageAdmin('super_admin')).toBe(false);
+    });
+
+    it('returns false for all roles when no user', () => {
+      setUser(null);
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canManageAdmin('admin')).toBe(false);
+      expect(result.current.canManageAdmin('production_house_admin')).toBe(false);
+      expect(result.current.canManageAdmin('super_admin')).toBe(false);
     });
   });
 

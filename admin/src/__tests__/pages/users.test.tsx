@@ -25,11 +25,13 @@ vi.mock('@/lib/supabase-browser', () => ({
 
 vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({
-    user: { id: 'super-1', role: 'super_admin', email: 'admin@test.com' },
+    user: { id: 'super-1', role: 'super_admin', email: 'admin@test.com', productionHouseIds: [] },
     isLoading: false,
     isAccessDenied: false,
+    blockedReason: null,
     signInWithGoogle: vi.fn(),
     signOut: vi.fn(),
+    refreshUser: vi.fn(),
   }),
 }));
 
@@ -41,6 +43,12 @@ vi.mock('@/hooks/useImpersonation', () => ({
     startImpersonation: vi.fn(),
     startRoleImpersonation: vi.fn(),
     stopImpersonation: vi.fn(),
+  }),
+  useEffectiveUser: () => ({
+    id: 'super-1',
+    role: 'super_admin',
+    email: 'admin@test.com',
+    productionHouseIds: [],
   }),
 }));
 
@@ -88,20 +96,16 @@ describe('UsersPage', () => {
     expect(screen.getByText('Invite Admin')).toBeInTheDocument();
   });
 
-  it('renders "Active Admins" and "Invitations" tab buttons', () => {
+  it('renders "Admins" and "Invitations" tab buttons', () => {
     renderWithProviders(<UsersPage />);
-    expect(screen.getByText('Active Admins')).toBeInTheDocument();
+    expect(screen.getByText('Admins')).toBeInTheDocument();
     expect(screen.getByText('Invitations')).toBeInTheDocument();
   });
 
-  it('shows table headers: User, Role, Assigned PHs, Since, Actions', async () => {
+  it('shows status filter buttons when on admins tab', () => {
     renderWithProviders(<UsersPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Assigned PHs')).toBeInTheDocument();
-    });
-    expect(screen.getByText('User', { selector: 'th' })).toBeInTheDocument();
-    expect(screen.getByText('Role', { selector: 'th' })).toBeInTheDocument();
-    expect(screen.getByText('Since')).toBeInTheDocument();
-    expect(screen.getByText('Actions')).toBeInTheDocument();
+    expect(screen.getByText('active')).toBeInTheDocument();
+    expect(screen.getByText('blocked')).toBeInTheDocument();
+    expect(screen.getByText('all')).toBeInTheDocument();
   });
 });

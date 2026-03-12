@@ -14,6 +14,10 @@ interface AdminUserRow {
   role_id: AdminRoleId;
   assigned_by: string | null;
   created_at: string;
+  status: 'active' | 'blocked';
+  blocked_by: string | null;
+  blocked_at: string | null;
+  blocked_reason: string | null;
   profile: {
     id: string;
     display_name: string | null;
@@ -56,6 +60,10 @@ export function useAdminUserList() {
         role_assigned_at: r.created_at,
         assigned_by: r.assigned_by,
         ph_assignments: phByUser.get(r.user_id) ?? [],
+        status: r.status ?? 'active',
+        blocked_by: r.blocked_by ?? null,
+        blocked_at: r.blocked_at ?? null,
+        blocked_reason: r.blocked_reason ?? null,
       })) as AdminUserWithDetails[];
     },
   });
@@ -147,6 +155,58 @@ export function useUpdateAdminRole() {
       const { error } = await supabase
         .from('admin_user_roles')
         .update({ role_id: roleId })
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+  });
+}
+
+/** Block an admin (set status to blocked with reason) */
+export function useBlockAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      blockedBy,
+      reason,
+    }: {
+      userId: string;
+      blockedBy: string;
+      reason: string;
+    }) => {
+      const { error } = await supabase
+        .from('admin_user_roles')
+        .update({
+          status: 'blocked',
+          blocked_by: blockedBy,
+          blocked_at: new Date().toISOString(),
+          blocked_reason: reason,
+        })
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+  });
+}
+
+/** Unblock an admin (restore active status) */
+export function useUnblockAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from('admin_user_roles')
+        .update({
+          status: 'active',
+          blocked_by: null,
+          blocked_at: null,
+          blocked_reason: null,
+        })
         .eq('user_id', userId);
       if (error) throw error;
     },

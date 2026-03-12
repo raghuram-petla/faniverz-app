@@ -196,4 +196,8 @@ export interface AdminUserWithDetails {
   role_assigned_at: string;
   assigned_by: string | null;
   ph_assignments: AdminPHAssignment[];
+  status: 'active' | 'blocked';
+  blocked_by: string | null;
+  blocked_at: string | null;
+  blocked_reason: string | null;
 }

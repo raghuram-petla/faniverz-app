@@ -18,6 +18,8 @@ import {
   useRevokeInvitation,
   useRevokeAdmin,
   useUpdateAdminRole,
+  useBlockAdmin,
+  useUnblockAdmin,
 } from '@/hooks/useAdminUsers';
 
 function createWrapper() {
@@ -41,6 +43,10 @@ describe('useAdminUserList', () => {
       role_id: 'super_admin',
       assigned_by: null,
       created_at: '2026-01-01T00:00:00Z',
+      status: 'active',
+      blocked_by: null,
+      blocked_at: null,
+      blocked_reason: null,
       profile: {
         id: 'user-1',
         display_name: 'Admin One',
@@ -86,6 +92,10 @@ describe('useAdminUserList', () => {
         role_assigned_at: '2026-01-01T00:00:00Z',
         assigned_by: null,
         ph_assignments: [mockPhData[0]],
+        status: 'active',
+        blocked_by: null,
+        blocked_at: null,
+        blocked_reason: null,
       },
     ]);
   });
@@ -261,6 +271,66 @@ describe('useUpdateAdminRole', () => {
 
     expect(mockFrom).toHaveBeenCalledWith('admin_user_roles');
     expect(mockUpdate).toHaveBeenCalledWith({ role_id: 'admin' });
+    expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
+  });
+});
+
+describe('useBlockAdmin', () => {
+  it('calls update with status=blocked, blocked_by, blocked_at, blocked_reason', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const { result } = renderHook(() => useBlockAdmin(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        userId: 'user-1',
+        blockedBy: 'admin-1',
+        reason: 'Violated policy',
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockFrom).toHaveBeenCalledWith('admin_user_roles');
+    expect(mockUpdate).toHaveBeenCalledWith({
+      status: 'blocked',
+      blocked_by: 'admin-1',
+      blocked_at: expect.any(String),
+      blocked_reason: 'Violated policy',
+    });
+    expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
+  });
+});
+
+describe('useUnblockAdmin', () => {
+  it('calls update with status=active and nulled block fields', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const { result } = renderHook(() => useUnblockAdmin(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate('user-1');
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockFrom).toHaveBeenCalledWith('admin_user_roles');
+    expect(mockUpdate).toHaveBeenCalledWith({
+      status: 'active',
+      blocked_by: null,
+      blocked_at: null,
+      blocked_reason: null,
+    });
     expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
   });
 });

@@ -63,6 +63,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'comments',
     'sync',
     'audit',
+    'users',
   ]),
   production_house_admin: new Set([
     'dashboard',
@@ -141,6 +142,14 @@ export function usePermissions() {
     return canUpdate(entity, ownerId);
   }
 
+  /** Whether the current user can block/unblock an admin with the given role */
+  function canManageAdmin(targetRole: AdminRoleId): boolean {
+    if (!role) return false;
+    if (isSuperAdmin) return targetRole !== 'super_admin';
+    if (isAdmin) return targetRole === 'production_house_admin';
+    return false;
+  }
+
   return {
     role,
     isSuperAdmin,
@@ -151,6 +160,7 @@ export function usePermissions() {
     canCreate,
     canUpdate,
     canDelete,
+    canManageAdmin,
     /** Audit log scope: super admin sees all, others see own */
     auditScope: isSuperAdmin ? ('all' as const) : ('own' as const),
   };

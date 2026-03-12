@@ -39,6 +39,10 @@ function makeUser(overrides: Partial<AdminUserWithDetails> = {}): AdminUserWithD
     role_assigned_at: '2024-01-01T00:00:00Z',
     assigned_by: null,
     ph_assignments: [],
+    status: 'active',
+    blocked_by: null,
+    blocked_at: null,
+    blocked_reason: null,
     ...overrides,
   };
 }
