@@ -1,6 +1,6 @@
-# Commit and Push
+# Ship
 
-Stage ONLY files changed in this conversation, generate a commit message, create the commit, and push to remote.
+Smart commit-and-push that handles all scenarios: uncommitted changes, already-committed-but-unpushed changes, or both.
 
 ## Critical: Scope Control
 
@@ -15,22 +15,30 @@ You MUST:
 
 ## Steps
 
-1. Run `git status` to see all uncommitted files.
-2. **Build your file list** by reviewing the conversation to identify ONLY files you touched in this session. List them explicitly.
-3. Run `git diff --stat HEAD -- <your files>` to confirm the scope.
-4. Run `git log --oneline -5` to match the repository's commit message style.
-5. Analyze the changes and draft a concise commit message:
+1. Run `git status` and `git log --oneline -5 @{u}..HEAD 2>/dev/null || echo "NO_UPSTREAM"` in parallel to determine the current state.
+
+2. **Determine the scenario:**
+   - **Scenario A — Uncommitted changes from this session exist:** Go to step 3 (commit flow).
+   - **Scenario B — No uncommitted changes from this session, but unpushed commits exist:** Skip to step 8 (push only).
+   - **Scenario C — No uncommitted changes and no unpushed commits:** Report "Nothing to ship" and stop.
+
+3. **Build your file list** by reviewing the conversation to identify ONLY files you touched in this session. List them explicitly.
+
+4. Run `git diff --stat HEAD -- <your files>` to confirm the scope.
+
+5. Run `git log --oneline -5` to match the repository's commit message style.
+
+6. Analyze the changes and draft a concise commit message:
    - Use conventional commit prefixes: `feat:`, `fix:`, `refactor:`, `chore:`, `test:`, `docs:`
    - Keep the first line under 72 characters
    - Add a blank line then bullet points for multi-area changes
    - Focus on the "why" not the "what"
-6. Stage ONLY your files by name:
+
+7. Stage ONLY your files by name and create the commit:
 
 ```bash
 git add path/to/file1 path/to/file2 ...
 ```
-
-7. Create the commit using a HEREDOC for proper formatting:
 
 ```bash
 git commit -m "$(cat <<'EOF'
@@ -44,14 +52,24 @@ EOF
 )"
 ```
 
-8. Run `git status` after the commit to verify success and confirm other changes remain unstaged.
+8. Run `git status` after the commit (or in Scenario B) to verify state.
+
 9. Push to remote:
 
 ```bash
 git push
 ```
 
-10. Report the commit hash, summary, and push status to the user.
+If the branch has no upstream, use:
+
+```bash
+git push -u origin HEAD
+```
+
+10. Report to the user:
+    - If committed: the commit hash and summary
+    - Push status (success/failure)
+    - Any remaining uncommitted changes (from other sessions)
 
 ## Rules
 
