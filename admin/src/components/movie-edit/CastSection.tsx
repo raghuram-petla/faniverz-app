@@ -4,19 +4,26 @@ import { Plus } from 'lucide-react';
 import { arrayMove } from '@dnd-kit/sortable';
 import { type DragEndEvent } from '@dnd-kit/core';
 import type { MovieCast, Actor } from '@/lib/types';
+import { FormInput, FormSelect } from '@/components/common/FormField';
+import { Button } from '@/components/common/Button';
 import { ActorSearchDropdown } from './ActorSearchDropdown';
 import { SortableList } from './SortableCastList';
 
 const ROLE_ORDER_OPTIONS = [
-  { value: 1, label: '1 — Director' },
-  { value: 2, label: '2 — Producer' },
-  { value: 3, label: '3 — Music Director' },
-  { value: 4, label: '4 — Director of Photography' },
-  { value: 5, label: '5 — Editor' },
-  { value: 6, label: '6 — Art Director' },
-  { value: 7, label: '7 — Stunt Choreographer' },
-  { value: 8, label: '8 — Choreographer' },
-  { value: 9, label: '9 — Lyricist' },
+  { value: '1', label: '1 — Director' },
+  { value: '2', label: '2 — Producer' },
+  { value: '3', label: '3 — Music Director' },
+  { value: '4', label: '4 — Director of Photography' },
+  { value: '5', label: '5 — Editor' },
+  { value: '6', label: '6 — Art Director' },
+  { value: '7', label: '7 — Stunt Choreographer' },
+  { value: '8', label: '8 — Choreographer' },
+  { value: '9', label: '9 — Lyricist' },
+];
+
+const CREDIT_TYPE_OPTIONS = [
+  { value: 'cast', label: 'Cast (Actor)' },
+  { value: 'crew', label: 'Crew (Technician)' },
 ];
 
 const EMPTY_CAST_FORM = {
@@ -109,7 +116,7 @@ export function CastSection({
 
   return (
     <div className="space-y-6">
-      {/* ─── Cast Section ─── */}
+      {/* Cast Section */}
       <div className="space-y-3">
         <h3 className="text-base font-bold text-on-surface">Cast</h3>
         {castItems.length > 0 ? (
@@ -119,7 +126,7 @@ export function CastSection({
         )}
       </div>
 
-      {/* ─── Crew Section ─── */}
+      {/* Crew Section */}
       <div className="space-y-3">
         <h3 className="text-base font-bold text-on-surface">Crew</h3>
         {crewItems.length > 0 ? (
@@ -129,27 +136,23 @@ export function CastSection({
         )}
       </div>
 
-      {/* ─── Add Form ─── */}
+      {/* Add Form */}
       <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
         <p className="text-sm font-semibold text-on-surface-muted">Add Cast / Crew</p>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">Type</label>
-            <select
-              value={castForm.credit_type}
-              onChange={(e) =>
-                setCastForm((p) => ({
-                  ...p,
-                  credit_type: e.target.value as 'cast' | 'crew',
-                  role_order: '',
-                }))
-              }
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            >
-              <option value="cast">Cast (Actor)</option>
-              <option value="crew">Crew (Technician)</option>
-            </select>
-          </div>
+          <FormSelect
+            label="Type"
+            variant="compact"
+            value={castForm.credit_type}
+            options={CREDIT_TYPE_OPTIONS}
+            onValueChange={(v) =>
+              setCastForm((p) => ({
+                ...p,
+                credit_type: v as 'cast' | 'crew',
+                role_order: '',
+              }))
+            }
+          />
           <ActorSearchDropdown
             actors={actors}
             searchQuery={castSearchQuery}
@@ -165,44 +168,34 @@ export function CastSection({
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">
-              {castForm.credit_type === 'cast' ? 'Character Name' : 'Role Title'}
-            </label>
-            <input
-              type="text"
-              placeholder={castForm.credit_type === 'cast' ? 'e.g. Arjun' : 'e.g. Director'}
-              value={castForm.role_name}
-              onChange={(e) => setCastForm((p) => ({ ...p, role_name: e.target.value }))}
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            />
-          </div>
+          <FormInput
+            label={castForm.credit_type === 'cast' ? 'Character Name' : 'Role Title'}
+            variant="compact"
+            type="text"
+            placeholder={castForm.credit_type === 'cast' ? 'e.g. Arjun' : 'e.g. Director'}
+            value={castForm.role_name}
+            onValueChange={(v) => setCastForm((p) => ({ ...p, role_name: v }))}
+          />
           {castForm.credit_type === 'crew' && (
-            <div>
-              <label className="block text-xs text-on-surface-subtle mb-1">Role Order</label>
-              <select
-                value={castForm.role_order}
-                onChange={(e) => setCastForm((p) => ({ ...p, role_order: e.target.value }))}
-                className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-              >
-                <option value="">Select role…</option>
-                {ROLE_ORDER_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <FormSelect
+              label="Role Order"
+              variant="compact"
+              value={castForm.role_order}
+              options={ROLE_ORDER_OPTIONS}
+              placeholder="Select role…"
+              onValueChange={(v) => setCastForm((p) => ({ ...p, role_order: v }))}
+            />
           )}
         </div>
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="md"
           disabled={!castForm.actor_id}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+          icon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" />
           Add Entry
-        </button>
+        </Button>
       </form>
     </div>
   );

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getMovieDetails, getPersonDetails, TMDB_IMAGE } from '@/lib/tmdb';
+import { ensureTmdbApiKey, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/lookup
@@ -9,10 +10,8 @@ import { getMovieDetails, getPersonDetails, TMDB_IMAGE } from '@/lib/tmdb';
  */
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.TMDB_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'TMDB_API_KEY is not configured.' }, { status: 503 });
-    }
+    const tmdb = ensureTmdbApiKey();
+    if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
     const { tmdbId, type } = body as { tmdbId: number; type: 'movie' | 'person' };
@@ -24,7 +23,7 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     if (type === 'movie') {
-      const detail = await getMovieDetails(tmdbId, apiKey);
+      const detail = await getMovieDetails(tmdbId, tmdb.apiKey);
 
       // Check if already in our DB
       const { data: existing } = await supabase
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
         },
       });
     } else {
-      const person = await getPersonDetails(tmdbId, apiKey);
+      const person = await getPersonDetails(tmdbId, tmdb.apiKey);
 
       // Check if already in our DB
       const { data: existing } = await supabase
@@ -79,10 +78,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (err) {
-    console.error('Lookup failed:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Lookup failed' },
-      { status: 500 },
-    );
+    return errorResponse('Lookup', err);
   }
 }

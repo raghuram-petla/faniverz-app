@@ -6,6 +6,7 @@ import { useTheme } from '@/theme';
 import { createStyles } from '@/styles/search.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { MovieRating } from '@/components/ui/MovieRating';
 import type { Movie } from '@/types';
 
 export interface TrendingMoviesProps {
@@ -45,8 +46,7 @@ export function TrendingMovies({ movies, onMoviePress }: TrendingMoviesProps) {
               {movie.title}
             </Text>
             <View style={styles.trendingMeta}>
-              <Ionicons name="star" size={12} color={colors.yellow400} />
-              <Text style={styles.trendingRating}>{movie.rating}</Text>
+              <MovieRating rating={movie.rating} size={12} textStyle={styles.trendingRating} />
               <Text style={styles.trendingDot}>•</Text>
               <Text style={styles.trendingReviews}>
                 {movie.review_count} {t('search.reviews')}

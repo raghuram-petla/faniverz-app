@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+import { MAX_FILE_SIZE } from '@/lib/upload-config';
 
 /** Standalone upload utility for non-hook contexts (e.g. createMovieEditHandlers) */
 export async function uploadImage(file: File, endpoint: string): Promise<string> {

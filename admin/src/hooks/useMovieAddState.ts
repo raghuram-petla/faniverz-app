@@ -14,7 +14,7 @@ import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { useMovieEditDerived } from '@/hooks/useMovieEditDerived';
 import { useMovieEditPendingState } from '@/hooks/useMovieEditPendingState';
-import { uploadImage } from '@/hooks/useImageUpload';
+import { createCommonFormHandlers } from '@/hooks/createCommonFormHandlers';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
 
 const INITIAL_FORM: MovieForm = {
@@ -82,80 +82,8 @@ export function useMovieAddState() {
 
   useUnsavedChangesWarning(derived.isDirty);
 
-  // ── Handlers ──
-  function updateField(field: string, value: string | string[] | boolean) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
-  async function handleImageUpload(
-    file: File,
-    endpoint: string,
-    field: 'poster_url' | 'backdrop_url',
-    setUploading: (v: boolean) => void,
-  ) {
-    setUploading(true);
-    try {
-      const url = await uploadImage(file, endpoint);
-      setForm((prev) => ({ ...prev, [field]: url }));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
-    }
-  }
-  function toggleGenre(genre: string) {
-    setForm((prev) => ({
-      ...prev,
-      genres: prev.genres.includes(genre)
-        ? prev.genres.filter((g) => g !== genre)
-        : [...prev.genres, genre],
-    }));
-  }
-  function handleVideoRemove(videoId: string, isPending: boolean) {
-    if (isPending) {
-      const idx = Number(videoId.replace('pending-video-', ''));
-      pending.setPendingVideoAdds((prev) => prev.filter((_, i) => i !== idx));
-    } else {
-      pending.setPendingVideoRemoveIds((prev) => new Set([...prev, videoId]));
-    }
-  }
-  function handlePosterRemove(posterId: string, isPending: boolean) {
-    if (isPending) {
-      const idx = Number(posterId.replace('pending-poster-', ''));
-      pending.setPendingPosterAdds((prev) => prev.filter((_, i) => i !== idx));
-    } else {
-      pending.setPendingPosterRemoveIds((prev) => new Set([...prev, posterId]));
-    }
-  }
-  function handlePlatformRemove(platformId: string, isPending: boolean) {
-    if (isPending) {
-      pending.setPendingPlatformAdds((prev) => prev.filter((p) => p.platform_id !== platformId));
-    } else {
-      pending.setPendingPlatformRemoveIds((prev) => new Set([...prev, platformId]));
-    }
-  }
-  function handlePHRemove(phId: string, isPending: boolean) {
-    if (isPending) {
-      pending.setPendingPHAdds((prev) => prev.filter((p) => p.production_house_id !== phId));
-    } else {
-      pending.setPendingPHRemoveIds((prev) => new Set([...prev, phId]));
-    }
-  }
-  function handleCastRemove(castId: string, isPending: boolean) {
-    if (isPending) {
-      const idx = Number(castId.replace('pending-cast-', ''));
-      pending.setPendingCastAdds((prev) => prev.filter((_, i) => i !== idx));
-    } else {
-      pending.setPendingCastRemoveIds((prev) => new Set([...prev, castId]));
-    }
-  }
-  function handleRunRemove(runId: string, isPending: boolean) {
-    if (isPending) {
-      const idx = Number(runId.replace('pending-run-', ''));
-      pending.setPendingRunAdds((prev) => prev.filter((_, i) => i !== idx));
-    } else {
-      pending.setPendingRunRemoveIds((prev) => new Set([...prev, runId]));
-    }
-  }
+  // ── Shared handlers (updateField, toggleGenre, handleImageUpload, 6 remove handlers) ──
+  const common = createCommonFormHandlers({ setForm, ...pending });
 
   // ── Two-phase submit ──
   async function handleSubmit(e?: React.FormEvent) {
@@ -252,15 +180,13 @@ export function useMovieAddState() {
   return {
     form,
     setForm,
-    updateField,
-    toggleGenre,
+    ...common,
     uploadingPoster,
     setUploadingPoster,
     uploadingBackdrop,
     setUploadingBackdrop,
     posterInputRef,
     backdropInputRef,
-    handleImageUpload,
     setPendingVideoAdds: pending.setPendingVideoAdds,
     setPendingPosterAdds: pending.setPendingPosterAdds,
     setPendingPlatformAdds: pending.setPendingPlatformAdds,
@@ -269,12 +195,6 @@ export function useMovieAddState() {
     setPendingRunAdds: pending.setPendingRunAdds,
     setPendingMainPosterId: pending.setPendingMainPosterId,
     setLocalCastOrder: pending.setLocalCastOrder,
-    handleVideoRemove,
-    handlePosterRemove,
-    handlePlatformRemove,
-    handlePHRemove,
-    handleCastRemove,
-    handleRunRemove,
     visibleCast: derived.visibleCast,
     visibleVideos: derived.visibleVideos,
     visiblePosters: derived.visiblePosters,

@@ -1,6 +1,5 @@
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { getImageUrl } from '@shared/imageUrl';
@@ -12,6 +11,7 @@ import type { OTTPlatform } from '@/types/ott';
 import type { SemanticTheme } from '@shared/themes';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from '@/components/movie/MovieQuickAction';
+import { MovieRating } from '@/components/ui/MovieRating';
 
 export interface SearchResultMovieProps {
   movie: Movie;
@@ -20,7 +20,7 @@ export interface SearchResultMovieProps {
 }
 
 export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMovieProps) {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const s = createStyles(theme);
   const status = deriveMovieStatus(movie, platforms.length);
   const { actionType, isActive, onPress: handleAction } = useMovieAction(movie, platforms.length);
@@ -53,12 +53,12 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
           <View style={[s.badge, { backgroundColor: getMovieStatusColor(status) }]}>
             <Text style={s.badgeText}>{getMovieStatusLabel(status)}</Text>
           </View>
-          {movie.rating > 0 && (
-            <View style={s.rating}>
-              <Ionicons name="star" size={12} color={colors.yellow400} />
-              <Text style={s.ratingText}>{movie.rating}</Text>
-            </View>
-          )}
+          <MovieRating
+            rating={movie.rating}
+            size={12}
+            containerStyle={s.rating}
+            textStyle={s.ratingText}
+          />
         </View>
         {movie.director && <Text style={s.director}>{movie.director}</Text>}
         {movie.genres.length > 0 && (

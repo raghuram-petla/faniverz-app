@@ -16,6 +16,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createProductionHouseStyles } from '@/styles/productionHouseDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { extractReleaseYear } from '@/utils/formatDate';
 import { ProductionHouseDetailSkeleton } from '@/components/productionHouse/ProductionHouseDetailSkeleton';
 
 export default function ProductionHouseDetailScreen() {
@@ -123,7 +124,7 @@ export default function ProductionHouseDetailScreen() {
         ) : (
           <View style={styles.moviesList}>
             {movies.map((movie) => {
-              const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+              const year = extractReleaseYear(movie.release_date);
               return (
                 <TouchableOpacity
                   key={movie.id}

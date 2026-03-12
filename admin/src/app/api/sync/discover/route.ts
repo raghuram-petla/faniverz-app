@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { discoverTeluguMovies, discoverTeluguMoviesByMonth } from '@/lib/tmdb';
+import { ensureTmdbApiKey, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/discover
@@ -10,10 +11,8 @@ import { discoverTeluguMovies, discoverTeluguMoviesByMonth } from '@/lib/tmdb';
  */
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.TMDB_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'TMDB_API_KEY is not configured.' }, { status: 503 });
-    }
+    const tmdb = ensureTmdbApiKey();
+    if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
     const { year, month } = body as { year: number; month?: number };
@@ -24,8 +23,8 @@ export async function POST(request: NextRequest) {
 
     // Discover from TMDB
     const results = month
-      ? await discoverTeluguMoviesByMonth(year, month, apiKey)
-      : await discoverTeluguMovies(year, apiKey);
+      ? await discoverTeluguMoviesByMonth(year, month, tmdb.apiKey)
+      : await discoverTeluguMovies(year, tmdb.apiKey);
 
     // Batch-check which tmdb_ids already exist in our DB
     const tmdbIds = results.map((m) => m.id);
@@ -39,10 +38,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ results, existingTmdbIds });
   } catch (err) {
-    console.error('Discover failed:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Discovery failed' },
-      { status: 500 },
-    );
+    return errorResponse('Discover', err);
   }
 }

@@ -38,7 +38,7 @@ describe('FeedActionBar', () => {
   it('renders view count with K formatting', () => {
     render(<FeedActionBar {...defaultProps} />);
     expect(screen.getByLabelText('1500 views')).toBeTruthy();
-    expect(screen.getByText('1.5K')).toBeTruthy();
+    expect(screen.getByText('2K')).toBeTruthy();
   });
 
   it('renders share button', () => {

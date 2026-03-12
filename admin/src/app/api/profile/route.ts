@@ -1,29 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, type User } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { verifyBearer } from '@/lib/sync-helpers';
 
 const ALLOWED_FIELDS = ['avatar_url', 'display_name'] as const;
 
-async function verifyAuth(req: NextRequest): Promise<User | null> {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
-
-  const token = authHeader.slice(7);
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-  const {
-    data: { user },
-    error,
-  } = await supabaseAuth.auth.getUser(token);
-
-  return error || !user ? null : user;
-}
-
 export async function GET(req: NextRequest) {
   try {
-    const user = await verifyAuth(req);
+    const user = await verifyBearer(req.headers.get('authorization'));
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -39,7 +22,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await verifyAuth(req);
+    const user = await verifyBearer(req.headers.get('authorization'));
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

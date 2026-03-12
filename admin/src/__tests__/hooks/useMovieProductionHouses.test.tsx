@@ -41,7 +41,8 @@ describe('useMovieProductionHouses', () => {
       },
     ];
 
-    const mockEq = vi.fn().mockResolvedValue({ data: mockData, error: null });
+    const mockOrder = vi.fn().mockResolvedValue({ data: mockData, error: null });
+    const mockEq = vi.fn().mockReturnValue({ order: mockOrder });
 
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({ eq: mockEq }),

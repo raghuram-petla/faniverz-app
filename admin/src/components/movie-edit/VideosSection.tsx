@@ -4,6 +4,8 @@ import { Plus, X } from 'lucide-react';
 import { VIDEO_TYPES } from '@shared/constants';
 import type { VideoType, MovieVideo } from '@/lib/types';
 import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
+import { FormInput, FormSelect } from '@/components/common/FormField';
+import { Button } from '@/components/common/Button';
 
 const EMPTY_VIDEO_FORM = {
   youtube_input: '',
@@ -70,8 +72,11 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
               Import it as the first video entry?
             </p>
           </div>
-          <button
+          <Button
             type="button"
+            variant="blue"
+            size="md"
+            icon={<Plus className="w-4 h-4" />}
             onClick={() => {
               const youtubeId = extractYouTubeId(trailerUrl);
               if (!youtubeId) {
@@ -88,10 +93,9 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
                 display_order: 0,
               });
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 shrink-0"
           >
-            <Plus className="w-4 h-4" /> Import
-          </button>
+            Import
+          </Button>
         </div>
       )}
 
@@ -119,13 +123,14 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
                   )}
                 </div>
               </div>
-              <button
+              <Button
+                variant="icon"
+                size="sm"
                 onClick={() => onRemove(video.id, video.id.startsWith('pending-video-'))}
-                className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
                 aria-label={`Remove ${video.title}`}
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -134,65 +139,49 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
       <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
         <p className="text-sm font-semibold text-on-surface-muted">Add Video</p>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">YouTube URL or ID *</label>
-            <input
-              type="text"
-              required
-              placeholder="https://youtube.com/watch?v=... or dQw4w9WgXcQ"
-              value={videoForm.youtube_input}
-              onChange={(e) => setVideoForm((p) => ({ ...p, youtube_input: e.target.value }))}
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">Type *</label>
-            <select
-              value={videoForm.video_type}
-              onChange={(e) =>
-                setVideoForm((p) => ({ ...p, video_type: e.target.value as VideoType }))
-              }
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            >
-              {VIDEO_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs text-on-surface-subtle mb-1">Title *</label>
-          <input
-            type="text"
+          <FormInput
+            label="YouTube URL or ID"
             required
-            placeholder="e.g. Official Trailer"
-            value={videoForm.title}
-            onChange={(e) => setVideoForm((p) => ({ ...p, title: e.target.value }))}
-            className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
+            variant="compact"
+            type="text"
+            placeholder="https://youtube.com/watch?v=... or dQw4w9WgXcQ"
+            value={videoForm.youtube_input}
+            onValueChange={(v) => setVideoForm((p) => ({ ...p, youtube_input: v }))}
+          />
+          <FormSelect
+            label="Type"
+            required
+            variant="compact"
+            value={videoForm.video_type}
+            options={VIDEO_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+            onValueChange={(v) => setVideoForm((p) => ({ ...p, video_type: v as VideoType }))}
           />
         </div>
+        <FormInput
+          label="Title"
+          required
+          variant="compact"
+          type="text"
+          placeholder="e.g. Official Trailer"
+          value={videoForm.title}
+          onValueChange={(v) => setVideoForm((p) => ({ ...p, title: v }))}
+        />
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">Duration</label>
-            <input
-              type="text"
-              placeholder="e.g. 2:34"
-              value={videoForm.duration}
-              onChange={(e) => setVideoForm((p) => ({ ...p, duration: e.target.value }))}
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">Date</label>
-            <input
-              type="date"
-              value={videoForm.video_date}
-              onChange={(e) => setVideoForm((p) => ({ ...p, video_date: e.target.value }))}
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            />
-          </div>
+          <FormInput
+            label="Duration"
+            variant="compact"
+            type="text"
+            placeholder="e.g. 2:34"
+            value={videoForm.duration}
+            onValueChange={(v) => setVideoForm((p) => ({ ...p, duration: v }))}
+          />
+          <FormInput
+            label="Date"
+            variant="compact"
+            type="date"
+            value={videoForm.video_date}
+            onValueChange={(v) => setVideoForm((p) => ({ ...p, video_date: v }))}
+          />
         </div>
         {/* YouTube embed preview */}
         {extractYouTubeId(videoForm.youtube_input) && (
@@ -205,14 +194,15 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
             />
           </div>
         )}
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="md"
           disabled={!videoForm.youtube_input || !videoForm.title}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+          icon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" />
           Add Video
-        </button>
+        </Button>
       </form>
     </div>
   );

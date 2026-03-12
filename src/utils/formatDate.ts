@@ -41,3 +41,11 @@ export function formatWatchTime(minutes: number): string {
   const h = Math.floor(minutes / 60);
   return `${h}h`;
 }
+
+/**
+ * Extract the year from a date string. Returns null for undefined/null/empty input.
+ */
+export function extractReleaseYear(dateStr?: string | null): number | null {
+  if (!dateStr) return null;
+  return new Date(dateStr).getFullYear();
+}

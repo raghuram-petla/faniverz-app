@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Building2, Plus, X } from 'lucide-react';
 import type { ProductionHouse } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
+import { INPUT_CLASSES } from '@/components/common/FormField';
+import { Button } from '@/components/common/Button';
 
 type PendingPH = {
   production_house_id: string;
@@ -55,18 +57,19 @@ export function ProductionHousesSection({
               <span className="text-on-surface font-medium flex-1">
                 {mph.production_house?.name ?? mph.production_house_id}
               </span>
-              <button
+              <Button
+                variant="icon"
+                size="sm"
                 onClick={() => {
                   const isPending = pendingPHAdds.some(
                     (p) => p.production_house_id === mph.production_house_id,
                   );
                   onRemove(mph.production_house_id, isPending);
                 }}
-                className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
                 aria-label={`Remove ${mph.production_house?.name}`}
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -78,7 +81,7 @@ export function ProductionHousesSection({
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="flex-1 bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
+            className={`flex-1 ${INPUT_CLASSES.compact}`}
           >
             <option value="">Select production house…</option>
             {allProductionHouses
@@ -91,19 +94,20 @@ export function ProductionHousesSection({
                 </option>
               ))}
           </select>
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             disabled={!selectedId}
+            icon={<Plus className="w-4 h-4" />}
             onClick={() => {
               const ph = allProductionHouses.find((p) => p.id === selectedId);
               onAdd({ production_house_id: selectedId, _ph: ph });
               setSelectedId('');
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
           >
-            <Plus className="w-4 h-4" />
             Add
-          </button>
+          </Button>
         </div>
       </div>
     </div>

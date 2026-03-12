@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
+import { ensureTmdbApiKey, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/refresh-movie
@@ -9,10 +10,8 @@ import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync
  */
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.TMDB_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'TMDB_API_KEY is not configured.' }, { status: 503 });
-    }
+    const tmdb = ensureTmdbApiKey();
+    if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
     const { movieId } = body as { movieId: string };
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
     const syncLogId = await createSyncLog(supabase, `refresh-movie`);
 
     try {
-      const result = await processMovieFromTmdb(movie.tmdb_id, apiKey, supabase);
+      const result = await processMovieFromTmdb(movie.tmdb_id, tmdb.apiKey, supabase);
 
       await completeSyncLog(supabase, syncLogId, {
         status: 'success',
@@ -63,10 +62,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 500 });
     }
   } catch (err) {
-    console.error('Refresh movie failed:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Refresh failed' },
-      { status: 500 },
-    );
+    return errorResponse('Refresh movie', err);
   }
 }

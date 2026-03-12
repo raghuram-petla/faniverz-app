@@ -3,9 +3,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { generateVariants, type ImageVariant } from '@/lib/image-resize';
 import { getR2Client } from '@/lib/r2-client';
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/upload-config';
 
 export interface UploadConfig {
   bucket: string;
@@ -32,7 +30,7 @@ export function createUploadHandler(config: UploadConfig) {
         return NextResponse.json({ error: 'No file provided' }, { status: 400 });
       }
 
-      if (!ALLOWED_TYPES.includes(file.type)) {
+      if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
         return NextResponse.json(
           { error: 'Invalid file type. Only JPEG, PNG, and WebP are allowed.' },
           { status: 400 },

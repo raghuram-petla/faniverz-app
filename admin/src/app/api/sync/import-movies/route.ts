@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
+import { ensureTmdbApiKey, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/import-movies
@@ -9,10 +10,8 @@ import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync
  */
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.TMDB_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'TMDB_API_KEY is not configured.' }, { status: 503 });
-    }
+    const tmdb = ensureTmdbApiKey();
+    if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
     const { tmdbIds } = body as { tmdbIds: number[] };
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     for (const tmdbId of tmdbIds) {
       try {
-        const result = await processMovieFromTmdb(tmdbId, apiKey, supabase);
+        const result = await processMovieFromTmdb(tmdbId, tmdb.apiKey, supabase);
         results.push(result);
         if (result.isNew) added++;
         else updated++;
@@ -58,10 +57,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ syncLogId, results, errors });
   } catch (err) {
-    console.error('Import failed:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Import failed' },
-      { status: 500 },
-    );
+    return errorResponse('Import movies', err);
   }
 }

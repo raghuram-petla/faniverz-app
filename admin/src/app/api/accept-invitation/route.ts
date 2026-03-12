@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { verifyBearer } from '@/lib/sync-helpers';
 
 /**
  * POST /api/accept-invitation
@@ -11,19 +11,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 export async function POST(req: NextRequest) {
   try {
     // Verify the caller's identity via their access token
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const token = authHeader.slice(7);
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const supabaseAuth = createClient(supabaseUrl, anonKey);
-    const {
-      data: { user: authUser },
-      error: authErr,
-    } = await supabaseAuth.auth.getUser(token);
-    if (authErr || !authUser) {
+    const authUser = await verifyBearer(req.headers.get('authorization'));
+    if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

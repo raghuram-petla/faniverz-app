@@ -18,6 +18,7 @@ import { ReviewModal } from '@/components/movie/detail/ReviewModal';
 import { MovieDetailHeader } from '@/components/movie/detail/MovieDetailHeader';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTheme } from '@/theme';
+import { extractReleaseYear } from '@/utils/formatDate';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
@@ -74,7 +75,8 @@ export default function MovieDetailScreen() {
   }
 
   const handleShare = async () => {
-    const text = `${movie.title}${movie.release_date ? ` (${new Date(movie.release_date).getFullYear()})` : ''} — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;
+    const year = extractReleaseYear(movie.release_date);
+    const text = `${movie.title}${year ? ` (${year})` : ''} — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;
     await Share.share({ message: text });
   };
 
@@ -96,7 +98,7 @@ export default function MovieDetailScreen() {
   });
 
   const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
-  const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+  const releaseYear = extractReleaseYear(movie.release_date);
   const tabLabels: Record<DisplayTab, string> = {
     overview: t('movie.overview'),
     media: t('movieDetail.media'),

@@ -1,5 +1,7 @@
 'use client';
 import type { MovieForm } from '@/hooks/useMovieEditState';
+import { FormInput, FormSelect, FormTextarea, FormField } from '@/components/common/FormField';
+import { Button } from '@/components/common/Button';
 import { ImageUploadField } from './ImageUploadField';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 import { BackdropFocalPicker } from './BackdropFocalPicker';
@@ -17,6 +19,23 @@ const genres = [
   'Family',
   'Adventure',
   'Historical',
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: '', label: 'Not set' },
+  { value: 'te', label: 'Telugu' },
+  { value: 'hi', label: 'Hindi' },
+  { value: 'ta', label: 'Tamil' },
+  { value: 'kn', label: 'Kannada' },
+  { value: 'ml', label: 'Malayalam' },
+  { value: 'en', label: 'English' },
+];
+
+const CERTIFICATION_OPTIONS = [
+  { value: '', label: 'None' },
+  { value: 'U', label: 'U' },
+  { value: 'UA', label: 'UA' },
+  { value: 'A', label: 'A' },
 ];
 
 interface BasicInfoSectionProps {
@@ -53,28 +72,21 @@ export function BasicInfoSection({
 }: BasicInfoSectionProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm text-on-surface-muted mb-1">Title *</label>
-        <input
-          type="text"
-          required
-          value={form.title}
-          onChange={(e) => updateField('title', e.target.value)}
-          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-        />
-      </div>
+      <FormInput
+        label="Title"
+        required
+        type="text"
+        value={form.title}
+        onValueChange={(v) => updateField('title', v)}
+      />
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Release Date</label>
-          <input
-            type="date"
-            value={form.release_date}
-            onChange={(e) => updateField('release_date', e.target.value)}
-            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Currently In Theaters</label>
+        <FormInput
+          label="Release Date"
+          type="date"
+          value={form.release_date}
+          onValueChange={(v) => updateField('release_date', v)}
+        />
+        <FormField label="Currently In Theaters">
           <label className="flex items-center gap-3 bg-input rounded-xl px-4 py-3 cursor-pointer">
             <input
               type="checkbox"
@@ -86,37 +98,23 @@ export function BasicInfoSection({
               {form.in_theaters ? 'Yes — In Theaters' : 'No'}
             </span>
           </label>
-        </div>
+        </FormField>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Director</label>
-          <input
-            type="text"
-            value={form.director}
-            onChange={(e) => updateField('director', e.target.value)}
-            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Original Language</label>
-          <select
-            value={form.original_language}
-            onChange={(e) => updateField('original_language', e.target.value)}
-            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-          >
-            <option value="">Not set</option>
-            <option value="te">Telugu</option>
-            <option value="hi">Hindi</option>
-            <option value="ta">Tamil</option>
-            <option value="kn">Kannada</option>
-            <option value="ml">Malayalam</option>
-            <option value="en">English</option>
-          </select>
-        </div>
+        <FormInput
+          label="Director"
+          type="text"
+          value={form.director}
+          onValueChange={(v) => updateField('director', v)}
+        />
+        <FormSelect
+          label="Original Language"
+          value={form.original_language}
+          options={LANGUAGE_OPTIONS}
+          onValueChange={(v) => updateField('original_language', v)}
+        />
       </div>
-      <div>
-        <label className="block text-sm text-on-surface-muted mb-1">Featured Movie</label>
+      <FormField label="Featured Movie">
         <label className="flex items-center gap-3 bg-input rounded-xl px-4 py-3 cursor-pointer">
           <input
             type="checkbox"
@@ -128,30 +126,20 @@ export function BasicInfoSection({
             {form.is_featured ? 'Yes — Featured on home screen' : 'No'}
           </span>
         </label>
-      </div>
+      </FormField>
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Runtime (min)</label>
-          <input
-            type="number"
-            value={form.runtime}
-            onChange={(e) => updateField('runtime', e.target.value)}
-            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Certification</label>
-          <select
-            value={form.certification}
-            onChange={(e) => updateField('certification', e.target.value)}
-            className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-          >
-            <option value="">None</option>
-            <option value="U">U</option>
-            <option value="UA">UA</option>
-            <option value="A">A</option>
-          </select>
-        </div>
+        <FormInput
+          label="Runtime (min)"
+          type="number"
+          value={form.runtime}
+          onValueChange={(v) => updateField('runtime', v)}
+        />
+        <FormSelect
+          label="Certification"
+          value={form.certification}
+          options={CERTIFICATION_OPTIONS}
+          onValueChange={(v) => updateField('certification', v)}
+        />
       </div>
       {/* Poster */}
       <ImageUploadField
@@ -197,40 +185,36 @@ export function BasicInfoSection({
       />
 
       {/* Trailer URL */}
-      <div>
-        <label className="block text-sm text-on-surface-muted mb-1">Trailer URL</label>
-        <input
-          type="url"
-          value={form.trailer_url}
-          onChange={(e) => updateField('trailer_url', e.target.value)}
-          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-        />
-      </div>
+      <FormInput
+        label="Trailer URL"
+        type="url"
+        value={form.trailer_url}
+        onValueChange={(v) => updateField('trailer_url', v)}
+      />
 
       {/* Synopsis */}
-      <div>
-        <label className="block text-sm text-on-surface-muted mb-1">Synopsis</label>
-        <textarea
-          rows={4}
-          value={form.synopsis}
-          onChange={(e) => updateField('synopsis', e.target.value)}
-          className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600 resize-none"
-        />
-      </div>
+      <FormTextarea
+        label="Synopsis"
+        rows={4}
+        value={form.synopsis}
+        onValueChange={(v) => updateField('synopsis', v)}
+      />
 
       {/* Genres */}
       <div>
         <label className="block text-sm text-on-surface-muted mb-2">Genres</label>
         <div className="flex flex-wrap gap-2">
           {genres.map((genre) => (
-            <button
+            <Button
               key={genre}
               type="button"
+              variant={form.genres.includes(genre) ? 'primary' : 'secondary'}
+              size="sm"
               onClick={() => toggleGenre(genre)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${form.genres.includes(genre) ? 'bg-red-600 text-white' : 'bg-input text-on-surface-muted hover:bg-input-active'}`}
+              className={form.genres.includes(genre) ? '' : 'hover:bg-input-active'}
             >
               {genre}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

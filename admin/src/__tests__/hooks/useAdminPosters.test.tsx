@@ -50,7 +50,7 @@ describe('useMoviePosters', () => {
 
     expect(mockFrom).toHaveBeenCalledWith('movie_posters');
     expect(mockEq).toHaveBeenCalledWith('movie_id', 'm1');
-    expect(mockOrder).toHaveBeenCalledWith('display_order');
+    expect(mockOrder).toHaveBeenCalledWith('display_order', { ascending: true });
     expect(result.current.data).toEqual(mockPosters);
   });
 

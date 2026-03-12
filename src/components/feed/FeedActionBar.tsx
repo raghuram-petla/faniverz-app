@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { formatCompactNumber } from '@/utils/formatNumber';
 
 export interface FeedActionBarProps {
   commentCount: number;
@@ -12,12 +13,6 @@ export interface FeedActionBarProps {
   onUpvote?: () => void;
   onDownvote?: () => void;
   onShare?: () => void;
-}
-
-function formatCount(count: number): string {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`;
-  if (count >= 1_000) return `${(count / 1_000).toFixed(1)}K`;
-  return String(count);
 }
 
 export function FeedActionBar({
@@ -53,7 +48,9 @@ export function FeedActionBar({
         accessibilityLabel={`Comments, ${safeComments} comments`}
       >
         <Ionicons name="chatbubble-outline" size={18} color={defaultColor} />
-        <Text style={[styles.count, { color: defaultColor }]}>{formatCount(safeComments)}</Text>
+        <Text style={[styles.count, { color: defaultColor }]}>
+          {formatCompactNumber(safeComments)}
+        </Text>
       </TouchableOpacity>
 
       {/* Upvote */}
@@ -70,7 +67,7 @@ export function FeedActionBar({
           size={18}
           color={upColor}
         />
-        <Text style={[styles.count, { color: upColor }]}>{formatCount(safeUpvotes)}</Text>
+        <Text style={[styles.count, { color: upColor }]}>{formatCompactNumber(safeUpvotes)}</Text>
       </TouchableOpacity>
 
       {/* Downvote */}
@@ -87,13 +84,17 @@ export function FeedActionBar({
           size={18}
           color={downColor}
         />
-        <Text style={[styles.count, { color: downColor }]}>{formatCount(safeDownvotes)}</Text>
+        <Text style={[styles.count, { color: downColor }]}>
+          {formatCompactNumber(safeDownvotes)}
+        </Text>
       </TouchableOpacity>
 
       {/* Views */}
       <View style={styles.actionItem} accessibilityLabel={`${safeViews} views`}>
         <Ionicons name="eye-outline" size={18} color={defaultColor} />
-        <Text style={[styles.count, { color: defaultColor }]}>{formatCount(safeViews)}</Text>
+        <Text style={[styles.count, { color: defaultColor }]}>
+          {formatCompactNumber(safeViews)}
+        </Text>
       </View>
 
       {/* Share */}

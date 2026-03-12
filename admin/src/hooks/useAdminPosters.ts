@@ -1,74 +1,21 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { createMovieChildHooks } from './createMovieChildHooks';
 import type { MoviePoster } from '@/lib/types';
 
-export function useMoviePosters(movieId: string) {
-  return useQuery({
-    queryKey: ['admin', 'posters', movieId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('movie_posters')
-        .select('*')
-        .eq('movie_id', movieId)
-        .order('display_order');
-      if (error) throw error;
-      return data as MoviePoster[];
-    },
-    enabled: !!movieId,
-  });
-}
+const {
+  useList: useMoviePosters,
+  useAdd: useAddPoster,
+  useUpdate: useUpdatePoster,
+  useRemove: useRemovePoster,
+} = createMovieChildHooks<MoviePoster>({
+  table: 'movie_posters',
+  keySuffix: 'posters',
+  orderBy: 'display_order',
+});
 
-export function useAddPoster() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (poster: Partial<MoviePoster>) => {
-      const { data, error } = await supabase.from('movie_posters').insert(poster).select().single();
-      if (error) throw error;
-      return data as MoviePoster;
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'posters', variables.movie_id] });
-    },
-  });
-}
-
-export function useUpdatePoster() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      movieId,
-      ...poster
-    }: Partial<MoviePoster> & { id: string; movieId: string }) => {
-      const { data, error } = await supabase
-        .from('movie_posters')
-        .update(poster)
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return { ...data, movieId } as MoviePoster & { movieId: string };
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'posters', data.movieId] });
-    },
-  });
-}
-
-export function useRemovePoster() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
-      const { error } = await supabase.from('movie_posters').delete().eq('id', id);
-      if (error) throw error;
-      return movieId;
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'posters', variables.movieId] });
-    },
-  });
-}
+export { useMoviePosters, useAddPoster, useUpdatePoster, useRemovePoster };
 
 export function useSetMainPoster() {
   const qc = useQueryClient();

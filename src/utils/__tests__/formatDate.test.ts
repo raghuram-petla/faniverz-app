@@ -1,4 +1,10 @@
-import { formatRelativeTime, formatDate, formatMemberSince, formatWatchTime } from '../formatDate';
+import {
+  formatRelativeTime,
+  formatDate,
+  formatMemberSince,
+  formatWatchTime,
+  extractReleaseYear,
+} from '../formatDate';
 
 describe('formatRelativeTime', () => {
   beforeEach(() => {
@@ -140,5 +146,23 @@ describe('formatWatchTime', () => {
 
   it('formats 150 minutes as "2h" (floors partial hours)', () => {
     expect(formatWatchTime(150)).toBe('2h');
+  });
+});
+
+describe('extractReleaseYear', () => {
+  it('returns year from valid date string', () => {
+    expect(extractReleaseYear('2025-06-15T12:00:00Z')).toBe(2025);
+  });
+
+  it('returns null for undefined', () => {
+    expect(extractReleaseYear(undefined)).toBeNull();
+  });
+
+  it('returns null for null', () => {
+    expect(extractReleaseYear(null)).toBeNull();
+  });
+
+  it('returns null for empty string', () => {
+    expect(extractReleaseYear('')).toBeNull();
   });
 });

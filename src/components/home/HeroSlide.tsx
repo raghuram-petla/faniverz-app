@@ -10,6 +10,7 @@ import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { getMovieActionType } from '@/hooks/useMovieAction';
+import { extractReleaseYear } from '@/utils/formatDate';
 import { createStyles } from './HeroCarousel.styles';
 import type { Movie, OTTPlatform } from '@/types';
 
@@ -33,7 +34,7 @@ export function HeroSlide({
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
 
-  const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+  const releaseYear = extractReleaseYear(movie.release_date);
   const status = deriveMovieStatus(movie, platforms.length);
   const actionType = getMovieActionType(status);
   const isActionActive = actionType === 'follow' ? isFollowed : isInWatchlist;

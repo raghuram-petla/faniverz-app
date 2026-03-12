@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Film, Plus, X } from 'lucide-react';
 import type { OTTPlatform, MoviePlatform } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
+import { INPUT_CLASSES } from '@/components/common/FormField';
+import { Button } from '@/components/common/Button';
 
 type PendingPlatform = {
   platform_id: string;
@@ -63,18 +65,19 @@ export function PlatformsSection({
                   </span>
                 )}
               </div>
-              <button
+              <Button
+                variant="icon"
+                size="sm"
                 onClick={() => {
                   const isPending = pendingPlatformAdds.some(
                     (p) => p.platform_id === mp.platform_id,
                   );
                   onRemove(mp.platform_id, isPending);
                 }}
-                className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
                 aria-label={`Remove ${mp.platform?.name}`}
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -86,7 +89,7 @@ export function PlatformsSection({
           <select
             value={selectedPlatformId}
             onChange={(e) => setSelectedPlatformId(e.target.value)}
-            className="flex-1 bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
+            className={`flex-1 ${INPUT_CLASSES.compact}`}
           >
             <option value="">Select platform…</option>
             {allPlatforms
@@ -102,11 +105,14 @@ export function PlatformsSection({
             value={availableFrom}
             onChange={(e) => setAvailableFrom(e.target.value)}
             placeholder="Available from"
-            className="bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
+            className={INPUT_CLASSES.compact}
           />
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             disabled={!selectedPlatformId}
+            icon={<Plus className="w-4 h-4" />}
             onClick={() => {
               const platform = allPlatforms.find((p) => p.id === selectedPlatformId);
               onAdd({
@@ -117,11 +123,9 @@ export function PlatformsSection({
               setSelectedPlatformId('');
               setAvailableFrom('');
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
           >
-            <Plus className="w-4 h-4" />
             Add
-          </button>
+          </Button>
         </div>
       </div>
     </div>

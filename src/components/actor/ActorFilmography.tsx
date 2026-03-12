@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { createStyles } from '@/styles/actorDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { extractReleaseYear } from '@/utils/formatDate';
 
 export interface FilmCredit {
   id: string;
@@ -51,7 +52,7 @@ export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProp
           {credits.map((credit) => {
             const movie = credit.movie;
             if (!movie) return null;
-            const year = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+            const year = extractReleaseYear(movie.release_date);
             const roleText =
               credit.credit_type === 'cast' && credit.role_name
                 ? `as ${credit.role_name}`

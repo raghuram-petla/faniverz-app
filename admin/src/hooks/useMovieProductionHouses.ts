@@ -1,28 +1,22 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { createMovieChildHooks } from './createMovieChildHooks';
 import type { ProductionHouse } from '@/lib/types';
 
-interface MovieProductionHouse {
+export interface MovieProductionHouse {
   movie_id: string;
   production_house_id: string;
   production_house: ProductionHouse;
 }
 
-export function useMovieProductionHouses(movieId: string) {
-  return useQuery({
-    queryKey: ['admin', 'movie-production-houses', movieId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('movie_production_houses')
-        .select('*, production_house:production_houses(*)')
-        .eq('movie_id', movieId);
-      if (error) throw error;
-      return (data ?? []) as MovieProductionHouse[];
-    },
-    enabled: !!movieId,
-  });
-}
+const { useList: useMovieProductionHouses } = createMovieChildHooks<MovieProductionHouse>({
+  table: 'movie_production_houses',
+  keySuffix: 'movie-production-houses',
+  select: '*, production_house:production_houses(*)',
+});
+
+export { useMovieProductionHouses };
 
 export function useAddMovieProductionHouse() {
   const qc = useQueryClient();

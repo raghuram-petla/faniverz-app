@@ -80,12 +80,4 @@ export function getCategoryIconName(
   }
 }
 
-export function formatViews(views: number): string {
-  if (views >= 1_000_000) {
-    return `${(views / 1_000_000).toFixed(1)}M`;
-  }
-  if (views >= 1_000) {
-    return `${(views / 1_000).toFixed(0)}K`;
-  }
-  return String(views);
-}
+export { formatCompactNumber as formatViews } from '@/utils/formatNumber';

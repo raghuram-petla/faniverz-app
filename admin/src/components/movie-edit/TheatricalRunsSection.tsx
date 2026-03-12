@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { FormInput } from '@/components/common/FormField';
+import { Button } from '@/components/common/Button';
 
 interface TheatricalRun {
   id: string;
@@ -55,13 +57,14 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
                   Original
                 </span>
               )}
-              <button
+              <Button
+                variant="icon"
+                size="sm"
                 onClick={() => onRemove(run.id, run.id.startsWith('pending-run-'))}
-                className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
                 aria-label={`Remove run ${run.release_date}`}
               >
                 <X className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -70,37 +73,32 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
       <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
         <p className="text-sm font-semibold text-on-surface-muted">Add Theatrical Run</p>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">Release Date *</label>
-            <input
-              type="date"
-              required
-              value={runForm.release_date}
-              onChange={(e) => setRunForm((p) => ({ ...p, release_date: e.target.value }))}
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-on-surface-subtle mb-1">
-              Label <span className="text-on-surface-disabled font-normal">(optional)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Re-release, Director's Cut"
-              value={runForm.label}
-              onChange={(e) => setRunForm((p) => ({ ...p, label: e.target.value }))}
-              className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
-            />
-          </div>
+          <FormInput
+            label="Release Date"
+            required
+            variant="compact"
+            type="date"
+            value={runForm.release_date}
+            onValueChange={(v) => setRunForm((p) => ({ ...p, release_date: v }))}
+          />
+          <FormInput
+            label="Label"
+            variant="compact"
+            type="text"
+            placeholder="e.g. Re-release, Director's Cut"
+            value={runForm.label}
+            onValueChange={(v) => setRunForm((p) => ({ ...p, label: v }))}
+          />
         </div>
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="md"
           disabled={!runForm.release_date}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-on-surface text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+          icon={<Plus className="w-4 h-4" />}
         >
-          <Plus className="w-4 h-4" />
           Add Run
-        </button>
+        </Button>
       </form>
     </div>
   );

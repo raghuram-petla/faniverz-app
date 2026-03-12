@@ -1,8 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '@/theme/colors';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
@@ -11,6 +9,7 @@ import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from '@/components/movie/MovieQuickAction';
+import { MovieRating } from '@/components/ui/MovieRating';
 
 interface DiscoverGridItemProps {
   item: Movie;
@@ -46,12 +45,12 @@ export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemPr
             ))}
           </View>
         )}
-        {item.rating > 0 && (
-          <View style={styles.gridRating}>
-            <Ionicons name="star" size={12} color={colors.yellow400} />
-            <Text style={styles.gridRatingText}>{item.rating}</Text>
-          </View>
-        )}
+        <MovieRating
+          rating={item.rating}
+          size={12}
+          containerStyle={styles.gridRating}
+          textStyle={styles.gridRatingText}
+        />
         <MovieQuickAction
           actionType={actionType}
           isActive={isActive}
