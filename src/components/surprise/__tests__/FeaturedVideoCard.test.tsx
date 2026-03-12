@@ -59,14 +59,14 @@ describe('FeaturedVideoCard', () => {
 
   it('renders "Play video" accessibility label', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    expect(screen.getByLabelText('Play video')).toBeTruthy();
+    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
   });
 
   it('activates video player after pressing play', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    const playButton = screen.getByLabelText('Play video');
+    const playButton = screen.getByLabelText('common.playVideo');
     fireEvent.press(playButton);
     // After pressing play, the WebView component should be rendered
-    expect(screen.queryByLabelText('Play video')).toBeNull();
+    expect(screen.queryByLabelText('common.playVideo')).toBeNull();
   });
 });

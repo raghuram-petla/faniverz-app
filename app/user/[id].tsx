@@ -30,7 +30,11 @@ export default function UserProfileScreen() {
   const { t } = useTranslation();
   const styles = createUserProfileStyles(theme);
 
-  const { data: profile, isLoading } = useQuery({
+  const {
+    data: profile,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['profile', id],
     queryFn: () => fetchPublicProfile(id ?? ''),
     enabled: !!id,
@@ -45,6 +49,11 @@ export default function UserProfileScreen() {
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.red600} />
+        </View>
+      ) : isError ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="cloud-offline-outline" size={48} color={colors.gray500} />
+          <Text style={styles.emptyText}>{t('common.somethingWentWrong')}</Text>
         </View>
       ) : !profile ? (
         <View style={styles.emptyContainer}>

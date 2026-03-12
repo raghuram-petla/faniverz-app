@@ -238,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // ignore
     }
-    supabase.auth.signOut().catch(() => {});
+    supabase.auth.signOut().catch((err) => console.error('Sign out failed:', err));
   }, []);
 
   return (

@@ -31,7 +31,7 @@ const MAX_RECENT = 10;
 type SearchFilter = 'all' | 'movies' | 'actors' | 'studios';
 
 export default function SearchScreen() {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();

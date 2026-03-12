@@ -121,9 +121,8 @@ describe('SurpriseScreen', () => {
 
     render(<SurpriseScreen />);
 
-    // Grid items have accessibilityLabel "Play <title>"
-    expect(screen.getByLabelText('Play RRR Behind The Scenes')).toBeTruthy();
-    expect(screen.getByLabelText('Play Director Interview')).toBeTruthy();
+    // t() mock returns the key; grid items use t('common.playTitle', { title })
+    expect(screen.getAllByLabelText('common.playTitle')).toHaveLength(2);
   });
 
   it('shows skeleton when data is loading', () => {
@@ -274,7 +273,7 @@ describe('SurpriseScreen', () => {
     render(<SurpriseScreen />);
 
     // Press the "Play video" accessibility button to activate the WebView
-    fireEvent.press(screen.getByLabelText('Play video'));
+    fireEvent.press(screen.getByLabelText('common.playVideo'));
 
     // After activation, the WebView should be shown (testID="video-player")
     expect(screen.getByTestId('video-player')).toBeTruthy();

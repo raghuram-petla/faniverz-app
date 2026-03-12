@@ -30,7 +30,14 @@
     "failedToAddFavorite": "Failed to add favorite actor. Please try again.",
     "failedToRemoveFavorite": "Failed to remove favorite actor. Please try again.",
     "failedToAddComment": "Failed to add comment. Please try again.",
-    "failedToDeleteComment": "Failed to delete comment. Please try again."
+    "failedToDeleteComment": "Failed to delete comment. Please try again.",
+    "playVideo": "Play video",
+    "shareVideo": "Share video",
+    "playTitle": "Play {{title}}",
+    "unfollowName": "Unfollow {{name}}",
+    "entityTypeMovie": "Movie",
+    "entityTypeActor": "Actor",
+    "entityTypeProductionHouse": "Production House"
   },
   "tabs": {
     "home": "Home",
@@ -50,7 +57,11 @@
     "watchNow": "Watch Now",
     "moreInfo": "More Info",
     "getTickets": "Get Tickets",
-    "watchOnLabel": "Watch on:"
+    "watchOnLabel": "Watch on:",
+    "followingTapToUnfollow": "Following {{title}}, tap to unfollow",
+    "savedTapToRemove": "{{title}} saved, tap to remove",
+    "followTitle": "Follow {{title}}",
+    "saveTitle": "Save {{title}}"
   },
   "feed": {
     "addComment": "Add a comment...",

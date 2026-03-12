@@ -142,11 +142,11 @@ export function HeroSlide({
             accessibilityLabel={
               isActionActive
                 ? actionType === 'follow'
-                  ? `Following ${movie.title}, tap to unfollow`
-                  : `${movie.title} saved, tap to remove`
+                  ? t('home.followingTapToUnfollow', { title: movie.title })
+                  : t('home.savedTapToRemove', { title: movie.title })
                 : actionType === 'follow'
-                  ? `Follow ${movie.title}`
-                  : `Save ${movie.title}`
+                  ? t('home.followTitle', { title: movie.title })
+                  : t('home.saveTitle', { title: movie.title })
             }
           >
             <Ionicons
@@ -181,7 +181,7 @@ export function HeroSlide({
             style={styles.infoButton}
             onPress={onWatchNow}
             accessibilityRole="button"
-            accessibilityLabel="More Info"
+            accessibilityLabel={t('home.moreInfo')}
           >
             <Ionicons name="chevron-forward" size={22} color={palette.black} />
           </TouchableOpacity>

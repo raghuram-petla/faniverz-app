@@ -46,5 +46,8 @@ export function useSetMainPoster() {
       qc.invalidateQueries({ queryKey: ['admin', 'posters', data.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'movie', data.movieId] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to set main poster');
+    },
   });
 }

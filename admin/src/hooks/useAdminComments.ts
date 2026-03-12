@@ -49,5 +49,8 @@ export function useDeleteComment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'comments'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to delete comment');
+    },
   });
 }

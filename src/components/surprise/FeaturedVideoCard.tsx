@@ -67,7 +67,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
             onPress={handlePlay}
             activeOpacity={0.9}
             accessibilityRole="button"
-            accessibilityLabel="Play video"
+            accessibilityLabel={t('common.playVideo')}
           >
             <Image
               source={{ uri: thumbnailUrl }}
@@ -100,7 +100,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
               <TouchableOpacity
                 style={overlayStyles.shareHitArea}
                 onPress={onShare}
-                accessibilityLabel="Share video"
+                accessibilityLabel={t('common.shareVideo')}
               />
             </View>
           </View>

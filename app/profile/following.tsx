@@ -95,12 +95,16 @@ export default function FollowingScreen() {
             <Text style={styles.rowName} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={styles.rowType}>{item.entity_type.replace('_', ' ')}</Text>
+            <Text style={styles.rowType}>
+              {t(
+                `common.entityType${item.entity_type === 'movie' ? 'Movie' : item.entity_type === 'actor' ? 'Actor' : 'ProductionHouse'}`,
+              )}
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.unfollowButton}
             onPress={() => handleUnfollow(item.entity_type, item.entity_id)}
-            accessibilityLabel={`Unfollow ${item.name}`}
+            accessibilityLabel={t('common.unfollowName', { name: item.name })}
           >
             <Ionicons name="close-circle-outline" size={20} color={palette.red500} />
           </TouchableOpacity>

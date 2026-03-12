@@ -87,7 +87,7 @@ function NotificationItem({
 }
 
 export default function NotificationsScreen() {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();

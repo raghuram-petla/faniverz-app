@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-nati
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
+import { useTranslation } from 'react-i18next';
 import { colors } from '@/theme/colors';
 import {
   buildYouTubeEmbedHtml,
@@ -28,6 +29,7 @@ export interface MediaVideoCardProps {
 }
 
 export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCardProps) {
+  const { t } = useTranslation();
   const styles = createCardStyles(theme);
 
   const onNavRequest = useCallback(
@@ -67,7 +69,7 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
             <TouchableOpacity
               style={styles.shareHitArea}
               onPress={onShare}
-              accessibilityLabel="Share video"
+              accessibilityLabel={t('common.shareVideo')}
             />
           </View>
         </View>

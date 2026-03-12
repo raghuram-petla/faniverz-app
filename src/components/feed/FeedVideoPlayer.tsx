@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
@@ -28,6 +29,7 @@ export function FeedVideoPlayer({
   duration,
   isActive,
 }: FeedVideoPlayerProps) {
+  const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
   const thumb = thumbnailUrl ?? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
@@ -65,7 +67,7 @@ export function FeedVideoPlayer({
           <TouchableOpacity
             style={videoStyles.shareHitArea}
             onPress={onShare}
-            accessibilityLabel="Share video"
+            accessibilityLabel={t('common.shareVideo')}
           />
         </View>
       </View>

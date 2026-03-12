@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import ScreenHeader from '@/components/common/ScreenHeader';
@@ -44,7 +43,6 @@ export default function MyReviewsScreen() {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { user } = useAuth();
   const { data: reviews, isLoading, refetch } = useUserReviews(user?.id ?? '');
   const { update, remove } = useReviewMutations();

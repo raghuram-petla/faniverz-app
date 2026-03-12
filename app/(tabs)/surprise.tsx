@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,12 +37,17 @@ function ContentCard({ item, index }: ContentCardProps) {
   const iconName = getCategoryIconName(item.category);
   const bgColor = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
 
+  const handlePlay = useCallback(() => {
+    Linking.openURL(`https://www.youtube.com/watch?v=${item.youtube_id}`);
+  }, [item.youtube_id]);
+
   return (
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.8}
+      onPress={handlePlay}
       accessibilityRole="button"
-      accessibilityLabel={`Play ${item.title}`}
+      accessibilityLabel={t('common.playTitle', { title: item.title })}
     >
       {/* Thumbnail placeholder */}
       <View style={[styles.cardThumb, { backgroundColor: bgColor }]}>

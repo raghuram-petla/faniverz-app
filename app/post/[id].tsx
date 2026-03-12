@@ -72,6 +72,7 @@ export default function PostDetailScreen() {
 
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
 
+  // Intentional no-op: prevent recursive navigation when already on post detail
   const handleNoOp = (_item: NewsFeedItem) => {};
 
   const handleUpvote = useCallback(

@@ -55,5 +55,8 @@ export function useDeleteReview() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'reviews'] });
     },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to delete review');
+    },
   });
 }

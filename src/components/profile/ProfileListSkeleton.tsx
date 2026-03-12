@@ -1,7 +1,6 @@
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
 
-const W = Dimensions.get('window').width;
 const ITEMS = [1, 2, 3, 4, 5];
 
 export interface ProfileListSkeletonProps {

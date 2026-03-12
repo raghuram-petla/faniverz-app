@@ -100,7 +100,7 @@ describe('FollowingScreen', () => {
 
   it('shows unfollow button for each entity', () => {
     render(<FollowingScreen />);
-    expect(screen.getByLabelText('Unfollow Pushpa 2')).toBeTruthy();
-    expect(screen.getByLabelText('Unfollow Allu Arjun')).toBeTruthy();
+    // t() mock returns the key, so both unfollow buttons have label 'common.unfollowName'
+    expect(screen.getAllByLabelText('common.unfollowName')).toHaveLength(2);
   });
 });
