@@ -47,7 +47,7 @@ export function ReviewsTab({
         <Text
           style={{ color: theme.textTertiary, textAlign: 'center', marginTop: 24, fontSize: 14 }}
         >
-          {t('movie.noReviewsYet', 'No reviews yet. Be the first to share your thoughts!')}
+          {t('movie.noReviewsYet')}
         </Text>
       )}
 

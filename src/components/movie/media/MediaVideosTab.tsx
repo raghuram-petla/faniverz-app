@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { MediaVideoCard } from '@/components/movie/media/MediaVideoCard';
 import type { MovieVideo } from '@/types';
@@ -18,6 +19,7 @@ export interface MediaVideosTabProps {
 const ALL_CATEGORY = 'All';
 
 export function MediaVideosTab({ videosByType, activeCategory }: MediaVideosTabProps) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
@@ -40,8 +42,8 @@ export function MediaVideosTab({ videosByType, activeCategory }: MediaVideosTabP
       <View style={styles.emptyState}>
         <Text style={styles.emptyStateText}>
           {activeCategory === ALL_CATEGORY
-            ? 'No videos available yet'
-            : 'No videos in this category'}
+            ? t('movieDetail.noVideosYet')
+            : t('movieDetail.noVideosInCategory')}
         </Text>
       </View>
     );

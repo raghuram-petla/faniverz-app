@@ -90,7 +90,8 @@
     "asRole": "{{role}} గా",
     "outOf5": "/5",
     "reviewCountLabel": "({{count}} సమీక్షలు)",
-    "userFallback": "వినియోగదారు"
+    "userFallback": "వినియోగదారు",
+    "noReviewsYet": "ఇంకా సమీక్షలు లేవు. మీ అభిప్రాయాన్ని మొదటగా పంచుకోండి!"
   },
   "movieDetail": {
     "media": "మీడియా",
@@ -103,7 +104,9 @@
     "photoCount": "{{count}} ఫోటో",
     "photoCount_plural": "{{count}} ఫోటోలు",
     "exploreAllMedia": "అన్ని మీడియా అన్వేషించండి",
-    "mediaSummary": "{{videos}} · {{photos}}"
+    "mediaSummary": "{{videos}} · {{photos}}",
+    "noVideosYet": "ఇంకా వీడియోలు అందుబాటులో లేవు",
+    "noVideosInCategory": "ఈ వర్గంలో వీడియోలు లేవు"
   },
   "actorDetail": {
     "born": "జన్మదినం",

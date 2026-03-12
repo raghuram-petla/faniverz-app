@@ -90,7 +90,8 @@
     "asRole": "as {{role}}",
     "outOf5": "/5",
     "reviewCountLabel": "({{count}} reviews)",
-    "userFallback": "User"
+    "userFallback": "User",
+    "noReviewsYet": "No reviews yet. Be the first to share your thoughts!"
   },
   "movieDetail": {
     "media": "Media",
@@ -103,7 +104,9 @@
     "photoCount": "{{count}} Photo",
     "photoCount_plural": "{{count}} Photos",
     "exploreAllMedia": "Explore All Media",
-    "mediaSummary": "{{videos}} . {{photos}}"
+    "mediaSummary": "{{videos}} . {{photos}}",
+    "noVideosYet": "No videos available yet",
+    "noVideosInCategory": "No videos in this category"
   },
   "actorDetail": {
     "born": "Born",
