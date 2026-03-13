@@ -18,12 +18,20 @@ function isAllowedUrl(url: string): boolean {
 // @boundary: admin-only route — verifies admin role before processing
 // @contract: accepts { urls: string[] }; returns { results: Array<{ url, status: 'ok'|'missing'|'error' }> }
 export async function POST(request: NextRequest) {
+  // @edge: auth is outside the body try-catch so auth errors return 401/500, not misleading 400
+  let user;
   try {
-    const user = await verifyAdmin(request.headers.get('authorization'));
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    user = await verifyAdmin(request.headers.get('authorization'));
+  } catch (e) {
+    console.error('[image-check] verifyAdmin threw:', e);
+    return NextResponse.json({ error: 'Auth verification failed' }, { status: 500 });
+  }
 
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
     const body = await request.json();
     const { urls } = body;
 
@@ -45,11 +53,9 @@ export async function POST(request: NextRequest) {
     // Validate all URLs are from allowed domains
     const disallowedUrls = urls.filter((url: string) => !isAllowedUrl(url));
     if (disallowedUrls.length > 0) {
+      console.error('[image-check] Disallowed URLs:', disallowedUrls);
       return NextResponse.json(
-        {
-          error:
-            'URLs must be from allowed CDN domains (r2.cloudflarestorage.com, image.tmdb.org, or app CDN)',
-        },
+        { error: 'URLs must be from allowed CDN domains (faniverz.com)', disallowedUrls },
         { status: 400 },
       );
     }
@@ -68,7 +74,11 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ results });
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  } catch (e) {
+    console.error('[image-check] Request parsing error:', e);
+    return NextResponse.json(
+      { error: 'Invalid request body', detail: e instanceof Error ? e.message : String(e) },
+      { status: 400 },
+    );
   }
 }

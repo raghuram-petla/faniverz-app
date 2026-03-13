@@ -61,6 +61,14 @@ export function useImageVariants(originalUrl: string | null, variantType: Varian
           },
           body: JSON.stringify({ urls: built.map((v) => v.url) }),
         });
+
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          console.error('[useImageVariants] API error:', res.status, errBody);
+          setVariants((prev) => prev.map((v) => ({ ...v, status: 'error' as const })));
+          return;
+        }
+
         const data = await res.json();
         const statusMap = new Map<string, CheckStatus>(
           data.results?.map((r: { url: string; status: CheckStatus }) => [r.url, r.status]) ?? [],
