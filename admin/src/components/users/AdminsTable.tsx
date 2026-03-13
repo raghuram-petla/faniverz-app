@@ -2,7 +2,7 @@
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import type { AdminUserWithDetails, AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Loader2, User, Eye, Ban, ShieldCheck, Trash2 } from 'lucide-react';
+import { Loader2, Eye, Ban, ShieldCheck, Trash2 } from 'lucide-react';
 
 export interface AdminsTableProps {
   users: AdminUserWithDetails[] | undefined;
@@ -73,9 +73,17 @@ export function AdminsTable({
               <tr key={u.id} className="border-b border-outline-subtle hover:bg-surface-elevated">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-input flex items-center justify-center">
-                      <User className="w-4 h-4 text-on-surface-muted" />
-                    </div>
+                    {u.avatar_url ? (
+                      <img
+                        src={u.avatar_url}
+                        alt={u.display_name ?? 'Admin avatar'}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-xs font-medium text-red-400">
+                        {(u.display_name ?? '?')[0]?.toUpperCase() ?? '?'}
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-medium text-on-surface">
                         {u.display_name || 'Unnamed'}

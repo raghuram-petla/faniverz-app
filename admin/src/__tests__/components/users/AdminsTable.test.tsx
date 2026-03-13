@@ -5,7 +5,6 @@ import type { AdminUserWithDetails } from '@/lib/types';
 
 vi.mock('lucide-react', () => ({
   Loader2: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="loader-icon" {...props} />,
-  User: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="user-icon" {...props} />,
   Eye: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="eye-icon" {...props} />,
   Ban: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="ban-icon" {...props} />,
   ShieldCheck: (props: React.SVGProps<SVGSVGElement>) => (
@@ -332,6 +331,34 @@ describe('AdminsTable', () => {
         realUserId: 'current-user',
       });
       expect(screen.queryByTitle('Impersonate')).not.toBeInTheDocument();
+    });
+  });
+
+  // Avatar rendering tests
+  describe('avatar rendering', () => {
+    it('renders avatar image when avatar_url is present', () => {
+      renderTable({
+        users: [
+          makeUser({ avatar_url: 'https://cdn.example.com/avatar.jpg', display_name: 'Alice' }),
+        ],
+      });
+      const img = screen.getByAltText('Alice');
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', 'https://cdn.example.com/avatar.jpg');
+    });
+
+    it('renders initials fallback when avatar_url is null', () => {
+      renderTable({
+        users: [makeUser({ avatar_url: null, display_name: 'Bob' })],
+      });
+      expect(screen.getByText('B')).toBeInTheDocument();
+    });
+
+    it('renders "?" when avatar_url and display_name are both null', () => {
+      renderTable({
+        users: [makeUser({ avatar_url: null, display_name: null })],
+      });
+      expect(screen.getByText('?')).toBeInTheDocument();
     });
   });
 
