@@ -15,10 +15,6 @@ export type AdminPage =
   | 'notifications'
   | 'reviews'
   | 'comments'
-  | 'watchlist'
-  | 'follows'
-  | 'favorites'
-  | 'feed-votes'
   | 'sync'
   | 'audit'
   | 'app-users'
@@ -48,10 +44,6 @@ const ALL_PAGES: Set<AdminPage> = new Set([
   'notifications',
   'reviews',
   'comments',
-  'watchlist',
-  'follows',
-  'favorites',
-  'feed-votes',
   'sync',
   'audit',
   'app-users',

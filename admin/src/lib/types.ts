@@ -117,11 +117,7 @@ export interface DashboardStats {
   totalUsers: number;
   totalReviews: number;
   totalFeedItems: number;
-  totalWatchlistEntries: number;
-  totalFollows: number;
   totalComments: number;
-  totalFavorites: number;
-  totalFeedVotes: number;
 }
 
 export interface Review {
@@ -139,15 +135,6 @@ export interface Review {
   profile?: { id: string; display_name: string | null; email: string | null };
 }
 
-export interface FavoriteActor {
-  id: string;
-  user_id: string;
-  actor_id: string;
-  created_at: string;
-  actor?: { id: string; name: string; photo_url: string | null };
-  profile?: { id: string; display_name: string | null; email: string | null };
-}
-
 export interface FeedComment {
   id: string;
   feed_item_id: string;
@@ -156,25 +143,6 @@ export interface FeedComment {
   created_at: string;
   feed_item?: { id: string; title: string | null };
   profile?: { id: string; display_name: string | null; email: string | null };
-}
-
-export interface EntityFollow {
-  id: string;
-  user_id: string;
-  entity_type: 'movie' | 'actor' | 'production_house' | 'user';
-  entity_id: string;
-  created_at: string;
-  profile?: { id: string; display_name: string | null; email: string | null };
-}
-
-export interface FeedVote {
-  id: string;
-  feed_item_id: string;
-  user_id: string;
-  vote_type: 'up' | 'down';
-  created_at: string;
-  profile?: { id: string; display_name: string | null; email: string | null };
-  feed_item?: { id: string; title: string };
 }
 
 // ============================================================

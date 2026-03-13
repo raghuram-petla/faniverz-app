@@ -11,10 +11,7 @@ import {
   Users,
   Star,
   MessageSquare,
-  Bookmark,
-  Heart,
   MessageCircle,
-  ThumbsUp,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -112,34 +109,6 @@ export default function DashboardPage() {
             icon: MessageCircle,
             color: 'text-cyan-500',
             bg: 'bg-cyan-600/20',
-          },
-          {
-            label: 'Watchlist',
-            value: stats?.totalWatchlistEntries,
-            icon: Bookmark,
-            color: 'text-orange-500',
-            bg: 'bg-orange-600/20',
-          },
-          {
-            label: 'Follows',
-            value: stats?.totalFollows,
-            icon: Heart,
-            color: 'text-pink-500',
-            bg: 'bg-pink-600/20',
-          },
-          {
-            label: 'Favorites',
-            value: stats?.totalFavorites,
-            icon: Star,
-            color: 'text-amber-500',
-            bg: 'bg-amber-600/20',
-          },
-          {
-            label: 'Feed Votes',
-            value: stats?.totalFeedVotes,
-            icon: ThumbsUp,
-            color: 'text-indigo-500',
-            bg: 'bg-indigo-600/20',
           },
         ].map((card) => {
           const Icon = card.icon;

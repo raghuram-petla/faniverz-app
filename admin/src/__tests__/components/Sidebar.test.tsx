@@ -86,6 +86,13 @@ describe('Sidebar', () => {
     }
   });
 
+  it('renders section headers', () => {
+    render(<Sidebar />);
+    expect(screen.getByText('Content')).toBeInTheDocument();
+    expect(screen.getByText('Moderation')).toBeInTheDocument();
+    expect(screen.getByText('System')).toBeInTheDocument();
+  });
+
   it('has the Faniverz branding logo', () => {
     render(<Sidebar />);
     expect(screen.getByAltText('Faniverz')).toBeInTheDocument();

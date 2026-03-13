@@ -73,15 +73,14 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Movies')).toBeInTheDocument();
   });
 
-  it('renders all 7 stat cards', () => {
+  it('renders all 6 stat cards', () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Movies')).toBeInTheDocument();
     expect(screen.getByText('Actors')).toBeInTheDocument();
     expect(screen.getByText('Users')).toBeInTheDocument();
     expect(screen.getByText('Reviews')).toBeInTheDocument();
     expect(screen.getByText('Feed Items')).toBeInTheDocument();
-    expect(screen.getByText('Watchlist')).toBeInTheDocument();
-    expect(screen.getByText('Follows')).toBeInTheDocument();
+    expect(screen.getByText('Comments')).toBeInTheDocument();
   });
 
   it('renders quick action links', () => {

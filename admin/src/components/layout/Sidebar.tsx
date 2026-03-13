@@ -14,9 +14,6 @@ import {
   Bell,
   Star,
   MessageSquare,
-  Bookmark,
-  Heart,
-  ThumbsUp,
   RefreshCw,
   FileText,
   Shield,
@@ -33,38 +30,62 @@ interface NavItem {
   page: AdminPage;
 }
 
-const navItems: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, page: 'dashboard' },
-  { href: '/movies', label: 'Movies', icon: Film, page: 'movies' },
-  { href: '/cast', label: 'Cast/Actors', icon: Users, page: 'cast' },
+interface NavSection {
+  label: string | null;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
   {
-    href: '/production-houses',
-    label: 'Production Houses',
-    icon: Building2,
-    page: 'production-houses',
+    label: null,
+    items: [{ href: '/', label: 'Dashboard', icon: LayoutDashboard, page: 'dashboard' }],
   },
-  { href: '/ott', label: 'OTT Releases', icon: Tv, page: 'ott' },
-  { href: '/platforms', label: 'Platforms', icon: Layers, page: 'platforms' },
-  { href: '/surprise', label: 'Surprise Content', icon: Sparkles, page: 'surprise' },
-  { href: '/feed', label: 'News Feed', icon: Newspaper, page: 'feed' },
-  { href: '/notifications', label: 'Notifications', icon: Bell, page: 'notifications' },
-  { href: '/reviews', label: 'Reviews', icon: Star, page: 'reviews' },
-  { href: '/comments', label: 'Comments', icon: MessageSquare, page: 'comments' },
-  { href: '/watchlist', label: 'Watchlist', icon: Bookmark, page: 'watchlist' },
-  { href: '/follows', label: 'Follows', icon: Heart, page: 'follows' },
-  { href: '/favorites', label: 'Favorites', icon: Star, page: 'favorites' },
-  { href: '/feed-votes', label: 'Feed Votes', icon: ThumbsUp, page: 'feed-votes' },
-  { href: '/sync', label: 'Sync', icon: RefreshCw, page: 'sync' },
-  { href: '/audit', label: 'Audit Log', icon: FileText, page: 'audit' },
-  { href: '/app-users', label: 'App Users', icon: UsersRound, page: 'app-users' },
-  { href: '/users', label: 'User Management', icon: Shield, page: 'users' },
+  {
+    label: 'Content',
+    items: [
+      { href: '/movies', label: 'Movies', icon: Film, page: 'movies' },
+      { href: '/cast', label: 'Cast/Actors', icon: Users, page: 'cast' },
+      {
+        href: '/production-houses',
+        label: 'Production Houses',
+        icon: Building2,
+        page: 'production-houses',
+      },
+      { href: '/ott', label: 'OTT Releases', icon: Tv, page: 'ott' },
+      { href: '/platforms', label: 'Platforms', icon: Layers, page: 'platforms' },
+      { href: '/surprise', label: 'Surprise Content', icon: Sparkles, page: 'surprise' },
+      { href: '/feed', label: 'News Feed', icon: Newspaper, page: 'feed' },
+      { href: '/notifications', label: 'Notifications', icon: Bell, page: 'notifications' },
+    ],
+  },
+  {
+    label: 'Moderation',
+    items: [
+      { href: '/reviews', label: 'Reviews', icon: Star, page: 'reviews' },
+      { href: '/comments', label: 'Comments', icon: MessageSquare, page: 'comments' },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { href: '/sync', label: 'Sync', icon: RefreshCw, page: 'sync' },
+      { href: '/audit', label: 'Audit Log', icon: FileText, page: 'audit' },
+      { href: '/app-users', label: 'App Users', icon: UsersRound, page: 'app-users' },
+      { href: '/users', label: 'User Management', icon: Shield, page: 'users' },
+    ],
+  },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { canViewPage } = usePermissions();
 
-  const visibleItems = navItems.filter((item) => canViewPage(item.page));
+  const visibleSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => canViewPage(item.page)),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <aside className="w-64 bg-surface-card border-r border-outline min-h-screen p-4">
@@ -78,26 +99,37 @@ export function Sidebar() {
         />
       </div>
 
-      <nav className="space-y-1">
-        {visibleItems.map((item) => {
-          const isActive =
-            pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-red-600 text-white'
-                  : 'text-on-surface-muted hover:bg-surface-elevated hover:text-on-surface'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {item.label}
-            </Link>
-          );
-        })}
+      <nav className="space-y-4">
+        {visibleSections.map((section, idx) => (
+          <div key={section.label ?? idx}>
+            {section.label && (
+              <p className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-on-surface-muted/60">
+                {section.label}
+              </p>
+            )}
+            <div className="space-y-1">
+              {section.items.map((item) => {
+                const isActive =
+                  pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-red-600 text-white'
+                        : 'text-on-surface-muted hover:bg-surface-elevated hover:text-on-surface'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
     </aside>
   );

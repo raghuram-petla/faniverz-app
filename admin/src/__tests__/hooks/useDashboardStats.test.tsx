@@ -33,11 +33,7 @@ function setupGlobalAdminMock() {
     profiles: 100,
     reviews: 30,
     news_feed: 55,
-    watchlists: 200,
-    entity_follows: 75,
     feed_comments: 18,
-    favorite_actors: 42,
-    feed_votes: 90,
   };
   fromSpy.mockImplementation((table: string) =>
     chainable({ count: counts[table] ?? 0, data: null, error: null }),
@@ -55,8 +51,6 @@ function setupPHAdminMock(movieIds: string[], actorIds: string[]) {
     movie_production_houses: { count: null, data: junctionData, error: null },
     movie_cast: { count: null, data: castData, error: null },
     reviews: { count: 5, data: null, error: null },
-    watchlists: { count: 12, data: null, error: null },
-    entity_follows: { count: 3, data: null, error: null },
     feed_comments: { count: 7, data: null, error: null },
   };
 
@@ -103,11 +97,7 @@ describe('useDashboardStats', () => {
         totalUsers: 100,
         totalReviews: 30,
         totalFeedItems: 55,
-        totalWatchlistEntries: 200,
-        totalFollows: 75,
         totalComments: 18,
-        totalFavorites: 42,
-        totalFeedVotes: 90,
       });
     });
 
@@ -124,11 +114,7 @@ describe('useDashboardStats', () => {
         'totalUsers',
         'totalReviews',
         'totalFeedItems',
-        'totalWatchlistEntries',
-        'totalFollows',
         'totalComments',
-        'totalFavorites',
-        'totalFeedVotes',
       ]);
     });
   });
@@ -147,11 +133,7 @@ describe('useDashboardStats', () => {
         totalUsers: 0,
         totalReviews: 5,
         totalFeedItems: 8,
-        totalWatchlistEntries: 12,
-        totalFollows: 3,
         totalComments: 7,
-        totalFavorites: 0,
-        totalFeedVotes: 0,
       });
     });
 
@@ -179,11 +161,7 @@ describe('useDashboardStats', () => {
         totalUsers: 0,
         totalReviews: 0,
         totalFeedItems: 0,
-        totalWatchlistEntries: 0,
-        totalFollows: 0,
         totalComments: 0,
-        totalFavorites: 0,
-        totalFeedVotes: 0,
       });
     });
 
