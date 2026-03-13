@@ -13,7 +13,8 @@ export interface ImpersonateModalProps {
 }
 
 export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps) {
-  const { startImpersonation, startRoleImpersonation } = useImpersonation();
+  const { startImpersonation, startRoleImpersonation, realUser } = useImpersonation();
+  const isRoot = realUser?.role === 'root';
   const [role, setRole] = useState<AdminRoleId>('admin');
   const [selectedPhIds, setSelectedPhIds] = useState<string[]>([]);
   const [productionHouses, setProductionHouses] = useState<ProductionHouse[]>([]);
@@ -59,6 +60,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
 
   const canStart =
     targetUser ||
+    role === 'super_admin' ||
     role === 'admin' ||
     (role === 'production_house_admin' && selectedPhIds.length > 0);
 
@@ -112,6 +114,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
                 }}
                 className="w-full bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
               >
+                {isRoot && <option value="super_admin">Super Admin</option>}
                 <option value="admin">Admin</option>
                 <option value="production_house_admin">PH Admin</option>
               </select>

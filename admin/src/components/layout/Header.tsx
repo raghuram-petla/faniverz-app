@@ -24,7 +24,7 @@ export function Header() {
   const [imgError, setImgError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isSuperAdmin = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'root';
   const currentTheme = theme ?? 'system';
 
   useEffect(() => {

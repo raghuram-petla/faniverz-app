@@ -7,10 +7,13 @@ const { mockStartImpersonation, mockStartRoleImpersonation } = vi.hoisted(() => 
   mockStartRoleImpersonation: vi.fn(),
 }));
 
+let mockRealUser: { role: string } | null = { role: 'super_admin' };
+
 vi.mock('@/hooks/useImpersonation', () => ({
   useImpersonation: () => ({
     startImpersonation: mockStartImpersonation,
     startRoleImpersonation: mockStartRoleImpersonation,
+    realUser: mockRealUser,
   }),
 }));
 
@@ -54,6 +57,7 @@ describe('ImpersonateModal', () => {
     vi.clearAllMocks();
     mockStartImpersonation.mockResolvedValue(undefined);
     mockStartRoleImpersonation.mockResolvedValue(undefined);
+    mockRealUser = { role: 'super_admin' };
   });
 
   it('renders "Impersonate User" heading when targetUser is provided', () => {
@@ -129,5 +133,24 @@ describe('ImpersonateModal', () => {
     fireEvent.change(select, { target: { value: 'production_house_admin' } });
     const startButton = screen.getByRole('button', { name: /start impersonating/i });
     expect(startButton).toBeDisabled();
+  });
+
+  it('shows Super Admin option in role dropdown when real user is root', () => {
+    mockRealUser = { role: 'root' };
+    render(<ImpersonateModal targetUser={null} onClose={onClose} />);
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(3);
+    expect(options[0]).toHaveTextContent('Super Admin');
+    expect(options[1]).toHaveTextContent('Admin');
+    expect(options[2]).toHaveTextContent('PH Admin');
+  });
+
+  it('does not show Super Admin option when real user is super_admin', () => {
+    mockRealUser = { role: 'super_admin' };
+    render(<ImpersonateModal targetUser={null} onClose={onClose} />);
+    const options = screen.getAllByRole('option');
+    expect(options).toHaveLength(2);
+    expect(options[0]).toHaveTextContent('Admin');
+    expect(options[1]).toHaveTextContent('PH Admin');
   });
 });

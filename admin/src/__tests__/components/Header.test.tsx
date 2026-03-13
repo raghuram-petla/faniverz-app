@@ -111,6 +111,13 @@ describe('Header', () => {
     expect(screen.getByText('Impersonate')).toBeInTheDocument();
   });
 
+  it('shows impersonate option for root users', () => {
+    setUser({ ...superAdmin, role: 'root' });
+    render(<Header />);
+    openMenu();
+    expect(screen.getByText('Impersonate')).toBeInTheDocument();
+  });
+
   it('hides impersonate option for non-super admins', () => {
     setUser({ ...superAdmin, role: 'admin' });
     render(<Header />);
