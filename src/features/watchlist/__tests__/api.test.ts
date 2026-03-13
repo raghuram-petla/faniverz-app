@@ -43,7 +43,7 @@ describe('watchlist api', () => {
 
       await fetchWatchlist('user-1');
       expect(supabase.from).toHaveBeenCalledWith('watchlists');
-      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(*)');
+      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(*, movie_platforms(count))');
       expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
       expect(mockOrder).toHaveBeenCalledWith('added_at', { ascending: false });
     });
@@ -209,7 +209,7 @@ describe('watchlist api', () => {
 
       await fetchWatchlistPaginated('user-1', 0);
       expect(supabase.from).toHaveBeenCalledWith('watchlists');
-      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(*)');
+      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(*, movie_platforms(count))');
       expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
       expect(mockOrder).toHaveBeenCalledWith('added_at', { ascending: false });
       expect(mockRange).toHaveBeenCalledWith(0, 9);

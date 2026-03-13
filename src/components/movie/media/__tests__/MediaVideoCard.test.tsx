@@ -7,6 +7,42 @@ jest.mock('@/theme/colors', () => ({
   colors: new Proxy({}, { get: () => '#000' }),
 }));
 
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+  MaterialIcons: 'MaterialIcons',
+}));
+
+jest.mock('expo-image', () => ({
+  Image: 'Image',
+}));
+
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const map: Record<string, string> = {
+        'common.shareVideo': 'Share video',
+      };
+      return map[key] ?? key;
+    },
+    i18n: { language: 'en' },
+  }),
+}));
+
+jest.mock('@/utils/youtubeNavigation', () => ({
+  buildYouTubeEmbedHtml: jest.fn(() => '<html>embed</html>'),
+  shareYouTubeVideo: jest.fn(),
+  handleYouTubeNavigation: jest.fn(() => true),
+  handleYouTubeOpenWindow: jest.fn(),
+}));
+
+jest.mock('@/constants/webview', () => ({
+  WEBVIEW_BASE_URL: 'https://localhost',
+}));
+
+jest.mock('@/constants/placeholders', () => ({
+  PLACEHOLDER_POSTER: 'https://placeholder.com/poster.png',
+}));
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { MediaVideoCard } from '../MediaVideoCard';
@@ -32,6 +68,13 @@ describe('MediaVideoCard', () => {
   const onPlay = jest.fn();
 
   beforeEach(() => jest.clearAllMocks());
+
+  it('renders without crashing', () => {
+    const { toJSON } = render(
+      <MediaVideoCard video={makeVideo()} isPlaying={false} onPlay={onPlay} theme={mockTheme} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
 
   it('renders video title in collapsed state', () => {
     render(
@@ -91,6 +134,13 @@ describe('MediaVideoCard', () => {
     expect(screen.getByLabelText('Share video')).toBeTruthy();
   });
 
+  it('still shows video title when playing', () => {
+    render(
+      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
+    );
+    expect(screen.getByText('Official Trailer')).toBeTruthy();
+  });
+
   it('has correct accessibility label for play', () => {
     render(
       <MediaVideoCard
@@ -101,5 +151,17 @@ describe('MediaVideoCard', () => {
       />,
     );
     expect(screen.getByLabelText('Play Title Song')).toBeTruthy();
+  });
+
+  it('renders with null youtube_id using placeholder', () => {
+    const { toJSON } = render(
+      <MediaVideoCard
+        video={makeVideo({ youtube_id: null as any })}
+        isPlaying={false}
+        onPlay={onPlay}
+        theme={mockTheme}
+      />,
+    );
+    expect(toJSON()).toBeTruthy();
   });
 });

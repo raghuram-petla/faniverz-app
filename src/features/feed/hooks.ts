@@ -9,6 +9,8 @@ import {
   removeFeedVote,
   fetchUserVotes,
 } from './api';
+import { Alert } from 'react-native';
+import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import type { FeedFilterOption } from '@/types';
 import type { NewsFeedItem } from '@shared/types';
@@ -123,6 +125,7 @@ export function useVoteFeedItem() {
           queryClient.setQueryData(queryKey, data);
         }
       }
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote'));
     },
     onSettled: () => {
       for (const key of FEED_QUERY_KEYS) {
@@ -134,7 +137,7 @@ export function useVoteFeedItem() {
 }
 
 // @sync: mirrors the same optimistic update pattern as useVoteFeedItem above. Both must iterate the same FEED_QUERY_KEYS and use the same cache structure assumption ({ pages: NewsFeedItem[][] }). If one is updated to handle a new cache shape (e.g., adding cursors), the other must match.
-// @edge: if the delete fails (e.g., RLS violation because user_id doesn't match auth.uid()), the rollback restores old data, but the user sees a brief flash of the un-voted state. No error toast is shown — the error is silently swallowed beyond the rollback.
+// @edge: if the delete fails (e.g., RLS violation because user_id doesn't match auth.uid()), the rollback restores old data and an error Alert is shown.
 export function useRemoveFeedVote() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -185,6 +188,7 @@ export function useRemoveFeedVote() {
           queryClient.setQueryData(queryKey, data);
         }
       }
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote'));
     },
     onSettled: () => {
       for (const key of FEED_QUERY_KEYS) {

@@ -40,26 +40,44 @@ async function registerForPushNotifications(): Promise<string | null> {
   return token;
 }
 
+// @contract: returns token without requesting OS permissions — uses getPermissionsAsync (read-only)
+// instead of requestPermissionsAsync. Returns null if permissions were never granted.
+async function getExistingPushToken(): Promise<string | null> {
+  if (!Device.isDevice) return null;
+
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') return null;
+
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+  return token;
+}
+
 export function usePushToken() {
   const { user } = useAuth();
-  // @invariant: registeredRef prevents duplicate registration within a single component mount. But if the user
-  // signs out and signs in as a different user without the component unmounting (session swap via AuthProvider),
-  // the ref stays true and the new user's push token is never registered. The ref resets only on remount.
   const registeredRef = useRef(false);
+  // @sideeffect: tracks the user ID that was last registered. When user changes (session swap),
+  // resets registeredRef so the new user's token gets registered.
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!user || registeredRef.current) return;
+    if (!user) return;
+
+    // Reset registration ref on user change (handles session swap without remount)
+    if (lastUserIdRef.current !== null && lastUserIdRef.current !== user.id) {
+      registeredRef.current = false;
+    }
+    lastUserIdRef.current = user.id;
+
+    if (registeredRef.current) return;
 
     (async () => {
       try {
         const pushPref = await AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS);
-        // @edge: opted-out path still calls registerForPushNotifications() which requests OS permissions.
-        // A user who disabled push in app settings will still see the OS permission prompt on first launch
-        // if they haven't granted it yet — confusing since they already opted out. The token is obtained
-        // only to pass it to deactivatePushToken, but requesting permissions is a side effect of getting the token.
         if (pushPref === 'false') {
-          // User has opted out — deactivate any existing token
-          const token = await registerForPushNotifications();
+          // @edge: user opted out — deactivate without requesting OS permissions.
+          // Uses getExistingPushToken which only reads current permission status.
+          const token = await getExistingPushToken();
           if (token && user.id) {
             await deactivatePushToken(token);
           }
@@ -72,8 +90,9 @@ export function usePushToken() {
           await upsertPushToken(user.id, token);
           registeredRef.current = true;
         }
-      } catch {
-        // Silently fail — push is optional
+      } catch (err) {
+        // @edge: push is optional — log for debugging but don't block the app
+        console.warn('Push token registration failed:', err);
       }
     })();
   }, [user]);

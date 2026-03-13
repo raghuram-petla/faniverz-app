@@ -1,5 +1,10 @@
 jest.mock('../followApi');
 
+jest.mock('@/i18n', () => ({
+  __esModule: true,
+  default: { t: (key: string) => key },
+}));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(() => ({
     user: { id: 'user-123' },

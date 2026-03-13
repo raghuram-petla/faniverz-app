@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Alert } from 'react-native';
+import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from './followApi';
 import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
@@ -30,9 +32,9 @@ export function useEntityFollows() {
   return { ...query, followSet };
 }
 
-// @contract: entity_follows table has UNIQUE(user_id, entity_type, entity_id) — duplicate follow attempts throw a Supabase 23505 (unique_violation) error. The onError handler rolls back the optimistic add, but no user-facing error toast is shown. The user sees the follow button toggle back with no explanation.
-// @edge: optimistic update adds a temp EntityFollow with id='temp-{timestamp}'. If the user rapidly follows/unfollows before onSettled fires, the unfollow's onMutate filter (matching entity_type + entity_id) will correctly remove the temp entry, but there's a race window where the invalidation from follow's onSettled overwrites the unfollow's optimistic state.
-// @coupling: onSettled invalidates ['entity-follows'] (prefix) which also invalidates useEnrichedFollows(['enriched-follows', userId]) — but ONLY because both start with different prefixes. Actually, it does NOT invalidate 'enriched-follows'. If a follow is added, the enriched follows list won't update until its own 5-minute staleTime expires.
+// @contract: entity_follows table has UNIQUE(user_id, entity_type, entity_id) — duplicate follow attempts throw a Supabase 23505 (unique_violation) error. The onError handler rolls back the optimistic add and shows an Alert.
+// @edge: optimistic update adds a temp EntityFollow with id='temp-{timestamp}'. If the user rapidly follows/unfollows before onSettled fires, there's a race window where invalidation from follow's onSettled may overwrite the unfollow's optimistic state.
+// @coupling: onSettled invalidates both ['entity-follows'] and ['enriched-follows'] to keep both caches in sync.
 export function useFollowEntity() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -64,15 +66,17 @@ export function useFollowEntity() {
       if (context?.previousFollows) {
         queryClient.setQueryData(['entity-follows', user?.id], context.previousFollows);
       }
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToFollow'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['entity-follows'] });
+      queryClient.invalidateQueries({ queryKey: ['enriched-follows'] });
     },
   });
 }
 
 // @coupling: fetchEnrichedFollows does 3 parallel lookups (movies, actors, production_houses) to resolve names/images. 'user' type follows are NOT looked up — they show name='Deleted' and image_url=null. If user follows are implemented in the UI, this will show broken data.
-// @invariant: query key ['enriched-follows', userId] is NOT invalidated by useFollowEntity/useUnfollowEntity (they invalidate ['entity-follows'] only). After follow/unfollow, this cache stays stale for up to 5 minutes.
+// @invariant: query key ['enriched-follows', userId] is invalidated by useFollowEntity/useUnfollowEntity onSettled.
 export function useEnrichedFollows() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -110,9 +114,11 @@ export function useUnfollowEntity() {
       if (context?.previousFollows) {
         queryClient.setQueryData(['entity-follows', user?.id], context.previousFollows);
       }
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToUnfollow'));
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['entity-follows'] });
+      queryClient.invalidateQueries({ queryKey: ['enriched-follows'] });
     },
   });
 }

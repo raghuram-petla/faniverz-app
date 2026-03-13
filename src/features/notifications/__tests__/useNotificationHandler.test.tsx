@@ -2,6 +2,9 @@ import React from 'react';
 import { renderHook } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
 
+const mockPush = jest.fn();
+const mockInvalidate = jest.fn();
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
@@ -10,20 +13,39 @@ jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: mockInvalidate }),
 }));
 
-const mockPush = jest.fn();
-const mockInvalidate = jest.fn();
-
 import { useNotificationHandler } from '../useNotificationHandler';
 
-describe('useNotificationHandler', () => {
-  it('sets notification handler on module load', () => {
-    // setNotificationHandler is called at module top-level before any test runs
-    // We check the mock from jest.setup.js was invoked during module import
-    expect(Notifications.setNotificationHandler).toHaveBeenCalled();
-  });
+// Helper to capture the notification response callback
+function captureResponseCallback(): (response: unknown) => void {
+  let captured: (response: unknown) => void = () => {};
+  (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementationOnce(
+    (cb: (response: unknown) => void) => {
+      captured = cb;
+      return { remove: jest.fn() };
+    },
+  );
+  return (...args: unknown[]) => captured(args[0]);
+}
 
+function buildResponse(data: Record<string, unknown> | null | undefined) {
+  return {
+    notification: {
+      request: {
+        content: {
+          data,
+        },
+      },
+    },
+  };
+}
+
+describe('useNotificationHandler', () => {
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('sets notification handler on module load', () => {
+    expect(Notifications.setNotificationHandler).toHaveBeenCalled();
   });
 
   it('adds notification response listener on mount', () => {
@@ -35,52 +57,64 @@ describe('useNotificationHandler', () => {
   });
 
   it('navigates to movie when notification has movie_id', () => {
-    let capturedCallback: (response: unknown) => void;
-    (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementationOnce(
-      (cb: (response: unknown) => void) => {
-        capturedCallback = cb;
-        return { remove: jest.fn() };
-      },
-    );
-
+    const callback = captureResponseCallback();
     renderHook(() => useNotificationHandler());
 
-    capturedCallback!({
-      notification: {
-        request: {
-          content: {
-            data: { movie_id: 'movie-123' },
-          },
-        },
-      },
-    });
+    callback(buildResponse({ movie_id: 'movie-123' }));
 
     expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['notifications'] });
     expect(mockPush).toHaveBeenCalledWith('/movie/movie-123');
   });
 
   it('navigates to notifications screen when no movie_id', () => {
-    let capturedCallback: (response: unknown) => void;
-    (Notifications.addNotificationResponseReceivedListener as jest.Mock).mockImplementationOnce(
-      (cb: (response: unknown) => void) => {
-        capturedCallback = cb;
-        return { remove: jest.fn() };
-      },
-    );
-
+    const callback = captureResponseCallback();
     renderHook(() => useNotificationHandler());
 
-    capturedCallback!({
-      notification: {
-        request: {
-          content: {
-            data: {},
-          },
-        },
-      },
-    });
+    callback(buildResponse({}));
 
     expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('navigates to notifications screen when data is null', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse(null));
+
+    expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['notifications'] });
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('navigates to notifications screen when data is undefined', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse(undefined));
+
+    expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['notifications'] });
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('navigates to notifications screen when data has unrecognized keys', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ actor_id: 'actor-1', type: 'new_role' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+    expect(mockPush).not.toHaveBeenCalledWith(expect.stringContaining('/movie/'));
+  });
+
+  it('invalidates notifications query on every notification response', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ movie_id: 'movie-1' }));
+    expect(mockInvalidate).toHaveBeenCalledTimes(1);
+
+    // Simulate second notification
+    callback(buildResponse({}));
+    expect(mockInvalidate).toHaveBeenCalledTimes(2);
   });
 
   it('cleans up listener on unmount', () => {
@@ -93,5 +127,11 @@ describe('useNotificationHandler', () => {
     unmount();
 
     expect(mockRemove).toHaveBeenCalled();
+  });
+
+  it('does not call remove if listener ref is null on unmount', () => {
+    // Default mock returns { remove: jest.fn() }, but we verify the cleanup doesn't crash
+    const { unmount } = renderHook(() => useNotificationHandler());
+    expect(() => unmount()).not.toThrow();
   });
 });

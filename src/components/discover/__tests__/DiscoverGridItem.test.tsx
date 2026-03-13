@@ -1,15 +1,24 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
-import { DiscoverGridItem } from '../DiscoverGridItem';
-import type { Movie, OTTPlatform } from '@/types';
-
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
 jest.mock('expo-image', () => ({
   Image: 'Image',
+}));
+
+jest.mock('@/theme', () => ({
+  useTheme: () => ({
+    theme: new Proxy({}, { get: () => '#000' }),
+    colors: new Proxy({}, { get: () => '#000' }),
+    mode: 'dark',
+    setMode: jest.fn(),
+  }),
+}));
+
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+  MaterialIcons: 'MaterialIcons',
 }));
 
 jest.mock('@/components/ui/StatusBadge', () => {
@@ -40,6 +49,15 @@ jest.mock('@/hooks/useMovieAction', () => ({
     onPress: mockActionPress,
   }),
 }));
+
+jest.mock('@/constants/placeholders', () => ({
+  PLACEHOLDER_POSTER: 'https://placeholder.com/poster.png',
+}));
+
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react-native';
+import { DiscoverGridItem } from '../DiscoverGridItem';
+import type { Movie, OTTPlatform } from '@/types';
 
 const mockStyles = new Proxy({}, { get: () => ({}) });
 
@@ -85,11 +103,16 @@ const mockPlatforms: OTTPlatform[] = [
   { id: 'prime', name: 'Prime', logo: 'prime', logo_url: null, color: '#00a8e1', display_order: 3 },
 ];
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
-
 describe('DiscoverGridItem', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('renders without crashing', () => {
+    const { toJSON } = render(
+      <DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
+
   it('renders movie title', () => {
     render(<DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />);
     expect(screen.getByText('Test Movie')).toBeTruthy();
@@ -127,8 +150,20 @@ describe('DiscoverGridItem', () => {
     expect(tree).not.toContain('Aha');
   });
 
-  it('renders action button', () => {
+  it('renders action button with correct accessibility label', () => {
     render(<DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />);
     expect(screen.getByLabelText('Follow Test Movie')).toBeTruthy();
+  });
+
+  it('renders status badge', () => {
+    render(<DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />);
+    expect(screen.getByText('upcoming')).toBeTruthy();
+  });
+
+  it('renders with single platform', () => {
+    render(
+      <DiscoverGridItem item={baseMovie} platforms={[mockPlatforms[0]]} styles={mockStyles} />,
+    );
+    expect(screen.getByText('Aha')).toBeTruthy();
   });
 });

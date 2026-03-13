@@ -63,4 +63,45 @@ describe('CommentInput', () => {
     fireEvent.press(screen.getByLabelText('Send comment'));
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it('disables send button when input is empty', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const sendBtn = screen.getByLabelText('Send comment');
+    expect(sendBtn.props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('clears input after successful submit', () => {
+    const onSubmit = jest.fn();
+    render(<CommentInput isAuthenticated={true} onSubmit={onSubmit} />);
+    const input = screen.getByLabelText('Comment input');
+    fireEvent.changeText(input, 'My comment');
+    fireEvent.press(screen.getByLabelText('Send comment'));
+    expect(onSubmit).toHaveBeenCalledWith('My comment');
+    // After submit, input value resets
+    expect(input.props.value).toBe('');
+  });
+
+  it('renders with default bottomInset of 0', () => {
+    const { toJSON } = render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('renders with custom bottomInset', () => {
+    const { toJSON } = render(
+      <CommentInput isAuthenticated={true} onSubmit={jest.fn()} bottomInset={34} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('input supports multiline', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const input = screen.getByLabelText('Comment input');
+    expect(input.props.multiline).toBe(true);
+  });
+
+  it('input has maxLength of 500', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const input = screen.getByLabelText('Comment input');
+    expect(input.props.maxLength).toBe(500);
+  });
 });

@@ -23,8 +23,27 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 
 const PAGE_SIZE = 10;
 
-// @coupling: deriveMovieStatus is called with platformCount=0 for EVERY entry. This means movies that are actually streaming (have platform entries) are classified as 'released' not 'streaming' by this hook. The watchlist API (fetchWatchlist) joins movies(*) but does NOT fetch platform data, so the hook has no way to know platform count. 'available' filter catches in_theaters correctly but misses streaming movies unless in_theaters is also true.
-// @invariant: query key ['watchlist', userId] is shared with useWatchlistSet below. Both hooks call fetchWatchlist with the same userId. If either hook's queryFn changes (e.g., adding a filter), both will return different data for the same cache key, causing cache corruption. They MUST use the same queryFn.
+// @contract: API response extends WatchlistEntry with _platformCount for streaming classification
+type WatchlistEntryWithPlatformCount = WatchlistEntry & { _platformCount?: number };
+
+// @contract: shared filter logic for watchlist entries — uses _platformCount from API response
+// to correctly classify streaming movies via deriveMovieStatus.
+function categorizeEntries(entries: WatchlistEntryWithPlatformCount[]) {
+  const available = entries.filter((e) => {
+    if (e.status !== 'watchlist' || !e.movie) return false;
+    const movieStatus = deriveMovieStatus(e.movie, e._platformCount ?? 0);
+    return movieStatus === 'in_theaters' || movieStatus === 'streaming';
+  });
+  const upcoming = entries.filter((e) => {
+    if (e.status !== 'watchlist' || !e.movie) return false;
+    const movieStatus = deriveMovieStatus(e.movie, e._platformCount ?? 0);
+    return movieStatus === 'upcoming';
+  });
+  const watched = entries.filter((e) => e.status === 'watched');
+  return { available, upcoming, watched };
+}
+
+// @invariant: query key ['watchlist', userId] is shared with useWatchlistSet below.
 export function useWatchlist(userId: string) {
   const query = useQuery({
     queryKey: ['watchlist', userId],
@@ -34,22 +53,11 @@ export function useWatchlist(userId: string) {
   });
 
   const entries = query.data ?? [];
-  const available = entries.filter((e) => {
-    if (e.status !== 'watchlist' || !e.movie) return false;
-    const movieStatus = deriveMovieStatus(e.movie, 0);
-    return movieStatus === 'in_theaters' || movieStatus === 'streaming';
-  });
-  const upcoming = entries.filter((e) => {
-    if (e.status !== 'watchlist' || !e.movie) return false;
-    const movieStatus = deriveMovieStatus(e.movie, 0);
-    return movieStatus === 'upcoming';
-  });
-  const watched = entries.filter((e) => e.status === 'watched');
+  const { available, upcoming, watched } = categorizeEntries(entries);
 
   return { ...query, available, upcoming, watched };
 }
 
-// @sync: duplicates the available/upcoming/watched filter logic from useWatchlist above. If the deriveMovieStatus call is ever changed (e.g., passing actual platform count), it must be updated in BOTH hooks. No shared utility for this derivation exists.
 export function useWatchlistPaginated(userId: string) {
   const query = useInfiniteQuery({
     queryKey: ['watchlist-paginated', userId],
@@ -62,17 +70,7 @@ export function useWatchlistPaginated(userId: string) {
   });
 
   const entries = query.data?.pages.flat() ?? [];
-  const available = entries.filter((e) => {
-    if (e.status !== 'watchlist' || !e.movie) return false;
-    const movieStatus = deriveMovieStatus(e.movie, 0);
-    return movieStatus === 'in_theaters' || movieStatus === 'streaming';
-  });
-  const upcoming = entries.filter((e) => {
-    if (e.status !== 'watchlist' || !e.movie) return false;
-    const movieStatus = deriveMovieStatus(e.movie, 0);
-    return movieStatus === 'upcoming';
-  });
-  const watched = entries.filter((e) => e.status === 'watched');
+  const { available, upcoming, watched } = categorizeEntries(entries);
 
   return { ...query, available, upcoming, watched };
 }
@@ -86,8 +84,8 @@ export function useIsWatchlisted(userId: string, movieId: string) {
   });
 }
 
-// @contract: invalidateAll covers 3 cache keys: ['watchlist', userId], ['watchlist-paginated', userId], and ['watchlist', 'check', userId]. If a new watchlist query is added with a different key pattern, it must be added to invalidateAll or it will show stale data after mutations.
-// @edge: add mutation does NOT have optimistic update — UI won't reflect the add until server response + invalidation. The remove mutation DOES have optimistic update. This asymmetry means "add to watchlist" feels slower than "remove from watchlist" to the user.
+// @contract: invalidateAll covers 3 cache keys: ['watchlist', userId],
+// ['watchlist-paginated', userId], and ['watchlist', 'check', userId].
 export function useWatchlistMutations() {
   const queryClient = useQueryClient();
 
@@ -100,11 +98,33 @@ export function useWatchlistMutations() {
   const add = useMutation({
     mutationFn: ({ userId, movieId }: { userId: string; movieId: string }) =>
       addToWatchlist(userId, movieId),
-    onSuccess: (_data, { userId }) => {
-      invalidateAll(userId);
+    // @sideeffect: optimistic update — immediately marks movie as watchlisted in the check cache
+    onMutate: async ({ userId, movieId }) => {
+      await queryClient.cancelQueries({ queryKey: ['watchlist', 'check', userId, movieId] });
+      const prev = queryClient.getQueryData<WatchlistEntry | null>([
+        'watchlist',
+        'check',
+        userId,
+        movieId,
+      ]);
+      queryClient.setQueryData<WatchlistEntry | null>(['watchlist', 'check', userId, movieId], {
+        id: `temp-${Date.now()}`,
+        user_id: userId,
+        movie_id: movieId,
+        status: 'watchlist',
+        added_at: new Date().toISOString(),
+        watched_at: null,
+      } as WatchlistEntry);
+      return { prev };
     },
-    onError: () => {
+    onError: (_err, { userId, movieId }, context) => {
+      if (context?.prev !== undefined) {
+        queryClient.setQueryData(['watchlist', 'check', userId, movieId], context.prev);
+      }
       Alert.alert(i18n.t('common.error'), i18n.t('common.failedToAddWatchlist'));
+    },
+    onSettled: (_data, _err, { userId }) => {
+      invalidateAll(userId);
     },
   });
 
@@ -118,7 +138,6 @@ export function useWatchlistMutations() {
       queryClient.setQueryData<WatchlistEntry[]>(['watchlist', userId], (old) =>
         old?.filter((e) => e.movie_id !== movieId),
       );
-      // Also optimistically update the paginated query
       queryClient.setQueryData<InfiniteData<WatchlistEntry[], number>>(
         ['watchlist-paginated', userId],
         (old) => {
@@ -166,8 +185,8 @@ export function useWatchlistMutations() {
   return { add, remove, markWatched, moveBack };
 }
 
-// @coupling: used by useMovieAction (hooks/useMovieAction.ts) and HeroCarousel to check if a movie is watchlisted. The set only contains movie_ids with status='watchlist' — watched movies are excluded. So a movie marked as watched won't show as "watchlisted" in the UI, which is correct behavior but worth noting if someone expects "any watchlist entry" to be in the set.
-// @invariant: shares query key ['watchlist', userId] with useWatchlist — they read from the same cache. When useWatchlistMutations invalidates, BOTH hooks re-render. If this hook is used on a screen without useWatchlist, the cache is populated by whichever hook renders first.
+// @coupling: used by useMovieAction and HeroCarousel to check if a movie is watchlisted.
+// @invariant: shares query key ['watchlist', userId] with useWatchlist — they read from the same cache.
 export function useWatchlistSet() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
