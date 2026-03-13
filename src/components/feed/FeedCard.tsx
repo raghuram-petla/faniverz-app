@@ -108,7 +108,7 @@ function FeedCardInner({
         <FeedAvatar
           imageUrl={entityAvatarUrl}
           entityType={entityType}
-          size={44}
+          size={48}
           label={entityName}
           onPress={
             entityId && onEntityPress ? () => onEntityPress(entityType, entityId) : undefined

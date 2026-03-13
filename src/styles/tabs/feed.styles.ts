@@ -216,8 +216,9 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       paddingHorizontal: 12,
     },
     separator: {
-      height: 8,
-      backgroundColor: t.surface,
+      height: 2,
+      backgroundColor: t.input,
       marginTop: 10,
+      borderRadius: 1,
     },
   });

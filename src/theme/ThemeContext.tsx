@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { useColorScheme, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { useColorScheme, LayoutAnimation, Platform, UIManager, Appearance } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -57,6 +57,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isDark = mode === 'system' ? systemScheme === 'dark' : mode === 'dark';
+
+  // @sideeffect Syncs React Native's Appearance with the app's selected theme so iOS
+  // renders correct status bar icon colors even when app theme differs from system theme
+  useEffect(() => {
+    Appearance.setColorScheme(mode === 'system' ? null : mode);
+  }, [mode]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({

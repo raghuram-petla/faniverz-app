@@ -27,7 +27,7 @@ export function FeedActionBar({
   onShare,
 }: FeedActionBarProps) {
   const { theme, colors } = useTheme();
-  const defaultColor = theme.textTertiary;
+  const defaultColor = theme.textSecondary;
   // @edge all counts default to 0 to handle null/undefined from API responses
   const safeComments = commentCount ?? 0;
   const safeUpvotes = upvoteCount ?? 0;
@@ -49,7 +49,7 @@ export function FeedActionBar({
         accessibilityRole="button"
         accessibilityLabel={`Comments, ${safeComments} comments`}
       >
-        <Ionicons name="chatbubble-outline" size={18} color={defaultColor} />
+        <Ionicons name="chatbubble-outline" size={22} color={defaultColor} />
         <Text style={[styles.count, { color: defaultColor }]}>
           {formatCompactNumber(safeComments)}
         </Text>
@@ -66,7 +66,7 @@ export function FeedActionBar({
       >
         <Ionicons
           name={userVote === 'up' ? 'arrow-up' : 'arrow-up-outline'}
-          size={18}
+          size={22}
           color={upColor}
         />
         <Text style={[styles.count, { color: upColor }]}>{formatCompactNumber(safeUpvotes)}</Text>
@@ -83,7 +83,7 @@ export function FeedActionBar({
       >
         <Ionicons
           name={userVote === 'down' ? 'arrow-down' : 'arrow-down-outline'}
-          size={18}
+          size={22}
           color={downColor}
         />
         <Text style={[styles.count, { color: downColor }]}>
@@ -93,7 +93,7 @@ export function FeedActionBar({
 
       {/* Views */}
       <View style={styles.actionItem} accessibilityLabel={`${safeViews} views`}>
-        <Ionicons name="eye-outline" size={18} color={defaultColor} />
+        <Ionicons name="eye-outline" size={22} color={defaultColor} />
         <Text style={[styles.count, { color: defaultColor }]}>
           {formatCompactNumber(safeViews)}
         </Text>
@@ -108,7 +108,7 @@ export function FeedActionBar({
         accessibilityRole="button"
         accessibilityLabel="Share"
       >
-        <Ionicons name="share-outline" size={18} color={defaultColor} />
+        <Ionicons name="share-outline" size={22} color={defaultColor} />
       </TouchableOpacity>
     </View>
   );
@@ -123,10 +123,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   count: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
   },
 });

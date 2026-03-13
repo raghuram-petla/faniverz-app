@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, StatusBar, BackHandler, TouchableOpacity, type View } from 'react-native';
+import { Dimensions, BackHandler, TouchableOpacity, type View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -234,7 +235,7 @@ export function ImageViewerOverlay({
 
   return (
     <Animated.View style={styles.root} pointerEvents="auto">
-      <StatusBar barStyle="light-content" />
+      <StatusBar style="light" />
       <Animated.View style={[styles.backdrop, animatedBackdropStyle]} />
 
       <ImageViewerGestures

@@ -12,7 +12,7 @@ export function PostContentSkeleton() {
       {/* Feed card skeleton */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <SkeletonBox width={44} height={44} borderRadius={22} />
+          <SkeletonBox width={48} height={48} borderRadius={24} />
           <View style={styles.headerText}>
             <SkeletonBox width={120} height={14} borderRadius={4} />
             <SkeletonBox width={80} height={12} borderRadius={4} />
