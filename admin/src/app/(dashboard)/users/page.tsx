@@ -28,7 +28,7 @@ export default function UsersPage() {
   const [impersonateTarget, setImpersonateTarget] = useState<AdminUserWithDetails | null>(null);
   const [blockTarget, setBlockTarget] = useState<AdminUserWithDetails | null>(null);
   const { user: realUser } = useAuth();
-  const { isSuperAdmin, canManageAdmin } = usePermissions();
+  const { role, isSuperAdmin, canManageAdmin } = usePermissions();
   const { data: users, isLoading: usersLoading } = useAdminUserList();
   const { data: invitations, isLoading: invitesLoading } = useAdminInvitations();
   const revokeAdmin = useRevokeAdmin();
@@ -42,9 +42,16 @@ export default function UsersPage() {
   const activeSuperAdminCount =
     users?.filter((u) => u.role_id === 'super_admin' && u.status === 'active').length ?? 0;
 
-  // Regular admins see only PH admins; super admins see everyone
+  // Each role only sees users at their own level and below
+  const ROLE_RANK: Record<string, number> = {
+    root: 4,
+    super_admin: 3,
+    admin: 2,
+    production_house_admin: 1,
+  };
+  const myRank = ROLE_RANK[role ?? ''] ?? 0;
   const visibleUsers = users?.filter((u) => {
-    if (!isSuperAdmin && u.role_id !== 'production_house_admin') return false;
+    if (ROLE_RANK[u.role_id] > myRank) return false;
     if (statusFilter !== 'all' && u.status !== statusFilter) return false;
     return true;
   });

@@ -134,6 +134,7 @@ describe('AdminsTable', () => {
       users: [makeUser({ id: 'other-user', role_id: 'admin' })],
       realUserId: 'current-user',
       isSuperAdmin: false,
+      canManageAdmin: () => false,
     });
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     expect(screen.getByText('Admin')).toBeInTheDocument();

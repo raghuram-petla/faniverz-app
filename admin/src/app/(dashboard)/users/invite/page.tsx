@@ -5,14 +5,23 @@ import { useInviteAdmin } from '@/hooks/useAdminUsers';
 import { useAdminProductionHouses } from '@/hooks/useAdminProductionHouses';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { ADMIN_ROLE_LABELS, type AdminRoleId } from '@/lib/types';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ArrowLeft, Send, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
+
+const INVITABLE_ROLES: { value: AdminRoleId; label: string }[] = [
+  { value: 'super_admin', label: 'Super Admin — Full access + user management' },
+  { value: 'admin', label: 'Admin — Full content access' },
+  { value: 'production_house_admin', label: 'PH Admin — Scoped to production house(s)' },
+];
 
 export default function InviteAdminPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { canManageAdmin } = usePermissions();
   const inviteAdmin = useInviteAdmin();
   const { data: phData } = useAdminProductionHouses('');
+  const availableRoles = INVITABLE_ROLES.filter((r) => canManageAdmin(r.value));
   const allHouses = phData?.pages.flat() ?? [];
 
   const [email, setEmail] = useState('');
@@ -153,10 +162,11 @@ export default function InviteAdminPage() {
               }}
               className="w-full bg-input rounded-lg px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
             >
-              <option value="admin">Admin — Full content access</option>
-              <option value="production_house_admin">
-                PH Admin — Scoped to production house(s)
-              </option>
+              {availableRoles.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
             </select>
           </div>
 

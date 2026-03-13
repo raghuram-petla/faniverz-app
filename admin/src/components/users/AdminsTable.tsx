@@ -19,8 +19,8 @@ export interface AdminsTableProps {
   isRevokePending: boolean;
 }
 
-/** Roles available in the role-change dropdown (root is SQL-only) */
-const CHANGEABLE_ROLES: { value: AdminRoleId; label: string }[] = [
+/** All non-root roles for dropdown (filtered per-user by canManageAdmin) */
+const ALL_CHANGEABLE_ROLES: { value: AdminRoleId; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin' },
   { value: 'admin', label: 'Admin' },
   { value: 'production_house_admin', label: 'PH Admin' },
@@ -67,8 +67,12 @@ export function AdminsTable({
           {users?.map((u) => {
             const isSelf = u.id === realUserId;
             const canManage = !isSelf && canManageAdmin(u.role_id);
-            // Root role is SQL-only: always show as static badge, never as dropdown
-            const showRoleDropdown = !isSelf && isSuperAdmin && u.role_id !== 'root';
+            // Show role dropdown only if the current user can manage this user
+            const showRoleDropdown = canManage && u.role_id !== 'root';
+            // Only show roles the current user can assign (at or below their manageable level)
+            const assignableRoles = ALL_CHANGEABLE_ROLES.filter(
+              (r) => r.value === u.role_id || canManageAdmin(r.value),
+            );
             return (
               <tr key={u.id} className="border-b border-outline-subtle hover:bg-surface-elevated">
                 <td className="px-6 py-4">
@@ -104,7 +108,7 @@ export function AdminsTable({
                       disabled={isRolePending || u.status === 'blocked'}
                       className="bg-input rounded-lg px-2 py-1 text-xs text-on-surface outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-50"
                     >
-                      {CHANGEABLE_ROLES.map((r) => (
+                      {assignableRoles.map((r) => (
                         <option key={r.value} value={r.value}>
                           {r.label}
                         </option>
