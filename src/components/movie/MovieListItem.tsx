@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
@@ -23,6 +24,7 @@ interface MovieListItemProps {
 
 export function MovieListItem({ movie, platforms, isPast, testID }: MovieListItemProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const status = deriveMovieStatus(movie, platforms?.length ?? 0);
@@ -56,7 +58,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
         {status === 'in_theaters' && (
           <View style={styles.posterBadgeLeft}>
             <View style={styles.theaterBadge}>
-              <Text style={styles.theaterBadgeText}>Theater</Text>
+              <Text style={styles.theaterBadgeText}>{t('actorDetail.theater')}</Text>
             </View>
           </View>
         )}

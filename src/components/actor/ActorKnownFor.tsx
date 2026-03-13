@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { createStyles } from '@/styles/actorDetail.styles';
 import { getImageUrl } from '@shared/imageUrl';
@@ -14,6 +15,7 @@ export interface ActorKnownForProps {
 
 export function ActorKnownFor({ credits, onMoviePress }: ActorKnownForProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   // Top 5 by rating, only those with a movie
@@ -26,7 +28,9 @@ export function ActorKnownFor({ credits, onMoviePress }: ActorKnownForProps) {
 
   return (
     <View style={{ marginBottom: 24 }}>
-      <Text style={[styles.filmographyTitle, { marginBottom: 12 }]}>Known For</Text>
+      <Text style={[styles.filmographyTitle, { marginBottom: 12 }]}>
+        {t('actorDetail.knownFor')}
+      </Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

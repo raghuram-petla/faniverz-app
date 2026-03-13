@@ -102,7 +102,9 @@ export function ReviewModal({
                   contentFit="cover"
                 />
                 <View>
-                  <Text style={styles.modalMovieTitle}>{movieTitle}</Text>
+                  <Text style={styles.modalMovieTitle} numberOfLines={2}>
+                    {movieTitle}
+                  </Text>
                   {(releaseYear || director) && (
                     <Text style={styles.modalMovieMeta}>
                       {[releaseYear, director].filter(Boolean).join(' • ')}

@@ -140,7 +140,12 @@
     "male": "Male",
     "nonBinary": "Non-binary",
     "technician": "Technician",
-    "actor": "Actor"
+    "actor": "Actor",
+    "knownFor": "Known For",
+    "filmography": "Filmography",
+    "noMovies": "No movies found",
+    "noMoviesSubtitle": "This person's filmography will appear here.",
+    "theater": "Theater"
   },
   "postDetail": {
     "title": "Post",

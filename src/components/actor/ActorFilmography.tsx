@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createStyles } from '@/styles/actorDetail.styles';
@@ -28,12 +29,13 @@ export interface ActorFilmographyProps {
 
 export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProps) {
   const { theme, colors } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
 
   return (
     <>
       <View style={styles.filmographyHeader}>
-        <Text style={styles.filmographyTitle}>Filmography</Text>
+        <Text style={styles.filmographyTitle}>{t('actorDetail.filmography')}</Text>
         {credits.length > 0 && (
           <View style={styles.countBadge}>
             <Text style={styles.countBadgeText}>{credits.length}</Text>
@@ -44,8 +46,8 @@ export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProp
       {credits.length === 0 ? (
         <EmptyState
           icon="film-outline"
-          title="No movies found"
-          subtitle="This person's filmography will appear here."
+          title={t('actorDetail.noMovies')}
+          subtitle={t('actorDetail.noMoviesSubtitle')}
         />
       ) : (
         <View style={styles.filmographyList}>
@@ -55,7 +57,7 @@ export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProp
             const year = extractReleaseYear(movie.release_date);
             const roleText =
               credit.credit_type === 'cast' && credit.role_name
-                ? `as ${credit.role_name}`
+                ? t('movie.asRole', { role: credit.role_name })
                 : credit.role_name;
             return (
               <TouchableOpacity
