@@ -8,7 +8,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/theme';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
 export interface FollowButtonProps {
@@ -21,6 +21,7 @@ export interface FollowButtonProps {
 // @assumes onPress is auth-gated by the parent — this component doesn't check authentication
 export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonProps) {
   const { t } = useTranslation();
+  const { theme, colors } = useTheme();
   const iconScale = useSharedValue(1);
   const prevFollowing = useRef(isFollowing);
   const animationsEnabled = useAnimationsEnabled();
@@ -42,7 +43,10 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
 
   return (
     <TouchableOpacity
-      style={[styles.button, isFollowing ? styles.buttonFollowing : styles.buttonDefault]}
+      style={[
+        styles.button,
+        isFollowing ? { borderColor: colors.green500 } : { borderColor: theme.textSecondary },
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
@@ -56,10 +60,10 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
         <Ionicons
           name={isFollowing ? 'heart' : 'heart-outline'}
           size={18}
-          color={isFollowing ? colors.green500 : colors.gray500}
+          color={isFollowing ? colors.green500 : theme.textSecondary}
         />
       </Animated.View>
-      <Text style={[styles.text, { color: isFollowing ? colors.green500 : colors.gray500 }]}>
+      <Text style={[styles.text, { color: isFollowing ? colors.green500 : theme.textSecondary }]}>
         {isFollowing ? t('common.following') : t('common.follow')}
       </Text>
     </TouchableOpacity>
@@ -75,12 +79,6 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 18,
     borderWidth: 1,
-  },
-  buttonDefault: {
-    borderColor: colors.gray500,
-  },
-  buttonFollowing: {
-    borderColor: colors.green500,
   },
   text: {
     fontSize: 14,
