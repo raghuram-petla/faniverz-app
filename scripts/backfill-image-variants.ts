@@ -75,7 +75,12 @@ for (const [name, url] of Object.entries(PUBLIC_URLS)) {
 
 // ── Clients ──────────────────────────────────────────────────────────────────
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+  global: {
+    headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+  },
+});
 
 const r2Endpoint = R2_ENDPOINT || `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
 
@@ -244,6 +249,7 @@ let skippedExisting = 0;
 let migratedExternal = 0;
 let generatedVariants = 0;
 let failed = 0;
+const manualFixSql: string[] = [];
 
 // ── Bucket index cache ───────────────────────────────────────────────────────
 
@@ -277,13 +283,31 @@ async function backfillSource(source: ImageSource) {
 
   const bucketKeys = await getBucketIndex(source.bucket);
 
-  const { data: rows, error } = await supabase
-    .from(source.table)
-    .select(`id, ${source.column}`)
-    .not(source.column, 'is', null);
-
-  if (error) throw error;
-  console.log(`  Rows with non-null URLs: ${rows?.length ?? 0}`);
+  // Paginate to fetch ALL rows (Supabase default limit is 1000)
+  const allRows: Record<string, unknown>[] = [];
+  const PAGE = 1000;
+  let offset = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data: page, error: pgErr } = await supabase
+      .from(source.table)
+      .select(`id, ${source.column}`)
+      .not(source.column, 'is', null)
+      .range(offset, offset + PAGE - 1);
+    if (pgErr) throw pgErr;
+    if (!page || page.length === 0) {
+      hasMore = false;
+      break;
+    }
+    allRows.push(...page);
+    if (page.length < PAGE) {
+      hasMore = false;
+      break;
+    }
+    offset += PAGE;
+  }
+  const rows = allRows;
+  console.log(`  Rows with non-null URLs: ${rows.length}`);
 
   // Categorise rows without any network calls
   const externals: ExternalRow[] = [];
@@ -331,15 +355,24 @@ async function backfillSource(source: ImageSource) {
           source.publicBaseUrl,
         );
 
-        const { error: upErr } = await supabase
+        const { error: upErr, count } = await supabase
           .from(source.table)
-          .update({ [source.column]: newUrl })
+          .update({ [source.column]: newUrl }, { count: 'exact' })
           .eq('id', id);
 
-        if (upErr) throw new Error(`DB update: ${upErr.message}`);
-
-        migratedExternal++;
-        process.stdout.write('M');
+        if (upErr || count === 0) {
+          // Image uploaded to R2 but DB update blocked (RLS) — emit SQL for manual fix
+          const safeSql = `UPDATE ${source.table} SET ${source.column} = '${newUrl}' WHERE id = '${id}';`;
+          manualFixSql.push(safeSql);
+          console.error(
+            `\n  WARN [${source.table}.${id}]: DB update blocked by RLS — image uploaded, SQL emitted`,
+          );
+          failed++;
+        } else {
+          console.log(`\n    [${id}] ${url} → ${newUrl} (rows affected: ${count})`);
+          migratedExternal++;
+          process.stdout.write('M');
+        }
       } catch (e) {
         console.error(`\n  FAIL migrate [${source.table}.${id}]: ${(e as Error).message}`);
         failed++;
@@ -395,7 +428,11 @@ async function main() {
   console.log('Migrates external URLs to R2 and ensures all images have _sm, _md, _lg variants.\n');
 
   for (const source of IMAGE_SOURCES) {
-    await backfillSource(source);
+    try {
+      await backfillSource(source);
+    } catch (e) {
+      console.error(`\n  Skipping ${source.table}.${source.column}: ${(e as Error).message}`);
+    }
   }
 
   console.log('\n\n=== Summary ===');
@@ -404,6 +441,11 @@ async function main() {
   console.log(`  Migrated from external: ${migratedExternal}`);
   console.log(`  Generated variants    : ${generatedVariants}`);
   console.log(`  Failed                : ${failed}`);
+
+  if (manualFixSql.length > 0) {
+    console.log(`\n=== Manual SQL fixes (run in Supabase Dashboard SQL Editor) ===\n`);
+    console.log(manualFixSql.join('\n'));
+  }
 
   if (failed > 0) process.exit(1);
 }
