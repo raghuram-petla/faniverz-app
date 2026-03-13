@@ -3,13 +3,30 @@ import { verifyAdmin } from '@/lib/sync-helpers';
 
 const MAX_URLS = 10;
 
-// @invariant: only CDN domains allowed — prevents SSRF by restricting outbound HEAD requests
+// @invariant: only CDN/storage domains allowed — prevents SSRF by restricting outbound HEAD requests
+// @edge: in local dev, Supabase storage serves from localhost/LAN IPs — must be allowed
 const ALLOWED_URL_PATTERNS = ['faniverz.com'];
+
+function isLocalDev(): boolean {
+  return (
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('localhost') === true ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('127.0.0.1') === true
+  );
+}
 
 function isAllowedUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return ALLOWED_URL_PATTERNS.some((pattern) => parsed.hostname.includes(pattern));
+    if (ALLOWED_URL_PATTERNS.some((pattern) => parsed.hostname.includes(pattern))) return true;
+    // @edge: allow local/LAN IPs in dev (Supabase storage / MinIO on local network)
+    if (
+      isLocalDev() &&
+      (parsed.hostname === 'localhost' ||
+        parsed.hostname === '127.0.0.1' ||
+        /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(parsed.hostname))
+    )
+      return true;
+    return false;
   } catch {
     return false;
   }

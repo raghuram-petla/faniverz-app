@@ -116,58 +116,83 @@ describe('POST /api/image-check', () => {
   it('returns 400 when any URL is from a disallowed domain', async () => {
     const res = await POST(
       makeRequest({
-        urls: ['https://r2.cloudflarestorage.com/ok.jpg', 'https://evil.com/bad.jpg'],
+        urls: ['https://cdn.faniverz.com/ok.jpg', 'https://evil.com/bad.jpg'],
       }),
     );
     expect(res.status).toBe(400);
   });
 
-  it('allows URLs from r2.cloudflarestorage.com', async () => {
+  it('allows URLs from faniverz.com CDN', async () => {
     mockFetch.mockResolvedValue({ ok: true });
-    const res = await POST(makeRequest({ urls: ['https://abc.r2.cloudflarestorage.com/img.jpg'] }));
+    const res = await POST(makeRequest({ urls: ['https://cdn.faniverz.com/img.jpg'] }));
     expect(res.status).toBe(200);
   });
 
-  it('allows URLs from image.tmdb.org', async () => {
-    mockFetch.mockResolvedValue({ ok: true });
-    const res = await POST(makeRequest({ urls: ['https://image.tmdb.org/t/p/w500/poster.jpg'] }));
-    expect(res.status).toBe(200);
+  it('allows local storage URLs in dev mode', async () => {
+    const origUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';
+    try {
+      mockFetch.mockResolvedValue({ ok: true });
+      const res = await POST(
+        makeRequest({ urls: ['http://10.0.0.23:9000/faniverz-movie-posters/img.jpg'] }),
+      );
+      expect(res.status).toBe(200);
+    } finally {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = origUrl;
+    }
   });
 
-  it('allows URLs from pub- CDN domains', async () => {
-    mockFetch.mockResolvedValue({ ok: true });
-    const res = await POST(makeRequest({ urls: ['https://pub-abc123.r2.dev/img.jpg'] }));
-    expect(res.status).toBe(200);
+  it('allows localhost URLs in dev mode', async () => {
+    const origUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
+    try {
+      mockFetch.mockResolvedValue({ ok: true });
+      const res = await POST(
+        makeRequest({ urls: ['http://localhost:9000/faniverz-movie-posters/img.jpg'] }),
+      );
+      expect(res.status).toBe(200);
+    } finally {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = origUrl;
+    }
+  });
+
+  it('rejects LAN URLs when not in dev mode', async () => {
+    const origUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://abc.supabase.co';
+    try {
+      const res = await POST(
+        makeRequest({ urls: ['http://10.0.0.23:9000/faniverz-movie-posters/img.jpg'] }),
+      );
+      expect(res.status).toBe(400);
+    } finally {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = origUrl;
+    }
   });
 
   it('returns ok for accessible URLs', async () => {
     mockFetch.mockResolvedValue({ ok: true });
-    const res = await POST(makeRequest({ urls: ['https://r2.cloudflarestorage.com/img.jpg'] }));
+    const res = await POST(makeRequest({ urls: ['https://cdn.faniverz.com/img.jpg'] }));
     const data = await res.json();
-    expect(data.results).toEqual([
-      { url: 'https://r2.cloudflarestorage.com/img.jpg', status: 'ok' },
-    ]);
-    expect(mockFetch).toHaveBeenCalledWith('https://r2.cloudflarestorage.com/img.jpg', {
+    expect(data.results).toEqual([{ url: 'https://cdn.faniverz.com/img.jpg', status: 'ok' }]);
+    expect(mockFetch).toHaveBeenCalledWith('https://cdn.faniverz.com/img.jpg', {
       method: 'HEAD',
     });
   });
 
   it('returns missing for 404 URLs', async () => {
     mockFetch.mockResolvedValue({ ok: false });
-    const res = await POST(makeRequest({ urls: ['https://r2.cloudflarestorage.com/missing.jpg'] }));
+    const res = await POST(makeRequest({ urls: ['https://cdn.faniverz.com/missing.jpg'] }));
     const data = await res.json();
     expect(data.results).toEqual([
-      { url: 'https://r2.cloudflarestorage.com/missing.jpg', status: 'missing' },
+      { url: 'https://cdn.faniverz.com/missing.jpg', status: 'missing' },
     ]);
   });
 
   it('returns error for network failures', async () => {
     mockFetch.mockRejectedValue(new Error('Network error'));
-    const res = await POST(makeRequest({ urls: ['https://r2.cloudflarestorage.com/fail.jpg'] }));
+    const res = await POST(makeRequest({ urls: ['https://cdn.faniverz.com/fail.jpg'] }));
     const data = await res.json();
-    expect(data.results).toEqual([
-      { url: 'https://r2.cloudflarestorage.com/fail.jpg', status: 'error' },
-    ]);
+    expect(data.results).toEqual([{ url: 'https://cdn.faniverz.com/fail.jpg', status: 'error' }]);
   });
 
   it('handles multiple URLs in parallel', async () => {
@@ -177,9 +202,9 @@ describe('POST /api/image-check', () => {
       .mockRejectedValueOnce(new Error('fail'));
 
     const urls = [
-      'https://r2.cloudflarestorage.com/a.jpg',
-      'https://r2.cloudflarestorage.com/b.jpg',
-      'https://r2.cloudflarestorage.com/c.jpg',
+      'https://cdn.faniverz.com/a.jpg',
+      'https://cdn.faniverz.com/b.jpg',
+      'https://cdn.faniverz.com/c.jpg',
     ];
     const res = await POST(makeRequest({ urls }));
     const data = await res.json();
