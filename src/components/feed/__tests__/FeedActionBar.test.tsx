@@ -85,14 +85,14 @@ describe('FeedActionBar', () => {
   it('shows filled icon and green color when userVote is up', () => {
     const { toJSON } = render(<FeedActionBar {...defaultProps} userVote="up" />);
     const json = JSON.stringify(toJSON());
-    expect(json).toContain('"arrow-up"');
+    expect(json).toContain('"heart"');
     expect(json).toContain('#22c55e');
   });
 
   it('shows filled icon and red color when userVote is down', () => {
     const { toJSON } = render(<FeedActionBar {...defaultProps} userVote="down" />);
     const json = JSON.stringify(toJSON());
-    expect(json).toContain('"arrow-down"');
+    expect(json).toContain('"heart-broken"');
     expect(json).toContain('#ef4444');
   });
 

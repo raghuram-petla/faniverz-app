@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { formatCompactNumber } from '@/utils/formatNumber';
 
@@ -64,11 +64,7 @@ export function FeedActionBar({
         accessibilityRole="button"
         accessibilityLabel={`Upvote, ${safeUpvotes} upvotes`}
       >
-        <Ionicons
-          name={userVote === 'up' ? 'arrow-up' : 'arrow-up-outline'}
-          size={22}
-          color={upColor}
-        />
+        <Ionicons name={userVote === 'up' ? 'heart' : 'heart-outline'} size={22} color={upColor} />
         <Text style={[styles.count, { color: upColor }]}>{formatCompactNumber(safeUpvotes)}</Text>
       </TouchableOpacity>
 
@@ -81,8 +77,8 @@ export function FeedActionBar({
         accessibilityRole="button"
         accessibilityLabel={`Downvote, ${safeDownvotes} downvotes`}
       >
-        <Ionicons
-          name={userVote === 'down' ? 'arrow-down' : 'arrow-down-outline'}
+        <MaterialCommunityIcons
+          name={userVote === 'down' ? 'heart-broken' : 'heart-broken-outline'}
           size={22}
           color={downColor}
         />

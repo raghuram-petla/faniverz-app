@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -71,7 +71,7 @@ export function VoteButtons({
       >
         <Animated.View style={upIconStyle}>
           <Ionicons
-            name={userVote === 'up' ? 'arrow-up' : 'arrow-up-outline'}
+            name={userVote === 'up' ? 'heart' : 'heart-outline'}
             size={16}
             color={userVote === 'up' ? colors.green500 : theme.textSecondary}
           />
@@ -94,8 +94,8 @@ export function VoteButtons({
         accessibilityLabel={`Downvote, ${downvoteCount} downvotes`}
       >
         <Animated.View style={downIconStyle}>
-          <Ionicons
-            name={userVote === 'down' ? 'arrow-down' : 'arrow-down-outline'}
+          <MaterialCommunityIcons
+            name={userVote === 'down' ? 'heart-broken' : 'heart-broken-outline'}
             size={16}
             color={userVote === 'down' ? colors.red500 : theme.textSecondary}
           />

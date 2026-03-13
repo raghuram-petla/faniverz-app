@@ -14,9 +14,9 @@ export interface ActivityItemProps {
 
 /** @boundary action_type is a string from the DB; unknown types fall through to vote config */
 const ACTION_CONFIG: Record<string, { icon: string; labelKey: string; color: string }> = {
-  vote: { icon: 'arrow-up', labelKey: 'profile.votedOnPost', color: palette.blue500 },
+  vote: { icon: 'heart', labelKey: 'profile.votedOnPost', color: palette.blue500 },
   follow: { icon: 'heart', labelKey: 'profile.followedEntity', color: palette.red500 },
-  unfollow: { icon: 'heart-dislike', labelKey: 'profile.unfollowedEntity', color: palette.gray500 },
+  unfollow: { icon: 'heart-broken', labelKey: 'profile.unfollowedEntity', color: palette.gray500 },
   comment: { icon: 'chatbubble', labelKey: 'profile.commentedOnPost', color: palette.violet500 },
   review: { icon: 'star', labelKey: 'profile.wroteReview', color: palette.amber500 },
 };
