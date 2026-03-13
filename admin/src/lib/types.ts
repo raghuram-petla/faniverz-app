@@ -121,6 +121,7 @@ export interface DashboardStats {
   totalFollows: number;
   totalComments: number;
   totalFavorites: number;
+  totalFeedVotes: number;
 }
 
 export interface Review {

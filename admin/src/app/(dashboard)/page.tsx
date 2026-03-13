@@ -14,6 +14,7 @@ import {
   Bookmark,
   Heart,
   MessageCircle,
+  ThumbsUp,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -132,6 +133,13 @@ export default function DashboardPage() {
             icon: Star,
             color: 'text-amber-500',
             bg: 'bg-amber-600/20',
+          },
+          {
+            label: 'Feed Votes',
+            value: stats?.totalFeedVotes,
+            icon: ThumbsUp,
+            color: 'text-indigo-500',
+            bg: 'bg-indigo-600/20',
           },
         ].map((card) => {
           const Icon = card.icon;

@@ -36,7 +36,7 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                   onPress={
                     mp.streaming_url?.startsWith('http')
                       ? () =>
-                          Linking.openURL(mp.streaming_url ?? '').catch(() =>
+                          Linking.openURL(mp.streaming_url!).catch(() =>
                             Alert.alert(t('common.error'), t('common.openLinkFailed')),
                           )
                       : undefined

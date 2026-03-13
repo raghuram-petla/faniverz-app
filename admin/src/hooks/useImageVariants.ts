@@ -26,7 +26,7 @@ function buildVariants(originalUrl: string, variantType: VariantType): VariantIn
 
   return sizes.map((size, i) => ({
     label: SIZE_LABELS[size],
-    url: getImageUrl(originalUrl, size)!,
+    url: getImageUrl(originalUrl, size) ?? originalUrl,
     width: size === 'original' ? null : specs[i - 1].width,
     quality: size === 'original' ? null : specs[i - 1].quality,
     status: 'checking' as const,

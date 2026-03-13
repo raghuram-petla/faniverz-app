@@ -179,7 +179,9 @@ export default function NotificationsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-on-surface font-medium">{notification.title}</span>
+                      <span className="text-on-surface font-medium truncate max-w-[250px] inline-block align-middle">
+                        {notification.title}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span

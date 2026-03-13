@@ -1,3 +1,7 @@
+// Set required env vars for supabase client initialization
+process.env.EXPO_PUBLIC_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://test.supabase.co';
+process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'test-anon-key';
+
 // Mock react-i18next — load actual English translations so tests can assert on English text
 jest.mock('react-i18next', () => {
   const en = require('./src/i18n/en.json');

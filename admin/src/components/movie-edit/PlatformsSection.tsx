@@ -48,7 +48,7 @@ export function PlatformsSection({
               >
                 {mp.platform?.logo_url ? (
                   <img
-                    src={getImageUrl(mp.platform.logo_url, 'sm')!}
+                    src={getImageUrl(mp.platform.logo_url, 'sm') ?? mp.platform.logo_url}
                     alt=""
                     className="w-6 h-6 object-contain"
                   />

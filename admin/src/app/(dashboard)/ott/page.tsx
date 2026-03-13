@@ -70,7 +70,9 @@ export default function OttReleasesPage() {
                 >
                   <td className="px-6 py-4">
                     <span className="text-on-surface font-medium">
-                      {release.movie?.title ?? release.movie_id}
+                      <span className="truncate max-w-[200px] inline-block align-middle">
+                        {release.movie?.title ?? release.movie_id}
+                      </span>
                     </span>
                   </td>
                   <td className="px-6 py-4">

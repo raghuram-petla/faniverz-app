@@ -52,7 +52,7 @@ export function Header() {
           >
             {user?.avatar_url && !imgError ? (
               <img
-                src={getImageUrl(user.avatar_url, 'sm')!}
+                src={getImageUrl(user.avatar_url, 'sm') ?? user.avatar_url}
                 alt="Avatar"
                 className="w-9 h-9 rounded-full object-cover"
                 onError={() => setImgError(true)}

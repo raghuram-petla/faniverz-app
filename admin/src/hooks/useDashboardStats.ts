@@ -33,6 +33,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
             totalFollows: 0,
             totalComments: 0,
             totalFavorites: 0,
+            totalFeedVotes: 0,
           };
         }
 
@@ -82,21 +83,33 @@ export function useDashboardStats(productionHouseIds?: string[]) {
           totalFollows: follows.count ?? 0,
           totalComments: comments.count ?? 0,
           totalFavorites: 0, // PH admins: favorites are not scoped to movies
+          totalFeedVotes: 0, // PH admins: feed votes not scoped
         };
       }
 
-      const [movies, actors, users, reviews, feedItems, watchlist, follows, comments, favorites] =
-        await Promise.all([
-          supabase.from('movies').select('id', { count: 'estimated', head: true }),
-          supabase.from('actors').select('id', { count: 'estimated', head: true }),
-          supabase.from('profiles').select('id', { count: 'estimated', head: true }),
-          supabase.from('reviews').select('id', { count: 'estimated', head: true }),
-          supabase.from('news_feed').select('id', { count: 'estimated', head: true }),
-          supabase.from('watchlists').select('id', { count: 'estimated', head: true }),
-          supabase.from('entity_follows').select('id', { count: 'estimated', head: true }),
-          supabase.from('feed_comments').select('id', { count: 'estimated', head: true }),
-          supabase.from('favorite_actors').select('id', { count: 'estimated', head: true }),
-        ]);
+      const [
+        movies,
+        actors,
+        users,
+        reviews,
+        feedItems,
+        watchlist,
+        follows,
+        comments,
+        favorites,
+        feedVotes,
+      ] = await Promise.all([
+        supabase.from('movies').select('id', { count: 'estimated', head: true }),
+        supabase.from('actors').select('id', { count: 'estimated', head: true }),
+        supabase.from('profiles').select('id', { count: 'estimated', head: true }),
+        supabase.from('reviews').select('id', { count: 'estimated', head: true }),
+        supabase.from('news_feed').select('id', { count: 'estimated', head: true }),
+        supabase.from('watchlists').select('id', { count: 'estimated', head: true }),
+        supabase.from('entity_follows').select('id', { count: 'estimated', head: true }),
+        supabase.from('feed_comments').select('id', { count: 'estimated', head: true }),
+        supabase.from('favorite_actors').select('id', { count: 'estimated', head: true }),
+        supabase.from('feed_votes').select('id', { count: 'estimated', head: true }),
+      ]);
 
       return {
         totalMovies: movies.count ?? 0,
@@ -108,6 +121,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         totalFollows: follows.count ?? 0,
         totalComments: comments.count ?? 0,
         totalFavorites: favorites.count ?? 0,
+        totalFeedVotes: feedVotes.count ?? 0,
       };
     },
     staleTime: 5 * 60_000,

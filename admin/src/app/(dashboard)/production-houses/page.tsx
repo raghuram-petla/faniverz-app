@@ -97,7 +97,7 @@ export default function ProductionHousesPage() {
               {form.logo_url ? (
                 <div className="flex items-center gap-2 flex-1">
                   <img
-                    src={getImageUrl(form.logo_url, 'sm')!}
+                    src={getImageUrl(form.logo_url, 'sm') ?? form.logo_url}
                     alt=""
                     className="w-9 h-9 rounded object-cover border border-outline shrink-0"
                   />
@@ -195,7 +195,7 @@ export default function ProductionHousesPage() {
                 <div className="w-14 h-14 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {house.logo_url ? (
                     <img
-                      src={getImageUrl(house.logo_url, 'sm')!}
+                      src={getImageUrl(house.logo_url, 'sm') ?? house.logo_url}
                       alt=""
                       className="w-full h-full object-cover"
                     />

@@ -81,7 +81,9 @@ export default function SurpriseContentPage() {
                     className="border-b border-outline-subtle hover:bg-surface-elevated transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <span className="text-on-surface font-medium">{item.title}</span>
+                      <span className="text-on-surface font-medium truncate max-w-[250px] inline-block align-middle">
+                        {item.title}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span

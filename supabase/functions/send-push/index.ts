@@ -23,7 +23,16 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
     // If not using service role key, verify the JWT belongs to an admin
-    if (token !== serviceKey) {
+    // Use constant-time comparison to prevent timing attacks
+    const isServiceRole = (() => {
+      const a = new TextEncoder().encode(token);
+      const b = new TextEncoder().encode(serviceKey);
+      if (a.length !== b.length) return false;
+      let result = 0;
+      for (let i = 0; i < a.length; i++) result |= a[i] ^ b[i];
+      return result === 0;
+    })();
+    if (!isServiceRole) {
       const supabaseAuth = createClient(Deno.env.get('SUPABASE_URL')!, serviceKey);
       const {
         data: { user },

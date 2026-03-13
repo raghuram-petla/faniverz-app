@@ -51,7 +51,7 @@ export function ActorSearchDropdown({
                 <div className="w-6 h-6 rounded-full bg-input overflow-hidden shrink-0 flex items-center justify-center">
                   {a.photo_url ? (
                     <img
-                      src={getImageUrl(a.photo_url, 'sm')!}
+                      src={getImageUrl(a.photo_url, 'sm') ?? a.photo_url}
                       alt=""
                       className="w-full h-full object-cover"
                     />

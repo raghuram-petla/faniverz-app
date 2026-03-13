@@ -124,7 +124,7 @@ export default function PlatformsPage() {
                 <div className="flex items-center gap-3">
                   {platform.logo_url ? (
                     <img
-                      src={getImageUrl(platform.logo_url, 'sm')!}
+                      src={getImageUrl(platform.logo_url, 'sm') ?? platform.logo_url}
                       alt={platform.name}
                       className="w-12 h-12 rounded-lg object-contain border border-outline"
                     />
@@ -133,7 +133,9 @@ export default function PlatformsPage() {
                       <Monitor className="w-5 h-5 text-on-surface-subtle" />
                     </span>
                   )}
-                  <h3 className="text-on-surface font-semibold text-lg">{platform.name}</h3>
+                  <h3 className="text-on-surface font-semibold text-lg truncate max-w-[180px]">
+                    {platform.name}
+                  </h3>
                 </div>
                 <div className="flex items-center gap-1">
                   <button

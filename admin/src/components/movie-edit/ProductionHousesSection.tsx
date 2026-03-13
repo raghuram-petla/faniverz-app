@@ -46,7 +46,10 @@ export function ProductionHousesSection({
               <div className="w-10 h-10 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                 {mph.production_house?.logo_url ? (
                   <img
-                    src={getImageUrl(mph.production_house.logo_url, 'sm')!}
+                    src={
+                      getImageUrl(mph.production_house.logo_url, 'sm') ??
+                      mph.production_house.logo_url
+                    }
                     alt=""
                     className="w-full h-full object-cover"
                   />

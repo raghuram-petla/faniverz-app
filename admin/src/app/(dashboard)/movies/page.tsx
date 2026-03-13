@@ -117,7 +117,7 @@ export default function MoviesPage() {
                     <div className="flex items-center gap-3">
                       {movie.poster_url ? (
                         <img
-                          src={getImageUrl(movie.poster_url, 'sm')!}
+                          src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
                           alt=""
                           className="w-10 h-14 rounded object-cover"
                         />
@@ -126,7 +126,9 @@ export default function MoviesPage() {
                           <Film className="w-4 h-4 text-on-surface-subtle" />
                         </div>
                       )}
-                      <span className="font-medium text-on-surface">{movie.title}</span>
+                      <span className="font-medium text-on-surface truncate max-w-[200px] inline-block align-middle">
+                        {movie.title}
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 py-3">

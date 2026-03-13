@@ -196,7 +196,10 @@ function FeedCardInner({
                 {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
                 <Image
                   source={{
-                    uri: getImageUrl(imageUrl ?? '', 'md') ?? imageUrl ?? PLACEHOLDER_POSTER,
+                    uri:
+                      (imageUrl ? getImageUrl(imageUrl, 'md') : null) ??
+                      imageUrl ??
+                      PLACEHOLDER_POSTER,
                   }}
                   style={styles.media}
                   contentFit="cover"

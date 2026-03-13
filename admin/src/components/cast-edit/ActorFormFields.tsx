@@ -61,7 +61,7 @@ export function ActorFormFields({
         {form.photo_url ? (
           <div className="flex items-center gap-4">
             <img
-              src={getImageUrl(form.photo_url, 'sm')!}
+              src={getImageUrl(form.photo_url, 'sm') ?? form.photo_url}
               alt="Photo preview"
               className="w-20 h-20 rounded-full object-cover border border-outline"
             />
