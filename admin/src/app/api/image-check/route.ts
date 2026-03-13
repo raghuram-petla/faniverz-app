@@ -4,7 +4,7 @@ import { verifyAdmin } from '@/lib/sync-helpers';
 const MAX_URLS = 10;
 
 // @invariant: only CDN domains allowed — prevents SSRF by restricting outbound HEAD requests
-const ALLOWED_URL_PATTERNS = ['r2.cloudflarestorage.com', 'image.tmdb.org', 'pub-'];
+const ALLOWED_URL_PATTERNS = ['faniverz.com'];
 
 function isAllowedUrl(url: string): boolean {
   try {
