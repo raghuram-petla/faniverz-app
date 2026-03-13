@@ -392,14 +392,15 @@ describe('movies api', () => {
   });
 
   describe('fetchMoviesPaginated', () => {
+    // fetchMoviesPaginated now passes { featuredFirst: true } to applyMovieFilters,
+    // which chains: select → order(is_featured) → order(sortBy) → range
     beforeEach(() => {
       mockRange.mockReturnValue(makeRangeResult());
-      mockOrder.mockReturnValue(makeOrderResult());
+      mockOrder.mockReturnValue({ order: mockOrder, range: mockRange });
       mockSelect.mockReturnValue({ order: mockOrder });
     });
 
     it('queries movies table and calls range(0, 9) for page 0', async () => {
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
       await fetchMoviesPaginated(0);
@@ -408,7 +409,6 @@ describe('movies api', () => {
     });
 
     it('calls range(10, 19) for page 1', async () => {
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
       await fetchMoviesPaginated(1);
@@ -417,7 +417,6 @@ describe('movies api', () => {
 
     it('returns data array on success', async () => {
       const mockData = [{ id: '1', title: 'Movie' }];
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult(mockData));
 
       const result = await fetchMoviesPaginated(0);
@@ -425,7 +424,6 @@ describe('movies api', () => {
     });
 
     it('returns empty array when data is null', async () => {
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult(null));
 
       const result = await fetchMoviesPaginated(0);
@@ -433,7 +431,6 @@ describe('movies api', () => {
     });
 
     it('throws on error', async () => {
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult(null, new Error('Paginated fetch failed')));
 
       await expect(fetchMoviesPaginated(0)).rejects.toThrow('Paginated fetch failed');
@@ -443,7 +440,6 @@ describe('movies api', () => {
       const mockEq2 = jest.fn();
       mockSelect.mockReturnValue({ eq: mockEq2 });
       mockEq2.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
       await fetchMoviesPaginated(0, 10, { movieStatus: 'in_theaters' });
@@ -453,7 +449,6 @@ describe('movies api', () => {
     it('filters by genre when provided', async () => {
       mockSelect.mockReturnValue({ contains: mockContains });
       mockContains.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
       await fetchMoviesPaginated(0, 10, { genre: 'Action' });
@@ -471,7 +466,6 @@ describe('movies api', () => {
       mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
       mockSelect.mockReturnValue({ in: mockIn });
       mockIn.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([{ id: 'm1' }]));
 
       const result = await fetchMoviesPaginated(0, 10, { platformId: 'netflix' });
@@ -493,8 +487,6 @@ describe('movies api', () => {
     });
 
     it('orders by top_rated sortBy', async () => {
-      mockSelect.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
       await fetchMoviesPaginated(0, 10, { sortBy: 'top_rated' });
@@ -502,8 +494,6 @@ describe('movies api', () => {
     });
 
     it('orders by latest sortBy', async () => {
-      mockSelect.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
       await fetchMoviesPaginated(0, 10, { sortBy: 'latest' });
@@ -511,8 +501,6 @@ describe('movies api', () => {
     });
 
     it('orders by upcoming sortBy', async () => {
-      mockSelect.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
       await fetchMoviesPaginated(0, 10, { sortBy: 'upcoming' });

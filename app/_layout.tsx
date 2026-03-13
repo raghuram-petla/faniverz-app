@@ -18,6 +18,8 @@ import { useAnimationStore } from '@/stores/useAnimationStore';
 // React renders a blank frame. Expo docs require this at the top level.
 SplashScreen.preventAutoHideAsync();
 
+const ROOT_STYLE = { flex: 1 } as const;
+
 function ThemedStack() {
   const { theme, isDark } = useTheme();
   usePushToken();
@@ -75,7 +77,7 @@ export default function RootLayout() {
   // instance is shared across hot reloads in development. In production, a new instance
   // is created per app launch.
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={ROOT_STYLE}>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>

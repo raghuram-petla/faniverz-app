@@ -1,12 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import { Review, CreateReviewInput, UpdateReviewInput } from '@/types';
 
-// @coupling: selects profile:profiles(display_name, avatar_url) — the Review type declares profile as Pick<UserProfile, 'id' | 'display_name' | 'avatar_url'> but 'id' is NOT selected here. Any consumer accessing review.profile.id gets undefined at runtime despite TypeScript showing it as a string. This is a type-safety gap caused by the select being narrower than the type declaration.
+// @contract: selects profile:profiles(id, display_name, avatar_url) — matches Review type Pick<UserProfile, 'id' | 'display_name' | 'avatar_url'>.
 // @edge: no pagination — fetches ALL reviews for a movie. A popular movie with hundreds of reviews returns them all in one call. No limit applied.
 export async function fetchMovieReviews(movieId: string): Promise<Review[]> {
   const { data, error } = await supabase
     .from('reviews')
-    .select('*, profile:profiles(display_name, avatar_url)')
+    .select('*, profile:profiles(id, display_name, avatar_url)')
     .eq('movie_id', movieId)
     .order('created_at', { ascending: false });
 
@@ -14,11 +14,11 @@ export async function fetchMovieReviews(movieId: string): Promise<Review[]> {
   return data ?? [];
 }
 
-// @coupling: selects movie:movies(title, poster_url) — the Review type declares movie as Pick<Movie, 'id' | 'title' | 'poster_url'> but 'id' is NOT selected. Same type-safety gap as fetchMovieReviews: movie.id is undefined at runtime. If the UI tries to navigate to a movie detail page using review.movie.id, navigation will break with an undefined route param.
+// @contract: selects movie:movies(id, title, poster_url) — matches Review type Pick<Movie, 'id' | 'title' | 'poster_url'>.
 export async function fetchUserReviews(userId: string): Promise<Review[]> {
   const { data, error } = await supabase
     .from('reviews')
-    .select('*, movie:movies(title, poster_url)')
+    .select('*, movie:movies(id, title, poster_url)')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -54,21 +54,25 @@ export async function deleteReview(id: string): Promise<void> {
   if (error) throw error;
 }
 
-// @edge: read-then-write pattern (SELECT then INSERT/DELETE) is NOT atomic — two rapid taps can both read existing=null and both insert, causing a unique constraint violation on the second insert. The error bubbles up as a generic alert in useReviewMutations.helpful.onError. The helpful_count trigger would fire twice, incrementing by 2 instead of 1. On the next toggle, the SELECT finds one row (the first insert), deletes it, but the second orphaned row persists, leaving helpful_count permanently off by 1.
-// @sideeffect: both the insert and delete fire the on_review_helpful_change_update_count trigger which does a COUNT(*) recalculation (not increment/decrement). So the race condition above would self-heal on the next trigger fire IF the orphaned row is eventually cleaned up. But the orphaned row stays unless manually deleted.
+// @contract: atomic toggle using upsert + delete — avoids read-then-write race condition.
+// First attempts to delete; if 0 rows affected, inserts instead. Both paths are single
+// statements so concurrent taps cannot produce duplicates.
+// @sideeffect: fires on_review_helpful_change_update_count trigger which does COUNT(*) recalculation.
 export async function toggleHelpful(userId: string, reviewId: string): Promise<boolean> {
-  const { data: existing } = await supabase
+  const { data: deleted } = await supabase
     .from('review_helpful')
-    .select('*')
+    .delete()
     .eq('user_id', userId)
     .eq('review_id', reviewId)
-    .maybeSingle();
+    .select('id');
 
-  if (existing) {
-    await supabase.from('review_helpful').delete().eq('user_id', userId).eq('review_id', reviewId);
+  if (deleted && deleted.length > 0) {
     return false;
-  } else {
-    await supabase.from('review_helpful').insert({ user_id: userId, review_id: reviewId });
-    return true;
   }
+
+  const { error } = await supabase
+    .from('review_helpful')
+    .upsert({ user_id: userId, review_id: reviewId }, { onConflict: 'user_id,review_id' });
+  if (error) throw error;
+  return true;
 }

@@ -4,7 +4,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 
 jest.mock('@/lib/supabase', () => {
   const mockSingle = jest.fn();
-  const mockEq = jest.fn(() => ({ single: mockSingle }));
+  const mockEq = jest.fn(() => ({ single: mockSingle, maybeSingle: mockSingle }));
   const mockSelect = jest.fn(() => ({ eq: mockEq }));
   const mockFrom = jest.fn(() => ({ select: mockSelect }));
 

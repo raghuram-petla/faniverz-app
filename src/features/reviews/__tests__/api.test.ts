@@ -40,7 +40,7 @@ describe('reviews api', () => {
 
       await fetchMovieReviews('movie-1');
       expect(supabase.from).toHaveBeenCalledWith('reviews');
-      expect(mockSelect).toHaveBeenCalledWith('*, profile:profiles(display_name, avatar_url)');
+      expect(mockSelect).toHaveBeenCalledWith('*, profile:profiles(id, display_name, avatar_url)');
       expect(mockEq).toHaveBeenCalledWith('movie_id', 'movie-1');
       expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
     });
@@ -81,7 +81,7 @@ describe('reviews api', () => {
 
       await fetchUserReviews('user-1');
       expect(supabase.from).toHaveBeenCalledWith('reviews');
-      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(title, poster_url)');
+      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(id, title, poster_url)');
       expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
     });
 
@@ -173,22 +173,13 @@ describe('reviews api', () => {
 
   describe('toggleHelpful', () => {
     it('removes helpful mark when already exists', async () => {
-      // First call: check existing
-      (supabase.from as jest.Mock).mockImplementationOnce(() => ({
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({ data: { id: 'h1' } }),
-            }),
-          }),
-        }),
-      }));
-
-      // Second call: delete
+      // Delete finds existing row
       (supabase.from as jest.Mock).mockImplementationOnce(() => ({
         delete: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
-            eq: jest.fn().mockResolvedValue({ error: null }),
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockResolvedValue({ data: [{ id: 'h1' }] }),
+            }),
           }),
         }),
       }));
@@ -198,20 +189,20 @@ describe('reviews api', () => {
     });
 
     it('adds helpful mark when not exists', async () => {
-      // First call: check existing (not found)
+      // Delete finds nothing
       (supabase.from as jest.Mock).mockImplementationOnce(() => ({
-        select: jest.fn().mockReturnValue({
+        delete: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              maybeSingle: jest.fn().mockResolvedValue({ data: null }),
+              select: jest.fn().mockResolvedValue({ data: [] }),
             }),
           }),
         }),
       }));
 
-      // Second call: insert
+      // Upsert
       (supabase.from as jest.Mock).mockImplementationOnce(() => ({
-        insert: jest.fn().mockResolvedValue({ error: null }),
+        upsert: jest.fn().mockResolvedValue({ error: null }),
       }));
 
       const result = await toggleHelpful('u1', 'r1');

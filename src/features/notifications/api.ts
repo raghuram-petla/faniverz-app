@@ -1,18 +1,16 @@
 import { supabase } from '@/lib/supabase';
 import { Notification } from '@/types';
 
-// @boundary: nested select joins movie and platform data in a single query. If a notification references a
-// movie_id or platform_id that was deleted (no FK CASCADE), the join returns null for that relation rather
-// than failing — callers must handle notification.movie or notification.platform being null even if the
-// Notification type doesn't mark them as optional.
-// @edge: no LIMIT on this query — fetches ALL notifications for the user. For power users with years of
-// notifications, this unbounded fetch can return thousands of rows, causing slow load times and high memory use.
+// @boundary: nested select joins movie and platform data. If referenced movie/platform is deleted,
+// the join returns null — callers must handle optional movie/platform.
+// @contract: limited to 200 most recent notifications to prevent memory issues on high-activity users.
 export async function fetchNotifications(userId: string): Promise<Notification[]> {
   const { data, error } = await supabase
     .from('notifications')
     .select('*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
 
   if (error) throw error;
   return data ?? [];

@@ -1,6 +1,7 @@
 const mockSelect = jest.fn();
 const mockEq = jest.fn();
 const mockOrder = jest.fn();
+const mockLimit = jest.fn();
 const mockUpdate = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
@@ -24,7 +25,8 @@ describe('notifications api', () => {
     it('queries notifications with movie join for the user', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: [], error: null });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: [], error: null });
 
       await fetchNotifications('user-1');
       expect(supabase.from).toHaveBeenCalledWith('notifications');
@@ -39,7 +41,8 @@ describe('notifications api', () => {
       const notifications = [{ id: 'n1', title: 'New release' }];
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: notifications, error: null });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: notifications, error: null });
 
       const result = await fetchNotifications('user-1');
       expect(result).toEqual(notifications);
@@ -48,7 +51,8 @@ describe('notifications api', () => {
     it('returns empty array when data is null', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: null });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: null, error: null });
 
       const result = await fetchNotifications('user-1');
       expect(result).toEqual([]);
@@ -57,7 +61,8 @@ describe('notifications api', () => {
     it('throws on error', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: new Error('DB error') });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: null, error: new Error('DB error') });
 
       await expect(fetchNotifications('user-1')).rejects.toThrow('DB error');
     });

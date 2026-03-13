@@ -1,6 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
 
+// @contract: shared helper to unwrap Supabase query result with error handling
+function unwrap<T>(result: { data: T[] | null; error: { message: string } | null }): T[] {
+  if (result.error) throw result.error;
+  return result.data ?? [];
+}
+
 // @boundary: entity_id is a UUID referencing different tables depending on entity_type (movies, actors, production_houses, profiles). There's no FK constraint — if the referenced entity is deleted, the follow row persists as an orphan. fetchEnrichedFollows handles this by showing name='Deleted', but the follow still counts in the user's follows list.
 export async function fetchUserFollows(userId: string): Promise<EntityFollow[]> {
   const { data, error } = await supabase
@@ -42,34 +48,17 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
 
   const [movies, actors, houses] = await Promise.all([
     grouped.movie.length > 0
-      ? supabase
-          .from('movies')
-          .select('id, title, poster_url')
-          .in('id', grouped.movie)
-          .then((r) => {
-            if (r.error) throw r.error;
-            return r.data ?? [];
-          })
+      ? supabase.from('movies').select('id, title, poster_url').in('id', grouped.movie).then(unwrap)
       : [],
     grouped.actor.length > 0
-      ? supabase
-          .from('actors')
-          .select('id, name, photo_url')
-          .in('id', grouped.actor)
-          .then((r) => {
-            if (r.error) throw r.error;
-            return r.data ?? [];
-          })
+      ? supabase.from('actors').select('id, name, photo_url').in('id', grouped.actor).then(unwrap)
       : [],
     grouped.production_house.length > 0
       ? supabase
           .from('production_houses')
           .select('id, name, logo_url')
           .in('id', grouped.production_house)
-          .then((r) => {
-            if (r.error) throw r.error;
-            return r.data ?? [];
-          })
+          .then(unwrap)
       : [],
   ]);
 

@@ -11,7 +11,7 @@ import {
 } from './api';
 import { CreateReviewInput, UpdateReviewInput } from '@/types';
 
-// @coupling: fetchMovieReviews joins profile:profiles(display_name, avatar_url) but the Review type (src/types/review.ts) declares profile as Pick<UserProfile, 'id' | 'display_name' | 'avatar_url'>. The select does NOT include 'id' in the profile join — so profile.id will be undefined at runtime even though the type says it's there. Any UI code using review.profile?.id (e.g., navigating to user profile) will get undefined.
+// @coupling: fetchMovieReviews joins profile:profiles(id, display_name, avatar_url) — matches Review type.
 export function useMovieReviews(movieId: string) {
   return useQuery({
     queryKey: ['reviews', movieId],

@@ -8,6 +8,7 @@ interface VideoLayout {
 export interface UseActiveVideoReturn {
   activeVideoId: string | null;
   registerVideoLayout: (id: string, y: number, height: number) => void;
+  unregisterVideoLayout: (id: string) => void;
   handleScrollForVideo: (scrollY: number, viewportHeight: number) => void;
 }
 
@@ -20,12 +21,16 @@ export function useActiveVideo(): UseActiveVideoReturn {
   // @nullable null when no video card is sufficiently visible in the viewport
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   // @sync layouts ref is mutated imperatively during render-time onLayout callbacks — not tied to React state
-  // @edge stale entries accumulate if feed items are removed without unmounting — Map is never pruned
   const layouts = useRef<Map<string, VideoLayout>>(new Map());
 
   // @sideeffect mutates layouts ref; callers must provide absolute y relative to ScrollView content, not screen
   const registerVideoLayout = useCallback((id: string, y: number, height: number) => {
     layouts.current.set(id, { y, height });
+  }, []);
+
+  // @sideeffect removes entry from layouts ref — call on feed item unmount to prevent memory leak
+  const unregisterVideoLayout = useCallback((id: string) => {
+    layouts.current.delete(id);
   }, []);
 
   const handleScrollForVideo = useCallback((scrollY: number, viewportHeight: number) => {
@@ -61,5 +66,5 @@ export function useActiveVideo(): UseActiveVideoReturn {
     setActiveVideoId((prev) => (prev === bestId ? prev : bestId));
   }, []);
 
-  return { activeVideoId, registerVideoLayout, handleScrollForVideo };
+  return { activeVideoId, registerVideoLayout, unregisterVideoLayout, handleScrollForVideo };
 }

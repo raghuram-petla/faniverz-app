@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import { Actor, ActorCredit, FavoriteActor } from '@/types';
 
-// @coupling: returns FavoriteActor with nested actor:actors(*) join. The FavoriteActor type (src/types/user.ts) has actor_id and optional actor field. If an actor is deleted from the actors table but the FK has no CASCADE, the join returns actor: null while the favorite row persists. UI code destructuring actor.name will crash on null. Currently favorite_actors has no FK — it's just a UUID field — so orphaned favorites are possible.
+// @coupling: returns FavoriteActor with nested actor:actors(*) join. No FK constraint on actor_id,
+// so orphaned favorites (deleted actor) are filtered out to prevent null crashes.
 export async function fetchFavoriteActors(userId: string): Promise<FavoriteActor[]> {
   const { data, error } = await supabase
     .from('favorite_actors')
@@ -10,7 +11,7 @@ export async function fetchFavoriteActors(userId: string): Promise<FavoriteActor
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).filter((f) => f.actor !== null);
 }
 
 export async function addFavoriteActor(userId: string, actorId: string): Promise<void> {

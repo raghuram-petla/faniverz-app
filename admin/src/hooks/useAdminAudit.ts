@@ -72,6 +72,6 @@ export function useAdminAuditLog(filters?: AuditFilters) {
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
+      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
   });
 }

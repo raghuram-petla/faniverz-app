@@ -13,10 +13,13 @@ interface CastTabProps {
   onActorPress: (actorId: string) => void;
 }
 
-export function CastTab({ cast, crew, onActorPress }: CastTabProps) {
+export function CastTab({ cast: rawCast, crew: rawCrew, onActorPress }: CastTabProps) {
   const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
+  // @contract: filter out entries where actor was deleted to prevent ghost rows
+  const cast = rawCast.filter((cm) => cm.actor);
+  const crew = rawCrew.filter((cm) => cm.actor);
   return (
     <View style={styles.castTab}>
       {cast.length > 0 && (

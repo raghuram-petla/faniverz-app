@@ -6,6 +6,34 @@ import type { Movie } from '@/lib/types';
 
 const PAGE_SIZE = 50;
 
+// @contract: shared filter logic for both PH-scoped and unscoped movie queries
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyStatusFilter(query: any, statusFilter: string, today: string, pmIds: string[]) {
+  if (statusFilter === 'upcoming') {
+    return { query: query.gt('release_date', today), empty: false };
+  } else if (statusFilter === 'in_theaters') {
+    return { query: query.eq('in_theaters', true), empty: false };
+  } else if (statusFilter === 'announced') {
+    return { query: query.is('release_date', null), empty: false };
+  } else if (statusFilter === 'streaming') {
+    if (pmIds.length === 0) return { query, empty: true };
+    return {
+      query: query.in('id', pmIds).lte('release_date', today).eq('in_theaters', false),
+      empty: false,
+    };
+  } else if (statusFilter === 'released') {
+    let q = query
+      .not('release_date', 'is', null)
+      .lte('release_date', today)
+      .eq('in_theaters', false);
+    if (pmIds.length > 0) {
+      q = q.not('id', 'in', `(${pmIds.join(',')})`);
+    }
+    return { query: q, empty: false };
+  }
+  return { query, empty: false };
+}
+
 const crud = createCrudHooks<Movie>({
   table: 'movies',
   queryKeyBase: 'movies',
@@ -64,56 +92,24 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
           .order('release_date', { ascending: false })
           .range(from, to);
         if (search) query = query.ilike('title', `%${search}%`);
-        // @invariant Status filter logic: 'released' = past release + not in theaters + NOT on any OTT platform
-        if (statusFilter === 'upcoming') {
-          query = query.gt('release_date', today);
-        } else if (statusFilter === 'in_theaters') {
-          query = query.eq('in_theaters', true);
-        } else if (statusFilter === 'announced') {
-          query = query.is('release_date', null);
-        } else if (statusFilter === 'streaming') {
-          if (pmIds.length === 0) return [] as Movie[];
-          query = query.in('id', pmIds).lte('release_date', today).eq('in_theaters', false);
-        } else if (statusFilter === 'released') {
-          query = query
-            .not('release_date', 'is', null)
-            .lte('release_date', today)
-            .eq('in_theaters', false);
-          if (pmIds.length > 0) {
-            query = query.not('id', 'in', `(${pmIds.join(',')})`);
-          }
-        }
+        const phResult = applyStatusFilter(query, statusFilter, today, pmIds);
+        if (phResult.empty) return [] as Movie[];
+        query = phResult.query;
 
         const { data, error } = await query;
         if (error) throw error;
         return data as Movie[];
       }
 
-      // @edge Duplicated filter logic for non-PH path — must stay in sync with PH-scoped branch above
       let query = supabase
         .from('movies')
         .select('*')
         .order('release_date', { ascending: false })
         .range(from, to);
       if (search) query = query.ilike('title', `%${search}%`);
-      if (statusFilter === 'upcoming') {
-        query = query.gt('release_date', today);
-      } else if (statusFilter === 'in_theaters') {
-        query = query.eq('in_theaters', true);
-      } else if (statusFilter === 'announced') {
-        query = query.is('release_date', null);
-      } else if (statusFilter === 'streaming') {
-        if (pmIds.length === 0) return [] as Movie[];
-        query = query.in('id', pmIds).lte('release_date', today).eq('in_theaters', false);
-      } else if (statusFilter === 'released') {
-        query = query
-          .not('release_date', 'is', null)
-          .lte('release_date', today)
-          .eq('in_theaters', false);
-        if (pmIds.length > 0) {
-          query = query.not('id', 'in', `(${pmIds.join(',')})`);
-        }
-      }
+      const result = applyStatusFilter(query, statusFilter, today, pmIds);
+      if (result.empty) return [] as Movie[];
+      query = result.query;
 
       const { data, error } = await query;
       if (error) throw error;
@@ -121,7 +117,7 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
+      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
     enabled: (search.length >= 2 || search === '') && (!needsPlatformIds || platformIdsReady),
   });
 }

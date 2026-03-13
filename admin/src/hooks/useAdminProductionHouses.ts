@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { createCrudHooks } from '@/hooks/createCrudHooks';
@@ -27,9 +28,11 @@ const crud = createCrudHooks<ProductionHouse>({
 // @nullable: productionHouseIds — omit or pass empty to get unscoped (super admin) results
 export function useAdminProductionHouses(search = '', productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
+  // @contract: sorted IDs for stable cache key — prevents redundant refetches on array reorder
+  const sortedIds = useMemo(() => productionHouseIds?.slice().sort(), [productionHouseIds]);
 
   return useInfiniteQuery({
-    queryKey: ['admin', 'production-houses', search, productionHouseIds],
+    queryKey: ['admin', 'production-houses', search, sortedIds],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -46,7 +49,7 @@ export function useAdminProductionHouses(search = '', productionHouseIds?: strin
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
+      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
     enabled: search.length >= 2 || search === '',
   });
 }

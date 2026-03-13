@@ -3,13 +3,15 @@ import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types';
 import { useAuth } from '../providers/AuthProvider';
 
-// @contract: .single() throws PGRST116 if no row exists. Unlike productionHouses/api.ts which catches PGRST116
-// and returns null, this function lets it propagate — so if the handle_new_user trigger fails to create a
-// profile row (e.g., constraint violation), useProfile throws and the query enters error state with no recovery path.
-// @nullable: return type says UserProfile | null, but .single() never returns null on success — it either
-// returns data or throws. The null in the signature is technically unreachable.
+// @contract: .maybeSingle() returns null when no row exists instead of throwing PGRST116.
+// This handles edge cases where handle_new_user trigger fails to create a profile row.
+// @nullable: returns null when profile doesn't exist yet (first login before trigger completes).
 async function fetchProfile(userId: string): Promise<UserProfile | null> {
-  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
 
   if (error) throw error;
   return data;

@@ -133,7 +133,7 @@ export function useMovieEditDerived(params: {
     // @edge If localCastOrder is set, items not in the order map fall back to their display_order
     if (!localCastOrder) return allItems;
     const orderMap = new Map(localCastOrder.map((cid, idx) => [cid, idx]));
-    return [...allItems].sort(
+    return allItems.sort(
       (a, b) => (orderMap.get(a.id) ?? a.display_order) - (orderMap.get(b.id) ?? b.display_order),
     );
   }, [castData, pendingCastAdds, pendingCastRemoveIds, localCastOrder, id]);
@@ -220,7 +220,9 @@ export function useMovieEditDerived(params: {
     if (pendingPlatformAdds.length > 0 || pendingPlatformRemoveIds.size > 0) return true;
     if (pendingPHAdds.length > 0 || pendingPHRemoveIds.size > 0) return true;
     if (pendingRunAdds.length > 0 || pendingRunRemoveIds.size > 0) return true;
-    return JSON.stringify(form) !== JSON.stringify(initialForm);
+    // @contract: shallow field comparison avoids expensive JSON.stringify on every render
+    const keys = Object.keys(form) as (keyof MovieForm)[];
+    return keys.some((k) => form[k] !== initialForm[k]);
   }, [
     form,
     initialForm,

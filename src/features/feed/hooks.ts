@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchNewsFeed,
@@ -194,14 +195,15 @@ export function useRemoveFeedVote() {
   });
 }
 
-// @invariant: query key ['feed-votes', userId, feedItemIds] — the vote mutations invalidate ['feed-votes'] (prefix match), which correctly catches this. However, feedItemIds is an array in the key — if the same items arrive in different order across renders, React Query treats them as different keys and refetches. This can cause redundant network calls on re-renders that reorder items.
-// @coupling: the returned Record<string, 'up' | 'down'> is used by FeedCard components to pass previousVote to useVoteFeedItem/useRemoveFeedVote. If this query returns stale data (2min staleTime), the previousVote passed to the mutation's optimistic update will be wrong, causing a count flicker until onSettled corrects it.
+// @invariant: query key uses sorted feedItemIds to prevent redundant refetches when array order changes.
+// @coupling: the returned Record<string, 'up' | 'down'> is used by FeedCard components to pass previousVote.
 export function useUserVotes(feedItemIds: string[]) {
   const { user } = useAuth();
   const userId = user?.id;
+  const sortedIds = useMemo(() => [...feedItemIds].sort(), [feedItemIds]);
 
   return useQuery({
-    queryKey: ['feed-votes', userId, feedItemIds],
+    queryKey: ['feed-votes', userId, sortedIds],
     queryFn: () => fetchUserVotes(userId ?? '', feedItemIds),
     enabled: !!userId && feedItemIds.length > 0,
     staleTime: 2 * 60 * 1000,

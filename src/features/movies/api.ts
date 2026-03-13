@@ -208,7 +208,7 @@ export async function fetchMoviesPaginated(
 ): Promise<Movie[]> {
   let query = supabase.from('movies').select('*');
 
-  const result = await applyMovieFilters(query, filters);
+  const result = await applyMovieFilters(query, filters, { featuredFirst: true });
   if (result === null) return [];
   query = result;
 

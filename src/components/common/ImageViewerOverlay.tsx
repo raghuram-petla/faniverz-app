@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
   withRepeat,
   withSequence,
+  cancelAnimation,
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
@@ -102,12 +103,13 @@ export function ImageViewerOverlay({
     return () => clearTimeout(delay);
   }, [fullResLoaded, progressX, progressBarOpacity, animationsEnabled]);
 
-  // Fade out progress bar when full-res loads
+  // Fade out progress bar and cancel infinite animation when full-res loads
   useEffect(() => {
     if (fullResLoaded) {
+      cancelAnimation(progressX);
       progressBarOpacity.value = animationsEnabled ? withTiming(0, { duration: 300 }) : 0;
     }
-  }, [fullResLoaded, progressBarOpacity, animationsEnabled]);
+  }, [fullResLoaded, progressX, progressBarOpacity, animationsEnabled]);
 
   const progressBarContainerStyle = useAnimatedStyle(() => ({
     position: 'absolute' as const,
