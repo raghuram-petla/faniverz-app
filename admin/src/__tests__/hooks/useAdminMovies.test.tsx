@@ -113,6 +113,55 @@ describe('useAdminMovies', () => {
 
     expect(mockEq).toHaveBeenCalledWith('in_theaters', true);
   });
+
+  describe('platform movie IDs caching — regression', () => {
+    it('does not fetch movie_platforms when filter is empty', async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            range: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      });
+
+      const { result } = renderHook(() => useAdminMovies('', ''), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const fromCalls = mockFrom.mock.calls.map((c: unknown[]) => c[0]);
+      expect(fromCalls).not.toContain('movie_platforms');
+    });
+
+    it('fetches platform IDs via separate cached query for streaming filter', async () => {
+      const platformIds = [{ movie_id: 'm1' }];
+      const movies = [{ id: 'm1', title: 'Stream Movie' }];
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return {
+            select: vi.fn().mockResolvedValue({ data: platformIds, error: null }),
+          };
+        }
+        const mockEq = vi.fn().mockResolvedValue({ data: movies, error: null });
+        const mockLte = vi.fn().mockReturnValue({ eq: mockEq });
+        const mockIn = vi.fn().mockReturnValue({ lte: mockLte });
+        const mockRange = vi.fn().mockReturnValue({ in: mockIn });
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({ range: mockRange }),
+          }),
+        };
+      });
+
+      const { result } = renderHook(() => useAdminMovies('', 'streaming'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockFrom).toHaveBeenCalledWith('movie_platforms');
+    });
+  });
 });
 
 describe('useCreateMovie', () => {

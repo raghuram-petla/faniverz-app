@@ -28,10 +28,15 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
       .from('production_houses')
       .select('*')
       .order('name')
-      .then(({ data }) => {
-        setProductionHouses(data ?? []);
-        setPhLoading(false);
-      });
+      .then(
+        ({ data }) => {
+          setProductionHouses(data ?? []);
+          setPhLoading(false);
+        },
+        () => {
+          setPhLoading(false);
+        },
+      );
   }, [role, targetUser]);
 
   async function handleStart() {

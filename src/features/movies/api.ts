@@ -1,6 +1,14 @@
 import { supabase } from '@/lib/supabase';
 import { Movie, MovieWithDetails, MovieStatus } from '@/types';
 
+/** Returns today's date as YYYY-MM-DD in local timezone (avoids UTC offset bug with toISOString). */
+export function getLocalDateString(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export interface MovieFilters {
   movieStatus?: MovieStatus;
   genre?: string;
@@ -12,7 +20,7 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
   let query = supabase.from('movies').select('*');
 
   if (filters?.movieStatus) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     switch (filters.movieStatus) {
       case 'upcoming':
         query = query.gt('release_date', todayStr);
@@ -169,7 +177,7 @@ export async function fetchMoviesPaginated(
   let query = supabase.from('movies').select('*');
 
   if (filters?.movieStatus) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     switch (filters.movieStatus) {
       case 'upcoming':
         query = query.gt('release_date', todayStr);

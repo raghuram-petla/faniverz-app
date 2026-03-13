@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -161,45 +162,49 @@ export default function FeedScreen() {
       <FilterPills filter={filter} setFilter={setFilter} styles={styles} />
 
       {/* Content */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={(e) => {
-          handlePullScroll(e);
-          const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-          if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300) {
-            loadMore();
-          }
-        }}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onScrollEndDrag={handleScrollEndDrag}
-        scrollEventThrottle={400}
-      >
-        <PullToRefreshIndicator
-          pullDistance={pullDistance}
-          isRefreshing={isRefreshing}
-          refreshing={refreshing}
-        />
-        {isLoading ? (
+      {isLoading ? (
+        <View style={styles.scroll}>
           <FeedContentSkeleton />
-        ) : allItems.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />
-            <Text style={styles.emptyTitle}>{t('feed.noUpdates')}</Text>
-            <Text style={styles.emptySubtitle}>
-              {filter !== 'all'
-                ? t('feed.noFilterContent', {
-                    filter: FEED_PILLS.find((p) => p.value === filter)?.label ?? filter,
-                  })
-                : t('feed.checkBackSoon')}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.feedList}>
-            {allItems.map((item) => (
+        </View>
+      ) : (
+        <View style={styles.scroll}>
+          <FlashList
+            data={allItems}
+            keyExtractor={(item) => item.id}
+            drawDistance={500}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            onScroll={handlePullScroll}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onScrollEndDrag={handleScrollEndDrag}
+            scrollEventThrottle={16}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            ListHeaderComponent={
+              <PullToRefreshIndicator
+                pullDistance={pullDistance}
+                isRefreshing={isRefreshing}
+                refreshing={refreshing}
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />
+                <Text style={styles.emptyTitle}>{t('feed.noUpdates')}</Text>
+                <Text style={styles.emptySubtitle}>
+                  {filter !== 'all'
+                    ? t('feed.noFilterContent', {
+                        filter: FEED_PILLS.find((p) => p.value === filter)?.label ?? filter,
+                      })
+                    : t('feed.checkBackSoon')}
+                </Text>
+              </View>
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null
+            }
+            renderItem={({ item }) => (
               <FeedCard
-                key={item.id}
                 item={item}
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
@@ -212,11 +217,10 @@ export default function FeedScreen() {
                 onFollow={gate(handleFollow)}
                 onUnfollow={gate(handleUnfollow)}
               />
-            ))}
-            {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}
-          </View>
-        )}
-      </ScrollView>
+            )}
+          />
+        </View>
+      )}
     </View>
   );
 }

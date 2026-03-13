@@ -56,6 +56,7 @@ import {
   fetchMoviesByPlatform,
   fetchMoviesPaginated,
   fetchUpcomingMovies,
+  getLocalDateString,
 } from '../api';
 
 describe('movies api', () => {
@@ -579,6 +580,31 @@ describe('movies api', () => {
       mockRange.mockReturnValue(makeRangeResult(null, new Error('Upcoming fetch failed')));
 
       await expect(fetchUpcomingMovies(0)).rejects.toThrow('Upcoming fetch failed');
+    });
+  });
+
+  describe('getLocalDateString', () => {
+    it('formats a date as YYYY-MM-DD in local timezone', () => {
+      const date = new Date(2025, 2, 15); // March 15, 2025 (month is 0-indexed)
+      expect(getLocalDateString(date)).toBe('2025-03-15');
+    });
+
+    it('pads single-digit month and day with leading zeros', () => {
+      const date = new Date(2025, 0, 5); // January 5, 2025
+      expect(getLocalDateString(date)).toBe('2025-01-05');
+    });
+
+    it('uses local date, not UTC (avoids timezone offset bug)', () => {
+      // Simulate 11:30 PM on March 11 in a UTC-5 timezone
+      // toISOString() would return 2025-03-12T04:30:00Z (next day in UTC)
+      // getLocalDateString should return the LOCAL date
+      const date = new Date(2025, 2, 11, 23, 30, 0);
+      expect(getLocalDateString(date)).toBe('2025-03-11');
+    });
+
+    it('defaults to current date when no argument', () => {
+      const result = getLocalDateString();
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 });

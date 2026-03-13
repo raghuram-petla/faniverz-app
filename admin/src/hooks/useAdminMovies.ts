@@ -22,6 +22,18 @@ const crud = createCrudHooks<Movie>({
  */
 export function useAdminMovies(search = '', statusFilter = '', productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
+  const needsPlatformIds = statusFilter === 'streaming' || statusFilter === 'released';
+
+  // Cached platform movie IDs — avoids re-fetching on every page load
+  const { data: platformMovieIds, isSuccess: platformIdsReady } = useQuery({
+    queryKey: ['admin', 'platform-movie-ids'],
+    queryFn: async () => {
+      const { data: pmData } = await supabase.from('movie_platforms').select('movie_id');
+      return [...new Set((pmData ?? []).map((r: { movie_id: string }) => r.movie_id))];
+    },
+    enabled: needsPlatformIds,
+    staleTime: 60_000,
+  });
 
   return useInfiniteQuery({
     queryKey: ['admin', 'movies', search, statusFilter, productionHouseIds],
@@ -29,13 +41,7 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       const today = new Date().toISOString().split('T')[0];
-
-      // Pre-fetch platform movie IDs for streaming/released filters
-      let platformMovieIds: string[] = [];
-      if (statusFilter === 'streaming' || statusFilter === 'released') {
-        const { data: pmData } = await supabase.from('movie_platforms').select('movie_id');
-        platformMovieIds = [...new Set((pmData ?? []).map((r) => r.movie_id))];
-      }
+      const pmIds = platformMovieIds ?? [];
 
       if (hasPHScope) {
         const { data: junctionData, error: jErr } = await supabase
@@ -61,18 +67,15 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
         } else if (statusFilter === 'announced') {
           query = query.is('release_date', null);
         } else if (statusFilter === 'streaming') {
-          if (platformMovieIds.length === 0) return [] as Movie[];
-          query = query
-            .in('id', platformMovieIds)
-            .lte('release_date', today)
-            .eq('in_theaters', false);
+          if (pmIds.length === 0) return [] as Movie[];
+          query = query.in('id', pmIds).lte('release_date', today).eq('in_theaters', false);
         } else if (statusFilter === 'released') {
           query = query
             .not('release_date', 'is', null)
             .lte('release_date', today)
             .eq('in_theaters', false);
-          if (platformMovieIds.length > 0) {
-            query = query.not('id', 'in', `(${platformMovieIds.join(',')})`);
+          if (pmIds.length > 0) {
+            query = query.not('id', 'in', `(${pmIds.join(',')})`);
           }
         }
 
@@ -94,18 +97,15 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
       } else if (statusFilter === 'announced') {
         query = query.is('release_date', null);
       } else if (statusFilter === 'streaming') {
-        if (platformMovieIds.length === 0) return [] as Movie[];
-        query = query
-          .in('id', platformMovieIds)
-          .lte('release_date', today)
-          .eq('in_theaters', false);
+        if (pmIds.length === 0) return [] as Movie[];
+        query = query.in('id', pmIds).lte('release_date', today).eq('in_theaters', false);
       } else if (statusFilter === 'released') {
         query = query
           .not('release_date', 'is', null)
           .lte('release_date', today)
           .eq('in_theaters', false);
-        if (platformMovieIds.length > 0) {
-          query = query.not('id', 'in', `(${platformMovieIds.join(',')})`);
+        if (pmIds.length > 0) {
+          query = query.not('id', 'in', `(${pmIds.join(',')})`);
         }
       }
 
@@ -116,7 +116,7 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
-    enabled: search.length >= 2 || search === '',
+    enabled: (search.length >= 2 || search === '') && (!needsPlatformIds || platformIdsReady),
   });
 }
 
