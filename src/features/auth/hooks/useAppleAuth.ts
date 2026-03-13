@@ -7,6 +7,8 @@ export function useAppleAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // @assumes: Apple Sign In is only available on iOS. On Android, isAvailable is always false and signInWithApple
+  // silently returns undefined (no error thrown), so UI must conditionally render the Apple button based on isAvailable.
   const isAvailable = Platform.OS === 'ios';
 
   const signInWithApple = async () => {
@@ -14,6 +16,10 @@ export function useAppleAuth() {
     setIsLoading(true);
     setError(null);
     try {
+      // @edge: Apple only provides FULL_NAME and EMAIL on the FIRST sign-in for a given Apple ID + app combo.
+      // Subsequent sign-ins return null for these fields. If the handle_new_user trigger fails on first sign-in
+      // and the user retries, the name/email are lost forever — Supabase stores raw_user_meta_data from the
+      // first successful auth, so the profile will have null display_name unless manually set later.
       const credential = await AppleAuthentication.signInAsync({
         requestedScopes: [
           AppleAuthentication.AppleAuthenticationScope.FULL_NAME,

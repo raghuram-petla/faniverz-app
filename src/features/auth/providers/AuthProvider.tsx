@@ -27,6 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
 
+  // @edge: getSession and onAuthStateChange race — if onAuthStateChange fires before getSession resolves,
+  // session gets set twice. Harmless (React batches state) but means isLoading can briefly be true while session is already populated.
   useEffect(() => {
     supabase.auth
       .getSession()
@@ -45,6 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (newSession) {
         setIsGuest(false);
       }
+      // @sideeffect: clears ALL TanStack Query cache (queryClient.clear) plus three Zustand stores on sign-out.
+      // If a new store is added and not reset here, stale data from the previous user leaks into the next session.
+      // @coupling: directly references useCalendarStore, useFilterStore, useFeedStore — any new user-scoped store must be added here manually.
       if (event === 'SIGNED_OUT') {
         queryClient.clear();
         useCalendarStore.getState().clearFilters();
@@ -60,6 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         session,
+        // @assumes: session.user is always populated when session is non-null (Supabase SDK contract).
+        // If Supabase ever returns a session with null user, downstream hooks (useProfile, useUpdateProfile) will silently skip queries via enabled: !!user?.id.
         user: session?.user ?? null,
         isLoading,
         isGuest,

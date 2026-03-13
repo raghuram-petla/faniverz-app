@@ -1,6 +1,15 @@
 /**
  * Sync engine — shared logic for importing/refreshing movies and actors from TMDB.
  * Used by API routes. Server-side only.
+ *
+ * @boundary: TMDB API + R2 uploads + Supabase writes happen in sequence, not in a
+ * transaction. A crash after movie upsert but before cast insert leaves a movie row
+ * with zero cast/crew — the app renders "No cast" but re-running the same import
+ * overwrites cleanly because movie upserts on tmdb_id and cast is delete-then-reinsert.
+ *
+ * @coupling: depends on r2-sync.ts maybeUploadImage for all image uploads — if R2
+ * credentials are missing, the entire sync still succeeds but stores TMDB CDN URLs
+ * directly in the DB, which will break if TMDB changes their image CDN paths.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -53,7 +62,9 @@ export async function processMovieFromTmdb(
   const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
   const tmpKey = String(tmdbId);
 
-  // Upload poster + backdrop to R2
+  // @sideeffect: parallel R2 uploads — if one fails the other may succeed, leaving
+  // the movie with a poster but no backdrop (or vice versa). The failed URL falls
+  // back to the TMDB CDN URL via maybeUploadImage, so the app still renders images.
   const [posterUrl, backdropUrl] = await Promise.all([
     maybeUploadImage(
       detail.poster_path,
@@ -81,7 +92,11 @@ export async function processMovieFromTmdb(
 
   const isNew = !existing;
 
-  // Upsert movie — only TMDB-sourced fields (certification, is_featured omitted)
+  // @invariant: upsert only writes TMDB-sourced fields — admin-curated fields
+  // (certification, is_featured, release_type, ott_platform_id, ott_release_date)
+  // are intentionally omitted so a re-sync never overwrites manual admin edits.
+  // @assumes: 'tmdb_id' has a UNIQUE constraint in the movies table — without it,
+  // onConflict silently inserts duplicates instead of updating.
   const { data: movie, error: movieErr } = await supabase
     .from('movies')
     .upsert(
@@ -108,14 +123,20 @@ export async function processMovieFromTmdb(
   if (movieErr) throw new Error(`Movie upsert failed: ${movieErr.message}`);
   const movieId = movie.id as string;
 
-  // Delete existing cast for clean re-sync
+  // @sideeffect: delete-then-reinsert is NOT atomic — if the process crashes between
+  // delete and the cast insert loop, the movie has zero cast until the next re-sync.
+  // A transaction would prevent this but Supabase JS client doesn't support multi-statement txns.
   const { error: castDeleteErr } = await supabase
     .from('movie_cast')
     .delete()
     .eq('movie_id', movieId);
   if (castDeleteErr) throw new Error(`Cast delete failed: ${castDeleteErr.message}`);
 
-  // Upsert top 15 cast
+  // @edge: cast members are processed sequentially (not parallel) to avoid
+  // overwhelming R2 with concurrent image uploads. If an actor upsert fails
+  // (actorErr), that cast member is silently skipped — castCount will be less
+  // than topCast.length but no error is thrown to the caller.
+  // @assumes: TMDB cast array is pre-sorted by billing order (castMember.order).
   const topCast = detail.credits.cast.slice(0, 15);
   let castCount = 0;
 
@@ -155,7 +176,9 @@ export async function processMovieFromTmdb(
     castCount++;
   }
 
-  // Upsert key crew
+  // @coupling: keyCrew filtering is defined in tmdb.ts CREW_JOB_MAP — only Director,
+  // Producer, Executive Producer, Music Composer, DOP, and Editor are synced.
+  // Adding new crew roles requires updating CREW_JOB_MAP, not this file.
   const keyCrew = extractKeyCrewMembers(detail.credits.crew);
   let crewCount = 0;
 
@@ -174,6 +197,10 @@ export async function processMovieFromTmdb(
           tmdb_person_id: crewMember.id,
           name: crewMember.name,
           photo_url: photoUrl,
+          // @invariant: crew are stored as 'technician' in the actors table, cast as 'actor'.
+          // The mobile app filters on person_type for "Cast" vs "Crew" sections.
+          // If a person appears as both actor and crew in different movies, the LAST
+          // sync wins because upsert on tmdb_person_id overwrites person_type.
           person_type: 'technician',
           gender: crewMember.gender ?? null,
         },

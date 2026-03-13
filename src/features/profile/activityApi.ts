@@ -16,6 +16,9 @@ export interface UserActivity {
 
 export const PAGE_SIZE = 20;
 
+// @coupling: FILTER_MAP must stay in sync with ActivityActionType union. If a new action_type (e.g., 'review')
+// is added to the union but not added to a filter group here, those activities only appear under 'all' —
+// there's no TypeScript enforcement that every action_type is covered by at least one filter.
 const FILTER_MAP: Record<ActivityFilter, ActivityActionType[]> = {
   all: [],
   votes: ['vote'],
@@ -39,6 +42,9 @@ export async function fetchUserActivity(
     query = query.in('action_type', actionTypes);
   }
 
+  // @edge: .range() uses inclusive start and inclusive end. If PAGE_SIZE is 20, page 0 fetches rows 0-19,
+  // page 1 fetches 20-39, etc. getNextPageParam checks lastPage.length < PAGE_SIZE to stop pagination.
+  // If exactly PAGE_SIZE rows exist, one extra empty page fetch occurs before pagination stops — harmless but wasteful.
   const { data, error } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
   if (error) throw error;
   return data ?? [];

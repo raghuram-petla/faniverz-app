@@ -21,6 +21,12 @@ export async function fetchOttReleases(movieId: string): Promise<MoviePlatform[]
   return data ?? [];
 }
 
+// @edge: no deduplication of platforms per movie — if movie_platforms has duplicate rows for the same
+// movie_id + platform_id (no unique constraint enforced here), the same platform appears multiple times
+// in the array for that movie. UI components rendering platform logos would show duplicates.
+// @boundary: `item.platform as unknown as OTTPlatform` is a double cast that bypasses type safety. Supabase's
+// nested select returns platform as a generic object; if the platforms table schema changes (e.g., column rename),
+// TypeScript won't catch the mismatch and runtime will have undefined fields on the OTTPlatform objects.
 export async function fetchMoviePlatformMap(
   movieIds: string[],
 ): Promise<Record<string, OTTPlatform[]>> {

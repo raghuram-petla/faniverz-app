@@ -21,6 +21,15 @@ export function ensureTmdbApiKey():
 /**
  * Verify a Bearer token from the Authorization header using Supabase auth.
  * Returns the authenticated user or null.
+ *
+ * @boundary: creates a NEW Supabase client per request (not the singleton from
+ * supabase-browser.ts) to validate the JWT server-side. This is intentional — the
+ * browser client has autoRefreshToken disabled and uses the anon key, which is
+ * correct for server-side token verification.
+ * @assumes: the JWT has not expired. Supabase getUser() validates the token against
+ * the auth server (not just local decode), so revoked tokens are correctly rejected.
+ * However, network failures to the Supabase auth endpoint return error, causing
+ * valid users to be treated as unauthenticated.
  */
 export async function verifyBearer(authHeader: string | null): Promise<User | null> {
   if (!authHeader?.startsWith('Bearer ')) return null;
@@ -41,6 +50,13 @@ export async function verifyBearer(authHeader: string | null): Promise<User | nu
 /**
  * Verify a Bearer token AND check that the user has an admin role.
  * Returns the authenticated admin user or null.
+ *
+ * @sideeffect: uses the service role client (getSupabaseAdmin) to read admin_user_roles,
+ * bypassing RLS. This is required because the anon key can't read admin tables.
+ * @edge: does NOT check the specific role level — any non-blocked role (root,
+ * super_admin, admin, ph_admin) passes. Endpoint-level role checks must be done
+ * separately by the caller. Currently only upload-handler.ts uses this, and it
+ * allows any admin to upload images regardless of role.
  */
 export async function verifyAdmin(authHeader: string | null): Promise<User | null> {
   const user = await verifyBearer(authHeader);

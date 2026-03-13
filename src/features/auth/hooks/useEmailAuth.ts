@@ -23,6 +23,12 @@ export function useEmailAuth() {
     }
   };
 
+  // @boundary: display_name is passed via options.data (raw_user_meta_data) — the DB trigger handle_new_user()
+  // reads it as the 3rd fallback after 'full_name' and 'name'. If the key were renamed here without updating
+  // the trigger, new email signups would fall through to using email as display_name.
+  // @sideeffect: Supabase signUp creates auth.users row AND fires handle_new_user trigger which inserts into profiles.
+  // If the trigger fails (e.g., profiles table constraint violation), auth.users row still exists but profiles row doesn't —
+  // causing useProfile to throw PGRST116 on the next fetch.
   const signUp = async (email: string, password: string, displayName?: string) => {
     setIsLoading(true);
     setError(null);
@@ -44,6 +50,9 @@ export function useEmailAuth() {
     }
   };
 
+  // @coupling: signOut only clears the Supabase session. Cache/store cleanup happens in AuthProvider's
+  // onAuthStateChange listener reacting to 'SIGNED_OUT'. If signOut succeeds but the listener doesn't fire
+  // (e.g., component unmounted), stale user data persists in TanStack Query cache until app restart.
   const signOut = async () => {
     setIsLoading(true);
     setError(null);
@@ -59,6 +68,8 @@ export function useEmailAuth() {
     }
   };
 
+  // @edge: resetPasswordForEmail silently succeeds even for non-existent emails (Supabase security behavior).
+  // Callers cannot distinguish "email sent" from "email not found" — intentional to prevent email enumeration.
   const resetPassword = async (email: string) => {
     setIsLoading(true);
     setError(null);

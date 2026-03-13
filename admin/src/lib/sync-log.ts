@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-/** Create a sync_log entry in 'running' status. Returns the log ID. */
+// @contract: createSyncLog and completeSyncLog are expected to be called as a pair.
+// If the caller crashes between create and complete, the sync_log row stays in
+// 'running' status permanently — the admin UI shows it as "In progress..." with
+// no timeout or stale-detection. Manual DB cleanup is required.
+// @coupling: sync-engine.ts re-exports these for backwards compatibility — callers
+// can import from either sync-engine.ts or sync-log.ts.
 export async function createSyncLog(
   supabase: SupabaseClient,
   functionName: string,
@@ -19,7 +24,10 @@ export async function createSyncLog(
   return data.id as string;
 }
 
-/** Update a sync_log entry on completion. */
+// @edge: if this update fails (e.g. network error), the sync_log stays in 'running'
+// even though the sync actually completed successfully. The thrown error propagates to
+// the API route, which returns 500 to the admin — the admin may re-trigger the sync,
+// causing duplicate movie processing (safe due to upsert, but wastes time and API calls).
 export async function completeSyncLog(
   supabase: SupabaseClient,
   syncLogId: string,

@@ -4,6 +4,8 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from './followApi';
 import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
 
+// @coupling: followSet builds keys as `${entity_type}:${entity_id}` — any consumer checking isFollowed must use this exact format. If entity_type enum in shared/types.ts adds a new value (e.g., 'director'), the set will contain it but consumers won't know to check for it.
+// @edge: RLS on entity_follows limits SELECT to auth.uid() = user_id — if the Supabase auth token is stale/expired, this returns empty data (not an error), making it look like the user follows nothing. The hook has no way to distinguish "no follows" from "auth expired".
 export function useEntityFollows() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -28,6 +30,9 @@ export function useEntityFollows() {
   return { ...query, followSet };
 }
 
+// @contract: entity_follows table has UNIQUE(user_id, entity_type, entity_id) — duplicate follow attempts throw a Supabase 23505 (unique_violation) error. The onError handler rolls back the optimistic add, but no user-facing error toast is shown. The user sees the follow button toggle back with no explanation.
+// @edge: optimistic update adds a temp EntityFollow with id='temp-{timestamp}'. If the user rapidly follows/unfollows before onSettled fires, the unfollow's onMutate filter (matching entity_type + entity_id) will correctly remove the temp entry, but there's a race window where the invalidation from follow's onSettled overwrites the unfollow's optimistic state.
+// @coupling: onSettled invalidates ['entity-follows'] (prefix) which also invalidates useEnrichedFollows(['enriched-follows', userId]) — but ONLY because both start with different prefixes. Actually, it does NOT invalidate 'enriched-follows'. If a follow is added, the enriched follows list won't update until its own 5-minute staleTime expires.
 export function useFollowEntity() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -66,6 +71,8 @@ export function useFollowEntity() {
   });
 }
 
+// @coupling: fetchEnrichedFollows does 3 parallel lookups (movies, actors, production_houses) to resolve names/images. 'user' type follows are NOT looked up — they show name='Deleted' and image_url=null. If user follows are implemented in the UI, this will show broken data.
+// @invariant: query key ['enriched-follows', userId] is NOT invalidated by useFollowEntity/useUnfollowEntity (they invalidate ['entity-follows'] only). After follow/unfollow, this cache stays stale for up to 5 minutes.
 export function useEnrichedFollows() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -78,6 +85,7 @@ export function useEnrichedFollows() {
   });
 }
 
+// @edge: delete uses triple filter (user_id + entity_type + entity_id). If entity_id is wrong (e.g., passed a movie title instead of UUID), the delete succeeds with 0 affected rows — no error, no feedback, follow stays. The optimistic update already removed it from cache, so the UI briefly shows unfollowed, then re-follows on invalidation.
 export function useUnfollowEntity() {
   const queryClient = useQueryClient();
   const { user } = useAuth();

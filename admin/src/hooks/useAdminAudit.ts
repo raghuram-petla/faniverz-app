@@ -15,7 +15,11 @@ export interface AuditFilters {
   adminUserId?: string;
 }
 
-/** Strip characters that break PostgREST .or() filter syntax */
+// @boundary: PostgREST's .or() filter uses commas as delimiters and parentheses for
+// grouping. Unsanitized search terms containing these characters (e.g. "O'Brien" or
+// "actor, director") would corrupt the filter syntax, causing Supabase to return a
+// 400 error instead of filtered results. This strips them rather than escaping them,
+// so searching for "O'Brien" actually searches for "OBrien" — partial match loss.
 function sanitizeSearchTerm(term: string): string {
   return term.replace(/[,.()"'\\]/g, '').trim();
 }
@@ -33,7 +37,11 @@ export function useAdminAuditLog(filters?: AuditFilters) {
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      // Non-super admins: restrict to own entries (defense in depth — RLS also enforces this)
+      // @sync: adminUserId filter is defense-in-depth — RLS on audit_log_view already
+      // restricts non-super admins to their own rows. If RLS policy is ever loosened
+      // (e.g. for a "team lead" role), this client-side filter still prevents data leaks.
+      // However, removing this filter without updating RLS would expose all admin
+      // actions to any admin user.
       if (filters?.adminUserId) {
         query = query.eq('admin_user_id', filters.adminUserId);
       }

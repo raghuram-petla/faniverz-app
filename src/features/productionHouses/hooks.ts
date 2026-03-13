@@ -9,12 +9,17 @@ async function fetchProductionHouses(): Promise<ProductionHouse[]> {
   return data as ProductionHouse[];
 }
 
+// @edge: Supabase's .in() translates to SQL IN clause, which has a practical limit (~32K params in Postgres).
+// If productionHouseIds is very large, this could hit query size limits. Currently safe since production_houses
+// table has ~dozen rows, but no guard exists if the dataset grows.
 async function fetchMovieIdsByProductionHouse(productionHouseIds: string[]): Promise<string[]> {
   const { data, error } = await supabase
     .from('movie_production_houses')
     .select('movie_id')
     .in('production_house_id', productionHouseIds);
   if (error) throw error;
+  // @contract: deduplicates movie_ids because a movie can be linked to multiple production houses in the junction table.
+  // Callers depend on receiving unique IDs — if Set dedup is removed, downstream filters would show duplicate movie cards.
   return [...new Set((data ?? []).map((r) => r.movie_id))];
 }
 
@@ -36,6 +41,9 @@ export function useMovieIdsByProductionHouse(productionHouseIds: string[]) {
 }
 
 export function useProductionHouseDetail(id: string) {
+  // @coupling: fetches house and movies as two independent queries — no shared loading/error boundary.
+  // If house fetch succeeds but movies fetch fails, isLoading stays true until movies also resolves (OR logic).
+  // UI can show a stale/empty movie list while the house header renders fine, with no per-section error state.
   const houseQuery = useQuery({
     queryKey: ['production_house', id],
     queryFn: () => fetchProductionHouseById(id),

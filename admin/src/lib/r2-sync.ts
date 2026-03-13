@@ -2,6 +2,11 @@
  * R2 upload helper for sync operations.
  * Downloads images from external URLs (TMDB CDN) and uploads to R2 with variants.
  * Server-side only.
+ *
+ * @coupling: this file creates its OWN S3Client via getR2Client() — separate from
+ * r2-client.ts which is used by upload-handler.ts. Both construct clients identically
+ * but changes to one won't affect the other. If R2 credentials change, both files
+ * need to work or both fail independently.
  */
 
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
@@ -19,12 +24,20 @@ export const R2_BUCKETS = {
   actorPhotos: 'faniverz-actor-photos',
 } as const;
 
+// @coupling: these env var names must match what's set in .env.local AND what
+// upload-handler.ts reads via config.baseUrlEnvVar. If a new bucket is added
+// (e.g. production house logos), it must be added here AND in R2_BUCKETS AND
+// the env var must be set, or uploads succeed but the returned URL is the
+// TMDB CDN fallback, silently mixing CDN sources in the DB.
 const R2_PUBLIC_URLS: Record<string, string | undefined> = {
   'faniverz-movie-posters': process.env.R2_PUBLIC_BASE_URL_POSTERS,
   'faniverz-movie-backdrops': process.env.R2_PUBLIC_BASE_URL_BACKDROPS,
   'faniverz-actor-photos': process.env.R2_PUBLIC_BASE_URL_ACTORS,
 };
 
+// @edge: checks R2_ACCOUNT_ID but NOT R2_SECRET_ACCESS_KEY — if the secret is
+// missing but account ID and access key are set, the client is created but all
+// PutObject calls fail at runtime with a credentials error.
 function getR2Client(): S3Client | null {
   if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID) return null;
   return new S3Client({
@@ -81,7 +94,15 @@ async function uploadImageFromUrl(sourceUrl: string, bucket: string, key: string
   const baseName = dotIdx > 0 ? key.slice(0, dotIdx) : key;
   const ext = dotIdx > 0 ? key.slice(dotIdx + 1) : 'jpg';
 
-  // Upload original + variants in parallel
+  // @sideeffect: uploads original + all resized variants in parallel. If one variant
+  // upload fails (e.g. network blip), Promise.all rejects and the ENTIRE upload is
+  // treated as failed — but the successful variants are already persisted in R2 as
+  // orphans with no corresponding DB reference (the caller gets an error, falls back
+  // to TMDB URL). Re-syncing the same movie re-uploads all variants, overwriting orphans.
+  // @coupling: R2 key format is `{tmdbId}.jpg` for originals and `{tmdbId}_sm.jpg`,
+  // `{tmdbId}_md.jpg`, `{tmdbId}_lg.jpg` for variants. The mobile app constructs
+  // variant URLs by inserting the suffix before the extension — if this naming
+  // convention changes, the mobile image component's URL rewriting breaks silently.
   await Promise.all([
     r2.send(
       new PutObjectCommand({
@@ -114,6 +135,13 @@ async function uploadImageFromUrl(sourceUrl: string, bucket: string, key: string
 /**
  * Upload image from URL if path is not null.
  * Convenience wrapper that handles null paths.
+ *
+ * @contract: returns null for null tmdbPath (no upload attempted), R2 public URL on
+ * success, or the original TMDB CDN URL as fallback when R2 is not configured or
+ * the source fetch fails. Callers store whatever URL is returned directly in the DB.
+ * @nullable: tmdbPath is null when TMDB has no image for the entity (e.g. actor
+ * without a profile photo). The DB column stores null, and the mobile app renders
+ * a placeholder via PLACEHOLDER_AVATAR / PLACEHOLDER_POSTER constants.
  */
 export async function maybeUploadImage(
   tmdbPath: string | null,

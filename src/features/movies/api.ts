@@ -16,6 +16,9 @@ export interface MovieFilters {
   sortBy?: 'popular' | 'top_rated' | 'latest' | 'upcoming';
 }
 
+// @boundary: 'streaming' filter requires two sequential Supabase calls — first to movie_platforms then to movies. If movie_platforms has stale data (e.g., platform removed but row lingers), phantom movies appear in streaming results.
+// @edge: 'released' filter uses `lte(release_date) AND eq(in_theaters, false)` — a movie that left theaters but has no OTT entry yet shows as 'released', not 'streaming'. This differs from deriveMovieStatus (shared/movieStatus.ts) which checks platformCount > 0.
+// @coupling: sort order 'popular' uses review_count from movies table — this column is updated by a DB trigger (update_movie_rating in triggers migration) on review insert/update/delete, NOT by this app. Stale review_count = wrong sort order.
 export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
   let query = supabase.from('movies').select('*');
 
@@ -94,6 +97,9 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
   return data ?? [];
 }
 
+// @coupling: the actor join in movie_cast.select() explicitly lists columns (id, name, photo_url, birth_date, person_type, tmdb_person_id, created_at) — if the Actor type in shared/types.ts adds new fields (e.g., biography, height_cm), they won't appear here unless the select() is updated. The cast/crew CastMember type assumes .actor is the full Actor shape but gets a partial.
+// @edge: .single() throws PGRST116 if movie not found — the error is re-thrown, so callers see a Supabase error, not null. This differs from fetchFeedItemById which catches PGRST116 and returns null.
+// @assumes: movie_cast rows always have credit_type = 'cast' | 'crew'. If a row has NULL or an unexpected value, it's silently excluded from both cast and crew arrays.
 export async function fetchMovieById(id: string): Promise<MovieWithDetails | null> {
   const { data: movie, error } = await supabase.from('movies').select('*').eq('id', id).single();
 
@@ -146,6 +152,8 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
   };
 }
 
+// @edge: month param is 0-indexed (JavaScript Date convention) — new Date(year, 12, 1) wraps to January of next year. Callers must pass 0-11 not 1-12, but the parameter name 'month' doesn't signal this.
+// @assumes: release_date is stored as 'YYYY-MM-DD' string in Supabase. String comparison (gte/lte) works correctly only because the format is lexicographically sortable. A different date format would silently return wrong results.
 export async function fetchMoviesByMonth(year: number, month: number): Promise<Movie[]> {
   const startDate = getLocalDateString(new Date(year, month, 1));
   const endDate = getLocalDateString(new Date(year, month + 1, 0));
@@ -161,6 +169,8 @@ export async function fetchMoviesByMonth(year: number, month: number): Promise<M
   return data ?? [];
 }
 
+// @boundary: query string is interpolated directly into PostgREST filter syntax — a query containing commas, parentheses, or dots could break the .or() filter or cause unexpected matching. No sanitization is performed.
+// @edge: only searches title and director columns — genres, cast names, and production houses are not searched. Users searching for an actor name get no results here; must use searchActors separately.
 export async function searchMovies(query: string): Promise<Movie[]> {
   const { data, error } = await supabase
     .from('movies')
@@ -173,6 +183,8 @@ export async function searchMovies(query: string): Promise<Movie[]> {
   return data ?? [];
 }
 
+// @sync: duplicates filter/sort logic from fetchMovies above — any filter change (e.g., adding a new MovieStatus case) must be applied in BOTH functions or paginated results will diverge from non-paginated. No shared filter-builder utility exists.
+// @edge: unlike fetchMovies, this function does NOT prepend `order('is_featured', { ascending: false })` — so featured movies don't surface first in paginated results, breaking consistency with the non-paginated list.
 export async function fetchMoviesPaginated(
   page: number,
   pageSize: number = 10,
@@ -255,6 +267,7 @@ export async function fetchMoviesPaginated(
   return data ?? [];
 }
 
+// @assumes: getLocalDateString() returns the device's local date — if a user's device clock is off by a day, they'll see yesterday's releases in upcoming or miss today's.
 export async function fetchUpcomingMovies(page: number, pageSize: number = 10): Promise<Movie[]> {
   const todayStr = getLocalDateString();
   const from = page * pageSize;
@@ -271,6 +284,7 @@ export async function fetchUpcomingMovies(page: number, pageSize: number = 10): 
   return data ?? [];
 }
 
+// @edge: no pagination — fetches ALL movies for a platform in one call. For a platform like Netflix with hundreds of titles, this returns a large payload with no limit.
 export async function fetchMoviesByPlatform(platformId: string): Promise<Movie[]> {
   const { data: movieIds, error: platErr3 } = await supabase
     .from('movie_platforms')

@@ -35,7 +35,11 @@ export function extractYouTubeId(input: string): string | null {
     // Not a valid URL — try bare ID
   }
 
-  // Bare YouTube ID (typically 11 chars, alphanumeric + - + _)
+  // @edge: bare ID check is fixed at exactly 11 chars. YouTube has used 11-char IDs
+  // since launch, but this is not a documented guarantee. If YouTube ever uses
+  // longer IDs, they'll be rejected here and the admin must paste the full URL instead.
+  // Also, any random 11-char alphanumeric string passes this check — no validation
+  // that the video actually exists on YouTube.
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
     return trimmed;
   }
@@ -43,9 +47,10 @@ export function extractYouTubeId(input: string): string | null {
   return null;
 }
 
-/**
- * Get YouTube thumbnail URL for a given video ID.
- */
+// @boundary: YouTube thumbnail URLs are publicly accessible without an API key, but
+// 'maxresdefault' quality is not available for all videos — YouTube returns a grey
+// placeholder image (120x90) with no error status code. The default 'mqdefault' is
+// always available. The admin trailer preview uses this for thumbnail display.
 export function getYouTubeThumbnail(
   id: string,
   quality: 'default' | 'mqdefault' | 'hqdefault' | 'maxresdefault' = 'mqdefault',

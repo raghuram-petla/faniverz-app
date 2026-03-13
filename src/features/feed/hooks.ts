@@ -13,8 +13,10 @@ import type { FeedFilterOption } from '@/types';
 import type { NewsFeedItem } from '@shared/types';
 
 const PAGE_SIZE = 15;
+// @invariant: FEED_QUERY_KEYS must list every top-level feed query key used in this file. The vote mutations use this array to cancel/rollback/invalidate ALL feed caches. If a new feed query key is added (e.g., 'trending-feed') but not added here, vote optimistic updates will miss that cache entirely.
 const FEED_QUERY_KEYS = ['news-feed', 'personalized-feed'] as const;
 
+// @coupling: PAGE_SIZE here (15) must match the PAGE_SIZE in feed/api.ts (also 15). The getNextPageParam logic returns undefined when lastPage.length < PAGE_SIZE. If api.ts PAGE_SIZE changes without updating hooks.ts, infinite scroll will stop prematurely or never stop.
 export function useNewsFeed(filter?: FeedFilterOption) {
   return useInfiniteQuery({
     queryKey: ['news-feed', filter],
@@ -34,6 +36,8 @@ export function useFeaturedFeed() {
   });
 }
 
+// @coupling: fetchPersonalizedFeed calls the Supabase RPC 'get_personalized_feed' which scores items based on user's watchlist, favorite_actors, and watched platforms. Personalization is entirely server-side — the hook just passes userId. If the RPC function is dropped/renamed, this fails silently with an empty feed (RPC errors are thrown but the scoring logic is invisible to the client).
+// @edge: when userId is null (logged-out user), fetchPersonalizedFeed still runs with p_user_id=null — the RPC handles this by returning unpersonalized results (score = 0 for personalization component). So this works for anonymous users but returns chronological-ish order, not truly "personalized".
 export function usePersonalizedFeed(filter: FeedFilterOption = 'all') {
   const { user } = useAuth();
   const userId = user?.id ?? null;
@@ -57,6 +61,9 @@ export function useFeedItem(id: string) {
   });
 }
 
+// @sideeffect: vote counts are maintained BOTH optimistically in the client cache AND by a DB trigger (trg_feed_vote_count in personalized_feed migration). The upsert in voteFeedItem fires the trigger which increments/decrements news_feed.upvote_count. After onSettled invalidation, the server value overwrites the optimistic one. Between optimistic update and server response (~1-2s), counts may be off by 1 if another user votes simultaneously.
+// @assumes: previousVote is passed by the caller from useUserVotes data — if the caller passes the wrong previousVote (e.g., cache was stale), the optimistic count adjustment will be wrong (e.g., decrementing upvote when user hadn't upvoted). The onSettled invalidation self-heals this.
+// @edge: the optimistic update iterates ALL cached feed pages across BOTH 'news-feed' and 'personalized-feed' queries. For large caches (many filter variations x many pages), this is O(n*m) synchronous work on the JS thread during onMutate.
 export function useVoteFeedItem() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -125,6 +132,8 @@ export function useVoteFeedItem() {
   });
 }
 
+// @sync: mirrors the same optimistic update pattern as useVoteFeedItem above. Both must iterate the same FEED_QUERY_KEYS and use the same cache structure assumption ({ pages: NewsFeedItem[][] }). If one is updated to handle a new cache shape (e.g., adding cursors), the other must match.
+// @edge: if the delete fails (e.g., RLS violation because user_id doesn't match auth.uid()), the rollback restores old data, but the user sees a brief flash of the un-voted state. No error toast is shown — the error is silently swallowed beyond the rollback.
 export function useRemoveFeedVote() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -185,6 +194,8 @@ export function useRemoveFeedVote() {
   });
 }
 
+// @invariant: query key ['feed-votes', userId, feedItemIds] — the vote mutations invalidate ['feed-votes'] (prefix match), which correctly catches this. However, feedItemIds is an array in the key — if the same items arrive in different order across renders, React Query treats them as different keys and refetches. This can cause redundant network calls on re-renders that reorder items.
+// @coupling: the returned Record<string, 'up' | 'down'> is used by FeedCard components to pass previousVote to useVoteFeedItem/useRemoveFeedVote. If this query returns stale data (2min staleTime), the previousVote passed to the mutation's optimistic update will be wrong, causing a count flicker until onSettled corrects it.
 export function useUserVotes(feedItemIds: string[]) {
   const { user } = useAuth();
   const userId = user?.id;

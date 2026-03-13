@@ -13,6 +13,9 @@ interface UpdateProfileInput {
   is_watchlist_public?: boolean;
 }
 
+// @invariant: updated_at is set manually here AND by the moddatetime trigger on profiles (migration 20240101000014).
+// The trigger overwrites the client-supplied value with now(), so the explicit updated_at in the spread is effectively dead code.
+// Removing it wouldn't change behavior, but if the moddatetime extension is ever disabled, this becomes the only source of truth.
 async function updateProfile(userId: string, updates: UpdateProfileInput) {
   const { data, error } = await supabase
     .from('profiles')

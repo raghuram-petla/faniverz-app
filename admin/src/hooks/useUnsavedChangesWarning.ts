@@ -3,6 +3,13 @@ import { useEffect, useRef } from 'react';
 /**
  * Warns users before navigating away when there are unsaved changes.
  * Handles: browser reload/close, Next.js Link clicks, and browser back/forward.
+ *
+ * @edge: Next.js App Router client-side navigation via router.push() is NOT intercepted.
+ * Only <Link> clicks (which render as <a> tags) are caught by the click handler.
+ * Programmatic navigation from hooks or callbacks bypasses this warning entirely.
+ * @sideeffect: pushes a guard entry to browser history on mount. If the component
+ * unmounts without the user navigating back (e.g. programmatic redirect), the guard
+ * entry stays in history, causing an extra "back" press to return to the same page.
  */
 export function useUnsavedChangesWarning(isDirty: boolean) {
   const isDirtyRef = useRef(isDirty);
@@ -16,7 +23,10 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
       }
     };
 
-    // Intercept <a> clicks (Next.js Link components) in capture phase
+    // @assumes: Next.js Link components render as <a> tags in the DOM. If Next.js
+    // changes Link to use a different element (e.g. div with onClick), this
+    // closest('a') check would stop intercepting client-side navigation.
+    // Uses capture phase (3rd arg = true) so it runs before Next.js's click handler.
     const handleClick = (e: MouseEvent) => {
       if (!isDirtyRef.current) return;
 

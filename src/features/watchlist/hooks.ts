@@ -23,6 +23,8 @@ import { useAuth } from '@/features/auth/providers/AuthProvider';
 
 const PAGE_SIZE = 10;
 
+// @coupling: deriveMovieStatus is called with platformCount=0 for EVERY entry. This means movies that are actually streaming (have platform entries) are classified as 'released' not 'streaming' by this hook. The watchlist API (fetchWatchlist) joins movies(*) but does NOT fetch platform data, so the hook has no way to know platform count. 'available' filter catches in_theaters correctly but misses streaming movies unless in_theaters is also true.
+// @invariant: query key ['watchlist', userId] is shared with useWatchlistSet below. Both hooks call fetchWatchlist with the same userId. If either hook's queryFn changes (e.g., adding a filter), both will return different data for the same cache key, causing cache corruption. They MUST use the same queryFn.
 export function useWatchlist(userId: string) {
   const query = useQuery({
     queryKey: ['watchlist', userId],
@@ -47,6 +49,7 @@ export function useWatchlist(userId: string) {
   return { ...query, available, upcoming, watched };
 }
 
+// @sync: duplicates the available/upcoming/watched filter logic from useWatchlist above. If the deriveMovieStatus call is ever changed (e.g., passing actual platform count), it must be updated in BOTH hooks. No shared utility for this derivation exists.
 export function useWatchlistPaginated(userId: string) {
   const query = useInfiniteQuery({
     queryKey: ['watchlist-paginated', userId],
@@ -83,6 +86,8 @@ export function useIsWatchlisted(userId: string, movieId: string) {
   });
 }
 
+// @contract: invalidateAll covers 3 cache keys: ['watchlist', userId], ['watchlist-paginated', userId], and ['watchlist', 'check', userId]. If a new watchlist query is added with a different key pattern, it must be added to invalidateAll or it will show stale data after mutations.
+// @edge: add mutation does NOT have optimistic update — UI won't reflect the add until server response + invalidation. The remove mutation DOES have optimistic update. This asymmetry means "add to watchlist" feels slower than "remove from watchlist" to the user.
 export function useWatchlistMutations() {
   const queryClient = useQueryClient();
 
@@ -161,6 +166,8 @@ export function useWatchlistMutations() {
   return { add, remove, markWatched, moveBack };
 }
 
+// @coupling: used by useMovieAction (hooks/useMovieAction.ts) and HeroCarousel to check if a movie is watchlisted. The set only contains movie_ids with status='watchlist' — watched movies are excluded. So a movie marked as watched won't show as "watchlisted" in the UI, which is correct behavior but worth noting if someone expects "any watchlist entry" to be in the set.
+// @invariant: shares query key ['watchlist', userId] with useWatchlist — they read from the same cache. When useWatchlistMutations invalidates, BOTH hooks re-render. If this hook is used on a screen without useWatchlist, the cache is populated by whichever hook renders first.
 export function useWatchlistSet() {
   const { user } = useAuth();
   const userId = user?.id ?? '';

@@ -1,4 +1,10 @@
-/** For updates, compute only the fields that changed between old and new */
+// @edge: compares fields using JSON.stringify, which means objects with the same keys
+// in different order are treated as different (e.g. {a:1,b:2} vs {b:2,a:1}). In
+// practice this rarely triggers false positives because Supabase returns consistent
+// key ordering, but manually constructed audit details could show phantom "changes".
+// @assumes: details.old and details.new are flat or shallow objects. Deeply nested
+// objects are compared as serialized strings, so a deeply-nested field change shows
+// the entire subtree as changed, not just the leaf field.
 export function getChangedFields(details: Record<string, unknown>): Record<string, unknown> | null {
   const old = details.old as Record<string, unknown> | undefined;
   const newVal = details.new as Record<string, unknown> | undefined;

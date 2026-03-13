@@ -132,11 +132,14 @@ Document edge cases that are handled, partially handled, or intentionally ignore
 
 Collect all source files that need annotation. Process in this order:
 
-1. **API/data layer** (`src/api/`, `src/hooks/`, `admin/src/hooks/`) — annotate these first because they define the data contracts that components depend on
-2. **Shared components** (`src/components/`) — annotate props contracts and rendering assumptions
-3. **Screen components** (`app/`, `admin/src/app/`) — annotate data flow, navigation, and user interaction
-4. **Utilities** (`src/utils/`, `src/constants/`) — annotate contracts and edge cases
-5. **Stores** (`src/stores/`) — annotate state shape and mutation contracts
+1. **API/data layer** (`src/features/*/api.ts`, `src/features/*/hooks.ts`, `src/hooks/`, `admin/src/hooks/`) — annotate these first because they define the data contracts that components depend on
+2. **Backend utilities** (`admin/src/lib/`) — sync engine, TMDB client, R2 storage, upload pipeline
+3. **Auth layer** (`src/features/auth/`) — providers and auth hooks
+4. **Shared components** (`src/components/`) — annotate props contracts and rendering assumptions
+5. **Screen components** (`app/`, `admin/src/app/`) — annotate data flow, navigation, and user interaction
+6. **Utilities** (`src/utils/`, `src/constants/`) — annotate contracts and edge cases
+7. **Stores** (`src/stores/`) — annotate state shape and mutation contracts
+8. **Layouts & providers** (`app/_layout.tsx`, `src/providers/`) — provider nesting, route guards
 
 Skip exempt files: `.styles.ts`, `.test.ts`, `.test.tsx`, `__tests__/`, `.d.ts`, `.config.*`, `scripts/`, `.next/`
 
@@ -170,6 +173,60 @@ For each file, read it fully and add comments using the taxonomy above. Follow t
 - Do NOT change imports, exports, types, or any code structure
 
 **Density guideline**: Aim for 5-15 annotation comments per 100 lines of source code in complex files (API, hooks, screens). Simple utility files may need only 2-5. Don't pad for coverage — only annotate where context genuinely helps.
+
+### Quality Bar — BAD vs GOOD annotations
+
+**The litmus test:** Would a bug-hunting agent learn something from this comment that it couldn't get from reading the code alone? If not, don't add it.
+
+**BAD — restates the code (NEVER write these):**
+
+```ts
+// @edge: query must be >= 2 chars to fire
+export function useSearchActors(query: string) {
+  return useQuery({ enabled: query.length >= 2 });
+// ^ A bug-hunter can read `enabled: query.length >= 2`. This comment adds ZERO value.
+
+// @nullable: actor is null until loaded
+return { actor: actorQuery.data ?? null };
+// ^ Obvious from `?? null`. Worthless.
+
+// @sideeffect: signs in with Google
+// ^ Obvious from the function name `signInWithGoogle`.
+
+// @contract: renders input field for authenticated users
+// ^ Obvious from the JSX ternary. Don't restate conditionals.
+```
+
+**GOOD — provides invisible context (ALWAYS write like these):**
+
+```ts
+// @invariant: query key ['actors', 'favorites', userId] must match invalidation in useFavoriteActorMutations — mismatch = stale favorites list forever
+// @assumes: userId is a valid UUID from auth context; empty string disables query via `enabled: !!userId` but passing a non-UUID string would return empty results silently (no error)
+export function useFavoriteActors(userId: string) {
+
+// @edge: no optimistic update on add/remove — UI won't reflect change until server roundtrip + cache invalidation (~1-2s). Rapid add/remove can show stale state.
+// @sideeffect: Alert.alert on error blocks the UI thread — if multiple mutations fail rapidly, alerts stack and must be dismissed one-by-one
+const add = useMutation({
+
+// @boundary: idToken comes from Google Sign-In SDK — not validated by our code. Supabase validates server-side. If Google SDK returns a stale/revoked token, signInWithIdToken throws with a generic "invalid_grant" error that we surface as-is to the user.
+
+// @coupling: R2 bucket key format is `{type}/{uuid}/{size}.webp` — if this changes, CDN invalidation in r2-sync.ts AND URL construction in image-resize.ts both break silently
+// @invariant: VARIANT_SIZES must include 'original' — upload-handler always generates it, and admin preview reads variants.find(v => v.size === 'original')
+
+// @boundary: TMDB API rate limit is 40 req/10s — sequential fetches avoid this, but bulk operations with >5 movies risk 429 responses that are NOT retried
+// @sideeffect: writes to movies, actors, movie_cast, movie_genres without a transaction — partial failure leaves a movie row with no cast/genres, rendering "No cast" in the app
+
+// @coupling: username uniqueness check queries profiles.username directly — if the UNIQUE constraint is ever removed from the table, this check becomes a no-op and duplicate usernames become possible
+// @sync: debounced availability check (300ms) can race with form submit — user can submit while a stale "available" result is displayed
+```
+
+**Key principles for high-quality annotations:**
+
+1. **Name the blast radius** — don't just say "invalidates cache"; say WHICH query key and what happens if it mismatches
+2. **Describe failure modes** — what happens on error? Is it retried? Does it leave orphaned state?
+3. **Quantify timing** — don't just say "race condition possible"; say the debounce interval, the staleTime, or the expected latency
+4. **Cross-reference files** — name the specific file/function that would break if this code changes
+5. **Expose invisible contracts** — RLS policies, DB constraints, TMDB rate limits, R2 key formats — things the code depends on but doesn't encode
 
 ### Phase 3 — Verify No Functional Changes
 

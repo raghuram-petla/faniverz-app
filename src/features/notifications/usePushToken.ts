@@ -29,6 +29,9 @@ async function registerForPushNotifications(): Promise<string | null> {
 
   if (finalStatus !== 'granted') return null;
 
+  // @nullable: projectId can be undefined if app.config doesn't have extra.eas.projectId set (e.g., local dev
+  // without EAS). getExpoPushTokenAsync will still attempt to fetch a token but may fail with an opaque error
+  // about missing project configuration, not a clear "projectId is undefined" message.
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
   const { data: token } = await Notifications.getExpoPushTokenAsync({
     projectId,
@@ -39,6 +42,9 @@ async function registerForPushNotifications(): Promise<string | null> {
 
 export function usePushToken() {
   const { user } = useAuth();
+  // @invariant: registeredRef prevents duplicate registration within a single component mount. But if the user
+  // signs out and signs in as a different user without the component unmounting (session swap via AuthProvider),
+  // the ref stays true and the new user's push token is never registered. The ref resets only on remount.
   const registeredRef = useRef(false);
 
   useEffect(() => {
@@ -47,6 +53,10 @@ export function usePushToken() {
     (async () => {
       try {
         const pushPref = await AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS);
+        // @edge: opted-out path still calls registerForPushNotifications() which requests OS permissions.
+        // A user who disabled push in app settings will still see the OS permission prompt on first launch
+        // if they haven't granted it yet — confusing since they already opted out. The token is obtained
+        // only to pass it to deactivatePushToken, but requesting permissions is a side effect of getting the token.
         if (pushPref === 'false') {
           // User has opted out — deactivate any existing token
           const token = await registerForPushNotifications();

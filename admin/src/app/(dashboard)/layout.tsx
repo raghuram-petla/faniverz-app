@@ -13,7 +13,10 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Loader2 } from 'lucide-react';
 import type { AdminPage } from '@/hooks/usePermissions';
 
-/** Map route prefixes to AdminPage for route-level permission checks */
+// @coupling: every new admin page route MUST be added here, otherwise it's accessible
+// to all admin roles regardless of permissions. Missing a route from this map means
+// the page silently bypasses role-based access control — getPageForRoute returns null,
+// and DashboardContent renders the page without checking canViewPage.
 const ROUTE_PAGE_MAP: Record<string, AdminPage> = {
   '/movies': 'movies',
   '/cast': 'cast',
@@ -59,6 +62,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, isLoading, isAccessDenied } = useAuth();
   const router = useRouter();
 
+  // @sideeffect: redirects to /login via router.replace (not push), so the dashboard
+  // URL is removed from browser history. After login, AuthProvider redirects back to '/'
+  // (dashboard root), not the originally requested page — deep links to specific admin
+  // pages are lost on session expiry.
   useEffect(() => {
     if (!isLoading && !user && !isAccessDenied) {
       router.replace('/login');

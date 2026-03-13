@@ -4,6 +4,9 @@ import type { NewsFeedItem, FeedVote } from '@shared/types';
 
 const PAGE_SIZE = 15;
 
+// @coupling: the movie join uses the explicit FK name 'news_feed_movie_id_fkey' — if this FK is renamed in a migration, Supabase returns data without the movie relation (silently null) rather than erroring. The same FK name is used in fetchFeaturedFeedItems and fetchFeedItemById below; all three must stay in sync.
+// @nullable: movie_id on news_feed is nullable. When movie_id IS NULL, the join returns movie: null. The NewsFeedItem type declares movie as optional, so TypeScript won't catch UI code that assumes movie is always present.
+// @edge: filter 'trailers' matches feed_type='video' AND content_type IN ('trailer','teaser','glimpse','promo') — but the personalized feed RPC (get_personalized_feed) has its OWN copy of this filter logic in SQL. Adding a new content_type to one but not the other causes different results between the two feeds.
 export async function fetchNewsFeed(
   filter?: FeedFilterOption,
   page: number = 0,
@@ -60,6 +63,9 @@ export async function fetchFeaturedFeedItems(): Promise<NewsFeedItem[]> {
   return (data as unknown as NewsFeedItem[]) ?? [];
 }
 
+// @boundary: calls Supabase RPC 'get_personalized_feed' — the function returns a flat row (no nested movie object). This function manually reconstructs the nested { movie: { id, title, poster_url, release_date } } shape to match NewsFeedItem. If the RPC adds new columns (e.g., movie_backdrop_url), they must be mapped here too or they're silently dropped.
+// @assumes: the RPC returns movie_title as null for non-movie feed items. The ternary `row.movie_title ? { ... } : undefined` means feed items without a movie get movie=undefined, matching the fetchNewsFeed behavior. But if movie_title is empty string (not null), it would create a movie object with empty title.
+// @sideeffect: the `as Record<string, unknown>[]` cast discards all Supabase type inference. If the RPC return type changes (e.g., column renamed from 'score' to 'rank_score'), the cast hides the mismatch and the field silently becomes undefined.
 export async function fetchPersonalizedFeed(
   userId: string | null,
   filter: FeedFilterOption = 'all',
@@ -123,6 +129,8 @@ export async function fetchFeedItemById(id: string): Promise<NewsFeedItem | null
   return data as unknown as NewsFeedItem;
 }
 
+// @sideeffect: the upsert fires a DB trigger (trg_feed_vote_count) that handles both INSERT and UPDATE cases. On INSERT: increments the new vote_type count. On UPDATE (vote change): decrements old vote_type and increments new. The trigger handles the count math — the client's optimistic update in useVoteFeedItem must mirror this logic exactly or counts will flicker.
+// @contract: onConflict 'feed_item_id,user_id' matches the UNIQUE constraint on feed_votes table. If this constraint is dropped/renamed, the upsert silently becomes a plain insert, allowing duplicate votes and double-counting via the trigger.
 export async function voteFeedItem(
   feedItemId: string,
   userId: string,
@@ -141,6 +149,7 @@ export async function voteFeedItem(
   return data as FeedVote;
 }
 
+// @sideeffect: delete fires the same trg_feed_vote_count trigger which decrements the appropriate count on news_feed. If the row doesn't exist (already deleted), Supabase returns success with 0 affected rows — the trigger doesn't fire, so counts stay correct. No error is thrown for "nothing to delete".
 export async function removeFeedVote(feedItemId: string, userId: string): Promise<void> {
   const { error } = await supabase
     .from('feed_votes')
@@ -151,6 +160,8 @@ export async function removeFeedVote(feedItemId: string, userId: string): Promis
   if (error) throw error;
 }
 
+// @edge: Supabase .in() filter has an implicit URL length limit (~2000 chars). With UUID feed_item_ids (36 chars each), this breaks around ~50 IDs. If a user scrolls through many pages and collects 50+ visible feed item IDs, the query silently truncates or fails. Currently PAGE_SIZE=15 so this is safe for 3 pages, but batching is not implemented.
+// @assumes: vote_type column is constrained to 'up'|'down' via CHECK in DB, so the cast to 'up' | 'down' is safe. If the constraint is relaxed to allow other values, the cast hides them from TypeScript.
 export async function fetchUserVotes(
   userId: string,
   feedItemIds: string[],

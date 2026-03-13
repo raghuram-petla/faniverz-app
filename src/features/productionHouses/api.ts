@@ -15,6 +15,10 @@ export async function fetchProductionHouseById(id: string): Promise<ProductionHo
   return data;
 }
 
+// @coupling: two-step fetch (junction table then movies) instead of a Supabase join because movie_production_houses
+// is a many-to-many junction and Supabase's nested select would return duplicate movie rows per production house link.
+// Downside: two round trips to the server. If movie_production_houses or movies table has RLS policies that differ
+// from what the anon key can access, the junction fetch may succeed but the movies fetch may return fewer results.
 export async function fetchProductionHouseMovies(id: string): Promise<Movie[]> {
   const { data: junction, error: jErr } = await supabase
     .from('movie_production_houses')

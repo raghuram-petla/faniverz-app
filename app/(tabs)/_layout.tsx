@@ -14,6 +14,10 @@ export default function TabLayout() {
         animation: 'none',
         tabBarActiveTintColor: colors.red600,
         tabBarInactiveTintColor: theme.textSecondary,
+        // @assumes: height 80 + paddingBottom 20 accommodates the iPhone home indicator
+        // (34pt). On Android (no home indicator), the extra padding creates a slightly
+        // taller tab bar than stock Material Design, but this is a deliberate design choice
+        // for visual consistency across platforms.
         tabBarStyle: {
           backgroundColor: theme.surface,
           borderTopColor: theme.border,
@@ -56,6 +60,10 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="bookmark" size={size} color={color} />,
         }}
       />
+      {/* @coupling: href=null hides these tabs from the tab bar but keeps them
+          routable via router.push('/(tabs)/feed'). Removing these Screen declarations
+          entirely would cause Expo Router to auto-generate tab entries from the file
+          system, making hidden tabs suddenly appear in the tab bar. */}
       <Tabs.Screen
         name="feed"
         options={{

@@ -37,6 +37,12 @@ export interface ImpersonationProviderProps {
   children: React.ReactNode;
 }
 
+// @assumes: the target user exists in BOTH profiles AND admin_user_roles tables.
+// If the target is a regular app user (no admin_user_roles row), roleRes.data is null
+// and this returns null — the impersonation silently fails with no error message to
+// the admin. The admin sees no feedback about why impersonation didn't start.
+// @coupling: reads from profiles table (shared with mobile app) — profile fields
+// like display_name, avatar_url come from whatever the app user has set.
 async function buildTargetUser(targetUserId: string): Promise<AdminUser | null> {
   const [profileRes, roleRes, phRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', targetUserId).single(),
@@ -52,6 +58,11 @@ async function buildTargetUser(targetUserId: string): Promise<AdminUser | null> 
   };
 }
 
+// @sideeffect: sets is_active=false and ended_at on ALL active sessions for this user,
+// not just the current one. If the user has stale 'running' sessions from browser crashes,
+// they're all cleaned up here. This is safe because a user can only have one active
+// impersonation at a time — the insert in startImpersonation doesn't check for existing
+// active sessions, it relies on this cleanup running first.
 async function endActiveSession(userId: string) {
   await supabase
     .from('admin_impersonation_sessions')
@@ -66,12 +77,22 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
   const realUserRef = useRef(realUser);
   realUserRef.current = realUser;
 
-  // Only root and super_admin can impersonate (hierarchy: root > super_admin > admin > PH admin).
-  // Uses the REAL user's role, not the effective role — impersonation ability is based on
-  // who you actually are, not who you're pretending to be.
+  // @invariant: impersonation privilege is checked against realUser.role, NEVER effectiveUser.
+  // If this checked effectiveUser, a root user impersonating a ph_admin would lose the
+  // ability to stop impersonation (stopImpersonation would silently no-op).
+  // @edge: does NOT prevent a super_admin from impersonating a root user — the hierarchy
+  // check is only "can I impersonate at all?", not "can I impersonate THIS role?".
+  // A super_admin impersonating root gains root-level UI access for the session.
   const isSuperAdmin = realUser?.role === 'super_admin' || realUser?.role === 'root';
 
-  // Restore active session on mount
+  // @sideeffect: on mount, restores any active impersonation session from the DB so
+  // that refreshing the browser page doesn't drop the impersonation. Without this,
+  // the admin would need to re-start impersonation after every page reload.
+  // @edge: if the target user's role or PH assignments changed since the session was
+  // created, role-based impersonation uses the stale target_role from the session row,
+  // but user-based impersonation re-fetches live data via buildTargetUser. This creates
+  // an inconsistency: role impersonation persists the original role, user impersonation
+  // always reflects the target's current role.
   useEffect(() => {
     if (!realUser || !isSuperAdmin) return;
     let cancelled = false;

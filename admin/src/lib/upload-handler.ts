@@ -13,6 +13,10 @@ export interface UploadConfig {
   label: string;
 }
 
+// @contract: factory that creates a Next.js POST route handler for a specific R2 bucket.
+// Each upload endpoint (posters, backdrops, actors, avatars) calls this with its own config.
+// @coupling: uses r2-client.ts getR2Client (NOT the inline getR2Client in r2-sync.ts) —
+// this one supports R2_ENDPOINT for local MinIO dev, while r2-sync.ts does not.
 export function createUploadHandler(config: UploadConfig) {
   return async function POST(request: NextRequest) {
     try {
@@ -50,6 +54,11 @@ export function createUploadHandler(config: UploadConfig) {
         );
       }
 
+      // @coupling: key format is `{uuid}.{ext}` — different from r2-sync.ts which uses
+      // `{tmdbId}.{ext}`. Manual admin uploads use UUIDs so they never collide with
+      // TMDB-synced images. However, if an admin manually uploads a poster and then
+      // re-syncs the movie from TMDB, the TMDB sync overwrites poster_url in the DB
+      // with the tmdbId-keyed URL, orphaning the UUID-keyed upload in R2 permanently.
       const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
       const id = randomUUID();
       const key = `${id}.${ext}`;
@@ -57,6 +66,10 @@ export function createUploadHandler(config: UploadConfig) {
 
       const variants = await generateVariants(buffer, file.type, config.variants);
 
+      // @sideeffect: uploads original + variants in parallel. Same orphan risk as r2-sync.ts —
+      // partial failure leaves some variants in R2 but returns 500 to the client, so the admin
+      // sees "Upload failed" and retries with a new UUID, creating more orphans.
+      // No cleanup of partial uploads is attempted.
       await Promise.all([
         r2.send(
           new PutObjectCommand({
@@ -78,6 +91,10 @@ export function createUploadHandler(config: UploadConfig) {
         ),
       ]);
 
+      // @edge: the upload to R2 has already succeeded at this point — if baseUrlEnvVar
+      // is not configured, the image exists in R2 but we return 503. The admin gets an
+      // error and may retry, creating duplicate uploads. The already-uploaded image is
+      // unreachable because no public URL can be constructed for it.
       const baseUrl = process.env[config.baseUrlEnvVar];
       if (!baseUrl) {
         return NextResponse.json(
