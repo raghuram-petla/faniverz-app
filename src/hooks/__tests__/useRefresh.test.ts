@@ -34,7 +34,7 @@ describe('useRefresh', () => {
     expect(fn3).toHaveBeenCalledTimes(1);
   });
 
-  it('handles refetch rejection gracefully', async () => {
+  it('handles refetch rejection gracefully and resets refreshing', async () => {
     const fn1 = jest.fn().mockResolvedValue('ok');
     const fn2 = jest.fn().mockRejectedValue(new Error('fail'));
     const { result } = renderHook(() => useRefresh(fn1, fn2));
@@ -49,6 +49,8 @@ describe('useRefresh', () => {
 
     expect(fn1).toHaveBeenCalled();
     expect(fn2).toHaveBeenCalled();
+    // Critical: refreshing must reset even when a refetch rejects
+    expect(result.current.refreshing).toBe(false);
   });
 
   it('works with zero refetch functions', async () => {

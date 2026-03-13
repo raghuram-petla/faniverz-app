@@ -5,8 +5,11 @@ export function useRefresh(...refetchFns: (() => Promise<unknown>)[]) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all(refetchFns.map((fn) => fn()));
-    setRefreshing(false);
+    try {
+      await Promise.all(refetchFns.map((fn) => fn()));
+    } finally {
+      setRefreshing(false);
+    }
   }, refetchFns);
 
   return { refreshing, onRefresh };

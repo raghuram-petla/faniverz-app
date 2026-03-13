@@ -43,13 +43,7 @@ export function ReviewsTab({
         <Text style={styles.writeReviewText}>{t('movie.writeReview')}</Text>
       </TouchableOpacity>
 
-      {reviews.length === 0 && (
-        <Text
-          style={{ color: theme.textTertiary, textAlign: 'center', marginTop: 24, fontSize: 14 }}
-        >
-          {t('movie.noReviewsYet')}
-        </Text>
-      )}
+      {reviews.length === 0 && <Text style={styles.emptyText}>{t('movie.noReviewsYet')}</Text>}
 
       {reviews.map((review) => (
         <View key={review.id} style={styles.reviewCard}>
@@ -57,7 +51,7 @@ export function ReviewsTab({
             <View style={styles.reviewAvatar}>
               <Ionicons name="person" size={16} color={theme.textSecondary} />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={styles.reviewHeaderInfo}>
               <Text style={styles.reviewUserName} numberOfLines={1}>
                 {review.profile?.display_name ?? t('movie.userFallback')}
               </Text>

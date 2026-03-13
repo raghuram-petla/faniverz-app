@@ -5,7 +5,7 @@ const mockInsert = jest.fn();
 const mockDelete = jest.fn();
 const mockIlike = jest.fn();
 const mockLimit = jest.fn();
-const mockSingle = jest.fn();
+const mockMaybeSingle = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -157,8 +157,8 @@ describe('actors api', () => {
     it('fetches a single actor by id', async () => {
       const actor = { id: 'a1', name: 'Nagarjuna' };
       mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ single: mockSingle });
-      mockSingle.mockResolvedValue({ data: actor, error: null });
+      mockEq.mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockMaybeSingle.mockResolvedValue({ data: actor, error: null });
 
       const result = await fetchActorById('a1');
       expect(supabase.from).toHaveBeenCalledWith('actors');
@@ -167,12 +167,21 @@ describe('actors api', () => {
       expect(result).toEqual(actor);
     });
 
+    it('returns null when actor not found', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchActorById('nonexistent');
+      expect(result).toBeNull();
+    });
+
     it('throws on error', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ single: mockSingle });
-      mockSingle.mockResolvedValue({ data: null, error: new Error('Not found') });
+      mockEq.mockReturnValue({ maybeSingle: mockMaybeSingle });
+      mockMaybeSingle.mockResolvedValue({ data: null, error: new Error('DB error') });
 
-      await expect(fetchActorById('bad-id')).rejects.toThrow('Not found');
+      await expect(fetchActorById('bad-id')).rejects.toThrow('DB error');
     });
   });
 

@@ -56,9 +56,7 @@ export function CommentsList({
       ))}
       {hasNextPage && onLoadMore ? (
         <TouchableOpacity onPress={onLoadMore} accessibilityLabel="Load more comments">
-          <Text style={{ color: colors.red600, textAlign: 'center', paddingVertical: 8 }}>
-            {t('feed.loadMore')}
-          </Text>
+          <Text style={styles.loadMoreText}>{t('feed.loadMore')}</Text>
         </TouchableOpacity>
       ) : null}
     </View>

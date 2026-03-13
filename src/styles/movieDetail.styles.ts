@@ -245,6 +245,7 @@ export const createStyles = (t: SemanticTheme) =>
       gap: 8,
     },
     reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    reviewHeaderInfo: { flex: 1 },
     reviewAvatar: {
       width: 40,
       height: 40,

@@ -137,4 +137,9 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       fontSize: 14,
       color: t.textTertiary,
     },
+    loadMoreText: {
+      color: colors.red600,
+      textAlign: 'center',
+      paddingVertical: 8,
+    },
   });

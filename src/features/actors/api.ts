@@ -42,7 +42,7 @@ export async function searchActors(query: string): Promise<Actor[]> {
 }
 
 export async function fetchActorById(id: string): Promise<Actor | null> {
-  const { data, error } = await supabase.from('actors').select('*').eq('id', id).single();
+  const { data, error } = await supabase.from('actors').select('*').eq('id', id).maybeSingle();
 
   if (error) throw error;
   return data;
