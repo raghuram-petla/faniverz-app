@@ -50,3 +50,4 @@ find . \( -name "*.ts" -o -name "*.tsx" \) \
 - Admin components go to `admin/src/components/<feature>/`
 - Mocks in new mobile tests use `jest.mock()`, admin tests use `vi.mock()`
 - Admin ESLint uses `--max-warnings 0` (no warnings allowed)
+- **Never reduce line count by removing comments, code-intel annotations, or documentation.** Line reduction must come from structural decomposition (extracting components, hooks, styles), not from deleting explanatory content.
