@@ -44,7 +44,7 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  // @edge behavior is undefined on Android — KeyboardAvoidingView only adjusts on iOS
+  // @edge: behavior is undefined on Android — KeyboardAvoidingView only adjusts on iOS
   return (
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top + 12 }]}

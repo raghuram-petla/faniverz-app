@@ -29,6 +29,8 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
+// @boundary: Discover screen — paginated movie grid with deep-link support for filter/platform params
+// @coupling: useFilterStore (Zustand), useMoviesPaginated, useMoviePlatformMap, useProductionHouses
 export default function DiscoverScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -100,6 +102,7 @@ export default function DiscoverScreen() {
   const { data: productionHouses = [] } = useProductionHouses();
   const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
+  // @coupling: useMovieIdsByProductionHouse returns movie IDs from the production_house_movies junction table
   const { data: phMovieIds = [] } = useMovieIdsByProductionHouse(selectedProductionHouses);
 
   // @invariant: all filtering (search, genre, platform, PH) happens client-side on already-fetched pages

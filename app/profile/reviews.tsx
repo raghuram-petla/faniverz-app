@@ -38,12 +38,15 @@ function StarRow({ rating, styles }: { rating: number; styles: ReturnType<typeof
   );
 }
 
+// @boundary: My Reviews — user's review history with sort, edit, and delete capabilities
+// @coupling: useUserReviews, useReviewMutations (update/remove) — backed by reviews table
 export default function MyReviewsScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  // @contract: useUserReviews joins reviews with movie data (poster_url, title) for display
   const { data: reviews, isLoading, refetch } = useUserReviews(user?.id ?? '');
   const { update, remove } = useReviewMutations();
   const { refreshing, onRefresh } = useRefresh(refetch);

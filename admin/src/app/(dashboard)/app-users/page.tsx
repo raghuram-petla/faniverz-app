@@ -54,8 +54,8 @@ export default function AppUsersPage() {
     setPage(0);
   };
 
-  // @sideeffect Banning prevents the user from logging in to the mobile app
-  // @boundary Ban is irreversible from this page — no unban action exposed here
+  // @sideeffect Banning sets a 10-year ban_duration via Supabase Auth admin API
+  // @boundary Ban is irreversible from this page — no unban action exposed; requires API route /api/manage-user
   const handleBan = (user: EndUserProfile) => {
     const name = user.display_name ?? user.email ?? 'this user';
     if (!confirm(`Ban ${name}? They will not be able to log in.`)) return;

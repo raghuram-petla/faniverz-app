@@ -123,6 +123,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   /** @edge Empty movies array renders nothing — parent should show skeleton instead */
   if (movies.length === 0) return null;
 
+  // @edge handleActionToggle is defined after the early return — ESLint allows this because it's a const, not a hook
   /** @sideeffect Mutates follow/watchlist state via TanStack mutations; auth-gated */
   const handleActionToggle = useCallback(
     (movieId: string, actionType: 'follow' | 'watchlist') =>

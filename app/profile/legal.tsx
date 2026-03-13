@@ -78,6 +78,8 @@ We may update this policy. We will notify you of significant changes.
 11. Contact
 For privacy questions, contact us at faniverz@gmail.com.`;
 
+// @boundary: Legal document viewer — static terms of service or privacy policy text
+// @assumes: content is hardcoded inline; no backend fetch or CMS integration
 export default function LegalScreen() {
   const { t } = useTranslation();
   // @boundary: type query param determines which legal document to show

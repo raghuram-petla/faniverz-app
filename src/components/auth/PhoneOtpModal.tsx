@@ -64,6 +64,7 @@ export function PhoneOtpModal({
   };
 
   /** @sideeffect resets all local state (phone, otp, step) before calling parent onClose */
+  /** @edge if modal is re-opened immediately after close, useState resets may batch with new mount */
   const handleClose = () => {
     setPhone('');
     setOtp('');

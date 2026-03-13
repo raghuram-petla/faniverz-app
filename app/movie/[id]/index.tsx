@@ -30,6 +30,8 @@ import { MovieDetailSkeleton } from '@/components/movie/detail/MovieDetailSkelet
 type TabName = 'overview' | 'cast' | 'reviews';
 type DisplayTab = TabName | 'media';
 
+// @boundary: Movie detail — hero section + tabbed content (overview, media, cast, reviews)
+// @coupling: useMovieDetail, useMovieReviews, useReviewMutations, useMovieAction, deriveMovieStatus
 export default function MovieDetailScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -59,6 +61,8 @@ export default function MovieDetailScreen() {
   // @invariant: useMovieAction must be called unconditionally (rules of hooks)
   // @edge: stub object used when movie hasn't loaded yet — action will be inert
   const movieForAction = movie ?? { id: id ?? '', release_date: null, in_theaters: false };
+  // @contract: actionType is 'watchlist' | 'watched' | 'reminder' based on movie release status
+  // @coupling: useMovieAction internally uses useWatchlistEntry + useToggleWatched + useToggleReminder
   const {
     actionType,
     isActive: isActionActive,

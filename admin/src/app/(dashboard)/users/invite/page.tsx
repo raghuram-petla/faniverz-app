@@ -43,8 +43,8 @@ export default function InviteAdminPage() {
 
   const isPHRole = roleId === 'production_house_admin';
 
-  // @sideeffect: creates an admin_invitations row with a token, then displays the invite link
-  // @boundary: invite link points to /login?invite=<token> — OAuth flow auto-accepts the invite on sign-in
+  // @sideeffect: creates an admin_invitations row with a token (expires in 7 days), then displays the invite link
+  // @boundary: invite link points to /login?invite=<token> — AuthProvider auto-calls /api/accept-invitation on OAuth callback
   // @edge: PH admin role requires at least one production house selected; form validates client-side before submit
   // @assumes: user.id is always available (page is behind auth guard)
   async function handleSubmit(e: React.FormEvent) {

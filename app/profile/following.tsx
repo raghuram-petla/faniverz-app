@@ -29,6 +29,8 @@ const FILTER_KEYS: { key: Filter; i18nKey: string }[] = [
   { key: 'production_house', i18nKey: 'search.studios' },
 ];
 
+// @boundary: Following list — all entities (movies, actors, production houses) the user follows
+// @coupling: useEnrichedFollows, useUnfollowEntity — backed by entity_follows table
 export default function FollowingScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

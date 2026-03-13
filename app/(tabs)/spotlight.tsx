@@ -49,6 +49,7 @@ export default function SpotlightScreen() {
   const tileSize = Math.floor(
     (screenWidth - PLATFORM_GRID_H_PADDING - PLATFORM_GRID_GAP_TOTAL) / 4,
   );
+  // @contract: useMovies fetches ALL movies in a single query (not paginated) — fine for small catalog
   const { data: allMovies = [], isLoading, refetch: refetchMovies } = useMovies();
   const { data: platforms = [], refetch: refetchPlatforms } = usePlatforms();
 

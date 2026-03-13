@@ -28,6 +28,7 @@ export function CalendarFilterPanel({
 }: CalendarFilterPanelProps) {
   const { theme, colors } = useTheme();
   /** @edge when no year is selected, uses current year to compute days-in-month; defaults to 31 when no month selected */
+  /** @edge selectedDay may exceed daysInMonth after month change (e.g. day 31 when switching to Feb) — not auto-cleared */
   const daysInMonth =
     selectedMonth !== null && selectedYear !== null
       ? new Date(selectedYear, selectedMonth + 1, 0).getDate()

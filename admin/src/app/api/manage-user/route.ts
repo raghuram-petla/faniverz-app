@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     if (action === 'ban') {
-      // @assumes: 87600h = 10 years; effectively a permanent ban
+      // @assumes: 87600h = 10 years; effectively a permanent ban — Supabase Auth rejects all login attempts
       const { error } = await supabase.auth.admin.updateUserById(userId, {
         ban_duration: '87600h',
       });

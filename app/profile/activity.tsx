@@ -22,6 +22,8 @@ const FILTER_KEYS: { key: ActivityFilter; i18nKey: string }[] = [
   { key: 'comments', i18nKey: 'profile.filterComments' },
 ];
 
+// @boundary: Activity log — chronological list of user actions (votes, follows, comments)
+// @coupling: useUserActivity returns paginated data from Supabase user_activity view
 export default function ActivityScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();

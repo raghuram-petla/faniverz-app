@@ -20,6 +20,7 @@ export function useActiveVideo(): UseActiveVideoReturn {
   // @nullable null when no video card is sufficiently visible in the viewport
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   // @sync layouts ref is mutated imperatively during render-time onLayout callbacks — not tied to React state
+  // @edge stale entries accumulate if feed items are removed without unmounting — Map is never pruned
   const layouts = useRef<Map<string, VideoLayout>>(new Map());
 
   // @sideeffect mutates layouts ref; callers must provide absolute y relative to ScrollView content, not screen

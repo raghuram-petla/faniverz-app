@@ -30,6 +30,8 @@ interface FavoriteActorWithActor extends FavoriteActor {
   actor?: Actor;
 }
 
+// @boundary: Favorite actors grid — 2-column layout with add/remove capabilities
+// @coupling: useFavoriteActors, useFavoriteActorMutations — backed by favorite_actors table
 export default function FavoriteActorsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

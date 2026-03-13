@@ -63,7 +63,7 @@ export default function EditProductionHousePage() {
     }
   }
 
-  // @sideeffect: hard-deletes production_houses row — cascades to movie_production_houses join records
+  // @sideeffect: hard-deletes production_houses row — DB CASCADE removes movie_production_houses + admin_ph_assignments referencing this PH
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
       try {

@@ -31,6 +31,8 @@ const MAX_RECENT = 10;
 
 type SearchFilter = 'all' | 'movies' | 'actors' | 'studios';
 
+// @boundary: Universal search — movies, actors, production houses with recent searches and trending
+// @coupling: useUniversalSearch, useMovies (for trending), useMoviePlatformMap, AsyncStorage
 export default function SearchScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -48,6 +50,7 @@ export default function SearchScreen() {
   const actors = searchResults?.actors ?? [];
   const productionHouses = searchResults?.productionHouses ?? [];
 
+  // @coupling: useMovies fetches ALL movies (same as spotlight) — used here only for trending slice
   const { data: allMovies = [], refetch: refetchMovies } = useMovies();
   // @assumes: "trending" is approximated by highest rating; no dedicated trending API
   const trendingMovies = useMemo(

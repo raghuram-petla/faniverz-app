@@ -12,7 +12,7 @@ import { formatDateTime } from '@/lib/utils';
 import { Bell, RotateCcw, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-// @coupling Status/type style maps must cover all possible DB enum values
+// @coupling Status/type style maps must cover all notifications.status and notifications.type DB enum values
 const statusStyles: Record<string, { bg: string; text: string }> = {
   pending: { bg: 'bg-yellow-600/20', text: 'text-yellow-400' },
   sent: { bg: 'bg-green-600/20', text: 'text-green-400' },
@@ -53,7 +53,7 @@ export default function NotificationsPage() {
     retryNotification.mutate(id);
   };
 
-  // @sideeffect Resets all failed notifications to pending status for reprocessing
+  // @sideeffect Resets all failed notifications to 'pending' — the send-push edge function will re-process them
   const handleBulkRetry = () => {
     if (!confirm('Retry all failed notifications? This will set them back to pending.')) return;
     bulkRetry.mutate();

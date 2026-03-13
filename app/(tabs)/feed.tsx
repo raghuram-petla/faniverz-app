@@ -43,6 +43,7 @@ export default function FeedScreen() {
   // @sideeffect vote/remove mutations use optimistic updates via TanStack Query cache
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
+  // @coupling: followSet is a Set<"entityType:entityId"> — same composite key format as index.tsx feed
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
@@ -51,6 +52,7 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const router = useRouter();
 
+  // @edge: unlike index.tsx, this does NOT deduplicate — assumes useNewsFeed pages don't overlap
   const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);

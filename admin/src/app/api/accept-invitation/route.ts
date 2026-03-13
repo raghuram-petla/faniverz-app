@@ -9,8 +9,9 @@ import { verifyBearer } from '@/lib/sync-helpers';
  * uses the service role key to create admin_user_roles + admin_ph_assignments.
  */
 // @boundary: public-facing route — caller authenticates via Supabase access token, not admin role
-// @contract: returns { role: string } on success; role is the role_id UUID or 'existing'
+// @contract: returns { role: string } on success; role is the role_id or 'existing'
 // @sideeffect: inserts into admin_user_roles, admin_ph_assignments; updates admin_invitations status
+// @edge: not transactional — if role insert succeeds but PH assignment fails, user has role but no PH scope
 export async function POST(req: NextRequest) {
   try {
     // Verify the caller's identity via their access token

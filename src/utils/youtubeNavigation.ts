@@ -6,6 +6,7 @@ import { WEBVIEW_BASE_URL } from '@/constants/webview';
  * Builds the HTML wrapper for embedding a YouTube video.
  */
 // @boundary generates raw HTML injected into WebView — youtubeId must be sanitized upstream
+// @edge no XSS sanitization — callers must ensure youtubeId contains only [a-zA-Z0-9_-]
 // @invariant autoplay=1 and playsinline=1 are always set; rel=0 disables related videos
 export function buildYouTubeEmbedHtml(youtubeId: string, autoMute = false): string {
   const muteParam = autoMute ? '&mute=1' : '';

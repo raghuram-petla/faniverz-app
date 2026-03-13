@@ -79,7 +79,8 @@ export function CollapsibleProfileLayout({
     [nameWidth, nameHeight],
   );
 
-  // @assumes insets.top is stable after initial render; recalculation on rotation is not handled
+  // @assumes insets.top is stable after initial render; orientation change would break layout math
+  // @coupling scrollViewTop must equal the actual paddingTop of the ScrollView for animations to align
   const scrollViewTop = insets.top + NAV_BAR_HEIGHT;
   const heroAvatarCY = scrollViewTop + 16 + IMAGE_EXPANDED / 2;
   const collapsedCY = insets.top + NAV_BAR_HEIGHT / 2;

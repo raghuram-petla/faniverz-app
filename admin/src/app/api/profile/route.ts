@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// @boundary: admin-only route — caller updates their own profile only (user.id from token)
-// @sideeffect: writes to profiles table; auto-sets updated_at timestamp
+// @boundary: admin-only route — caller updates their own profile only (user.id derived from JWT, not from request body)
+// @sideeffect: writes to profiles table via service role (bypasses RLS); auto-sets updated_at timestamp
 export async function PATCH(req: NextRequest) {
   try {
     const user = await verifyAdmin(req.headers.get('authorization'));

@@ -21,6 +21,8 @@ import type { SemanticTheme } from '@shared/themes';
 import { useCheckUsername, useSetUsername } from '@/features/auth/hooks/useUsername';
 import { useProfile } from '@/features/auth/hooks/useProfile';
 
+// @boundary: Username picker — real-time availability check with debounced DB query
+// @coupling: useCheckUsername (debounced query), useSetUsername (mutation), useProfile (current value)
 export default function UsernameScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

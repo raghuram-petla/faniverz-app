@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     let added = 0;
     let updated = 0;
 
-    // @assumes: sequential processing is intentional — avoids TMDB rate limits from parallel requests
+    // @assumes: sequential processing is intentional — TMDB rate limit is 40 requests/10s; parallel fetches risk 429s
     for (const tmdbId of tmdbIds) {
       try {
         const result = await processMovieFromTmdb(tmdbId, tmdb.apiKey, supabase);

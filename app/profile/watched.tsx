@@ -31,6 +31,8 @@ const SORT_OPTION_KEYS: { key: SortKey; i18nKey: string }[] = [
   { key: 'title', i18nKey: 'profile.sortTitleAZ' },
 ];
 
+// @boundary: Watched movies grid — 2-column layout with sort options and aggregate stats
+// @coupling: useWatchlist returns watched entries with joined movie data (poster, rating, runtime)
 export default function WatchedMoviesScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -38,6 +40,7 @@ export default function WatchedMoviesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  // @contract: useWatchlist destructures the 'watched' property — only items with watched_at set
   const { watched, isLoading, refetch } = useWatchlist(user?.id ?? '');
 
   const [sortKey, setSortKey] = useState<SortKey>('recent');

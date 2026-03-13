@@ -32,6 +32,7 @@ export default function RegisterScreen() {
   const { signUp, isLoading, error } = useEmailAuth();
   const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
   const { signInWithApple, isLoading: appleLoading, isAvailable: appleAvailable } = useAppleAuth();
+  // @coupling: usePhoneAuth uses Supabase signInWithOtp — shares auth session with email flow
   const { sendOtp, verifyOtp, isLoading: phoneLoading, error: phoneError } = usePhoneAuth();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -62,6 +63,7 @@ export default function RegisterScreen() {
       return;
     }
     try {
+      // @sideeffect: signUp stores username in Supabase user_metadata, then a DB trigger copies it to profiles table
       await signUp(email.trim(), password, username.trim());
       router.replace('/(tabs)');
     } catch {

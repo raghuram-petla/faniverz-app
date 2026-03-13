@@ -40,6 +40,7 @@ export function AnimatedNumber({
   // @invariant fromRef captures the display value at animation start to interpolate from
   const fromRef = useRef(0);
 
+  // @edge closure captures stale displayValue — fromRef.current bridges the gap correctly
   useEffect(() => {
     if (!animationsEnabled) {
       setDisplayValue(value);

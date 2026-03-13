@@ -29,6 +29,8 @@ import { getImageUrl } from '@shared/imageUrl';
 // @invariant: bio text must not exceed 150 characters — enforced in handleSave
 const BIO_LIMIT = 150;
 
+// @boundary: Edit profile form — display name, phone, location, bio, and avatar upload
+// @coupling: useProfile, useUpdateProfile, useAvatarUpload — three hooks for read/write/upload
 export default function EditProfileScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -38,6 +40,7 @@ export default function EditProfileScreen() {
   const { user } = useAuth();
   const { data: profile, isLoading } = useProfile();
   const { mutate: updateProfile, isPending: isSaving } = useUpdateProfile();
+  // @sideeffect: pickAndUpload launches image picker, uploads to Supabase storage, then updates profile.avatar_url
   const { pickAndUpload, isUploading } = useAvatarUpload();
 
   const [displayName, setDisplayName] = useState('');

@@ -9,6 +9,8 @@ import { useUpdateProfile } from '@/features/auth/hooks/useUpdateProfile';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { colors as palette } from '@shared/colors';
 
+// @boundary: Privacy toggles — controls profile and watchlist visibility
+// @coupling: useProfile reads, useUpdateProfile writes to profiles table boolean columns
 export default function PrivacySettingsScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();

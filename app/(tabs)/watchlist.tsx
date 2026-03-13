@@ -44,6 +44,8 @@ export default function WatchlistScreen() {
   // @edge userId defaults to '' when user is null — triggers guest view early return below
   const userId = user?.id ?? '';
 
+  // @contract: useWatchlistPaginated splits entries into three buckets server-side by status
+  // @coupling: available/upcoming/watched categorization mirrors deriveMovieStatus in @shared/movieStatus
   const {
     available,
     upcoming,

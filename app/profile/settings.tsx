@@ -14,6 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { useAnimationStore } from '@/stores/useAnimationStore';
 import type { IconName, Section } from '@/components/profile/settingsTypes';
 
+// @boundary: Settings hub — appearance, notifications, privacy, preferences, and about links
+// @coupling: useTheme (mode setter), useAnimationStore, AsyncStorage (push/email prefs), i18n
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -35,8 +37,8 @@ export default function SettingsScreen() {
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
 
-  // Notification preferences are stored locally via AsyncStorage only.
-  // There is no backend table for these settings. Push delivery is controlled
+  // @sync: Notification preferences are stored locally via AsyncStorage only.
+  // @assumes: There is no backend table for these settings. Push delivery is controlled
   // server-side; these toggles control the client's local filtering behavior.
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS)

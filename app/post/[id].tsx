@@ -35,6 +35,8 @@ import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import { PostContentSkeleton } from '@/components/feed/PostContentSkeleton';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
+// @boundary: Post detail — single feed item with comments, voting, and reply input
+// @coupling: useFeedItem, useComments, useAddComment, useDeleteComment — five data hooks
 export default function PostDetailScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -62,7 +64,9 @@ export default function PostDetailScreen() {
     fetchNextPage,
     refetch: refetchComments,
   } = useComments(id ?? '');
+  // @sideeffect: addMutation invalidates comments query cache + increments post.comment_count optimistically
   const addMutation = useAddComment(id ?? '');
+  // @sideeffect: deleteMutation decrements post.comment_count optimistically
   const deleteMutation = useDeleteComment(id ?? '');
 
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchComments);

@@ -115,6 +115,7 @@ export default function SurpriseScreen() {
 
   // @contract When filter is 'all', category is undefined which tells the hook to fetch all categories
   const category = filter === 'all' ? undefined : filter;
+  // @coupling: useSurpriseContent queries Supabase surprise_content table — filtered by category column
   const { data: items = [], isLoading, refetch } = useSurpriseContent(category);
   const { refreshing, onRefresh } = useRefresh(refetch);
   const {

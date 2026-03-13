@@ -51,6 +51,7 @@ export function getFeedTypeColor(contentType: string): string {
 }
 
 // @contract maps backend content_type to human-readable label for UI display
+// @edge default case returns raw contentType string — new backend types render as-is until code is updated
 export function getFeedTypeLabel(contentType: string): string {
   switch (contentType) {
     case 'trailer':

@@ -20,6 +20,8 @@ interface AccountRow {
   onPress: () => void;
 }
 
+// @boundary: Account management — logout and delete account (both destructive actions)
+// @coupling: useEmailAuth (signOut), useDeleteAccount — both interact with Supabase auth
 export default function AccountScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

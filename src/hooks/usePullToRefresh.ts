@@ -20,6 +20,7 @@ export function usePullToRefresh(onRefresh: () => void, refreshing: boolean) {
   onRefreshRef.current = onRefresh;
 
   // @sideeffect syncs React refreshing state into reanimated shared value; resets pullDistance on completion
+  // @edge intentionally omits pullDistance/isRefreshing from deps — stable shared value refs, not state
   useEffect(() => {
     isRefreshing.value = refreshing;
     if (!refreshing) {

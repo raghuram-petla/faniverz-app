@@ -42,6 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoaded(true));
   }, []);
 
+  // @coupling reads useAnimationStore outside React lifecycle — getState() bypasses subscriptions intentionally
   const setMode = useCallback((newMode: ThemeMode) => {
     if (useAnimationStore.getState().animationsEnabled) {
       LayoutAnimation.configureNext(
@@ -75,7 +76,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     [isDark, mode, setMode],
   );
 
-  // Don't render until we've loaded the stored preference to avoid flash
+  // @edge renders null until AsyncStorage load completes — can cause layout flicker if load is slow
   if (!loaded) return null;
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

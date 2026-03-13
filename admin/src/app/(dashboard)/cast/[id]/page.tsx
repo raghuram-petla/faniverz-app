@@ -86,7 +86,7 @@ export default function EditActorPage() {
     }
   }
 
-  // @sideeffect: hard-deletes actor row — cascades to movie_cast join records
+  // @sideeffect: hard-deletes actor row — DB CASCADE removes movie_cast join records referencing this actor
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
       try {

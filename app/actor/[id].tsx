@@ -50,9 +50,11 @@ export default function ActorDetailScreen() {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
+  // @assumes: id is a UUID string from the actors table; undefined if deep-linked with invalid param
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  // @boundary: useActorDetail fetches actor + filmography (credits) in a single query
+  // @boundary: useActorDetail fetches actor + filmography (credits) via Supabase RPC or joined select
+  // @coupling: filmography items are used by both ActorKnownFor and ActorFilmography components below
   const { actor, filmography, isLoading, refetch } = useActorDetail(id ?? '');
   const [showPhoto, setShowPhoto] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
@@ -116,6 +118,7 @@ export default function ActorDetailScreen() {
     );
   }
 
+  // @nullable: actor.gender is 0 (unknown) when TMDB doesn't have the data — no label shown
   const genderLabel = actor.gender ? t(GENDER_LABEL_KEYS[actor.gender]) : null;
   // @edge: technicians show their first crew role name; falls back to generic "Technician" label
   const personTypeLabel =

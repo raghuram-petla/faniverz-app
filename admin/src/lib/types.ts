@@ -74,6 +74,7 @@ export interface AuditLogEntry {
   impersonating_display_name: string | null;
 }
 
+// @coupling: AUDIT_ENTITY_TYPES must match all entity_type values written by audit log triggers/hooks
 export const AUDIT_ENTITY_TYPES = [
   'actor',
   'movie',
@@ -148,16 +149,16 @@ export interface FeedComment {
 // ============================================================
 // RBAC Types
 //
-// Role hierarchy (highest → lowest):
+// @invariant: Role hierarchy (highest → lowest):
 //   root > super_admin > admin > production_house_admin
 //
-// Each role can only manage/impersonate roles BELOW it:
+// @contract: Each role can only manage/impersonate roles BELOW it:
 //   root         → can manage super_admin, admin, PH admin
 //   super_admin  → can manage admin, PH admin (NOT other super_admins)
 //   admin        → can manage PH admin only
 //   PH admin     → cannot manage anyone
 //
-// root is SQL-only — cannot be assigned via the admin UI.
+// @boundary: root is SQL-only — cannot be assigned via the admin UI.
 // ============================================================
 
 export type AdminRoleId = 'root' | 'super_admin' | 'admin' | 'production_house_admin';

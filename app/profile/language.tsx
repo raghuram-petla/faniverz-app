@@ -23,6 +23,8 @@ const LANGUAGES: Language[] = [
   { code: 'te', label: 'Telugu', native: 'Telugu' },
 ];
 
+// @boundary: Language picker — currently supports English and Telugu
+// @coupling: i18n singleton from @/i18n, AsyncStorage for persistence across app restarts
 export default function LanguageScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();

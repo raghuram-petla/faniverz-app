@@ -36,6 +36,7 @@ export default function LoginScreen() {
   // @edge appleAvailable is false on Android — Apple sign-in button conditionally hidden
   const { signInWithApple, isLoading: appleLoading, isAvailable: appleAvailable } = useAppleAuth();
   const { sendOtp, verifyOtp, isLoading: phoneLoading, error: phoneError } = usePhoneAuth();
+  // @coupling: setIsGuest writes to AuthProvider Zustand state — checked by useAuthGate throughout the app
   const { setIsGuest } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

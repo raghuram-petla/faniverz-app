@@ -21,7 +21,7 @@ interface CardProps {
 /** @contract shows movie status badge, rating, genres; actions: remove + mark as watched */
 export function AvailableCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
-  /** @sideeffect remove and markWatched trigger TanStack Query mutations that invalidate watchlist cache */
+  /** @sideeffect remove and markWatched trigger TanStack Query mutations that invalidate ['watchlist'] cache key */
   const { remove, markWatched } = useWatchlistMutations();
   /** @nullable movie may be null if the referenced movie was deleted from DB */
   const movie = entry.movie;

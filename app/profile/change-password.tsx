@@ -10,6 +10,8 @@ import type { SemanticTheme } from '@shared/themes';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import { colors as palette } from '@shared/colors';
 
+// @boundary: Change password — sends reset email to user's registered address (no inline form)
+// @coupling: useEmailAuth.resetPassword — same Supabase function used by forgot-password.tsx
 export default function ChangePasswordScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();

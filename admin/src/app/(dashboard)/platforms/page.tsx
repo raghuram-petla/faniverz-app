@@ -76,7 +76,7 @@ export default function PlatformsPage() {
     }
   };
 
-  // @sideeffect Cascade: deleting a platform also removes all its OTT release associations
+  // @sideeffect Cascade: DB foreign key ON DELETE CASCADE removes all ott_releases rows referencing this platform
   const handleDelete = (id: string) => {
     if (!confirm('Delete this platform? This will also remove all related OTT releases.')) return;
     deletePlatform.mutate(id);

@@ -26,6 +26,8 @@ import type { MovieVideo } from '@/types';
 
 type MediaTabName = 'videos' | 'photos';
 
+// @boundary: Media gallery — videos (grouped by type) and photos for a single movie
+// @coupling: VIDEO_TYPES from shared constants, useMovieDetail for videos + posters data
 export default function MediaScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -37,6 +39,7 @@ export default function MediaScreen() {
   const { data: movie, isLoading } = useMovieDetail(id ?? '');
 
   const [activeTab, setActiveTab] = useState<MediaTabName>('videos');
+  // @invariant: 'All' must be the first category; other categories are derived from VIDEO_TYPES
   const [activeCategory, setActiveCategory] = useState('All');
   const scrollOffset = useSharedValue(0);
 

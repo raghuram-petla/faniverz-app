@@ -23,6 +23,7 @@ interface DiscoverFilterModalProps {
 }
 
 /** @invariant genre list must stay in sync with the genres column values in the movies table */
+/** @coupling admin panel uses the same genre list in admin/src/app/movies — changes must be mirrored */
 export const GENRES = [
   'Action',
   'Drama',

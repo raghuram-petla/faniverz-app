@@ -21,6 +21,8 @@ import { extractReleaseYear } from '@/utils/formatDate';
 import { ProductionHouseDetailSkeleton } from '@/components/productionHouse/ProductionHouseDetailSkeleton';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
+// @boundary: Production house detail — collapsible header layout with movie filmography grid
+// @coupling: useProductionHouseDetail, useEntityFollows, useFollowEntity, useUnfollowEntity
 export default function ProductionHouseDetailScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();

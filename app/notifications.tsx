@@ -87,6 +87,8 @@ function NotificationItem({
   );
 }
 
+// @boundary: Notification center — shows release/watchlist/trending/reminder notifications
+// @coupling: useNotifications, useUnreadCount, useNotificationMutations from features/notifications
 export default function NotificationsScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();

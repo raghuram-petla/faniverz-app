@@ -61,8 +61,8 @@ export default function UsersPage() {
     return true;
   });
 
-  // @sideeffect Permanently removes admin role — user loses all admin panel access
-  // @invariant Guards against revoking the last root or super_admin to prevent lockout
+  // @sideeffect Deletes admin_user_roles row — user loses all admin panel access immediately (no soft-delete)
+  // @invariant Guards against revoking the last root or super_admin to prevent full lockout
   function handleRevoke(userId: string, roleId: string) {
     if (roleId === 'root' && activeRootCount <= 1)
       return void alert('Cannot revoke the last root user.');

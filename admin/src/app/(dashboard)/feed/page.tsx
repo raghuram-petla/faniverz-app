@@ -28,8 +28,8 @@ export default function FeedPage() {
   const featureMutation = useToggleFeatureFeed();
   const reorderMutation = useReorderFeed();
 
-  // @sideeffect Reorders all items optimistically — sends full display_order map to backend
-  // @assumes items array is the source of truth for current ordering
+  // @sideeffect Reorders all items optimistically — sends full display_order map to backend via batch update
+  // @assumes items array is TanStack Query cache (optimistic update not applied locally — relies on re-fetch)
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
