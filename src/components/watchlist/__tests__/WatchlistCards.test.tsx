@@ -40,7 +40,16 @@ const mockEntry = {
   },
 } as any;
 
+const nullMovieEntry = { movie: null } as any;
+
 describe('AvailableCard', () => {
+  it('returns null when movie is missing', () => {
+    const { toJSON } = render(
+      <AvailableCard entry={nullMovieEntry} userId="u1" styles={mockStyles} />,
+    );
+    expect(toJSON()).toBeNull();
+  });
+
   it('renders movie title', () => {
     render(<AvailableCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
@@ -58,6 +67,13 @@ describe('AvailableCard', () => {
 });
 
 describe('UpcomingCard', () => {
+  it('returns null when movie is missing', () => {
+    const { toJSON } = render(
+      <UpcomingCard entry={nullMovieEntry} userId="u1" styles={mockStyles} />,
+    );
+    expect(toJSON()).toBeNull();
+  });
+
   it('renders movie title', () => {
     render(<UpcomingCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
@@ -70,6 +86,13 @@ describe('UpcomingCard', () => {
 });
 
 describe('WatchedCard', () => {
+  it('returns null when movie is missing', () => {
+    const { toJSON } = render(
+      <WatchedCard entry={nullMovieEntry} userId="u1" styles={mockStyles} />,
+    );
+    expect(toJSON()).toBeNull();
+  });
+
   it('renders movie title', () => {
     render(<WatchedCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     expect(screen.getByText('Pushpa 2')).toBeTruthy();

@@ -61,6 +61,15 @@ describe('ActorKnownFor', () => {
     expect(screen.queryByText('Movie 0')).toBeNull();
   });
 
+  it('skips credits with null movie', () => {
+    const credits = [
+      makeCredit('c1', 9.0, 'Top Movie'),
+      { id: 'c2', credit_type: 'cast', role_name: 'Hero', movie: null } as unknown as FilmCredit,
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Top Movie')).toBeTruthy();
+  });
+
   it('navigates to movie on card press', () => {
     const credits = [makeCredit('c1', 9.0, 'Top Movie')];
     render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);

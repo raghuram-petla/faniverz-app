@@ -33,7 +33,8 @@ export function ActorKnownFor({ credits, onMoviePress }: ActorKnownForProps) {
         contentContainerStyle={{ gap: 12 }}
       >
         {topCredits.map((credit) => {
-          const movie = credit.movie!;
+          const movie = credit.movie;
+          if (!movie) return null;
           return (
             <TouchableOpacity
               key={credit.id}

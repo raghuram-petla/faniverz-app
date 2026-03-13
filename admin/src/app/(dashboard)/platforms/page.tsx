@@ -12,6 +12,7 @@ import { useImageUpload } from '@/hooks/useImageUpload';
 import type { OTTPlatform } from '@/lib/types';
 import { Monitor, Plus, Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { getImageUrl } from '@shared/imageUrl';
+import { colors } from '@shared/colors';
 
 interface PlatformFormData {
   name: string;
@@ -62,7 +63,7 @@ export default function PlatformsPage() {
         {
           ...payload,
           logo: form.name.charAt(0).toUpperCase() || '?',
-          color: '#333333',
+          color: colors.zinc900,
           display_order: 0,
         },
         { onSuccess: handleClose },

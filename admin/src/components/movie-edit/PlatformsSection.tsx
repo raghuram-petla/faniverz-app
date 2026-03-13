@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Film, Plus, X } from 'lucide-react';
 import type { OTTPlatform, MoviePlatform } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
+import { colors } from '@shared/colors';
 import { INPUT_CLASSES } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
 
@@ -43,7 +44,7 @@ export function PlatformsSection({
             >
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
-                style={{ backgroundColor: mp.platform?.color || '#333' }}
+                style={{ backgroundColor: mp.platform?.color || colors.zinc900 }}
               >
                 {mp.platform?.logo_url ? (
                   <img

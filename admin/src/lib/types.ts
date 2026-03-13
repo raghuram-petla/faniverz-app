@@ -166,6 +166,16 @@ export interface EntityFollow {
   profile?: { id: string; display_name: string | null; email: string | null };
 }
 
+export interface FeedVote {
+  id: string;
+  feed_item_id: string;
+  user_id: string;
+  vote_type: 'up' | 'down';
+  created_at: string;
+  profile?: { id: string; display_name: string | null; email: string | null };
+  feed_item?: { id: string; title: string };
+}
+
 // ============================================================
 // RBAC Types
 // ============================================================

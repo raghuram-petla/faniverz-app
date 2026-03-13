@@ -114,7 +114,11 @@ export default function ProductionHouseDetailScreen() {
         />
       }
       heroContent={
-        house.description ? <Text style={styles.description}>{house.description}</Text> : null
+        house.description ? (
+          <Text style={styles.description} numberOfLines={4}>
+            {house.description}
+          </Text>
+        ) : null
       }
       onScroll={handlePullScroll}
       onScrollBeginDrag={handleScrollBeginDrag}

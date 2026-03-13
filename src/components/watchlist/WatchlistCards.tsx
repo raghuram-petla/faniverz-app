@@ -21,7 +21,8 @@ interface CardProps {
 export function AvailableCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
   const { remove, markWatched } = useWatchlistMutations();
-  const movie = entry.movie!;
+  const movie = entry.movie;
+  if (!movie) return null;
 
   const status = deriveMovieStatus(movie, 0);
   const statusLabel = getMovieStatusLabel(status);
@@ -92,7 +93,8 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const { remove, markWatched } = useWatchlistMutations();
-  const movie = entry.movie!;
+  const movie = entry.movie;
+  if (!movie) return null;
 
   const releaseDateFormatted = movie.release_date
     ? new Date(movie.release_date).toLocaleDateString('en-IN', {
@@ -164,7 +166,8 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
 export function WatchedCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
   const { remove, moveBack } = useWatchlistMutations();
-  const movie = entry.movie!;
+  const movie = entry.movie;
+  if (!movie) return null;
 
   return (
     <TouchableOpacity

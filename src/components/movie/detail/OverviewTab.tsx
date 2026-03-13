@@ -24,7 +24,11 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
 
   return (
     <View style={styles.overviewTab}>
-      {movie.synopsis && <Text style={styles.synopsis}>{movie.synopsis}</Text>}
+      {movie.synopsis && (
+        <Text style={styles.synopsis} numberOfLines={6}>
+          {movie.synopsis}
+        </Text>
+      )}
       {movie.genres.length > 0 && (
         <View style={styles.genreRow}>
           {movie.genres.map((g) => (

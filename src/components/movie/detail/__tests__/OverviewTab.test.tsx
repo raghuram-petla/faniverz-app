@@ -73,9 +73,11 @@ const onExploreMedia = jest.fn();
 describe('OverviewTab', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('renders synopsis text', () => {
+  it('renders synopsis text with numberOfLines truncation', () => {
     render(<OverviewTab movie={mockMovie} onExploreMedia={onExploreMedia} />);
-    expect(screen.getByText(/continuation of Pushpa Raj/)).toBeTruthy();
+    const synopsisEl = screen.getByText(/continuation of Pushpa Raj/);
+    expect(synopsisEl).toBeTruthy();
+    expect(synopsisEl.props.numberOfLines).toBe(6);
   });
 
   it('renders genre pills', () => {

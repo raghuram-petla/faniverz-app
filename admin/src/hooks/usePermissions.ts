@@ -18,6 +18,7 @@ export type AdminPage =
   | 'watchlist'
   | 'follows'
   | 'favorites'
+  | 'feed-votes'
   | 'sync'
   | 'audit'
   | 'app-users'
@@ -52,6 +53,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'watchlist',
     'follows',
     'favorites',
+    'feed-votes',
     'sync',
     'audit',
     'app-users',
@@ -72,6 +74,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'watchlist',
     'follows',
     'favorites',
+    'feed-votes',
     'sync',
     'audit',
     'app-users',

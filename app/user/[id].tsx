@@ -78,7 +78,9 @@ export default function UserProfileScreen() {
           {/* Info */}
           {profile.bio ? (
             <View style={styles.infoSection}>
-              <Text style={styles.bio}>{profile.bio}</Text>
+              <Text style={styles.bio} numberOfLines={4}>
+                {profile.bio}
+              </Text>
             </View>
           ) : null}
 
