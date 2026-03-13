@@ -24,6 +24,7 @@ export function Header() {
   const [imgError, setImgError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Hierarchy: root and super_admin can impersonate (root > super_admin > admin > PH admin)
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'root';
   const currentTheme = theme ?? 'system';
 
@@ -104,6 +105,9 @@ export function Header() {
                   ))}
                 </div>
               </div>
+              {/* Only show Impersonate option for root/super_admin when NOT already impersonating.
+                  This opens the role-selection modal (not user-specific). For user-specific
+                  impersonation, use the eye icon in the AdminsTable on the Users page. */}
               {isSuperAdmin && !isImpersonating && (
                 <button
                   onClick={() => {

@@ -93,12 +93,24 @@ const CREATE_ACCESS: Record<AdminRoleId, Set<AdminEntity>> = {
   production_house_admin: new Set(['movie', 'actor', 'ott_release']),
 };
 
+/**
+ * Role-based permissions hook.
+ *
+ * Uses the EFFECTIVE user (real or impersonated) so that all permission checks
+ * reflect the currently-active role. This is critical for impersonation — when
+ * a root user impersonates as super_admin, they should see exactly what a real
+ * super_admin would see, including which actions are available.
+ *
+ * Role hierarchy: root > super_admin > admin > production_house_admin
+ * See AdminRoleId in types.ts for the full hierarchy documentation.
+ */
 export function usePermissions() {
   const user = useEffectiveUser();
   const role = user?.role ?? null;
   const phIds = user?.productionHouseIds ?? [];
 
   const isRoot = role === 'root';
+  // isSuperAdmin includes root — root inherits all super_admin privileges
   const isSuperAdmin = role === 'super_admin' || isRoot;
   const isAdmin = role === 'admin';
   const isPHAdmin = role === 'production_house_admin';
@@ -134,15 +146,24 @@ export function usePermissions() {
     return canUpdate(entity, ownerId);
   }
 
-  /** Whether the current user can block/unblock/revoke an admin with the given role */
+  /**
+   * Whether the current user can manage (block/unblock/revoke/impersonate)
+   * an admin with the given role.
+   *
+   * Enforces strict hierarchy — a role can only act on roles BELOW it:
+   *   root         → super_admin, admin, PH admin (everything except root)
+   *   super_admin  → admin, PH admin (NOT super_admin or root)
+   *   admin        → PH admin only
+   *   PH admin     → nobody
+   *
+   * This is also used by AdminsTable to gate the impersonate (eye) button.
+   * If you change this logic, update the impersonate button condition too.
+   */
   function canManageAdmin(targetRole: AdminRoleId): boolean {
     if (!role) return false;
-    // Root can manage anyone except other root users
     if (isRoot) return targetRole !== 'root';
-    // Super admin can manage admin + PH admin only (not super_admin or root)
     if (role === 'super_admin')
       return targetRole === 'admin' || targetRole === 'production_house_admin';
-    // Admin can only manage PH admins
     if (isAdmin) return targetRole === 'production_house_admin';
     return false;
   }

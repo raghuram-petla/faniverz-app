@@ -140,15 +140,21 @@ export function AdminsTable({
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {!isSelf && isSuperAdmin && u.status === 'active' && (
-                      <button
-                        onClick={() => onImpersonate(u)}
-                        className="p-2 text-on-surface-subtle hover:text-amber-500 transition-colors"
-                        title="Impersonate"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    )}
+                    {/* Hierarchy: only show impersonate for roles BELOW the current user.
+                        canManageAdmin enforces: root→all except root, super_admin→admin+PH, admin→PH.
+                        isSuperAdmin gates overall ability to impersonate (admins cannot). */}
+                    {!isSelf &&
+                      isSuperAdmin &&
+                      canManageAdmin(u.role_id) &&
+                      u.status === 'active' && (
+                        <button
+                          onClick={() => onImpersonate(u)}
+                          className="p-2 text-on-surface-subtle hover:text-amber-500 transition-colors"
+                          title="Impersonate"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      )}
                     {canManage && u.status === 'active' && (
                       <button
                         onClick={() => onBlock(u)}

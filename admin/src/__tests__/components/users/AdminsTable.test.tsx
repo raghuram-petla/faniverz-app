@@ -281,6 +281,60 @@ describe('AdminsTable', () => {
     expect(screen.queryByTitle('Block')).not.toBeInTheDocument();
   });
 
+  // Impersonate hierarchy tests — role hierarchy: root > super_admin > admin > PH admin
+  // A user can only impersonate roles BELOW them, never at same level or above.
+  describe('impersonate hierarchy', () => {
+    it('super admin cannot impersonate other super admins', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-sa', role_id: 'super_admin', status: 'active' })],
+        isSuperAdmin: true,
+        canManageAdmin: (role) => role === 'admin' || role === 'production_house_admin',
+        realUserId: 'current-user',
+      });
+      expect(screen.queryByTitle('Impersonate')).not.toBeInTheDocument();
+    });
+
+    it('super admin can impersonate admin users', () => {
+      renderTable({
+        users: [makeUser({ id: 'admin-user', role_id: 'admin', status: 'active' })],
+        isSuperAdmin: true,
+        canManageAdmin: (role) => role === 'admin' || role === 'production_house_admin',
+        realUserId: 'current-user',
+      });
+      expect(screen.getByTitle('Impersonate')).toBeInTheDocument();
+    });
+
+    it('super admin can impersonate PH admin users', () => {
+      renderTable({
+        users: [makeUser({ id: 'ph-user', role_id: 'production_house_admin', status: 'active' })],
+        isSuperAdmin: true,
+        canManageAdmin: (role) => role === 'admin' || role === 'production_house_admin',
+        realUserId: 'current-user',
+      });
+      expect(screen.getByTitle('Impersonate')).toBeInTheDocument();
+    });
+
+    it('root can impersonate super admin users', () => {
+      renderTable({
+        users: [makeUser({ id: 'sa-user', role_id: 'super_admin', status: 'active' })],
+        isSuperAdmin: true,
+        canManageAdmin: (role) => role !== 'root',
+        realUserId: 'current-user',
+      });
+      expect(screen.getByTitle('Impersonate')).toBeInTheDocument();
+    });
+
+    it('root cannot impersonate other root users', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-root', role_id: 'root', status: 'active' })],
+        isSuperAdmin: true,
+        canManageAdmin: (role) => role !== 'root',
+        realUserId: 'current-user',
+      });
+      expect(screen.queryByTitle('Impersonate')).not.toBeInTheDocument();
+    });
+  });
+
   // Root role tests
   describe('root role display', () => {
     it('shows root as static badge with amber styling, never as dropdown', () => {

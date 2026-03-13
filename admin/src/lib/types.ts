@@ -179,6 +179,17 @@ export interface FeedVote {
 
 // ============================================================
 // RBAC Types
+//
+// Role hierarchy (highest → lowest):
+//   root > super_admin > admin > production_house_admin
+//
+// Each role can only manage/impersonate roles BELOW it:
+//   root         → can manage super_admin, admin, PH admin
+//   super_admin  → can manage admin, PH admin (NOT other super_admins)
+//   admin        → can manage PH admin only
+//   PH admin     → cannot manage anyone
+//
+// root is SQL-only — cannot be assigned via the admin UI.
 // ============================================================
 
 export type AdminRoleId = 'root' | 'super_admin' | 'admin' | 'production_house_admin';

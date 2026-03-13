@@ -14,6 +14,10 @@ export interface ImpersonateModalProps {
 
 export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps) {
   const { startImpersonation, startRoleImpersonation, realUser } = useImpersonation();
+  // Role dropdown respects hierarchy — only show roles BELOW the real user's role:
+  //   root         → super_admin, admin, PH admin
+  //   super_admin  → admin, PH admin (no super_admin option)
+  // root is never shown as an impersonation target (SQL-only role).
   const isRoot = realUser?.role === 'root';
   const [role, setRole] = useState<AdminRoleId>('admin');
   const [selectedPhIds, setSelectedPhIds] = useState<string[]>([]);
@@ -114,6 +118,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
                 }}
                 className="w-full bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
               >
+                {/* Hierarchy: root sees super_admin option; super_admin does not */}
                 {isRoot && <option value="super_admin">Super Admin</option>}
                 <option value="admin">Admin</option>
                 <option value="production_house_admin">PH Admin</option>

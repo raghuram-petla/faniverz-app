@@ -66,6 +66,9 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
   const realUserRef = useRef(realUser);
   realUserRef.current = realUser;
 
+  // Only root and super_admin can impersonate (hierarchy: root > super_admin > admin > PH admin).
+  // Uses the REAL user's role, not the effective role — impersonation ability is based on
+  // who you actually are, not who you're pretending to be.
   const isSuperAdmin = realUser?.role === 'super_admin' || realUser?.role === 'root';
 
   // Restore active session on mount
@@ -102,6 +105,7 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
 
   const startImpersonation = useCallback(async (targetUserId: string) => {
     const user = realUserRef.current;
+    // Guard: only root/super_admin can impersonate (hierarchy enforced)
     if (!user || (user.role !== 'super_admin' && user.role !== 'root')) return;
     try {
       const target = await buildTargetUser(targetUserId);
@@ -121,6 +125,7 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
 
   const startRoleImpersonation = useCallback(async (role: AdminRoleId, phIds: string[] = []) => {
     const user = realUserRef.current;
+    // Guard: only root/super_admin can impersonate (hierarchy enforced)
     if (!user || (user.role !== 'super_admin' && user.role !== 'root')) return;
     try {
       await endActiveSession(user.id);
