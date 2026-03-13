@@ -3,18 +3,23 @@ import { useState, useRef } from 'react';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { Loader2, Upload, X } from 'lucide-react';
 
+/** @contract onSubmit receives cleaned data with nulls for empty optional fields */
 export interface AddActorFormProps {
   onSubmit: (data: {
     name: string;
+    /** @nullable empty string in form state is coerced to null before submission */
     photo_url: string | null;
+    /** @nullable empty date string coerced to null */
     birth_date: string | null;
     person_type: 'actor' | 'technician';
+    /** @nullable string-to-number conversion; empty string becomes null */
     height_cm: number | null;
   }) => Promise<void>;
   isPending: boolean;
   onCancel: () => void;
 }
 
+/** @invariant form uses empty strings as sentinel for "no value" — coerced to null on submit */
 const EMPTY_FORM = {
   name: '',
   photo_url: '',
@@ -28,6 +33,7 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
   const { upload, uploading } = useImageUpload('/api/upload/actor-photo');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  /** @sideeffect uploads file to /api/upload/actor-photo, then sets photo_url in form state */
   async function handlePhotoUpload(file: File) {
     try {
       const url = await upload(file);
@@ -37,6 +43,10 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
     }
   }
 
+  /**
+   * @boundary coerces form strings to typed payload (empty→null, string→number)
+   * @sideeffect resets form to EMPTY_FORM after successful submission
+   */
   async function handleAdd() {
     if (!form.name.trim()) return;
     await onSubmit({
@@ -65,6 +75,7 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
+            /** @edge e.target.value reset allows re-selecting the same file */
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handlePhotoUpload(file);

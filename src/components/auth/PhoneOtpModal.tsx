@@ -36,8 +36,11 @@ export function PhoneOtpModal({
   const { t } = useTranslation();
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  /** @invariant two-step flow: 'phone' -> 'otp'; back navigation resets to 'phone' */
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
 
+  /** @sideeffect calls onSendOtp and advances to OTP step on success */
+  /** @boundary errors are caught and surfaced via the error prop from parent */
   const handleSend = async () => {
     if (!phone.trim()) return;
     try {
@@ -48,6 +51,7 @@ export function PhoneOtpModal({
     }
   };
 
+  /** @sideeffect verifies OTP, closes modal, and invokes onSuccess callback on success */
   const handleVerify = async () => {
     if (!otp.trim()) return;
     try {
@@ -59,6 +63,7 @@ export function PhoneOtpModal({
     }
   };
 
+  /** @sideeffect resets all local state (phone, otp, step) before calling parent onClose */
   const handleClose = () => {
     setPhone('');
     setOtp('');

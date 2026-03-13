@@ -26,6 +26,7 @@ import {
   useActiveSection,
 } from '@/components/movie-edit';
 
+// @coupling: useMovieAddState manages identical section state as useMovieEditState but without server-load; both share movie-edit components
 export default function NewMoviePage() {
   const {
     form,
@@ -71,6 +72,7 @@ export default function NewMoviePage() {
     handleSubmit,
   } = useMovieAddState();
 
+  // @sync: useActiveSection uses IntersectionObserver to highlight the section nav based on scroll position
   const { activeId: activeSection, scrollTo } = useActiveSection(MOVIE_SECTIONS.map((s) => s.id));
 
   return (
@@ -89,6 +91,8 @@ export default function NewMoviePage() {
               </span>
             )}
           </div>
+          {/* @sideeffect: handleSubmit creates the movie row + all related join records (cast, platforms, posters, etc.) in a single batch */}
+          {/* @invariant: button disabled until at least one field is filled (isDirty) */}
           <button
             onClick={() => handleSubmit()}
             disabled={!isDirty || isSaving}
@@ -237,6 +241,7 @@ export default function NewMoviePage() {
         </div>
 
         {/* Right column — Preview */}
+        {/* @coupling: PreviewPanel renders a device-framed mobile movie detail preview, mirrors the mobile MovieDetail screen */}
         <PreviewPanel form={form} />
       </div>
     </div>

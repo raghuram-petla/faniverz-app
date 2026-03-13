@@ -22,11 +22,13 @@ import Link from 'next/link';
 type Tab = 'admins' | 'invitations';
 type StatusFilter = 'active' | 'blocked' | 'all';
 
+// @coupling Heavy dependency on usePermissions for role hierarchy enforcement throughout
 export default function UsersPage() {
   const [tab, setTab] = useState<Tab>('admins');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
   const [impersonateTarget, setImpersonateTarget] = useState<AdminUserWithDetails | null>(null);
   const [blockTarget, setBlockTarget] = useState<AdminUserWithDetails | null>(null);
+  // @assumes realUser is the actual authenticated user (not impersonated) for self-protection checks
   const { user: realUser } = useAuth();
   const { role, isSuperAdmin, canManageAdmin } = usePermissions();
   const { data: users, isLoading: usersLoading } = useAdminUserList();
@@ -37,12 +39,14 @@ export default function UsersPage() {
   const blockAdminMut = useBlockAdmin();
   const unblockAdmin = useUnblockAdmin();
 
+  // @invariant Must always have at least 1 active root and 1 active super_admin — prevents lockout
   const activeRootCount =
     users?.filter((u) => u.role_id === 'root' && u.status === 'active').length ?? 0;
   const activeSuperAdminCount =
     users?.filter((u) => u.role_id === 'super_admin' && u.status === 'active').length ?? 0;
 
   // Each role only sees users at their own level and below
+  // @boundary Role hierarchy enforced client-side — higher-ranked users are hidden
   const ROLE_RANK: Record<string, number> = {
     root: 4,
     super_admin: 3,
@@ -50,12 +54,15 @@ export default function UsersPage() {
     production_house_admin: 1,
   };
   const myRank = ROLE_RANK[role ?? ''] ?? 0;
+  // @edge Unknown role_id defaults to rank 0 via nullish coalesce
   const visibleUsers = users?.filter((u) => {
     if (ROLE_RANK[u.role_id] > myRank) return false;
     if (statusFilter !== 'all' && u.status !== statusFilter) return false;
     return true;
   });
 
+  // @sideeffect Permanently removes admin role — user loses all admin panel access
+  // @invariant Guards against revoking the last root or super_admin to prevent lockout
   function handleRevoke(userId: string, roleId: string) {
     if (roleId === 'root' && activeRootCount <= 1)
       return void alert('Cannot revoke the last root user.');
@@ -65,6 +72,7 @@ export default function UsersPage() {
     revokeAdmin.mutate(userId, { onError: (err: Error) => alert(`Error: ${err.message}`) });
   }
 
+  // @sideeffect Blocks admin and records blockedBy + reason for audit trail
   function handleBlock(reason: string) {
     if (!blockTarget || !realUser) return;
     if (blockTarget.role_id === 'root' && activeRootCount <= 1)

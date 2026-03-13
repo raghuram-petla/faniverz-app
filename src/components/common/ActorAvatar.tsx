@@ -8,16 +8,18 @@ import { colors as palette } from '@shared/colors';
 import { Actor } from '@/types';
 import { getImageUrl, ImageSize } from '@shared/imageUrl';
 
+/** @boundary Maps display pixel size to CDN image variant to avoid downloading oversized assets */
 function photoVariant(displaySize: number): ImageSize {
   if (displaySize <= 80) return 'sm';
   if (displaySize <= 160) return 'md';
   return 'lg';
 }
 
-// TMDB gender encoding
+// @coupling TMDB gender encoding: 0=unknown, 1=female, 2=male
 const GENDER_FEMALE = 1;
 const GENDER_MALE = 2;
 
+/** @assumes birthDate is a valid ISO date string from the DB */
 function isMinor(birthDate: string): boolean {
   const birth = new Date(birthDate);
   const now = new Date();
@@ -32,7 +34,9 @@ type AvatarConfig = {
   bgKey: 'default' | 'female' | 'minorMale' | 'minorFemale';
 };
 
+/** @nullable actor can be undefined — defaults to gender-neutral icon with default bg */
 function resolveConfig(actor: Actor | undefined): AvatarConfig {
+  // @edge gender defaults to 0 (unknown) when actor is undefined
   const gender = actor?.gender ?? 0;
   const minor = actor?.birth_date ? isMinor(actor.birth_date) : false;
 
@@ -57,6 +61,10 @@ interface Props {
   size?: number;
 }
 
+/**
+ * @contract Renders actor photo when available, otherwise a gender/age-aware icon placeholder.
+ * @edge Falls back to PLACEHOLDER_AVATAR if getImageUrl returns null.
+ */
 export function ActorAvatar({ actor, size = 64 }: Props) {
   const { colors, isDark } = useTheme();
 

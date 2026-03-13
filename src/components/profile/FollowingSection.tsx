@@ -22,6 +22,7 @@ const ENTITY_LABEL_KEYS: Record<FeedEntityType, string> = {
   user: 'profile.followingUsers',
 };
 
+/** @invariant shows at most 6 items in the preview grid; overflow triggers "See more" link */
 const MAX_PREVIEW = 6;
 
 export function FollowingSection({ follows, onEntityPress, onViewAll }: FollowingSectionProps) {
@@ -29,9 +30,11 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
   const { theme } = useTheme();
   const styles = createStyles(theme);
 
+  /** @edge empty follows array renders nothing — parent should handle the empty state */
   if (follows.length === 0) return null;
 
   const preview = follows.slice(0, MAX_PREVIEW);
+  /** @sync groups all follows by entity_type for category chip counts */
   const grouped = new Map<FeedEntityType, number>();
   for (const f of follows) {
     grouped.set(f.entity_type, (grouped.get(f.entity_type) ?? 0) + 1);
@@ -60,6 +63,7 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
       {/* Preview grid */}
       <View style={styles.grid}>
         {preview.map((f) => {
+          /** @contract actors get photo placeholder; all other entity types get poster placeholder */
           const placeholder = f.entity_type === 'actor' ? PLACEHOLDER_PHOTO : PLACEHOLDER_POSTER;
           const imageUrl = getImageUrl(f.image_url, 'sm') ?? placeholder;
           return (

@@ -16,7 +16,9 @@ import {
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  // @coupling usePermissions determines both stat scoping and quick-action visibility
   const { isPHAdmin, productionHouseIds, canViewPage } = usePermissions();
+  // @boundary PH admins see only their production house stats; others see global counts
   const { data: stats, isLoading } = useDashboardStats(isPHAdmin ? productionHouseIds : undefined);
 
   const quickActions = [
@@ -42,7 +44,7 @@ export default function DashboardPage() {
       icon: Newspaper,
       color: 'text-amber-500',
       bgColor: 'bg-amber-600/20',
-      show: !isPHAdmin,
+      show: !isPHAdmin, // @invariant PH admins cannot create feed posts
     },
     {
       label: 'Add OTT Release',
@@ -50,7 +52,7 @@ export default function DashboardPage() {
       icon: Tv,
       color: 'text-purple-500',
       bgColor: 'bg-purple-600/20',
-      show: canViewPage('ott') && !isPHAdmin,
+      show: canViewPage('ott') && !isPHAdmin, // @invariant Requires OTT page permission AND non-PH role
     },
     {
       label: 'Trigger Sync',
@@ -58,7 +60,7 @@ export default function DashboardPage() {
       icon: RefreshCw,
       color: 'text-blue-500',
       bgColor: 'bg-blue-600/20',
-      show: canViewPage('sync'),
+      show: canViewPage('sync'), // @invariant Sync restricted by role-based page access
     },
   ];
 
@@ -120,6 +122,7 @@ export default function DashboardPage() {
                 </div>
                 <span className="text-sm text-on-surface-muted">{card.label}</span>
               </div>
+              {/* @edge Defaults to 0 when stats haven't loaded yet */}
               {isLoading ? (
                 <div className="h-9 w-16 bg-outline/30 rounded animate-pulse" />
               ) : (

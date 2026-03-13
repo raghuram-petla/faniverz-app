@@ -12,6 +12,7 @@ export interface ActivityItemProps {
   onPress: () => void;
 }
 
+/** @boundary action_type is a string from the DB; unknown types fall through to vote config */
 const ACTION_CONFIG: Record<string, { icon: string; labelKey: string; color: string }> = {
   vote: { icon: 'arrow-up', labelKey: 'profile.votedOnPost', color: palette.blue500 },
   follow: { icon: 'heart', labelKey: 'profile.followedEntity', color: palette.red500 },
@@ -31,8 +32,10 @@ export function ActivityItem({ activity, onPress }: ActivityItemProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  /** @edge unknown action_type defaults to vote config to prevent crash */
   const config = ACTION_CONFIG[activity.action_type] ?? ACTION_CONFIG.vote;
 
+  /** @contract follow/unfollow labels include the entity type suffix; other actions use label alone */
   const label =
     activity.action_type === 'follow' || activity.action_type === 'unfollow'
       ? `${t(config.labelKey)} ${t(ENTITY_LABEL_KEYS[activity.entity_type] ?? '')}`

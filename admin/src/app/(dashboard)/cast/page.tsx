@@ -13,6 +13,7 @@ import { getImageUrl } from '@shared/imageUrl';
 
 export default function CastPage() {
   const { user } = useAuth();
+  // @coupling isPHAdmin restricts edit visibility; canDelete gates deletion by ownership
   const { isPHAdmin, canDelete } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
@@ -22,6 +23,8 @@ export default function CastPage() {
   const deleteActor = useDeleteActor();
   const [showAdd, setShowAdd] = useState(false);
 
+  // @sideeffect Creates actor with created_by stamped for ownership tracking
+  // @nullable user?.id may be absent if auth context hasn't loaded (defensive spread)
   async function handleAdd(formData: {
     name: string;
     photo_url: string | null;
@@ -106,6 +109,7 @@ export default function CastPage() {
                   </div>
                 </div>
               </Link>
+              {/* @invariant PH admins can only edit actors they created; non-PH admins edit all */}
               {(!isPHAdmin || actor.created_by === user?.id) && (
                 <Link
                   href={'/cast/' + actor.id}
@@ -114,6 +118,7 @@ export default function CastPage() {
                   <Pencil className="w-4 h-4" />
                 </Link>
               )}
+              {/* @boundary Delete permission checks both role and ownership via canDelete */}
               {canDelete('actor', actor.created_by) && (
                 <button
                   onClick={() => {

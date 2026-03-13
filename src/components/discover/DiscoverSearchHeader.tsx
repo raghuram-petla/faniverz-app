@@ -16,6 +16,7 @@ export interface DiscoverSearchHeaderProps {
   onBack: () => void;
 }
 
+/** @coupling FILTER_TABS from DiscoverFilterModal drives tab rendering */
 export function DiscoverSearchHeader({
   insetTop,
   searchQuery,

@@ -15,13 +15,16 @@ interface StaleQueryResult {
   isLoading: boolean;
 }
 
+/** @contract displays movies not synced within staleDays, with bulk refresh option */
 export interface StaleMoviesSectionProps {
   staleDays: number;
   onStaleDaysChange: (days: number) => void;
   staleMovies: StaleQueryResult;
   showList: boolean;
   onToggleList: () => void;
+  /** @sideeffect triggers sequential TMDB refresh for all stale movies */
   onRefreshAll: () => void;
+  /** @invariant when true, disables Refresh All button to prevent concurrent bulk operations */
   isBulkRunning: boolean;
 }
 
@@ -99,6 +102,7 @@ export function StaleMoviesSection({
             >
               <span className="text-on-surface">{item.title}</span>
               <span className="text-on-surface-subtle">
+                {/** @nullable tmdb_last_synced_at is null for movies never synced from TMDB */}
                 {item.tmdb_last_synced_at ? formatRelativeTime(item.tmdb_last_synced_at) : 'Never'}
               </span>
             </div>
@@ -109,10 +113,12 @@ export function StaleMoviesSection({
   );
 }
 
+/** @contract displays actors with TMDB IDs but no biography, with bulk fetch option */
 export interface MissingBiosSectionProps {
   missingBios: StaleQueryResult;
   showList: boolean;
   onToggleList: () => void;
+  /** @sideeffect triggers sequential TMDB bio fetch for all actors missing bios */
   onFetchAll: () => void;
   isBulkRunning: boolean;
 }
@@ -191,6 +197,7 @@ export interface BulkProgressPanelProps {
   progress: BulkProgress;
 }
 
+/** @contract shows progress bar, current item, and accumulated errors during bulk operations */
 export function BulkProgressPanel({ progress }: BulkProgressPanelProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5 space-y-3">

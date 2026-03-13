@@ -2,10 +2,13 @@ import { ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
+/** @contract Horizontal scrollable pill bar for filtering media by category */
 export interface MediaFilterPillsProps {
+  /** @assumes First category is always "All" — no validation enforced */
   categories: string[];
   active: string;
   onSelect: (category: string) => void;
+  /** @coupling Theme passed directly instead of via hook — parent controls theming */
   theme: SemanticTheme;
 }
 

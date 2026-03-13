@@ -11,6 +11,7 @@ import { createStyles } from '@/styles/movieMedia.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
+/** @contract Grid of movie posters with tap-to-zoom via ImageViewer provider */
 export interface MediaPhotosTabProps {
   posters: MoviePoster[];
 }
@@ -21,7 +22,9 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
   const styles = createStyles(theme);
   const { openImage } = useImageViewer();
 
+  /** @sync Ref map tracks View refs per poster ID for measuring source layout during zoom transition */
   const posterRefs = useRef<Map<string, React.RefObject<View | null>>>(new Map());
+  /** @sideeffect hiddenId hides the source thumbnail while the ImageViewer overlay is active */
   const [hiddenId, setHiddenId] = useState<string | null>(null);
 
   const getRef = useCallback((id: string) => {
@@ -31,8 +34,10 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
     return posterRefs.current.get(id)!;
   }, []);
 
+  /** @boundary Measures source thumbnail in window coords to animate zoom transition */
   const handlePosterPress = useCallback(
     (poster: MoviePoster, ref: React.RefObject<View | null>) => {
+      /** @edge ref.current may be null if View unmounted during rapid scrolling */
       if (!ref.current) return;
       ref.current.measureInWindow((x: number, y: number, width: number, height: number) => {
         openImage({

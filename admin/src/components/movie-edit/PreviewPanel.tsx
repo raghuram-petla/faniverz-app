@@ -29,14 +29,17 @@ const PLACEHOLDER_POSTER =
   '%3Ctext x=%22100%22 y=%22195%22 text-anchor=%22middle%22 fill=%22%23a1a1aa%22 font-family=%22sans-serif%22 font-size=%2212%22%3ENo Poster%3C/text%3E' +
   '%3C/svg%3E';
 
+// @coupling MovieForm from useMovieEditState — reads all visual fields for live preview
 interface PreviewPanelProps {
   form: MovieForm;
 }
 
 export function PreviewPanel({ form }: PreviewPanelProps) {
   const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
+  // @assumes DEVICES[1] is a reasonable default device (iPhone-sized)
   const [device, setDevice] = useState(DEVICES[1]);
 
+  // @sync sticky positioning at top-[100px] must stay below SectionNav's sticky header
   return (
     <div className="w-[340px] shrink-0 sticky top-[100px] self-start space-y-3">
       <DeviceSelector selected={device} onChange={setDevice} />
@@ -66,6 +69,7 @@ export function PreviewPanel({ form }: PreviewPanelProps) {
       </div>
 
       <DeviceFrame device={device} maxWidth={340}>
+        {/* @nullable all form fields fall back to placeholder values for preview */}
         {previewMode === 'spotlight' ? (
           <SpotlightPreview
             title={form.title || 'Movie Title'}

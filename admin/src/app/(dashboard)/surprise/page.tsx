@@ -4,6 +4,7 @@ import { useAdminSurprise, useDeleteSurprise } from '@/hooks/useAdminSurprise';
 import { Sparkles, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
+// @edge Unknown categories fall back to bg-input/text-on-surface-muted via nullish coalesce in render
 const categoryColors: Record<string, { bg: string; text: string }> = {
   song: { bg: 'bg-pink-600/20', text: 'text-pink-400' },
   'short-film': { bg: 'bg-purple-600/20', text: 'text-purple-400' },
@@ -94,6 +95,7 @@ export default function SurpriseContentPage() {
                     </td>
                     <td className="px-6 py-4 text-on-surface-muted text-sm">
                       {item.duration ?? '--'}
+                      {/* @nullable duration is optional on surprise content */}
                     </td>
                     <td className="px-6 py-4 text-right text-on-surface-muted text-sm">
                       {item.views.toLocaleString()}

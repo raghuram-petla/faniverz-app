@@ -17,6 +17,8 @@ export interface FollowButtonProps {
   entityName?: string;
 }
 
+// @sideeffect triggers reanimated scale bounce on follow transition (unfollowed -> followed)
+// @assumes onPress is auth-gated by the parent — this component doesn't check authentication
 export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonProps) {
   const { t } = useTranslation();
   const iconScale = useSharedValue(1);

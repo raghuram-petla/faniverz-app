@@ -19,6 +19,7 @@ export function TrendingMovies({ movies, onMoviePress }: TrendingMoviesProps) {
   const { t } = useTranslation();
   const styles = createStyles(theme);
 
+  /** @edge returns null when no trending movies — parent handles the empty search state */
   if (movies.length === 0) return null;
 
   return (

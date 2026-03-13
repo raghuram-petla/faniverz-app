@@ -6,6 +6,7 @@ import { useCreateSurprise } from '@/hooks/useAdminSurprise';
 import { Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
+// @contract: categories must match the surprise_content.category CHECK constraint in the database
 const categories = ['song', 'short-film', 'bts', 'interview', 'trailer'] as const;
 
 export default function NewSurpriseContentPage() {
@@ -19,6 +20,8 @@ export default function NewSurpriseContentPage() {
   const [duration, setDuration] = useState('');
   const [views, setViews] = useState(0);
 
+  // @sideeffect: inserts into surprise_content table, navigates to /surprise on success
+  // @edge: empty description/duration coerced to null; views defaults to 0
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createItem.mutate(

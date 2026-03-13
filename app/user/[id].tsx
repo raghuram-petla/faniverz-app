@@ -13,6 +13,8 @@ import { createUserProfileStyles } from '@/styles/userProfile.styles';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import type { UserProfile } from '@/types';
 
+// @boundary: fetches public-facing profile fields only — no private data (email, phone) exposed
+// @edge: returns null on any Supabase error (e.g., invalid UUID, deleted user)
 async function fetchPublicProfile(userId: string): Promise<UserProfile | null> {
   const { data, error } = await supabase
     .from('profiles')
@@ -30,6 +32,8 @@ export default function UserProfileScreen() {
   const { t } = useTranslation();
   const styles = createUserProfileStyles(theme);
 
+  // @contract: query is disabled when id is falsy — prevents fetching with empty string
+  // @nullable: profile may be null even on success if the user doesn't exist
   const {
     data: profile,
     isLoading,

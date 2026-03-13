@@ -10,6 +10,7 @@ import {
 import { Sparkles, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
+// @contract: categories must match the surprise_content.category CHECK constraint in the database
 const categories = ['song', 'short-film', 'bts', 'interview', 'trailer'] as const;
 
 export default function EditSurpriseContentPage() {
@@ -28,6 +29,8 @@ export default function EditSurpriseContentPage() {
   const [duration, setDuration] = useState('');
   const [views, setViews] = useState(0);
 
+  // @sync: populates local form state from server data when item loads
+  // @nullable: description/duration may be null in DB — default to empty string for controlled inputs
   useEffect(() => {
     if (item) {
       setTitle(item.title);
@@ -39,6 +42,8 @@ export default function EditSurpriseContentPage() {
     }
   }, [item]);
 
+  // @sideeffect: updates surprise_content row in Supabase, navigates to /surprise on success
+  // @edge: empty description/duration coerced to null; views defaults to 0 from initial state
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateItem.mutate(
@@ -55,6 +60,7 @@ export default function EditSurpriseContentPage() {
     );
   };
 
+  // @sideeffect: hard-deletes surprise_content row — no soft-delete/undo
   const handleDelete = () => {
     if (!confirm('Delete this surprise content? This cannot be undone.')) return;
     deleteItem.mutate(id, { onSuccess: () => router.push('/surprise') });

@@ -6,7 +6,9 @@ import { formatDateTime } from '@/lib/utils';
 import { formatDuration, statusStyles } from './syncHelpers';
 import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 
+/** @contract displays sync_logs table with status/function filters and expandable error details */
 export function HistoryTab() {
+  /** @coupling useAdminSyncLogs auto-refeshes when any log has status 'running' */
   const { data: logs, isLoading } = useAdminSyncLogs();
   const [statusFilter, setStatusFilter] = useState('');
   const [functionFilter, setFunctionFilter] = useState('');
@@ -23,6 +25,7 @@ export function HistoryTab() {
     });
   }, [logs, statusFilter, functionFilter]);
 
+  /** @edge derives unique function names from loaded logs — changes if log history grows */
   const functionNames = useMemo(() => {
     if (!logs) return [];
     return [...new Set(logs.map((l) => l.function_name))].sort();
@@ -106,6 +109,7 @@ export function HistoryTab() {
               {filteredLogs.map((log) => {
                 const status = statusStyles[log.status] ?? statusStyles.failed;
                 const isExpanded = expandedRows.has(log.id);
+                /** @edge log.errors can be array or object (JSONB column) — must handle both shapes */
                 const hasErrors =
                   log.errors &&
                   typeof log.errors === 'object' &&

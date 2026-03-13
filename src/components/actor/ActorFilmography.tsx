@@ -52,9 +52,11 @@ export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProp
       ) : (
         <View style={styles.filmographyList}>
           {credits.map((credit) => {
+            /** @nullable movie may be null if the referenced movie was deleted */
             const movie = credit.movie;
             if (!movie) return null;
             const year = extractReleaseYear(movie.release_date);
+            /** @contract cast credits prefix role_name with "as"; crew credits show role_name directly */
             const roleText =
               credit.credit_type === 'cast' && credit.role_name
                 ? t('movie.asRole', { role: credit.role_name })

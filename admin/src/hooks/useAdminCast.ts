@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase-browser';
 import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { Actor, MovieCast } from '@/lib/types';
 
+// @coupling: createCrudHooks — paginated list/single/create/update/delete for actors table
+// @edge: enabledFn skips queries for 1-char search strings to avoid noisy partial matches
 const actorsCrud = createCrudHooks<Actor>({
   table: 'actors',
   queryKeyBase: 'actors',
@@ -22,6 +24,9 @@ export const useDeleteActor = actorsCrud.useDelete;
 
 // ── Movie-specific cast hooks (different table, custom logic) ──
 
+// @contract: returns cast sorted by display_order, then crew sorted by role_order; cast before crew
+// @boundary: joins movie_cast with actors via PostgREST foreign-key embed
+// @assumes: credit_type is either 'cast' or 'crew' — other values are silently excluded
 export function useMovieCast(movieId: string) {
   return useQuery({
     queryKey: ['admin', 'cast', movieId],
@@ -37,6 +42,7 @@ export function useMovieCast(movieId: string) {
         .sort((a, b) => a.display_order - b.display_order);
       const crew = all
         .filter((c) => c.credit_type === 'crew')
+        // @edge: null role_order defaults to 99 to push unordered crew to the end
         .sort((a, b) => (a.role_order ?? 99) - (b.role_order ?? 99));
       return [...cast, ...crew];
     },
@@ -44,6 +50,8 @@ export function useMovieCast(movieId: string) {
   });
 }
 
+// @sideeffect: inserts into movie_cast and invalidates cache for the movie's cast list
+// @assumes: cast partial must include movie_id, actor_id, credit_type at minimum
 export function useAddCast() {
   const qc = useQueryClient();
   return useMutation({
@@ -61,6 +69,7 @@ export function useAddCast() {
   });
 }
 
+// @sideeffect: hard-deletes movie_cast row by id + movieId compound filter
 export function useRemoveCast() {
   const qc = useQueryClient();
   return useMutation({
@@ -82,6 +91,9 @@ export function useRemoveCast() {
   });
 }
 
+// @sideeffect: updates display_order for each cast item; fires N parallel update queries
+// @edge: partial failure — some items may update before the first error is detected
+// @sync: all updates run in parallel via Promise.all; no transaction wrapping
 export function useUpdateCastOrder() {
   const qc = useQueryClient();
   return useMutation({

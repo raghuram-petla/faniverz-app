@@ -21,11 +21,14 @@ import { SocialSignInButtons } from '@/components/auth/SocialSignInButtons';
 import { PhoneOtpModal } from '@/components/auth/PhoneOtpModal';
 import { createRegisterStyles } from '@/styles/auth.styles';
 
+// @coupling useEmailAuth, useGoogleAuth, useAppleAuth, usePhoneAuth — mirrors login.tsx auth strategies
+// @boundary Account creation flow with client-side validation before Supabase call
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = useMemo(() => createRegisterStyles(theme), [theme]);
   const router = useRouter();
+  // @sideeffect signUp creates Supabase user with username metadata
   const { signUp, isLoading, error } = useEmailAuth();
   const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
   const { signInWithApple, isLoading: appleLoading, isAvailable: appleAvailable } = useAppleAuth();
@@ -35,11 +38,15 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  // @nullable validationError is null when no validation issue; cleared on each handleSignUp call
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
 
+  // @contract All four fields required; password >= 6 chars; passwords must match
+  // @sideeffect Clears validationError on each invocation before re-validating
+  // @sideeffect On success, navigates to tabs via router.replace (replaces auth stack)
   const handleSignUp = async () => {
     setValidationError(null);
     if (!username.trim() || !email.trim() || !password || !confirmPassword) {
@@ -80,6 +87,7 @@ export default function RegisterScreen() {
     }
   };
 
+  // @edge Client-side validationError takes priority; falls back to server error from hook
   const displayError = validationError || error;
 
   return (
@@ -214,6 +222,7 @@ export default function RegisterScreen() {
           <View style={styles.dividerLine} />
         </View>
 
+        {/* @nullable onApple is undefined on Android — SocialSignInButtons hides the button */}
         <View style={styles.socialSection}>
           <SocialSignInButtons
             onGoogle={handleGoogleSignIn}

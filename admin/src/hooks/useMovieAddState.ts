@@ -35,6 +35,9 @@ const INITIAL_FORM: MovieForm = {
   backdrop_focus_y: null,
 };
 
+// @contract Returns a self-contained state bundle for the movie-add form
+// @coupling Shares form handlers with movie-edit via createCommonFormHandlers
+// @coupling Uses useMovieEditDerived with id='new' to compute visible lists and isDirty
 export function useMovieAddState() {
   const router = useRouter();
 
@@ -85,7 +88,8 @@ export function useMovieAddState() {
   // ── Shared handlers (updateField, toggleGenre, handleImageUpload, 6 remove handlers) ──
   const common = createCommonFormHandlers({ setForm, ...pending });
 
-  // ── Two-phase submit ──
+  // @sideeffect Two-phase submit: Phase 1 creates movie, Phase 2 adds all child relations
+  // @edge If Phase 1 succeeds but Phase 2 fails, movie exists without its relations
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!form.title.trim()) {
@@ -117,7 +121,7 @@ export function useMovieAddState() {
       } as Record<string, unknown>);
       const movieId = movie.id;
 
-      // Phase 2: add all pending relations
+      // @assumes movieId is a valid UUID returned from insert; used as FK for all child inserts
       const promises: Promise<unknown>[] = [];
       for (let i = 0; i < pending.pendingCastAdds.length; i++) {
         const { _actor, ...c } = pending.pendingCastAdds[i];
@@ -134,6 +138,7 @@ export function useMovieAddState() {
       for (const v of pending.pendingVideoAdds) {
         promises.push(addVideo.mutateAsync({ movie_id: movieId, ...v }));
       }
+      // @edge Main poster selection: if pendingMainPosterId matches this poster's index, override is_main
       for (let i = 0; i < pending.pendingPosterAdds.length; i++) {
         const p = pending.pendingPosterAdds[i];
         const isMain = pending.pendingMainPosterId

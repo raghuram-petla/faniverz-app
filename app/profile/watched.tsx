@@ -20,6 +20,7 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
+// @assumes: 90 min is a reasonable fallback for movies without runtime data
 const FALLBACK_RUNTIME_MINUTES = 90;
 
 type SortKey = 'recent' | 'rating' | 'title';
@@ -50,6 +51,7 @@ export default function WatchedMoviesScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
+  // @nullable: watched_at, movie.rating, and movie.title may all be null — defaulted for sort stability
   const sorted = useMemo(() => {
     const copy = [...(watched ?? [])];
     if (sortKey === 'recent') {
@@ -71,10 +73,12 @@ export default function WatchedMoviesScreen() {
     count > 0
       ? (sorted.reduce((sum, e) => sum + (e.movie?.rating ?? 0), 0) / count).toFixed(1)
       : '—';
+  // @nullable: movies without runtime use FALLBACK_RUNTIME_MINUTES for the aggregate stat
   const watchTimeMinutes = sorted.reduce(
     (sum, e) => sum + (e.movie?.runtime ?? FALLBACK_RUNTIME_MINUTES),
     0,
   );
+  // @edge: displays em-dash when no movies are watched to avoid showing "0h 0m"
   const watchTimeLabel = count > 0 ? formatWatchTime(watchTimeMinutes) : '—';
 
   const activeSortLabel = SORT_OPTION_KEYS.find((o) => o.key === sortKey)

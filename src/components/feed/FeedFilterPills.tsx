@@ -9,6 +9,8 @@ export interface FeedFilterPillsProps {
   styles: ReturnType<typeof createFeedStyles>;
 }
 
+/** @coupling FEED_PILLS — pill config drives available filter options and their colors */
+/** @contract styles must come from createFeedStyles(theme) to match pill styling */
 export function FeedFilterPills({ filter, setFilter, styles }: FeedFilterPillsProps) {
   return (
     <ScrollView

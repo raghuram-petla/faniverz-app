@@ -13,12 +13,16 @@ export interface UseActiveVideoReturn {
 
 /**
  * Tracks registered video card positions within a ScrollView and determines
- * which video is most centered in the viewport (with ≥50% visibility).
+ * which video is most centered in the viewport (with >=50% visibility).
  */
+// @contract only one video is active at a time; null when no video meets the 50% visibility threshold
 export function useActiveVideo(): UseActiveVideoReturn {
+  // @nullable null when no video card is sufficiently visible in the viewport
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  // @sync layouts ref is mutated imperatively during render-time onLayout callbacks — not tied to React state
   const layouts = useRef<Map<string, VideoLayout>>(new Map());
 
+  // @sideeffect mutates layouts ref; callers must provide absolute y relative to ScrollView content, not screen
   const registerVideoLayout = useCallback((id: string, y: number, height: number) => {
     layouts.current.set(id, { y, height });
   }, []);
@@ -40,7 +44,7 @@ export function useActiveVideo(): UseActiveVideoReturn {
       const visibleBottom = Math.min(videoBottom, viewportBottom);
       const visibleHeight = Math.max(0, visibleBottom - visibleTop);
 
-      // Must be at least 50% visible
+      // @invariant 50% visibility gate — prevents autoplay for barely-visible cards
       if (layout.height > 0 && visibleHeight / layout.height < 0.5) return;
 
       const videoCenter = videoTop + layout.height / 2;
@@ -52,6 +56,7 @@ export function useActiveVideo(): UseActiveVideoReturn {
       }
     });
 
+    // @edge avoids unnecessary re-renders by skipping setState when activeVideoId hasn't changed
     setActiveVideoId((prev) => (prev === bestId ? prev : bestId));
   }, []);
 

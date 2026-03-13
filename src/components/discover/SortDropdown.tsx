@@ -10,7 +10,9 @@ export interface SortDropdownProps {
   styles: Record<string, any>;
 }
 
+/** @coupling SORT_OPTIONS from DiscoverFilterModal drives available sort values */
 export function SortDropdown({ visible, sortBy, onSelectSort, styles }: SortDropdownProps) {
+  /** @contract returns null when hidden — parent controls visibility toggle */
   if (!visible) return null;
 
   return (

@@ -7,6 +7,8 @@ import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
 import type { OTTPlatform, ProductionHouse } from '@shared/types';
 
+// @contract MovieForm mirrors the editable subset of the movies table — non-editable fields
+// (tmdb_id, spotlight_focus_*, detail_focus_*) are preserved separately in movieData
 export interface MovieForm {
   title: string;
   poster_url: string;
@@ -52,17 +54,19 @@ export type PendingPlatformAdd = {
 
 export type PendingPHAdd = { production_house_id: string; _ph?: ProductionHouse };
 
-// ─── Mutation types (minimal shape needed) ───
+// @contract Minimal mutation interface — only mutateAsync is required by handlers
 interface MutateAsync<TArgs, TResult = unknown> {
   mutateAsync: (args: TArgs) => Promise<TResult>;
 }
 
+// @coupling Consumed by createMovieEditHandlers — all fields must be provided by useMovieEditState
+// @assumes All mutation objects are already initialized via their respective hooks
 export interface MovieEditHandlerDeps {
   id: string;
   form: MovieForm;
   setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
   router: AppRouterInstance;
-  // Original movie data for preserving fields not in the form
+  // @nullable Original movie data — null when movie hasn't loaded yet
   movieData?: {
     spotlight_focus_x: number | null;
     spotlight_focus_y: number | null;
@@ -84,7 +88,7 @@ export interface MovieEditHandlerDeps {
   setPendingRunAdds: React.Dispatch<React.SetStateAction<PendingRun[]>>;
   setPendingRunRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
 
-  // Pending state values (needed for handleSubmit)
+  // @nullable localCastOrder — null means no reorder has occurred (keep server order)
   localCastOrder: string[] | null;
   pendingCastAdds: PendingCastAdd[];
   pendingCastRemoveIds: Set<string>;

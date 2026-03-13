@@ -4,11 +4,14 @@ import type { AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import { Loader2, Clock, CheckCircle, XCircle } from 'lucide-react';
 
+/** @contract displays admin_invitations rows; revoke action only available for 'pending' status */
 export interface InvitationsTableProps {
+  /** @nullable undefined during initial fetch */
   invitations:
     | { id: string; email: string; role_id: AdminRoleId; status: string; created_at: string }[]
     | undefined;
   isLoading: boolean;
+  /** @sideeffect updates invitation status to 'revoked' in DB */
   onRevoke: (id: string) => void;
   isRevokePending: boolean;
 }
@@ -47,6 +50,7 @@ export function InvitationsTable({
             <tr key={inv.id} className="border-b border-outline-subtle hover:bg-surface-elevated">
               <td className="px-6 py-4 text-sm text-on-surface">{inv.email}</td>
               <td className="px-6 py-4">
+                {/** @sync ADMIN_ROLE_LABELS must have entries for all valid AdminRoleId values */}
                 <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-600/10 text-red-500">
                   {ADMIN_ROLE_LABELS[inv.role_id]}
                 </span>

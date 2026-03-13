@@ -5,6 +5,8 @@ import { WEBVIEW_BASE_URL } from '@/constants/webview';
 /**
  * Builds the HTML wrapper for embedding a YouTube video.
  */
+// @boundary generates raw HTML injected into WebView — youtubeId must be sanitized upstream
+// @invariant autoplay=1 and playsinline=1 are always set; rel=0 disables related videos
 export function buildYouTubeEmbedHtml(youtubeId: string, autoMute = false): string {
   const muteParam = autoMute ? '&mute=1' : '';
   return `<!DOCTYPE html>
@@ -28,6 +30,8 @@ export function shareYouTubeVideo(youtubeId: string): void {
  * Handles new window requests from YouTube embed iframes.
  * YouTube's player uses window.open() for logo clicks and channel links.
  */
+// @sideeffect opens native share sheet or external browser via Linking
+// @edge 'intent://' URLs are Android deep links — intercepted to trigger share instead
 export function handleYouTubeOpenWindow(targetUrl: string, youtubeId: string): void {
   if (targetUrl.includes('youtube.com/share') || targetUrl.includes('intent://')) {
     shareYouTubeVideo(youtubeId);
@@ -40,12 +44,15 @@ export function handleYouTubeOpenWindow(targetUrl: string, youtubeId: string): v
  * Intercepts regular navigation requests in YouTube embed WebViews.
  * Allows embed/initial loads, blocks and handles everything else.
  */
+// @contract returns true to allow navigation, false to block and handle externally
+// @coupling depends on WEBVIEW_BASE_URL from constants/webview for origin matching
 export function handleYouTubeNavigation(
   request: ShouldStartLoadRequest,
   youtubeId: string,
 ): boolean {
   const { url } = request;
 
+  // @invariant only about:blank, base URL, and /embed/ paths are allowed to load in-WebView
   if (url === 'about:blank' || url === `${WEBVIEW_BASE_URL}/` || url.includes('/embed/')) {
     return true;
   }

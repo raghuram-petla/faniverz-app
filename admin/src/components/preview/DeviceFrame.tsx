@@ -7,7 +7,9 @@ interface DeviceFrameProps {
   children: React.ReactNode;
 }
 
+/** @contract scales device resolution to fit maxWidth while preserving aspect ratio */
 export function DeviceFrame({ device, maxWidth = 320, children }: DeviceFrameProps) {
+  /** @invariant scale factor applied uniformly to width and height to preserve aspect ratio */
   const scale = maxWidth / device.width;
   const scaledHeight = device.height * scale;
 
@@ -20,6 +22,7 @@ export function DeviceFrame({ device, maxWidth = 320, children }: DeviceFramePro
         {/* Status bar */}
         <div
           className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6"
+          /** @sync safeAreaTop from DeviceConfig must match actual device safe area insets */
           style={{ height: device.safeAreaTop * scale }}
         >
           <span className="text-[10px] text-on-surface font-semibold">9:41</span>

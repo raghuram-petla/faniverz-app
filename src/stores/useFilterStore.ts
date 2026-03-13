@@ -20,6 +20,8 @@ interface FilterState {
   clearAll: () => void;
 }
 
+// @coupling filter state drives query params in useMoviesQuery — all fields participate in API call
+// @invariant empty arrays and 'all' filter mean no filtering applied (show everything)
 export const useFilterStore = create<FilterState>((set) => ({
   selectedFilter: 'all',
   selectedGenres: [],
@@ -30,6 +32,7 @@ export const useFilterStore = create<FilterState>((set) => ({
 
   setFilter: (filter) => set({ selectedFilter: filter }),
 
+  // @contract toggles genre in/out of selection — idempotent for same value
   toggleGenre: (genre) =>
     set((state) => ({
       selectedGenres: state.selectedGenres.includes(genre)
@@ -55,6 +58,7 @@ export const useFilterStore = create<FilterState>((set) => ({
 
   setSearchQuery: (query) => set({ searchQuery: query }),
 
+  // @contract resets all filters to defaults — triggers refetch in consumers via Zustand subscription
   clearAll: () =>
     set({
       selectedFilter: 'all',

@@ -67,6 +67,7 @@ export default function SettingsScreen() {
     });
   };
 
+  // @coupling: toggle keys must match the 'key' field in section row definitions below
   const toggleMap: Record<string, { value: boolean; setter: () => void }> = {
     push: { value: pushEnabled, setter: togglePush },
     email: { value: emailEnabled, setter: toggleEmail },
@@ -78,6 +79,7 @@ export default function SettingsScreen() {
 
   const isLoggedIn = !!user;
 
+  // @contract: notification and privacy sections only appear when user is logged in
   const sections: Section[] = [
     {
       title: t('settings.appearance'),

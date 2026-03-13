@@ -2,6 +2,8 @@
 import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { SurpriseContent } from '@/lib/types';
 
+// @coupling: createCrudHooks — delegates all CRUD logic to the generic factory
+// @contract: created_at descending — newest surprise content appears first
 const crud = createCrudHooks<SurpriseContent>({
   table: 'surprise_content',
   queryKeyBase: 'surprise',

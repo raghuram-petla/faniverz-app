@@ -2,6 +2,8 @@
 import { createMovieChildHooks } from './createMovieChildHooks';
 import type { MovieVideo } from '@/lib/types';
 
+// @coupling: createMovieChildHooks — movie-scoped CRUD via generic child factory
+// @contract: display_order ascending (default) — videos appear in admin-configured order
 const {
   useList: useMovieVideos,
   useAdd: useAddVideo,

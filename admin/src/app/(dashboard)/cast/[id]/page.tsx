@@ -19,6 +19,7 @@ export default function EditActorPage() {
   const updateActor = useUpdateActor();
   const deleteActor = useDeleteActor();
   const [device, setDevice] = useState(DEVICES[1]);
+  // @boundary: uploads go through /api/upload/actor-photo which stores to Supabase Storage + generates variants
   const { upload, uploading } = useImageUpload('/api/upload/actor-photo');
 
   const [form, setForm] = useState<ActorFormState>({
@@ -32,6 +33,8 @@ export default function EditActorPage() {
     height_cm: '',
   });
 
+  // @sync: populates form from server data on first load; re-runs if actor refetches
+  // @nullable: all optional fields default to empty string for controlled inputs
   useEffect(() => {
     if (actor) {
       setForm({
@@ -60,6 +63,8 @@ export default function EditActorPage() {
     }
   }
 
+  // @sideeffect: updates actors row in Supabase, navigates to /cast on success
+  // @edge: empty strings coerced to null for all optional fields; gender/height_cm converted from string to number
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -81,6 +86,7 @@ export default function EditActorPage() {
     }
   }
 
+  // @sideeffect: hard-deletes actor row — cascades to movie_cast join records
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
       try {
@@ -142,6 +148,7 @@ export default function EditActorPage() {
         </form>
 
         {/* Right column — Live preview */}
+        {/* @coupling: ActorDetailPreview mirrors the mobile ActorDetail screen layout for WYSIWYG editing */}
         <div className="w-[340px] shrink-0 sticky top-6 self-start space-y-4">
           <DeviceSelector selected={device} onChange={setDevice} />
           <div className="flex justify-center">

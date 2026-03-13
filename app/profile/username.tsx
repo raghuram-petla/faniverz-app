@@ -28,7 +28,9 @@ export default function UsernameScreen() {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { data: profile } = useProfile();
+  // @nullable: profile?.username may be null for new users who haven't set one yet
   const [username, setUsername] = useState(profile?.username ?? '');
+  // @boundary: useCheckUsername debounces and queries the DB for availability
   const { isAvailable, isChecking, error: checkError } = useCheckUsername(username);
   const setUsernameMutation = useSetUsername();
 
@@ -75,6 +77,7 @@ export default function UsernameScreen() {
               placeholder="username"
               placeholderTextColor={theme.textTertiary}
               value={username}
+              // @invariant: usernames are lowercase alphanumeric + underscores only
               onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
               autoCapitalize="none"
               autoCorrect={false}

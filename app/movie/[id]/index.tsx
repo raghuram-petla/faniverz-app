@@ -40,9 +40,12 @@ export default function MovieDetailScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
+  // @boundary: id comes from URL param — defaults to '' which returns null from API
   const { data: movie, isLoading: movieLoading, refetch: refetchMovie } = useMovieDetail(id ?? '');
   const { data: reviews = [], refetch: refetchReviews } = useMovieReviews(id ?? '');
+  // @sideeffect: createReview.mutate triggers optimistic update + invalidates review cache
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
+  // @contract: gate() wraps callbacks — redirects to login if user is unauthenticated
   const { gate } = useAuthGate();
   const { refreshing, onRefresh } = useRefresh(refetchMovie, refetchReviews);
   const {
@@ -53,7 +56,8 @@ export default function MovieDetailScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
-  // useMovieAction must be called unconditionally (rules of hooks)
+  // @invariant: useMovieAction must be called unconditionally (rules of hooks)
+  // @edge: stub object used when movie hasn't loaded yet — action will be inert
   const movieForAction = movie ?? { id: id ?? '', release_date: null, in_theaters: false };
   const {
     actionType,
@@ -80,6 +84,8 @@ export default function MovieDetailScreen() {
     await Share.share({ message: text });
   };
 
+  // @edge: rating === 0 guard prevents submitting empty reviews
+  // @sideeffect: resets all review form state after submit; closes modal immediately (optimistic)
   const handleSubmitReview = gate(() => {
     if (reviewRating === 0) return;
     createReview.mutate({
@@ -97,6 +103,7 @@ export default function MovieDetailScreen() {
     setContainsSpoiler(false);
   });
 
+  // @coupling: deriveMovieStatus is a shared function that determines theatrical/ott/upcoming status
   const movieStatus = deriveMovieStatus(movie, movie.platforms.length);
   const releaseYear = extractReleaseYear(movie.release_date);
   const tabLabels: Record<DisplayTab, string> = {
@@ -105,6 +112,7 @@ export default function MovieDetailScreen() {
     cast: t('movie.cast'),
     reviews: t('movie.reviews'),
   };
+  // @boundary: media tab navigates to a separate route instead of rendering inline
   const handleTabPress = (tab: DisplayTab) => {
     if (tab === 'media') {
       router.push(`/movie/${id}/media`);

@@ -11,6 +11,9 @@ import { verifyAdmin, errorResponse } from '@/lib/sync-helpers';
  * - { action: 'unban', userId }         — Removes the ban
  * - { action: 'update-profile', userId, fields: { display_name?, bio?, location? } }
  */
+// @boundary: admin-only route — requires valid admin role via verifyAdmin
+// @contract: accepts { action, userId, ...params }; returns { success: true, action } on success
+// @sideeffect: ban/unban mutates Supabase Auth user state; update-profile writes to profiles table
 export async function POST(req: NextRequest) {
   try {
     const admin = await verifyAdmin(req.headers.get('authorization'));
@@ -28,6 +31,7 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     if (action === 'ban') {
+      // @assumes: 87600h = 10 years; effectively a permanent ban
       const { error } = await supabase.auth.admin.updateUserById(userId, {
         ban_duration: '87600h',
       });
@@ -49,6 +53,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
       }
       // Only allow safe fields
+      // @invariant: whitelist-only — unknown fields are silently dropped, never written to DB
       const allowed = ['display_name', 'bio', 'location'] as const;
       const safeFields: Record<string, unknown> = {};
       for (const key of allowed) {

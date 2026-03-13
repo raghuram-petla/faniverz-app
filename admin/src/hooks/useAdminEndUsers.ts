@@ -22,6 +22,8 @@ export interface UseAdminEndUsersOptions {
 
 const DEFAULT_PAGE_SIZE = 50;
 
+// @boundary Queries 'profiles' table directly — separate from admin_user_roles
+// @edge Search uses raw ilike — special chars in search string are not escaped
 export function useAdminEndUsers({
   search,
   page,
@@ -59,6 +61,8 @@ export function useAdminEndUsers({
   });
 }
 
+// @boundary Calls Next.js /api/manage-user route instead of Supabase directly — needs auth token
+// @assumes Session exists; will fail silently with undefined token if not authenticated
 async function callManageUser(action: string, userId: string, extra?: Record<string, unknown>) {
   const {
     data: { session },
@@ -78,6 +82,7 @@ async function callManageUser(action: string, userId: string, extra?: Record<str
   return res.json();
 }
 
+// @sideeffect Bans user via server-side admin API (not direct DB) to enforce auth checks
 export function useBanUser() {
   const qc = useQueryClient();
   return useMutation({
@@ -104,6 +109,7 @@ export function useUnbanUser() {
   });
 }
 
+// @contract Only display_name, bio, location can be updated — other profile fields are read-only
 export function useUpdateEndUserProfile() {
   const qc = useQueryClient();
   return useMutation({

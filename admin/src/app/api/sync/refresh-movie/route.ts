@@ -8,6 +8,8 @@ import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers
  * Refresh an existing movie from TMDB by its local movie ID.
  * Looks up tmdb_id from the DB, then re-syncs all data.
  */
+// @contract: accepts { movieId: UUID }; returns { syncLogId, result } on success
+// @sideeffect: overwrites movie + related credits/genres with latest TMDB data; writes sync_log
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyAdmin(request.headers.get('authorization'));
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
     if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
+    // @assumes: movieId is a local UUID, not a TMDB ID
     const { movieId } = body as { movieId: string };
 
     if (!movieId) {
@@ -38,6 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Movie not found.' }, { status: 404 });
     }
 
+    // @edge: manually-created movies (no TMDB link) cannot be refreshed
     if (!movie.tmdb_id) {
       return NextResponse.json(
         { error: 'Movie has no TMDB ID. Cannot refresh from TMDB.' },
@@ -59,6 +63,7 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
 
+      // @sideeffect: sync_log completed as 'failed' — preserves audit trail on error
       await completeSyncLog(supabase, syncLogId, {
         status: 'failed',
         errors: [{ movieId, tmdbId: movie.tmdb_id, message }],

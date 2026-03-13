@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase-browser';
 import { MovieSearchField } from '@/components/notifications/MovieSearchField';
 import { BROADCAST_USER_ID } from '@shared/constants';
 
+// @contract: notificationTypes must match notifications.type CHECK constraint in the database
 const notificationTypes = ['release', 'watchlist', 'trending', 'reminder'] as const;
 const inputClass =
   'w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent';
@@ -39,6 +40,8 @@ export default function ComposeNotificationPage() {
     };
   }, []);
 
+  // @boundary: queries Supabase profiles table directly (not through a hook) for single-user lookup
+  // @edge: requires '@' in email before firing query to avoid unnecessary lookups on partial input
   const doLookup = useCallback(async (email: string) => {
     if (!email.includes('@')) return;
     const { data, error } = await supabase
@@ -57,6 +60,7 @@ export default function ComposeNotificationPage() {
     }
   }, []);
 
+  // @sync: debounces email lookup by 400ms to avoid rapid-fire queries while typing
   const handleUserLookup = (email: string) => {
     setUserEmail(email);
     setResolvedUserId(null);
@@ -66,6 +70,10 @@ export default function ComposeNotificationPage() {
     debounceRef.current = setTimeout(() => doLookup(email), 400);
   };
 
+  // @sideeffect: inserts into notifications table; send-push edge function picks up pending notifications
+  // @boundary: BROADCAST_USER_ID is a sentinel UUID — the edge function expands it to all registered devices
+  // @edge: 'immediate' schedule uses current timestamp; 'scheduled' converts local datetime-local to ISO string
+  // @invariant: submit blocked when targetMode is 'user' but no user was resolved from email lookup
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (targetMode === 'user' && !resolvedUserId) return;

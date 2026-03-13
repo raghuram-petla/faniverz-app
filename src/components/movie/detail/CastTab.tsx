@@ -5,9 +5,11 @@ import { useTheme } from '@/theme';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTranslation } from 'react-i18next';
 
+/** @contract Renders cast and crew sections with avatar rows; shows empty state when both are empty */
 interface CastTabProps {
   cast: CastMember[];
   crew: CastMember[];
+  /** @assumes actorId is valid — caller navigates to actor detail screen */
   onActorPress: (actorId: string) => void;
 }
 
@@ -24,6 +26,7 @@ export function CastTab({ cast, crew, onActorPress }: CastTabProps) {
             <TouchableOpacity
               key={cm.id}
               style={styles.castItem}
+              /** @nullable cm.actor may be null if actor record was deleted; tap is no-op */
               onPress={() => cm.actor?.id && onActorPress(cm.actor.id)}
               activeOpacity={0.7}
             >

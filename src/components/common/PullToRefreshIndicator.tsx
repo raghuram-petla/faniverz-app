@@ -7,6 +7,11 @@ import type { SharedValue } from 'react-native-reanimated';
 
 const INDICATOR_HEIGHT = 48;
 
+/**
+ * @contract Renders pull-to-refresh visual feedback above scroll content.
+ * @coupling usePullToRefresh hook — reads its shared values (pullDistance, isRefreshing).
+ * @sync pullDistance and isRefreshing are worklet-thread shared values; refreshing is JS-thread boolean.
+ */
 export interface PullToRefreshIndicatorProps {
   pullDistance: SharedValue<number>;
   isRefreshing: SharedValue<boolean>;
@@ -20,6 +25,7 @@ export function PullToRefreshIndicator({
 }: PullToRefreshIndicatorProps) {
   const { theme } = useTheme();
 
+  // @invariant Container height is always max(pull-driven height, refresh-driven height)
   const containerStyle = useAnimatedStyle(() => {
     const pullHeight = interpolate(
       pullDistance.value,

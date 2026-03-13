@@ -10,14 +10,18 @@ interface DiscoverMovie {
   release_date: string;
 }
 
+/** @contract displays TMDB discover results with import status overlay per movie */
 export interface DiscoverResultsProps {
   results: DiscoverMovie[];
+  /** @boundary Set of TMDB IDs already in our DB — these cards show "Imported" badge and are non-selectable */
   existingSet: Set<number>;
+  /** @edge derived from results minus existingSet — used for "Select all new" count */
   newMovies: DiscoverMovie[];
   selected: Set<number>;
   isImporting: boolean;
   onToggleSelect: (tmdbId: number) => void;
   onSelectAllNew: () => void;
+  /** @sideeffect triggers batch import of selected TMDB IDs via /api/sync/import */
   onImport: () => void;
 }
 
@@ -85,6 +89,7 @@ export function DiscoverResults({
               } disabled:cursor-default`}
             >
               <div className="aspect-[2/3] bg-surface-muted">
+                {/* @boundary TMDB image URL constructed from poster_path — depends on TMDB CDN */}
                 {movie.poster_path ? (
                   <img
                     src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
@@ -128,6 +133,7 @@ export interface ImportProgressListProps {
   items: ImportProgress[];
 }
 
+/** @contract renders per-movie import status with spinner/check/error icons */
 export function ImportProgressList({ items }: ImportProgressListProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5 space-y-3">

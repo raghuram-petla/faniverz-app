@@ -13,6 +13,11 @@ export interface HomeButtonProps {
   style?: ViewStyle;
 }
 
+/**
+ * @contract Renders a circular home icon when navigation depth >= 2 (or forceShow).
+ * @sideeffect router.dismissAll() pops entire stack back to root on press.
+ * @coupling Relies on expo-router navigation state; getParent() may be undefined in tests.
+ */
 export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
   const { theme } = useTheme();
   const router = useRouter();
@@ -21,6 +26,7 @@ export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
   // For screens in nested stacks (e.g. movie/[id]/_layout), the nearest
   // navigator's index is 0. Check the parent navigator too and use the max.
   const state = navigation.getState();
+  // @edge stackDepth falls back to 0 when navigation state is unavailable
   let stackDepth = state?.index ?? 0;
   try {
     const parentIndex = navigation.getParent?.()?.getState?.()?.index;
@@ -30,6 +36,7 @@ export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
   } catch {
     // getParent may not exist in all environments
   }
+  // @invariant Button hidden at depth 0-1 unless forceShow overrides
   const shouldShow = forceShow ?? stackDepth >= 2;
 
   if (!shouldShow) return null;

@@ -31,9 +31,11 @@ export interface FaqAccordionProps {
 
 export function FaqAccordion({ items, theme }: FaqAccordionProps) {
   const { t } = useTranslation();
+  /** @invariant only one FAQ item can be expanded at a time; null = all collapsed */
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const styles = createStyles(theme);
 
+  /** @contract toggling an already-expanded item collapses it (accordion behavior) */
   const toggle = (index: number) => {
     setExpandedIndex((prev) => (prev === index ? null : index));
   };

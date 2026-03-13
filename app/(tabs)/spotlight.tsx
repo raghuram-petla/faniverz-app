@@ -30,11 +30,14 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import { createStyles } from '@/styles/tabs/spotlight.styles';
 
 const HorizontalSpacer = () => <View style={{ width: 12 }} />;
+// @invariant Hero carousel shows at most 7 featured movies; platform grid shows at most 8 tiles
 const FEATURED_MOVIE_LIMIT = 7;
 const PLATFORM_TILE_COUNT = 8;
 const PLATFORM_GRID_H_PADDING = 32;
 const PLATFORM_GRID_GAP_TOTAL = 36;
 
+// @boundary Spotlight home — hero carousel, sections by status, and platform grid
+// @coupling useMovies + useMoviePlatformMap + usePlatforms — three data fetches combined
 export default function SpotlightScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -42,6 +45,7 @@ export default function SpotlightScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
+  // @assumes 4 tiles per row; tileSize is derived from screen width minus padding/gaps
   const tileSize = Math.floor(
     (screenWidth - PLATFORM_GRID_H_PADDING - PLATFORM_GRID_GAP_TOTAL) / 4,
   );
@@ -61,10 +65,12 @@ export default function SpotlightScreen() {
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
+  // @coupling deriveMovieStatus — shared logic from @shared/movieStatus determines in_theaters/streaming/upcoming
   const moviesWithStatus = allMovies.map((m) => ({
     movie: m,
     status: deriveMovieStatus(m, (platformMap[m.id] ?? []).length),
   }));
+  // @contract Featured movies = in_theaters + streaming, sorted by is_featured flag, capped at 7
   const featuredMovies = moviesWithStatus
     .filter((ms) => ms.status === 'in_theaters' || ms.status === 'streaming')
     .sort((a, b) => (b.movie.is_featured ? 1 : 0) - (a.movie.is_featured ? 1 : 0))
@@ -79,6 +85,7 @@ export default function SpotlightScreen() {
   const upcomingMovies = moviesWithStatus
     .filter((ms) => ms.status === 'upcoming')
     .map((ms) => ms.movie);
+  // @contract Upcoming split: no platforms = theatrical release; has platforms = OTT release
   const upcomingTheatrical = upcomingMovies.filter(
     (m) => !platformMap[m.id] || platformMap[m.id].length === 0,
   );
@@ -132,6 +139,7 @@ export default function SpotlightScreen() {
           isRefreshing={isRefreshing}
           refreshing={refreshing}
         />
+        {/* @edge Shows empty state only when ALL four movie categories are empty */}
         {isLoading ? (
           <SpotlightSkeleton />
         ) : featuredMovies.length === 0 &&
@@ -228,6 +236,7 @@ export default function SpotlightScreen() {
                 </View>
               )}
 
+              {/* @invariant Displays at most PLATFORM_TILE_COUNT (8) platform tiles */}
               {platforms.length > 0 && (
                 <View>
                   <SectionHeader title={t('home.browseByPlatform')} />

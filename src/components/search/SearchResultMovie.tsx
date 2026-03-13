@@ -19,6 +19,7 @@ export interface SearchResultMovieProps {
   onPress: () => void;
 }
 
+/** @coupling useMovieAction derives quick-action type from movie status and platform availability */
 export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMovieProps) {
   const { theme } = useTheme();
   const s = createStyles(theme);
@@ -65,6 +66,7 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
             {movie.director}
           </Text>
         )}
+        {/* @nullable genres may be null/undefined from API; defaults to empty array */}
         {(movie.genres ?? []).length > 0 && (
           <Text style={s.genres} numberOfLines={1}>
             {(movie.genres ?? []).join(' • ')}

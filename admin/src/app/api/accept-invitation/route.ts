@@ -8,9 +8,13 @@ import { verifyBearer } from '@/lib/sync-helpers';
  * Verifies the caller's identity via the Supabase access token, then
  * uses the service role key to create admin_user_roles + admin_ph_assignments.
  */
+// @boundary: public-facing route — caller authenticates via Supabase access token, not admin role
+// @contract: returns { role: string } on success; role is the role_id UUID or 'existing'
+// @sideeffect: inserts into admin_user_roles, admin_ph_assignments; updates admin_invitations status
 export async function POST(req: NextRequest) {
   try {
     // Verify the caller's identity via their access token
+    // @coupling: verifyBearer uses Supabase anon client (not admin) — intentional for self-service flow
     const authUser = await verifyBearer(req.headers.get('authorization'));
     if (!authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,6 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure the caller matches the claimed userId and email
+    // @invariant: caller can only accept invitations addressed to their own email
     if (authUser.id !== userId || authUser.email?.toLowerCase() !== email.toLowerCase()) {
       return NextResponse.json({ error: 'Identity mismatch' }, { status: 403 });
     }
@@ -29,6 +34,8 @@ export async function POST(req: NextRequest) {
     const supabaseAdmin = getSupabaseAdmin();
 
     // Find pending, non-expired invitation for this email
+    // @assumes: admin_invitations.email is stored lowercase; caller email is normalized above
+    // @edge: multiple pending invitations for same email — takes most recent via order+limit
     const { data: invitation, error: inviteErr } = await supabaseAdmin
       .from('admin_invitations')
       .select('*')
@@ -74,6 +81,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create PH assignments if applicable
+    // @nullable: production_house_ids may be null/empty for roles that don't need PH scoping
     const phIds = invitation.production_house_ids as string[];
     if (phIds && phIds.length > 0) {
       const phRows = phIds.map((phId: string) => ({
@@ -88,6 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark invitation as accepted
+    // @edge: if role insert succeeded but this update fails, user has role but invitation stays pending
     const { error: acceptErr } = await supabaseAdmin
       .from('admin_invitations')
       .update({ status: 'accepted', accepted_at: new Date().toISOString() })

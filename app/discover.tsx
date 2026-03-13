@@ -35,8 +35,10 @@ export default function DiscoverScreen() {
   const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  // @boundary: deep-link params — filter/platform may arrive from home screen shortcuts
   const params = useLocalSearchParams<{ filter?: string; platform?: string }>();
 
+  // @coupling: useFilterStore — global Zustand store shared with DiscoverFilterModal
   const {
     selectedFilter,
     selectedGenres,
@@ -65,11 +67,14 @@ export default function DiscoverScreen() {
     transform: [{ rotate: `${chevronRotate.value}deg` }],
   }));
 
+  // @sideeffect: applies deep-link params on mount only (empty deps intentional)
+  // @assumes: params.filter is a valid MovieStatus or 'all'
   useEffect(() => {
     if (params.filter) setFilter(params.filter as 'all' | MovieStatus);
     if (params.platform) togglePlatform(params.platform);
   }, []);
 
+  // @contract: only movieStatus and sortBy are sent to the API; genre/platform/PH filtering is client-side
   const filters = useMemo(
     () => ({
       ...(selectedFilter !== 'all' && { movieStatus: selectedFilter }),
@@ -97,6 +102,8 @@ export default function DiscoverScreen() {
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
   const { data: phMovieIds = [] } = useMovieIdsByProductionHouse(selectedProductionHouses);
 
+  // @invariant: all filtering (search, genre, platform, PH) happens client-side on already-fetched pages
+  // @nullable: m.director and m.genres may be null — guarded with ?.toLowerCase() and ?? []
   const filteredMovies = useMemo(() => {
     let movies = allMovies;
 
@@ -136,6 +143,7 @@ export default function DiscoverScreen() {
   const activeFilterCount =
     selectedGenres.length + selectedPlatforms.length + selectedProductionHouses.length;
 
+  // @edge: guard against double-fetch when already loading the next page
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();

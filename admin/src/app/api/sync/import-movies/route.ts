@@ -8,8 +8,11 @@ import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers
  * Import one or more movies from TMDB by their TMDB IDs.
  * Creates sync_log entries to track progress.
  */
+// @contract: returns { syncLogId, results, errors }; partial success is possible (some movies fail)
+// @sideeffect: creates movies, actors, credits, genres in DB; writes sync_log entries
 export async function POST(request: NextRequest) {
   try {
+    // @boundary: admin-only — import creates significant DB state
     const user = await verifyAdmin(request.headers.get('authorization'));
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -26,6 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Limit batch size to prevent timeout
+    // @edge: serverless function timeout — sequential TMDB fetches + DB writes can exceed limit at >5
     if (tmdbIds.length > 5) {
       return NextResponse.json(
         { error: 'Maximum 5 movies per batch. Send multiple requests for larger imports.' },
@@ -41,6 +45,7 @@ export async function POST(request: NextRequest) {
     let added = 0;
     let updated = 0;
 
+    // @assumes: sequential processing is intentional — avoids TMDB rate limits from parallel requests
     for (const tmdbId of tmdbIds) {
       try {
         const result = await processMovieFromTmdb(tmdbId, tmdb.apiKey, supabase);
@@ -53,6 +58,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // @edge: partial failure (some succeed, some fail) still logs as 'success' — only all-fail is 'failed'
     await completeSyncLog(supabase, syncLogId, {
       status: errors.length === 0 ? 'success' : results.length > 0 ? 'success' : 'failed',
       moviesAdded: added,

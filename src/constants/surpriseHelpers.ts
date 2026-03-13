@@ -10,6 +10,7 @@ export interface PillConfig {
   activeColor: string;
 }
 
+// @sync pill order and categories must match SurpriseCategory type and backend surprise_videos categories
 export const PILLS: PillConfig[] = [
   { label: 'All', value: 'all', activeColor: colors.red600 },
   { label: 'Songs', value: 'song', activeColor: colors.purple600 },
@@ -20,6 +21,8 @@ export const PILLS: PillConfig[] = [
 
 export const CARD_GRADIENTS: readonly string[] = colors.cardGradients;
 
+// @coupling colors must stay in sync with PILLS activeColor values above
+// @edge default case returns red600 for 'trailer' and any future categories
 export function getCategoryColor(category: SurpriseCategory): string {
   switch (category) {
     case 'song':
@@ -35,6 +38,7 @@ export function getCategoryColor(category: SurpriseCategory): string {
   }
 }
 
+// @edge default returns raw category string — safe fallback for new categories
 export function getCategoryLabel(category: SurpriseCategory): string {
   switch (category) {
     case 'song':
@@ -71,4 +75,5 @@ export function getCategoryIconName(
   }
 }
 
+// @coupling re-exports formatCompactNumber as formatViews for backward compatibility
 export { formatCompactNumber as formatViews } from '@/utils/formatNumber';

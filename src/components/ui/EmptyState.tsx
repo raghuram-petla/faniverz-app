@@ -13,6 +13,10 @@ import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
+/**
+ * @contract Centered empty-state placeholder with icon pop-in and staggered text fade.
+ * @edge Action button only rendered when BOTH actionLabel and onAction are provided.
+ */
 interface EmptyStateProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -26,6 +30,7 @@ export function EmptyState({ icon, title, subtitle, actionLabel, onAction }: Emp
   const styles = useMemo(() => createStyles(theme), [theme]);
   const animationsEnabled = useAnimationsEnabled();
 
+  // @sync Icon and text animate in sequence: icon springs in first, text fades in after 200ms delay
   const iconScale = useSharedValue(animationsEnabled ? 0 : 1);
   const textOpacity = useSharedValue(animationsEnabled ? 0 : 1);
 

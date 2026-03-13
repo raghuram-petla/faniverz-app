@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
 import type { SemanticTheme } from '@shared/themes';
 
+/** @invariant must match the visual height of the header content area (logo + buttons) */
 const HEADER_CONTENT_HEIGHT = 52;
 
 export interface CollapsibleHeaderState {
@@ -20,9 +21,11 @@ export interface CollapsibleHeaderState {
   handleScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
+/** @contract returns scroll handler that collapses header on scroll-down, reveals on scroll-up */
 export function useCollapsibleHeader(insetTop: number): CollapsibleHeaderState {
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
+  /** @sync headerOffset tracks cumulative scroll diff, clamped to [0, HEADER_CONTENT_HEIGHT] */
   const headerOffset = useRef(0);
   const totalHeaderHeight = insetTop + HEADER_CONTENT_HEIGHT;
 
@@ -31,6 +34,7 @@ export function useCollapsibleHeader(insetTop: number): CollapsibleHeaderState {
       const rawY = e.nativeEvent.contentOffset.y;
       const currentY = Math.max(0, rawY);
 
+      /** @edge bounce/overscroll: reset header to fully visible when at top */
       if (currentY <= 0) {
         headerOffset.current = 0;
         headerTranslateY.setValue(0);

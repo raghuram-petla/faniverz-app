@@ -8,9 +8,12 @@ interface Movie {
   title: string;
 }
 
+/** @contract typeahead movie search with dropdown selection for notification targeting */
 export interface MovieSearchFieldProps {
+  /** @nullable undefined during initial movie list fetch */
   movies: Movie[] | undefined;
   movieSearch: string;
+  /** @edge empty string means no movie selected; dropdown only shows when movieId is empty */
   movieId: string;
   inputClass: string;
   onSearchChange: (value: string) => void;
@@ -27,6 +30,7 @@ export function MovieSearchField({
   onMovieSelect,
   onClear,
 }: MovieSearchFieldProps) {
+  /** @edge client-side filter on full movie list — works for current dataset size but not scalable */
   const filtered = useMemo(
     () => movies?.filter((m) => m.title.toLowerCase().includes(movieSearch.toLowerCase())),
     [movies, movieSearch],
@@ -45,8 +49,10 @@ export function MovieSearchField({
           className={`${inputClass} pl-10`}
         />
       </div>
+      {/** @invariant dropdown only visible when searching AND no movie is already selected */}
       {movieSearch && filtered && filtered.length > 0 && !movieId && (
         <div className="bg-surface-elevated border border-outline rounded-lg max-h-40 overflow-y-auto">
+          {/** @edge caps dropdown at 10 results to prevent layout overflow */}
           {filtered.slice(0, 10).map((movie) => (
             <button
               key={movie.id}

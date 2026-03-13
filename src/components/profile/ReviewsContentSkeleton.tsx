@@ -2,6 +2,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
 
 const W = Dimensions.get('window').width;
+/** @assumes 16px horizontal padding on each side + 8px gaps between 3 stat cards */
 const STAT_W = (W - 48) / 3;
 const REVIEWS = [1, 2, 3];
 

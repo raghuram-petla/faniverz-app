@@ -1,6 +1,7 @@
 'use client';
 import { DEVICES, type DeviceConfig } from '@shared/constants';
 
+/** @coupling DEVICES array from @shared/constants defines available device presets */
 interface DeviceSelectorProps {
   selected: DeviceConfig;
   onChange: (device: DeviceConfig) => void;
@@ -11,6 +12,7 @@ export function DeviceSelector({ selected, onChange }: DeviceSelectorProps) {
     <select
       value={selected.name}
       onChange={(e) => {
+        /** @assumes device names are unique within DEVICES array */
         const device = DEVICES.find((d) => d.name === e.target.value);
         if (device) onChange(device);
       }}

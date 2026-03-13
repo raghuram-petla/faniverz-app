@@ -39,6 +39,7 @@ export function SectionTitle({
   const styles = createStyles(theme);
   const animationsEnabled = useAnimationsEnabled();
   const rot = useSharedValue(collapsed ? 0 : 90);
+  /** @sideeffect animates chevron rotation: 0deg when collapsed, 90deg when expanded */
   useEffect(() => {
     const deg = collapsed ? 0 : 90;
     rot.value = animationsEnabled ? withTiming(deg, { duration: 200 }) : deg;

@@ -11,6 +11,7 @@ import {
 
 const SKELETON_CARDS = [1, 2, 3];
 
+/** @contract renders a reusable section skeleton with header + horizontal card row */
 function SectionSkeleton({ testID }: { testID?: string }) {
   const { theme } = useTheme();
   const styles = createStyles(theme);

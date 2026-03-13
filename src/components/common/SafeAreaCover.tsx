@@ -7,6 +7,11 @@ export interface SafeAreaCoverProps {
   backgroundColor?: string;
 }
 
+/**
+ * @contract Absolutely-positioned bar covering the status bar notch area.
+ * @assumes Parent uses position:relative or the root View so zIndex:100 stacks correctly.
+ * @coupling useSafeAreaInsets — height is 0 on devices without a notch.
+ */
 export function SafeAreaCover({ backgroundColor }: SafeAreaCoverProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();

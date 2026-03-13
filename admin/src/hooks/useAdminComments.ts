@@ -3,6 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { FeedComment } from '@/lib/types';
 
+// @boundary: joins feed_comments with news_feed and profiles via PostgREST foreign-key selects
+// @edge: search filters body via ilike server-side, but profile.display_name is matched client-side
+//        because PostgREST cannot OR across foreign table columns
+// @contract: returns max 200 comments, newest first; query disabled for 1-char searches
 export function useAdminComments(search = '') {
   return useQuery({
     queryKey: ['admin', 'comments', search],
@@ -38,6 +42,7 @@ export function useAdminComments(search = '') {
   });
 }
 
+// @sideeffect: invalidates all ['admin', 'comments'] queries on success; window.alert on error
 export function useUpdateComment() {
   const qc = useQueryClient();
   return useMutation({
@@ -55,6 +60,7 @@ export function useUpdateComment() {
   });
 }
 
+// @sideeffect: hard-deletes comment row from feed_comments; no soft-delete
 export function useDeleteComment() {
   const qc = useQueryClient();
   return useMutation({

@@ -29,6 +29,8 @@ import {
   useActiveSection,
 } from '@/components/movie-edit';
 
+// @coupling: entire edit state (form, pending adds/removes, dirty tracking, save) is managed by useMovieEditState hook
+// @coupling: seven sub-sections (BasicInfo, Videos, Posters, Platforms, ProductionHouses, Cast, TheatricalRuns) extracted to movie-edit components
 export default function EditMoviePage() {
   const { id } = useParams<{ id: string }>();
 
@@ -79,6 +81,7 @@ export default function EditMoviePage() {
     handleDelete,
   } = useMovieEditState(id);
 
+  // @sync: useActiveSection uses IntersectionObserver to highlight the section nav based on scroll position
   const { activeId: activeSection, scrollTo } = useActiveSection(MOVIE_SECTIONS.map((s) => s.id));
 
   if (isLoading)
@@ -110,6 +113,8 @@ export default function EditMoviePage() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {/* @sideeffect: handleSubmit persists all pending adds/removes/field changes in a single batch to Supabase */}
+            {/* @invariant: button is disabled until at least one field diverges from the server snapshot (isDirty) */}
             <button
               onClick={() => handleSubmit()}
               disabled={!isDirty || isSaving}
@@ -265,6 +270,7 @@ export default function EditMoviePage() {
         </div>
 
         {/* Right column — Preview */}
+        {/* @coupling: PreviewPanel renders a device-framed mobile movie detail preview, mirrors the mobile MovieDetail screen */}
         <PreviewPanel form={form} />
       </div>
     </div>

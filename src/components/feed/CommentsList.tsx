@@ -15,6 +15,7 @@ export interface CommentsListProps {
   onDelete?: (commentId: string) => void;
 }
 
+/** @contract three states: loading spinner, empty state, or comment list with optional pagination */
 export function CommentsList({
   comments,
   userId,
@@ -50,6 +51,7 @@ export function CommentsList({
         <CommentItem
           key={comment.id}
           comment={comment}
+          /** @nullable userId can be null for unauthenticated users — isOwn will be false */
           isOwn={comment.user_id === userId}
           onDelete={onDelete}
         />

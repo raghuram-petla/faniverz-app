@@ -15,6 +15,8 @@ const crud = createCrudHooks<NewsFeedItem>({
 });
 
 // Custom list: multi-column ordering + JOIN + feed_type filter
+// @boundary Bypasses createCrudHooks list — needs triple-sort (pinned, order, date) + movie JOIN
+// @nullable filter param: omitted = all feed types returned
 export function useAdminFeed(filter?: FeedType) {
   return useQuery({
     queryKey: [...QUERY_KEY, filter],
@@ -39,6 +41,7 @@ export function useAdminFeed(filter?: FeedType) {
 }
 
 // Custom single: needs JOIN
+// @boundary Bypasses crud.useSingle — same movie JOIN as list query
 export function useAdminFeedItem(id: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, id],
@@ -59,6 +62,7 @@ export const useCreateFeedItem = crud.useCreate;
 export const useUpdateFeedItem = crud.useUpdate;
 export const useDeleteFeedItem = crud.useDelete;
 
+// @sideeffect Toggles is_pinned flag — affects sort order since pinned items appear first
 export function useTogglePinFeed() {
   const qc = useQueryClient();
   return useMutation({
@@ -91,6 +95,8 @@ export function useToggleFeatureFeed() {
   });
 }
 
+// @sideeffect Batch-updates display_order for all items; fires N parallel Supabase calls
+// @edge If one update fails mid-batch, earlier updates persist — no transaction rollback
 export function useReorderFeed() {
   const qc = useQueryClient();
   return useMutation({

@@ -10,6 +10,7 @@ import { Users, Loader2, Ban, Pencil, X, Check } from 'lucide-react';
 
 const PAGE_SIZE = 50;
 
+// @nullable Both url and name can be null — renders initials fallback or '?' placeholder
 function UserAvatar({ url, name }: { url: string | null; name: string | null }) {
   const initials = (name ?? '?')[0]?.toUpperCase() ?? '?';
 
@@ -26,9 +27,12 @@ function UserAvatar({ url, name }: { url: string | null; name: string | null }) 
   );
 }
 
+// @contract Server-side pagination (not cursor-based) — page index sent to API
 export default function AppUsersPage() {
+  // @sync Page resets to 0 on search change via handleSearchChange
   const [page, setPage] = useState(0);
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+  // @invariant At most one user can be in edit mode at a time
   const [editingUser, setEditingUser] = useState<EndUserProfile | null>(null);
   const [editName, setEditName] = useState('');
 
@@ -50,6 +54,8 @@ export default function AppUsersPage() {
     setPage(0);
   };
 
+  // @sideeffect Banning prevents the user from logging in to the mobile app
+  // @boundary Ban is irreversible from this page — no unban action exposed here
   const handleBan = (user: EndUserProfile) => {
     const name = user.display_name ?? user.email ?? 'this user';
     if (!confirm(`Ban ${name}? They will not be able to log in.`)) return;
@@ -131,6 +137,7 @@ export default function AppUsersPage() {
   );
 }
 
+// @contract UserTable is a presentation component — all mutations delegated via callbacks
 interface UserTableProps {
   users: EndUserProfile[];
   editingUser: EndUserProfile | null;

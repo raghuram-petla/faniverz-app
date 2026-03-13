@@ -18,9 +18,14 @@ interface SkeletonBoxProps {
   testID?: string;
 }
 
+/**
+ * @contract Renders a themed placeholder box with infinite shimmer animation.
+ * @sideeffect Starts an infinite withRepeat animation on mount; cleaned up by reanimated on unmount.
+ */
 export function SkeletonBox({ width, height, borderRadius = 8, style, testID }: SkeletonBoxProps) {
   const { theme } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
+  // @invariant Shimmer gradient sweeps full screen width regardless of box width
   const translateX = useSharedValue(-screenWidth);
 
   useEffect(() => {

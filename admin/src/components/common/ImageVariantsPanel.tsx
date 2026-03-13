@@ -4,7 +4,9 @@ import { ChevronDown, ChevronRight, Copy, Check, RefreshCw, Loader2 } from 'luci
 import { useImageVariants, type VariantInfo } from '@/hooks/useImageVariants';
 import type { VariantType } from '@/lib/variant-config';
 
+// @contract collapsible panel that checks CDN variant availability for a given original image
 export interface ImageVariantsPanelProps {
+  // @nullable null means no image uploaded yet — component renders nothing
   originalUrl: string | null;
   variantType: VariantType;
 }
@@ -41,6 +43,7 @@ function SummaryDot({
 function CopyButton({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
 
+  // @sideeffect writes to system clipboard; resets copied state after 1.5s
   async function handleCopy() {
     await navigator.clipboard.writeText(url);
     setCopied(true);
@@ -67,6 +70,7 @@ const LABEL_COLORS: Record<string, string> = {
 };
 
 function VariantRow({ variant, thumbnailUrl }: { variant: VariantInfo; thumbnailUrl: string }) {
+  // @nullable variant.width — null means original (unresized) image
   const specs = variant.width ? `${variant.width}px @ q${variant.quality}` : 'Full size';
 
   return (
@@ -96,12 +100,14 @@ export function ImageVariantsPanel({ originalUrl, variantType }: ImageVariantsPa
     variantType,
   );
 
+  // @edge no image uploaded — render nothing
   if (!originalUrl) return null;
 
   const summaryText = isChecking
     ? 'Checking variants...'
     : `${readyCount}/${totalCount} variants ready`;
 
+  // @edge fallback to first variant if SM doesn't exist
   const thumbnailUrl = variants.find((v) => v.label === 'SM')?.url ?? variants[0]?.url;
 
   return (

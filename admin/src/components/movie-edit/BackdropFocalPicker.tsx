@@ -2,9 +2,10 @@
 import { useRef, useCallback, useState } from 'react';
 import { HERO_HEIGHT, DEVICES, SPOTLIGHT_GRADIENT } from '@shared/constants';
 
-// Use widest device — gives the most conservative (smallest) frame for portrait images.
+// @assumes widest device gives the most conservative (smallest) frame for portrait images.
 // Whatever the picker shows as "visible" will be visible on ALL devices.
 const HERO_WIDTH = Math.max(...DEVICES.map((d) => d.width));
+// @coupling HERO_HEIGHT from shared constants must match the mobile SpotlightCard height
 const HERO_ASPECT = HERO_WIDTH / HERO_HEIGHT;
 
 // Pre-compute the spotlight gradient CSS (same gradient used in the mobile hero)
@@ -32,8 +33,7 @@ export function BackdropFocalPicker({
   const cx = focusX ?? 0.5;
   const cy = focusY ?? 0.5;
 
-  // Determine panning direction from image vs hero aspect ratio
-  // Wider than hero → horizontal pan; taller than hero → vertical pan
+  // @contract panDir determines if user drags horizontally, vertically, or not at all
   const panDir =
     imageAspect == null
       ? null
@@ -49,10 +49,9 @@ export function BackdropFocalPicker({
   const overflowW = 1 - frameW;
   const overflowH = 1 - frameH;
 
-  // Frame position — matches CSS objectPosition semantics:
+  // @sync frame position mirrors CSS objectPosition semantics:
   // objectPosition X% distributes X% of the overflow to the left (cropped).
-  // So frameLeft = focusX × overflow.  This keeps the picker in sync with
-  // the preview, which uses `objectPosition: '${focusX*100}% ${focusY*100}%'`.
+  // frameLeft = focusX * overflow keeps picker in sync with PreviewPanel.
   const frameLeft = panDir === 'horizontal' ? cx * overflowW : 0;
   const frameTop = panDir === 'vertical' ? cy * overflowH : 0;
 
@@ -63,6 +62,7 @@ export function BackdropFocalPicker({
     }
   }, []);
 
+  // @boundary clamps focus values to [0, 1] range; no-op when panDir is 'none'
   const positionFromEvent = useCallback(
     (clientX: number, clientY: number) => {
       const el = containerRef.current;
@@ -88,6 +88,7 @@ export function BackdropFocalPicker({
     [onChange, frameW, frameH, overflowW, overflowH, cx, cy, panDir],
   );
 
+  // @sideeffect captures pointer to continue tracking outside the container bounds
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault();
@@ -110,6 +111,7 @@ export function BackdropFocalPicker({
     dragging.current = false;
   }, []);
 
+  // @edge no backdrop uploaded — render nothing
   if (!backdropUrl) return null;
 
   const containerAspectRatio = imageAspect != null ? `${imageAspect}` : '16 / 9';

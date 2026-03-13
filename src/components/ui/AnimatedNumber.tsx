@@ -15,10 +15,16 @@ export interface AnimatedNumberProps extends Omit<TextProps, 'children'> {
   suffix?: string;
 }
 
+/** @contract Cubic ease-out for smooth deceleration toward target number */
 function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
+/**
+ * @contract Animates a number counting up/down using requestAnimationFrame on the JS thread.
+ * @sync Uses rAF (not reanimated) because Text content cannot be driven from the UI thread.
+ * @edge When animations are disabled, value snaps immediately without counting.
+ */
 export function AnimatedNumber({
   value,
   duration = 800,
@@ -31,6 +37,7 @@ export function AnimatedNumber({
   const [displayValue, setDisplayValue] = useState(animationsEnabled ? 0 : value);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
+  // @invariant fromRef captures the display value at animation start to interpolate from
   const fromRef = useRef(0);
 
   useEffect(() => {

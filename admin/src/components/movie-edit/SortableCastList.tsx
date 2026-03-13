@@ -19,6 +19,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { MovieCast } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
 
+// @coupling @dnd-kit/sortable — each item must have a unique id for drag tracking
 function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entry.id,
@@ -56,6 +57,7 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
           <User className="w-4 h-4 text-on-surface-subtle" />
         )}
       </div>
+      {/* @nullable actor relation may not be joined — falls back to raw actor_id */}
       <span className="text-on-surface font-medium flex-1 truncate">
         {entry.actor?.name ?? entry.actor_id}
       </span>
@@ -80,6 +82,7 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
   );
 }
 
+// @contract renders a drag-and-drop sortable list; parent handles reorder logic in onDragEnd
 export function SortableList({
   items,
   onDragEnd,
@@ -87,13 +90,16 @@ export function SortableList({
 }: {
   items: MovieCast[];
   onDragEnd: (event: DragEndEvent) => void;
+  // @boundary isPending flag lets parent decide DB delete vs pending-state removal
   onRemove: (id: string, isPending: boolean) => void;
 }) {
+  // @assumes 5px distance constraint prevents accidental drags on click
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // @edge empty list — skip DndContext setup entirely
   if (items.length === 0) return null;
 
   return (

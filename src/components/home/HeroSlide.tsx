@@ -15,12 +15,15 @@ import { useTranslation } from 'react-i18next';
 import { createStyles } from './HeroCarousel.styles';
 import type { Movie, OTTPlatform } from '@/types';
 
+/** @contract Renders a single hero slide with backdrop, meta, OTT badges, and action buttons */
 export interface HeroSlideProps {
   movie: Movie;
+  /** @coupling Must match the platforms keyed by movie.id in HeroCarousel's platformMap */
   platforms: OTTPlatform[];
   isFollowed: boolean;
   isInWatchlist: boolean;
   onWatchNow: () => void;
+  /** @contract Parent must handle auth-gating before mutating follow/watchlist state */
   onActionToggle: (actionType: 'follow' | 'watchlist') => void;
 }
 
@@ -37,13 +40,16 @@ export function HeroSlide({
   const styles = createStyles(theme);
 
   const releaseYear = extractReleaseYear(movie.release_date);
+  /** @boundary deriveMovieStatus is shared logic — depends on release_date + platforms count */
   const status = deriveMovieStatus(movie, platforms.length);
+  /** @coupling actionType derived from status determines whether follow or watchlist button shows */
   const actionType = getMovieActionType(status);
   const isActionActive = actionType === 'follow' ? isFollowed : isInWatchlist;
 
   return (
     <View style={styles.slide}>
       <Image
+        /** @nullable backdrop_url/poster_url may be null; falls back to PLACEHOLDER_POSTER */
         source={{
           uri:
             getImageUrl(movie.backdrop_url, 'md') ??
@@ -52,6 +58,7 @@ export function HeroSlide({
         }}
         style={styles.backdrop}
         contentFit="cover"
+        /** @nullable spotlight_focus_x/y overrides backdrop_focus_x/y; both may be null */
         contentPosition={
           (movie.spotlight_focus_x ?? movie.backdrop_focus_x) != null &&
           (movie.spotlight_focus_y ?? movie.backdrop_focus_y) != null
@@ -70,12 +77,14 @@ export function HeroSlide({
 
       <View style={styles.content}>
         {/* Badges row */}
+        {/** @edge upcoming movies intentionally excluded from status badge display */}
         <View style={styles.badgeRow}>
           {(status === 'in_theaters' || status === 'streaming') && (
             <View style={[styles.typeBadge, { backgroundColor: getMovieStatusColor(status) }]}>
               <Text style={styles.typeBadgeText}>{getMovieStatusLabel(status)}</Text>
             </View>
           )}
+          {/** @edge rating of 0 means no reviews yet — hide star badge entirely */}
           {movie.rating > 0 && (
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={14} color={colors.yellow400} />
@@ -118,6 +127,7 @@ export function HeroSlide({
 
         {/* Buttons */}
         <View style={styles.buttonRow}>
+          {/** @invariant watch button always navigates to movie detail regardless of status label */}
           <TouchableOpacity
             style={styles.watchButton}
             onPress={onWatchNow}

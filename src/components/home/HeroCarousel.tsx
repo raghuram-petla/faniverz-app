@@ -13,11 +13,15 @@ import { useWatchlistSet, useWatchlistMutations } from '@/features/watchlist/hoo
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useAuthGate } from '@/hooks/useAuthGate';
 
+/** @invariant Must be long enough for user to read slide content */
 const AUTO_PLAY_INTERVAL = 5000;
+/** @sync Delay before resetting clone slide to real first — must exceed scroll animation duration */
 const CLONE_RESET_DELAY = 400;
 
+/** @contract Infinite-loop hero carousel with auto-play, dot pagination, and follow/watchlist actions */
 interface HeroCarouselProps {
   movies: Movie[];
+  /** @nullable When undefined, no platform badges render on any slide */
   platformMap?: Record<string, OTTPlatform[]>;
 }
 
@@ -37,12 +41,13 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   const userId = user?.id ?? '';
   const { gate } = useAuthGate();
 
-  // Append clone of first item for seamless loop
+  /** @edge Appends clone of first slide for seamless infinite loop; skipped for single-item lists */
   const extendedMovies = useMemo(() => {
     if (movies.length <= 1) return movies;
     return [...movies, movies[0]];
   }, [movies]);
 
+  /** @sync Ref keeps movies.length in sync for use inside stale onViewableItemsChanged closure */
   const moviesLenRef = useRef(movies.length);
   moviesLenRef.current = movies.length;
   const cloneResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -54,7 +59,10 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
     };
   }, []);
 
-  // Track visible item via onViewableItemsChanged
+  /**
+   * @sideeffect When clone slide becomes visible, schedules silent reset to real first index.
+   * @assumes FlatList calls this with at least one viewable item when scrolling settles.
+   */
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0 && viewableItems[0].index != null) {
       const idx = viewableItems[0].index;
@@ -112,8 +120,10 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
     [router],
   );
 
+  /** @edge Empty movies array renders nothing — parent should show skeleton instead */
   if (movies.length === 0) return null;
 
+  /** @sideeffect Mutates follow/watchlist state via TanStack mutations; auth-gated */
   const handleActionToggle = useCallback(
     (movieId: string, actionType: 'follow' | 'watchlist') =>
       gate(() => {
@@ -165,6 +175,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        /** @invariant Clone slide at index === movies.length gets distinct key to avoid React reconciliation issues */
         keyExtractor={(item, index) => (index === movies.length ? `${item.id}-clone` : item.id)}
         renderItem={renderSlide}
         onViewableItemsChanged={onViewableItemsChanged}
@@ -200,6 +211,7 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
   );
 }
 
+/** @contract Animated dot: expands to 32px when active, collapses to 6px when inactive */
 function CarouselDot({ isActive, onPress }: { isActive: boolean; onPress: () => void }) {
   const animationsEnabled = useAnimationsEnabled();
   const width = useSharedValue(isActive ? 32 : 6);

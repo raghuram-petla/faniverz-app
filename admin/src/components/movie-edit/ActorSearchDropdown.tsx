@@ -4,11 +4,13 @@ import { User } from 'lucide-react';
 import type { Actor } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
 
+// @contract controlled typeahead — parent provides filtered actors list and manages search state
 interface Props {
   actors: Actor[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onSelect: (actor: Actor) => void;
+  // @invariant when selectedActorId is truthy, dropdown hides even if searchQuery >= 2 chars
   selectedActorId: string;
 }
 
@@ -35,6 +37,7 @@ export function ActorSearchDropdown({
         onFocus={() => setDropdownOpen(true)}
         className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
       />
+      {/* @edge dropdown only opens with >= 2 chars AND no actor already selected */}
       {dropdownOpen && searchQuery.length >= 2 && !selectedActorId && (
         <div className="absolute z-40 top-full mt-1 left-0 right-0 bg-surface border border-outline rounded-lg shadow-xl max-h-48 overflow-y-auto">
           {actors.length > 0 ? (
@@ -49,6 +52,7 @@ export function ActorSearchDropdown({
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-on-surface hover:bg-input text-left"
               >
                 <div className="w-6 h-6 rounded-full bg-input overflow-hidden shrink-0 flex items-center justify-center">
+                  {/* @nullable photo_url — falls back to generic User icon */}
                   {a.photo_url ? (
                     <img
                       src={getImageUrl(a.photo_url, 'sm') ?? a.photo_url}

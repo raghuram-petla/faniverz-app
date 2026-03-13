@@ -19,6 +19,7 @@ interface PlatformFormData {
   logo_url: string;
 }
 
+// @contract emptyForm resets dialog state for both "add" and "cancel" flows
 const emptyForm: PlatformFormData = { name: '', logo_url: '' };
 
 export default function PlatformsPage() {
@@ -53,12 +54,16 @@ export default function PlatformsPage() {
     setForm(emptyForm);
   };
 
+  // @contract Dual-purpose handler: creates or updates based on editingId presence
+  // @sideeffect Closes dialog on success via onSuccess callback
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // @nullable Empty logo_url string is normalized to null for DB storage
     const payload = { name: form.name, logo_url: form.logo_url || null };
     if (editingId) {
       updatePlatform.mutate({ id: editingId, ...payload }, { onSuccess: handleClose });
     } else {
+      // @edge New platforms get auto-generated logo (first char) and default color/order
       createPlatform.mutate(
         {
           ...payload,
@@ -71,6 +76,7 @@ export default function PlatformsPage() {
     }
   };
 
+  // @sideeffect Cascade: deleting a platform also removes all its OTT release associations
   const handleDelete = (id: string) => {
     if (!confirm('Delete this platform? This will also remove all related OTT releases.')) return;
     deletePlatform.mutate(id);
@@ -161,6 +167,7 @@ export default function PlatformsPage() {
       )}
 
       {/* Dialog overlay */}
+      {/* @assumes Only one dialog instance exists — controlled by showDialog boolean */}
       {showDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-surface-card border border-outline rounded-xl p-6 w-full max-w-md mx-4 space-y-6">

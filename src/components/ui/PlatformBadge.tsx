@@ -3,12 +3,17 @@ import { Image } from 'expo-image';
 import { getPlatformLogo } from '@/constants/platformLogos';
 import { colors as palette } from '@/theme/colors';
 
+/**
+ * @contract Renders a small colored square with platform logo image or text fallback.
+ * @coupling getPlatformLogo — returns a local asset require() or null for unknown platforms.
+ */
 interface PlatformBadgeProps {
   platform: { id: string; color: string; logo: string };
   size?: number;
 }
 
 export function PlatformBadge({ platform, size = 24 }: PlatformBadgeProps) {
+  // @edge Falls back to text initial when logo asset is not registered for this platform ID
   const logo = getPlatformLogo(platform.id);
 
   return (

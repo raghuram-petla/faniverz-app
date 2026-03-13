@@ -24,7 +24,8 @@ const COLUMN_GAP = 12;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - 32 - COLUMN_GAP) / 2;
 
-// The API returns FavoriteActor with actor joined
+// @boundary: the API returns FavoriteActor with actor joined via Supabase select
+// @nullable: actor may be undefined if the join fails (e.g., deleted actor row)
 interface FavoriteActorWithActor extends FavoriteActor {
   actor?: Actor;
 }
@@ -50,6 +51,8 @@ export default function FavoriteActorsScreen() {
   const actorList = (favorites ?? []) as FavoriteActorWithActor[];
   const count = actorList.length;
 
+  // @edge: no-op when user is not authenticated
+  // @sideeffect: removes the favorite record from DB; query cache invalidated on success
   const handleRemove = (actorId: string) => {
     if (!user?.id) return;
     remove.mutate({ userId: user.id, actorId });

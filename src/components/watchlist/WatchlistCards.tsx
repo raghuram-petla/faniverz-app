@@ -18,9 +18,12 @@ interface CardProps {
   styles: Record<string, any>;
 }
 
+/** @contract shows movie status badge, rating, genres; actions: remove + mark as watched */
 export function AvailableCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
+  /** @sideeffect remove and markWatched trigger TanStack Query mutations that invalidate watchlist cache */
   const { remove, markWatched } = useWatchlistMutations();
+  /** @nullable movie may be null if the referenced movie was deleted from DB */
   const movie = entry.movie;
   if (!movie) return null;
 
@@ -89,6 +92,7 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
   );
 }
 
+/** @contract shows upcoming badge with formatted release date; same actions as AvailableCard */
 export function UpcomingCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -96,6 +100,7 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
   const movie = entry.movie;
   if (!movie) return null;
 
+  /** @nullable release_date — shows "TBA" when null */
   const releaseDateFormatted = movie.release_date
     ? new Date(movie.release_date).toLocaleDateString('en-IN', {
         month: 'short',
@@ -163,8 +168,10 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
   );
 }
 
+/** @contract dimmed card style for watched movies; actions: move back to watchlist + remove */
 export function WatchedCard({ entry, userId, styles }: CardProps) {
   const router = useRouter();
+  /** @sideeffect moveBack transitions movie from watched -> unwatched in the watchlist */
   const { remove, moveBack } = useWatchlistMutations();
   const movie = entry.movie;
   if (!movie) return null;

@@ -6,8 +6,10 @@ import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { MessageSquare, Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
 
+// @contract Inline editing uses local state (editingId/editBody) — only one comment editable at a time
 export default function CommentsPage() {
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+  // @invariant At most one comment can be in edit mode (editingId is singular)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
   const {
@@ -32,6 +34,7 @@ export default function CommentsPage() {
 
   const cancelEdit = () => setEditingId(null);
 
+  // @sideeffect Persists edited comment body and exits edit mode on success
   const saveEdit = () => {
     if (!editingId) return;
     updateComment.mutate(
@@ -111,10 +114,12 @@ export default function CommentsPage() {
                   <td className="px-6 py-4">
                     <span className="text-on-surface font-medium text-sm">
                       {comment.feed_item?.title ?? 'Untitled post'}
+                      {/* @nullable feed_item may be null if post was deleted */}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-on-surface-muted">
                     {comment.profile?.display_name ?? comment.profile?.email ?? 'Unknown'}
+                    {/* @nullable Falls through display_name -> email -> 'Unknown' */}
                   </td>
                   <td className="px-6 py-4 text-sm text-on-surface-muted max-w-md">
                     {editingId === comment.id ? (

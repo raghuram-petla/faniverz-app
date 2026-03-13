@@ -2,8 +2,10 @@
 import { ShieldX, Ban } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 
+// @coupling AuthProvider — reads blockedReason to distinguish blocked vs unauthorized
 export function AccessDenied() {
   const { signOut, blockedReason } = useAuth();
+  // @contract renders "Access Blocked" when blockedReason is truthy, "Access Denied" otherwise
   const isBlocked = !!blockedReason;
 
   return (

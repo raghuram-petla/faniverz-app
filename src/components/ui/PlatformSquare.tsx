@@ -6,6 +6,10 @@ import { isDark } from '@/utils/colorUtils';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 
+/**
+ * @contract Pressable colored square with platform logo; used on OTT filter/selection screens.
+ * @edge Falls back to text initial when logo asset is not registered for this platform.
+ */
 interface PlatformSquareProps {
   platform: OTTPlatform;
   size: number;
@@ -15,6 +19,7 @@ interface PlatformSquareProps {
 export function PlatformSquare({ platform, size, onPress }: PlatformSquareProps) {
   const { theme } = useTheme();
   const logo = getPlatformLogo(platform.id);
+  // @boundary Adds visible border only on dark-colored platforms to maintain contrast against dark backgrounds
   const dark = isDark(platform.color);
 
   return (

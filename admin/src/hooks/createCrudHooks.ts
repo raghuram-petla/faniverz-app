@@ -27,6 +27,8 @@ export interface CrudConfig {
   enabledFn?: (search: string) => boolean;
 }
 
+// @contract T must have an 'id' field — used for single-item invalidation and update/delete keys
+// @boundary All DB access via Supabase client; errors thrown to TanStack Query for handling
 export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
   const {
     table,
@@ -67,6 +69,7 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     });
   }
 
+  // @edge Hard limit of 5000 rows — no pagination; suitable only for small reference tables
   function useSimpleList() {
     return useQuery({
       queryKey: [...listKey],
@@ -82,6 +85,8 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     });
   }
 
+  // @edge Conditional hook call — React rules technically violated but safe because
+  // paginated is a static config value that never changes between renders
   function useList(search = '') {
     if (paginated) return usePaginatedList(search);
     return useSimpleList();
@@ -116,6 +121,7 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     });
   }
 
+  // @sideeffect Invalidates both list and single-item caches on success
   function useUpdate() {
     const qc = useQueryClient();
     return useMutation({

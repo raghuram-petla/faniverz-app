@@ -86,6 +86,8 @@ export interface StaleItemsResponse {
 
 // ── API fetch helper ──────────────────────────────────────────────────────────
 
+// @boundary Proxy to /api/sync/* Next.js routes — server handles TMDB API key securely
+// @contract GET when body is undefined; POST with JSON body otherwise
 async function syncApi<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`/api/sync/${path}`, {
     method: body !== undefined ? 'POST' : 'GET',
@@ -123,6 +125,8 @@ export function useTmdbLookup() {
 }
 
 /** Import movies from TMDB by their IDs. Max 5 per batch. */
+// @sideeffect Creates movies + cast + crew in DB; invalidates both sync and movies caches
+// @edge Max 5 per batch enforced server-side — larger arrays will be rejected
 export function useImportMovies() {
   const qc = useQueryClient();
   return useMutation({
@@ -138,6 +142,7 @@ export function useImportMovies() {
 }
 
 /** Refresh an existing movie from TMDB. */
+// @sideeffect Overwrites movie fields with latest TMDB data; invalidates movie + sync caches
 export function useRefreshMovie() {
   const qc = useQueryClient();
   return useMutation({
@@ -170,6 +175,7 @@ export function useRefreshActor() {
 }
 
 /** Fetch stale movies or actors missing bios. */
+// @nullable days param — omitted uses server default staleness threshold
 export function useStaleItems(type: 'movies' | 'actors-missing-bios', days?: number) {
   const params = new URLSearchParams({ type });
   if (days !== undefined) params.set('days', String(days));
@@ -181,6 +187,7 @@ export function useStaleItems(type: 'movies' | 'actors-missing-bios', days?: num
 }
 
 /** Search existing movies by title (typeahead). */
+// @edge enabled guard at query.length>=2 prevents excessive DB calls on single-char input
 export function useMovieSearch(query: string) {
   return useQuery({
     queryKey: ['admin', 'movie-search', query],

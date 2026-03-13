@@ -6,7 +6,9 @@ import { Tv, Trash2, Plus, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OttReleasesPage() {
+  // @coupling usePermissions gates both data scoping (PH filter) and delete button visibility
   const { isPHAdmin, productionHouseIds, canDelete } = usePermissions();
+  // @boundary PH admins only see releases for their production house movies
   const { data: releases, isLoading } = useAdminOttReleases(
     isPHAdmin ? productionHouseIds : undefined,
   );
@@ -65,7 +67,7 @@ export default function OttReleasesPage() {
             <tbody>
               {releases.map((release) => (
                 <tr
-                  key={`${release.movie_id}-${release.platform_id}`}
+                  key={`${release.movie_id}-${release.platform_id}`} /* @invariant Composite key — OTT releases keyed by (movie_id, platform_id) pair */
                   className="border-b border-outline-subtle hover:bg-surface-elevated transition-colors"
                 >
                   <td className="px-6 py-4">
@@ -101,6 +103,7 @@ export default function OttReleasesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {/* @contract Edit route uses tilde-separated composite key in URL */}
                       <Link
                         href={`/ott/${release.movie_id}~${release.platform_id}`}
                         className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
@@ -108,6 +111,7 @@ export default function OttReleasesPage() {
                       >
                         <Pencil className="w-4 h-4" />
                       </Link>
+                      {/* @invariant Delete gated by role-based canDelete('ott_release') */}
                       {canDelete('ott_release') && (
                         <button
                           onClick={() => handleDelete(release.movie_id, release.platform_id)}

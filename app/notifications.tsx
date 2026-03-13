@@ -30,6 +30,7 @@ type NotificationIconConfig = {
   bg: string;
 };
 
+// @edge: unknown notification types fall back to 'release' icon via ?? operator in NotificationItem
 const TYPE_ICON: Record<string, NotificationIconConfig> = {
   release: { name: 'film-outline', bg: palette.purple600 },
   watchlist: { name: 'calendar-outline', bg: palette.blue600 },
@@ -95,8 +96,10 @@ export default function NotificationsScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
 
+  // @assumes: userId is '' when logged out — hooks return empty data for empty userId
   const { data: notifications = [], refetch } = useNotifications(userId);
   const unreadCount = useUnreadCount(userId);
+  // @sideeffect: markRead/markAllRead trigger optimistic cache updates via TanStack Query
   const { markRead, markAllRead } = useNotificationMutations();
   const { refreshing, onRefresh } = useRefresh(refetch);
   const {
@@ -107,6 +110,8 @@ export default function NotificationsScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
+  // @sideeffect: marks as read (if unread) then navigates to movie detail
+  // @nullable: notification.movie_id may be null — only navigates when present
   const handleNotificationPress = (notification: Notification) => {
     if (!notification.read) {
       markRead.mutate(notification.id);
@@ -116,6 +121,7 @@ export default function NotificationsScreen() {
     }
   };
 
+  // @edge: no-op when there are no unread notifications or user is logged out
   const handleMarkAllRead = () => {
     if (userId && unreadCount > 0) {
       markAllRead.mutate(userId, {

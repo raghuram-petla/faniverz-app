@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { SyncLog } from '@/lib/types';
 
+// @contract: returns last 50 sync logs, newest first
+// @sync: auto-polls every 10s while any log has status === 'running'
 export function useAdminSyncLogs() {
   return useQuery({
     queryKey: ['admin', 'sync'],
@@ -23,6 +25,8 @@ export function useAdminSyncLogs() {
   });
 }
 
+// @boundary: invokes a Supabase Edge Function by name (e.g. 'sync-movies')
+// @sideeffect: window.alert on failure; invalidates sync query cache on success
 export function useTriggerSync() {
   const qc = useQueryClient();
   return useMutation({

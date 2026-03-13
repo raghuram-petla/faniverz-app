@@ -32,6 +32,7 @@ export type AdminEntity =
   | 'notification'
   | 'sync';
 
+// @invariant ALL_PAGES and ALL_ENTITIES must stay in sync with AdminPage/AdminEntity types above
 const ALL_PAGES: Set<AdminPage> = new Set([
   'dashboard',
   'movies',
@@ -101,6 +102,8 @@ export function usePermissions() {
   const role = user?.role ?? null;
   const phIds = user?.productionHouseIds ?? [];
 
+  // @invariant Role hierarchy: root > super_admin > admin > production_house_admin
+  // @coupling useEffectiveUser resolves impersonation — all checks use impersonated role
   const isRoot = role === 'root';
   // isSuperAdmin includes root — root inherits all super_admin privileges
   const isSuperAdmin = role === 'super_admin' || isRoot;
@@ -123,6 +126,8 @@ export function usePermissions() {
    * Whether the current user can update/delete a given entity.
    * For PH admins, pass ownerId (created_by) for actor ownership checks.
    */
+  // @assumes PH admin movie/ott_release updates are further scoped by Supabase RLS policies
+  // @nullable ownerId — only checked for 'actor' entity by PH admins
   function canUpdate(entity: AdminEntity, ownerId?: string | null): boolean {
     if (!role) return false;
     if (isRoot || isSuperAdmin || isAdmin) return CREATE_ACCESS[role].has(entity);
@@ -172,6 +177,7 @@ export function usePermissions() {
     canUpdate,
     canDelete,
     canManageAdmin,
+    // @sync Must match server-side audit RLS policy scoping rules
     /** Audit log scope: root/super admin sees all, others see own */
     auditScope: isSuperAdmin ? ('all' as const) : ('own' as const),
   };

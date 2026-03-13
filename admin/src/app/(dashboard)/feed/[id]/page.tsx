@@ -9,6 +9,7 @@ export default function EditFeedItemPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  // @coupling: useAdminFeedItem joins feed_items with movies for the movie badge display
   const { data: item, isLoading } = useAdminFeedItem(id);
   const updateMutation = useUpdateFeedItem();
   const deleteMutation = useDeleteFeedItem();
@@ -27,6 +28,9 @@ export default function EditFeedItemPage() {
     }
   }, [item]);
 
+  // @sideeffect: updates feed_items row in Supabase, navigates to /feed on success
+  // @edge: empty description coerced to null to avoid storing blank strings in DB
+  // @contract: type assertion needed because mutateAsync expects full NewsFeedItem but we only send a partial update
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -43,6 +47,7 @@ export default function EditFeedItemPage() {
     }
   };
 
+  // @sideeffect: hard-deletes the feed_items row — no soft-delete/undo
   const handleDelete = async () => {
     if (!confirm('Delete this feed item?')) return;
     try {
@@ -88,6 +93,7 @@ export default function EditFeedItemPage() {
       </div>
 
       {/* Source info */}
+      {/* @invariant: items with source_table are auto-generated — edits here may be overwritten by source sync */}
       {item.source_table ? (
         <div className="bg-surface-elevated rounded-lg px-4 py-3 text-sm text-on-surface-muted">
           Auto-generated from <span className="font-mono text-on-surface">{item.source_table}</span>{' '}
@@ -96,6 +102,7 @@ export default function EditFeedItemPage() {
       ) : null}
 
       {/* Preview */}
+      {/* @edge: youtube_id takes priority over thumbnail_url when both exist */}
       {item.youtube_id ? (
         <div className="rounded-xl overflow-hidden aspect-video bg-surface-elevated">
           <iframe

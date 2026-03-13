@@ -3,11 +3,14 @@ import { useImpersonation } from '@/hooks/useImpersonation';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import { Eye, X } from 'lucide-react';
 
+// @coupling useImpersonation — only renders when impersonation session is active
 export function ImpersonationBar() {
   const { isImpersonating, effectiveUser, stopImpersonation } = useImpersonation();
 
+  // @edge renders null when not impersonating — callers always mount this component
   if (!isImpersonating || !effectiveUser) return null;
 
+  // @nullable display_name and email may both be absent; falls back to 'Unknown'
   const label = effectiveUser.display_name || effectiveUser.email || 'Unknown';
   const roleLabel = ADMIN_ROLE_LABELS[effectiveUser.role];
 

@@ -6,6 +6,9 @@ interface ProfileUpdate {
   display_name?: string | null;
 }
 
+// @boundary: calls /api/profile REST endpoint, not Supabase directly
+// @assumes: active Supabase session exists; throws if unauthenticated
+// @sideeffect: window.alert on error — blocks UI thread
 export function useUpdateProfile() {
   return useMutation({
     mutationFn: async (updates: ProfileUpdate) => {

@@ -80,6 +80,8 @@ For privacy questions, contact us at faniverz@gmail.com.`;
 
 export default function LegalScreen() {
   const { t } = useTranslation();
+  // @boundary: type query param determines which legal document to show
+  // @assumes: type is either 'terms' or 'privacy'; any other value shows privacy by default
   const { type } = useLocalSearchParams<{ type: string }>();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();

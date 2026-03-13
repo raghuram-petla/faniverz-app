@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 export default function NewOttReleasePage() {
   const router = useRouter();
+  // @coupling: fetches ALL movies for the dropdown — may need virtualization if catalog grows large
   const { data: movies, isLoading: moviesLoading } = useAllMovies();
   const { data: platforms, isLoading: platformsLoading } = useAdminPlatforms();
   const createRelease = useCreateOttRelease();
@@ -19,6 +20,9 @@ export default function NewOttReleasePage() {
   const [availableFrom, setAvailableFrom] = useState('');
   const [streamingUrl, setStreamingUrl] = useState('');
 
+  // @sideeffect: inserts into ott_releases table, navigates to /ott on success
+  // @contract: movieId + platformId form a composite PK — creating a duplicate will fail with a DB constraint error
+  // @edge: empty available_from/streaming_url coerced to null
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!movieId || !platformId) return;

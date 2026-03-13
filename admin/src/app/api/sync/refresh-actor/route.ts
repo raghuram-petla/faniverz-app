@@ -8,6 +8,8 @@ import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers
  * Refresh an existing actor from TMDB by their local actor ID.
  * Looks up tmdb_person_id from the DB, then fetches latest data.
  */
+// @contract: accepts { actorId: UUID }; returns { syncLogId, result } on success
+// @sideeffect: updates actors table with latest TMDB data; writes sync_log entry
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyAdmin(request.headers.get('authorization'));
@@ -19,6 +21,7 @@ export async function POST(request: NextRequest) {
     if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
+    // @assumes: actorId is a valid UUID from the actors table, not a TMDB person ID
     const { actorId } = body as { actorId: string };
 
     if (!actorId) {
@@ -38,6 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Actor not found.' }, { status: 404 });
     }
 
+    // @edge: manually-created actors (no TMDB link) cannot be refreshed — guard early
     if (!actor.tmdb_person_id) {
       return NextResponse.json(
         { error: 'Actor has no TMDB person ID. Cannot refresh from TMDB.' },
@@ -64,6 +68,7 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
 
+      // @sideeffect: sync_log still completed (as 'failed') even when refresh throws — audit trail preserved
       await completeSyncLog(supabase, syncLogId, {
         status: 'failed',
         errors: [{ actorId, tmdbPersonId: actor.tmdb_person_id, message }],

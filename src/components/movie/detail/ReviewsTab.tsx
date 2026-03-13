@@ -7,12 +7,15 @@ import type { Review } from '@/types/review';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTranslation } from 'react-i18next';
 
+/** @contract Displays rating summary, write-review CTA, and paginated review cards */
 interface ReviewsTabProps {
   rating: number;
   reviewCount: number;
   reviews: Review[];
+  /** @coupling userId required to gate helpful votes — empty string means unauthenticated */
   userId: string;
   onWriteReview: () => void;
+  /** @sideeffect Fires helpful-vote mutation on the backend */
   onHelpful: (reviewId: string) => void;
 }
 
@@ -52,6 +55,7 @@ export function ReviewsTab({
               <Ionicons name="person" size={16} color={theme.textSecondary} />
             </View>
             <View style={styles.reviewHeaderInfo}>
+              {/** @nullable profile may be null if user deleted account; falls back to generic label */}
               <Text style={styles.reviewUserName} numberOfLines={1}>
                 {review.profile?.display_name ?? t('movie.userFallback')}
               </Text>
@@ -70,6 +74,7 @@ export function ReviewsTab({
               <Text style={styles.spoilerBadgeText}>{t('movie.containsSpoiler')}</Text>
             </View>
           )}
+          {/** @edge Helpful button is a no-op when userId is empty (unauthenticated users) */}
           <TouchableOpacity
             style={styles.helpfulButton}
             onPress={() => {

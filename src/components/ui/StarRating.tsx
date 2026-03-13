@@ -11,6 +11,10 @@ import Animated, {
 import { useTheme } from '@/theme';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
+/**
+ * @contract Renders a row of star icons; supports read-only display and interactive rating input.
+ * @edge AnimatedStar only animates the pop effect on fill transition (unfilled -> filled), not on initial render.
+ */
 interface StarRatingProps {
   rating: number;
   maxStars?: number;
@@ -19,6 +23,7 @@ interface StarRatingProps {
   onRate?: (rating: number) => void;
 }
 
+// @invariant Stagger delay between each star pop animation
 const STAGGER_MS = 50;
 
 function AnimatedStar({
@@ -40,6 +45,7 @@ function AnimatedStar({
   const prevFilled = useRef(filled);
   const animationsEnabled = useAnimationsEnabled();
 
+  // @sideeffect Pop animation only fires on unfilled->filled transition (tracked via prevFilled ref)
   useEffect(() => {
     if (animationsEnabled && animateOnFill && filled && !prevFilled.current) {
       scale.value = withDelay(
@@ -79,6 +85,7 @@ export function StarRating({
     <View style={styles.container}>
       {stars.map((star) => {
         const filled = star <= rating;
+        // @contract StarWrapper switches between pressable and inert based on interactive flag
         const StarWrapper = interactive ? TouchableOpacity : View;
         return (
           <StarWrapper

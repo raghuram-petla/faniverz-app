@@ -3,6 +3,7 @@ import { MovieStatus } from '@/types';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { colors as palette } from '@/theme/colors';
 
+/** @coupling getMovieStatusColor/getMovieStatusLabel from constants — must stay in sync with MovieStatus enum */
 interface StatusBadgeProps {
   type: MovieStatus;
 }

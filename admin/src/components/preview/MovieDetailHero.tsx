@@ -17,6 +17,7 @@ interface MovieDetailHeroProps {
   objectPosition: string;
 }
 
+/** @coupling mirrors the mobile MovieDetailScreen hero section — backdrop, poster, metadata */
 export function MovieDetailHero({
   title,
   backdropUrl,
@@ -30,7 +31,9 @@ export function MovieDetailHero({
   gradientCss,
   objectPosition,
 }: MovieDetailHeroProps) {
+  /** @nullable releaseDate may be null for TBD movies */
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
+  /** @sync MOVIE_STATUS_CONFIG must have entries for all MovieStatus enum values */
   const config = MOVIE_STATUS_CONFIG[movieStatus];
 
   return (
@@ -41,7 +44,7 @@ export function MovieDetailHero({
         position: 'relative',
       }}
     >
-      {/* Backdrop */}
+      {/** @edge falls back to posterUrl when backdropUrl is missing */}
       {(backdropUrl || posterUrl) && (
         <img
           src={backdropUrl || posterUrl}
@@ -208,7 +211,7 @@ export function MovieDetailHero({
   );
 }
 
-// Re-export gradient builder so callers can use it
+/** @boundary converts shared gradient config (colors[] + locations[]) to CSS linear-gradient string */
 export function buildGradientCss(gradientConfig: typeof DETAIL_GRADIENT): string {
   const { colors: gc, locations: gl } = gradientConfig;
   const stops = gc.map((c, i) => `${c} ${gl[i] * 100}%`).join(', ');

@@ -30,7 +30,9 @@ export default function ActivityScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<ActivityFilter>('all');
 
+  // @boundary: useUserActivity returns paginated data filtered by activity type
   const { data, isLoading, refetch, fetchNextPage, hasNextPage } = useUserActivity(filter);
+  // @contract: pages are flattened into a single array for FlatList consumption
   const activities = useMemo(() => data?.pages.flatMap((p) => p) ?? [], [data]);
 
   const { refreshing, onRefresh } = useRefresh(async () => {
@@ -44,6 +46,7 @@ export default function ActivityScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
+  // @edge: unknown entity_type values are silently ignored (no navigation)
   const handleActivityPress = useCallback(
     (activity: UserActivity) => {
       if (activity.entity_type === 'movie') {

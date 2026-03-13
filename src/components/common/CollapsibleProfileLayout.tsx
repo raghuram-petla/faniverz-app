@@ -19,6 +19,11 @@ import {
   COLLAPSE_SCROLL_DISTANCE,
 } from '@/styles/collapsibleProfile.styles';
 
+/**
+ * @contract Scroll-driven collapsible hero: avatar + name float and shrink into the nav bar as user scrolls.
+ * @coupling collapsibleProfile.styles — imports layout constants (NAV_BAR_HEIGHT, IMAGE_EXPANDED, etc.).
+ * @sync scrollOffset is a SharedValue updated from onScroll for 60fps worklet-driven interpolation.
+ */
 export interface CollapsibleProfileLayoutProps {
   /** Name shown in hero and collapsed bar */
   name: string;
@@ -62,6 +67,7 @@ export function CollapsibleProfileLayout({
   const styles = createStyles(theme);
   const { width: screenWidth } = useWindowDimensions();
   const scrollOffset = useSharedValue(0);
+  // @edge nameWidth/nameHeight initialize to estimated values; corrected on first onLayout
   const nameWidth = useSharedValue(200);
   const nameHeight = useSharedValue(30);
 
@@ -73,14 +79,15 @@ export function CollapsibleProfileLayout({
     [nameWidth, nameHeight],
   );
 
-  // Position anchors
+  // @assumes insets.top is stable after initial render; recalculation on rotation is not handled
   const scrollViewTop = insets.top + NAV_BAR_HEIGHT;
   const heroAvatarCY = scrollViewTop + 16 + IMAGE_EXPANDED / 2;
   const collapsedCY = insets.top + NAV_BAR_HEIGHT / 2;
+  // @invariant NAME_SCALE = collapsed font size / hero font size (14px / 24px)
   const NAME_SCALE = 14 / 24;
   const COLLAPSED_GAP = 10;
 
-  // --- Floating avatar: centered in hero → left-of-center in collapsed (side-by-side with name) ---
+  // @boundary p interpolates [0,1] over COLLAPSE_SCROLL_DISTANCE; clamped so over-scroll has no effect
   const animatedAvatarStyle = useAnimatedStyle(() => {
     const s = scrollOffset.value;
     const p = interpolate(s, [0, COLLAPSE_SCROLL_DISTANCE], [0, 1], Extrapolation.CLAMP);
@@ -136,6 +143,7 @@ export function CollapsibleProfileLayout({
     };
   });
 
+  /** @sideeffect Writes to scrollOffset shared value AND forwards event to parent onScroll */
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollOffset.value = e.nativeEvent.contentOffset.y;
     onScroll?.(e);
@@ -157,7 +165,7 @@ export function CollapsibleProfileLayout({
         {rightContent ?? <View style={styles.navPlaceholder} />}
       </View>
 
-      {/* Floating animated avatar */}
+      {/* @invariant pointerEvents="none" ensures floating layers don't steal taps from scroll content */}
       <Animated.View
         style={[styles.floatingAvatar, animatedAvatarStyle]}
         pointerEvents="none"

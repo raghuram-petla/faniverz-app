@@ -29,19 +29,24 @@ import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
 
+// @boundary News feed tab — FlashList-based feed with voting, follows, and filter pills
+// @coupling useFeedStore (Zustand), useNewsFeed (distinct from usePersonalizedFeed in index.tsx)
 export default function FeedScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createFeedStyles(theme);
   const insets = useSafeAreaInsets();
+  // @sync filter persists in Zustand store — shared with index.tsx feed
   const { filter, setFilter } = useFeedStore();
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     useNewsFeed(filter);
+  // @sideeffect vote/remove mutations use optimistic updates via TanStack Query cache
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
+  // @boundary gate() wraps callbacks — redirects guests to login instead of executing the action
   const { gate } = useAuthGate();
   const { user } = useAuth();
   const router = useRouter();
@@ -62,6 +67,8 @@ export default function FeedScreen() {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // @contract Toggle behavior: re-voting with same direction removes vote; otherwise creates/switches
+  // @nullable prev defaults to null when user has no existing vote on this item
   const handleUpvote = useCallback(
     (itemId: string) => {
       const prev = userVotes[itemId] ?? null;
@@ -109,6 +116,8 @@ export default function FeedScreen() {
     [unfollowMutation],
   );
 
+  // @edge If entityId matches current user, routes to own profile tab instead of user detail
+  // @assumes entityType values are constrained by FeedEntityType union
   const handleEntityPress = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       if (entityType === 'user') {
@@ -167,6 +176,7 @@ export default function FeedScreen() {
           <FeedContentSkeleton />
         </View>
       ) : (
+        // @coupling FlashList from @shopify — requires fixed estimatedItemSize or drawDistance for perf
         <View style={styles.scroll}>
           <FlashList
             data={allItems}
@@ -209,7 +219,7 @@ export default function FeedScreen() {
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
-                onUpvote={gate(handleUpvote)}
+                onUpvote={gate(handleUpvote)} /* @boundary gate wraps — guests see login prompt */
                 onDownvote={gate(handleDownvote)}
                 onComment={handleComment}
                 onShare={handleShare}

@@ -17,6 +17,7 @@ export function SearchResultActor({ actor, onPress }: SearchResultActorProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  /** @nullable photo_url — falls back to PLACEHOLDER_PHOTO for actors without images */
   const photoUrl = getImageUrl(actor.photo_url, 'sm') ?? PLACEHOLDER_PHOTO;
 
   return (

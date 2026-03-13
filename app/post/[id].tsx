@@ -45,9 +45,12 @@ export default function PostDetailScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
+  // @boundary: useFeedItem fetches a single feed item by ID from Supabase
   const { data: post, isLoading: feedLoading, refetch } = useFeedItem(id ?? '');
+  // @sideeffect: vote mutations trigger optimistic updates on the feed item's vote counts
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
+  // @contract: userVotes map is keyed by feed item ID; value is 'up' | 'down' | null
   const feedItemIds = useMemo(() => (post ? [post.id] : []), [post]);
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
   const { gate } = useAuthGate();
@@ -73,9 +76,10 @@ export default function PostDetailScreen() {
 
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
 
-  // Intentional no-op: prevent recursive navigation when already on post detail
+  // @edge: intentional no-op — FeedCard requires onPress but we're already on post detail
   const handleNoOp = (_item: NewsFeedItem) => {};
 
+  // @contract: toggling the same vote direction removes it; switching directions replaces it
   const handleUpvote = useCallback(
     (itemId: string) => {
       const prev = userVotes[itemId] ?? null;
@@ -100,6 +104,7 @@ export default function PostDetailScreen() {
     [userVotes, voteMutation, removeMutation],
   );
 
+  // @edge: tapping own avatar navigates to /profile; other users go to /user/[id]
   const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
     if (entityType === 'user') {
       if (entityId === user?.id) {

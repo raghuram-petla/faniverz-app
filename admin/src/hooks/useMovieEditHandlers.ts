@@ -3,6 +3,8 @@ import type React from 'react';
 import type { MovieEditHandlerDeps } from '@/hooks/useMovieEditTypes';
 import { createCommonFormHandlers } from '@/hooks/createCommonFormHandlers';
 
+// @coupling Consumes full MovieEditHandlerDeps — tightly coupled to useMovieEditState
+// @contract Returns all form handlers including shared ones from createCommonFormHandlers
 export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
   const {
     id,
@@ -50,6 +52,9 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
   // Shared form handlers (updateField, toggleGenre, handleImageUpload, 6 remove handlers)
   const common = createCommonFormHandlers(deps);
 
+  // @sideeffect Fires all pending mutations (movie update + child adds/removes) via Promise.all
+  // @edge All mutations fire concurrently — partial failure leaves DB in inconsistent state
+  // @assumes Pending IDs starting with 'pending-' are never sent as removals
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     setIsSaving(true);
@@ -72,6 +77,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
           is_featured: form.is_featured,
           backdrop_focus_x: form.backdrop_focus_x,
           backdrop_focus_y: form.backdrop_focus_y,
+          // @invariant Focus coordinates preserved from original movie — not editable in form
           spotlight_focus_x: movieData?.spotlight_focus_x ?? null,
           spotlight_focus_y: movieData?.spotlight_focus_y ?? null,
           detail_focus_x: movieData?.detail_focus_x ?? null,
@@ -79,6 +85,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         }),
       ];
 
+      // @invariant Only server-persisted cast IDs get order updates; pending IDs are excluded
       if (localCastOrder) {
         const updates: { id: string; display_order: number }[] = [];
         for (let idx = 0; idx < localCastOrder.length; idx++) {
@@ -116,6 +123,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       for (const posterId of pendingPosterRemoveIds) {
         promises.push(removePoster.mutateAsync({ id: posterId, movieId: id }));
       }
+      // @edge Main poster can only be set on existing (server) posters — pending posters' is_main is set on add
       if (pendingMainPosterId && !pendingMainPosterId.startsWith('pending-')) {
         promises.push(setMainPoster.mutateAsync({ id: pendingMainPosterId, movieId: id }));
       }
@@ -169,6 +177,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     }
   }
 
+  // @sideeffect Deletes movie and redirects to /movies — cascades handled by DB FK constraints
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
       try {

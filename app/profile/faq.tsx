@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import ScreenHeader from '@/components/common/ScreenHeader';
+// @coupling: FAQ_ITEMS is a static array defined in FaqAccordion — no backend dependency
 import { FaqAccordion, FAQ_ITEMS } from '@/components/profile/FaqAccordion';
 
 export default function FaqScreen() {

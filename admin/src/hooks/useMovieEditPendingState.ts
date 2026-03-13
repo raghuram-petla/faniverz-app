@@ -9,6 +9,9 @@ import type {
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
 
+// @contract: all pending state is local-only; nothing is persisted until the parent form saves
+// @invariant: add-lists and remove-sets for each entity are independent — an ID should not appear in both
+// @coupling: consumed by useMovieEdit to batch-apply changes on save
 export function useMovieEditPendingState() {
   const [pendingCastAdds, setPendingCastAdds] = useState<PendingCastAdd[]>([]);
   const [pendingCastRemoveIds, setPendingCastRemoveIds] = useState<Set<string>>(new Set());
@@ -19,6 +22,7 @@ export function useMovieEditPendingState() {
 
   const [pendingPosterAdds, setPendingPosterAdds] = useState<PendingPosterAdd[]>([]);
   const [pendingPosterRemoveIds, setPendingPosterRemoveIds] = useState<Set<string>>(new Set());
+  // @nullable: null means no main-poster change pending; string means user selected a new main poster
   const [pendingMainPosterId, setPendingMainPosterId] = useState<string | null>(null);
 
   const [pendingPlatformAdds, setPendingPlatformAdds] = useState<PendingPlatformAdd[]>([]);
@@ -30,6 +34,7 @@ export function useMovieEditPendingState() {
   const [pendingRunAdds, setPendingRunAdds] = useState<PendingRun[]>([]);
   const [pendingRunRemoveIds, setPendingRunRemoveIds] = useState<Set<string>>(new Set());
 
+  // @sideeffect: clears all 14 pending-state fields back to empty defaults
   function resetPendingState() {
     setPendingCastAdds([]);
     setPendingCastRemoveIds(new Set());

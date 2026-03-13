@@ -19,6 +19,7 @@ export interface VoteButtonsProps {
   onDownvote: () => void;
 }
 
+/** @sideeffect triggers a shrink-grow-settle animation sequence on the shared value */
 function bounceScale(sv: SharedValue<number>) {
   sv.value = withSequence(
     withTiming(0.7, { duration: 80 }),
@@ -40,6 +41,8 @@ export function VoteButtons({
   const prevVote = useRef(userVote);
   const animationsEnabled = useAnimationsEnabled();
 
+  /** @sideeffect animation only fires on vote state change, not initial render */
+  /** @assumes prevVote ref stays in sync with userVote across re-renders */
   useEffect(() => {
     if (userVote !== prevVote.current) {
       if (animationsEnabled) {

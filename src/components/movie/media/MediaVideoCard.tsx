@@ -18,13 +18,20 @@ import type { SemanticTheme } from '@shared/themes';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+/** @invariant Card spans full width minus 16px horizontal padding on each side */
 const CARD_WIDTH = SCREEN_WIDTH - 32;
+/** @coupling 16:9 aspect ratio matches YouTube video thumbnails */
 const THUMB_HEIGHT = Math.round(CARD_WIDTH * (9 / 16));
 
+/**
+ * @contract Two render modes: thumbnail+play overlay (idle) or embedded WebView player (playing).
+ * Only one card plays at a time — parent manages playingVideoId state.
+ */
 export interface MediaVideoCardProps {
   video: MovieVideo;
   isPlaying: boolean;
   onPlay: (id: string) => void;
+  /** @coupling Theme passed directly to avoid hook call inside list item */
   theme: SemanticTheme;
 }
 
@@ -32,11 +39,13 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
   const { t } = useTranslation();
   const styles = createCardStyles(theme);
 
+  /** @boundary Intercepts WebView navigation to prevent leaving the app for non-YouTube URLs */
   const onNavRequest = useCallback(
     (request: ShouldStartLoadRequest) => handleYouTubeNavigation(request, video.youtube_id),
     [video.youtube_id],
   );
 
+  /** @boundary Handles WebView window.open calls — redirects to YouTube app or in-app browser */
   const onOpenWindow = useCallback(
     (e: { nativeEvent: { targetUrl: string } }) =>
       handleYouTubeOpenWindow(e.nativeEvent.targetUrl, video.youtube_id),
@@ -65,6 +74,7 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
             onShouldStartLoadWithRequest={onNavRequest}
             onOpenWindow={onOpenWindow}
           />
+          {/** @edge Share overlay positioned over WebView bottom-left to intercept taps before WebView */}
           <View style={styles.shareOverlay} pointerEvents="box-none">
             <TouchableOpacity
               style={styles.shareHitArea}
@@ -89,6 +99,7 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
     >
       <View style={styles.thumbnailWrapper}>
         <Image
+          /** @nullable youtube_id may be missing for non-YouTube videos; falls back to placeholder */
           source={{
             uri: video.youtube_id
               ? `https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`

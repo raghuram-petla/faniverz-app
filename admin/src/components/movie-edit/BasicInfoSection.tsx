@@ -38,9 +38,11 @@ const CERTIFICATION_OPTIONS = [
   { value: 'A', label: 'A' },
 ];
 
+// @contract largest movie-edit section — title, dates, images, genres, synopsis, focal point
 interface BasicInfoSectionProps {
   form: MovieForm;
   setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
+  // @boundary updateField accepts string | string[] | boolean to handle text, genres array, and toggles
   updateField: (field: string, value: string | string[] | boolean) => void;
   toggleGenre: (genre: string) => void;
   uploadingPoster: boolean;
@@ -141,7 +143,7 @@ export function BasicInfoSection({
           onValueChange={(v) => updateField('certification', v)}
         />
       </div>
-      {/* Poster */}
+      {/* @coupling poster + backdrop each use ImageUploadField + ImageVariantsPanel for CDN pipeline visibility */}
       <ImageUploadField
         label="Poster"
         url={form.poster_url}
@@ -175,7 +177,7 @@ export function BasicInfoSection({
       )}
       <ImageVariantsPanel originalUrl={form.backdrop_url} variantType="backdrop" />
 
-      {/* Backdrop Focal Point */}
+      {/* @sync focal point picker output feeds into the preview panel via form.backdrop_focus_x/y */}
       <BackdropFocalPicker
         backdropUrl={form.backdrop_url}
         focusX={form.backdrop_focus_x}
@@ -200,7 +202,7 @@ export function BasicInfoSection({
         onValueChange={(v) => updateField('synopsis', v)}
       />
 
-      {/* Genres */}
+      {/* @invariant genre list is hardcoded — must match the genres recognized by the mobile app */}
       <div>
         <label className="block text-sm text-on-surface-muted mb-2">Genres</label>
         <div className="flex flex-wrap gap-2">

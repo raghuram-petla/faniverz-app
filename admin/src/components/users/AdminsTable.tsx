@@ -4,16 +4,24 @@ import type { AdminUserWithDetails, AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import { Loader2, Eye, Ban, ShieldCheck, Trash2 } from 'lucide-react';
 
+/**
+ * @contract renders admin users table with role hierarchy-aware actions
+ * @invariant self-actions (block/revoke/role-change on own account) are always disabled
+ */
 export interface AdminsTableProps {
+  /** @nullable undefined during initial fetch */
   users: AdminUserWithDetails[] | undefined;
   isLoading: boolean;
   realUserId: string | undefined;
+  /** @assumes true for root or super_admin — gates impersonation button visibility */
   isSuperAdmin: boolean;
+  /** @boundary enforces role hierarchy: returns true only for roles below the caller's level */
   canManageAdmin: (role: AdminRoleId) => boolean;
   onImpersonate: (u: AdminUserWithDetails) => void;
   onBlock: (u: AdminUserWithDetails) => void;
   onUnblock: (userId: string) => void;
   onRevoke: (userId: string, roleId: string) => void;
+  /** @sideeffect updates admin_user_roles.role_id in DB */
   onRoleChange: (userId: string, roleId: AdminRoleId) => void;
   isRolePending: boolean;
   isRevokePending: boolean;
@@ -66,16 +74,19 @@ export function AdminsTable({
         <tbody>
           {users?.map((u) => {
             const isSelf = u.id === realUserId;
+            /** @invariant canManage is false for self and for users with equal/higher role */
             const canManage = !isSelf && canManageAdmin(u.role_id);
             // Show role dropdown only if the current user can manage this user
+            /** @edge root role never gets a dropdown — root is SQL-only, not assignable via UI */
             const showRoleDropdown = canManage && u.role_id !== 'root';
-            // Only show roles the current user can assign (at or below their manageable level)
+            /** @boundary filters assignable roles to only those below the current user's level */
             const assignableRoles = ALL_CHANGEABLE_ROLES.filter(
               (r) => r.value === u.role_id || canManageAdmin(r.value),
             );
             return (
               <tr key={u.id} className="border-b border-outline-subtle hover:bg-surface-elevated">
                 <td className="px-6 py-4">
+                  {/** @nullable avatar_url may be null; fallback shows first letter of display_name or '?' */}
                   <div className="flex items-center gap-3">
                     {u.avatar_url ? (
                       <img

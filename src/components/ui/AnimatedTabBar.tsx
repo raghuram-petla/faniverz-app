@@ -6,6 +6,10 @@ import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { animatedTabBarStyles as styles } from './AnimatedTabBar.styles';
 
+/**
+ * @contract Generic sliding-indicator tab bar; T constrains tab keys to a string union.
+ * @assumes Tab count stays constant after mount; dynamic tab addition is not supported.
+ */
 export interface AnimatedTabBarProps<T extends string> {
   tabs: T[];
   labels: Record<T, string>;
@@ -14,6 +18,7 @@ export interface AnimatedTabBarProps<T extends string> {
 }
 
 const SCREEN_W = Dimensions.get('window').width;
+// @coupling Layout math assumes marginHorizontal:16 + padding:4 from AnimatedTabBar.styles
 const TAB_BAR_INNER_W = SCREEN_W - 32 - 8; // marginHorizontal 16 each side + padding 4 each side
 
 export function AnimatedTabBar<T extends string>({

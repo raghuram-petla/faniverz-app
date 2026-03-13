@@ -9,9 +9,11 @@ import type { MoviePlatform, MovieStatus } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTranslation } from 'react-i18next';
 
+/** @contract Renders OTT platform buttons with deep links, plus upcoming-release alert banner */
 interface WatchOnSectionProps {
   platforms: MoviePlatform[];
   movieStatus: MovieStatus;
+  /** @nullable null for TBA movies — release alert shows "TBA" text */
   releaseDate: string | null;
 }
 
@@ -26,6 +28,7 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
           <Text style={styles.sectionTitle}>{t('movie.watchOn')}</Text>
           <View style={styles.watchOnRow}>
             {platforms.map((mp) => {
+              /** @nullable mp.platform may be null if platform was deleted from DB */
               const p = mp.platform;
               if (!p) return null;
               const logo = getPlatformLogo(p.id);
@@ -33,6 +36,7 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                 <TouchableOpacity
                   key={p.id}
                   style={[styles.watchOnButton, { backgroundColor: p.color }]}
+                  /** @boundary Only opens external link if streaming_url is a valid http(s) URL; otherwise button is non-interactive */
                   onPress={
                     mp.streaming_url?.startsWith('http')
                       ? () =>
@@ -44,6 +48,7 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                   activeOpacity={mp.streaming_url ? 0.7 : 1}
                   accessibilityLabel={`Watch on ${p.name}`}
                 >
+                  {/** @edge Logo resolution: local asset > remote logo_url > emoji fallback */}
                   {logo ? (
                     <Image source={logo} style={styles.watchOnLogo} contentFit="contain" />
                   ) : p.logo_url ? (

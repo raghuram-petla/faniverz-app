@@ -4,6 +4,7 @@ import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
+/** @contract Renders section title with optional "See All" style action link on the right */
 interface SectionHeaderProps {
   title: string;
   actionLabel?: string;
@@ -17,6 +18,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
+      {/* @invariant Action link only rendered when BOTH label and handler are provided */}
       {actionLabel && onAction && (
         <TouchableOpacity onPress={onAction} accessibilityRole="button">
           <Text style={styles.action}>{actionLabel}</Text>

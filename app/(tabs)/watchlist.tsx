@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
+// @edge Android requires explicit opt-in for LayoutAnimation; iOS supports it by default
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -31,6 +32,8 @@ import { useTheme } from '@/theme';
 import { AvailableCard, UpcomingCard, WatchedCard } from '@/components/watchlist/WatchlistCards';
 import { createStyles } from '@/styles/tabs/watchlist.styles';
 
+// @boundary Watchlist tab — three sections (available, upcoming, watched) with collapsible headers
+// @coupling useWatchlistPaginated, useAuth — requires authenticated user for data fetch
 export default function WatchlistScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -38,6 +41,7 @@ export default function WatchlistScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  // @edge userId defaults to '' when user is null — triggers guest view early return below
   const userId = user?.id ?? '';
 
   const {
@@ -62,16 +66,21 @@ export default function WatchlistScreen() {
   const listRef = useRef<FlatList>(null);
   useScrollToTop(listRef);
 
+  // @contract totalSaved excludes watched — only available + upcoming count as "saved"
   const totalSaved = available.length + upcoming.length;
+  // @invariant hasContent is true if any section has items — drives empty vs content state
   const hasContent = totalSaved > 0 || watched.length > 0;
   const animationsEnabled = useAnimationsEnabled();
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  // @sideeffect Triggers LayoutAnimation before state update for smooth collapse/expand
+  // @assumes animationsEnabled respects user's reduced motion preference
   const toggleSection = (sectionKey: string) => {
     if (animationsEnabled) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCollapsedSections((prev) => ({ ...prev, [sectionKey]: !prev[sectionKey] }));
   };
 
-  // Build a flat list of items with section headers
+  // @contract Builds flat list interleaving section headers and entries; collapsed sections omit entries
+  // @coupling WatchlistListItem union type — discriminated on 'type' field for renderItem switch
   const listItems = useMemo<WatchlistListItem[]>(() => {
     const items: WatchlistListItem[] = [];
 
@@ -162,7 +171,7 @@ export default function WatchlistScreen() {
     );
   };
 
-  // Guest / unauthenticated state
+  // @boundary Guest / unauthenticated state — shows sign-in prompt with EmptyState
   if (!user) {
     return (
       <View style={styles.screen}>

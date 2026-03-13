@@ -20,11 +20,18 @@ import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
 
+/**
+ * @contract Fully controlled modal for writing/editing a movie review.
+ * All form state is managed by the parent — this component is purely presentational.
+ */
 interface ReviewModalProps {
   visible: boolean;
   movieTitle: string;
+  /** @nullable posterUrl is null for movies without posters; falls back to PLACEHOLDER_POSTER */
   posterUrl: string | null;
+  /** @nullable null for TBA movies */
   releaseYear: number | null;
+  /** @nullable null if movie has no credited director */
   director: string | null;
   reviewRating: number;
   reviewTitle: string;
@@ -35,6 +42,7 @@ interface ReviewModalProps {
   onTitleChange: (title: string) => void;
   onBodyChange: (body: string) => void;
   onSpoilerToggle: () => void;
+  /** @assumes Parent validates reviewRating > 0 before calling; button is disabled at rating 0 */
   onSubmit: () => void;
   onClose: () => void;
 }
@@ -62,6 +70,7 @@ export function ReviewModal({
   const styles = createStyles(theme);
   const animationsEnabled = useAnimationsEnabled();
 
+  /** @sideeffect Spring animation on modal open; gracefully degrades when animations disabled */
   const contentScale = useSharedValue(1);
   useEffect(() => {
     if (visible) {
@@ -79,6 +88,7 @@ export function ReviewModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
+      {/** @edge KeyboardAvoidingView uses 'padding' on iOS only; Android handles keyboard natively */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -147,6 +157,7 @@ export function ReviewModal({
                 <TouchableOpacity onPress={onClose}>
                   <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
+                {/** @invariant Submit disabled at rating 0 — prevents empty reviews */}
                 <TouchableOpacity
                   style={[styles.modalSubmitButton, reviewRating === 0 && { opacity: 0.5 }]}
                   onPress={onSubmit}

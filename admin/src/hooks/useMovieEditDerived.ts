@@ -60,6 +60,8 @@ interface PosterRow {
   created_at: string;
 }
 
+// @contract All visible* arrays merge server data with pending adds, minus pending removes
+// @coupling Used by both useMovieEditState (edit flow) and useMovieAddState (add flow)
 export function useMovieEditDerived(params: {
   id: string;
   castData: MovieCast[];
@@ -111,6 +113,7 @@ export function useMovieEditDerived(params: {
     initialForm,
   } = params;
 
+  // @invariant Pending items get synthetic IDs like 'pending-cast-N' — index-based, not stable across re-renders if array mutates
   const visibleCast = useMemo(() => {
     const serverFiltered = castData.filter((c) => !pendingCastRemoveIds.has(c.id));
     const allItems = [
@@ -127,6 +130,7 @@ export function useMovieEditDerived(params: {
         created_at: '',
       })),
     ] as MovieCast[];
+    // @edge If localCastOrder is set, items not in the order map fall back to their display_order
     if (!localCastOrder) return allItems;
     const orderMap = new Map(localCastOrder.map((cid, idx) => [cid, idx]));
     return [...allItems].sort(
@@ -147,6 +151,7 @@ export function useMovieEditDerived(params: {
     [videosData, pendingVideoAdds, pendingVideoRemoveIds, id],
   );
 
+  // @edge pendingMainPosterId overrides is_main on ALL posters — ensures exactly one main poster
   const visiblePosters = useMemo(() => {
     const items = [
       ...postersData.filter((p) => !pendingPosterRemoveIds.has(p.id)),
@@ -163,6 +168,7 @@ export function useMovieEditDerived(params: {
     return items;
   }, [postersData, pendingPosterAdds, pendingPosterRemoveIds, pendingMainPosterId, id]);
 
+  // @invariant Platforms are keyed by platform_id (not a surrogate id) — removal set uses platform_id
   const visiblePlatforms = useMemo(
     () => [
       ...moviePlatforms.filter((mp) => !pendingPlatformRemoveIds.has(mp.platform_id)),
@@ -202,6 +208,8 @@ export function useMovieEditDerived(params: {
     [theatricalRuns, pendingRunAdds, pendingRunRemoveIds, id],
   );
 
+  // @edge JSON.stringify comparison for form fields — deep equality check on objects with no circular refs
+  // @assumes initialForm is null only before movie data loads (add flow sets it to INITIAL_FORM immediately)
   const isDirty = useMemo(() => {
     if (!initialForm) return false;
     if (localCastOrder !== null) return true;

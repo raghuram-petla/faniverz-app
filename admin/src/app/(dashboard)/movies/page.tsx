@@ -13,6 +13,7 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
 
+// @coupling Must stay in sync with shared MOVIE_STATUS_CONFIG keys
 const STATUS_BADGE_CLASSES: Record<string, string> = {
   announced: 'bg-amber-600/20 text-amber-400',
   upcoming: 'bg-blue-600/20 text-blue-400',
@@ -21,6 +22,8 @@ const STATUS_BADGE_CLASSES: Record<string, string> = {
   released: 'bg-gray-600/20 text-gray-400',
 };
 
+// @contract Derives display status from movie data at runtime (not stored in DB)
+// @assumes deriveMovieStatus second param (ottCount) is 0 here — list page doesn't fetch OTT data
 function getStatusBadge(movie: Movie) {
   const status = deriveMovieStatus(movie, 0);
   const config = MOVIE_STATUS_CONFIG[status];
@@ -31,9 +34,11 @@ function getStatusBadge(movie: Movie) {
 }
 
 export default function MoviesPage() {
+  // @coupling usePermissions gates data scoping, delete button, and edit visibility
   const { isPHAdmin, productionHouseIds, canDelete } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [statusFilter, setStatusFilter] = useState<string>('');
+  // @boundary PH admins see only their production house movies via productionHouseIds filter
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminMovies(debouncedSearch, statusFilter, isPHAdmin ? productionHouseIds : undefined);
   const movies = data?.pages.flat() ?? [];
@@ -145,6 +150,7 @@ export default function MoviesPage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-on-surface-muted">
                     {movie.release_date ? formatDate(movie.release_date) : '—'}
+                    {/* @nullable release_date absent for announced movies */}
                   </td>
                   <td className="px-4 py-3 text-sm text-yellow-400">
                     {movie.rating > 0 ? `★ ${movie.rating.toFixed(1)}` : '—'}
@@ -157,6 +163,7 @@ export default function MoviesPage() {
                       >
                         <Edit className="w-4 h-4" />
                       </Link>
+                      {/* @invariant Delete gated by role-based canDelete('movie') */}
                       {canDelete('movie') && (
                         <button
                           onClick={() => {

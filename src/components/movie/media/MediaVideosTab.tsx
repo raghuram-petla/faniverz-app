@@ -11,7 +11,9 @@ interface VideoGroup {
   videos: MovieVideo[];
 }
 
+/** @contract Renders grouped video cards filtered by category; only one video plays at a time */
 export interface MediaVideosTabProps {
+  /** @assumes videosByType groups are pre-sorted by type (Trailer, Teaser, etc.) */
   videosByType: VideoGroup[];
   activeCategory: string;
 }
@@ -24,10 +26,12 @@ export function MediaVideosTab({ videosByType, activeCategory }: MediaVideosTabP
   const styles = createStyles(theme);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
+  /** @sideeffect Stops any playing video when user switches category filter */
   useEffect(() => {
     setPlayingVideoId(null);
   }, [activeCategory]);
 
+  /** @invariant Toggling the same video ID pauses it; ensures only one video plays at a time */
   const handlePlay = (id: string) => {
     setPlayingVideoId((prev) => (prev === id ? null : id));
   };

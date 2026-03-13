@@ -1,6 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
 import type { ViewStyle, TextStyle } from 'react-native';
 
+/**
+ * @contract Two display modes: separator mode (inline text joined by separator) or pill mode (wrapped row).
+ * @edge Returns null for empty genres array — parent must handle empty state if needed.
+ */
 export interface GenreListProps {
   genres: string[];
   maxItems?: number;
@@ -18,6 +22,7 @@ export function GenreList({
   textStyle,
   pillStyle,
 }: GenreListProps) {
+  // @boundary Only first maxItems genres are shown; excess is silently truncated
   if (genres.length === 0) return null;
 
   const visible = genres.slice(0, maxItems);

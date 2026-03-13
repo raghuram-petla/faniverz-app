@@ -16,9 +16,12 @@ import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from './MovieQuickAction';
 import { useTranslation } from 'react-i18next';
 
+/** @contract Compact poster card used in horizontal scroll lists (128px wide, 2:3 aspect) */
 interface MovieCardProps {
   movie: Movie;
+  /** @nullable When undefined, platform badges and streaming status badge are hidden */
   platforms?: OTTPlatform[];
+  /** @coupling Set true in calendar/upcoming sections to show date badge instead of rating */
   showReleaseDate?: boolean;
   showTypeBadge?: boolean;
   testID?: string;
@@ -35,7 +38,9 @@ export function MovieCard({
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
+  /** @boundary status drives badge visibility, action type, and release date formatting */
   const status = deriveMovieStatus(movie, platforms?.length ?? 0);
+  /** @sideeffect useMovieAction internally auth-gates and fires follow/watchlist mutations */
   const {
     actionType,
     isActive,
@@ -46,6 +51,7 @@ export function MovieCard({
     router.push(`/movie/${movie.id}`);
   };
 
+  /** @nullable release_date may be null for TBA movies — monthAbbr falls back to "TBA" */
   const releaseDate = movie.release_date ? new Date(movie.release_date) : null;
   const monthAbbr =
     releaseDate?.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() ?? t('movie.tba');
@@ -93,6 +99,7 @@ export function MovieCard({
         )}
 
         {/* OTT platform icons — top-right */}
+        {/** @edge Caps at 2 platform badges to avoid overflowing the poster corner */}
         {platforms && platforms.length > 0 && (
           <View style={styles.badgeTopRight}>
             {platforms.slice(0, 2).map((platform) => (
@@ -113,7 +120,7 @@ export function MovieCard({
         {movie.title}
       </Text>
 
-      {/* Rating or release date below title */}
+      {/** @invariant Rating and release date are mutually exclusive — showReleaseDate takes precedence */}
       {movie.rating > 0 && !showReleaseDate && (
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={12} color={palette.yellow400} />

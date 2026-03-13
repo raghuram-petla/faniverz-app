@@ -20,8 +20,10 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
+// @contract Inline editing pattern matches CommentsPage — single item editable at a time
 export default function ReviewsPage() {
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+  // @contract ratingFilter=0 means "all ratings" — hook interprets 0 as no filter
   const [ratingFilter, setRatingFilter] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState('');
@@ -40,6 +42,7 @@ export default function ReviewsPage() {
     deleteReview.mutate(id);
   };
 
+  // @nullable review.body can be null for rating-only reviews (no text)
   const startEdit = (review: Review) => {
     setEditingId(review.id);
     setEditBody(review.body ?? '');
@@ -47,6 +50,7 @@ export default function ReviewsPage() {
 
   const cancelEdit = () => setEditingId(null);
 
+  // @sideeffect Persists edited review body and exits edit mode on success
   const saveEdit = () => {
     if (!editingId) return;
     updateReview.mutate({ id: editingId, body: editBody }, { onSuccess: () => setEditingId(null) });
@@ -164,6 +168,7 @@ export default function ReviewsPage() {
                         rows={3}
                       />
                     ) : (
+                      // @nullable Both title and body can be null for rating-only reviews
                       <span className="truncate block">{review.title ?? review.body ?? '--'}</span>
                     )}
                   </td>

@@ -76,10 +76,12 @@ const navSections: NavSection[] = [
   },
 ];
 
+// @boundary filters nav items by role-based permissions; unauthorized pages never render
 export function Sidebar() {
   const pathname = usePathname();
   const { canViewPage } = usePermissions();
 
+  // @coupling usePermissions — empty sections are pruned so they don't show headers with no links
   const visibleSections = navSections
     .map((section) => ({
       ...section,
@@ -109,6 +111,7 @@ export function Sidebar() {
             )}
             <div className="space-y-1">
               {section.items.map((item) => {
+                // @edge dashboard ('/') only matches exact path; other routes match prefixes
                 const isActive =
                   pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 const Icon = item.icon;

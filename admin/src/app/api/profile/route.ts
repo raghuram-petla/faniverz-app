@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { verifyAdmin } from '@/lib/sync-helpers';
 
+// @invariant: whitelist-only — PATCH accepts only these two fields, all others are silently dropped
 const ALLOWED_FIELDS = ['avatar_url', 'display_name'] as const;
 
+// @contract: returns { google_avatar_url: string | null } — the avatar from Google OAuth metadata
 export async function GET(req: NextRequest) {
   try {
     const user = await verifyAdmin(req.headers.get('authorization'));
@@ -11,6 +13,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // @nullable: avatar_url and picture may both be absent depending on OAuth provider
+    // @coupling: field names come from Google OAuth user_metadata shape — 'avatar_url' (Supabase) or 'picture' (raw OIDC)
     const googleAvatarUrl =
       (user.user_metadata?.avatar_url as string) ?? (user.user_metadata?.picture as string) ?? null;
 
@@ -20,6 +24,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// @boundary: admin-only route — caller updates their own profile only (user.id from token)
+// @sideeffect: writes to profiles table; auto-sets updated_at timestamp
 export async function PATCH(req: NextRequest) {
   try {
     const user = await verifyAdmin(req.headers.get('authorization'));

@@ -18,25 +18,31 @@ export interface MovieActionResult {
   labelActive: string;
 }
 
+// @contract pure function — streaming movies get watchlist action, all others get follow
 /** Pure utility — used by HeroCarousel where hooks can't be called inside renderItem. */
 export function getMovieActionType(status: MovieStatus): MovieActionType {
   return status === 'streaming' ? 'watchlist' : 'follow';
 }
 
+// @coupling deriveMovieStatus, useAuthGate, follow mutations, watchlist mutations
+// @contract returns a unified action interface (icon, label, handler) based on derived movie status
 export function useMovieAction(
   movie: Pick<Movie, 'id' | 'release_date' | 'in_theaters'>,
   platformCount: number,
 ): MovieActionResult {
+  // @assumes deriveMovieStatus is pure and deterministic given the same movie + platformCount
   const status = deriveMovieStatus(movie, platformCount);
   const actionType = getMovieActionType(status);
 
   const { user } = useAuth();
+  // @nullable userId falls back to empty string when logged out; gate() prevents mutations in that state
   const userId = user?.id ?? '';
   const { gate } = useAuthGate();
 
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
+  // @assumes followSet keys use "movie:{id}" format — must stay in sync with follow mutation entityType
   const isFollowing = followSet.has(`movie:${movie.id}`);
 
   const { watchlistSet } = useWatchlistSet();
@@ -45,6 +51,8 @@ export function useMovieAction(
 
   const isActive = actionType === 'follow' ? isFollowing : isWatchlisted;
 
+  // @boundary auth gate wraps the entire handler — unauthenticated users are redirected before any mutation fires
+  // @sideeffect fires follow/unfollow or watchlist add/remove mutation; optimistic updates handled by TanStack Query
   const handlePress = useCallback(() => {
     gate(() => {
       if (actionType === 'follow') {

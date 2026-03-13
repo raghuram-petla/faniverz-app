@@ -6,6 +6,7 @@ import { formatRelativeTime } from './syncHelpers';
 import { Search, Film, Users, Loader2, RefreshCw, Clock } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
+/** @contract single-item refresh for movies and actors via TMDB — search, select, refresh */
 export function RefreshTab() {
   return (
     <div className="space-y-6">
@@ -17,6 +18,7 @@ export function RefreshTab() {
 
 // ── Movie Section ────────────────────────────────────────────────────────────
 
+/** @coupling uses debounced search to query local DB movies, then refreshes selected one from TMDB */
 function RefreshMovieSection() {
   const {
     search: query,
@@ -100,6 +102,7 @@ function RefreshMovieSection() {
             </div>
             <button
               onClick={() => refreshMovie.mutate(selectedMovie.id)}
+              /** @edge movies without tmdb_id (manually added) cannot be refreshed from TMDB */
               disabled={refreshMovie.isPending || !selectedMovie.tmdb_id}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
@@ -135,6 +138,7 @@ function RefreshMovieSection() {
 
 // ── Actor Section ────────────────────────────────────────────────────────────
 
+/** @coupling uses debounced search to query local DB actors, then refreshes selected one from TMDB */
 function RefreshActorSection() {
   const {
     search: query,
@@ -221,6 +225,7 @@ function RefreshActorSection() {
             </div>
             <button
               onClick={() => refreshActor.mutate(selectedActor.id)}
+              /** @edge actors without tmdb_person_id cannot be refreshed from TMDB */
               disabled={refreshActor.isPending || !selectedActor.tmdb_person_id}
               className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >

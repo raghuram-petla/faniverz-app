@@ -3,6 +3,8 @@ import { colors } from '@/theme/colors';
 import type { FeedPillConfig } from '@/types';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
+// @sync pill values must match FeedFilterOption type and backend content_type groupings
+// @coupling activeColor values should stay consistent with getFeedTypeColor mappings below
 export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'All', value: 'all', activeColor: colors.red600 },
   { label: 'Trailers', value: 'trailers', activeColor: colors.blue600 },
@@ -13,6 +15,8 @@ export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'Updates', value: 'updates', activeColor: colors.yellow400 },
 ];
 
+// @sync must cover all content_type values from news_feed_items table
+// @edge default returns red600 — safe for any new content types added to the backend
 export function getFeedTypeColor(contentType: string): string {
   switch (contentType) {
     case 'trailer':
@@ -46,6 +50,7 @@ export function getFeedTypeColor(contentType: string): string {
   }
 }
 
+// @contract maps backend content_type to human-readable label for UI display
 export function getFeedTypeLabel(contentType: string): string {
   switch (contentType) {
     case 'trailer':
@@ -121,12 +126,16 @@ export function getFeedTypeIconName(
   }
 }
 
+// @boundary external dependency on YouTube's thumbnail CDN — no auth required
+// @assumes youtubeId is a valid YouTube video ID; invalid IDs return a default YouTube placeholder image
 export function getYouTubeThumbnail(youtubeId: string): string {
   return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 }
 
 // ── Entity helpers (for X-style feed layout) ────────────────────────────────────
 
+// @contract derives entity type from NewsFeedItem fields using priority: movie_id > source_table > default
+// @invariant always returns a valid FeedEntityType — defaults to 'movie' when ambiguous
 export function deriveEntityType(item: NewsFeedItem): FeedEntityType {
   if (item.movie_id) return 'movie';
   if (item.source_table === 'actors') return 'actor';
@@ -134,11 +143,14 @@ export function deriveEntityType(item: NewsFeedItem): FeedEntityType {
   return 'movie';
 }
 
+// @nullable returns null when no avatar available — callers should use PLACEHOLDER_AVATAR
+// @coupling accesses item.movie?.poster_url which relies on joined movie data being present
 export function getEntityAvatarUrl(item: NewsFeedItem): string | null {
   if (item.movie_id) return item.movie?.poster_url ?? null;
   return item.thumbnail_url ?? null;
 }
 
+// @edge returns 'Unknown' when movie join or title is missing — prevents blank names in UI
 export function getEntityName(item: NewsFeedItem): string {
   if (item.movie_id) return item.movie?.title ?? 'Unknown';
   return item.title ?? 'Unknown';
@@ -150,6 +162,8 @@ export function getEntityId(item: NewsFeedItem): string | null {
   return null;
 }
 
+// @nullable returns null when entity ID cannot be determined — prevents broken navigation
+// @coupling route patterns must match Expo Router file-based routes in app/ directory
 export function getEntityRoute(item: NewsFeedItem): string | null {
   const entityType = deriveEntityType(item);
   const entityId = getEntityId(item);

@@ -18,12 +18,13 @@ export function ActorKnownFor({ credits, onMoviePress }: ActorKnownForProps) {
   const { t } = useTranslation();
   const styles = createStyles(theme);
 
-  // Top 5 by rating, only those with a movie
+  /** @contract shows top 5 credits by rating; excludes credits without a movie or with 0 rating */
   const topCredits = credits
     .filter((c) => c.movie && c.movie.rating > 0)
     .sort((a, b) => (b.movie?.rating ?? 0) - (a.movie?.rating ?? 0))
     .slice(0, 5);
 
+  /** @edge returns null when no rated credits exist — parent must handle missing section */
   if (topCredits.length === 0) return null;
 
   return (

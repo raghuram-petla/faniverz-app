@@ -3,6 +3,7 @@ import { verifyAdmin } from '@/lib/sync-helpers';
 
 const MAX_URLS = 10;
 
+// @invariant: only CDN domains allowed — prevents SSRF by restricting outbound HEAD requests
 const ALLOWED_URL_PATTERNS = ['r2.cloudflarestorage.com', 'image.tmdb.org', 'pub-'];
 
 function isAllowedUrl(url: string): boolean {
@@ -14,6 +15,8 @@ function isAllowedUrl(url: string): boolean {
   }
 }
 
+// @boundary: admin-only route — verifies admin role before processing
+// @contract: accepts { urls: string[] }; returns { results: Array<{ url, status: 'ok'|'missing'|'error' }> }
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyAdmin(request.headers.get('authorization'));
@@ -51,6 +54,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // @sideeffect: makes outbound HEAD requests to external CDN URLs
+    // @edge: individual fetch failures are caught per-URL — one broken URL doesn't fail the batch
     const results = await Promise.all(
       urls.map(async (url: string) => {
         try {

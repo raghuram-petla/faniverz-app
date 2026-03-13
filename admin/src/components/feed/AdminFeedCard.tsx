@@ -4,6 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { NewsFeedItem } from '@/lib/types';
 
+/** @sync content_type keys must match the content_type enum in news_feed_items table */
 const TYPE_COLORS: Record<string, string> = {
   trailer: 'bg-blue-600',
   teaser: 'bg-blue-500',
@@ -38,6 +39,7 @@ export function AdminFeedCard({
   onEdit,
   onDelete,
 }: AdminFeedCardProps) {
+  /** @coupling useSortable binds to DndContext/SortableContext in parent SortableFeedList */
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -49,6 +51,7 @@ export function AdminFeedCard({
     zIndex: isDragging ? 10 : undefined,
   };
 
+  /** @edge falls back to gray for unknown content_type values */
   const badgeColor = TYPE_COLORS[item.content_type] ?? 'bg-gray-600';
 
   return (

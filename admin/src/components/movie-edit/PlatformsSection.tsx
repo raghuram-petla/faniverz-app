@@ -9,7 +9,9 @@ import { Button } from '@/components/common/Button';
 
 type PendingPlatform = {
   platform_id: string;
+  // @nullable null means "available now" (no specific date)
   available_from: string | null;
+  // @coupling _platform carries display data; stripped before DB save
   _platform?: OTTPlatform;
 };
 
@@ -44,6 +46,7 @@ export function PlatformsSection({
             >
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
+                // @nullable platform.color — defaults to zinc900 if platform has no brand color
                 style={{ backgroundColor: mp.platform?.color || colors.zinc900 }}
               >
                 {mp.platform?.logo_url ? (
@@ -93,6 +96,7 @@ export function PlatformsSection({
             className={`flex-1 ${INPUT_CLASSES.compact}`}
           >
             <option value="">Select platform…</option>
+            {/* @invariant already-added platforms are excluded from the dropdown */}
             {allPlatforms
               .filter((p) => !visiblePlatforms.some((mp) => mp.platform_id === p.id))
               .map((p) => (

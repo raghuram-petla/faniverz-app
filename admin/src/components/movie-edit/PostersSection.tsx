@@ -20,11 +20,14 @@ type PendingPoster = {
   display_order: number;
 };
 
+// @contract manages poster gallery: upload, remove, set-main, and legacy poster_url import
 interface Props {
+  // @assumes visiblePosters is a union of persisted and pending posters with synthetic ids
   visiblePosters: (
     | MoviePoster
     | (PendingPoster & { id: string; movie_id: string; created_at: string })
   )[];
+  // @coupling posterUrl comes from the movie's legacy poster_url field (basic info)
   posterUrl: string;
   onAdd: (poster: PendingPoster) => void;
   onRemove: (id: string, isPending: boolean) => void;
@@ -36,6 +39,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
   const { upload, uploading } = useImageUpload('/api/upload/movie-poster');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // @sideeffect uploads to /api/upload/movie-poster then adds poster entry to pending state
   async function handleUpload(file: File) {
     try {
       const url = await upload(file);
@@ -55,7 +59,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
 
   return (
     <div className="space-y-4">
-      {/* Backward compat: import poster_url to gallery */}
+      {/* @edge backward compat: legacy poster_url exists but no gallery entries — offer one-click import */}
       {posterUrl && visiblePosters.length === 0 && (
         <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
           <div>
@@ -167,6 +171,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
             e.target.value = '';
           }}
         />
+        {/* @boundary upload disabled when title is empty to ensure posters always have a title */}
         <button
           type="button"
           disabled={uploading || !posterForm.title}

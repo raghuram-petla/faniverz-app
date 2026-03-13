@@ -12,6 +12,7 @@ import { formatDateTime } from '@/lib/utils';
 import { Bell, RotateCcw, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
+// @coupling Status/type style maps must cover all possible DB enum values
 const statusStyles: Record<string, { bg: string; text: string }> = {
   pending: { bg: 'bg-yellow-600/20', text: 'text-yellow-400' },
   sent: { bg: 'bg-green-600/20', text: 'text-green-400' },
@@ -27,6 +28,7 @@ const typeStyles: Record<string, { bg: string; text: string }> = {
 };
 
 export default function NotificationsPage() {
+  // @contract Empty string means "all" — filters only sent when non-empty
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
 
@@ -51,11 +53,13 @@ export default function NotificationsPage() {
     retryNotification.mutate(id);
   };
 
+  // @sideeffect Resets all failed notifications to pending status for reprocessing
   const handleBulkRetry = () => {
     if (!confirm('Retry all failed notifications? This will set them back to pending.')) return;
     bulkRetry.mutate();
   };
 
+  // @sideeffect Irreversibly cancels all pending notifications — cannot be undone
   const handleBulkCancel = () => {
     if (!confirm('Cancel all pending notifications? This cannot be undone.')) return;
     bulkCancel.mutate();
@@ -195,6 +199,7 @@ export default function NotificationsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {/* @contract Actions are status-dependent: pending=cancel, failed=retry */}
                         {notification.status === 'pending' && (
                           <button
                             onClick={() => handleCancel(notification.id)}

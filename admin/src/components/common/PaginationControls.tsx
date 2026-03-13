@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+// @assumes page is 0-indexed; totalCount and pageSize are positive integers
 export interface PaginationControlsProps {
   page: number;
   totalPages: number;
@@ -17,6 +18,7 @@ export function PaginationControls({
   onPrevious,
   onNext,
 }: PaginationControlsProps) {
+  // @edge when totalCount < pageSize, 'to' clamps to totalCount
   const from = page * pageSize + 1;
   const to = Math.min((page + 1) * pageSize, totalCount);
 

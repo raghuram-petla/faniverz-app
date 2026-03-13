@@ -10,32 +10,41 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
+/**
+ * @contract Wraps children in pinch-zoom, pan, and double-tap gesture handlers.
+ * @coupling ImageViewerOverlay — owns scale/translateX/translateY so it can coordinate close animations.
+ * @sync All shared values run on the UI thread (worklets); onDismiss bridges back to JS via runOnJS.
+ */
 export interface ImageViewerGesturesProps {
   children: React.ReactNode;
   onDismiss: () => void;
-  /** Backdrop opacity driven by drag-to-dismiss (0–1). */
+  /** Backdrop opacity driven by drag-to-dismiss (0-1). */
   backdropOpacity: SharedValue<number>;
-  /** Gesture scale — owned by parent (ImageViewerOverlay) so it can animate zoom-out on close. */
+  /** Gesture scale -- owned by parent (ImageViewerOverlay) so it can animate zoom-out on close. */
   scale: SharedValue<number>;
-  /** Gesture translateX — owned by parent. */
+  /** Gesture translateX -- owned by parent. */
   translateX: SharedValue<number>;
-  /** Gesture translateY — owned by parent. */
+  /** Gesture translateY -- owned by parent. */
   translateY: SharedValue<number>;
 }
 
 export const MAX_SCALE = 4;
 export const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 export const IMG_W = SCREEN_W;
+// @assumes Poster images are 2:3 aspect ratio
 export const IMG_H = SCREEN_W * 1.5; // 2:3 poster
 export const Y_OVERSCROLL = 150;
+// @invariant Swipe distance must exceed this threshold (px) to trigger dismiss
 const DISMISS_THRESHOLD = 100;
 
+/** @boundary Clamps horizontal translation so the image edge never moves past screen center */
 export function clampX(x: number, s: number): number {
   'worklet';
   const maxX = Math.max(0, (IMG_W * s - SCREEN_W) / 2);
   return Math.min(maxX, Math.max(-maxX, x));
 }
 
+/** @boundary Clamps vertical translation; adds Y_OVERSCROLL for elastic bounce past image edges */
 export function clampY(y: number, s: number): number {
   'worklet';
   const maxY = Math.max(0, (IMG_H * s - SCREEN_H) / 2) + Y_OVERSCROLL;
@@ -55,6 +64,7 @@ export function ImageViewerGestures({
   const savedTranslateX = useSharedValue(0);
   const savedTranslateY = useSharedValue(0);
 
+  /** @sideeffect Animates all transforms back to identity and restores backdrop opacity */
   const resetTransforms = useCallback(() => {
     'worklet';
     scale.value = withTiming(1);
@@ -74,6 +84,7 @@ export function ImageViewerGestures({
     backdropOpacity,
   ]);
 
+  // @invariant Scale is clamped to [1, MAX_SCALE]; pinch below 1 snaps back on end
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
       scale.value = Math.min(MAX_SCALE, Math.max(1, savedScale.value * e.scale));
@@ -90,6 +101,7 @@ export function ImageViewerGestures({
       }
     });
 
+  // @edge At scale=1, pan drives drag-to-dismiss; at scale>1, pan pans the zoomed image
   const pan = Gesture.Pan()
     .minPointers(1)
     .onStart(() => {
@@ -139,6 +151,7 @@ export function ImageViewerGestures({
       }
     });
 
+  // @sideeffect Double-tap toggles between MAX_SCALE (focal zoom) and identity
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
     .onEnd((e) => {
@@ -159,6 +172,7 @@ export function ImageViewerGestures({
       }
     });
 
+  // @contract Pinch runs simultaneously with pan/double-tap; double-tap and pan race (first recognized wins)
   const gesture = Gesture.Simultaneous(pinch, Gesture.Race(doubleTap, pan));
 
   const animatedStyle = useAnimatedStyle(() => ({

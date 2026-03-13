@@ -5,6 +5,7 @@ import type {
   TextareaHTMLAttributes,
 } from 'react';
 
+// @coupling consumed by PlatformsSection and ProductionHousesSection via direct import of INPUT_CLASSES
 // ── Class constants (use directly when custom rendering is needed) ──
 
 const LABEL_CLASSES = {
@@ -65,6 +66,7 @@ export function FormField({
 
 // ── FormInput (label + <input>) ──
 
+// @contract wraps native input; excludes onChange (replaced by onValueChange) and className (variant-driven)
 export interface FormInputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'onChange' | 'className'
@@ -102,6 +104,7 @@ export interface FormSelectOption {
   label: string;
 }
 
+// @contract wraps native select; options rendered from FormSelectOption[]; onChange replaced by onValueChange
 export interface FormSelectProps extends Omit<
   SelectHTMLAttributes<HTMLSelectElement>,
   'onChange' | 'className'
@@ -132,6 +135,7 @@ export function FormSelect({
         onChange={(e) => onValueChange(e.target.value)}
         className={INPUT_CLASSES[variant]}
       >
+        {/* @nullable placeholder — when provided, renders a disabled-looking empty option */}
         {placeholder && <option value="">{placeholder}</option>}
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -143,6 +147,7 @@ export function FormSelect({
   );
 }
 
+// @invariant all form primitives share the same variant system (default/compact/bordered)
 // ── FormTextarea (label + <textarea>) ──
 
 export interface FormTextareaProps extends Omit<

@@ -9,6 +9,7 @@ import {
   POSTER_HEIGHT,
 } from './MovieDetailSkeleton.styles';
 
+/** @contract Placeholder skeleton matching MovieDetail layout — shown while data fetches */
 export function MovieDetailSkeleton() {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -39,7 +40,7 @@ export function MovieDetailSkeleton() {
           <SkeletonBox width={70} height={36} borderRadius={8} />
         </View>
 
-        {/* Content skeleton lines */}
+        {/** @coupling Skeleton widths use SCREEN_WIDTH from styles — must stay in sync with actual detail layout */}
         <View style={styles.contentLines}>
           <SkeletonBox width={SCREEN_WIDTH - 32} height={16} borderRadius={4} />
           <SkeletonBox width={SCREEN_WIDTH - 80} height={16} borderRadius={4} />

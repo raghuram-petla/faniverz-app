@@ -23,6 +23,7 @@ export interface FeedVideoPlayerProps {
   isActive: boolean;
 }
 
+/** @contract renders WebView when isActive, static thumbnail otherwise */
 export function FeedVideoPlayer({
   youtubeId,
   thumbnailUrl,
@@ -32,9 +33,11 @@ export function FeedVideoPlayer({
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
+  /** @nullable thumbnailUrl — falls back to YouTube's auto-generated thumbnail */
   const thumb = thumbnailUrl ?? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
 
   const onNavRequest = useCallback(
+    /** @boundary intercepts WebView navigation to prevent leaving the embed context */
     (request: ShouldStartLoadRequest) => handleYouTubeNavigation(request, youtubeId),
     [youtubeId],
   );
@@ -63,6 +66,7 @@ export function FeedVideoPlayer({
           onShouldStartLoadWithRequest={onNavRequest}
           onOpenWindow={onOpenWindow}
         />
+        {/* @edge share hit area overlays bottom-left of video; pointerEvents="box-none" lets taps pass through elsewhere */}
         <View style={videoStyles.shareOverlay} pointerEvents="box-none">
           <TouchableOpacity
             style={videoStyles.shareHitArea}
@@ -76,7 +80,11 @@ export function FeedVideoPlayer({
 
   return (
     <View style={styles.mediaContainer}>
-      <Image source={{ uri: thumb || PLACEHOLDER_POSTER }} style={styles.media} />
+      <Image
+        source={{ uri: thumb || PLACEHOLDER_POSTER }}
+        style={styles.media}
+        resizeMode="cover"
+      />
       <View style={styles.playBtn}>
         <Ionicons name="play" size={24} color={colors.white} style={styles.playIcon} />
       </View>

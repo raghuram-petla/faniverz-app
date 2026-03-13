@@ -29,14 +29,18 @@ interface ContentCardProps {
   index: number;
 }
 
+// @coupling surpriseHelpers — getCategoryColor, getCategoryIconName, CARD_GRADIENTS for visual mapping
 function ContentCard({ item, index }: ContentCardProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
   const catColor = getCategoryColor(item.category);
   const iconName = getCategoryIconName(item.category);
+  // @invariant CARD_GRADIENTS cycles via modulo — ensures no index-out-of-bounds
   const bgColor = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
 
+  // @sideeffect Opens YouTube in external browser/app via Linking
+  // @assumes item.youtube_id is always a valid YouTube video ID
   const handlePlay = useCallback(() => {
     Linking.openURL(`https://www.youtube.com/watch?v=${item.youtube_id}`);
   }, [item.youtube_id]);
@@ -61,7 +65,7 @@ function ContentCard({ item, index }: ContentCardProps) {
           <Ionicons name={iconName} size={10} color={colors.white} />
         </View>
 
-        {/* Duration — bottom right */}
+        {/* @nullable duration may not exist for all content items */}
         {item.duration ? (
           <View style={styles.cardDurationBadge}>
             <Text style={styles.cardDurationText}>{item.duration}</Text>
@@ -101,6 +105,7 @@ function FunFactBox({ fact }: FunFactBoxProps) {
   );
 }
 
+// @boundary Surprise tab — curated video content (trailers, interviews, etc.) with category filter
 export default function SurpriseScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -108,6 +113,7 @@ export default function SurpriseScreen() {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterOption>('all');
 
+  // @contract When filter is 'all', category is undefined which tells the hook to fetch all categories
   const category = filter === 'all' ? undefined : filter;
   const { data: items = [], isLoading, refetch } = useSurpriseContent(category);
   const { refreshing, onRefresh } = useRefresh(refetch);
@@ -119,6 +125,8 @@ export default function SurpriseScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
+  // @nullable featured is null when items array is empty
+  // @contract First item gets hero treatment; remaining items go to the grid
   const featured = items[0] ?? null;
   const gridItems = items.slice(1);
 

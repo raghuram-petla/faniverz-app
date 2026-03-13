@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import type { SurpriseContent } from '@/types';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 
+/** @edge fallback video ID used when item.youtube_id is null — must be a valid public YouTube video */
 const FALLBACK_VIDEO_ID = 'roYRXbhxhlM';
 
 interface FeaturedVideoCardProps {
@@ -30,8 +31,10 @@ interface FeaturedVideoCardProps {
   styles: Record<string, any>;
 }
 
+/** @contract renders thumbnail until tapped, then swaps to live WebView embed */
 export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   const { t } = useTranslation();
+  /** @nullable youtube_id — uses FALLBACK_VIDEO_ID when null */
   const videoId = item.youtube_id ?? FALLBACK_VIDEO_ID;
   const thumbnailUrl = videoId
     ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
@@ -39,6 +42,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   const catColor = getCategoryColor(item.category);
   const catLabel = getCategoryLabel(item.category);
   const iconName = getCategoryIconName(item.category);
+  /** @sideeffect once activated, the WebView replaces the thumbnail permanently for this render cycle */
   const [activated, setActivated] = useState(false);
 
   const handlePlay = useCallback(() => {

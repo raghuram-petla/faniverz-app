@@ -19,6 +19,12 @@ import { measureView } from '@/utils/measureView';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import type { ImageSourceLayout } from '@/providers/ImageViewerProvider';
 
+/**
+ * @contract Full-screen image viewer with shared-element open/close transition.
+ * @coupling ImageViewerProvider — supplies sourceLayout/sourceRef for position interpolation.
+ * @coupling ImageViewerGestures — delegates pinch/pan/double-tap; owns gesture shared values.
+ * @sideeffect Hides source thumbnail during open, restores it on close (via onSourceHide/onSourceShow).
+ */
 export interface ImageViewerOverlayProps {
   feedUrl: string;
   fullUrl: string;
@@ -31,6 +37,7 @@ export interface ImageViewerOverlayProps {
 }
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+// @assumes All poster images follow 2:3 aspect ratio
 const POSTER_ASPECT = 3 / 2;
 const OPEN_DURATION = 300;
 const CLOSE_DURATION = 250;
@@ -49,8 +56,10 @@ export function ImageViewerOverlay({
   onClose,
 }: ImageViewerOverlayProps) {
   const animationsEnabled = useAnimationsEnabled();
+  // @edge When animations disabled, progress/backdrop start at final values (no transition)
   const progress = useSharedValue(animationsEnabled ? 0 : 1);
   const backdropOpacity = useSharedValue(animationsEnabled ? 0 : 1);
+  // @invariant closingRef prevents double-close from concurrent button press and swipe dismiss
   const closingRef = useRef(false);
 
   // Gesture shared values — owned here so we can animate zoom-out on close
@@ -58,7 +67,7 @@ export function ImageViewerOverlay({
   const gestureTranslateX = useSharedValue(0);
   const gestureTranslateY = useSharedValue(0);
 
-  // Source position — updated on close for scroll-aware fly-back
+  // @sync Source position re-measured on close so fly-back targets correct position after scroll
   const srcX = useSharedValue(sourceLayout.x);
   const srcY = useSharedValue(sourceLayout.y);
   const srcW = useSharedValue(sourceLayout.width);
@@ -148,7 +157,7 @@ export function ImageViewerOverlay({
     [progress, backdropOpacity, cleanup],
   );
 
-  // Fly back to thumbnail (re-measure, then animate)
+  // @boundary Re-measures source thumbnail position before fly-back; falls back to fast fade if measure fails
   const doFlyBack = useCallback(() => {
     measureView(
       sourceRef,
@@ -163,7 +172,7 @@ export function ImageViewerOverlay({
     );
   }, [sourceRef, srcX, srcY, srcW, srcH, animateClose]);
 
-  // Close: reset gesture transforms and fly back simultaneously (no jerk)
+  /** @sideeffect Resets gesture zoom and translates, then triggers fly-back to source thumbnail */
   const handleCloseButton = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
@@ -237,11 +246,13 @@ export function ImageViewerOverlay({
       >
         <Animated.View style={[styles.gestureArea]}>
           <Animated.View style={animatedContainerStyle}>
+            {/* @edge Feed-res image shown immediately; full-res stacked on top with crossfade */}
             <Image
               source={{ uri: feedUrl || PLACEHOLDER_POSTER }}
               style={styles.imageFill}
               contentFit="cover"
             />
+            {/* @sideeffect onLoad sets fullResLoaded which fades out the progress bar */}
             <Image
               source={{ uri: fullUrl || PLACEHOLDER_POSTER }}
               style={styles.imageFill}

@@ -11,6 +11,7 @@ import type {
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
 
+// @contract All setter functions must match the pending-state shape from useMovieEditPendingState
 export interface CommonFormDeps {
   setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
   setPendingVideoAdds: React.Dispatch<React.SetStateAction<PendingVideoAdd[]>>;
@@ -49,10 +50,13 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     setPendingRunRemoveIds,
   } = deps;
 
+  // @contract field must match a key from MovieForm; no runtime validation
   function updateField(field: string, value: string | string[] | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // @sideeffect Uploads image to storage endpoint, then updates form field with returned URL
+  // @boundary Uses uploadImage from useImageUpload — delegates to Supabase Storage
   async function handleImageUpload(
     file: File,
     endpoint: string,
@@ -79,6 +83,8 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     }));
   }
 
+  // @invariant isPending=true means id has 'pending-*-N' format; index is parsed from suffix
+  // @invariant isPending=false means id is a real DB UUID — queued for removal on save
   function handleVideoRemove(videoId: string, isPending: boolean) {
     if (isPending) {
       const idx = Number(videoId.replace('pending-video-', ''));

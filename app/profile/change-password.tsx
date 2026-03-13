@@ -19,8 +19,11 @@ export default function ChangePasswordScreen() {
   const { resetPassword, isLoading, error } = useEmailAuth();
   const [sent, setSent] = useState(false);
 
+  // @nullable: email defaults to '' when user is somehow unauthenticated
   const email = user?.email ?? '';
 
+  // @sideeffect: triggers Supabase password reset email; error surfaced via hook's `error` state
+  // @edge: no-op when email is empty — prevents sending reset to blank address
   const handleSend = async () => {
     if (!email) return;
     try {

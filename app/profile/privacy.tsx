@@ -17,9 +17,11 @@ export default function PrivacySettingsScreen() {
   const { data: profile, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
 
+  // @nullable: defaults to true (public) when profile hasn't loaded — matches DB column defaults
   const isProfilePublic = profile?.is_profile_public ?? true;
   const isWatchlistPublic = profile?.is_watchlist_public ?? true;
 
+  // @sideeffect: persists privacy toggle to Supabase profiles table
   const handleToggleProfile = () => {
     updateProfile.mutate(
       { is_profile_public: !isProfilePublic },

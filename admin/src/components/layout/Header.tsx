@@ -24,10 +24,11 @@ export function Header() {
   const [imgError, setImgError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Hierarchy: root and super_admin can impersonate (root > super_admin > admin > PH admin)
+  // @boundary role hierarchy: only root and super_admin can impersonate
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'root';
   const currentTheme = theme ?? 'system';
 
+  // @sideeffect attaches global mousedown listener to close menu on outside click
   useEffect(() => {
     if (!menuOpen) return;
     const handleClick = (e: MouseEvent) => {
@@ -51,6 +52,7 @@ export function Header() {
             className="w-9 h-9 rounded-full bg-input flex items-center justify-center hover:ring-2 hover:ring-outline transition-all"
             aria-label="User menu"
           >
+            {/* @nullable avatar_url — falls back to User icon; imgError handles broken URLs */}
             {user?.avatar_url && !imgError ? (
               <img
                 src={getImageUrl(user.avatar_url, 'sm') ?? user.avatar_url}
@@ -135,6 +137,7 @@ export function Header() {
           )}
         </div>
       </header>
+      {/* @contract targetUser=null opens role-selection modal (not user-specific) */}
       {showModal && <ImpersonateModal targetUser={null} onClose={() => setShowModal(false)} />}
     </>
   );

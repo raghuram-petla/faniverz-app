@@ -8,6 +8,7 @@ import { RefreshTab } from '@/components/sync/RefreshTab';
 import { BulkTab } from '@/components/sync/BulkTab';
 import { HistoryTab } from '@/components/sync/HistoryTab';
 
+// @contract Tab components are lazy-rendered — only the active tab mounts
 const TABS = ['Discover', 'Import', 'Refresh', 'Bulk', 'History'] as const;
 type Tab = (typeof TABS)[number];
 
@@ -42,6 +43,7 @@ export default function SyncPage() {
         ))}
       </div>
 
+      {/* @coupling Each tab component manages its own data fetching and state */}
       {activeTab === 'Discover' && <DiscoverTab />}
       {activeTab === 'Import' && <ImportTab />}
       {activeTab === 'Refresh' && <RefreshTab />}

@@ -9,10 +9,14 @@ import Link from 'next/link';
 export default function EditOttReleasePage() {
   const router = useRouter();
   const params = useParams();
+  // @boundary: compositeId is URL-encoded as "movieId~platformId" — splitting on '~' recovers both FKs
+  // @assumes: route param always contains exactly one '~' separator
   const compositeId = params.id as string;
   const [movieId, platformId] = compositeId.split('~');
 
+  // @coupling: fetches ALL releases then filters client-side; works at current scale but won't scale to thousands
   const { data: releases, isLoading } = useAdminOttReleases();
+  // @nullable: release is undefined when loading or when compositeId doesn't match any record
   const release = releases?.find((r) => r.movie_id === movieId && r.platform_id === platformId);
   const updateRelease = useUpdateOttRelease();
 
@@ -26,6 +30,8 @@ export default function EditOttReleasePage() {
     }
   }, [release]);
 
+  // @sideeffect: mutates ott_releases row via Supabase, then navigates to /ott on success
+  // @edge: empty strings coerced to null — blank date means "available now"
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateRelease.mutate(

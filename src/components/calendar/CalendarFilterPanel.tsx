@@ -27,6 +27,7 @@ export function CalendarFilterPanel({
   styles,
 }: CalendarFilterPanelProps) {
   const { theme, colors } = useTheme();
+  /** @edge when no year is selected, uses current year to compute days-in-month; defaults to 31 when no month selected */
   const daysInMonth =
     selectedMonth !== null && selectedYear !== null
       ? new Date(selectedYear, selectedMonth + 1, 0).getDate()
@@ -90,6 +91,7 @@ export function CalendarFilterPanel({
           <TouchableOpacity
             key={month}
             style={[styles.monthButton, selectedMonth === i && styles.monthButtonActive]}
+            /** @contract re-tapping the active month deselects it (toggle behavior) */
             onPress={() => onSetDate(selectedYear, selectedMonth === i ? null : i, selectedDay)}
           >
             <Text

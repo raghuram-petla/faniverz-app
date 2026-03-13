@@ -2,6 +2,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
 
 const W = Dimensions.get('window').width;
+/** @invariant 4 standard fields + 1 bio field matches the actual edit profile form layout */
 const FIELDS = [1, 2, 3, 4];
 
 export function EditProfileSkeleton() {

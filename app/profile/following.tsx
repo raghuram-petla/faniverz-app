@@ -36,7 +36,9 @@ export default function FollowingScreen() {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { user } = useAuth();
+  // @boundary: useEnrichedFollows joins follow rows with entity names/images from Supabase
   const { data: follows = [], isLoading, refetch } = useEnrichedFollows();
+  // @sideeffect: unfollowMutation invalidates the follows query cache on success
   const unfollowMutation = useUnfollowEntity();
   const [filter, setFilter] = useState<Filter>('all');
   const { refreshing, onRefresh } = useRefresh(async () => {
@@ -55,6 +57,7 @@ export default function FollowingScreen() {
     [follows, filter],
   );
 
+  // @edge: 'user' type navigates to own profile since follows only contain the current user's follows
   const handleEntityPress = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       const routes: Record<FeedEntityType, string> = {
@@ -68,6 +71,7 @@ export default function FollowingScreen() {
     [router],
   );
 
+  // @edge: no-op when user is not authenticated (guard against stale session)
   const handleUnfollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       if (!user?.id) return;

@@ -9,6 +9,8 @@ export default function LoginPage() {
   const { user, isLoading: authLoading, signInWithGoogle } = useAuth();
   const [error, setError] = useState('');
 
+  // @sideeffect Redirects authenticated users to dashboard — prevents login page flash
+  // @assumes AuthProvider resolves user before authLoading flips to false
   useEffect(() => {
     if (!authLoading && user) {
       router.replace('/');
@@ -38,6 +40,8 @@ export default function LoginPage() {
         )}
 
         <button
+          // @boundary Google OAuth flow — errors caught locally, not propagated
+          // @sideeffect Triggers Supabase OAuth redirect; page may unmount mid-flow
           onClick={async () => {
             setError('');
             try {

@@ -19,6 +19,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 
 export default function FeedPage() {
   const router = useRouter();
+  // @contract Filter 'all' maps to undefined (no server-side filter applied)
   const [filter, setFilter] = useState<FeedType | 'all'>('all');
   const queryFilter = filter === 'all' ? undefined : filter;
   const { data: items = [], isLoading } = useAdminFeed(queryFilter);
@@ -27,6 +28,8 @@ export default function FeedPage() {
   const featureMutation = useToggleFeatureFeed();
   const reorderMutation = useReorderFeed();
 
+  // @sideeffect Reorders all items optimistically — sends full display_order map to backend
+  // @assumes items array is the source of truth for current ordering
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
@@ -37,6 +40,7 @@ export default function FeedPage() {
       if (oldIndex === -1 || newIndex === -1) return;
 
       const reordered = arrayMove(items, oldIndex, newIndex);
+      // @sync Sends reorder batch — all items get new display_order indices
       const updates = reordered.map((item, idx) => ({ id: item.id, display_order: idx }));
       reorderMutation.mutate(updates);
     },

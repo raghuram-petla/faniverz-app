@@ -21,8 +21,10 @@ const EMPTY_FORM = {
 };
 
 export default function ProductionHousesPage() {
+  // @boundary: PH admins are scoped to their assigned houses via productionHouseIds filter
   const { isPHAdmin, productionHouseIds, canCreate, canDelete } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
+  // @coupling: passes productionHouseIds to restrict query results for PH admins; null for super_admin/admin
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminProductionHouses(debouncedSearch, isPHAdmin ? productionHouseIds : undefined);
   const houses = data?.pages.flat() ?? [];
@@ -33,6 +35,7 @@ export default function ProductionHousesPage() {
   const { upload, uploading } = useImageUpload('/api/upload/production-house-logo');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // @sideeffect: uploads to Supabase Storage via /api/upload/production-house-logo, returns public URL
   async function handleLogoUpload(file: File) {
     try {
       const url = await upload(file);
@@ -42,6 +45,8 @@ export default function ProductionHousesPage() {
     }
   }
 
+  // @sideeffect: inserts into production_houses table, resets inline form on success
+  // @edge: empty logo_url/description coerced to null
   async function handleAdd() {
     if (!form.name.trim()) return;
     try {
@@ -195,6 +200,7 @@ export default function ProductionHousesPage() {
                 <div className="w-14 h-14 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {house.logo_url ? (
                     <img
+                      // @nullable: getImageUrl returns null if variant not found — falls back to original URL
                       src={getImageUrl(house.logo_url, 'sm') ?? house.logo_url}
                       alt=""
                       className="w-full h-full object-cover"
@@ -212,6 +218,7 @@ export default function ProductionHousesPage() {
                   )}
                 </div>
               </Link>
+              {/* @invariant: PH admins see read-only cards — edit/delete actions hidden via permission check */}
               {!isPHAdmin && (
                 <>
                   <Link

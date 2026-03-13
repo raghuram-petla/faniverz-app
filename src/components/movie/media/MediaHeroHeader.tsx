@@ -13,10 +13,12 @@ import type { MovieWithDetails } from '@/types/movie';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const HERO_HEIGHT = 200;
 
+/** @contract Parallax hero header for media page — image slides left and info fades on scroll */
 export interface MediaHeroHeaderProps {
   movie: MovieWithDetails;
   videoCount: number;
   photoCount: number;
+  /** @coupling scrollOffset is a shared Reanimated value from the parent's Animated.ScrollView */
   scrollOffset: SharedValue<number>;
 }
 
@@ -35,6 +37,7 @@ export function MediaHeroHeader({
     getImageUrl(movie.poster_url, 'md') ??
     PLACEHOLDER_POSTER;
 
+  /** @nullable Focus point overrides; both axes must be non-null for contentPosition to apply */
   const contentPosition =
     (movie.detail_focus_x ?? movie.backdrop_focus_x) != null &&
     (movie.detail_focus_y ?? movie.backdrop_focus_y) != null
@@ -44,6 +47,7 @@ export function MediaHeroHeader({
         }
       : undefined;
 
+  /** @sideeffect Parallax: image slides left by 30% of screen width as user scrolls down */
   const imageAnimStyle = useAnimatedStyle(() => ({
     transform: [
       {
@@ -57,6 +61,7 @@ export function MediaHeroHeader({
     ],
   }));
 
+  /** @sideeffect Title/subtitle fades out within first 120px of scroll */
   const infoAnimStyle = useAnimatedStyle(() => ({
     opacity: interpolate(scrollOffset.value, [0, 120], [1, 0], Extrapolation.CLAMP),
   }));

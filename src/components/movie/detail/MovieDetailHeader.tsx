@@ -5,13 +5,17 @@ import { colors as palette } from '@/theme/colors';
 import { HomeButton } from '@/components/common/HomeButton';
 import { createStyles } from '@/styles/movieDetail.styles';
 
+/** @contract Floating header over hero image with back, home, follow/watchlist, and share buttons */
 interface MovieDetailHeaderProps {
+  /** @coupling Must include safe area top inset — caller uses useSafeAreaInsets() */
   insetsTop: number;
   actionType: 'follow' | 'watchlist';
   isActionActive: boolean;
   onBack: () => void;
   onShare: () => void;
+  /** @sideeffect Toggles follow/watchlist mutation — caller handles auth gating */
   onToggleAction: () => void;
+  /** @nullable Falls back to 'movie' in accessibility labels when title not yet loaded */
   movieTitle?: string;
 }
 

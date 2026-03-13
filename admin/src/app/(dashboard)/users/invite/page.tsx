@@ -9,6 +9,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { ArrowLeft, Send, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 
+// @contract: INVITABLE_ROLES must be a subset of admin_roles.id values in the database
+// @invariant: displayed options are further filtered by canManageAdmin — users can only invite roles below their own
 const INVITABLE_ROLES: { value: AdminRoleId; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin — Full access + user management' },
   { value: 'admin', label: 'Admin — Full content access' },
@@ -25,7 +27,9 @@ export default function InviteAdminPage() {
   const allHouses = phData?.pages.flat() ?? [];
 
   const [email, setEmail] = useState('');
+  // @edge: defaults to 'admin' but if current user is admin (not super_admin), availableRoles may not include it
   const [roleId, setRoleId] = useState<AdminRoleId>('admin');
+  // @sync: selectedPHIds is cleared when role changes away from production_house_admin
   const [selectedPHIds, setSelectedPHIds] = useState<string[]>([]);
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
@@ -39,6 +43,10 @@ export default function InviteAdminPage() {
 
   const isPHRole = roleId === 'production_house_admin';
 
+  // @sideeffect: creates an admin_invitations row with a token, then displays the invite link
+  // @boundary: invite link points to /login?invite=<token> — OAuth flow auto-accepts the invite on sign-in
+  // @edge: PH admin role requires at least one production house selected; form validates client-side before submit
+  // @assumes: user.id is always available (page is behind auth guard)
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !user?.id) return;
@@ -61,6 +69,7 @@ export default function InviteAdminPage() {
     }
   }
 
+  // @sideeffect: writes to system clipboard; "Copied" feedback auto-resets after 2 seconds
   function handleCopy() {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);

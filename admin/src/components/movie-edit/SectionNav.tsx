@@ -12,6 +12,7 @@ export const MOVIE_SECTIONS = [
   { id: 'theatrical-runs', label: 'Theatrical Runs', icon: Calendar },
 ] as const;
 
+// @contract tracks which section is in the viewport; scrollTo programmatically scrolls and locks highlight
 export function useActiveSection(sectionIds: readonly string[]): {
   activeId: string;
   scrollTo: (id: string) => void;
@@ -28,10 +29,12 @@ export function useActiveSection(sectionIds: readonly string[]): {
     };
   }, []);
 
+  // @sideeffect scrolls window, attaches temporary scroll listener, sets lock to prevent observer conflicts
   const scrollTo = useCallback((id: string) => {
     // Clean up any previous scroll listener
     scrollListenerCleanupRef.current?.();
     setActiveId(id);
+    // @invariant lockRef prevents IntersectionObserver from overriding the programmatic highlight
     lockRef.current = true;
     scrollingRef.current = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -53,6 +56,7 @@ export function useActiveSection(sectionIds: readonly string[]): {
   }, []);
 
   useEffect(() => {
+    // @assumes sticky header is 120px tall; if SectionNav height changes, update this
     const STICKY_HEIGHT = 120;
 
     function update() {
@@ -75,6 +79,7 @@ export function useActiveSection(sectionIds: readonly string[]): {
     }
 
     let ticking = false;
+    // @edge distinguishes programmatic scrolls (lockRef stays) from manual scrolls (lockRef released)
     function onScroll() {
       if (lockRef.current) {
         if (scrollingRef.current) return; // programmatic scroll in progress
@@ -103,6 +108,7 @@ interface SectionNavProps {
 }
 
 export function SectionNav({ activeSection, onScrollTo }: SectionNavProps) {
+  // @sync sticky top-[52px] must sit just below the Header (h-16 minus border)
   return (
     <div className="sticky top-[52px] z-20 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-2">
       <div className="flex gap-1.5 overflow-x-auto">

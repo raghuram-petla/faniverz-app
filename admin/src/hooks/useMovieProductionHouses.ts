@@ -4,12 +4,15 @@ import { supabase } from '@/lib/supabase-browser';
 import { createMovieChildHooks } from './createMovieChildHooks';
 import type { ProductionHouse } from '@/lib/types';
 
+// @contract: represents a junction row with its resolved production_house relation
 export interface MovieProductionHouse {
   movie_id: string;
   production_house_id: string;
   production_house: ProductionHouse;
 }
 
+// @coupling: createMovieChildHooks — only useList used; add/remove are custom below
+// @boundary: select joins production_houses via PostgREST foreign-key embed
 const { useList: useMovieProductionHouses } = createMovieChildHooks<MovieProductionHouse>({
   table: 'movie_production_houses',
   keySuffix: 'movie-production-houses',
@@ -18,6 +21,8 @@ const { useList: useMovieProductionHouses } = createMovieChildHooks<MovieProduct
 
 export { useMovieProductionHouses };
 
+// @sideeffect: inserts junction row; invalidates movie-production-houses cache on success
+// @edge: duplicate insert will throw due to composite primary key constraint
 export function useAddMovieProductionHouse() {
   const qc = useQueryClient();
   return useMutation({
@@ -46,6 +51,7 @@ export function useAddMovieProductionHouse() {
   });
 }
 
+// @sideeffect: deletes junction row by composite key (movie_id + production_house_id)
 export function useRemoveMovieProductionHouse() {
   const qc = useQueryClient();
   return useMutation({

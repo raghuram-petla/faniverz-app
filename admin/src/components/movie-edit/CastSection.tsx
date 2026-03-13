@@ -9,6 +9,7 @@ import { Button } from '@/components/common/Button';
 import { ActorSearchDropdown } from './ActorSearchDropdown';
 import { SortableList } from './SortableCastList';
 
+// @invariant role_order values 1-9 match the display hierarchy in the mobile app's crew section
 const ROLE_ORDER_OPTIONS = [
   { value: '1', label: '1 — Director' },
   { value: '2', label: '2 — Producer' },
@@ -36,9 +37,12 @@ const EMPTY_CAST_FORM = {
 export type PendingCastAdd = {
   actor_id: string;
   credit_type: 'cast' | 'crew';
+  // @nullable role_name — optional character name for cast, role title for crew
   role_name: string | null;
+  // @nullable role_order — only set for crew; null for cast members
   role_order: number | null;
   display_order: number;
+  // @coupling _actor carries display data; stripped before DB save
   _actor?: Actor;
 };
 
@@ -63,6 +67,7 @@ export function CastSection({
 }: Props) {
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
 
+  // @invariant cast and crew are rendered in separate drag-and-drop lists
   const castItems = useMemo(
     () => visibleCast.filter((c) => c.credit_type === 'cast'),
     [visibleCast],
@@ -72,6 +77,7 @@ export function CastSection({
     [visibleCast],
   );
 
+  // @contract reorder preserves cast-before-crew order; only cast items are rearranged
   function handleCastDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -92,6 +98,7 @@ export function CastSection({
     onReorder([...castItems.map((c) => c.id), ...reordered.map((c) => c.id)]);
   }
 
+  // @edge actor_id empty + searchQuery present: user typed but didn't select from dropdown
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!castForm.actor_id) {
@@ -105,6 +112,7 @@ export function CastSection({
       actor_id: castForm.actor_id,
       credit_type: castForm.credit_type,
       role_name: castForm.role_name || null,
+      // @boundary role_order only applies to crew; cast members always get null
       role_order:
         castForm.credit_type === 'crew' && castForm.role_order ? Number(castForm.role_order) : null,
       display_order: visibleCast.length,

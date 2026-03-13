@@ -18,6 +18,7 @@ interface MovieDetailPreviewProps {
   focusY: number | null;
 }
 
+/** @coupling mirrors mobile MovieDetailScreen layout — backdrop + poster + metadata + tabs */
 export function MovieDetailPreview({
   title,
   backdropUrl,
@@ -33,6 +34,7 @@ export function MovieDetailPreview({
 }: MovieDetailPreviewProps) {
   const gradientCss = buildGradientCss(DETAIL_GRADIENT);
 
+  /** @nullable focusX/focusY are null when admin hasn't set a focal point; defaults to center */
   const objectPosition =
     focusX != null && focusY != null
       ? `${Math.round(focusX * 100)}% ${Math.round(focusY * 100)}%`

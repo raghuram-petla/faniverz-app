@@ -8,8 +8,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
+// @coupling Animated.createAnimatedComponent wraps Pressable for worklet-driven scale transforms
 const AnimatedPressableView = Animated.createAnimatedComponent(Pressable);
 
+/**
+ * @contract Pressable with spring-back scale feedback on press; gracefully degrades when animations disabled.
+ * @edge pressScale is applied via withTiming on press-in, withSpring on press-out for natural feel.
+ */
 export interface AnimatedPressableProps {
   children: ReactNode;
   onPress?: () => void;

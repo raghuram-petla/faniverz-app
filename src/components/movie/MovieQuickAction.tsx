@@ -11,14 +11,18 @@ import { colors as palette } from '@/theme/colors';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import type { MovieActionType } from '@/hooks/useMovieAction';
 
+/** @contract Overlay button for quick follow/watchlist toggle on movie posters */
 export interface MovieQuickActionProps {
+  /** @coupling Determined by deriveMovieStatus in parent — 'follow' for upcoming, 'watchlist' for released */
   actionType: MovieActionType;
   isActive: boolean;
+  /** @assumes Parent has already auth-gated this callback */
   onPress: () => void;
   movieTitle: string;
   style?: ViewStyle;
 }
 
+/** @invariant Sequence must end at scale 1.0 to return icon to natural size */
 const BOUNCE_SEQUENCE = [
   { value: 0.6, duration: 100 },
   { value: 1.2, duration: 150 },
@@ -36,7 +40,7 @@ export function MovieQuickAction({
   const prevActive = useSharedValue(isActive ? 1 : 0);
   const animationsEnabled = useAnimationsEnabled();
 
-  // Bounce on activation (not on initial render)
+  /** @edge Bounce only fires on activation transition, not on initial mount or deactivation */
   useEffect(() => {
     const wasActive = prevActive.value === 1;
     prevActive.value = isActive ? 1 : 0;

@@ -23,6 +23,8 @@ import { createStyles } from '@/styles/tabs/calendar.styles';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// @boundary Calendar tab — upcoming release dates grouped by day, filterable by year/month/day
+// @coupling useCalendarStore (Zustand), useUpcomingMovies (infinite query), useMoviePlatformMap
 export default function CalendarScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -57,12 +59,15 @@ export default function CalendarScreen() {
   } = useCalendarStore();
   const [showYearPicker, setShowYearPicker] = useState(false);
 
+  // @invariant today is midnight-normalized and memoized once per mount (no dependency array items)
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
 
+  // @contract Returns all movies when no filters active; filters are AND-combined (year AND month AND day)
+  // @edge Movies without release_date are excluded when any filter is active
   const filteredMovies = useMemo(() => {
     if (!hasUserFiltered) return allMovies;
     return allMovies.filter((movie) => {
@@ -75,6 +80,8 @@ export default function CalendarScreen() {
     });
   }, [allMovies, hasUserFiltered, selectedYear, selectedMonth, selectedDay]);
 
+  // @contract Groups movies by release_date string — each group becomes a date header + card list
+  // @nullable movie.release_date can be null; those get grouped under empty string key
   const groupedMovies = useMemo(() => {
     const groups: { date: string; movies: Movie[]; movieDate: Date }[] = [];
     const map = new Map<string, Movie[]>();
@@ -92,6 +99,7 @@ export default function CalendarScreen() {
     return groups;
   }, [filteredMovies]);
 
+  // @contract Extracts unique years from all movies (not filtered), sorted descending for year picker
   const years = useMemo(
     () =>
       Array.from(
@@ -208,6 +216,7 @@ export default function CalendarScreen() {
           ) : null
         }
         renderItem={({ item }) => {
+          // @contract Three visual states: past (dimmed), today (red highlight), upcoming (violet)
           const isPast = item.movieDate < today;
           const isToday = item.movieDate.toDateString() === today.toDateString();
 

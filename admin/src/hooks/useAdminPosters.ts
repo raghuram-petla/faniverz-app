@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase-browser';
 import { createMovieChildHooks } from './createMovieChildHooks';
 import type { MoviePoster } from '@/lib/types';
 
+// @coupling: createMovieChildHooks — movie-scoped CRUD via generic child factory
 const {
   useList: useMoviePosters,
   useAdd: useAddPoster,
@@ -17,6 +18,9 @@ const {
 
 export { useMoviePosters, useAddPoster, useUpdatePoster, useRemovePoster };
 
+// @sideeffect: mutates movie_posters (unset old, set new) AND movies.poster_url
+// @invariant: at most one poster per movie can have is_main=true (DB partial unique index)
+// @edge: first unset may silently match zero rows if no main poster exists yet
 export function useSetMainPoster() {
   const qc = useQueryClient();
   return useMutation({
@@ -37,6 +41,7 @@ export function useSetMainPoster() {
         .single();
       if (error) throw error;
 
+      // @coupling: keeps movies.poster_url in sync with the main poster's image_url
       // Sync poster_url to movies table
       await supabase.from('movies').update({ poster_url: data.image_url }).eq('id', movieId);
 

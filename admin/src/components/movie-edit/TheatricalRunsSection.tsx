@@ -17,18 +17,23 @@ export type PendingRun = {
   label: string | null;
 };
 
+// @contract displays existing theatrical runs and an inline form to add new ones
 interface Props {
+  // @assumes visibleRuns merges persisted DB rows and pending (unsaved) runs
   visibleRuns: TheatricalRun[];
   onAdd: (run: PendingRun) => void;
+  // @boundary isPending flag tells parent whether to remove from DB or just from pending state
   onRemove: (id: string, isPending: boolean) => void;
 }
 
 export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
   const [runForm, setRunForm] = useState({ release_date: '', label: '' });
 
+  // @edge empty release_date silently bails — submit button is also disabled for it
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!runForm.release_date) return;
+    // @nullable label — empty string coerced to null for DB storage
     onAdd({ release_date: runForm.release_date, label: runForm.label || null });
     setRunForm({ release_date: '', label: '' });
   }
@@ -60,6 +65,7 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
               <Button
                 variant="icon"
                 size="sm"
+                // @invariant pending runs use 'pending-run-' prefix to distinguish from DB rows
                 onClick={() => onRemove(run.id, run.id.startsWith('pending-run-'))}
                 aria-label={`Remove run ${run.release_date}`}
               >

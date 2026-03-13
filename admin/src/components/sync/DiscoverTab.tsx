@@ -7,6 +7,7 @@ import { Globe, Loader2 } from 'lucide-react';
 import { CURRENT_YEAR, YEARS, MONTHS, type ImportProgress } from './syncHelpers';
 import { DiscoverResults, ImportProgressList } from './DiscoverResults';
 
+/** @contract discovers Telugu movies from TMDB by year/month and supports batch import */
 export function DiscoverTab() {
   const [year, setYear] = useState(CURRENT_YEAR);
   const [month, setMonth] = useState(0);
@@ -15,7 +16,9 @@ export function DiscoverTab() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
 
+  /** @boundary DiscoverResult shape returned by useDiscoverMovies — cast needed due to mutation generic */
   const data = discover.data as DiscoverResult | undefined;
+  /** @invariant existingSet rebuilt only when existingTmdbIds changes — used to mark imported movies */
   const existingSet = useMemo(() => new Set(data?.existingTmdbIds ?? []), [data?.existingTmdbIds]);
   const newMovies = useMemo(
     () => (data?.results ?? []).filter((m) => !existingSet.has(m.id)),
@@ -39,6 +42,10 @@ export function DiscoverTab() {
 
   const selectAllNew = () => setSelected(new Set(newMovies.map((m) => m.id)));
 
+  /**
+   * @sideeffect imports selected movies in batches of 5 via /api/sync/import
+   * @edge batch size of 5 prevents TMDB rate-limit hits; errors per-batch are captured individually
+   */
   const handleImport = async () => {
     if (selected.size === 0) return;
     const moviesList = (data?.results ?? []).filter((m) => selected.has(m.id));

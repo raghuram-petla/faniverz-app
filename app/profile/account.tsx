@@ -30,6 +30,7 @@ export default function AccountScreen() {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  // @sideeffect: presents confirmation dialog, then signs out and navigates to profile tab
   const handleLogout = () => {
     Alert.alert(t('profile.logOut'), t('profile.logOutConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -48,6 +49,8 @@ export default function AccountScreen() {
     ]);
   };
 
+  // @sideeffect: irreversible — deletes the user's account and all associated data from Supabase
+  // @edge: on success, navigates to profile tab where the user will see the logged-out state
   const handleDeleteAccount = () => {
     Alert.alert(t('profile.deleteAccount'), t('profile.deleteAccountConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },

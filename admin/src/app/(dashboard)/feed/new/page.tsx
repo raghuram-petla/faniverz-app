@@ -6,12 +6,15 @@ import Link from 'next/link';
 import { useCreateFeedItem } from '@/hooks/useAdminFeed';
 import type { FeedType } from '@/lib/types';
 
+// @contract: FEED_TYPES must match feed_items.feed_type CHECK constraint in the database
 const FEED_TYPES: { label: string; value: FeedType }[] = [
   { label: 'Update (text announcement)', value: 'update' },
   { label: 'Video', value: 'video' },
   { label: 'Poster', value: 'poster' },
 ];
 
+// @coupling: CONTENT_TYPES is a superset — includes 'surprise' key even though it's not in FEED_TYPES dropdown
+// @contract: content_type values must match feed_items.content_type CHECK constraint in the database
 const CONTENT_TYPES: Record<FeedType, { label: string; value: string }[]> = {
   update: [{ label: 'Update', value: 'update' }],
   video: [
@@ -47,11 +50,15 @@ export default function NewFeedItemPage() {
   const [isPinned, setIsPinned] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
 
+  // @sync: switching feed type resets content type to the first option for the new type
   const handleFeedTypeChange = (type: FeedType) => {
     setFeedType(type);
     setContentType(CONTENT_TYPES[type]?.[0]?.value ?? type);
   };
 
+  // @sideeffect: inserts into feed_items table, navigates to /feed on success
+  // @edge: when youtubeId is set but thumbnailUrl is blank, auto-generates thumbnail from YouTube hqdefault endpoint
+  // @nullable: description, youtube_id, thumbnail_url all coerced to null when empty
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {

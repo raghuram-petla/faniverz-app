@@ -30,6 +30,7 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
   lg: 'px-4 py-3 text-sm rounded-xl',
 };
 
+// @contract icon variant uses padding-only sizing (no text padding); others get px+py
 const ICON_SIZE_CLASSES: Record<ButtonSize, string> = {
   sm: 'p-1 rounded',
   md: 'p-1.5 rounded',
@@ -53,9 +54,11 @@ export function Button({
   className,
   ...buttonProps
 }: ButtonProps) {
+  // @invariant icon variant always uses ICON_SIZE_CLASSES; all others use SIZE_CLASSES
   const isIconOnly = variant === 'icon';
   const sizeClass = isIconOnly ? ICON_SIZE_CLASSES[size] : SIZE_CLASSES[size];
   const widthClass = fullWidth ? 'w-full justify-center' : '';
+  // @edge icon-only button (no children) centers the icon; with children adds gap
   const layoutClass = children ? 'flex items-center gap-2' : 'flex items-center justify-center';
 
   const classes = [layoutClass, sizeClass, VARIANT_CLASSES[variant], widthClass, className ?? '']

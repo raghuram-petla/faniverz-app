@@ -49,6 +49,8 @@ export type {
 export type { VideoType } from '@/lib/types';
 export type { OTTPlatform, ProductionHouse } from '@shared/types';
 
+// @contract Orchestrator hook for movie edit page — composes data fetching, state, derived, and handlers
+// @coupling Delegates to useMovieEditDerived for visible lists and createMovieEditHandlers for actions
 export function useMovieEditState(id: string) {
   const router = useRouter();
   const { data: movie, isLoading } = useAdminMovie(id);
@@ -122,7 +124,8 @@ export function useMovieEditState(id: string) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
-  // Data hydration effect
+  // @sideeffect Hydrates form state from server data when movie loads or refreshes
+  // @edge Overwrites local form on every movie data change — pending edits are lost on refetch
   useEffect(() => {
     if (movie) {
       const loaded: MovieForm = {
@@ -148,7 +151,7 @@ export function useMovieEditState(id: string) {
     }
   }, [movie]);
 
-  // Save status reset timer
+  // @sideeffect Auto-clears 'success' save status after 3s for transient toast UX
   useEffect(() => {
     if (saveStatus === 'success') {
       const timer = setTimeout(() => setSaveStatus('idle'), 3000);
@@ -173,12 +176,13 @@ export function useMovieEditState(id: string) {
   // Warn on unsaved navigation
   useUnsavedChangesWarning(derived.isDirty);
 
-  // Compose handlers
+  // @coupling Passes full dependency graph to handler factory — any new pending state must be added here
   const handlers = createMovieEditHandlers({
     id,
     form,
     setForm,
     router,
+    // @nullable movieData — null while movie is loading; handlers guard against this
     movieData: movie
       ? {
           spotlight_focus_x: movie.spotlight_focus_x ?? null,

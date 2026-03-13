@@ -15,9 +15,12 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from './MovieQuickAction';
 
+/** @contract Horizontal list item with poster, genres, platforms, and rating — used in calendar/search */
 interface MovieListItemProps {
   movie: Movie;
+  /** @nullable When undefined, platform pills and streaming badge are hidden */
   platforms?: OTTPlatform[];
+  /** @coupling isPast dims the card opacity — set by calendar screen for past release dates */
   isPast?: boolean;
   testID?: string;
 }
@@ -27,7 +30,9 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
+  /** @boundary status drives theater badge, streaming badge, and rating visibility */
   const status = deriveMovieStatus(movie, platforms?.length ?? 0);
+  /** @sideeffect useMovieAction internally auth-gates and fires follow/watchlist mutations */
   const {
     actionType,
     isActive,
@@ -62,6 +67,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
             </View>
           </View>
         )}
+        {/** @edge Only first platform shown as badge on poster — full list rendered as pills below */}
         {status === 'streaming' && platforms && platforms.length > 0 && (
           <View style={styles.posterBadgeRight}>
             <PlatformBadge platform={platforms[0]} size={24} />
@@ -81,7 +87,8 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
           {movie.title}
         </Text>
 
-        {/* Genres */}
+        {/** @nullable genres may be null from API; defaults to empty array */}
+        {/** @edge Caps at 2 genre pills to prevent layout overflow */}
         {(movie.genres ?? []).length > 0 && (
           <View style={styles.genreRow}>
             {(movie.genres ?? []).slice(0, 2).map((genre) => (
@@ -110,7 +117,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
           </View>
         )}
 
-        {/* Rating */}
+        {/** @edge Rating hidden for upcoming movies (no reviews yet) and when rating is 0 */}
         {(status === 'in_theaters' || status === 'streaming') && movie.rating > 0 && (
           <View style={[styles.ratingRow, isPast && styles.ratingRowPast]}>
             <Ionicons name="star" size={14} color={palette.yellow400} />

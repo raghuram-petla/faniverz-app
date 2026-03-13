@@ -33,12 +33,15 @@ export default function MediaScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  // @boundary: id from URL param — empty string returns null from API
   const { data: movie, isLoading } = useMovieDetail(id ?? '');
 
   const [activeTab, setActiveTab] = useState<MediaTabName>('videos');
   const [activeCategory, setActiveCategory] = useState('All');
   const scrollOffset = useSharedValue(0);
 
+  // @coupling: VIDEO_TYPES from shared constants defines the canonical video type ordering
+  // @edge: types with zero matching videos are excluded from the grouped result
   const videosByType = useMemo(() => {
     if (!movie) return [];
     return VIDEO_TYPES.reduce<{ label: string; videos: MovieVideo[] }[]>((acc, vt) => {
@@ -53,6 +56,7 @@ export default function MediaScreen() {
     [videosByType],
   );
 
+  // @contract: strips the count suffix "(N)" from the category pill label for comparison
   const activeCategoryLabel =
     activeCategory === 'All' ? 'All' : activeCategory.replace(/\s*\(\d+\)$/, '');
 
@@ -63,6 +67,7 @@ export default function MediaScreen() {
     [scrollOffset],
   );
 
+  // @sync: title fades in as user scrolls past the hero header (80-160px range)
   const titleFadeStyle = useAnimatedStyle(() => ({
     opacity: interpolate(scrollOffset.value, [80, 160], [0, 1], Extrapolation.CLAMP),
   }));

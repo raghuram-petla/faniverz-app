@@ -15,6 +15,7 @@ interface SpotlightPreviewProps {
   focusY: number | null;
 }
 
+/** @coupling mirrors mobile SpotlightCard layout — must stay visually in sync with app/ */
 export function SpotlightPreview({
   title,
   backdropUrl,
@@ -26,9 +27,13 @@ export function SpotlightPreview({
   focusX,
   focusY,
 }: SpotlightPreviewProps) {
+  /** @nullable releaseDate may be null for unreleased or TBD movies */
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
+  /** @sync MOVIE_STATUS_CONFIG must have entries for all MovieStatus values */
   const config = MOVIE_STATUS_CONFIG[movieStatus];
+  /** @coupling SPOTLIGHT_GRADIENT from constants must match the gradient used in mobile app */
   const gradientCss = `linear-gradient(to bottom, ${SPOTLIGHT_GRADIENT.join(', ')})`;
+  /** @nullable focusX/focusY null when admin hasn't set a focal point; defaults to center */
   const objectPosition =
     focusX != null && focusY != null
       ? `${Math.round(focusX * 100)}% ${Math.round(focusY * 100)}%`
@@ -156,6 +161,7 @@ export function SpotlightPreview({
               gap: 8,
             }}
           >
+            {/** @edge CTA label changes based on movie status (theatrical vs streaming) */}
             <span style={{ fontSize: 16, fontWeight: 600, color: colors.black }}>
               {movieStatus === 'in_theaters' ? '🎫 Get Tickets' : '▶ Watch Now'}
             </span>

@@ -62,6 +62,7 @@ export default function MyReviewsScreen() {
   const [editBody, setEditBody] = useState('');
   const [editSpoiler, setEditSpoiler] = useState(false);
 
+  // @contract: three sort modes — recent (date desc), rating (desc), helpful (count desc)
   const sorted = useMemo(() => {
     if (!reviews) return [];
     const copy = [...reviews];
@@ -84,6 +85,8 @@ export default function MyReviewsScreen() {
       : '—';
   const totalHelpful = reviews?.reduce((sum, r) => sum + r.helpful_count, 0) ?? 0;
 
+  // @sync: populates all edit form fields from the review being edited
+  // @nullable: review.title and review.body may be null
   const handleEdit = (review: Review) => {
     setEditingReview(review);
     setEditRating(review.rating);
@@ -92,6 +95,8 @@ export default function MyReviewsScreen() {
     setEditSpoiler(review.contains_spoiler);
   };
 
+  // @edge: guards against submitting with no review selected or zero rating
+  // @sideeffect: clears editingReview on success which closes the ReviewModal
   const handleEditSubmit = () => {
     if (!editingReview || editRating === 0) return;
     update.mutate(
@@ -108,6 +113,7 @@ export default function MyReviewsScreen() {
     );
   };
 
+  // @sideeffect: irreversible — deletes the review from DB after confirmation dialog
   const handleDelete = (review: Review) => {
     Alert.alert(t('profile.deleteReview'), t('profile.deleteReviewConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },

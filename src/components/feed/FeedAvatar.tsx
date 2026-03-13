@@ -13,6 +13,7 @@ export interface FeedAvatarProps {
   onPress?: () => void;
 }
 
+/** @invariant every FeedEntityType must have a fallback icon entry */
 const FALLBACK_ICONS: Record<FeedEntityType, React.ComponentProps<typeof Ionicons>['name']> = {
   movie: 'film',
   actor: 'person',
@@ -20,8 +21,10 @@ const FALLBACK_ICONS: Record<FeedEntityType, React.ComponentProps<typeof Ionicon
   production_house: 'business',
 };
 
+/** @contract shape varies by entityType: movie=poster, actor=diamond, user=circle, production_house=rounded square */
 export function FeedAvatar({ imageUrl, entityType, size = 52, label, onPress }: FeedAvatarProps) {
   const { theme } = useTheme();
+  /** @nullable imageUrl — when null, resolvedUrl is null and fallback icon renders */
   const resolvedUrl = getImageUrl(imageUrl, 'sm');
 
   const accessLabel = onPress ? `Navigate to ${label ?? 'entity'}` : label;
@@ -52,6 +55,7 @@ export function FeedAvatar({ imageUrl, entityType, size = 52, label, onPress }: 
 
     if (entityType === 'actor') {
       const outerSize = size;
+      /** @sync inner image is 1.42x the outer container to fill the rotated diamond shape */
       const innerSize = Math.round(size * 1.42);
       return (
         <View

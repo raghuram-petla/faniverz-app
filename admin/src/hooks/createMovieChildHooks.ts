@@ -18,6 +18,10 @@ export interface MovieChildConfig {
 /**
  * Factory for movie child-resource hooks (list by movieId, add, update, remove).
  * Used by videos, posters, theatrical-runs, and production-houses.
+ *
+ * @contract Returns { useList, useAdd, useUpdate, useRemove } — each is a standalone React hook
+ * @coupling Depends on Supabase table having 'movie_id' FK and 'id' PK columns
+ * @boundary All Supabase errors are thrown; mutations show window.alert on failure
  */
 export function createMovieChildHooks<T>(config: MovieChildConfig) {
   const {
@@ -46,6 +50,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     });
   }
 
+  // @sideeffect Inserts row, then invalidates list cache for the item's movie_id
   function useAdd() {
     const qc = useQueryClient();
     return useMutation({
@@ -54,6 +59,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
         if (error) throw error;
         return data as T;
       },
+      // @assumes variables always contains movie_id — caller must include it
       onSuccess: (_data: T, variables: Partial<T>) => {
         const movieId = (variables as Record<string, unknown>).movie_id as string;
         qc.invalidateQueries({ queryKey: queryKey(movieId) });
@@ -64,6 +70,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     });
   }
 
+  // @contract Caller must pass { id, movieId } alongside update fields; movieId is stripped before DB update
   function useUpdate() {
     const qc = useQueryClient();
     return useMutation({
@@ -90,6 +97,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     });
   }
 
+  // @sideeffect Deletes row by composite key (id + movie_id) to prevent cross-movie deletion
   function useRemove() {
     const qc = useQueryClient();
     return useMutation({

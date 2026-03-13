@@ -18,8 +18,10 @@ interface DiscoverGridItemProps {
   styles: Record<string, any>;
 }
 
+/** @coupling useMovieAction — derives quick action (watchlist/watch) based on movie status */
 export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemProps) {
   const router = useRouter();
+  /** @boundary platforms.length drives status derivation; empty array = no streaming info */
   const status = deriveMovieStatus(item, platforms.length);
   const { actionType, isActive, onPress: handleAction } = useMovieAction(item, platforms.length);
 

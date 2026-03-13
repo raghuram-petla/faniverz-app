@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { Notification } from '@/lib/types';
 
+// @nullable filters param and both sub-fields — omitted = all notifications
+// @coupling JOINs movies table for poster_url display in notification list
 export function useAdminNotifications(filters?: { status?: string; type?: string }) {
   return useQuery({
     queryKey: ['admin', 'notifications', filters],
@@ -32,7 +34,9 @@ export function useCreateNotification() {
         .single();
       if (error) throw error;
 
-      // Trigger push delivery for immediate sends (fire-and-forget — don't fail the mutation)
+      // @sideeffect Triggers edge function 'send-push' for immediate notifications
+      // @edge Fire-and-forget: push failure is logged but does not reject the mutation
+      // @assumes Notifications within 60s of now are treated as "immediate"
       const isImmediate =
         !notification.scheduled_for ||
         new Date(notification.scheduled_for).getTime() <= Date.now() + 60_000;
@@ -78,6 +82,7 @@ export function useCancelNotification() {
   });
 }
 
+// @sideeffect Resets failed notification to 'pending' — does NOT re-trigger push delivery
 export function useRetryNotification() {
   const qc = useQueryClient();
   return useMutation({
@@ -98,6 +103,8 @@ export function useRetryNotification() {
   });
 }
 
+// @sideeffect Batch status transition: all 'failed' -> 'pending' in one UPDATE
+// @edge No row-count limit — large volumes could cause slow queries
 export function useBulkRetryFailed() {
   const qc = useQueryClient();
   return useMutation({
@@ -117,6 +124,7 @@ export function useBulkRetryFailed() {
   });
 }
 
+// @sideeffect Batch status transition: all 'pending' -> 'cancelled' in one UPDATE
 export function useBulkCancelPending() {
   const qc = useQueryClient();
   return useMutation({

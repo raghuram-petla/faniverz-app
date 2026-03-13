@@ -14,6 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+/** @contract TMDB lookup + import by ID for both movies and persons */
 export function ImportTab() {
   const [type, setType] = useState<'movie' | 'person'>('movie');
   const [tmdbId, setTmdbId] = useState('');
@@ -29,6 +30,10 @@ export function ImportTab() {
     lookup.mutate({ tmdbId: id, type });
   };
 
+  /**
+   * @sideeffect imports movie and re-runs lookup to refresh existsInDb status
+   * @edge only handles movies — person import must go through movie import (cast association)
+   */
   const handleImport = async () => {
     if (!result) return;
     if (result.type === 'movie') {
@@ -37,6 +42,10 @@ export function ImportTab() {
     }
   };
 
+  /**
+   * @assumes existingId is the internal UUID for the person in our DB
+   * @sideeffect re-runs lookup after refresh to update displayed data
+   */
   const handleRefreshPerson = async () => {
     if (!result || result.type !== 'person' || !result.existingId) return;
     await refreshActor.mutateAsync(result.existingId);
@@ -156,6 +165,7 @@ export interface MoviePreviewProps {
   onImport: () => void;
 }
 
+/** @contract shows TMDB movie details with import/re-sync action; existsInDb controls button label */
 function MoviePreview({ result, isPending, onImport }: MoviePreviewProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">
@@ -237,6 +247,7 @@ export interface PersonPreviewProps {
   onRefresh: () => void;
 }
 
+/** @contract shows TMDB person details; refresh only available if person exists in DB */
 function PersonPreview({ result, isPending, onRefresh }: PersonPreviewProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">

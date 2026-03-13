@@ -23,13 +23,17 @@ import { SocialSignInButtons } from '@/components/auth/SocialSignInButtons';
 import { PhoneOtpModal } from '@/components/auth/PhoneOtpModal';
 import { createLoginStyles } from '@/styles/auth.styles';
 
+// @coupling AuthProvider, useEmailAuth, useGoogleAuth, useAppleAuth, usePhoneAuth — four auth strategies wired here
+// @boundary Entry point for all authentication flows: email, Google, Apple, phone OTP, and guest
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = useMemo(() => createLoginStyles(theme), [theme]);
   const router = useRouter();
+  // @sideeffect signIn triggers Supabase email auth, sets session in AuthProvider
   const { signIn, isLoading, error } = useEmailAuth();
   const { signInWithGoogle, isLoading: googleLoading } = useGoogleAuth();
+  // @edge appleAvailable is false on Android — Apple sign-in button conditionally hidden
   const { signInWithApple, isLoading: appleLoading, isAvailable: appleAvailable } = useAppleAuth();
   const { sendOtp, verifyOtp, isLoading: phoneLoading, error: phoneError } = usePhoneAuth();
   const { setIsGuest } = useAuth();
@@ -38,6 +42,8 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
 
+  // @contract Requires non-empty email and password; silently no-ops on empty fields
+  // @sideeffect On success, navigates to tabs via router.replace (replaces auth stack)
   const handleSignIn = async () => {
     if (!email.trim() || !password) return;
     try {
@@ -66,6 +72,7 @@ export default function LoginScreen() {
     }
   };
 
+  // @sideeffect Sets guest flag in AuthProvider — limits access to gated features downstream
   const handleGuest = () => {
     setIsGuest(true);
     router.replace('/(tabs)');
@@ -76,6 +83,7 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      {/* @assumes keyboardShouldPersistTaps="handled" prevents keyboard dismiss on button tap */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -176,6 +184,7 @@ export default function LoginScreen() {
           <View style={styles.dividerLine} />
         </View>
 
+        {/* @nullable onApple is undefined when Apple auth unavailable (Android) */}
         <View style={styles.socialSection}>
           <SocialSignInButtons
             onGoogle={handleGoogleSignIn}
@@ -192,6 +201,7 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </ScrollView>
 
+      {/* @sync PhoneOtpModal manages its own OTP send/verify lifecycle; onSuccess triggers navigation */}
       <PhoneOtpModal
         visible={showPhoneModal}
         onClose={() => setShowPhoneModal(false)}

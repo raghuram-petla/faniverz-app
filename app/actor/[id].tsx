@@ -10,6 +10,7 @@ import {
   UIManager,
 } from 'react-native';
 
+// @sideeffect: enables LayoutAnimation on Android — must be called at module scope before any animation
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -37,6 +38,7 @@ import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { ActorDetailSkeleton } from '@/components/actor/ActorDetailSkeleton';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
+// @coupling: gender codes match the TMDB gender enum values stored in the actors table
 const GENDER_LABEL_KEYS: Record<number, string> = {
   1: 'actorDetail.female',
   2: 'actorDetail.male',
@@ -50,6 +52,7 @@ export default function ActorDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  // @boundary: useActorDetail fetches actor + filmography (credits) in a single query
   const { actor, filmography, isLoading, refetch } = useActorDetail(id ?? '');
   const [showPhoto, setShowPhoto] = useState(false);
   const [bioExpanded, setBioExpanded] = useState(false);
@@ -66,8 +69,10 @@ export default function ActorDetailScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
+  // @coupling: followSet uses "entityType:entityId" composite key format
   const isFollowing = followSet.has(`actor:${id}`);
 
+  // @contract: gate() redirects to login if unauthenticated; otherwise toggles follow state
   const handleFollowToggle = gate(() => {
     if (isFollowing) {
       unfollowMutation.mutate({ entityType: 'actor', entityId: id ?? '' });
@@ -112,6 +117,7 @@ export default function ActorDetailScreen() {
   }
 
   const genderLabel = actor.gender ? t(GENDER_LABEL_KEYS[actor.gender]) : null;
+  // @edge: technicians show their first crew role name; falls back to generic "Technician" label
   const personTypeLabel =
     actor.person_type === 'technician'
       ? (filmography.find((c) => c.credit_type === 'crew')?.role_name ??

@@ -31,25 +31,33 @@ import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
 import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpers';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
+// @boundary Home tab — personalized feed with collapsible header, video autoplay, voting, and follow
+// @coupling useFeedStore (Zustand), usePersonalizedFeed, useActiveVideo, useEntityFollows
 export default function FeedScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
   const styles = createFeedStyles(theme);
   const insets = useSafeAreaInsets();
+  // @sync filter persists in Zustand store — survives tab switches but not app restarts
   const { filter, setFilter } = useFeedStore();
+  // @sideeffect useCollapsibleHeader attaches animated translateY to scroll position
   const { headerTranslateY, totalHeaderHeight, handleScroll } = useCollapsibleHeader(insets.top);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     usePersonalizedFeed(filter);
+  // @sideeffect vote/remove mutations use optimistic updates via TanStack Query cache
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
+  // @sync activeVideoId tracks the single auto-playing video based on scroll position
   const { activeVideoId, registerVideoLayout, handleScrollForVideo } = useActiveVideo();
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
+  // @boundary gate() wraps callbacks — redirects guests to login instead of executing the action
   const { gate } = useAuthGate();
   const { user } = useAuth();
   const router = useRouter();
 
+  // @invariant Deduplicates by item.id — infinite query pages can overlap during refetch
   const allItems = useMemo(() => {
     const flat = data?.pages.flatMap((page) => page) ?? [];
     const seen = new Set<string>();
@@ -72,6 +80,8 @@ export default function FeedScreen() {
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
 
+  // @contract Toggle behavior: re-upvoting removes the vote; first upvote or switching from down creates new vote
+  // @nullable prev can be null (no vote), 'up', or 'down'
   const handleUpvote = useCallback(
     (itemId: string) => {
       const prev = userVotes[itemId] ?? null;
@@ -119,6 +129,8 @@ export default function FeedScreen() {
     [unfollowMutation],
   );
 
+  // @edge If entityId matches current user, navigates to own profile instead of user/:id
+  // @assumes entityType is always one of 'user' | 'movie' | 'actor' | 'production_house'
   const handleEntityPress = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       if (entityType === 'user') {
@@ -172,9 +184,11 @@ export default function FeedScreen() {
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingTop: totalHeaderHeight }]}
         showsVerticalScrollIndicator={false}
+        // @sync Three scroll handlers chained: pull-to-refresh, collapsible header, infinite load + video autoplay
         onScroll={(e) => {
           handlePullScroll(e);
           handleScroll(e);
+          // @edge 300px threshold triggers next page fetch before user reaches the bottom
           const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
           if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300) {
             loadMore();
@@ -217,7 +231,7 @@ export default function FeedScreen() {
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
-                onUpvote={gate(handleUpvote)}
+                onUpvote={gate(handleUpvote)} /* @boundary gate wraps — guests see login prompt */
                 onDownvote={gate(handleDownvote)}
                 onComment={handleComment}
                 onShare={handleShare}

@@ -4,20 +4,26 @@ import { Loader2, Upload, X } from 'lucide-react';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 import { getImageUrl } from '@shared/imageUrl';
 
+/** @contract all fields are strings for controlled inputs; parent converts on save */
 export interface ActorFormState {
   name: string;
+  /** @edge empty string means no photo; parent coerces to null for DB */
   photo_url: string;
   person_type: 'actor' | 'technician';
   birth_date: string;
+  /** @boundary gender stored as string enum ("0"|"1"|"2"|"3") matching TMDB convention */
   gender: string;
   biography: string;
   place_of_birth: string;
+  /** @boundary stored as string for input; parent converts to number | null */
   height_cm: string;
 }
 
+/** @coupling parent (ActorEditPage) owns form state; this component is purely presentational */
 interface ActorFormFieldsProps {
   form: ActorFormState;
   uploading: boolean;
+  /** @assumes field name matches a key in ActorFormState — not type-checked at call site */
   onFieldChange: (field: string, value: string) => void;
   onPhotoUpload: (file: File) => void;
 }
@@ -61,6 +67,7 @@ export function ActorFormFields({
         {form.photo_url ? (
           <div className="flex items-center gap-4">
             <img
+              /** @edge getImageUrl returns null if no variant exists; falls back to raw URL */
               src={getImageUrl(form.photo_url, 'sm') ?? form.photo_url}
               alt="Photo preview"
               className="w-20 h-20 rounded-full object-cover border border-outline"
@@ -106,6 +113,7 @@ export function ActorFormFields({
         {form.photo_url && (
           <p className="mt-2 text-xs text-on-surface-disabled truncate">{form.photo_url}</p>
         )}
+        {/** @coupling ImageVariantsPanel shows generated size variants (sm/md/lg) for the photo */}
         <ImageVariantsPanel originalUrl={form.photo_url} variantType="photo" />
       </div>
 
@@ -137,6 +145,7 @@ export function ActorFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs text-on-surface-subtle mb-1">Gender</label>
+          {/** @sync gender values (0-3) must match TMDB API gender enum and GENDER_LABELS in constants */}
           <select
             value={form.gender}
             onChange={(e) => onFieldChange('gender', e.target.value)}

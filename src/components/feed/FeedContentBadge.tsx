@@ -8,7 +8,9 @@ export interface FeedContentBadgeProps {
   size?: 'small' | 'normal';
 }
 
+/** @coupling feedHelpers — color, label, and icon derived from content_type string */
 export function FeedContentBadge({ contentType, size = 'normal' }: FeedContentBadgeProps) {
+  /** @boundary contentType is an arbitrary string; feedHelpers must handle unknown values */
   const bgColor = getFeedTypeColor(contentType);
   const label = getFeedTypeLabel(contentType);
   const iconName = getFeedTypeIconName(contentType);

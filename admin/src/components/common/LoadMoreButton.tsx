@@ -1,6 +1,7 @@
 'use client';
 import { Loader2 } from 'lucide-react';
 
+// @contract renders null when hasNextPage is false; disabled during fetch
 export interface LoadMoreButtonProps {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
@@ -12,6 +13,7 @@ export function LoadMoreButton({
   isFetchingNextPage,
   fetchNextPage,
 }: LoadMoreButtonProps) {
+  // @edge no more pages — bail out entirely
   if (!hasNextPage) return null;
 
   return (

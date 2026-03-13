@@ -16,6 +16,7 @@ export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createPostDetailStyles(theme);
+  /** @nullable profile may be null for deleted users; falls back to 'anonymous' */
   const displayName = comment.profile?.display_name ?? t('feed.anonymous');
 
   return (
@@ -31,6 +32,7 @@ export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
           <Text style={styles.commentTime}>{formatRelativeTime(comment.created_at)}</Text>
         </View>
         <Text style={styles.commentBody}>{comment.body}</Text>
+        {/* @contract delete button only shown when isOwn=true AND onDelete provided */}
         {isOwn && onDelete ? (
           <TouchableOpacity
             style={styles.commentDeleteBtn}

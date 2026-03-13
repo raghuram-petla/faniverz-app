@@ -17,6 +17,7 @@ export function SearchResultProductionHouse({ house, onPress }: SearchResultProd
   const { t } = useTranslation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
+  /** @nullable logo_url — falls back to PLACEHOLDER_POSTER for studios without logos */
   const logoUrl = getImageUrl(house.logo_url, 'sm') ?? PLACEHOLDER_POSTER;
 
   return (

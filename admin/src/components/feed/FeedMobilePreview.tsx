@@ -15,12 +15,14 @@ const FEED_TABS = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'];
 const MUTED_TEXT = colors.gray500;
 const ZINC_700 = colors.zinc700;
 
+/** @contract renders an in-browser mobile device preview of the feed; read-only, no mutations */
 export interface FeedMobilePreviewProps {
   items: NewsFeedItem[];
 }
 
 export function FeedMobilePreview({ items }: FeedMobilePreviewProps) {
   const [device, setDevice] = useState<DeviceConfig>(DEVICES[0]);
+  /** @edge caps at 10 items to keep preview performant; does not reflect actual feed pagination */
   const displayItems = items.slice(0, 10);
 
   return (
@@ -83,9 +85,12 @@ export function FeedMobilePreview({ items }: FeedMobilePreviewProps) {
   );
 }
 
+/** @coupling mirrors mobile FeedCard layout — changes here should stay in sync with app/ */
 function PreviewFeedCard({ item }: { item: NewsFeedItem }) {
+  /** @edge falls back to red600 / raw content_type for unknown types */
   const color = FEED_CONTENT_TYPE_COLORS[item.content_type] ?? colors.red600;
   const label = FEED_CONTENT_TYPE_LABELS[item.content_type] ?? item.content_type;
+  /** @nullable movie relation may not be joined on all feed items */
   const movieName = item.movie?.title;
 
   return (
@@ -121,6 +126,7 @@ function PreviewFeedCard({ item }: { item: NewsFeedItem }) {
       {/* Thumbnail */}
       {item.thumbnail_url ? (
         <div
+          /** @invariant videos (youtube_id present) use 16:9; posters use 40:51 aspect ratio */
           style={
             !item.youtube_id ? previewStyles.posterMediaContainer : previewStyles.mediaContainer
           }
@@ -131,6 +137,7 @@ function PreviewFeedCard({ item }: { item: NewsFeedItem }) {
 
       {/* Action bar */}
       <div style={previewStyles.actionBar}>
+        {/** @nullable counts default to 0 when null from DB (new/uninteracted items) */}
         <span style={{ fontSize: 8, color: MUTED_TEXT }}>▲ {item.upvote_count ?? 0}</span>
         <span style={{ fontSize: 8, color: MUTED_TEXT }}>▼ {item.downvote_count ?? 0}</span>
         <span style={{ fontSize: 8, color: MUTED_TEXT }}>👁 {item.view_count ?? 0}</span>

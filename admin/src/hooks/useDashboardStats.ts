@@ -7,12 +7,16 @@ import type { DashboardStats } from '@/lib/types';
  * Fetch dashboard stats, optionally scoped to production house movies.
  * PH admins only see stats for their production house's movies.
  */
+// @nullable: productionHouseIds — omit for super-admin (all stats); provide for PH-scoped stats
+// @contract: PH admins get totalUsers=0 because user count is not scoped to production houses
+// @boundary: uses estimated counts (head:true) for performance; not exact row counts
 export function useDashboardStats(productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
 
   return useQuery({
     queryKey: ['admin', 'dashboard', productionHouseIds],
     queryFn: async (): Promise<DashboardStats> => {
+      // @edge: PH-scoped branch — requires junction table lookup first
       if (hasPHScope) {
         const { data: junctionData, error: jErr } = await supabase
           .from('movie_production_houses')
@@ -22,6 +26,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
 
         const movieIds = [...new Set((junctionData ?? []).map((r) => r.movie_id))];
 
+        // @edge: PH has no movies — return zeroes early to avoid empty .in() queries
         if (movieIds.length === 0) {
           return {
             totalMovies: 0,
@@ -58,6 +63,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
             : Promise.resolve({ count: 0 }),
         ]);
 
+        // @assumes: an actor may appear in multiple movies; Set deduplication gives unique count
         const uniqueActorIds = new Set((castData.data ?? []).map((r) => r.actor_id));
 
         return {
@@ -70,6 +76,7 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         };
       }
 
+      // @sync: all 6 count queries fire in parallel for faster dashboard load
       const [movies, actors, users, reviews, feedItems, comments] = await Promise.all([
         supabase.from('movies').select('id', { count: 'estimated', head: true }),
         supabase.from('actors').select('id', { count: 'estimated', head: true }),

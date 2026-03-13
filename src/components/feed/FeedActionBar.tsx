@@ -28,11 +28,13 @@ export function FeedActionBar({
 }: FeedActionBarProps) {
   const { theme, colors } = useTheme();
   const defaultColor = theme.textTertiary;
+  // @edge all counts default to 0 to handle null/undefined from API responses
   const safeComments = commentCount ?? 0;
   const safeUpvotes = upvoteCount ?? 0;
   const safeDownvotes = downvoteCount ?? 0;
   const safeViews = viewCount ?? 0;
 
+  // @contract active vote highlights in green (up) or red (down); null = tertiary
   const upColor = userVote === 'up' ? colors.green500 : defaultColor;
   const downColor = userVote === 'down' ? colors.red500 : defaultColor;
 

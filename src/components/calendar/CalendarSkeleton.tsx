@@ -5,6 +5,7 @@ import { SkeletonBox } from '@/components/ui/SkeletonBox';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { createStyles, DATE_BOX_SIZE } from './CalendarSkeleton.styles';
 
+/** @invariant 3 date groups with 2 movies each approximates a typical calendar view */
 const DATE_GROUPS = [1, 2, 3];
 const MOVIE_ITEMS = [1, 2];
 

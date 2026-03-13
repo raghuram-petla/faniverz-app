@@ -14,7 +14,9 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { LoadMoreButton } from '@/components/common/LoadMoreButton';
 
 export default function AuditLogPage() {
+  // @coupling useEffectiveUser returns impersonated user if active, real user otherwise
   const user = useEffectiveUser();
+  // @boundary Audit visibility scoped: super_admins see all, others see only their entries
   const { isSuperAdmin } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [actionFilter, setActionFilter] = useState('');
@@ -23,12 +25,15 @@ export default function AuditLogPage() {
   const [dateTo, setDateTo] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
+  // @contract Empty filters object means "no filtering" — hook receives undefined when no keys set
   const filters: AuditFilters = {};
   if (actionFilter) filters.action = actionFilter;
   if (entityTypeFilter) filters.entityType = entityTypeFilter;
+  // @edge Search requires >= 2 chars to avoid overly broad queries
   if (debouncedSearch.length >= 2) filters.search = debouncedSearch;
   if (dateFrom) filters.dateFrom = dateFrom;
   if (dateTo) filters.dateTo = dateTo;
+  // @invariant Non-super admins only see their own audit entries — enforced client-side
   // Non-super admins only see their own audit entries
   if (!isSuperAdmin && user?.id) filters.adminUserId = user.id;
 
@@ -41,7 +46,7 @@ export default function AuditLogPage() {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = useAdminAuditLog(Object.keys(filters).length ? filters : undefined);
+  } = useAdminAuditLog(Object.keys(filters).length ? filters : undefined); // @contract Passes undefined when no filters → hook fetches unfiltered
   const entries = data?.pages.flat() ?? [];
 
   const toggleRow = (id: string) => {
@@ -196,6 +201,7 @@ export default function AuditLogPage() {
                           {entry.admin_display_name && entry.admin_email && (
                             <p className="text-on-surface-subtle text-xs">{entry.admin_email}</p>
                           )}
+                          {/* @edge Impersonation trail: shows who the admin was acting as */}
                           {entry.impersonating_role && (
                             <p className="text-amber-500 text-xs mt-0.5">
                               as{' '}
@@ -220,6 +226,7 @@ export default function AuditLogPage() {
                       <td className="px-6 py-4">
                         <span className="text-on-surface-muted text-sm font-mono">
                           {entry.entity_id ? `${entry.entity_id.slice(0, 8)}...` : '—'}
+                          {/* @edge Truncated UUID for readability; full ID visible in expanded details */}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-on-surface-muted text-sm">

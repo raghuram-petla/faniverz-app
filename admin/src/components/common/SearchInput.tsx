@@ -1,6 +1,7 @@
 'use client';
 import { Search, Loader2 } from 'lucide-react';
 
+// @contract controlled input — parent owns value, receives changes via onChange
 export interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -26,6 +27,7 @@ export function SearchInput({
         onChange={(e) => onChange(e.target.value)}
         className="w-full bg-input rounded-lg pl-10 pr-10 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
       />
+      {/* @nullable isLoading — only shows spinner when explicitly true */}
       {isLoading && (
         <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle animate-spin" />
       )}

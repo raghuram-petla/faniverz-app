@@ -12,6 +12,10 @@ export interface MovieRatingProps {
   textStyle?: TextStyle;
 }
 
+/**
+ * @contract Displays star icon + numeric rating; returns null for unrated (rating <= 0).
+ * @nullable reviewCount is optional; only shown when present and > 0.
+ */
 export function MovieRating({
   rating,
   size = 12,
@@ -20,6 +24,7 @@ export function MovieRating({
   containerStyle,
   textStyle,
 }: MovieRatingProps) {
+  // @edge Hides entire component when rating is 0 or negative (unrated movie)
   if (rating <= 0) return null;
 
   return (

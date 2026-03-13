@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useStaleItems, useRefreshMovie, useRefreshActor } from '@/hooks/useSync';
 import { StaleMoviesSection, MissingBiosSection, BulkProgressPanel } from './BulkSections';
 
+/** @contract orchestrates bulk TMDB sync: stale movie refresh + missing actor bio fetch */
 export function BulkTab() {
   const [staleDays, setStaleDays] = useState(30);
   const staleMovies = useStaleItems('movies', staleDays);
@@ -21,6 +22,10 @@ export function BulkTab() {
     errors: string[];
   } | null>(null);
 
+  /**
+   * @sideeffect sequentially refreshes each stale movie via TMDB API
+   * @edge errors are accumulated, not thrown — bulk operation continues on individual failures
+   */
   const handleBulkRefreshMovies = async () => {
     const items = staleMovies.data?.items ?? [];
     if (items.length === 0) return;
@@ -49,6 +54,7 @@ export function BulkTab() {
     }
   };
 
+  /** @sideeffect sequentially fetches bio for each actor with missing biography via TMDB API */
   const handleBulkRefreshActors = async () => {
     const items = missingBios.data?.items ?? [];
     if (items.length === 0) return;
@@ -77,6 +83,7 @@ export function BulkTab() {
     }
   };
 
+  /** @invariant isBulkRunning guards both Refresh All and Fetch All buttons to prevent concurrent bulk ops */
   const isBulkRunning = bulkProgress !== null && bulkProgress.completed < bulkProgress.total;
 
   return (

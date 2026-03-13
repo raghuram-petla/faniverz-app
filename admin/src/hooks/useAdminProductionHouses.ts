@@ -6,6 +6,8 @@ import type { ProductionHouse } from '@/lib/types';
 
 const PAGE_SIZE = 50;
 
+// @coupling: createCrudHooks — single/create/update/delete delegated to generic factory
+// @edge: enabledFn skips queries for 1-char search strings to avoid noisy partial matches
 const crud = createCrudHooks<ProductionHouse>({
   table: 'production_houses',
   queryKeyBase: 'production-houses',
@@ -20,6 +22,9 @@ const crud = createCrudHooks<ProductionHouse>({
  * List production houses. PH admins only see their assigned PHs.
  * Pass productionHouseIds to scope for PH admins.
  */
+// @contract: PH admins receive only their scoped production houses; super admins see all
+// @assumes: productionHouseIds is populated from the user's role_assignments for PH scoping
+// @nullable: productionHouseIds — omit or pass empty to get unscoped (super admin) results
 export function useAdminProductionHouses(search = '', productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
 

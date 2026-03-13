@@ -28,6 +28,7 @@ export default function ProductionHouseDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  // @boundary: useProductionHouseDetail fetches house metadata + associated movies in one query
   const { house, movies, isLoading, refetch } = useProductionHouseDetail(id ?? '');
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
@@ -44,8 +45,10 @@ export default function ProductionHouseDetailScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
+  // @coupling: followSet uses "entityType:entityId" composite key format
   const isFollowing = followSet.has(`production_house:${id}`);
 
+  // @contract: gate() redirects to login if unauthenticated; otherwise toggles follow state
   const handleFollowToggle = gate(() => {
     if (isFollowing) {
       unfollowMutation.mutate({ entityType: 'production_house', entityId: id ?? '' });
@@ -78,6 +81,7 @@ export default function ProductionHouseDetailScreen() {
     );
   }
 
+  // @nullable: house.logo_url may be null — renders a placeholder icon when missing
   const renderLogo = (size: number) =>
     house.logo_url ? (
       <Image

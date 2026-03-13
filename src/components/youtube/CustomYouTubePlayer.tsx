@@ -22,8 +22,10 @@ export function CustomYouTubePlayer({ youtubeId }: CustomYouTubePlayerProps) {
 
   const isPlaying = state.playerState === 'playing';
   const isBuffering = state.playerState === 'buffering';
+  /** @edge progress defaults to 0 when duration is 0 to avoid NaN in seek bar width */
   const progress = state.duration > 0 ? state.currentTime / state.duration : 0;
 
+  /** @boundary whitelist-only navigation: blocks all URLs except YouTube embed/player resources */
   const onNavRequest = useCallback((request: ShouldStartLoadRequest) => {
     const { url } = request;
     return (
@@ -36,6 +38,8 @@ export function CustomYouTubePlayer({ youtubeId }: CustomYouTubePlayerProps) {
     );
   }, []);
 
+  /** @edge guards against division-by-zero when trackWidth or duration is 0 */
+  /** @sideeffect converts touch X position to time offset and sends seek command to WebView */
   const handleSeek = useCallback(
     (locationX: number) => {
       if (trackWidth <= 0 || state.duration <= 0) return;

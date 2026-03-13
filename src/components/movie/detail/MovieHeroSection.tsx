@@ -11,9 +11,11 @@ import { useTranslation } from 'react-i18next';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
+/** @contract Full-width hero with backdrop, gradient overlay, poster thumbnail, and meta info */
 interface MovieHeroSectionProps {
   movie: MovieWithDetails;
   movieStatus: MovieStatus;
+  /** @nullable null when release_date is not set (TBA movies) */
   releaseYear: number | null;
 }
 
@@ -23,6 +25,7 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
   const styles = createStyles(theme);
   return (
     <View style={styles.hero}>
+      {/** @nullable backdrop_url/poster_url may be null; cascading fallback to PLACEHOLDER_POSTER */}
       <Image
         source={{
           uri:
@@ -34,6 +37,7 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
         contentFit="cover"
         recyclingKey={`hero-${movie.id}`}
         cachePolicy="memory-disk"
+        /** @nullable detail_focus_x/y overrides backdrop_focus_x/y; both may be null */
         contentPosition={
           (movie.detail_focus_x ?? movie.backdrop_focus_x) != null &&
           (movie.detail_focus_y ?? movie.backdrop_focus_y) != null
@@ -64,6 +68,7 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
             <Text style={styles.heroTitle} numberOfLines={2}>
               {movie.title}
             </Text>
+            {/** @edge rating of 0 means no reviews — entire rating row hidden */}
             {movie.rating > 0 && (
               <View style={styles.heroRatingRow}>
                 <Ionicons name="star" size={20} color={colors.yellow400} />

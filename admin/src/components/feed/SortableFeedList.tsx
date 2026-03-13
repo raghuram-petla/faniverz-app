@@ -33,6 +33,7 @@ export function SortableFeedList({
   onEdit,
   onDelete,
 }: SortableFeedListProps) {
+  /** @edge distance: 5 prevents accidental drags when clicking action buttons on feed cards */
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -46,6 +47,7 @@ export function SortableFeedList({
     );
   }
 
+  // @coupling onDragEnd handler in parent must call reorder mutation to persist new sort_order
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>

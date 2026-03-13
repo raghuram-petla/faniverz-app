@@ -6,6 +6,10 @@ import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import type { AdminRoleId, AdminUserWithDetails, ProductionHouse } from '@/lib/types';
 import { X, Loader2 } from 'lucide-react';
 
+/**
+ * @contract two modes: user-impersonation (targetUser set) or role-impersonation (targetUser null)
+ * @sideeffect writes impersonation state to ImpersonationContext, affecting entire admin panel
+ */
 export interface ImpersonateModalProps {
   /** Pre-selected target user (from Users page). Null = role-only mode. */
   targetUser: AdminUserWithDetails | null;
@@ -14,10 +18,10 @@ export interface ImpersonateModalProps {
 
 export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps) {
   const { startImpersonation, startRoleImpersonation, realUser } = useImpersonation();
-  // Role dropdown respects hierarchy — only show roles BELOW the real user's role:
-  //   root         → super_admin, admin, PH admin
-  //   super_admin  → admin, PH admin (no super_admin option)
-  // root is never shown as an impersonation target (SQL-only role).
+  /** @invariant role dropdown respects hierarchy — only show roles BELOW the real user's role:
+   *   root         -> super_admin, admin, PH admin
+   *   super_admin  -> admin, PH admin (no super_admin option)
+   * root is never shown as an impersonation target (SQL-only role). */
   const isRoot = realUser?.role === 'root';
   const [role, setRole] = useState<AdminRoleId>('admin');
   const [selectedPhIds, setSelectedPhIds] = useState<string[]>([]);
@@ -25,7 +29,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
   const [loading, setLoading] = useState(false);
   const [phLoading, setPhLoading] = useState(false);
 
-  // Fetch production houses for PH admin role selection
+  /** @sideeffect fetches production_houses only when role is PH admin and no targetUser set */
   useEffect(() => {
     if (targetUser || role !== 'production_house_admin') return;
     setPhLoading(true);
@@ -62,6 +66,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
     setSelectedPhIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
   }
 
+  /** @invariant PH admin requires at least one production house selected; other roles are self-sufficient */
   const canStart =
     targetUser ||
     role === 'super_admin' ||
@@ -160,6 +165,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
           </div>
         )}
 
+        {/** @assumes audit log records actions under the real user's identity, not the impersonated one */}
         <p className="text-xs text-on-surface-subtle">
           You will see the admin panel as this {targetUser ? 'user' : 'role'} would see it. All
           changes will be recorded in the audit log under your real identity.

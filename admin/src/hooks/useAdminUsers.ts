@@ -27,6 +27,8 @@ interface AdminUserRow {
 }
 
 /** List all admin users with their roles and PH assignments */
+// @coupling JOINs admin_user_roles + profiles + admin_ph_assignments + production_houses
+// @sideeffect Two sequential queries then client-side merge via phByUser Map
 export function useAdminUserList() {
   return useQuery({
     queryKey: ['admin', 'users'],
@@ -85,6 +87,7 @@ export function useAdminInvitations() {
 }
 
 /** Create a new invitation */
+// @sideeffect Normalizes email to lowercase before insert to prevent duplicate invites
 export function useInviteAdmin() {
   const qc = useQueryClient();
   return useMutation({
@@ -137,6 +140,8 @@ export function useRevokeInvitation() {
 }
 
 /** Revoke admin access (delete role + PH assignments) */
+// @sideeffect Deletes PH assignments first (FK constraint), then role — ordering matters
+// @edge No transaction — if role delete fails after PH delete, user has no role but also no PH links
 export function useRevokeAdmin() {
   const qc = useQueryClient();
   return useMutation({
@@ -177,6 +182,7 @@ export function useUpdateAdminRole() {
 }
 
 /** Block an admin (set status to blocked with reason) */
+// @contract blocked_by must be the current admin's userId; reason is freeform text
 export function useBlockAdmin() {
   const qc = useQueryClient();
   return useMutation({
@@ -209,6 +215,7 @@ export function useBlockAdmin() {
 }
 
 /** Unblock an admin (restore active status) */
+// @sideeffect Clears block status but does NOT clear blocked_by/blocked_reason columns
 export function useUnblockAdmin() {
   const qc = useQueryClient();
   return useMutation({

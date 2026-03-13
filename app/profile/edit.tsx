@@ -26,6 +26,7 @@ import { createStyles } from '@/styles/profile/edit.styles';
 import { EditProfileSkeleton } from '@/components/profile/EditProfileSkeleton';
 import { getImageUrl } from '@shared/imageUrl';
 
+// @invariant: bio text must not exceed 150 characters — enforced in handleSave
 const BIO_LIMIT = 150;
 
 export default function EditProfileScreen() {
@@ -44,6 +45,8 @@ export default function EditProfileScreen() {
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
 
+  // @sync: populates form fields when profile data arrives from the server
+  // @nullable: all profile fields may be null for new users
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name ?? '');
@@ -53,6 +56,8 @@ export default function EditProfileScreen() {
     }
   }, [profile]);
 
+  // @edge: bio length validation prevents exceeding DB column limit
+  // @sideeffect: trims whitespace from all fields before persisting
   const handleSave = () => {
     if (bio.length > BIO_LIMIT) {
       Alert.alert(t('profile.bioTooLong'), t('profile.bioTooLongMessage', { limit: BIO_LIMIT }));

@@ -8,6 +8,8 @@ import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers
  * Preview a TMDB movie or person before importing.
  * Read-only — no DB writes.
  */
+// @contract: accepts { tmdbId, type: 'movie'|'person' }; returns preview data + existsInDb flag
+// @sync: read-only — fetches from TMDB and checks local DB but never writes
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyAdmin(request.headers.get('authorization'));
@@ -15,6 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // @coupling: TMDB API key sourced from env; all TMDB calls share this pattern
     const tmdb = ensureTmdbApiKey();
     if (!tmdb.ok) return tmdb.response;
 
@@ -37,6 +40,7 @@ export async function POST(request: NextRequest) {
         .eq('tmdb_id', tmdbId)
         .maybeSingle();
 
+      // @nullable: director may be null if TMDB has no crew data or no Director job entry
       const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
 
       return NextResponse.json({
@@ -50,6 +54,7 @@ export async function POST(request: NextRequest) {
           releaseDate: detail.release_date,
           runtime: detail.runtime,
           genres: detail.genres.map((g) => g.name),
+          // @nullable: poster_path and backdrop_path may be null for obscure TMDB entries
           posterUrl: detail.poster_path ? TMDB_IMAGE.poster(detail.poster_path) : null,
           backdropUrl: detail.backdrop_path ? TMDB_IMAGE.backdrop(detail.backdrop_path) : null,
           director,

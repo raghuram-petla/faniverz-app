@@ -5,6 +5,9 @@ import type { MoviePlatform } from '@/lib/types';
 
 /**
  * List OTT releases. PH admins only see releases for their PH's movies.
+ *
+ * @coupling Joins movie_production_houses for PH scoping + platforms for display data
+ * @nullable productionHouseIds — omitted means full admin access (no PH filter)
  */
 export function useAdminOttReleases(productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
@@ -67,6 +70,7 @@ export function useCreateOttRelease() {
   });
 }
 
+// @contract Uses composite key (movie_id + platform_id) — no surrogate 'id' column
 export function useUpdateOttRelease() {
   const qc = useQueryClient();
   return useMutation({
@@ -121,6 +125,7 @@ export function useDeleteOttRelease() {
 }
 
 // Movie-specific platform hooks (for movie edit page)
+// @boundary Separate from useAdminOttReleases — scoped to a single movie, no PH check needed
 export function useMoviePlatforms(movieId: string) {
   return useQuery({
     queryKey: ['admin', 'movie_platforms', movieId],
@@ -136,6 +141,7 @@ export function useMoviePlatforms(movieId: string) {
   });
 }
 
+// @sideeffect Invalidates both movie-specific AND global OTT caches to keep both views fresh
 export function useAddMoviePlatform() {
   const qc = useQueryClient();
   return useMutation({
@@ -162,6 +168,7 @@ export function useAddMoviePlatform() {
   });
 }
 
+// @sideeffect Deletes by composite key (movie_id + platform_id), invalidates both caches
 export function useRemoveMoviePlatform() {
   const qc = useQueryClient();
   return useMutation({

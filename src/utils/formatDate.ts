@@ -2,6 +2,9 @@
  * Format a date string as relative time (e.g., "2m ago", "3h ago", "5d ago").
  * Falls back to short date for older timestamps.
  */
+// @assumes dateStr is a valid ISO 8601 or JS-parseable date string
+// @edge future dates produce negative diffs, shown as "Just now"
+// @coupling used by FeedCard, CommentItem, NotificationItem for timestamp display
 export function formatRelativeTime(dateStr: string): string {
   const now = new Date();
   const date = new Date(dateStr);
@@ -15,6 +18,7 @@ export function formatRelativeTime(dateStr: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
 
+  // @edge transitions from weeks to absolute date at ~4 weeks (not exactly 1 month)
   const diffWeeks = Math.floor(diffDays / 7);
   if (diffWeeks < 4) return `${diffWeeks}w ago`;
 
@@ -32,6 +36,7 @@ export function formatDate(dateStr: string): string {
 /**
  * Format a date string as "Month YYYY" (e.g., "March 2025") for member-since display.
  */
+// @nullable dateStr — returns 'Unknown' for null/undefined/empty input
 export function formatMemberSince(dateStr: string | null | undefined): string {
   if (!dateStr) return 'Unknown';
   const date = new Date(dateStr);
@@ -49,6 +54,7 @@ export function formatWatchTime(minutes: number): string {
 /**
  * Extract the year from a date string. Returns null for undefined/null/empty input.
  */
+// @nullable both input and return — callers must handle null
 export function extractReleaseYear(dateStr?: string | null): number | null {
   if (!dateStr) return null;
   return new Date(dateStr).getFullYear();

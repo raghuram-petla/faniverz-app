@@ -19,12 +19,16 @@ const crud = createCrudHooks<Movie>({
 /**
  * List movies with optional search, status filter, and PH scoping.
  * When productionHouseIds is provided (PH admin), only movies linked to those PHs are returned.
+ *
+ * @boundary Bypasses createCrudHooks — needs PH scoping, multi-status filtering, platform ID lookup
+ * @coupling Depends on movie_production_houses junction + movie_platforms for status derivation
  */
 export function useAdminMovies(search = '', statusFilter = '', productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
   const needsPlatformIds = statusFilter === 'streaming' || statusFilter === 'released';
 
-  // Cached platform movie IDs — avoids re-fetching on every page load
+  // @sideeffect Prefetches all movie_platforms IDs for 'streaming'/'released' filter derivation
+  // @edge staleTime=60s — newly added OTT releases may not appear in filter results for up to 1 min
   const { data: platformMovieIds, isSuccess: platformIdsReady } = useQuery({
     queryKey: ['admin', 'platform-movie-ids'],
     queryFn: async () => {
@@ -60,6 +64,7 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
           .order('release_date', { ascending: false })
           .range(from, to);
         if (search) query = query.ilike('title', `%${search}%`);
+        // @invariant Status filter logic: 'released' = past release + not in theaters + NOT on any OTT platform
         if (statusFilter === 'upcoming') {
           query = query.gt('release_date', today);
         } else if (statusFilter === 'in_theaters') {
@@ -84,6 +89,7 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
         return data as Movie[];
       }
 
+      // @edge Duplicated filter logic for non-PH path — must stay in sync with PH-scoped branch above
       let query = supabase
         .from('movies')
         .select('*')
@@ -121,6 +127,7 @@ export function useAdminMovies(search = '', statusFilter = '', productionHouseId
 }
 
 /** Fetch all movies (no pagination) — for dropdowns / selectors */
+// @edge limit(5000) on non-PH path — could be slow if movie count exceeds threshold
 export function useAllMovies(productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
 

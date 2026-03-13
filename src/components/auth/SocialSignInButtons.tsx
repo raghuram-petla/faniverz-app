@@ -13,6 +13,7 @@ export interface SocialSignInButtonsProps {
   showApple?: boolean;
 }
 
+/** @coupling parent must supply async handlers that trigger OAuth/OTP flows */
 export function SocialSignInButtons({
   onGoogle,
   onApple,
@@ -46,7 +47,7 @@ export function SocialSignInButtons({
         )}
       </TouchableOpacity>
 
-      {/* Apple (iOS only) */}
+      {/* @contract Apple button only renders when showApple=true AND onApple handler is provided (iOS only) */}
       {showApple && onApple ? (
         <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.input }]}

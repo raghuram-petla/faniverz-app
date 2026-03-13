@@ -2,6 +2,7 @@
 import { useRef, useState } from 'react';
 import { Loader2, Upload, X, ImageOff, RotateCcw } from 'lucide-react';
 
+// @contract image upload with preview, change, remove, and optional reset actions
 interface ImageUploadFieldProps {
   label: string;
   url: string;
@@ -37,6 +38,7 @@ export function ImageUploadField({
   const inputRef = useRef<HTMLInputElement>(null);
   const [imgError, setImgError] = useState(false);
 
+  // @sideeffect delegates upload to parent; resets input value to allow re-selecting same file
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) void onUpload(file, uploadEndpoint);
@@ -53,8 +55,10 @@ export function ImageUploadField({
         className="hidden"
         onChange={handleChange}
       />
+      {/* @edge url present: show preview + change/remove; url absent: show upload button */}
       {url ? (
         <div className="flex items-center gap-4">
+          {/* @edge broken image URL shows ImageOff placeholder instead of broken img tag */}
           {imgError ? (
             <div
               className={`rounded-lg border border-outline bg-input flex items-center justify-center ${previewClassName}`}

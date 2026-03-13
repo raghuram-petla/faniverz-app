@@ -3,6 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { Review } from '@/lib/types';
 
+// @boundary: joins reviews with movies and profiles via PostgREST foreign-key selects
+// @edge: search matches title/body server-side via .or(), but movie.title and profile.display_name
+//        are filtered client-side because PostgREST cannot OR across foreign table columns
+// @contract: returns max 200 reviews, newest first; query disabled for 1-char searches
 export function useAdminReviews(search = '', ratingFilter = 0) {
   return useQuery({
     queryKey: ['admin', 'reviews', search, ratingFilter],
@@ -51,6 +55,8 @@ export interface UpdateReviewPayload {
   contains_spoiler?: boolean;
 }
 
+// @sideeffect: invalidates all ['admin', 'reviews'] queries on success; window.alert on error
+// @nullable: title and body fields are optional — only provided fields are updated
 export function useUpdateReview() {
   const qc = useQueryClient();
   return useMutation({
@@ -68,6 +74,7 @@ export function useUpdateReview() {
   });
 }
 
+// @sideeffect: hard-deletes review row; no soft-delete or audit trail
 export function useDeleteReview() {
   const qc = useQueryClient();
   return useMutation({

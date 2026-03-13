@@ -3,6 +3,7 @@ import { SkeletonBox } from '@/components/ui/SkeletonBox';
 
 const W = Dimensions.get('window').width;
 const CARD_W = (W - 48) / 2;
+/** @invariant 1.5:1 aspect ratio matches actual movie poster cards */
 const CARD_H = CARD_W * 1.5;
 const ITEMS = [1, 2, 3, 4, 5, 6];
 

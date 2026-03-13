@@ -2,6 +2,8 @@
  * Returns true if the given hex color has low luminance (perceived as dark).
  * Uses the ITU-R BT.601 luma formula.
  */
+// @assumes hex is a valid 6-digit hex color string (with or without '#' prefix)
+// @edge threshold 40 is intentionally low — only very dark colors return true
 export function isDark(hex: string): boolean {
   const c = hex.replace('#', '');
   const r = parseInt(c.substring(0, 2), 16);

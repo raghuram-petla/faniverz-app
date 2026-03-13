@@ -45,6 +45,8 @@ const MENU_ITEM_DEFS: Omit<MenuItem, 'badge'>[] = [
   { icon: 'person-outline', labelKey: 'profile.accountDetails', route: '/profile/account' },
 ];
 
+// @boundary Profile tab — dual-mode: guest view (login prompt) vs authenticated view (stats + menu)
+// @coupling useProfile, useWatchlist, useUserReviews, useEnrichedFollows, useUnreadCount — five data sources
 export default function ProfileScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -52,13 +54,17 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  // @nullable profile can be null during initial load or if backend profile row is missing
   const { data: profile, refetch: refetchProfile } = useProfile();
 
   const isLoggedIn = !!user;
 
+  // @edge Fallback chain: display_name -> email prefix -> 'Guest' literal
   const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? 'Guest';
+  // @nullable usernameDisplay is null when profile has no username set
   const usernameDisplay = profile?.username ? `@${profile.username}` : null;
   const email = user?.email ?? '';
+  // @nullable avatar_url can be null — falls back to PLACEHOLDER_AVATAR constant
   const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md') ?? PLACEHOLDER_AVATAR;
   const memberSince = formatMemberSince(user?.created_at);
 
@@ -80,9 +86,11 @@ export default function ProfileScreen() {
 
   const watchlistCount = watchlistItems.length;
   const reviewsCount = userReviews.length;
+  // @edge avgRating defaults to 0 when no reviews to avoid division by zero
   const avgRating =
     reviewsCount > 0 ? userReviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount : 0;
 
+  // @contract Only the notifications menu item gets a badge; value is unread notification count
   const menuItems = useMemo(
     () =>
       MENU_ITEM_DEFS.map((item) => ({
@@ -95,6 +103,7 @@ export default function ProfileScreen() {
     [unreadCount, t],
   );
 
+  // @contract Maps all FeedEntityType values to routes; user always goes to own profile (not /user/:id)
   const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
     const routes: Record<FeedEntityType, string> = {
       movie: `/movie/${entityId}`,
@@ -105,7 +114,7 @@ export default function ProfileScreen() {
     router.push(routes[entityType] as Parameters<typeof router.push>[0]);
   };
 
-  // Guest view — login/signup prompt only
+  // @boundary Guest view — only shows login button + settings; no profile data or menu items
   if (!isLoggedIn) {
     return (
       <View style={[styles.container, styles.guestContainer, { paddingTop: insets.top + 16 }]}>
@@ -217,7 +226,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Following Section */}
+      {/* @edge Following section only renders when user has at least one follow */}
       {enrichedFollows.length > 0 && (
         <FollowingSection
           follows={enrichedFollows}

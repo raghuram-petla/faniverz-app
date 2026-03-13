@@ -12,8 +12,10 @@ interface CalendarState {
   clearFilters: () => void;
 }
 
+// @edge captured at module load time — not reactive to midnight crossing
 const now = new Date();
 
+// @invariant null values for year/month/day mean "use current date" — resolved by consumers
 export const useCalendarStore = create<CalendarState>((set) => ({
   selectedYear: null,
   selectedMonth: null,
@@ -29,6 +31,8 @@ export const useCalendarStore = create<CalendarState>((set) => ({
       hasUserFiltered: true,
     }),
 
+  // @edge wraps month overflow/underflow across year boundaries (Dec->Jan, Jan->Dec)
+  // @sideeffect clears selectedDay on month navigation to prevent invalid day selection
   navigateMonth: (direction) =>
     set((state) => {
       const currentMonth = state.selectedMonth ?? now.getMonth();
@@ -52,6 +56,7 @@ export const useCalendarStore = create<CalendarState>((set) => ({
 
   toggleFilters: () => set((state) => ({ showFilters: !state.showFilters })),
 
+  // @contract resets all state to initial values — consumer reverts to showing current month
   clearFilters: () =>
     set({
       selectedYear: null,

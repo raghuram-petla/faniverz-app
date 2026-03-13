@@ -1,6 +1,7 @@
 'use client';
 import type { FeedType } from '@/lib/types';
 
+/** @sync tab values must match FeedType union from @/lib/types; 'all' is a filter-only sentinel */
 const TABS: { label: string; value: FeedType | 'all' }[] = [
   { label: 'All', value: 'all' },
   { label: 'Videos', value: 'video' },

@@ -13,6 +13,7 @@ interface ActorDetailPreviewProps {
   biography: string;
 }
 
+/** @coupling mirrors mobile ActorDetailScreen layout — must stay visually in sync with app/ */
 export function ActorDetailPreview({
   name,
   photoUrl,
@@ -23,10 +24,13 @@ export function ActorDetailPreview({
   heightCm,
   biography,
 }: ActorDetailPreviewProps) {
+  /** @nullable gender 0 means "Not set" per TMDB convention; treated as falsy */
   const genderLabel = gender ? GENDER_LABELS[gender] : null;
   const typeLabel = personType === 'technician' ? 'Technician' : 'Actor';
+  /** @edge hasBioInfo controls whether the bio info card renders at all */
   const hasBioInfo = birthDate || placeOfBirth || heightCm;
 
+  /** @assumes birthDate is a valid ISO date string when non-empty */
   const formattedDate = birthDate
     ? new Date(birthDate).toLocaleDateString('en-US', {
         month: 'short',
@@ -83,6 +87,7 @@ export function ActorDetailPreview({
         {/* Centered avatar */}
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 4 }}>
           <div
+            /** @sync ACTOR_AVATAR_SIZE from @shared/constants must match mobile avatar dimensions */
             style={{
               width: ACTOR_AVATAR_SIZE,
               height: ACTOR_AVATAR_SIZE,
@@ -117,6 +122,7 @@ export function ActorDetailPreview({
           marginBottom: 8,
         }}
       >
+        {/** @edge shows placeholder text when name is empty (during initial form state) */}
         {name || 'Actor Name'}
       </div>
 

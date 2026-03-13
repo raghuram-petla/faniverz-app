@@ -15,6 +15,8 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? '');
   const { upload, uploading } = useImageUpload('/api/upload/profile-avatar');
 
+  // @sideeffect Uploads file, persists URL to profile, and refreshes auth context
+  // @sync Three sequential async steps — upload, DB update, context refresh
   async function handleUpload(file: File) {
     try {
       const url = await upload(file);
@@ -26,6 +28,7 @@ export default function ProfilePage() {
     }
   }
 
+  // @edge Rolls back local avatarUrl on failure to keep UI consistent with DB
   async function handleRemove() {
     try {
       setAvatarUrl('');
@@ -37,6 +40,8 @@ export default function ProfilePage() {
     }
   }
 
+  // @boundary Fetches Google avatar from /api/profile, which reads from Supabase auth metadata
+  // @assumes Session is valid when this function is called (user is on authenticated page)
   async function handleResetToGoogle() {
     try {
       const {

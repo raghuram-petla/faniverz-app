@@ -20,6 +20,8 @@ const SIZE_LABELS: Record<string, string> = {
   lg: 'LG',
 };
 
+// @contract: always returns exactly 4 variants (original, sm, md, lg) with initial status 'checking'
+// @assumes: specs array has at least 3 entries (sm, md, lg); original is index 0 so specs[i-1] is safe for i>=1
 function buildVariants(originalUrl: string, variantType: VariantType): VariantInfo[] {
   const specs = VARIANT_SPECS[variantType];
   const sizes: ImageSize[] = ['original', 'sm', 'md', 'lg'];
@@ -33,6 +35,9 @@ function buildVariants(originalUrl: string, variantType: VariantType): VariantIn
   }));
 }
 
+// @boundary: POSTs to /api/image-check to verify variant availability via HEAD requests
+// @nullable: originalUrl — when null, variants are cleared and no check is performed
+// @sideeffect: fires network request on mount and whenever originalUrl/variantType changes
 export function useImageVariants(originalUrl: string | null, variantType: VariantType) {
   const [variants, setVariants] = useState<VariantInfo[]>([]);
   const [isChecking, setIsChecking] = useState(false);
@@ -56,6 +61,7 @@ export function useImageVariants(originalUrl: string | null, variantType: Varian
 
         setVariants((prev) => prev.map((v) => ({ ...v, status: statusMap.get(v.url) ?? 'error' })));
       } catch {
+        // @edge: network failure marks all variants as 'error' rather than leaving them 'checking'
         setVariants((prev) => prev.map((v) => ({ ...v, status: 'error' as const })));
       } finally {
         setIsChecking(false);

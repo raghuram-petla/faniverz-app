@@ -10,7 +10,9 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
 import { MediaSummaryCard } from './MediaSummaryCard';
 
+/** @contract Renders synopsis, genres, info grid, production houses, and media summary/trailer */
 export interface OverviewTabProps {
+  /** @assumes movie is fully hydrated with videos, posters, productionHouses relations */
   movie: MovieWithDetails;
   onExploreMedia: () => void;
 }
@@ -20,6 +22,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
   const router = useRouter();
+  /** @invariant hasMedia determines whether MediaSummaryCard or legacy trailer button renders */
   const hasMedia = movie.videos.length > 0 || movie.posters.length > 0;
 
   return (
@@ -57,6 +60,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
         )}
       </View>
 
+      {/** @sideeffect Production house chips navigate to /production-house/:id on press */}
       {movie.productionHouses.length > 0 && (
         <View style={styles.productionHousesRow}>
           <Text style={styles.productionHousesLabel}>{t('movie.production')}</Text>
@@ -83,6 +87,7 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
         </View>
       )}
 
+      {/** @edge Falls back to direct trailer_url button when no structured media exists */}
       {hasMedia ? (
         <MediaSummaryCard
           videos={movie.videos}

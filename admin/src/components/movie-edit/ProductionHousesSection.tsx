@@ -8,6 +8,7 @@ import { Button } from '@/components/common/Button';
 
 type PendingPH = {
   production_house_id: string;
+  // @coupling _ph carries display data; stripped before DB save
   _ph?: ProductionHouse;
 };
 
@@ -57,6 +58,7 @@ export function ProductionHousesSection({
                   <Building2 className="w-5 h-5 text-on-surface-subtle" />
                 )}
               </div>
+              {/* @nullable production_house relation — falls back to raw ID */}
               <span className="text-on-surface font-medium flex-1">
                 {mph.production_house?.name ?? mph.production_house_id}
               </span>
@@ -87,6 +89,7 @@ export function ProductionHousesSection({
             className={`flex-1 ${INPUT_CLASSES.compact}`}
           >
             <option value="">Select production house…</option>
+            {/* @invariant already-added production houses are excluded from the dropdown */}
             {allProductionHouses
               .filter(
                 (ph) => !visibleProductionHouses.some((mph) => mph.production_house_id === ph.id),

@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { Ban, X } from 'lucide-react';
 import type { AdminUserWithDetails } from '@/lib/types';
 
+/** @sideeffect onConfirm triggers admin_user_roles status update to 'blocked' with reason */
 export interface BlockAdminModalProps {
   target: AdminUserWithDetails;
+  /** @contract reason string is required (button disabled when empty) */
   onConfirm: (reason: string) => void;
   onClose: () => void;
   isPending: boolean;
@@ -27,6 +29,7 @@ export function BlockAdminModal({ target, onConfirm, onClose, isPending }: Block
         </div>
 
         <p className="text-sm text-on-surface-muted mb-4">
+          {/** @edge display_name may be null for users who haven't set a profile name */}
           Block <strong className="text-on-surface">{target.display_name || target.email}</strong>?
           They will immediately lose access to the admin panel. This can be reversed later.
         </p>

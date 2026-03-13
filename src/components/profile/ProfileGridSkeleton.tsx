@@ -2,6 +2,7 @@ import { View, StyleSheet, Dimensions } from 'react-native';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
 
 const W = Dimensions.get('window').width;
+/** @assumes 16px horizontal padding + 16px gap between 2 columns */
 const CARD_W = (W - 48) / 2;
 const ITEMS = [1, 2, 3, 4];
 

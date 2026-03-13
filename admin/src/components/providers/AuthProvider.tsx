@@ -3,14 +3,21 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { supabase } from '@/lib/supabase-browser';
 import type { AdminUser, AdminRoleId } from '@/lib/types';
 
+/**
+ * @contract central auth state for admin panel — guards all admin routes
+ * @invariant user is null when unauthenticated OR when authenticated but without admin role
+ */
 interface AuthContextValue {
+  /** @nullable null when logged out, denied access, or blocked */
   user: AdminUser | null;
   isLoading: boolean;
   /** True when user is authenticated but has no admin role or is blocked */
   isAccessDenied: boolean;
   /** Reason the admin was blocked, if applicable */
   blockedReason: string | null;
+  /** @sideeffect redirects to Google OAuth flow */
   signInWithGoogle: () => Promise<void>;
+  /** @sideeffect clears local auth state and Supabase session */
   signOut: () => Promise<void>;
   /** Re-fetch the profile from Supabase and update user state */
   refreshUser: () => Promise<void>;
@@ -36,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
 
+  /** @edge 3s timeout prevents infinite loading spinner if auth check hangs */
   useEffect(() => {
     let initialLoadDone = false;
 
@@ -54,13 +62,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    /**
+     * @boundary fetches profile + admin role + PH assignments via REST API (not Supabase client)
+     * @assumes accessToken is a valid Supabase JWT with read access to profiles and admin_user_roles
+     */
     async function fetchAdminUser(userId: string, email: string | undefined, accessToken: string) {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
         const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
         const headers = { apikey: anonKey, Authorization: `Bearer ${accessToken}` };
 
-        // Try to auto-accept invitation first (if applicable)
+        /** @sideeffect auto-accepts pending invitation before role check — converts invite to role */
         if (email) {
           await tryAcceptInvitation(email, userId, accessToken);
         }
@@ -111,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setBlockedReason(null);
         const role = roles[0].role_id as AdminRoleId;
 
-        // Fetch PH assignments (only needed for PH admins, but cheap to always fetch)
+        /** @edge PH assignments only fetched for production_house_admin role to minimize queries */
         let phIds: string[] = [];
         if (role === 'production_house_admin') {
           const phRes = await fetch(
@@ -149,7 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Fast path: restore session from localStorage
+    /**
+     * @boundary reads Supabase auth token directly from localStorage for fast session restore
+     * @assumes localStorage key format: sb-{projectRef}-auth-token
+     */
     async function restoreSession(): Promise<boolean> {
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -228,6 +243,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  /**
+   * @sideeffect clears React state, localStorage token, and Supabase session
+   * @edge localStorage removal is try-caught for SSR safety; signOut error is logged but not thrown
+   */
   const signOut = useCallback(async () => {
     setUser(null);
     setIsAccessDenied(false);

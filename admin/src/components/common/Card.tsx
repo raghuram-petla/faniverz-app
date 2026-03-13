@@ -2,6 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react';
 
 export type CardVariant = 'elevated' | 'bordered' | 'subtle';
 
+// @invariant every CardVariant maps to a unique visual treatment; keep in sync with design tokens
 const VARIANT_CLASSES: Record<CardVariant, string> = {
   elevated: 'bg-surface-elevated rounded-xl',
   bordered: 'bg-surface-card border border-outline rounded-xl',
@@ -27,6 +28,7 @@ export function Card({
   className,
   ...divProps
 }: CardProps) {
+  // @contract merges variant + padding + caller className; falsy entries filtered out
   const classes = [VARIANT_CLASSES[variant], PADDING_CLASSES[padding], className ?? '']
     .filter(Boolean)
     .join(' ');

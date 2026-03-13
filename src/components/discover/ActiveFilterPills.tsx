@@ -34,10 +34,12 @@ export function ActiveFilterPills({
   const { t } = useTranslation();
   const animationsEnabled = useAnimationsEnabled();
 
+  /** @contract animations are conditionally applied based on user's reduced-motion preference */
   const entering = animationsEnabled ? FadeIn.duration(200) : undefined;
   const exiting = animationsEnabled ? FadeOut.duration(150) : undefined;
   const layout = animationsEnabled ? Layout.springify() : undefined;
 
+  /** @edge renders nothing when no filters are active — parent layout adjusts automatically */
   if (
     selectedGenres.length === 0 &&
     selectedPlatforms.length === 0 &&
@@ -57,6 +59,7 @@ export function ActiveFilterPills({
         </Animated.View>
       ))}
       {selectedPlatforms.map((p) => {
+        /** @nullable platform lookup may fail if platform was deleted; falls back to raw ID */
         const platform = platforms.find((pl) => pl.id === p);
         return (
           <Animated.View key={p} entering={entering} exiting={exiting} layout={layout}>

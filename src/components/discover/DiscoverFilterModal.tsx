@@ -22,6 +22,7 @@ interface DiscoverFilterModalProps {
   styles: Record<string, any>;
 }
 
+/** @invariant genre list must stay in sync with the genres column values in the movies table */
 export const GENRES = [
   'Action',
   'Drama',
@@ -44,6 +45,7 @@ export const SORT_OPTIONS = [
   { value: 'upcoming' as const, label: 'Upcoming' },
 ];
 
+/** @coupling DiscoverSearchHeader imports FILTER_TABS for tab rendering */
 export const FILTER_TABS = [
   { value: 'all' as const, label: 'All' },
   { value: 'in_theaters' as const, label: 'Theaters' },
@@ -152,6 +154,7 @@ export function DiscoverFilterModal({
             )}
           </ScrollView>
 
+          {/* @contract bottom actions: clear all resets filters in store; show results closes modal */}
           <View style={styles.modalActions}>
             <TouchableOpacity onPress={onClearAll}>
               <Text style={styles.clearFiltersText}>{t('discover.clearFilters')}</Text>

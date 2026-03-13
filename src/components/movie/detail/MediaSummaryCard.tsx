@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { MovieVideo, MoviePoster } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
 
+/** @contract Clickable card showing featured thumbnail + video/photo counts; navigates to media page */
 export interface MediaSummaryCardProps {
   videos: MovieVideo[];
   posters: MoviePoster[];
@@ -18,6 +19,7 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
   const { theme, colors } = useTheme();
   const styles = createStyles(theme);
 
+  /** @invariant Featured video priority: trailer > teaser > first video > null (no thumbnail) */
   const featured =
     videos.find((v) => v.video_type === 'trailer') ??
     videos.find((v) => v.video_type === 'teaser') ??
@@ -42,9 +44,11 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
       activeOpacity={0.85}
       accessibilityLabel={`${summaryText} — Explore all media`}
     >
+      {/** @nullable featured is null when no videos exist — thumbnail section hidden entirely */}
       {featured && (
         <View style={styles.mediaSummaryThumb}>
           <Image
+            /** @boundary YouTube thumbnail URL constructed from youtube_id; falls back to placeholder */
             source={{
               uri: featured.youtube_id
                 ? `https://img.youtube.com/vi/${featured.youtube_id}/mqdefault.jpg`

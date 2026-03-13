@@ -26,6 +26,7 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
+// @invariant: recent searches list never exceeds MAX_RECENT entries
 const MAX_RECENT = 10;
 
 type SearchFilter = 'all' | 'movies' | 'actors' | 'studios';
@@ -40,12 +41,15 @@ export default function SearchScreen() {
   const [filter, setFilter] = useState<SearchFilter>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
+  // @boundary: useUniversalSearch triggers API call when query >= 2 chars
+  // @nullable: searchResults may be undefined before first successful fetch
   const { data: searchResults, refetch: refetchResults } = useUniversalSearch(query);
   const movies = searchResults?.movies ?? [];
   const actors = searchResults?.actors ?? [];
   const productionHouses = searchResults?.productionHouses ?? [];
 
   const { data: allMovies = [], refetch: refetchMovies } = useMovies();
+  // @assumes: "trending" is approximated by highest rating; no dedicated trending API
   const trendingMovies = useMemo(
     () => [...allMovies].sort((a, b) => b.rating - a.rating).slice(0, 5),
     [allMovies],
@@ -67,6 +71,7 @@ export default function SearchScreen() {
     loadRecentSearches();
   }, []);
 
+  // @sideeffect: reads from AsyncStorage on mount; silently ignores corrupt JSON
   const loadRecentSearches = async () => {
     const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
     if (stored) {
@@ -78,6 +83,7 @@ export default function SearchScreen() {
     }
   };
 
+  // @sideeffect: persists to AsyncStorage; deduplicates and caps at MAX_RECENT
   const saveSearch = async (term: string) => {
     const updated = [term, ...recentSearches.filter((s) => s !== term)].slice(0, MAX_RECENT);
     setRecentSearches(updated);
@@ -95,11 +101,13 @@ export default function SearchScreen() {
     await AsyncStorage.removeItem(RECENT_SEARCHES_KEY);
   };
 
+  // @sideeffect: saves search term before navigating — only when query is meaningful (>= 2 chars)
   const handleMoviePress = (movie: Movie) => {
     if (query.length >= 2) saveSearch(query);
     router.push(`/movie/${movie.id}`);
   };
 
+  // @contract: search API is only invoked when query has >= 2 characters
   const hasQuery = query.length >= 2;
   const filteredMovies = filter === 'all' || filter === 'movies' ? movies : [];
   const filteredActors = filter === 'all' || filter === 'actors' ? actors : [];

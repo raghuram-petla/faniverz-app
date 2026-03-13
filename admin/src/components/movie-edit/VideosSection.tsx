@@ -20,17 +20,21 @@ type PendingVideo = {
   youtube_id: string;
   title: string;
   video_type: VideoType;
+  // @nullable description, video_date, duration — all optional metadata
   description: string | null;
   video_date: string | null;
   duration: string | null;
   display_order: number;
 };
 
+// @contract manages video gallery: YouTube URL/ID input, type classification, and legacy trailer import
 interface Props {
+  // @assumes visibleVideos is a union of persisted and pending videos with synthetic ids
   visibleVideos: (
     | MovieVideo
     | (PendingVideo & { id: string; movie_id: string; created_at: string })
   )[];
+  // @coupling trailerUrl comes from the movie's legacy trailer_url field (basic info)
   trailerUrl: string;
   movieTitle: string;
   onAdd: (video: PendingVideo) => void;
@@ -40,6 +44,7 @@ interface Props {
 export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, onRemove }: Props) {
   const [videoForm, setVideoForm] = useState(EMPTY_VIDEO_FORM);
 
+  // @boundary validates YouTube input before adding; accepts both full URLs and bare IDs
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const youtubeId = extractYouTubeId(videoForm.youtube_input);
@@ -61,7 +66,7 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
 
   return (
     <div className="space-y-4">
-      {/* Backward compat: import trailer_url as a video */}
+      {/* @edge backward compat: legacy trailer_url exists but no video entries — offer one-click import */}
       {trailerUrl && visibleVideos.length === 0 && (
         <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
           <div>
@@ -183,7 +188,7 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
             onValueChange={(v) => setVideoForm((p) => ({ ...p, video_date: v }))}
           />
         </div>
-        {/* YouTube embed preview */}
+        {/* @sideeffect live YouTube embed renders on valid ID — network request to youtube.com */}
         {extractYouTubeId(videoForm.youtube_input) && (
           <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
             <iframe

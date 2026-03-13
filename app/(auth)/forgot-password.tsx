@@ -19,16 +19,21 @@ import { colors as palette } from '@/theme/colors';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
+// @boundary Password reset flow — sends email via Supabase, shows success confirmation
 export default function ForgotPasswordScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // @sideeffect resetPassword triggers Supabase password reset email
   const { resetPassword, isLoading, error } = useEmailAuth();
   const [email, setEmail] = useState('');
+  // @invariant Once sent is true, the form is replaced by the success card (no way to go back to form)
   const [sent, setSent] = useState(false);
 
+  // @contract Requires non-empty email; no-ops on empty string
+  // @sideeffect On success, sets sent=true which swaps the entire UI to success card
   const handleSend = async () => {
     if (!email.trim()) return;
     try {
@@ -39,6 +44,7 @@ export default function ForgotPasswordScreen() {
     }
   };
 
+  // @edge behavior is undefined on Android — KeyboardAvoidingView only adjusts on iOS
   return (
     <KeyboardAvoidingView
       style={[styles.container, { paddingTop: insets.top + 12 }]}

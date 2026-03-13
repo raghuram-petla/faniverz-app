@@ -24,6 +24,8 @@ export function CommentInput({
   const [text, setText] = useState('');
   const trimmed = text.trim();
 
+  /** @sideeffect clears the input after submitting; onSubmit receives trimmed text */
+  /** @edge empty/whitespace-only input is silently ignored */
   const handleSend = () => {
     if (!trimmed) return;
     onSubmit(trimmed);
@@ -31,6 +33,7 @@ export function CommentInput({
   };
 
   return (
+    // @contract renders input field for authenticated users, login prompt otherwise
     <View style={[styles.inputBar, { paddingBottom: 8 + bottomInset }]}>
       {isAuthenticated ? (
         <>
