@@ -40,6 +40,14 @@ You MUST:
 git add path/to/file1 path/to/file2 ...
 ```
 
+First, get the GitHub username:
+
+```bash
+gh api user --jq '.login'
+```
+
+Then commit using the GitHub user as contributor (NEVER include Claude as a co-author or contributor):
+
 ```bash
 git commit -m "$(cat <<'EOF'
 <type>: <short summary>
@@ -47,7 +55,7 @@ git commit -m "$(cat <<'EOF'
 - Detail 1
 - Detail 2
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Co-Authored-By: <github_display_name> <github_username>@users.noreply.github.com
 EOF
 )"
 ```
@@ -81,3 +89,4 @@ git push -u origin HEAD
 - NEVER push to main/master with `--force` — warn the user if they request it
 - If pre-commit hooks fail, fix the issue and create a NEW commit
 - If unsure whether a file belongs to this session, ask the user
+- NEVER include Claude as a co-author or contributor in commits — always use the GitHub user's name and noreply email from `gh api user`
