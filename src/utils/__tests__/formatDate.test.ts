@@ -71,17 +71,18 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(sixDaysAgo)).toBe('6d ago');
   });
 
-  it('returns short date for timestamps 7+ days ago', () => {
+  it('returns "Xw ago" for timestamps 1-3 weeks ago', () => {
     const tenDaysAgo = new Date('2025-06-05T12:00:00Z').toISOString();
-    const result = formatRelativeTime(tenDaysAgo);
-    // Should be a short date like "Jun 5"
-    expect(result).toMatch(/Jun\s+5/);
+    expect(formatRelativeTime(tenDaysAgo)).toBe('1w ago');
+
+    const twoWeeksAgo = new Date('2025-06-01T12:00:00Z').toISOString();
+    expect(formatRelativeTime(twoWeeksAgo)).toBe('2w ago');
   });
 
-  it('returns short date for timestamps months ago', () => {
+  it('returns short date for timestamps 4+ weeks ago', () => {
     const monthsAgo = new Date('2025-01-15T12:00:00Z').toISOString();
     const result = formatRelativeTime(monthsAgo);
-    expect(result).toMatch(/Jan\s+15/);
+    expect(result).toMatch(/15.*Jan|Jan.*15/);
   });
 });
 

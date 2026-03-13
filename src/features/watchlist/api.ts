@@ -76,12 +76,13 @@ export async function isMovieWatchlisted(
   userId: string,
   movieId: string,
 ): Promise<WatchlistEntry | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('watchlists')
     .select('*')
     .eq('user_id', userId)
     .eq('movie_id', movieId)
     .maybeSingle();
 
+  if (error) throw error;
   return data;
 }

@@ -108,7 +108,7 @@ export default function DiscoverScreen() {
     }
 
     if (selectedGenres.length > 0) {
-      movies = movies.filter((m) => selectedGenres.some((g) => m.genres.includes(g)));
+      movies = movies.filter((m) => selectedGenres.some((g) => (m.genres ?? []).includes(g)));
     }
 
     if (selectedPlatforms.length > 0) {

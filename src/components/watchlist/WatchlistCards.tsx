@@ -59,7 +59,7 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
           </View>
         )}
         <View style={styles.genreRow}>
-          {movie.genres.slice(0, 2).map((genre) => (
+          {(movie.genres ?? []).slice(0, 2).map((genre) => (
             <Text key={genre} style={styles.genreText}>
               {genre}
             </Text>
@@ -133,7 +133,7 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
           <Text style={styles.releaseDateText}>{releaseDateFormatted}</Text>
         </View>
         <View style={styles.genreRow}>
-          {movie.genres.slice(0, 2).map((genre) => (
+          {(movie.genres ?? []).slice(0, 2).map((genre) => (
             <Text key={genre} style={styles.genreText}>
               {genre}
             </Text>
@@ -197,7 +197,7 @@ export function WatchedCard({ entry, userId, styles }: CardProps) {
           </View>
         )}
         <View style={styles.genreRow}>
-          {movie.genres.slice(0, 2).map((genre) => (
+          {(movie.genres ?? []).slice(0, 2).map((genre) => (
             <Text key={genre} style={styles.genreText}>
               {genre}
             </Text>

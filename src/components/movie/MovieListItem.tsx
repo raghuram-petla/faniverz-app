@@ -82,9 +82,9 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
         </Text>
 
         {/* Genres */}
-        {movie.genres.length > 0 && (
+        {(movie.genres ?? []).length > 0 && (
           <View style={styles.genreRow}>
-            {movie.genres.slice(0, 2).map((genre) => (
+            {(movie.genres ?? []).slice(0, 2).map((genre) => (
               <View key={genre} style={[styles.genrePill, isPast && styles.genrePillPast]}>
                 <Text style={[styles.genreText, isPast && styles.genreTextPast]}>{genre}</Text>
               </View>

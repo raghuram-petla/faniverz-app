@@ -74,19 +74,16 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
   for (const a of actors) lookup.set(a.id, { name: a.name, image_url: a.photo_url });
   for (const h of houses) lookup.set(h.id, { name: h.name, image_url: h.logo_url });
 
-  return follows
-    .map((f) => {
-      const info = lookup.get(f.entity_id);
-      if (!info) return null;
-      return {
-        entity_type: f.entity_type,
-        entity_id: f.entity_id,
-        name: info.name,
-        image_url: info.image_url,
-        created_at: f.created_at,
-      };
-    })
-    .filter((f): f is EnrichedFollow => f !== null);
+  return follows.map((f) => {
+    const info = lookup.get(f.entity_id);
+    return {
+      entity_type: f.entity_type,
+      entity_id: f.entity_id,
+      name: info?.name ?? 'Deleted',
+      image_url: info?.image_url ?? null,
+      created_at: f.created_at,
+    };
+  });
 }
 
 export async function unfollowEntity(

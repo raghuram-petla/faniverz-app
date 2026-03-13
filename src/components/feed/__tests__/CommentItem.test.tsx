@@ -9,7 +9,7 @@ jest.mock('@/styles/postDetail.styles', () => ({
   createPostDetailStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
-jest.mock('@/constants/feedHelpers', () => ({
+jest.mock('@/utils/formatDate', () => ({
   formatRelativeTime: (d: string) => `${d}-ago`,
 }));
 

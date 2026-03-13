@@ -29,9 +29,9 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
           {movie.synopsis}
         </Text>
       )}
-      {movie.genres.length > 0 && (
+      {(movie.genres ?? []).length > 0 && (
         <View style={styles.genreRow}>
-          {movie.genres.map((g) => (
+          {(movie.genres ?? []).map((g) => (
             <View key={g} style={styles.genrePill}>
               <Text style={styles.genrePillText}>{g}</Text>
             </View>

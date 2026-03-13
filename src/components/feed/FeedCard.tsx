@@ -12,8 +12,8 @@ import { FeedActionBar } from './FeedActionBar';
 import { FeedContentBadge } from './FeedContentBadge';
 import { FeedVideoPlayer } from './FeedVideoPlayer';
 import { FollowButton } from './FollowButton';
+import { formatRelativeTime } from '@/utils/formatDate';
 import {
-  formatRelativeTime,
   getFeedTypeLabel,
   deriveEntityType,
   getEntityAvatarUrl,

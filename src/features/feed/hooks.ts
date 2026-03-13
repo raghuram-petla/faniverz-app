@@ -13,6 +13,7 @@ import type { FeedFilterOption } from '@/types';
 import type { NewsFeedItem } from '@shared/types';
 
 const PAGE_SIZE = 15;
+const FEED_QUERY_KEYS = ['news-feed', 'personalized-feed'] as const;
 
 export function useNewsFeed(filter?: FeedFilterOption) {
   return useInfiniteQuery({
@@ -73,19 +74,18 @@ export function useVoteFeedItem() {
       return voteFeedItem(feedItemId, user.id, voteType);
     },
     onMutate: async ({ feedItemId, voteType, previousVote }) => {
-      await queryClient.cancelQueries({ queryKey: ['personalized-feed'] });
       const previousFeedData: {
         queryKey: readonly unknown[];
         data: { pages: NewsFeedItem[][] };
       }[] = [];
-      queryClient
-        .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: ['personalized-feed'] })
-        .forEach(([queryKey, data]) => {
-          if (data) previousFeedData.push({ queryKey, data });
-        });
-      queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>(
-        { queryKey: ['personalized-feed'] },
-        (old) => {
+      for (const key of FEED_QUERY_KEYS) {
+        await queryClient.cancelQueries({ queryKey: [key] });
+        queryClient
+          .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
+          .forEach(([queryKey, data]) => {
+            if (data) previousFeedData.push({ queryKey, data });
+          });
+        queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
           if (!old) return old;
           return {
             ...old,
@@ -93,10 +93,8 @@ export function useVoteFeedItem() {
               page.map((item) => {
                 if (item.id !== feedItemId) return item;
                 let { upvote_count, downvote_count } = item;
-                // Remove previous vote if switching
                 if (previousVote === 'up') upvote_count--;
                 if (previousVote === 'down') downvote_count--;
-                // Apply new vote
                 if (voteType === 'up') upvote_count++;
                 if (voteType === 'down') downvote_count++;
                 return {
@@ -107,8 +105,8 @@ export function useVoteFeedItem() {
               }),
             ),
           };
-        },
-      );
+        });
+      }
       return { previousFeedData };
     },
     onError: (_err, _vars, context) => {
@@ -119,7 +117,9 @@ export function useVoteFeedItem() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
+      for (const key of FEED_QUERY_KEYS) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
       queryClient.invalidateQueries({ queryKey: ['feed-votes'] });
     },
   });
@@ -135,19 +135,18 @@ export function useRemoveFeedVote() {
       return removeFeedVote(feedItemId, user.id);
     },
     onMutate: async ({ feedItemId, previousVote }) => {
-      await queryClient.cancelQueries({ queryKey: ['personalized-feed'] });
       const previousFeedData: {
         queryKey: readonly unknown[];
         data: { pages: NewsFeedItem[][] };
       }[] = [];
-      queryClient
-        .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: ['personalized-feed'] })
-        .forEach(([queryKey, data]) => {
-          if (data) previousFeedData.push({ queryKey, data });
-        });
-      queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>(
-        { queryKey: ['personalized-feed'] },
-        (old) => {
+      for (const key of FEED_QUERY_KEYS) {
+        await queryClient.cancelQueries({ queryKey: [key] });
+        queryClient
+          .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
+          .forEach(([queryKey, data]) => {
+            if (data) previousFeedData.push({ queryKey, data });
+          });
+        queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
           if (!old) return old;
           return {
             ...old,
@@ -166,8 +165,8 @@ export function useRemoveFeedVote() {
               }),
             ),
           };
-        },
-      );
+        });
+      }
       return { previousFeedData };
     },
     onError: (_err, _vars, context) => {
@@ -178,7 +177,9 @@ export function useRemoveFeedVote() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
+      for (const key of FEED_QUERY_KEYS) {
+        queryClient.invalidateQueries({ queryKey: [key] });
+      }
       queryClient.invalidateQueries({ queryKey: ['feed-votes'] });
     },
   });

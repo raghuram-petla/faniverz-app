@@ -109,7 +109,11 @@ export async function processMovieFromTmdb(
   const movieId = movie.id as string;
 
   // Delete existing cast for clean re-sync
-  await supabase.from('movie_cast').delete().eq('movie_id', movieId);
+  const { error: castDeleteErr } = await supabase
+    .from('movie_cast')
+    .delete()
+    .eq('movie_id', movieId);
+  if (castDeleteErr) throw new Error(`Cast delete failed: ${castDeleteErr.message}`);
 
   // Upsert top 15 cast
   const topCast = detail.credits.cast.slice(0, 15);

@@ -65,9 +65,9 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
             {movie.director}
           </Text>
         )}
-        {movie.genres.length > 0 && (
+        {(movie.genres ?? []).length > 0 && (
           <Text style={s.genres} numberOfLines={1}>
-            {movie.genres.join(' • ')}
+            {(movie.genres ?? []).join(' • ')}
           </Text>
         )}
       </View>

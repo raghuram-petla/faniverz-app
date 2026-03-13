@@ -194,7 +194,9 @@ function MoviePreview({ result, isPending, onImport }: MoviePreviewProps) {
             </div>
             <div className="col-span-2">
               <span className="text-on-surface-subtle">Genres:</span>{' '}
-              <span className="text-on-surface">{result.data.genres.join(', ') || '—'}</span>
+              <span className="text-on-surface">
+                {(result.data.genres ?? []).join(', ') || '—'}
+              </span>
             </div>
           </div>
           {result.data.overview && (

@@ -48,14 +48,17 @@ export async function POST(req: NextRequest) {
       .from('admin_user_roles')
       .select('id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (existingRole) {
       // Already has a role, mark invitation as accepted and return
-      await supabaseAdmin
+      const { error: updateErr } = await supabaseAdmin
         .from('admin_invitations')
         .update({ status: 'accepted', accepted_at: new Date().toISOString() })
         .eq('id', invitation.id);
+      if (updateErr) {
+        return NextResponse.json({ error: 'Failed to update invitation' }, { status: 500 });
+      }
       return NextResponse.json({ role: 'existing' });
     }
 
@@ -78,14 +81,20 @@ export async function POST(req: NextRequest) {
         production_house_id: phId,
         assigned_by: invitation.invited_by,
       }));
-      await supabaseAdmin.from('admin_ph_assignments').insert(phRows);
+      const { error: phErr } = await supabaseAdmin.from('admin_ph_assignments').insert(phRows);
+      if (phErr) {
+        return NextResponse.json({ error: 'Failed to assign production houses' }, { status: 500 });
+      }
     }
 
     // Mark invitation as accepted
-    await supabaseAdmin
+    const { error: acceptErr } = await supabaseAdmin
       .from('admin_invitations')
       .update({ status: 'accepted', accepted_at: new Date().toISOString() })
       .eq('id', invitation.id);
+    if (acceptErr) {
+      return NextResponse.json({ error: 'Failed to mark invitation accepted' }, { status: 500 });
+    }
 
     return NextResponse.json({ role: invitation.role_id });
   } catch {

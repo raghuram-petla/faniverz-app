@@ -94,7 +94,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     const qc = useQueryClient();
     return useMutation({
       mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
-        const { error } = await supabase.from(table).delete().eq('id', id);
+        const { error } = await supabase.from(table).delete().eq('id', id).eq('movie_id', movieId);
         if (error) throw error;
         return movieId;
       },

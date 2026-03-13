@@ -158,7 +158,7 @@ describe('POST /api/accept-invitation', () => {
 
     // Mock for admin_user_roles lookup (existing role)
     const mockRoleSingle = vi.fn().mockResolvedValue({ data: { id: 'role-1' }, error: null });
-    const mockRoleEqUser = vi.fn().mockReturnValue({ single: mockRoleSingle });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
     const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
 
     // Mock for admin_invitations update (mark accepted)
@@ -203,7 +203,7 @@ describe('POST /api/accept-invitation', () => {
 
     // Mock for admin_user_roles select (no existing role)
     const mockRoleSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const mockRoleEqUser = vi.fn().mockReturnValue({ single: mockRoleSingle });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
     const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
 
     // Mock for admin_user_roles insert
@@ -267,7 +267,7 @@ describe('POST /api/accept-invitation', () => {
 
     // Mock for admin_user_roles select (no existing role)
     const mockRoleSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const mockRoleEqUser = vi.fn().mockReturnValue({ single: mockRoleSingle });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
     const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
 
     // Mock for admin_user_roles insert
@@ -326,7 +326,7 @@ describe('POST /api/accept-invitation', () => {
 
     // Mock for admin_user_roles select (no existing role)
     const mockRoleSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-    const mockRoleEqUser = vi.fn().mockReturnValue({ single: mockRoleSingle });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
     const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
 
     // Mock for admin_user_roles insert (fails)

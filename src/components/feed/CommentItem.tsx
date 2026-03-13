@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
-import { formatRelativeTime } from '@/constants/feedHelpers';
+import { formatRelativeTime } from '@/utils/formatDate';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import type { FeedComment } from '@shared/types';
 

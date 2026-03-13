@@ -28,7 +28,7 @@ export function useWatchlist(userId: string) {
     queryKey: ['watchlist', userId],
     queryFn: () => fetchWatchlist(userId),
     enabled: !!userId,
-    staleTime: 0,
+    staleTime: 2 * 60 * 1000,
   });
 
   const entries = query.data ?? [];
@@ -55,7 +55,7 @@ export function useWatchlistPaginated(userId: string) {
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
     enabled: !!userId,
-    staleTime: 0,
+    staleTime: 2 * 60 * 1000,
   });
 
   const entries = query.data?.pages.flat() ?? [];
@@ -79,7 +79,7 @@ export function useIsWatchlisted(userId: string, movieId: string) {
     queryKey: ['watchlist', 'check', userId, movieId],
     queryFn: () => isMovieWatchlisted(userId, movieId),
     enabled: !!userId && !!movieId,
-    staleTime: 0,
+    staleTime: 2 * 60 * 1000,
   });
 }
 
@@ -89,7 +89,7 @@ export function useWatchlistMutations() {
   const invalidateAll = (userId: string) => {
     queryClient.invalidateQueries({ queryKey: ['watchlist', userId] });
     queryClient.invalidateQueries({ queryKey: ['watchlist-paginated', userId] });
-    queryClient.invalidateQueries({ queryKey: ['watchlist', 'check'] });
+    queryClient.invalidateQueries({ queryKey: ['watchlist', 'check', userId] });
   };
 
   const add = useMutation({
@@ -169,7 +169,7 @@ export function useWatchlistSet() {
     queryKey: ['watchlist', userId],
     queryFn: () => fetchWatchlist(userId),
     enabled: !!userId,
-    staleTime: 0,
+    staleTime: 2 * 60 * 1000,
   });
 
   const watchlistSet = useMemo(() => {

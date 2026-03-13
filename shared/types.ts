@@ -25,7 +25,7 @@ export interface Movie {
   backdrop_url: string | null;
   release_date: string | null;
   runtime: number | null;
-  genres: string[];
+  genres: string[] | null;
   certification: Certification | null;
   trailer_url: string | null;
   synopsis: string | null;

@@ -30,7 +30,7 @@ export async function completeSyncLog(
     errors?: unknown[];
   },
 ): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from('sync_logs')
     .update({
       status: result.status,
@@ -40,4 +40,6 @@ export async function completeSyncLog(
       completed_at: new Date().toISOString(),
     })
     .eq('id', syncLogId);
+
+  if (error) throw new Error(`Failed to complete sync log: ${error.message}`);
 }

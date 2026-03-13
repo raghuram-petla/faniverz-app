@@ -1,6 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { queryClient } from '@/lib/queryClient';
+import { useCalendarStore } from '@/stores/useCalendarStore';
+import { useFilterStore } from '@/stores/useFilterStore';
+import { useFeedStore } from '@/stores/useFeedStore';
 
 interface AuthContextType {
   session: Session | null;
@@ -31,10 +35,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       if (newSession) {
         setIsGuest(false);
+      }
+      if (event === 'SIGNED_OUT') {
+        queryClient.clear();
+        useCalendarStore.getState().clearFilters();
+        useFilterStore.getState().clearAll();
+        useFeedStore.setState({ filter: 'all' });
       }
     });
 

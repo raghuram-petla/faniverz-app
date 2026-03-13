@@ -68,7 +68,8 @@ function mockUpdate(data: unknown = { id: 'u-1', movie_id: 'm1', title: 'Updated
 }
 
 function mockDelete() {
-  const mockEq = vi.fn().mockResolvedValue({ error: null });
+  const mockEq2 = vi.fn().mockResolvedValue({ error: null });
+  const mockEq = vi.fn().mockReturnValue({ eq: mockEq2 });
   const mockDeleteFn = vi.fn().mockReturnValue({ eq: mockEq });
   mockFrom.mockReturnValue({ delete: mockDeleteFn });
   return { mockDeleteFn, mockEq };

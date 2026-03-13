@@ -29,6 +29,7 @@ import { Movie } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { createStyles } from '@/styles/tabs/spotlight.styles';
 
+const HorizontalSpacer = () => <View style={{ width: 12 }} />;
 const FEATURED_MOVIE_LIMIT = 7;
 const PLATFORM_TILE_COUNT = 8;
 const PLATFORM_GRID_H_PADDING = 32;
@@ -163,7 +164,7 @@ export default function SpotlightScreen() {
                     contentContainerStyle={styles.horizontalList}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => renderMovieCard(item, false, false)}
-                    ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                    ItemSeparatorComponent={HorizontalSpacer}
                   />
                 </View>
               )}
@@ -182,7 +183,7 @@ export default function SpotlightScreen() {
                     contentContainerStyle={styles.horizontalList}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => renderMovieCard(item, false, false)}
-                    ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                    ItemSeparatorComponent={HorizontalSpacer}
                   />
                 </View>
               )}
@@ -205,7 +206,7 @@ export default function SpotlightScreen() {
                         contentContainerStyle={styles.horizontalList}
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => renderMovieCard(item, true)}
-                        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                        ItemSeparatorComponent={HorizontalSpacer}
                       />
                     </View>
                   )}
@@ -220,7 +221,7 @@ export default function SpotlightScreen() {
                         contentContainerStyle={styles.horizontalList}
                         keyExtractor={(item) => item.id}
                         renderItem={({ item }) => renderMovieCard(item, true)}
-                        ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+                        ItemSeparatorComponent={HorizontalSpacer}
                       />
                     </View>
                   )}

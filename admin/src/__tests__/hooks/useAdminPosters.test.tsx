@@ -125,7 +125,8 @@ describe('useUpdatePoster', () => {
 
 describe('useRemovePoster', () => {
   it('deletes a poster by id', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
+    const mockEq2 = vi.fn().mockResolvedValue({ error: null });
+    const mockEq = vi.fn().mockReturnValue({ eq: mockEq2 });
     const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
 
     mockFrom.mockReturnValue({ delete: mockDelete });

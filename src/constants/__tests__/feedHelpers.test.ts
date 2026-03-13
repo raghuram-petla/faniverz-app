@@ -5,13 +5,13 @@ import {
   getFeedTypeLabel,
   getFeedTypeIconName,
   getYouTubeThumbnail,
-  formatRelativeTime,
   deriveEntityType,
   getEntityAvatarUrl,
   getEntityName,
   getEntityId,
   getEntityRoute,
 } from '../feedHelpers';
+import { formatRelativeTime } from '@/utils/formatDate';
 import type { NewsFeedItem } from '@shared/types';
 
 const makeFeedItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({

@@ -206,7 +206,8 @@ describe('fetchEnrichedFollows', () => {
     });
 
     const result = await fetchEnrichedFollows('u1');
-    expect(result).toHaveLength(1);
+    expect(result).toHaveLength(2);
     expect(result[0].entity_id).toBe('m1');
+    expect(result[1].name).toBe('Deleted');
   });
 });
