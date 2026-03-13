@@ -157,7 +157,7 @@ REVOKE EXECUTE ON FUNCTION audit_trigger_fn() FROM PUBLIC;
 -- 4. Re-grant get_personalized_feed to authenticated
 --    (may have been lost after DROP+CREATE in migration 000045)
 -- ============================================================
-GRANT EXECUTE ON FUNCTION get_personalized_feed(uuid, int, int) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_personalized_feed(uuid, text, int, int) TO authenticated;
 
 -- ============================================================
 -- 5. Revoke anon access to audit_log_view
