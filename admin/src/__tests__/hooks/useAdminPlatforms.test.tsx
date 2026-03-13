@@ -111,11 +111,11 @@ describe('useCreatePlatform', () => {
 
 describe('useUpdatePlatform', () => {
   it('updates a platform by id and invalidates cache', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
+    const mockMaybeSingle = vi.fn().mockResolvedValue({
       data: { id: 'netflix', name: 'Netflix Updated' },
       error: null,
     });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
     const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
     const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
 

@@ -142,11 +142,11 @@ describe('useCreateProductionHouse', () => {
 
 describe('useUpdateProductionHouse', () => {
   it('updates a production house by id and invalidates cache', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
+    const mockMaybeSingle = vi.fn().mockResolvedValue({
       data: { id: 'ph1', name: 'Updated Productions' },
       error: null,
     });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
     const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
     const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
 

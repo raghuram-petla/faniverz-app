@@ -125,14 +125,22 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
   function useUpdate() {
     const qc = useQueryClient();
     return useMutation({
+      // @edge RLS silently filters rows instead of returning 401 — an expired JWT
+      // causes 0 rows returned (not a permission error), so .single() throws PGRST116.
+      // Using .maybeSingle() lets us detect this and show an actionable message.
       mutationFn: async ({ id, ...entity }: Partial<T> & { id: string }) => {
         const { data, error } = await supabase
           .from(table)
           .update(entity)
           .eq('id', id)
           .select()
-          .single();
+          .maybeSingle();
         if (error) throw error;
+        if (!data) {
+          throw new Error(
+            'Update failed — no rows were modified. Your session may have expired. Please refresh the page and log in again.',
+          );
+        }
         return data as unknown as T;
       },
       onSuccess: (data: T) => {

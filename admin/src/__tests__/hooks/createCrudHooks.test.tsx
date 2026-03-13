@@ -101,8 +101,8 @@ function mockInsert(data: unknown = { id: 'new-1', name: 'Created' }) {
 }
 
 function mockUpdate(data: unknown = { id: 'u-1', name: 'Updated' }) {
-  const mockSingle = vi.fn().mockResolvedValue({ data, error: null });
-  const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+  const mockMaybeSingle = vi.fn().mockResolvedValue({ data, error: null });
+  const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
   const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
   const mockUpdateFn = vi.fn().mockReturnValue({ eq: mockEq });
   mockFrom.mockReturnValue({ update: mockUpdateFn });
