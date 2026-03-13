@@ -7,8 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { useUpcomingMovies } from '@/features/movies/hooks/useUpcomingMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
-import { MovieListItem } from '@/components/movie/MovieListItem';
 import { Movie } from '@/types';
+import { DateGroupItem } from './components/DateGroupItem';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { CalendarFilterPanel } from '@/components/calendar/CalendarFilterPanel';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
@@ -217,85 +217,9 @@ export default function CalendarScreen() {
             </View>
           ) : null
         }
-        renderItem={({ item }) => {
-          // @contract Three visual states: past (dimmed), today (red highlight), upcoming (violet)
-          const isPast = item.movieDate < today;
-          const isToday = item.movieDate.toDateString() === today.toDateString();
-
-          return (
-            <View style={styles.dateGroup}>
-              {/* Date Header */}
-              <View style={styles.dateHeader}>
-                <View
-                  style={[
-                    styles.dateBox,
-                    isToday && styles.dateBoxToday,
-                    !isToday && !isPast && styles.dateBoxUpcoming,
-                    isPast && styles.dateBoxPast,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.dateBoxMonth,
-                      isToday && { color: colors.white },
-                      isPast && { color: theme.textTertiary },
-                      !isToday && !isPast && { color: colors.violet400 },
-                    ]}
-                  >
-                    {item.movieDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.dateBoxDay,
-                      isToday && { color: colors.white },
-                      isPast && { color: theme.textTertiary },
-                    ]}
-                  >
-                    {item.movieDate.getDate()}
-                  </Text>
-                </View>
-                <View style={styles.dateInfo}>
-                  <Text
-                    style={[
-                      styles.dateWeekday,
-                      isToday && { color: colors.red500 },
-                      isPast && { color: theme.textTertiary },
-                    ]}
-                  >
-                    {item.movieDate.toLocaleDateString('en-US', { weekday: 'long' })}
-                  </Text>
-                  <Text style={[styles.dateFull, isPast && { color: theme.textDisabled }]}>
-                    {item.movieDate.toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                  {isToday && (
-                    <View style={styles.todayBadge}>
-                      <Text style={styles.todayBadgeText}>{t('calendar.today')}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={[styles.releaseCount, isPast && { color: theme.textDisabled }]}>
-                  {item.movies.length === 1
-                    ? t('calendar.release', { count: 1 })
-                    : t('calendar.releases', { count: item.movies.length })}
-                </Text>
-              </View>
-
-              {/* Movie Cards */}
-              {item.movies.map((movie) => (
-                <MovieListItem
-                  key={movie.id}
-                  movie={movie}
-                  platforms={platformMap[movie.id]}
-                  isPast={isPast}
-                />
-              ))}
-            </View>
-          );
-        }}
+        renderItem={({ item }) => (
+          <DateGroupItem item={item} today={today} platformMap={platformMap} />
+        )}
       />
     </View>
   );

@@ -19,9 +19,14 @@ export interface MovieFilters {
 // @boundary: 'streaming' filter requires two sequential Supabase calls — first to movie_platforms then to movies. If movie_platforms has stale data (e.g., platform removed but row lingers), phantom movies appear in streaming results.
 // @edge: 'released' filter uses `lte(release_date) AND eq(in_theaters, false)` — a movie that left theaters but has no OTT entry yet shows as 'released', not 'streaming'. This differs from deriveMovieStatus (shared/movieStatus.ts) which checks platformCount > 0.
 // @coupling: sort order 'popular' uses review_count from movies table — this column is updated by a DB trigger (update_movie_rating in triggers migration) on review insert/update/delete, NOT by this app. Stale review_count = wrong sort order.
-export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
-  let query = supabase.from('movies').select('*');
-
+// @contract: returns null when streaming/platformId filters yield zero matching IDs (caller should return [] early). Returns the mutated query otherwise. When featuredFirst is true, prepends is_featured DESC before the sortBy ordering.
+async function applyMovieFilters(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query: any,
+  filters?: MovieFilters,
+  options?: { featuredFirst?: boolean },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<any | null> {
   if (filters?.movieStatus) {
     const todayStr = getLocalDateString();
     switch (filters.movieStatus) {
@@ -32,7 +37,6 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
         query = query.eq('in_theaters', true);
         break;
       case 'streaming': {
-        // Movies that have at least one platform entry
         const { data: streamingIds, error: streamErr } = await supabase
           .from('movie_platforms')
           .select('movie_id');
@@ -40,10 +44,10 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
         if (streamingIds && streamingIds.length > 0) {
           query = query.in(
             'id',
-            streamingIds.map((m) => m.movie_id),
+            streamingIds.map((m: { movie_id: string }) => m.movie_id),
           );
         } else {
-          return [];
+          return null;
         }
         break;
       }
@@ -66,15 +70,17 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
     if (movieIds && movieIds.length > 0) {
       query = query.in(
         'id',
-        movieIds.map((m) => m.movie_id),
+        movieIds.map((m: { movie_id: string }) => m.movie_id),
       );
     } else {
-      return [];
+      return null;
     }
   }
 
-  // Featured movies always surface first
-  query = query.order('is_featured', { ascending: false });
+  // Featured-first ordering is prepended before sortBy so it becomes the primary ORDER BY column
+  if (options?.featuredFirst) {
+    query = query.order('is_featured', { ascending: false });
+  }
 
   switch (filters?.sortBy) {
     case 'top_rated':
@@ -91,6 +97,16 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
       query = query.order('review_count', { ascending: false });
       break;
   }
+
+  return query;
+}
+
+export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
+  let query = supabase.from('movies').select('*');
+
+  const result = await applyMovieFilters(query, filters, { featuredFirst: true });
+  if (result === null) return [];
+  query = result;
 
   const { data, error } = await query;
   if (error) throw error;
@@ -183,8 +199,8 @@ export async function searchMovies(query: string): Promise<Movie[]> {
   return data ?? [];
 }
 
-// @sync: duplicates filter/sort logic from fetchMovies above — any filter change (e.g., adding a new MovieStatus case) must be applied in BOTH functions or paginated results will diverge from non-paginated. No shared filter-builder utility exists.
-// @edge: unlike fetchMovies, this function does NOT prepend `order('is_featured', { ascending: false })` — so featured movies don't surface first in paginated results, breaking consistency with the non-paginated list.
+// @sync: shares filter/sort logic with fetchMovies via applyMovieFilters helper — adding a new MovieStatus case or sort option only requires updating applyMovieFilters.
+// @edge: unlike fetchMovies, this function does NOT pass featuredFirst: true — so featured movies don't surface first in paginated results, breaking consistency with the non-paginated list.
 export async function fetchMoviesPaginated(
   page: number,
   pageSize: number = 10,
@@ -192,71 +208,9 @@ export async function fetchMoviesPaginated(
 ): Promise<Movie[]> {
   let query = supabase.from('movies').select('*');
 
-  if (filters?.movieStatus) {
-    const todayStr = getLocalDateString();
-    switch (filters.movieStatus) {
-      case 'upcoming':
-        query = query.gt('release_date', todayStr);
-        break;
-      case 'in_theaters':
-        query = query.eq('in_theaters', true);
-        break;
-      case 'streaming': {
-        const { data: streamingIds, error: streamErr2 } = await supabase
-          .from('movie_platforms')
-          .select('movie_id');
-        if (streamErr2) throw streamErr2;
-        if (streamingIds && streamingIds.length > 0) {
-          query = query.in(
-            'id',
-            streamingIds.map((m) => m.movie_id),
-          );
-        } else {
-          return [];
-        }
-        break;
-      }
-      case 'released':
-        query = query.lte('release_date', todayStr).eq('in_theaters', false);
-        break;
-    }
-  }
-
-  if (filters?.genre) {
-    query = query.contains('genres', [filters.genre]);
-  }
-
-  if (filters?.platformId) {
-    const { data: movieIds, error: platErr2 } = await supabase
-      .from('movie_platforms')
-      .select('movie_id')
-      .eq('platform_id', filters.platformId);
-    if (platErr2) throw platErr2;
-    if (movieIds && movieIds.length > 0) {
-      query = query.in(
-        'id',
-        movieIds.map((m) => m.movie_id),
-      );
-    } else {
-      return [];
-    }
-  }
-
-  switch (filters?.sortBy) {
-    case 'top_rated':
-      query = query.order('rating', { ascending: false });
-      break;
-    case 'latest':
-      query = query.order('release_date', { ascending: false });
-      break;
-    case 'upcoming':
-      query = query.order('release_date', { ascending: true });
-      break;
-    case 'popular':
-    default:
-      query = query.order('review_count', { ascending: false });
-      break;
-  }
+  const result = await applyMovieFilters(query, filters);
+  if (result === null) return [];
+  query = result;
 
   const from = page * pageSize;
   const to = from + pageSize - 1;
