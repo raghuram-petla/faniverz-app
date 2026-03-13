@@ -3,6 +3,7 @@ import { fetchUpcomingMovies } from '../api';
 
 const PAGE_SIZE = 10;
 
+// @coupling: PAGE_SIZE=10 must match the getNextPageParam check — if fetchUpcomingMovies in ../api.ts applies additional filters that reduce results below 10, pagination stops prematurely.
 export function useUpcomingMovies() {
   return useInfiniteQuery({
     queryKey: ['upcoming-movies'],

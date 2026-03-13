@@ -6,6 +6,8 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import en from './en.json';
 import te from './te.json';
 
+// @sync: languageReady promise must resolve before i18n.t() calls return stored preference. Components rendering before this resolves get 'en' fallback regardless of user's saved language.
+// @edge: only 'en' and 'te' supported — any other device languageCode (e.g. 'hi', 'ta') silently falls back to 'en'. No user-facing notification of unsupported language.
 const deviceLanguage = getLocales()[0]?.languageCode ?? 'en';
 const supportedLanguage = deviceLanguage === 'te' ? 'te' : 'en';
 

@@ -2,6 +2,7 @@ export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
+// @edge: hardcoded 'en-US' locale — admin panel dates display in US format regardless of the admin user's browser locale.
 export function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
