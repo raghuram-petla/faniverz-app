@@ -81,7 +81,7 @@ export function ImportTab() {
       {refreshActor.isSuccess && (
         <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-green-400 text-sm">
           Actor refreshed successfully. Updated fields:{' '}
-          {refreshActor.data?.result.fields.join(', ') || 'none'}
+          {refreshActor.data?.result?.fields?.join(', ') || 'none'}
         </div>
       )}
     </div>

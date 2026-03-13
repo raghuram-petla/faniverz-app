@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotification } from '@/hooks/useAdminNotifications';
 import { useAllMovies } from '@/hooks/useAdminMovies';
@@ -32,6 +32,12 @@ export default function ComposeNotificationPage() {
   const [userLookupError, setUserLookupError] = useState('');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const doLookup = useCallback(async (email: string) => {
     if (!email.includes('@')) return;

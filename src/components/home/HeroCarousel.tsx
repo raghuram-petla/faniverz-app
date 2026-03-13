@@ -45,6 +45,14 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
 
   const moviesLenRef = useRef(movies.length);
   moviesLenRef.current = movies.length;
+  const cloneResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up clone reset timer on unmount
+  useEffect(() => {
+    return () => {
+      if (cloneResetTimerRef.current) clearTimeout(cloneResetTimerRef.current);
+    };
+  }, []);
 
   // Track visible item via onViewableItemsChanged
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -53,7 +61,8 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
       setActiveIndex(idx);
       // If viewing the clone, silently jump back to real first
       if (idx >= moviesLenRef.current && moviesLenRef.current > 1) {
-        setTimeout(() => {
+        if (cloneResetTimerRef.current) clearTimeout(cloneResetTimerRef.current);
+        cloneResetTimerRef.current = setTimeout(() => {
           flatListRef.current?.scrollToIndex({ index: 0, animated: false });
           setActiveIndex(0);
         }, CLONE_RESET_DELAY);

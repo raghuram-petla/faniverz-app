@@ -118,8 +118,8 @@ function RefreshMovieSection() {
           )}
           {refreshMovie.isSuccess && (
             <p className="text-xs text-green-400 mt-2">
-              Refreshed — {refreshMovie.data.result.castCount} cast,{' '}
-              {refreshMovie.data.result.crewCount} crew
+              Refreshed — {refreshMovie.data?.result?.castCount ?? 0} cast,{' '}
+              {refreshMovie.data?.result?.crewCount ?? 0} crew
             </p>
           )}
           {refreshMovie.isError && (
@@ -237,7 +237,7 @@ function RefreshActorSection() {
           )}
           {refreshActor.isSuccess && (
             <p className="text-xs text-green-400 mt-2">
-              Refreshed. Updated: {refreshActor.data?.result.fields.join(', ') || 'no changes'}
+              Refreshed. Updated: {refreshActor.data?.result?.fields?.join(', ') || 'no changes'}
             </p>
           )}
           {refreshActor.isError && (

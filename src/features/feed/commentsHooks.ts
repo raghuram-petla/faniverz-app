@@ -13,8 +13,8 @@ export function useComments(feedItemId: string) {
     queryKey: [COMMENTS_KEY, feedItemId],
     queryFn: ({ pageParam = 0 }) => fetchComments(feedItemId, pageParam, PAGE_SIZE),
     initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.length === PAGE_SIZE ? allPages.length : undefined,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.length === PAGE_SIZE ? (lastPageParam as number) + 1 : undefined,
     enabled: !!feedItemId,
   });
 }
@@ -34,7 +34,11 @@ export function useAddComment(feedItemId: string) {
         (old) => {
           if (!old) return { pages: [[newComment]], pageParams: [0] };
           const pages = [...old.pages];
-          pages[pages.length - 1] = [...pages[pages.length - 1], newComment];
+          if (pages.length === 0) {
+            pages.push([newComment]);
+          } else {
+            pages[pages.length - 1] = [...pages[pages.length - 1], newComment];
+          }
           return { ...old, pages };
         },
       );

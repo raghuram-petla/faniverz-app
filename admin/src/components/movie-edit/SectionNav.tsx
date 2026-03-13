@@ -19,8 +19,18 @@ export function useActiveSection(sectionIds: readonly string[]): {
   const [activeId, setActiveId] = useState(sectionIds[0]);
   const lockRef = useRef(false);
   const scrollingRef = useRef(false);
+  const scrollListenerCleanupRef = useRef<(() => void) | null>(null);
+
+  // Clean up scroll listener on unmount
+  useEffect(() => {
+    return () => {
+      scrollListenerCleanupRef.current?.();
+    };
+  }, []);
 
   const scrollTo = useCallback((id: string) => {
+    // Clean up any previous scroll listener
+    scrollListenerCleanupRef.current?.();
     setActiveId(id);
     lockRef.current = true;
     scrollingRef.current = true;
@@ -30,9 +40,14 @@ export function useActiveSection(sectionIds: readonly string[]): {
       timer = setTimeout(() => {
         scrollingRef.current = false;
         window.removeEventListener('scroll', onSettled);
+        scrollListenerCleanupRef.current = null;
       }, 150);
     }
     window.addEventListener('scroll', onSettled);
+    scrollListenerCleanupRef.current = () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', onSettled);
+    };
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);

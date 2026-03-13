@@ -72,7 +72,7 @@ export function ActorAvatar({ actor, size = 64 }: Props) {
 
   const { icon, bgKey } = resolveConfig(actor);
   const bg = resolveBgColor(bgKey, isDark);
-  const minor = actor?.birth_date ? isMinor(actor.birth_date) : false;
+  const minor = bgKey === 'minorMale' || bgKey === 'minorFemale';
   const iconSize = Math.round(size * (minor ? 0.42 : 0.5));
   const iconColor = isDark ? colors.white50 : colors.black50;
 

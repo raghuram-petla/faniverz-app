@@ -6,7 +6,9 @@ export function deriveMovieStatus(
 ): MovieStatus {
   if (movie.in_theaters) return 'in_theaters';
   if (!movie.release_date) return 'announced';
-  if (new Date(movie.release_date) > new Date()) return 'upcoming';
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  if (movie.release_date > todayStr) return 'upcoming';
   if (platformCount > 0) return 'streaming';
   return 'released';
 }

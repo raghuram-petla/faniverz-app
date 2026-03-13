@@ -93,7 +93,7 @@ export default function DiscoverScreen() {
   const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
   const { data: platforms = [] } = usePlatforms();
   const { data: productionHouses = [] } = useProductionHouses();
-  const movieIds = allMovies.map((m) => m.id);
+  const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
   const { data: phMovieIds = [] } = useMovieIdsByProductionHouse(selectedProductionHouses);
 

@@ -32,12 +32,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEYS.THEME_MODE).then((stored) => {
-      if (stored === 'light' || stored === 'dark' || stored === 'system') {
-        setModeState(stored);
-      }
-      setLoaded(true);
-    });
+    AsyncStorage.getItem(STORAGE_KEYS.THEME_MODE)
+      .then((stored) => {
+        if (stored === 'light' || stored === 'dark' || stored === 'system') {
+          setModeState(stored);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, []);
 
   const setMode = useCallback((newMode: ThemeMode) => {

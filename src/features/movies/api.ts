@@ -30,7 +30,10 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
         break;
       case 'streaming': {
         // Movies that have at least one platform entry
-        const { data: streamingIds } = await supabase.from('movie_platforms').select('movie_id');
+        const { data: streamingIds, error: streamErr } = await supabase
+          .from('movie_platforms')
+          .select('movie_id');
+        if (streamErr) throw streamErr;
         if (streamingIds && streamingIds.length > 0) {
           query = query.in(
             'id',
@@ -52,10 +55,11 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
   }
 
   if (filters?.platformId) {
-    const { data: movieIds } = await supabase
+    const { data: movieIds, error: platErr } = await supabase
       .from('movie_platforms')
       .select('movie_id')
       .eq('platform_id', filters.platformId);
+    if (platErr) throw platErr;
     if (movieIds && movieIds.length > 0) {
       query = query.in(
         'id',
@@ -143,8 +147,8 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
 }
 
 export async function fetchMoviesByMonth(year: number, month: number): Promise<Movie[]> {
-  const startDate = new Date(year, month, 1).toISOString().split('T')[0];
-  const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+  const startDate = getLocalDateString(new Date(year, month, 1));
+  const endDate = getLocalDateString(new Date(year, month + 1, 0));
 
   const { data, error } = await supabase
     .from('movies')
@@ -186,7 +190,10 @@ export async function fetchMoviesPaginated(
         query = query.eq('in_theaters', true);
         break;
       case 'streaming': {
-        const { data: streamingIds } = await supabase.from('movie_platforms').select('movie_id');
+        const { data: streamingIds, error: streamErr2 } = await supabase
+          .from('movie_platforms')
+          .select('movie_id');
+        if (streamErr2) throw streamErr2;
         if (streamingIds && streamingIds.length > 0) {
           query = query.in(
             'id',
@@ -208,10 +215,11 @@ export async function fetchMoviesPaginated(
   }
 
   if (filters?.platformId) {
-    const { data: movieIds } = await supabase
+    const { data: movieIds, error: platErr2 } = await supabase
       .from('movie_platforms')
       .select('movie_id')
       .eq('platform_id', filters.platformId);
+    if (platErr2) throw platErr2;
     if (movieIds && movieIds.length > 0) {
       query = query.in(
         'id',
@@ -248,7 +256,7 @@ export async function fetchMoviesPaginated(
 }
 
 export async function fetchUpcomingMovies(page: number, pageSize: number = 10): Promise<Movie[]> {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
@@ -264,11 +272,11 @@ export async function fetchUpcomingMovies(page: number, pageSize: number = 10): 
 }
 
 export async function fetchMoviesByPlatform(platformId: string): Promise<Movie[]> {
-  const { data: movieIds } = await supabase
+  const { data: movieIds, error: platErr3 } = await supabase
     .from('movie_platforms')
     .select('movie_id')
     .eq('platform_id', platformId);
-
+  if (platErr3) throw platErr3;
   if (!movieIds || movieIds.length === 0) return [];
 
   const { data, error } = await supabase

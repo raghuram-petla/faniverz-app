@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Search } from 'lucide-react';
 
 interface Movie {
@@ -26,7 +27,10 @@ export function MovieSearchField({
   onMovieSelect,
   onClear,
 }: MovieSearchFieldProps) {
-  const filtered = movies?.filter((m) => m.title.toLowerCase().includes(movieSearch.toLowerCase()));
+  const filtered = useMemo(
+    () => movies?.filter((m) => m.title.toLowerCase().includes(movieSearch.toLowerCase())),
+    [movies, movieSearch],
+  );
 
   return (
     <div className="space-y-2">

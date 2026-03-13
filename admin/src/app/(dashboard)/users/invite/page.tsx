@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useInviteAdmin } from '@/hooks/useAdminUsers';
 import { useAdminProductionHouses } from '@/hooks/useAdminProductionHouses';
@@ -20,6 +20,13 @@ export default function InviteAdminPage() {
   const [selectedPHIds, setSelectedPHIds] = useState<string[]>([]);
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
 
   const isPHRole = roleId === 'production_house_admin';
 
@@ -48,7 +55,8 @@ export default function InviteAdminPage() {
   function handleCopy() {
     navigator.clipboard.writeText(inviteLink);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
   }
 
   function togglePH(phId: string) {

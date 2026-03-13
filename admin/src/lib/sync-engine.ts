@@ -228,11 +228,12 @@ export async function processActorRefresh(
   );
 
   // Get current actor data to determine what changed
-  const { data: current } = await supabase
+  const { data: current, error: actorErr } = await supabase
     .from('actors')
     .select('biography, place_of_birth, birth_date, photo_url, gender, name')
     .eq('id', actorId)
     .single();
+  if (actorErr) throw new Error(`Actor fetch failed: ${actorErr.message}`);
 
   const updates: Record<string, unknown> = {};
   const fields: string[] = [];

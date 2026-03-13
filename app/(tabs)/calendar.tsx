@@ -32,7 +32,7 @@ export default function CalendarScreen() {
     useUpcomingMovies();
 
   const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
-  const movieIds = allMovies.map((m) => m.id);
+  const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);
   const { data: platformMap = {}, refetch: refetchPlatforms } = useMoviePlatformMap(movieIds);
   const { refreshing, onRefresh } = useRefresh(refetch, refetchPlatforms);
   const {

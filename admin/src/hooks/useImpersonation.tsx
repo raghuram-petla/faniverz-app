@@ -71,6 +71,7 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
   // Restore active session on mount
   useEffect(() => {
     if (!realUser || !isSuperAdmin) return;
+    let cancelled = false;
 
     (async () => {
       const { data } = await supabase
@@ -80,11 +81,11 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
         .eq('is_active', true)
         .maybeSingle();
 
-      if (!data) return;
+      if (cancelled || !data) return;
 
       if (data.target_user_id) {
         const built = await buildTargetUser(data.target_user_id);
-        if (built) setEffectiveUser(built);
+        if (!cancelled && built) setEffectiveUser(built);
       } else {
         setEffectiveUser({
           ...realUser,
@@ -93,6 +94,10 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
         });
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [realUser, isSuperAdmin]);
 
   const startImpersonation = useCallback(async (targetUserId: string) => {
