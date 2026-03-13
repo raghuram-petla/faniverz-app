@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
+import { colors as palette } from '@shared/colors';
 import { Actor } from '@/types';
 import { getImageUrl, ImageSize } from '@shared/imageUrl';
 
@@ -16,14 +17,6 @@ function photoVariant(displaySize: number): ImageSize {
 // TMDB gender encoding
 const GENDER_FEMALE = 1;
 const GENDER_MALE = 2;
-
-/** Design tokens for gender-based placeholder backgrounds */
-const GENDER_COLORS = {
-  default: { dark: '#27272A', light: '#E4E4E7' }, // zinc-800 / zinc-200
-  female: { dark: '#2D1F3A', light: '#EDE9FE' }, // dark purple / violet-100
-  minorMale: { dark: '#1A2F46', light: '#DBEAFE' }, // dark blue / blue-100
-  minorFemale: { dark: '#46151F', light: '#FFE4E6' }, // dark rose / rose-100
-} as const;
 
 function isMinor(birthDate: string): boolean {
   const birth = new Date(birthDate);
@@ -55,7 +48,7 @@ function resolveConfig(actor: Actor | undefined): AvatarConfig {
 }
 
 function resolveBgColor(bgKey: AvatarConfig['bgKey'], isDark: boolean): string {
-  const entry = GENDER_COLORS[bgKey];
+  const entry = palette.avatar[bgKey];
   return isDark ? entry.dark : entry.light;
 }
 

@@ -11,7 +11,11 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-import { useAdminWatchlist, useDeleteWatchlistEntry } from '@/hooks/useAdminWatchlist';
+import {
+  useAdminWatchlist,
+  useDeleteWatchlistEntry,
+  useToggleWatchlistStatus,
+} from '@/hooks/useAdminWatchlist';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -290,5 +294,68 @@ describe('useDeleteWatchlistEntry', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'watchlist'] });
+  });
+});
+
+describe('useToggleWatchlistStatus', () => {
+  it('toggles from watchlist to watched', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const { result } = renderHook(() => useToggleWatchlistStatus(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'wl-1', currentStatus: 'watchlist' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockFrom).toHaveBeenCalledWith('watchlists');
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'watched', watched_at: expect.any(String) }),
+    );
+    expect(mockEq).toHaveBeenCalledWith('id', 'wl-1');
+  });
+
+  it('toggles from watched to watchlist with null watched_at', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const { result } = renderHook(() => useToggleWatchlistStatus(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'wl-2', currentStatus: 'watched' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'watchlist', watched_at: null }),
+    );
+  });
+
+  it('reports error when toggle fails', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: { message: 'Update failed' } });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const { result } = renderHook(() => useToggleWatchlistStatus(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'wl-1', currentStatus: 'watchlist' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

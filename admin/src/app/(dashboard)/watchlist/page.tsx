@@ -1,9 +1,13 @@
 'use client';
 
-import { useAdminWatchlist, useDeleteWatchlistEntry } from '@/hooks/useAdminWatchlist';
+import {
+  useAdminWatchlist,
+  useDeleteWatchlistEntry,
+  useToggleWatchlistStatus,
+} from '@/hooks/useAdminWatchlist';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
-import { Bookmark, Trash2, Loader2 } from 'lucide-react';
+import { Bookmark, Trash2, Loader2, ArrowUpDown } from 'lucide-react';
 
 export default function WatchlistPage() {
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
@@ -15,6 +19,7 @@ export default function WatchlistPage() {
     error,
   } = useAdminWatchlist(debouncedSearch);
   const deleteEntry = useDeleteWatchlistEntry();
+  const toggleStatus = useToggleWatchlistStatus();
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this watchlist entry? This cannot be undone.')) return;
@@ -108,14 +113,26 @@ export default function WatchlistPage() {
                     {new Date(entry.added_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(entry.id)}
-                      disabled={deleteEntry.isPending}
-                      className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                      title="Delete watchlist entry"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() =>
+                          toggleStatus.mutate({ id: entry.id, currentStatus: entry.status })
+                        }
+                        disabled={toggleStatus.isPending}
+                        className="p-2 text-on-surface-subtle hover:text-blue-500 transition-colors disabled:opacity-50"
+                        title="Toggle status"
+                      >
+                        <ArrowUpDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(entry.id)}
+                        disabled={deleteEntry.isPending}
+                        className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                        title="Delete watchlist entry"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

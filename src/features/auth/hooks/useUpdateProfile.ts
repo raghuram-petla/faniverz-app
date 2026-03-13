@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
@@ -35,6 +36,9 @@ export function useUpdateProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
+    },
+    onError: (error: Error) => {
+      Alert.alert('Error', error.message || 'Failed to update profile');
     },
   });
 }

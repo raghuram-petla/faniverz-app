@@ -13,7 +13,7 @@ import type { NewsFeedItem } from '@/lib/types';
 
 const FEED_TABS = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'];
 const MUTED_TEXT = colors.gray500;
-const ZINC_700 = '#3F3F46';
+const ZINC_700 = colors.zinc700;
 
 export interface FeedMobilePreviewProps {
   items: NewsFeedItem[];

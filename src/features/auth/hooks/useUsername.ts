@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { checkUsernameAvailable, setUsername, validateUsername } from '../usernameApi';
@@ -49,6 +50,9 @@ export function useSetUsername() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+    onError: (error: Error) => {
+      Alert.alert('Error', error.message || 'Failed to set username');
     },
   });
 }

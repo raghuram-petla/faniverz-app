@@ -5,6 +5,9 @@ export const colors = {
   // Base
   black: '#000000',
   white: '#FFFFFF',
+  zinc700: '#3F3F46',
+  zinc800: '#27272A',
+  zinc200: '#E4E4E7',
   zinc900: '#18181B',
 
   // Primary
@@ -57,6 +60,26 @@ export const colors = {
     upcoming: '#2563EB', // blue-600
     ended: '#6B7280', // gray-500
   },
+
+  // Avatar placeholder backgrounds (gender-based, dark/light)
+  avatar: {
+    default: { dark: '#27272A', light: '#E4E4E7' }, // zinc-800 / zinc-200
+    female: { dark: '#2D1F3A', light: '#EDE9FE' }, // dark purple / violet-100
+    minorMale: { dark: '#1A2F46', light: '#DBEAFE' }, // dark blue / blue-100
+    minorFemale: { dark: '#46151F', light: '#FFE4E6' }, // dark rose / rose-100
+  },
+
+  // Surprise card gradient backgrounds
+  cardGradients: [
+    '#1e1b4b',
+    '#1a0533',
+    '#0a1628',
+    '#0f2a0f',
+    '#2a0a0a',
+    '#1a1a0a',
+    '#0a1a2a',
+    '#1a0a1a',
+  ] as readonly string[],
 
   // OTT Platform colors
   platform: {

@@ -9,6 +9,7 @@ const mockSetSearch = vi.fn();
 vi.mock('@/hooks/useAdminWatchlist', () => ({
   useAdminWatchlist: vi.fn(),
   useDeleteWatchlistEntry: vi.fn(),
+  useToggleWatchlistStatus: vi.fn(),
 }));
 
 vi.mock('@/hooks/useDebouncedSearch', () => ({
@@ -34,11 +35,16 @@ vi.mock('@/components/common/SearchInput', () => ({
   ),
 }));
 
-import { useAdminWatchlist, useDeleteWatchlistEntry } from '@/hooks/useAdminWatchlist';
+import {
+  useAdminWatchlist,
+  useDeleteWatchlistEntry,
+  useToggleWatchlistStatus,
+} from '@/hooks/useAdminWatchlist';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 
 const mockUseAdminWatchlist = vi.mocked(useAdminWatchlist);
 const mockUseDeleteWatchlistEntry = vi.mocked(useDeleteWatchlistEntry);
+const mockUseToggleWatchlistStatus = vi.mocked(useToggleWatchlistStatus);
 const mockUseDebouncedSearch = vi.mocked(useDebouncedSearch);
 
 const mockEntries = [
@@ -87,6 +93,11 @@ beforeEach(() => {
     mutate: mockMutate,
     isPending: false,
   } as unknown as ReturnType<typeof useDeleteWatchlistEntry>);
+
+  mockUseToggleWatchlistStatus.mockReturnValue({
+    mutate: vi.fn(),
+    isPending: false,
+  } as unknown as ReturnType<typeof useToggleWatchlistStatus>);
 });
 
 describe('WatchlistPage', () => {

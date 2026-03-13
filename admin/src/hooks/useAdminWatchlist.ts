@@ -37,6 +37,30 @@ export function useAdminWatchlist(search = '') {
   });
 }
 
+export function useToggleWatchlistStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
+      const newStatus = currentStatus === 'watched' ? 'watchlist' : 'watched';
+      const updates: Record<string, string | null> = { status: newStatus };
+      if (newStatus === 'watched') {
+        updates.watched_at = new Date().toISOString();
+      } else {
+        updates.watched_at = null;
+      }
+      const { error } = await supabase.from('watchlists').update(updates).eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'watchlist'] });
+    },
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to update watchlist status');
+    },
+  });
+}
+
 export function useDeleteWatchlistEntry() {
   const qc = useQueryClient();
   return useMutation({

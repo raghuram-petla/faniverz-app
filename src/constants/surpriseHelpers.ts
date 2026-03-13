@@ -18,16 +18,7 @@ export const PILLS: PillConfig[] = [
   { label: 'Interviews', value: 'interview', activeColor: colors.orange500 },
 ];
 
-export const CARD_GRADIENTS: string[] = [
-  '#1e1b4b',
-  '#1a0533',
-  '#0a1628',
-  '#0f2a0f',
-  '#2a0a0a',
-  '#1a1a0a',
-  '#0a1a2a',
-  '#1a0a1a',
-];
+export const CARD_GRADIENTS: readonly string[] = colors.cardGradients;
 
 export function getCategoryColor(category: SurpriseCategory): string {
   switch (category) {

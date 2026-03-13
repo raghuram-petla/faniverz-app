@@ -13,20 +13,20 @@ import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
 
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  announced: 'bg-amber-600/20 text-amber-400',
+  upcoming: 'bg-blue-600/20 text-blue-400',
+  in_theaters: 'bg-red-600/20 text-red-400',
+  streaming: 'bg-purple-600/20 text-purple-400',
+  released: 'bg-gray-600/20 text-gray-400',
+};
+
 function getStatusBadge(movie: Movie) {
-  // For list page, we don't have platform count; use 0 (streaming will show for those with platforms in detail)
   const status = deriveMovieStatus(movie, 0);
   const config = MOVIE_STATUS_CONFIG[status];
-  const colorMap: Record<string, string> = {
-    '#F59E0B': 'bg-amber-600/20 text-amber-400',
-    '#2563EB': 'bg-blue-600/20 text-blue-400',
-    '#DC2626': 'bg-red-600/20 text-red-400',
-    '#9333EA': 'bg-purple-600/20 text-purple-400',
-    '#6B7280': 'bg-gray-600/20 text-gray-400',
-  };
   return {
     label: config.label,
-    className: colorMap[config.color] ?? 'bg-gray-600/20 text-gray-400',
+    className: STATUS_BADGE_CLASSES[status] ?? 'bg-gray-600/20 text-gray-400',
   };
 }
 

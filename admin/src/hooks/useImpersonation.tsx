@@ -98,36 +98,48 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
   const startImpersonation = useCallback(async (targetUserId: string) => {
     const user = realUserRef.current;
     if (!user || user.role !== 'super_admin') return;
-    const target = await buildTargetUser(targetUserId);
-    if (!target) return;
-    await endActiveSession(user.id);
-    await supabase.from('admin_impersonation_sessions').insert({
-      real_user_id: user.id,
-      target_user_id: targetUserId,
-      target_role: target.role,
-      target_ph_ids: target.productionHouseIds,
-    });
-    setEffectiveUser(target);
+    try {
+      const target = await buildTargetUser(targetUserId);
+      if (!target) return;
+      await endActiveSession(user.id);
+      await supabase.from('admin_impersonation_sessions').insert({
+        real_user_id: user.id,
+        target_user_id: targetUserId,
+        target_role: target.role,
+        target_ph_ids: target.productionHouseIds,
+      });
+      setEffectiveUser(target);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to start impersonation');
+    }
   }, []);
 
   const startRoleImpersonation = useCallback(async (role: AdminRoleId, phIds: string[] = []) => {
     const user = realUserRef.current;
     if (!user || user.role !== 'super_admin') return;
-    await endActiveSession(user.id);
-    await supabase.from('admin_impersonation_sessions').insert({
-      real_user_id: user.id,
-      target_user_id: null,
-      target_role: role,
-      target_ph_ids: phIds,
-    });
-    setEffectiveUser({ ...user, role, productionHouseIds: phIds });
+    try {
+      await endActiveSession(user.id);
+      await supabase.from('admin_impersonation_sessions').insert({
+        real_user_id: user.id,
+        target_user_id: null,
+        target_role: role,
+        target_ph_ids: phIds,
+      });
+      setEffectiveUser({ ...user, role, productionHouseIds: phIds });
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to start role impersonation');
+    }
   }, []);
 
   const stopImpersonation = useCallback(async () => {
     const user = realUserRef.current;
     if (!user) return;
-    await endActiveSession(user.id);
-    setEffectiveUser(null);
+    try {
+      await endActiveSession(user.id);
+      setEffectiveUser(null);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : 'Failed to stop impersonation');
+    }
   }, []);
 
   return (

@@ -12,7 +12,8 @@ export async function uploadImage(file: File, endpoint: string): Promise<string>
   const res = await fetch(endpoint, { method: 'POST', body });
   const data = (await res.json()) as { url?: string; error?: string };
   if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-  return data.url!;
+  if (!data.url) throw new Error('Upload succeeded but no URL returned');
+  return data.url;
 }
 
 /** React hook wrapping uploadImage with uploading state */

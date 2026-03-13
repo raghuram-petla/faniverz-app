@@ -59,6 +59,19 @@ describe('uploadImage', () => {
 
     await expect(uploadImage(file, '/api/upload/test')).rejects.toThrow('Upload failed');
   });
+
+  it('throws when response is ok but url is missing', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+
+    const file = new File(['img'], 'photo.png', { type: 'image/png' });
+
+    await expect(uploadImage(file, '/api/upload/test')).rejects.toThrow(
+      'Upload succeeded but no URL returned',
+    );
+  });
 });
 
 // ── useImageUpload (hook) ────────────────────────────────────

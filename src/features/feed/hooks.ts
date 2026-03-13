@@ -190,7 +190,7 @@ export function useUserVotes(feedItemIds: string[]) {
 
   return useQuery({
     queryKey: ['feed-votes', userId, feedItemIds],
-    queryFn: () => fetchUserVotes(userId!, feedItemIds),
+    queryFn: () => fetchUserVotes(userId ?? '', feedItemIds),
     enabled: !!userId && feedItemIds.length > 0,
     staleTime: 2 * 60 * 1000,
   });
