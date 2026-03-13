@@ -37,6 +37,8 @@ export default function UsersPage() {
   const blockAdminMut = useBlockAdmin();
   const unblockAdmin = useUnblockAdmin();
 
+  const activeRootCount =
+    users?.filter((u) => u.role_id === 'root' && u.status === 'active').length ?? 0;
   const activeSuperAdminCount =
     users?.filter((u) => u.role_id === 'super_admin' && u.status === 'active').length ?? 0;
 
@@ -48,6 +50,8 @@ export default function UsersPage() {
   });
 
   function handleRevoke(userId: string, roleId: string) {
+    if (roleId === 'root' && activeRootCount <= 1)
+      return void alert('Cannot revoke the last root user.');
     if (roleId === 'super_admin' && activeSuperAdminCount <= 1)
       return void alert('Cannot revoke the last super admin.');
     if (!confirm('Revoke admin access? This permanently removes their role.')) return;
@@ -56,6 +60,8 @@ export default function UsersPage() {
 
   function handleBlock(reason: string) {
     if (!blockTarget || !realUser) return;
+    if (blockTarget.role_id === 'root' && activeRootCount <= 1)
+      return void alert('Cannot block the last active root user.');
     if (blockTarget.role_id === 'super_admin' && activeSuperAdminCount <= 1)
       return void alert('Cannot block the last active super admin.');
     blockAdminMut.mutate(

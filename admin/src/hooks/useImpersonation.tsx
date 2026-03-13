@@ -66,7 +66,7 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
   const realUserRef = useRef(realUser);
   realUserRef.current = realUser;
 
-  const isSuperAdmin = realUser?.role === 'super_admin';
+  const isSuperAdmin = realUser?.role === 'super_admin' || realUser?.role === 'root';
 
   // Restore active session on mount
   useEffect(() => {
@@ -102,7 +102,7 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
 
   const startImpersonation = useCallback(async (targetUserId: string) => {
     const user = realUserRef.current;
-    if (!user || user.role !== 'super_admin') return;
+    if (!user || (user.role !== 'super_admin' && user.role !== 'root')) return;
     try {
       const target = await buildTargetUser(targetUserId);
       if (!target) return;
@@ -121,7 +121,7 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
 
   const startRoleImpersonation = useCallback(async (role: AdminRoleId, phIds: string[] = []) => {
     const user = realUserRef.current;
-    if (!user || user.role !== 'super_admin') return;
+    if (!user || (user.role !== 'super_admin' && user.role !== 'root')) return;
     try {
       await endActiveSession(user.id);
       await supabase.from('admin_impersonation_sessions').insert({

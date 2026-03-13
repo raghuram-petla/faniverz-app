@@ -36,50 +36,45 @@ export type AdminEntity =
   | 'notification'
   | 'sync';
 
+const ALL_PAGES: Set<AdminPage> = new Set([
+  'dashboard',
+  'movies',
+  'cast',
+  'production-houses',
+  'ott',
+  'platforms',
+  'surprise',
+  'feed',
+  'notifications',
+  'reviews',
+  'comments',
+  'watchlist',
+  'follows',
+  'favorites',
+  'feed-votes',
+  'sync',
+  'audit',
+  'app-users',
+  'users',
+]);
+
+const ALL_ENTITIES: Set<AdminEntity> = new Set([
+  'movie',
+  'actor',
+  'production_house',
+  'ott_release',
+  'platform',
+  'surprise',
+  'news_feed',
+  'notification',
+  'sync',
+]);
+
 /** Pages accessible per role */
 const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
-  super_admin: new Set([
-    'dashboard',
-    'movies',
-    'cast',
-    'production-houses',
-    'ott',
-    'platforms',
-    'surprise',
-    'feed',
-    'notifications',
-    'reviews',
-    'comments',
-    'watchlist',
-    'follows',
-    'favorites',
-    'feed-votes',
-    'sync',
-    'audit',
-    'app-users',
-    'users',
-  ]),
-  admin: new Set([
-    'dashboard',
-    'movies',
-    'cast',
-    'production-houses',
-    'ott',
-    'platforms',
-    'surprise',
-    'feed',
-    'notifications',
-    'reviews',
-    'comments',
-    'watchlist',
-    'follows',
-    'favorites',
-    'feed-votes',
-    'sync',
-    'audit',
-    'app-users',
-    'users',
-  ]),
+  root: ALL_PAGES,
+  super_admin: ALL_PAGES,
+  admin: ALL_PAGES,
   production_house_admin: new Set([
     'dashboard',
     'movies',
@@ -92,28 +87,9 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
 
 /** Entities each role can CREATE */
 const CREATE_ACCESS: Record<AdminRoleId, Set<AdminEntity>> = {
-  super_admin: new Set([
-    'movie',
-    'actor',
-    'production_house',
-    'ott_release',
-    'platform',
-    'surprise',
-    'news_feed',
-    'notification',
-    'sync',
-  ]),
-  admin: new Set([
-    'movie',
-    'actor',
-    'production_house',
-    'ott_release',
-    'platform',
-    'surprise',
-    'news_feed',
-    'notification',
-    'sync',
-  ]),
+  root: ALL_ENTITIES,
+  super_admin: ALL_ENTITIES,
+  admin: ALL_ENTITIES,
   production_house_admin: new Set(['movie', 'actor', 'ott_release']),
 };
 
@@ -122,7 +98,8 @@ export function usePermissions() {
   const role = user?.role ?? null;
   const phIds = user?.productionHouseIds ?? [];
 
-  const isSuperAdmin = role === 'super_admin';
+  const isRoot = role === 'root';
+  const isSuperAdmin = role === 'super_admin' || isRoot;
   const isAdmin = role === 'admin';
   const isPHAdmin = role === 'production_house_admin';
 
@@ -144,7 +121,7 @@ export function usePermissions() {
    */
   function canUpdate(entity: AdminEntity, ownerId?: string | null): boolean {
     if (!role) return false;
-    if (isSuperAdmin || isAdmin) return CREATE_ACCESS[role].has(entity);
+    if (isRoot || isSuperAdmin || isAdmin) return CREATE_ACCESS[role].has(entity);
     if (!isPHAdmin) return false;
 
     // PH admin: entity-specific checks
@@ -157,16 +134,22 @@ export function usePermissions() {
     return canUpdate(entity, ownerId);
   }
 
-  /** Whether the current user can block/unblock an admin with the given role */
+  /** Whether the current user can block/unblock/revoke an admin with the given role */
   function canManageAdmin(targetRole: AdminRoleId): boolean {
     if (!role) return false;
-    if (isSuperAdmin) return targetRole !== 'super_admin';
+    // Root can manage anyone except other root users
+    if (isRoot) return targetRole !== 'root';
+    // Super admin can manage admin + PH admin only (not super_admin or root)
+    if (role === 'super_admin')
+      return targetRole === 'admin' || targetRole === 'production_house_admin';
+    // Admin can only manage PH admins
     if (isAdmin) return targetRole === 'production_house_admin';
     return false;
   }
 
   return {
     role,
+    isRoot,
     isSuperAdmin,
     isAdmin,
     isPHAdmin,
@@ -176,7 +159,7 @@ export function usePermissions() {
     canUpdate,
     canDelete,
     canManageAdmin,
-    /** Audit log scope: super admin sees all, others see own */
+    /** Audit log scope: root/super admin sees all, others see own */
     auditScope: isSuperAdmin ? ('all' as const) : ('own' as const),
   };
 }

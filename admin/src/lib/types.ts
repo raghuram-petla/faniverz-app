@@ -181,7 +181,7 @@ export interface FeedVote {
 // RBAC Types
 // ============================================================
 
-export type AdminRoleId = 'super_admin' | 'admin' | 'production_house_admin';
+export type AdminRoleId = 'root' | 'super_admin' | 'admin' | 'production_house_admin';
 
 export interface AdminPHAssignment {
   user_id: string;
@@ -212,6 +212,7 @@ export interface AdminUser extends UserProfile {
 }
 
 export const ADMIN_ROLE_LABELS: Record<AdminRoleId, string> = {
+  root: 'Root',
   super_admin: 'Super Admin',
   admin: 'Admin',
   production_house_admin: 'PH Admin',

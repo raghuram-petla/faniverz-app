@@ -162,19 +162,21 @@ describe('AdminsTable', () => {
     expect(unblockButton).toBeInTheDocument();
   });
 
-  it('shows Revoke button only for super admins on non-self users', () => {
+  it('shows Revoke button when canManageAdmin returns true', () => {
     renderTable({
       users: [makeUser({ id: 'other-user' })],
       isSuperAdmin: true,
+      canManageAdmin: () => true,
       realUserId: 'current-user',
     });
     expect(screen.getByTitle('Revoke access')).toBeInTheDocument();
   });
 
-  it('does not show Revoke button for non-super-admins', () => {
+  it('does not show Revoke button when canManageAdmin returns false', () => {
     renderTable({
       users: [makeUser({ id: 'other-user' })],
       isSuperAdmin: false,
+      canManageAdmin: () => false,
       realUserId: 'current-user',
     });
     expect(screen.queryByTitle('Revoke access')).not.toBeInTheDocument();
@@ -235,6 +237,7 @@ describe('AdminsTable', () => {
     renderTable({
       users: [makeUser({ id: 'other-user', role_id: 'admin' })],
       isSuperAdmin: true,
+      canManageAdmin: () => true,
       realUserId: 'current-user',
       onRevoke,
     });
@@ -276,5 +279,33 @@ describe('AdminsTable', () => {
       canManageAdmin: () => false,
     });
     expect(screen.queryByTitle('Block')).not.toBeInTheDocument();
+  });
+
+  // Root role tests
+  describe('root role display', () => {
+    it('shows root as static badge with amber styling, never as dropdown', () => {
+      renderTable({
+        users: [makeUser({ id: 'root-user', role_id: 'root' })],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+      });
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+      expect(screen.getByText('Root')).toBeInTheDocument();
+    });
+
+    it('does not include root in role dropdown options', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin' })],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+      });
+      const select = screen.getByRole('combobox');
+      const options = select.querySelectorAll('option');
+      const values = Array.from(options).map((o) => o.getAttribute('value'));
+      expect(values).not.toContain('root');
+      expect(values).toContain('super_admin');
+      expect(values).toContain('admin');
+      expect(values).toContain('production_house_admin');
+    });
   });
 });

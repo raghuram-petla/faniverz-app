@@ -64,19 +64,87 @@ describe('usePermissions', () => {
     const { result } = renderHook(() => usePermissions());
 
     expect(result.current.role).toBeNull();
+    expect(result.current.isRoot).toBe(false);
     expect(result.current.isSuperAdmin).toBe(false);
     expect(result.current.isAdmin).toBe(false);
     expect(result.current.isPHAdmin).toBe(false);
     expect(result.current.productionHouseIds).toEqual([]);
   });
 
-  // 2. Super admin — page access
+  // 2. Root — flags and page access
+  describe('root role', () => {
+    it('isRoot and isSuperAdmin are both true', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.isRoot).toBe(true);
+      expect(result.current.isSuperAdmin).toBe(true);
+      expect(result.current.isAdmin).toBe(false);
+      expect(result.current.isPHAdmin).toBe(false);
+    });
+
+    it('canViewPage returns true for all pages', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const page of ALL_PAGES) {
+        expect(result.current.canViewPage(page)).toBe(true);
+      }
+    });
+
+    it('canCreate returns true for all entities', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const entity of ALL_ENTITIES) {
+        expect(result.current.canCreate(entity)).toBe(true);
+      }
+    });
+
+    it('canUpdate returns true for all entities', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const entity of ALL_ENTITIES) {
+        expect(result.current.canUpdate(entity)).toBe(true);
+      }
+    });
+
+    it('auditScope is "all"', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.auditScope).toBe('all');
+    });
+  });
+
+  // 3. Root — canManageAdmin
+  describe('root canManageAdmin', () => {
+    it('can manage super_admin, admin, and production_house_admin', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canManageAdmin('super_admin')).toBe(true);
+      expect(result.current.canManageAdmin('admin')).toBe(true);
+      expect(result.current.canManageAdmin('production_house_admin')).toBe(true);
+    });
+
+    it('cannot manage other root users', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canManageAdmin('root')).toBe(false);
+    });
+  });
+
+  // 4. Super admin — page access
   describe('super_admin page access', () => {
     it('isSuperAdmin is true and canViewPage returns true for all pages including users', () => {
       setUser(makeUser({ role: 'super_admin' }));
       const { result } = renderHook(() => usePermissions());
 
       expect(result.current.isSuperAdmin).toBe(true);
+      expect(result.current.isRoot).toBe(false);
       expect(result.current.isAdmin).toBe(false);
       expect(result.current.isPHAdmin).toBe(false);
 
@@ -86,7 +154,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 3. Admin — page access
+  // 5. Admin — page access
   describe('admin page access', () => {
     it('isAdmin is true and canViewPage returns true for all pages including users', () => {
       setUser(makeUser({ role: 'admin' }));
@@ -102,7 +170,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 4. PH admin — page access
+  // 6. PH admin — page access
   describe('production_house_admin page access', () => {
     it('isPHAdmin is true and canViewPage returns correct access', () => {
       setUser(makeUser({ role: 'production_house_admin', productionHouseIds: ['ph-1'] }));
@@ -138,7 +206,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 5. Super admin — canCreate for all entities
+  // 7. Super admin — canCreate for all entities
   describe('super_admin create access', () => {
     it('canCreate returns true for all entities', () => {
       setUser(makeUser({ role: 'super_admin' }));
@@ -150,7 +218,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 6. PH admin — canCreate
+  // 8. PH admin — canCreate
   describe('production_house_admin create access', () => {
     it('canCreate returns true for movie/actor/ott_release, false for others', () => {
       setUser(makeUser({ role: 'production_house_admin' }));
@@ -174,7 +242,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 7. PH admin — canUpdate('actor', ownerId) only when ownerId matches user.id
+  // 9. PH admin — canUpdate('actor', ownerId) only when ownerId matches user.id
   describe('production_house_admin canUpdate actor', () => {
     it('returns true only when ownerId matches user.id', () => {
       setUser(makeUser({ id: 'ph-user-42', role: 'production_house_admin' }));
@@ -187,7 +255,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 8. PH admin — canUpdate('movie') returns true
+  // 10. PH admin — canUpdate('movie') returns true
   describe('production_house_admin canUpdate movie', () => {
     it('returns true for movie (RLS handles scoping)', () => {
       setUser(makeUser({ role: 'production_house_admin' }));
@@ -198,7 +266,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 9. PH admin — canUpdate('production_house') returns false
+  // 11. PH admin — canUpdate('production_house') returns false
   describe('production_house_admin canUpdate production_house', () => {
     it('returns false for production_house', () => {
       setUser(makeUser({ role: 'production_house_admin' }));
@@ -212,7 +280,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // 10. auditScope
+  // 12. auditScope
   describe('auditScope', () => {
     it('is "all" for super_admin', () => {
       setUser(makeUser({ role: 'super_admin' }));
@@ -304,22 +372,24 @@ describe('usePermissions', () => {
 
   // canManageAdmin
   describe('canManageAdmin', () => {
-    it('super_admin can manage admin and production_house_admin but not super_admin', () => {
+    it('super_admin can manage admin and production_house_admin but not super_admin or root', () => {
       setUser(makeUser({ role: 'super_admin' }));
       const { result } = renderHook(() => usePermissions());
 
       expect(result.current.canManageAdmin('admin')).toBe(true);
       expect(result.current.canManageAdmin('production_house_admin')).toBe(true);
       expect(result.current.canManageAdmin('super_admin')).toBe(false);
+      expect(result.current.canManageAdmin('root')).toBe(false);
     });
 
-    it('admin can manage production_house_admin but not admin or super_admin', () => {
+    it('admin can manage production_house_admin but not admin, super_admin, or root', () => {
       setUser(makeUser({ role: 'admin' }));
       const { result } = renderHook(() => usePermissions());
 
       expect(result.current.canManageAdmin('production_house_admin')).toBe(true);
       expect(result.current.canManageAdmin('admin')).toBe(false);
       expect(result.current.canManageAdmin('super_admin')).toBe(false);
+      expect(result.current.canManageAdmin('root')).toBe(false);
     });
 
     it('production_house_admin cannot manage any role', () => {
@@ -329,6 +399,7 @@ describe('usePermissions', () => {
       expect(result.current.canManageAdmin('admin')).toBe(false);
       expect(result.current.canManageAdmin('production_house_admin')).toBe(false);
       expect(result.current.canManageAdmin('super_admin')).toBe(false);
+      expect(result.current.canManageAdmin('root')).toBe(false);
     });
 
     it('returns false for all roles when no user', () => {
@@ -338,6 +409,7 @@ describe('usePermissions', () => {
       expect(result.current.canManageAdmin('admin')).toBe(false);
       expect(result.current.canManageAdmin('production_house_admin')).toBe(false);
       expect(result.current.canManageAdmin('super_admin')).toBe(false);
+      expect(result.current.canManageAdmin('root')).toBe(false);
     });
   });
 

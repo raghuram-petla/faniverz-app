@@ -19,6 +19,13 @@ export interface AdminsTableProps {
   isRevokePending: boolean;
 }
 
+/** Roles available in the role-change dropdown (root is SQL-only) */
+const CHANGEABLE_ROLES: { value: AdminRoleId; label: string }[] = [
+  { value: 'super_admin', label: 'Super Admin' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'production_house_admin', label: 'PH Admin' },
+];
+
 export function AdminsTable({
   users,
   isLoading,
@@ -60,6 +67,8 @@ export function AdminsTable({
           {users?.map((u) => {
             const isSelf = u.id === realUserId;
             const canManage = !isSelf && canManageAdmin(u.role_id);
+            // Root role is SQL-only: always show as static badge, never as dropdown
+            const showRoleDropdown = !isSelf && isSuperAdmin && u.role_id !== 'root';
             return (
               <tr key={u.id} className="border-b border-outline-subtle hover:bg-surface-elevated">
                 <td className="px-6 py-4">
@@ -76,11 +85,7 @@ export function AdminsTable({
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  {isSelf || !isSuperAdmin ? (
-                    <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-600/10 text-red-500">
-                      {ADMIN_ROLE_LABELS[u.role_id]}
-                    </span>
-                  ) : (
+                  {showRoleDropdown ? (
                     <select
                       value={u.role_id}
                       onChange={(e) => {
@@ -91,10 +96,22 @@ export function AdminsTable({
                       disabled={isRolePending || u.status === 'blocked'}
                       className="bg-input rounded-lg px-2 py-1 text-xs text-on-surface outline-none focus:ring-2 focus:ring-red-600 disabled:opacity-50"
                     >
-                      <option value="super_admin">Super Admin</option>
-                      <option value="admin">Admin</option>
-                      <option value="production_house_admin">PH Admin</option>
+                      {CHANGEABLE_ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
                     </select>
+                  ) : (
+                    <span
+                      className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
+                        u.role_id === 'root'
+                          ? 'bg-amber-600/10 text-amber-500'
+                          : 'bg-red-600/10 text-red-500'
+                      }`}
+                    >
+                      {ADMIN_ROLE_LABELS[u.role_id]}
+                    </span>
                   )}
                 </td>
                 <td className="px-6 py-4">
@@ -150,7 +167,7 @@ export function AdminsTable({
                         <ShieldCheck className="w-4 h-4" />
                       </button>
                     )}
-                    {!isSelf && isSuperAdmin && (
+                    {canManage && (
                       <button
                         onClick={() => onRevoke(u.id, u.role_id)}
                         disabled={isRevokePending}
