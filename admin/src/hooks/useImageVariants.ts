@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getImageUrl, type ImageSize } from '@shared/imageUrl';
 import { VARIANT_SPECS, type VariantType } from '@/lib/variant-config';
+import { supabase } from '@/lib/supabase-browser';
 
 export interface VariantInfo {
   label: string;
@@ -49,9 +50,15 @@ export function useImageVariants(originalUrl: string | null, variantType: Varian
       setIsChecking(true);
 
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         const res = await fetch('/api/image-check', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+          },
           body: JSON.stringify({ urls: built.map((v) => v.url) }),
         });
         const data = await res.json();
