@@ -1,13 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -26,6 +28,20 @@ function createWrapper() {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 }
+
+function mockCrudApi(responseData: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
+}
+
+beforeEach(() => {
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
+});
 
 describe('useMovieVideos', () => {
   it('fetches videos for a given movieId sorted by display_order', async () => {
@@ -63,15 +79,8 @@ describe('useMovieVideos', () => {
 });
 
 describe('useAddVideo', () => {
-  it('inserts a video and invalidates the cache', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: { id: 'v-new', movie_id: 'm1', title: 'New Trailer' },
-      error: null,
-    });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
-
-    mockFrom.mockReturnValue({ insert: mockInsert });
+  it('inserts a video via /api/admin-crud and invalidates the cache', async () => {
+    const fetchSpy = mockCrudApi({ id: 'v-new', movie_id: 'm1', title: 'New Trailer' });
 
     const { result } = renderHook(() => useAddVideo(), {
       wrapper: createWrapper(),
@@ -89,22 +98,30 @@ describe('useAddVideo', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('movie_videos');
-    expect(mockInsert).toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          table: 'movie_videos',
+          data: {
+            movie_id: 'm1',
+            youtube_id: 'abc123',
+            title: 'New Trailer',
+            video_type: 'trailer',
+            display_order: 0,
+          },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });
 
 describe('useUpdateVideo', () => {
-  it('updates a video by id and invalidates the cache', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: { id: 'v1', movie_id: 'm1', title: 'Updated Title' },
-      error: null,
-    });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
-    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ update: mockUpdate });
+  it('updates a video via /api/admin-crud by id and invalidates the cache', async () => {
+    const fetchSpy = mockCrudApi({ id: 'v1', movie_id: 'm1', title: 'Updated Title' });
 
     const { result } = renderHook(() => useUpdateVideo(), {
       wrapper: createWrapper(),
@@ -116,19 +133,25 @@ describe('useUpdateVideo', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('movie_videos');
-    expect(mockUpdate).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'v1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movie_videos',
+          id: 'v1',
+          data: { title: 'Updated Title' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });
 
 describe('useRemoveVideo', () => {
-  it('deletes a video by id', async () => {
-    const mockEq2 = vi.fn().mockResolvedValue({ error: null });
-    const mockEq = vi.fn().mockReturnValue({ eq: mockEq2 });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+  it('deletes a video via /api/admin-crud by id', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useRemoveVideo(), {
       wrapper: createWrapper(),
@@ -140,8 +163,14 @@ describe('useRemoveVideo', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('movie_videos');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'v1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ table: 'movie_videos', id: 'v1' }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });

@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 import type { FeedComment } from '@/lib/types';
 
 // @boundary: joins feed_comments with news_feed and profiles via PostgREST foreign-key selects
@@ -47,8 +48,7 @@ export function useUpdateComment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, body }: { id: string; body: string }) => {
-      const { error } = await supabase.from('feed_comments').update({ body }).eq('id', id);
-      if (error) throw error;
+      await crudFetch('PATCH', { table: 'feed_comments', id, data: { body } });
       return id;
     },
     onSuccess: () => {
@@ -65,8 +65,7 @@ export function useDeleteComment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('feed_comments').delete().eq('id', id);
-      if (error) throw error;
+      await crudFetch('DELETE', { table: 'feed_comments', id });
       return id;
     },
     onSuccess: () => {

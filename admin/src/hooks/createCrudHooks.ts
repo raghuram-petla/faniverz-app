@@ -1,6 +1,7 @@
 'use client';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 
 const DEFAULT_PAGE_SIZE = 50;
 
@@ -28,7 +29,7 @@ export interface CrudConfig {
 }
 
 // @contract T must have an 'id' field — used for single-item invalidation and update/delete keys
-// @boundary All DB access via Supabase client; errors thrown to TanStack Query for handling
+// @boundary Reads via Supabase browser client (RLS); writes via /api/admin-crud (service role)
 export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
   const {
     table,
@@ -104,13 +105,12 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     });
   }
 
+  // @sideeffect: writes via /api/admin-crud using service role (bypasses RLS)
   function useCreate() {
     const qc = useQueryClient();
     return useMutation({
       mutationFn: async (entity: Partial<T>) => {
-        const { data, error } = await supabase.from(table).insert(entity).select().single();
-        if (error) throw error;
-        return data as unknown as T;
+        return crudFetch<T>('POST', { table, data: entity });
       },
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: [...listKey] });
@@ -121,27 +121,12 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     });
   }
 
-  // @sideeffect Invalidates both list and single-item caches on success
+  // @sideeffect: writes via /api/admin-crud using service role (bypasses RLS)
   function useUpdate() {
     const qc = useQueryClient();
     return useMutation({
-      // @edge RLS silently filters rows instead of returning 401 — an expired JWT
-      // causes 0 rows returned (not a permission error), so .single() throws PGRST116.
-      // Using .maybeSingle() lets us detect this and show an actionable message.
       mutationFn: async ({ id, ...entity }: Partial<T> & { id: string }) => {
-        const { data, error } = await supabase
-          .from(table)
-          .update(entity)
-          .eq('id', id)
-          .select()
-          .maybeSingle();
-        if (error) throw error;
-        if (!data) {
-          throw new Error(
-            'Update failed — no rows were modified. Your session may have expired. Please refresh the page and log in again.',
-          );
-        }
-        return data as unknown as T;
+        return crudFetch<T>('PATCH', { table, id, data: entity });
       },
       onSuccess: (data: T) => {
         qc.invalidateQueries({ queryKey: [...listKey] });
@@ -153,12 +138,12 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     });
   }
 
+  // @sideeffect: writes via /api/admin-crud using service role (bypasses RLS)
   function useDelete() {
     const qc = useQueryClient();
     return useMutation({
       mutationFn: async (id: string) => {
-        const { error } = await supabase.from(table).delete().eq('id', id);
-        if (error) throw error;
+        await crudFetch<{ success: true }>('DELETE', { table, id });
         return id;
       },
       onSuccess: (id: string) => {

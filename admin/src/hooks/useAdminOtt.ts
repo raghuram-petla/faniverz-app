@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 import type { MoviePlatform } from '@/lib/types';
 
 /**
@@ -53,13 +54,7 @@ export function useCreateOttRelease() {
       available_from?: string | null;
       streaming_url?: string | null;
     }) => {
-      const { data, error } = await supabase
-        .from('movie_platforms')
-        .insert(release)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as MoviePlatform;
+      return crudFetch<MoviePlatform>('POST', { table: 'movie_platforms', data: release });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
@@ -85,15 +80,11 @@ export function useUpdateOttRelease() {
       available_from: string | null;
       streaming_url: string | null;
     }) => {
-      const { data, error } = await supabase
-        .from('movie_platforms')
-        .update({ available_from, streaming_url })
-        .eq('movie_id', movieId)
-        .eq('platform_id', platformId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data as MoviePlatform;
+      return crudFetch<MoviePlatform>('PATCH', {
+        table: 'movie_platforms',
+        filters: { movie_id: movieId, platform_id: platformId },
+        data: { available_from, streaming_url },
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
@@ -108,12 +99,10 @@ export function useDeleteOttRelease() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ movieId, platformId }: { movieId: string; platformId: string }) => {
-      const { error } = await supabase
-        .from('movie_platforms')
-        .delete()
-        .eq('movie_id', movieId)
-        .eq('platform_id', platformId);
-      if (error) throw error;
+      await crudFetch('DELETE', {
+        table: 'movie_platforms',
+        filters: { movie_id: movieId, platform_id: platformId },
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
@@ -141,7 +130,7 @@ export function useMoviePlatforms(movieId: string) {
   });
 }
 
-// @sideeffect Invalidates both movie-specific AND global OTT caches to keep both views fresh
+// @sideeffect Invalidates both movie-specific AND global OTT caches
 export function useAddMoviePlatform() {
   const qc = useQueryClient();
   return useMutation({
@@ -150,13 +139,7 @@ export function useAddMoviePlatform() {
       platform_id: string;
       available_from?: string | null;
     }) => {
-      const { data, error } = await supabase
-        .from('movie_platforms')
-        .insert(release)
-        .select('*, platform:platforms(*)')
-        .single();
-      if (error) throw error;
-      return data as MoviePlatform;
+      return crudFetch<MoviePlatform>('POST', { table: 'movie_platforms', data: release });
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', data.movie_id] });
@@ -168,17 +151,15 @@ export function useAddMoviePlatform() {
   });
 }
 
-// @sideeffect Deletes by composite key (movie_id + platform_id), invalidates both caches
+// @sideeffect Deletes by composite key, invalidates both caches
 export function useRemoveMoviePlatform() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ movieId, platformId }: { movieId: string; platformId: string }) => {
-      const { error } = await supabase
-        .from('movie_platforms')
-        .delete()
-        .eq('movie_id', movieId)
-        .eq('platform_id', platformId);
-      if (error) throw error;
+      await crudFetch('DELETE', {
+        table: 'movie_platforms',
+        filters: { movie_id: movieId, platform_id: platformId },
+      });
       return { movieId, platformId };
     },
     onSuccess: (_data, variables) => {

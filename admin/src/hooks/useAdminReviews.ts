@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 import type { Review } from '@/lib/types';
 
 // @boundary: joins reviews with movies and profiles via PostgREST foreign-key selects
@@ -61,8 +62,7 @@ export function useUpdateReview() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...fields }: UpdateReviewPayload) => {
-      const { error } = await supabase.from('reviews').update(fields).eq('id', id);
-      if (error) throw error;
+      await crudFetch('PATCH', { table: 'reviews', id, data: fields });
       return id;
     },
     onSuccess: () => {
@@ -79,8 +79,7 @@ export function useDeleteReview() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('reviews').delete().eq('id', id);
-      if (error) throw error;
+      await crudFetch('DELETE', { table: 'reviews', id });
       return id;
     },
     onSuccess: () => {

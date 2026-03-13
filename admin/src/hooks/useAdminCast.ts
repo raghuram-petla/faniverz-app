@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { Actor, MovieCast } from '@/lib/types';
 
@@ -50,15 +51,13 @@ export function useMovieCast(movieId: string) {
   });
 }
 
-// @sideeffect: inserts into movie_cast and invalidates cache for the movie's cast list
+// @sideeffect: inserts into movie_cast via /api/admin-crud and invalidates cache
 // @assumes: cast partial must include movie_id, actor_id, credit_type at minimum
 export function useAddCast() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (cast: Partial<MovieCast>) => {
-      const { data, error } = await supabase.from('movie_cast').insert(cast).select().single();
-      if (error) throw error;
-      return data as MovieCast;
+      return crudFetch<MovieCast>('POST', { table: 'movie_cast', data: cast });
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] });
@@ -69,17 +68,12 @@ export function useAddCast() {
   });
 }
 
-// @sideeffect: hard-deletes movie_cast row by id + movieId compound filter
+// @sideeffect: hard-deletes movie_cast row via /api/admin-crud
 export function useRemoveCast() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
-      const { error } = await supabase
-        .from('movie_cast')
-        .delete()
-        .eq('id', id)
-        .eq('movie_id', movieId);
-      if (error) throw error;
+      await crudFetch<{ success: true }>('DELETE', { table: 'movie_cast', id });
       return movieId;
     },
     onSuccess: (_data, variables) => {
@@ -91,7 +85,7 @@ export function useRemoveCast() {
   });
 }
 
-// @sideeffect: updates display_order for each cast item; fires N parallel update queries
+// @sideeffect: updates display_order for each cast item via /api/admin-crud
 // @edge: partial failure — some items may update before the first error is detected
 // @sync: all updates run in parallel via Promise.all; no transaction wrapping
 export function useUpdateCastOrder() {
@@ -104,16 +98,15 @@ export function useUpdateCastOrder() {
       movieId: string;
       items: { id: string; display_order: number }[];
     }) => {
-      const results = await Promise.all(
+      await Promise.all(
         items.map((item) =>
-          supabase
-            .from('movie_cast')
-            .update({ display_order: item.display_order })
-            .eq('id', item.id),
+          crudFetch('PATCH', {
+            table: 'movie_cast',
+            id: item.id,
+            data: { display_order: item.display_order },
+          }),
         ),
       );
-      const firstError = results.find((r) => r.error);
-      if (firstError?.error) throw firstError.error;
       return movieId;
     },
     onSuccess: (movieId) => {

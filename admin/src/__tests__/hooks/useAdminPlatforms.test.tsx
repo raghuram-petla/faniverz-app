@@ -1,13 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -25,6 +27,21 @@ function createWrapper() {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
+});
+
+function mockCrudApi(responseData: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
 }
 
 describe('useAdminPlatforms', () => {
@@ -77,22 +94,15 @@ describe('useAdminPlatforms', () => {
 });
 
 describe('useCreatePlatform', () => {
-  it('inserts a platform and invalidates cache', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: {
-        id: 'new',
-        name: 'New Platform',
-        logo: 'N',
-        logo_url: null,
-        color: '#333',
-        display_order: 0,
-      },
-      error: null,
+  it('sends POST to /api/admin-crud with platform data', async () => {
+    const fetchSpy = mockCrudApi({
+      id: 'new',
+      name: 'New Platform',
+      logo: 'N',
+      logo_url: null,
+      color: '#333',
+      display_order: 0,
     });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
-
-    mockFrom.mockReturnValue({ insert: mockInsert });
 
     const { result } = renderHook(() => useCreatePlatform(), {
       wrapper: createWrapper(),
@@ -104,22 +114,19 @@ describe('useCreatePlatform', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('platforms');
-    expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({ name: 'New Platform' }));
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    );
+    fetchSpy.mockRestore();
   });
 });
 
 describe('useUpdatePlatform', () => {
-  it('updates a platform by id and invalidates cache', async () => {
-    const mockMaybeSingle = vi.fn().mockResolvedValue({
-      data: { id: 'netflix', name: 'Netflix Updated' },
-      error: null,
-    });
-    const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
-    const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
-    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ update: mockUpdate });
+  it('sends PATCH to /api/admin-crud with platform id and data', async () => {
+    const fetchSpy = mockCrudApi({ id: 'netflix', name: 'Netflix Updated' });
 
     const { result } = renderHook(() => useUpdatePlatform(), {
       wrapper: createWrapper(),
@@ -131,18 +138,19 @@ describe('useUpdatePlatform', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('platforms');
-    expect(mockUpdate).toHaveBeenCalledWith({ name: 'Netflix Updated' });
-    expect(mockEq).toHaveBeenCalledWith('id', 'netflix');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+      }),
+    );
+    fetchSpy.mockRestore();
   });
 });
 
 describe('useDeletePlatform', () => {
-  it('deletes a platform by id', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+  it('sends DELETE to /api/admin-crud with platform id', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useDeletePlatform(), {
       wrapper: createWrapper(),
@@ -154,8 +162,12 @@ describe('useDeletePlatform', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('platforms');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'netflix');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+      }),
+    );
+    fetchSpy.mockRestore();
   });
 });

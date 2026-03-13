@@ -1,13 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -26,6 +28,21 @@ function createWrapper() {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
+});
+
+function mockCrudApi(responseData: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
 }
 
 describe('useAdminProductionHouses', () => {
@@ -115,15 +132,8 @@ describe('useAdminProductionHouse', () => {
 });
 
 describe('useCreateProductionHouse', () => {
-  it('inserts a production house and invalidates cache', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: { id: 'ph-new', name: 'New Productions' },
-      error: null,
-    });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
-
-    mockFrom.mockReturnValue({ insert: mockInsert });
+  it('sends POST to /api/admin-crud with production house data', async () => {
+    const fetchSpy = mockCrudApi({ id: 'ph-new', name: 'New Productions' });
 
     const { result } = renderHook(() => useCreateProductionHouse(), {
       wrapper: createWrapper(),
@@ -135,22 +145,19 @@ describe('useCreateProductionHouse', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('production_houses');
-    expect(mockInsert).toHaveBeenCalledWith({ name: 'New Productions' });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'POST',
+      }),
+    );
+    fetchSpy.mockRestore();
   });
 });
 
 describe('useUpdateProductionHouse', () => {
-  it('updates a production house by id and invalidates cache', async () => {
-    const mockMaybeSingle = vi.fn().mockResolvedValue({
-      data: { id: 'ph1', name: 'Updated Productions' },
-      error: null,
-    });
-    const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
-    const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
-    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ update: mockUpdate });
+  it('sends PATCH to /api/admin-crud with id and data', async () => {
+    const fetchSpy = mockCrudApi({ id: 'ph1', name: 'Updated Productions' });
 
     const { result } = renderHook(() => useUpdateProductionHouse(), {
       wrapper: createWrapper(),
@@ -162,18 +169,19 @@ describe('useUpdateProductionHouse', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('production_houses');
-    expect(mockUpdate).toHaveBeenCalledWith({ name: 'Updated Productions' });
-    expect(mockEq).toHaveBeenCalledWith('id', 'ph1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+      }),
+    );
+    fetchSpy.mockRestore();
   });
 });
 
 describe('useDeleteProductionHouse', () => {
-  it('deletes a production house by id', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+  it('sends DELETE to /api/admin-crud with id', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useDeleteProductionHouse(), {
       wrapper: createWrapper(),
@@ -185,8 +193,12 @@ describe('useDeleteProductionHouse', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('production_houses');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'ph1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+      }),
+    );
+    fetchSpy.mockRestore();
   });
 });

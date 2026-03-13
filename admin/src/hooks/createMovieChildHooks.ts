@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 
 export interface MovieChildConfig {
   /** Supabase table name */
@@ -21,7 +22,7 @@ export interface MovieChildConfig {
  *
  * @contract Returns { useList, useAdd, useUpdate, useRemove } — each is a standalone React hook
  * @coupling Depends on Supabase table having 'movie_id' FK and 'id' PK columns
- * @boundary All Supabase errors are thrown; mutations show window.alert on failure
+ * @boundary Reads via Supabase browser client; writes via /api/admin-crud (service role)
  */
 export function createMovieChildHooks<T>(config: MovieChildConfig) {
   const {
@@ -50,14 +51,12 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     });
   }
 
-  // @sideeffect Inserts row, then invalidates list cache for the item's movie_id
+  // @sideeffect Inserts row via /api/admin-crud, then invalidates list cache
   function useAdd() {
     const qc = useQueryClient();
     return useMutation({
       mutationFn: async (item: Partial<T>) => {
-        const { data, error } = await supabase.from(table).insert(item).select().single();
-        if (error) throw error;
-        return data as T;
+        return crudFetch<T>('POST', { table, data: item });
       },
       // @assumes variables always contains movie_id — caller must include it
       onSuccess: (_data: T, variables: Partial<T>) => {
@@ -70,7 +69,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     });
   }
 
-  // @contract Caller must pass { id, movieId } alongside update fields; movieId is stripped before DB update
+  // @contract Caller must pass { id, movieId } alongside update fields
   function useUpdate() {
     const qc = useQueryClient();
     return useMutation({
@@ -79,14 +78,8 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
         movieId,
         ...item
       }: Partial<T> & { id: string; movieId: string }) => {
-        const { data, error } = await supabase
-          .from(table)
-          .update(item)
-          .eq('id', id)
-          .select()
-          .single();
-        if (error) throw error;
-        return { ...data, movieId } as T & { movieId: string };
+        const row = await crudFetch<T>('PATCH', { table, id, data: item });
+        return { ...row, movieId } as T & { movieId: string };
       },
       onSuccess: (data: T & { movieId: string }) => {
         qc.invalidateQueries({ queryKey: queryKey(data.movieId) });
@@ -97,13 +90,12 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     });
   }
 
-  // @sideeffect Deletes row by composite key (id + movie_id) to prevent cross-movie deletion
+  // @sideeffect Deletes row via /api/admin-crud by id
   function useRemove() {
     const qc = useQueryClient();
     return useMutation({
       mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
-        const { error } = await supabase.from(table).delete().eq('id', id).eq('movie_id', movieId);
-        if (error) throw error;
+        await crudFetch<{ success: true }>('DELETE', { table, id });
         return movieId;
       },
       onSuccess: (_data: string, variables: { id: string; movieId: string }) => {

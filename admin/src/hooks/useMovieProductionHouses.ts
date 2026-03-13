@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 import { createMovieChildHooks } from './createMovieChildHooks';
 import type { ProductionHouse } from '@/lib/types';
 
@@ -21,7 +21,7 @@ const { useList: useMovieProductionHouses } = createMovieChildHooks<MovieProduct
 
 export { useMovieProductionHouses };
 
-// @sideeffect: inserts junction row; invalidates movie-production-houses cache on success
+// @sideeffect: inserts junction row via /api/admin-crud; invalidates cache on success
 // @edge: duplicate insert will throw due to composite primary key constraint
 export function useAddMovieProductionHouse() {
   const qc = useQueryClient();
@@ -33,11 +33,10 @@ export function useAddMovieProductionHouse() {
       movieId: string;
       productionHouseId: string;
     }) => {
-      const { error } = await supabase.from('movie_production_houses').insert({
-        movie_id: movieId,
-        production_house_id: productionHouseId,
+      await crudFetch('POST', {
+        table: 'movie_production_houses',
+        data: { movie_id: movieId, production_house_id: productionHouseId },
       });
-      if (error) throw error;
       return { movieId, productionHouseId };
     },
     onSuccess: (data) => {
@@ -51,7 +50,7 @@ export function useAddMovieProductionHouse() {
   });
 }
 
-// @sideeffect: deletes junction row by composite key (movie_id + production_house_id)
+// @sideeffect: deletes junction row by composite key via /api/admin-crud filters
 export function useRemoveMovieProductionHouse() {
   const qc = useQueryClient();
   return useMutation({
@@ -62,12 +61,10 @@ export function useRemoveMovieProductionHouse() {
       movieId: string;
       productionHouseId: string;
     }) => {
-      const { error } = await supabase
-        .from('movie_production_houses')
-        .delete()
-        .eq('movie_id', movieId)
-        .eq('production_house_id', productionHouseId);
-      if (error) throw error;
+      await crudFetch('DELETE', {
+        table: 'movie_production_houses',
+        filters: { movie_id: movieId, production_house_id: productionHouseId },
+      });
       return { movieId, productionHouseId };
     },
     onSuccess: (data) => {

@@ -4,10 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -20,6 +22,14 @@ function createWrapper() {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
+}
+
+function mockCrudApi(responseData: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
 }
 
 /** Build a chainable mock — every method returns self, await resolves with data */
@@ -66,6 +76,9 @@ const mockComments = [
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
 });
 
 describe('useAdminComments', () => {
@@ -231,11 +244,8 @@ describe('useAdminComments', () => {
 });
 
 describe('useDeleteComment', () => {
-  it('calls supabase.from(feed_comments).delete().eq(id, commentId)', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+  it('deletes a comment via /api/admin-crud by id', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useDeleteComment(), {
       wrapper: createWrapper(),
@@ -247,16 +257,19 @@ describe('useDeleteComment', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('feed_comments');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'com-1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ table: 'feed_comments', id: 'com-1' }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 
   it('returns the deleted comment id on success', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useDeleteComment(), {
       wrapper: createWrapper(),
@@ -269,13 +282,12 @@ describe('useDeleteComment', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toBe('com-2');
+
+    fetchSpy.mockRestore();
   });
 
-  it('reports error when supabase delete fails', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: { message: 'Delete failed' } });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+  it('reports error when delete fails', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
 
     const { result } = renderHook(() => useDeleteComment(), {
       wrapper: createWrapper(),
@@ -288,13 +300,12 @@ describe('useDeleteComment', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(result.current.error).toBeTruthy();
+
+    fetchSpy.mockRestore();
   });
 
   it('invalidates [admin, comments] query on success', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+    const fetchSpy = mockCrudApi({ success: true });
 
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -316,5 +327,7 @@ describe('useDeleteComment', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'comments'] });
+
+    fetchSpy.mockRestore();
   });
 });

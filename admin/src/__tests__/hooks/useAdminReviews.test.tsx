@@ -4,10 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -20,6 +22,14 @@ function createWrapper() {
   return function Wrapper({ children }: { children: React.ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
+}
+
+function mockCrudApi(responseData: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
 }
 
 const mockReviews = [
@@ -76,6 +86,9 @@ function buildChain(data: unknown[] | null = [], error: { message: string } | nu
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
 });
 
 describe('useAdminReviews', () => {
@@ -282,11 +295,8 @@ describe('useAdminReviews', () => {
 });
 
 describe('useDeleteReview', () => {
-  it('deletes a review by id', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+  it('deletes a review via /api/admin-crud by id', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useDeleteReview(), {
       wrapper: createWrapper(),
@@ -298,16 +308,19 @@ describe('useDeleteReview', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('reviews');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'rev-1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ table: 'reviews', id: 'rev-1' }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 
   it('returns the deleted id on success', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useDeleteReview(), {
       wrapper: createWrapper(),
@@ -320,13 +333,12 @@ describe('useDeleteReview', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toBe('rev-1');
+
+    fetchSpy.mockRestore();
   });
 
-  it('sets isError when supabase delete fails', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: { message: 'delete failed' } });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+  it('sets isError when delete fails', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
 
     const { result } = renderHook(() => useDeleteReview(), {
       wrapper: createWrapper(),
@@ -338,14 +350,13 @@ describe('useDeleteReview', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual({ message: 'delete failed' });
+    expect(result.current.error?.message).toBe('fail');
+
+    fetchSpy.mockRestore();
   });
 
   it('invalidates admin reviews query on success', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({ delete: mockDelete });
+    const fetchSpy = mockCrudApi({ success: true });
 
     const wrapper = createWrapper();
 
@@ -357,7 +368,14 @@ describe('useDeleteReview', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('reviews');
-    expect(mockEq).toHaveBeenCalledWith('id', 'rev-1');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ table: 'reviews', id: 'rev-1' }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });

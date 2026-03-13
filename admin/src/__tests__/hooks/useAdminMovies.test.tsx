@@ -1,13 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -21,6 +23,20 @@ function createWrapper() {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 }
+
+function mockCrudApi(responseData: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
+}
+
+beforeEach(() => {
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
+});
 
 describe('useAdminMovies', () => {
   it('uses the correct query key ["admin", "movies", search, statusFilter, productionHouseIds]', async () => {
@@ -165,22 +181,8 @@ describe('useAdminMovies', () => {
 });
 
 describe('useCreateMovie', () => {
-  it('calls supabase.from("movies").insert with the provided movie data', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({
-      data: { id: 'new-1', title: 'New Movie' },
-      error: null,
-    });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
-
-    mockFrom.mockReturnValue({
-      insert: mockInsert,
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockReturnValue({
-          range: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-    });
+  it('calls /api/admin-crud with POST method and movie data', async () => {
+    const fetchSpy = mockCrudApi({ id: 'new-1', title: 'New Movie' });
 
     const { result } = renderHook(() => useCreateMovie(), {
       wrapper: createWrapper(),
@@ -192,27 +194,24 @@ describe('useCreateMovie', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('movies');
-    expect(mockInsert).toHaveBeenCalledWith({
-      title: 'New Movie',
-      release_date: '2025-06-01',
-    });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          table: 'movies',
+          data: { title: 'New Movie', release_date: '2025-06-01' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });
 
 describe('useDeleteMovie', () => {
-  it('calls supabase.from("movies").delete().eq("id", movieId)', async () => {
-    const mockEq = vi.fn().mockResolvedValue({ error: null });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
-
-    mockFrom.mockReturnValue({
-      delete: mockDelete,
-      select: vi.fn().mockReturnValue({
-        order: vi.fn().mockReturnValue({
-          range: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-    });
+  it('calls /api/admin-crud with DELETE method and movie id', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => useDeleteMovie(), {
       wrapper: createWrapper(),
@@ -224,8 +223,14 @@ describe('useDeleteMovie', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('movies');
-    expect(mockDelete).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'movie-to-delete');
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ table: 'movies', id: 'movie-to-delete' }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });

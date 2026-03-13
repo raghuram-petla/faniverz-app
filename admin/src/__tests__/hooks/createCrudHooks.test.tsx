@@ -4,10 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -46,9 +48,13 @@ const simpleCrud = createCrudHooks<TestEntity>({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: authenticated session
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
 });
 
-// ── Helpers ──────────────────────────────────────────────────
+// ── Read Helpers ──────────────────────────────────────────────
 
 function mockPaginatedSelect(data: unknown[] = []) {
   mockFrom.mockReturnValue({
@@ -92,28 +98,15 @@ function mockSingleSelect(data: unknown = null, error: unknown = null) {
   });
 }
 
-function mockInsert(data: unknown = { id: 'new-1', name: 'Created' }) {
-  const mockSingle = vi.fn().mockResolvedValue({ data, error: null });
-  const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-  const mockInsertFn = vi.fn().mockReturnValue({ select: mockSelect });
-  mockFrom.mockReturnValue({ insert: mockInsertFn });
-  return { mockInsertFn };
-}
+// ── Write Helper: mock global.fetch for /api/admin-crud ──────
 
-function mockUpdate(data: unknown = { id: 'u-1', name: 'Updated' }) {
-  const mockMaybeSingle = vi.fn().mockResolvedValue({ data, error: null });
-  const mockSelect = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
-  const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
-  const mockUpdateFn = vi.fn().mockReturnValue({ eq: mockEq });
-  mockFrom.mockReturnValue({ update: mockUpdateFn });
-  return { mockUpdateFn, mockEq };
-}
-
-function mockDelete() {
-  const mockEq = vi.fn().mockResolvedValue({ error: null });
-  const mockDeleteFn = vi.fn().mockReturnValue({ eq: mockEq });
-  mockFrom.mockReturnValue({ delete: mockDeleteFn });
-  return { mockDeleteFn, mockEq };
+function mockCrudApi(responseData: unknown, status = 200) {
+  const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
+  return fetchSpy;
 }
 
 // ── Paginated List ───────────────────────────────────────────
@@ -214,8 +207,8 @@ describe('createCrudHooks – useSingle', () => {
 // ── Create ───────────────────────────────────────────────────
 
 describe('createCrudHooks – useCreate', () => {
-  it('inserts an entity and returns it', async () => {
-    const { mockInsertFn } = mockInsert({ id: 'new-1', name: 'Created' });
+  it('sends POST to /api/admin-crud with table and data', async () => {
+    const fetchSpy = mockCrudApi({ id: 'new-1', name: 'Created' });
 
     const { result } = renderHook(() => paginatedCrud.useCreate(), {
       wrapper: createWrapper(),
@@ -226,15 +219,19 @@ describe('createCrudHooks – useCreate', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFrom).toHaveBeenCalledWith('test_items');
-    expect(mockInsertFn).toHaveBeenCalledWith({ name: 'Created' });
+    expect(fetchSpy).toHaveBeenCalledWith('/api/admin-crud', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token',
+      },
+      body: JSON.stringify({ table: 'test_items', data: { name: 'Created' } }),
+    });
+    fetchSpy.mockRestore();
   });
 
-  it('throws on supabase error', async () => {
-    const mockSingle = vi.fn().mockResolvedValue({ data: null, error: { message: 'dup' } });
-    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-    const mockInsertFn = vi.fn().mockReturnValue({ select: mockSelect });
-    mockFrom.mockReturnValue({ insert: mockInsertFn });
+  it('throws on API error', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
 
     const { result } = renderHook(() => paginatedCrud.useCreate(), {
       wrapper: createWrapper(),
@@ -245,14 +242,15 @@ describe('createCrudHooks – useCreate', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+    fetchSpy.mockRestore();
   });
 });
 
 // ── Update ───────────────────────────────────────────────────
 
 describe('createCrudHooks – useUpdate', () => {
-  it('updates an entity by id', async () => {
-    const { mockUpdateFn, mockEq } = mockUpdate({ id: 'u-1', name: 'Updated' });
+  it('sends PATCH to /api/admin-crud with table, id, and data', async () => {
+    const fetchSpy = mockCrudApi({ id: 'u-1', name: 'Updated' });
 
     const { result } = renderHook(() => paginatedCrud.useUpdate(), {
       wrapper: createWrapper(),
@@ -263,17 +261,23 @@ describe('createCrudHooks – useUpdate', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFrom).toHaveBeenCalledWith('test_items');
-    expect(mockUpdateFn).toHaveBeenCalledWith({ name: 'Updated' });
-    expect(mockEq).toHaveBeenCalledWith('id', 'u-1');
+    expect(fetchSpy).toHaveBeenCalledWith('/api/admin-crud', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token',
+      },
+      body: JSON.stringify({ table: 'test_items', id: 'u-1', data: { name: 'Updated' } }),
+    });
+    fetchSpy.mockRestore();
   });
 });
 
 // ── Delete ───────────────────────────────────────────────────
 
 describe('createCrudHooks – useDelete', () => {
-  it('deletes an entity by id', async () => {
-    const { mockDeleteFn, mockEq } = mockDelete();
+  it('sends DELETE to /api/admin-crud with table and id', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => paginatedCrud.useDelete(), {
       wrapper: createWrapper(),
@@ -284,9 +288,15 @@ describe('createCrudHooks – useDelete', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFrom).toHaveBeenCalledWith('test_items');
-    expect(mockDeleteFn).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'del-1');
+    expect(fetchSpy).toHaveBeenCalledWith('/api/admin-crud', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token',
+      },
+      body: JSON.stringify({ table: 'test_items', id: 'del-1' }),
+    });
+    fetchSpy.mockRestore();
   });
 });
 

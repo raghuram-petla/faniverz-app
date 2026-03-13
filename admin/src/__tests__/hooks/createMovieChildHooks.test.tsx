@@ -4,10 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: { getSession: () => mockGetSession() },
   },
 }));
 
@@ -34,8 +36,19 @@ function createWrapper() {
   };
 }
 
+function mockCrudApi(responseData: unknown, status = 200) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => (status >= 200 && status < 300 ? responseData : { error: 'fail' }),
+  } as Response);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  mockGetSession.mockResolvedValue({
+    data: { session: { access_token: 'test-token' } },
+  });
 });
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -48,31 +61,6 @@ function mockSelectList(data: unknown[] = []) {
       }),
     }),
   });
-}
-
-function mockInsert(data: unknown = { id: 'new-1', movie_id: 'm1', title: 'Added' }) {
-  const mockSingle = vi.fn().mockResolvedValue({ data, error: null });
-  const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-  const mockInsertFn = vi.fn().mockReturnValue({ select: mockSelect });
-  mockFrom.mockReturnValue({ insert: mockInsertFn });
-  return { mockInsertFn };
-}
-
-function mockUpdate(data: unknown = { id: 'u-1', movie_id: 'm1', title: 'Updated' }) {
-  const mockSingle = vi.fn().mockResolvedValue({ data, error: null });
-  const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-  const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
-  const mockUpdateFn = vi.fn().mockReturnValue({ eq: mockEq });
-  mockFrom.mockReturnValue({ update: mockUpdateFn });
-  return { mockUpdateFn, mockEq };
-}
-
-function mockDelete() {
-  const mockEq2 = vi.fn().mockResolvedValue({ error: null });
-  const mockEq = vi.fn().mockReturnValue({ eq: mockEq2 });
-  const mockDeleteFn = vi.fn().mockReturnValue({ eq: mockEq });
-  mockFrom.mockReturnValue({ delete: mockDeleteFn });
-  return { mockDeleteFn, mockEq };
 }
 
 // ── useList ────────────────────────────────────────────────
@@ -102,8 +90,8 @@ describe('createMovieChildHooks – useList', () => {
 // ── useAdd ─────────────────────────────────────────────────
 
 describe('createMovieChildHooks – useAdd', () => {
-  it('inserts and invalidates correct query key', async () => {
-    const { mockInsertFn } = mockInsert();
+  it('inserts via /api/admin-crud and invalidates correct query key', async () => {
+    const fetchSpy = mockCrudApi({ id: 'new-1', movie_id: 'm1', title: 'Added' });
 
     const { result } = renderHook(() => hooks.useAdd(), {
       wrapper: createWrapper(),
@@ -114,16 +102,27 @@ describe('createMovieChildHooks – useAdd', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFrom).toHaveBeenCalledWith('movie_videos');
-    expect(mockInsertFn).toHaveBeenCalledWith({ movie_id: 'm1', title: 'New' });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          table: 'movie_videos',
+          data: { movie_id: 'm1', title: 'New' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });
 
 // ── useUpdate ──────────────────────────────────────────────
 
 describe('createMovieChildHooks – useUpdate', () => {
-  it('updates by id and invalidates', async () => {
-    const { mockUpdateFn, mockEq } = mockUpdate();
+  it('updates via /api/admin-crud by id and invalidates', async () => {
+    const fetchSpy = mockCrudApi({ id: 'u-1', movie_id: 'm1', title: 'Updated' });
 
     const { result } = renderHook(() => hooks.useUpdate(), {
       wrapper: createWrapper(),
@@ -134,17 +133,28 @@ describe('createMovieChildHooks – useUpdate', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFrom).toHaveBeenCalledWith('movie_videos');
-    expect(mockUpdateFn).toHaveBeenCalledWith({ title: 'Updated' });
-    expect(mockEq).toHaveBeenCalledWith('id', 'u-1');
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movie_videos',
+          id: 'u-1',
+          data: { title: 'Updated' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });
 
 // ── useRemove ──────────────────────────────────────────────
 
 describe('createMovieChildHooks – useRemove', () => {
-  it('deletes by id and invalidates', async () => {
-    const { mockDeleteFn, mockEq } = mockDelete();
+  it('deletes via /api/admin-crud by id and invalidates', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
 
     const { result } = renderHook(() => hooks.useRemove(), {
       wrapper: createWrapper(),
@@ -155,8 +165,15 @@ describe('createMovieChildHooks – useRemove', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFrom).toHaveBeenCalledWith('movie_videos');
-    expect(mockDeleteFn).toHaveBeenCalled();
-    expect(mockEq).toHaveBeenCalledWith('id', 'del-1');
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'DELETE',
+        body: JSON.stringify({ table: 'movie_videos', id: 'del-1' }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
   });
 });

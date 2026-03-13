@@ -1,6 +1,6 @@
 'use client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 import { createMovieChildHooks } from './createMovieChildHooks';
 import type { MoviePoster } from '@/lib/types';
 
@@ -26,24 +26,26 @@ export function useSetMainPoster() {
   return useMutation({
     mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
       // Unset existing main poster (partial unique index enforces at most one)
-      await supabase
-        .from('movie_posters')
-        .update({ is_main: false })
-        .eq('movie_id', movieId)
-        .eq('is_main', true);
+      await crudFetch('PATCH', {
+        table: 'movie_posters',
+        filters: { movie_id: movieId, is_main: true },
+        data: { is_main: false },
+        returnOne: false,
+      });
 
       // Set new main poster
-      const { data, error } = await supabase
-        .from('movie_posters')
-        .update({ is_main: true })
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
+      const data = await crudFetch<MoviePoster>('PATCH', {
+        table: 'movie_posters',
+        id,
+        data: { is_main: true },
+      });
 
       // @coupling: keeps movies.poster_url in sync with the main poster's image_url
-      // Sync poster_url to movies table
-      await supabase.from('movies').update({ poster_url: data.image_url }).eq('id', movieId);
+      await crudFetch('PATCH', {
+        table: 'movies',
+        id: movieId,
+        data: { poster_url: data.image_url },
+      });
 
       return { ...data, movieId } as MoviePoster & { movieId: string };
     },

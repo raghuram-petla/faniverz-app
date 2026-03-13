@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { crudFetch } from '@/lib/admin-crud-client';
 import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { NewsFeedItem, FeedType } from '@/lib/types';
 
@@ -62,13 +63,12 @@ export const useCreateFeedItem = crud.useCreate;
 export const useUpdateFeedItem = crud.useUpdate;
 export const useDeleteFeedItem = crud.useDelete;
 
-// @sideeffect Toggles is_pinned flag — affects sort order since pinned items appear first
+// @sideeffect Toggles is_pinned flag via /api/admin-crud
 export function useTogglePinFeed() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
-      const { error } = await supabase.from('news_feed').update({ is_pinned }).eq('id', id);
-      if (error) throw error;
+      await crudFetch('PATCH', { table: 'news_feed', id, data: { is_pinned } });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });
@@ -83,8 +83,7 @@ export function useToggleFeatureFeed() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, is_featured }: { id: string; is_featured: boolean }) => {
-      const { error } = await supabase.from('news_feed').update({ is_featured }).eq('id', id);
-      if (error) throw error;
+      await crudFetch('PATCH', { table: 'news_feed', id, data: { is_featured } });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });
@@ -95,18 +94,17 @@ export function useToggleFeatureFeed() {
   });
 }
 
-// @sideeffect Batch-updates display_order for all items; fires N parallel Supabase calls
+// @sideeffect Batch-updates display_order for all items via /api/admin-crud
 // @edge If one update fails mid-batch, earlier updates persist — no transaction rollback
 export function useReorderFeed() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (items: { id: string; display_order: number }[]) => {
-      const updates = items.map(({ id, display_order }) =>
-        supabase.from('news_feed').update({ display_order }).eq('id', id),
+      await Promise.all(
+        items.map(({ id, display_order }) =>
+          crudFetch('PATCH', { table: 'news_feed', id, data: { display_order } }),
+        ),
       );
-      const results = await Promise.all(updates);
-      const err = results.find((r) => r.error);
-      if (err?.error) throw err.error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEY });
