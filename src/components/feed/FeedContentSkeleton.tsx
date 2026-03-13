@@ -1,21 +1,28 @@
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
 
+/** @assumes window width is stable for the skeleton lifetime (no orientation change handling) */
 const W = Dimensions.get('window').width;
-const CARD_W = W - 32;
+/** @invariant 3 cards gives a full-screen illusion on most device sizes */
 const CARDS = [1, 2, 3];
 
 function CardSkeleton() {
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <SkeletonBox width={36} height={36} borderRadius={18} />
+        <SkeletonBox width={44} height={44} borderRadius={22} />
         <View style={styles.headerText}>
           <SkeletonBox width={120} height={14} borderRadius={4} />
           <SkeletonBox width={80} height={12} borderRadius={4} />
         </View>
       </View>
-      <SkeletonBox width={CARD_W} height={200} borderRadius={12} />
+      <View style={styles.badgeRow}>
+        <SkeletonBox width={60} height={18} borderRadius={4} />
+      </View>
+      <View style={styles.titleRow}>
+        <SkeletonBox width={W - 24} height={16} borderRadius={4} />
+      </View>
+      <SkeletonBox width={W} height={Math.round(W * (9 / 16))} borderRadius={0} />
       <View style={styles.actions}>
         <SkeletonBox width={60} height={28} borderRadius={14} />
         <SkeletonBox width={60} height={28} borderRadius={14} />
@@ -36,9 +43,11 @@ export function FeedContentSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, gap: 20, paddingTop: 8 },
-  card: { gap: 12 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  container: { gap: 20, paddingTop: 8 },
+  card: { gap: 8 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12 },
   headerText: { gap: 4 },
-  actions: { flexDirection: 'row', gap: 12 },
+  badgeRow: { paddingHorizontal: 12 },
+  titleRow: { paddingHorizontal: 12 },
+  actions: { flexDirection: 'row', gap: 12, paddingHorizontal: 12 },
 });

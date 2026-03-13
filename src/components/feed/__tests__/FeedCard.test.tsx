@@ -378,7 +378,7 @@ describe('FeedCard', () => {
     expect(mockOpenImage).toHaveBeenCalledWith(
       expect.objectContaining({
         fullUrl: 'https://example.com/thumb.jpg',
-        borderRadius: 12,
+        borderRadius: 0,
         sourceLayout: expect.objectContaining({ width: 200, height: 255 }),
         onSourceHide: expect.any(Function),
         onSourceShow: expect.any(Function),
@@ -482,14 +482,6 @@ describe('FeedCard', () => {
   it('does not make avatar tappable when onEntityPress is not provided', () => {
     render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
     expect(screen.queryByTestId('avatar-press')).toBeNull();
-  });
-
-  it('opens post when avatar column is tapped', () => {
-    const onPress = jest.fn();
-    const item = makeItem();
-    render(<FeedCard item={item} onPress={onPress} />);
-    fireEvent.press(screen.getByLabelText(`Open ${item.title}`));
-    expect(onPress).toHaveBeenCalledWith(item);
   });
 
   it('makes entity name tappable when onEntityPress is provided', () => {

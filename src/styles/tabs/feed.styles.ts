@@ -100,26 +100,24 @@ export const createFeedStyles = (t: SemanticTheme) =>
     },
   });
 
-// ── Feed card styles (X/Twitter-style two-column layout) ─────────────────────────
+// ── Feed card styles (YouTube-style stacked layout, edge-to-edge media) ──────────
 
 export const createFeedCardStyles = (t: SemanticTheme) =>
   StyleSheet.create({
-    // Two-column container
+    // @contract Stacked container — no flex row, media bleeds edge-to-edge
     post: {
-      flexDirection: 'row',
-      paddingLeft: 8,
-      paddingRight: 16,
       paddingTop: 12,
     },
-    avatarColumn: {
-      width: 58, // 48px avatar + 10px gap
-      paddingTop: 2,
-    },
-    contentColumn: {
-      flex: 1,
+    // @contract Inline avatar + name row with horizontal padding
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 12,
     },
     // Name row: entity name + optional pin/star + dot + timestamp + follow button
     nameRow: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -145,10 +143,11 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       fontSize: 13,
       color: t.textTertiary,
     },
-    // Badge row + title (stacked vertically)
+    // Badge row + title (stacked vertically, padded)
     badgeRow: {
       flexDirection: 'row',
       marginTop: 6,
+      paddingHorizontal: 12,
     },
     title: {
       fontSize: 15,
@@ -156,24 +155,26 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       color: t.textPrimary,
       lineHeight: 21,
       marginTop: 4,
+      paddingHorizontal: 12,
     },
     description: {
       fontSize: 14,
       color: t.textSecondary,
       lineHeight: 20,
       marginTop: 4,
+      paddingHorizontal: 12,
     },
-    // Media containers
+    // @contract Media containers — full bleed, no border radius, no horizontal padding
     mediaContainer: {
+      width: '100%',
       marginTop: 10,
-      borderRadius: 12,
       overflow: 'hidden',
       aspectRatio: 16 / 9,
       backgroundColor: t.surfaceElevated,
     },
     posterMediaContainer: {
+      width: '100%',
       marginTop: 10,
-      borderRadius: 12,
       overflow: 'hidden',
       aspectRatio: 40 / 51,
       backgroundColor: t.surfaceElevated,
@@ -212,11 +213,11 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
     actionBar: {
       paddingTop: 10,
       paddingBottom: 4,
+      paddingHorizontal: 12,
     },
     separator: {
-      height: StyleSheet.hairlineWidth,
-      backgroundColor: t.border,
+      height: 8,
+      backgroundColor: t.surface,
       marginTop: 10,
-      marginLeft: -58, // extend separator full width across both columns
     },
   });

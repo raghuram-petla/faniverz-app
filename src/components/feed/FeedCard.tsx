@@ -40,6 +40,7 @@ export interface FeedCardProps {
   onUnfollow?: (entityType: FeedEntityType, entityId: string) => void;
 }
 
+/** @coupling FeedAvatar, FeedActionBar, FeedContentBadge, FeedVideoPlayer, FollowButton — composes all feed sub-components */
 function FeedCardInner({
   item,
   onPress,
@@ -62,8 +63,10 @@ function FeedCardInner({
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const [posterHidden, setPosterHidden] = useState(false);
   const hasVideo = !!item.youtube_id;
+  /** @nullable thumbnail_url and movie?.poster_url may both be null; falls back gracefully */
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
   const hasThumbnail = !!imageUrl;
+  /** @invariant poster image only renders when there is a thumbnail but no video */
   const isPosterImage = hasThumbnail && !hasVideo;
   const label = getFeedTypeLabel(item.content_type);
 
@@ -82,6 +85,7 @@ function FeedCardInner({
     [item.id, onVideoLayout],
   );
 
+  /** @sideeffect opens full-screen image viewer with animated transition from poster position */
   const handlePosterPress = useCallback(() => {
     if (!imageUrl) return;
     measureView(posterRef, (layout) => {
@@ -90,7 +94,7 @@ function FeedCardInner({
         fullUrl: imageUrl,
         sourceLayout: layout,
         sourceRef: posterRef,
-        borderRadius: 12,
+        borderRadius: 0,
         onSourceHide: () => setPosterHidden(true),
         onSourceShow: () => setPosterHidden(false),
       });
@@ -99,138 +103,128 @@ function FeedCardInner({
 
   return (
     <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
-      {/* Left column: avatar + tappable space below */}
-      <TouchableOpacity
-        style={styles.avatarColumn}
-        activeOpacity={0.7}
-        onPress={() => onPress(item)}
-        accessibilityLabel={`Open ${item.title}`}
-      >
+      {/* Header row: inline avatar + name + follow */}
+      <View style={styles.headerRow}>
         <FeedAvatar
           imageUrl={entityAvatarUrl}
           entityType={entityType}
+          size={44}
           label={entityName}
           onPress={
             entityId && onEntityPress ? () => onEntityPress(entityType, entityId) : undefined
           }
         />
-      </TouchableOpacity>
-
-      {/* Right column: all content */}
-      <View style={styles.contentColumn}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => onPress(item)}
-          accessibilityRole="button"
-          accessibilityLabel={`${label}: ${item.title}`}
-        >
-          {/* Name row */}
-          <View style={styles.nameRow}>
-            <View style={styles.nameRowLeft}>
-              {entityId && onEntityPress ? (
-                <TouchableOpacity
-                  onPress={() => onEntityPress(entityType, entityId)}
-                  activeOpacity={0.7}
-                  accessibilityLabel={`Go to ${entityName}`}
-                >
-                  <Text style={styles.entityName} numberOfLines={1}>
-                    {entityName}
-                  </Text>
-                </TouchableOpacity>
-              ) : (
+        <View style={styles.nameRow}>
+          <View style={styles.nameRowLeft}>
+            {entityId && onEntityPress ? (
+              <TouchableOpacity
+                onPress={() => onEntityPress(entityType, entityId)}
+                activeOpacity={0.7}
+                accessibilityLabel={`Go to ${entityName}`}
+              >
                 <Text style={styles.entityName} numberOfLines={1}>
                   {entityName}
                 </Text>
-              )}
-              {item.is_featured ? (
-                <Ionicons name="star" size={12} color={colors.yellow400} />
-              ) : null}
-              <Text style={styles.dot}>·</Text>
-              <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
-            </View>
-            {entityId && onFollow ? (
-              <FollowButton
-                isFollowing={isFollowing ?? false}
-                entityName={entityName}
-                onPress={() =>
-                  isFollowing ? onUnfollow?.(entityType, entityId) : onFollow(entityType, entityId)
-                }
-              />
-            ) : null}
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.entityName} numberOfLines={1}>
+                {entityName}
+              </Text>
+            )}
+            {item.is_featured ? <Ionicons name="star" size={12} color={colors.yellow400} /> : null}
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
           </View>
-
-          {/* Badge + Title */}
-          <View style={styles.badgeRow}>
-            <FeedContentBadge contentType={item.content_type} />
-          </View>
-          <Text style={styles.title} numberOfLines={2}>
-            {item.title}
-          </Text>
-
-          {/* Description for text-only items */}
-          {item.description && !hasThumbnail ? (
-            <Text style={styles.description} numberOfLines={3}>
-              {item.description}
-            </Text>
-          ) : null}
-
-          {/* Media: video player or static image */}
-          {hasVideo ? (
-            <FeedVideoPlayer
-              youtubeId={item.youtube_id!}
-              thumbnailUrl={item.thumbnail_url}
-              duration={item.duration}
-              isActive={isVideoActive ?? false}
+          {entityId && onFollow ? (
+            <FollowButton
+              isFollowing={isFollowing ?? false}
+              entityName={entityName}
+              onPress={() =>
+                isFollowing ? onUnfollow?.(entityType, entityId) : onFollow(entityType, entityId)
+              }
             />
-          ) : isPosterImage ? (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handlePosterPress}
-              accessibilityLabel={`View ${item.title} poster`}
-            >
-              <View
-                ref={posterRef}
-                collapsable={false}
-                style={[styles.posterMediaContainer, posterHidden && { opacity: 0 }]}
-              >
-                {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
-                <Image
-                  source={{
-                    uri:
-                      (imageUrl ? getImageUrl(imageUrl, 'md') : null) ??
-                      imageUrl ??
-                      PLACEHOLDER_POSTER,
-                  }}
-                  style={styles.media}
-                  contentFit="cover"
-                  onLoad={() => setMediaLoaded(true)}
-                />
-              </View>
-            </TouchableOpacity>
           ) : null}
-        </TouchableOpacity>
-
-        {/* Action bar */}
-        <View style={styles.actionBar}>
-          <FeedActionBar
-            commentCount={item.comment_count}
-            upvoteCount={item.upvote_count}
-            downvoteCount={item.downvote_count}
-            viewCount={item.view_count}
-            userVote={userVote ?? null}
-            onComment={onComment ? () => onComment(item.id) : undefined}
-            onUpvote={onUpvote ? () => onUpvote(item.id) : undefined}
-            onDownvote={onDownvote ? () => onDownvote(item.id) : undefined}
-            onShare={onShare ? () => onShare(item.id) : undefined}
-          />
         </View>
-
-        <View style={styles.separator} />
       </View>
+
+      {/* Badge + Title + Description (padded via styles) */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => onPress(item)}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${item.title}`}
+      >
+        <View style={styles.badgeRow}>
+          <FeedContentBadge contentType={item.content_type} />
+        </View>
+        <Text style={styles.title} numberOfLines={2}>
+          {item.title}
+        </Text>
+
+        {item.description && !hasThumbnail ? (
+          <Text style={styles.description} numberOfLines={3}>
+            {item.description}
+          </Text>
+        ) : null}
+
+        {/* Media: full bleed edge-to-edge */}
+        {hasVideo ? (
+          <FeedVideoPlayer
+            youtubeId={item.youtube_id!}
+            thumbnailUrl={item.thumbnail_url}
+            duration={item.duration}
+            isActive={isVideoActive ?? false}
+          />
+        ) : isPosterImage ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handlePosterPress}
+            accessibilityLabel={`View ${item.title} poster`}
+          >
+            <View
+              ref={posterRef}
+              collapsable={false}
+              style={[styles.posterMediaContainer, posterHidden && { opacity: 0 }]}
+            >
+              {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
+              <Image
+                source={{
+                  uri:
+                    (imageUrl ? getImageUrl(imageUrl, 'md') : null) ??
+                    imageUrl ??
+                    PLACEHOLDER_POSTER,
+                }}
+                style={styles.media}
+                contentFit="cover"
+                onLoad={() => setMediaLoaded(true)}
+              />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+      </TouchableOpacity>
+
+      {/* Action bar (padded via styles) */}
+      <View style={styles.actionBar}>
+        <FeedActionBar
+          commentCount={item.comment_count}
+          upvoteCount={item.upvote_count}
+          downvoteCount={item.downvote_count}
+          viewCount={item.view_count}
+          userVote={userVote ?? null}
+          onComment={onComment ? () => onComment(item.id) : undefined}
+          onUpvote={onUpvote ? () => onUpvote(item.id) : undefined}
+          onDownvote={onDownvote ? () => onDownvote(item.id) : undefined}
+          onShare={onShare ? () => onShare(item.id) : undefined}
+        />
+      </View>
+
+      <View style={styles.separator} />
     </View>
   );
 }
 
+/** @sync custom memo comparator — must include every prop/field that affects render output */
+/** @edge callback props (onPress, onUpvote, etc.) are intentionally excluded; parent must stabilize them */
 export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
   return (
     prev.item.id === next.item.id &&
