@@ -6,7 +6,6 @@ export interface SurpriseContent {
   description: string | null;
   youtube_id: string;
   category: SurpriseCategory;
-  duration: string | null;
   views: number;
   created_at: string;
 }

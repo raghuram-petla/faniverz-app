@@ -105,9 +105,12 @@ export function Sidebar() {
         {visibleSections.map((section, idx) => (
           <div key={section.label ?? idx}>
             {section.label && (
-              <p className="px-3 py-1.5 mt-4 mb-2 text-[11px] font-bold uppercase tracking-widest text-on-surface bg-red-600/10 border-l-2 border-red-600 rounded-r-md">
-                {section.label}
-              </p>
+              <div className="mt-5 mb-3">
+                <div className="border-t border-outline" />
+                <p className="px-3 mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-on-surface-muted">
+                  {section.label}
+                </p>
+              </div>
             )}
             <div className="space-y-1">
               {section.items.map((item) => {

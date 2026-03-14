@@ -24,7 +24,6 @@ describe('FeedVideoPlayer', () => {
   const defaultProps = {
     youtubeId: 'abc123',
     thumbnailUrl: 'https://example.com/thumb.jpg',
-    duration: '2:30',
     isActive: false,
   };
 
@@ -40,16 +39,6 @@ describe('FeedVideoPlayer', () => {
       (node: { props: Record<string, unknown> }) => node.props.name === 'play',
     );
     expect(icons.length).toBeGreaterThan(0);
-  });
-
-  it('renders duration text when inactive', () => {
-    render(<FeedVideoPlayer {...defaultProps} />);
-    expect(screen.getByText('2:30')).toBeTruthy();
-  });
-
-  it('does not render duration when null', () => {
-    render(<FeedVideoPlayer {...defaultProps} duration={null} />);
-    expect(screen.queryByText('2:30')).toBeNull();
   });
 
   it('renders WebView when active', () => {

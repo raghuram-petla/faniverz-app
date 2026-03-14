@@ -161,10 +161,6 @@ export const createStyles = (t: SemanticTheme) =>
       fontWeight: '700',
       color: colors.white,
     },
-    featuredDuration: {
-      fontSize: 12,
-      color: t.textSecondary,
-    },
     featuredViews: {
       fontSize: 12,
       color: t.textSecondary,
@@ -218,20 +214,6 @@ export const createStyles = (t: SemanticTheme) =>
       borderRadius: 6,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    cardDurationBadge: {
-      position: 'absolute',
-      bottom: 6,
-      right: 6,
-      backgroundColor: t.overlayHeavy,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 4,
-    },
-    cardDurationText: {
-      fontSize: 10,
-      fontWeight: '600',
-      color: '#FFFFFF',
     },
     cardBody: {
       padding: 10,

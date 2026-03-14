@@ -30,7 +30,6 @@ const makeItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   source_id: 'v1',
   thumbnail_url: 'https://example.com/thumb.jpg',
   youtube_id: 'abc',
-  duration: '2:30',
   is_pinned: false,
   is_featured: false,
   display_order: 0,

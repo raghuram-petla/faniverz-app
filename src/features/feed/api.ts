@@ -93,7 +93,6 @@ export async function fetchPersonalizedFeed(
     source_id: row.source_id as string | null,
     thumbnail_url: row.thumbnail_url as string | null,
     youtube_id: row.youtube_id as string | null,
-    duration: row.duration as string | null,
     is_pinned: row.is_pinned as boolean,
     is_featured: row.is_featured as boolean,
     display_order: row.display_order as number,

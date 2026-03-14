@@ -111,11 +111,6 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
         <View style={styles.playOverlay}>
           <Ionicons name="play-circle" size={56} color={colors.white} />
         </View>
-        {video.duration && (
-          <View style={styles.durationBadge}>
-            <Text style={styles.durationText}>{video.duration}</Text>
-          </View>
-        )}
       </View>
       <Text style={styles.title} numberOfLines={2}>
         {video.title}
@@ -141,16 +136,6 @@ const createCardStyles = (t: SemanticTheme) =>
       justifyContent: 'center',
       backgroundColor: 'rgba(0,0,0,0.3)',
     },
-    durationBadge: {
-      position: 'absolute',
-      bottom: 8,
-      right: 8,
-      backgroundColor: 'rgba(0,0,0,0.8)',
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: 4,
-    },
-    durationText: { fontSize: 12, fontWeight: '600', color: colors.white },
     playerWrapper: {
       width: CARD_WIDTH,
       height: THUMB_HEIGHT,

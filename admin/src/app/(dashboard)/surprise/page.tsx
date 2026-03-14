@@ -59,9 +59,6 @@ export default function SurpriseContentPage() {
                 <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
                   Category
                 </th>
-                <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
-                  Duration
-                </th>
                 <th className="text-right text-sm font-medium text-on-surface-muted px-6 py-4">
                   Views
                 </th>
@@ -92,10 +89,6 @@ export default function SurpriseContentPage() {
                       >
                         {item.category}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-on-surface-muted text-sm">
-                      {item.duration ?? '--'}
-                      {/* @nullable duration is optional on surprise content */}
                     </td>
                     <td className="px-6 py-4 text-right text-on-surface-muted text-sm">
                       {item.views.toLocaleString()}

@@ -38,7 +38,7 @@ const mockContent = [
     description: 'The iconic theme from Pushpa',
     youtube_id: 'abc123',
     category: 'song' as const,
-    duration: '4:32',
+
     views: 5_200_000,
     created_at: '2024-01-01T00:00:00Z',
   },
@@ -48,7 +48,7 @@ const mockContent = [
     description: null,
     youtube_id: 'def456',
     category: 'bts' as const,
-    duration: '12:15',
+
     views: 980_000,
     created_at: '2024-01-02T00:00:00Z',
   },
@@ -58,7 +58,7 @@ const mockContent = [
     description: 'SS Rajamouli speaks about his vision',
     youtube_id: 'ghi789',
     category: 'interview' as const,
-    duration: '22:00',
+
     views: 320_000,
     created_at: '2024-01-03T00:00:00Z',
   },
@@ -141,15 +141,13 @@ describe('SurpriseScreen', () => {
     expect(screen.getByText('surprise.noContent')).toBeTruthy();
   });
 
-  it('renders featured video with description and duration', () => {
+  it('renders featured video with description', () => {
     mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
 
     render(<SurpriseScreen />);
 
     // Featured video (first item) shows description
     expect(screen.getByText('The iconic theme from Pushpa')).toBeTruthy();
-    // Duration is shown
-    expect(screen.getByText('4:32')).toBeTruthy();
   });
 
   it('renders short-film category content', () => {
@@ -160,7 +158,7 @@ describe('SurpriseScreen', () => {
         description: 'A compelling short film',
         youtube_id: 'xyz789',
         category: 'short-film' as const,
-        duration: '15:00',
+
         views: 450_000,
         created_at: '2024-01-04T00:00:00Z',
       },
@@ -230,7 +228,7 @@ describe('SurpriseScreen', () => {
         description: null,
         youtube_id: 'trailer123',
         category: 'trailer' as const,
-        duration: '2:30',
+
         views: 150,
         created_at: '2024-01-05T00:00:00Z',
       },
@@ -253,7 +251,7 @@ describe('SurpriseScreen', () => {
         description: 'Behind the scenes footage',
         youtube_id: 'bts123',
         category: 'bts' as const,
-        duration: '8:45',
+
         views: 1_200_000,
         created_at: '2024-01-01T00:00:00Z',
       },
@@ -287,7 +285,7 @@ describe('SurpriseScreen', () => {
         description: null,
         youtube_id: 'int123',
         category: 'interview' as const,
-        duration: '20:00',
+
         views: 500_000,
         created_at: '2024-01-01T00:00:00Z',
       },

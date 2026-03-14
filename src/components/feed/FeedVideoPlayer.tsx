@@ -19,17 +19,11 @@ import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTyp
 export interface FeedVideoPlayerProps {
   youtubeId: string;
   thumbnailUrl: string | null;
-  duration: string | null;
   isActive: boolean;
 }
 
 /** @contract renders WebView when isActive, static thumbnail otherwise */
-export function FeedVideoPlayer({
-  youtubeId,
-  thumbnailUrl,
-  duration,
-  isActive,
-}: FeedVideoPlayerProps) {
+export function FeedVideoPlayer({ youtubeId, thumbnailUrl, isActive }: FeedVideoPlayerProps) {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
@@ -88,11 +82,6 @@ export function FeedVideoPlayer({
       <View style={styles.playBtn}>
         <Ionicons name="play" size={24} color={colors.white} style={styles.playIcon} />
       </View>
-      {duration ? (
-        <View style={styles.durationBadge}>
-          <Text style={styles.durationText}>{duration}</Text>
-        </View>
-      ) : null}
     </View>
   );
 }

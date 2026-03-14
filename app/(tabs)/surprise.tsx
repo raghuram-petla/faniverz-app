@@ -64,13 +64,6 @@ function ContentCard({ item, index }: ContentCardProps) {
         <View style={[styles.cardCategoryBadge, { backgroundColor: catColor }]}>
           <Ionicons name={iconName} size={10} color={colors.white} />
         </View>
-
-        {/* @nullable duration may not exist for all content items */}
-        {item.duration ? (
-          <View style={styles.cardDurationBadge}>
-            <Text style={styles.cardDurationText}>{item.duration}</Text>
-          </View>
-        ) : null}
       </View>
 
       {/* Card body */}

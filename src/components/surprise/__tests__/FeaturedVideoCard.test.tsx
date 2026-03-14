@@ -27,7 +27,6 @@ const mockItem = {
   title: 'Making of Pushpa 2',
   category: 'behind_the_scenes',
   views: 50000,
-  duration: '12:30',
   description: 'Behind the scenes footage',
 } as any;
 
@@ -40,11 +39,6 @@ describe('FeaturedVideoCard', () => {
   it('renders category badge text', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
     expect(screen.getByText('BEHIND THE SCENES')).toBeTruthy();
-  });
-
-  it('renders duration', () => {
-    render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    expect(screen.getByText('12:30')).toBeTruthy();
   });
 
   it('renders views text', () => {

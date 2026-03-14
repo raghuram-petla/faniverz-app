@@ -54,7 +54,6 @@ describe('useMovieEditPendingState', () => {
           video_type: 'trailer' as const,
           description: null,
           video_date: null,
-          duration: null,
           display_order: 0,
         },
       ]);
@@ -147,7 +146,6 @@ describe('useMovieEditPendingState', () => {
           video_type: 'trailer' as const,
           description: null,
           video_date: null,
-          duration: null,
           display_order: 0,
         },
       ]);

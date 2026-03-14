@@ -103,32 +103,26 @@ export function BasicInfoSection({
         </FormField>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <FormInput
-          label="Director"
-          type="text"
-          value={form.director}
-          onValueChange={(v) => updateField('director', v)}
-        />
         <FormSelect
           label="Original Language"
           value={form.original_language}
           options={LANGUAGE_OPTIONS}
           onValueChange={(v) => updateField('original_language', v)}
         />
+        <FormField label="Featured Movie">
+          <label className="flex items-center gap-3 bg-input rounded-xl px-4 py-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.is_featured}
+              onChange={(e) => setForm((prev) => ({ ...prev, is_featured: e.target.checked }))}
+              className="w-5 h-5 rounded accent-red-600"
+            />
+            <span className="text-on-surface text-sm">
+              {form.is_featured ? 'Yes — Featured on home screen' : 'No'}
+            </span>
+          </label>
+        </FormField>
       </div>
-      <FormField label="Featured Movie">
-        <label className="flex items-center gap-3 bg-input rounded-xl px-4 py-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.is_featured}
-            onChange={(e) => setForm((prev) => ({ ...prev, is_featured: e.target.checked }))}
-            className="w-5 h-5 rounded accent-red-600"
-          />
-          <span className="text-on-surface text-sm">
-            {form.is_featured ? 'Yes — Featured on home screen' : 'No'}
-          </span>
-        </label>
-      </FormField>
       <div className="grid grid-cols-2 gap-4">
         <FormInput
           label="Runtime (min)"
@@ -173,7 +167,7 @@ export function BasicInfoSection({
         onRemove={() => updateField('backdrop_url', '')}
       />
       {form.backdrop_url && (
-        <p className="text-xs text-on-surface-disabled truncate">{form.backdrop_url}</p>
+        <p className="text-xs text-on-surface-subtle truncate">{form.backdrop_url}</p>
       )}
       <ImageVariantsPanel originalUrl={form.backdrop_url} variantType="backdrop" />
 
@@ -184,14 +178,6 @@ export function BasicInfoSection({
         focusY={form.backdrop_focus_y}
         onChange={(x, y) => setForm((p) => ({ ...p, backdrop_focus_x: x, backdrop_focus_y: y }))}
         onClear={() => setForm((p) => ({ ...p, backdrop_focus_x: null, backdrop_focus_y: null }))}
-      />
-
-      {/* Trailer URL */}
-      <FormInput
-        label="Trailer URL"
-        type="url"
-        value={form.trailer_url}
-        onValueChange={(v) => updateField('trailer_url', v)}
       />
 
       {/* Synopsis */}

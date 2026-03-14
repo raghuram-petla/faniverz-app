@@ -172,7 +172,6 @@ function FeedCardInner({
           <FeedVideoPlayer
             youtubeId={item.youtube_id!}
             thumbnailUrl={item.thumbnail_url}
-            duration={item.duration}
             isActive={isVideoActive ?? false}
           />
         ) : isPosterImage ? (

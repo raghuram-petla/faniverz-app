@@ -56,7 +56,6 @@ const makeVideo = (overrides: Partial<MovieVideo> = {}): MovieVideo => ({
   description: null,
   video_type: 'trailer',
   video_date: null,
-  duration: '3:20',
   display_order: 0,
   created_at: '',
   ...overrides,
@@ -81,30 +80,6 @@ describe('MediaVideoCard', () => {
       <MediaVideoCard video={makeVideo()} isPlaying={false} onPlay={onPlay} theme={mockTheme} />,
     );
     expect(screen.getByText('Official Trailer')).toBeTruthy();
-  });
-
-  it('shows duration badge when duration exists', () => {
-    render(
-      <MediaVideoCard
-        video={makeVideo({ duration: '2:45' })}
-        isPlaying={false}
-        onPlay={onPlay}
-        theme={mockTheme}
-      />,
-    );
-    expect(screen.getByText('2:45')).toBeTruthy();
-  });
-
-  it('hides duration badge when duration is null', () => {
-    render(
-      <MediaVideoCard
-        video={makeVideo({ duration: null })}
-        isPlaying={false}
-        onPlay={onPlay}
-        theme={mockTheme}
-      />,
-    );
-    expect(screen.queryByText('3:20')).toBeNull();
   });
 
   it('calls onPlay with video id when pressed', () => {

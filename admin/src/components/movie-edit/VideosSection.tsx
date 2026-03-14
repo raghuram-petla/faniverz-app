@@ -13,17 +13,15 @@ const EMPTY_VIDEO_FORM = {
   video_type: 'trailer' as VideoType,
   description: '',
   video_date: '',
-  duration: '',
 };
 
 type PendingVideo = {
   youtube_id: string;
   title: string;
   video_type: VideoType;
-  // @nullable description, video_date, duration — all optional metadata
+  // @nullable description, video_date — optional metadata
   description: string | null;
   video_date: string | null;
-  duration: string | null;
   display_order: number;
 };
 
@@ -58,7 +56,6 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
       video_type: videoForm.video_type,
       description: videoForm.description || null,
       video_date: videoForm.video_date || null,
-      duration: videoForm.duration || null,
       display_order: visibleVideos.length,
     });
     setVideoForm(EMPTY_VIDEO_FORM);
@@ -94,7 +91,6 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
                 video_type: 'trailer',
                 description: null,
                 video_date: null,
-                duration: null,
                 display_order: 0,
               });
             }}
@@ -123,9 +119,6 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
                     {VIDEO_TYPES.find((t) => t.value === video.video_type)?.label ??
                       video.video_type}
                   </span>
-                  {video.duration && (
-                    <span className="text-xs text-on-surface-subtle">{video.duration}</span>
-                  )}
                 </div>
               </div>
               <Button
@@ -172,14 +165,6 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
           onValueChange={(v) => setVideoForm((p) => ({ ...p, title: v }))}
         />
         <div className="grid grid-cols-2 gap-3">
-          <FormInput
-            label="Duration"
-            variant="compact"
-            type="text"
-            placeholder="e.g. 2:34"
-            value={videoForm.duration}
-            onValueChange={(v) => setVideoForm((p) => ({ ...p, duration: v }))}
-          />
           <FormInput
             label="Date"
             variant="compact"

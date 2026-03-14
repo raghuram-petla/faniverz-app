@@ -20,7 +20,6 @@ export interface MovieForm {
   synopsis: string;
   trailer_url: string;
   in_theaters: boolean;
-  director: string;
   original_language: string;
   is_featured: boolean;
   backdrop_focus_x: number | null;
@@ -33,7 +32,6 @@ export type PendingVideoAdd = {
   video_type: VideoType;
   description: string | null;
   video_date: string | null;
-  duration: string | null;
   display_order: number;
 };
 
@@ -110,14 +108,13 @@ export interface MovieEditHandlerDeps {
     title: string;
     poster_url: string | null;
     backdrop_url: string | null;
-    release_date: string;
+    release_date: string | null;
     runtime: number | null;
     genres: string[];
     certification: 'U' | 'UA' | 'A' | null;
     synopsis: string | null;
     trailer_url: string | null;
     in_theaters: boolean;
-    director: string | null;
     original_language: string | null;
     is_featured: boolean;
     backdrop_focus_x: number | null;

@@ -43,7 +43,6 @@ interface VideoRow {
   video_type: VideoType;
   description: string | null;
   video_date: string | null;
-  duration: string | null;
   display_order: number;
   created_at: string;
 }

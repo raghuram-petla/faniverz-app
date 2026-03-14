@@ -45,7 +45,6 @@ const defaultForm: MovieForm = {
   synopsis: '',
   trailer_url: '',
   in_theaters: false,
-  director: '',
   original_language: '',
   is_featured: false,
   backdrop_focus_x: null,

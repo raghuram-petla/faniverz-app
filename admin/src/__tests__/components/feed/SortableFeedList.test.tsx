@@ -42,7 +42,6 @@ const makeItem = (id: string, title: string): NewsFeedItem => ({
   source_id: null,
   thumbnail_url: null,
   youtube_id: null,
-  duration: null,
   is_pinned: false,
   is_featured: false,
   display_order: 0,

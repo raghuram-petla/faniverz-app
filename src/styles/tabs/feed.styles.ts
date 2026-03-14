@@ -196,20 +196,6 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
     playIcon: {
       marginLeft: 2,
     },
-    durationBadge: {
-      position: 'absolute',
-      bottom: 8,
-      right: 8,
-      backgroundColor: t.overlayHeavy,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 4,
-    },
-    durationText: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: '#FFFFFF',
-    },
     actionBar: {
       paddingTop: 10,
       paddingBottom: 4,

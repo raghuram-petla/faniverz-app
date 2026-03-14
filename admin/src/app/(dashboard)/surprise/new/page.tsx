@@ -17,11 +17,10 @@ export default function NewSurpriseContentPage() {
   const [description, setDescription] = useState('');
   const [youtubeId, setYoutubeId] = useState('');
   const [category, setCategory] = useState<string>('');
-  const [duration, setDuration] = useState('');
   const [views, setViews] = useState(0);
 
   // @sideeffect: inserts into surprise_content table, navigates to /surprise on success
-  // @edge: empty description/duration coerced to null; views defaults to 0
+  // @edge: empty description coerced to null; views defaults to 0
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createItem.mutate(
@@ -30,7 +29,6 @@ export default function NewSurpriseContentPage() {
         description: description || null,
         youtube_id: youtubeId,
         category: category as (typeof categories)[number],
-        duration: duration || null,
         views,
       },
       { onSuccess: () => router.push('/surprise') },
@@ -123,20 +121,6 @@ export default function NewSurpriseContentPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label htmlFor="duration" className="block text-sm font-medium text-on-surface-muted">
-              Duration
-            </label>
-            <input
-              id="duration"
-              type="text"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              placeholder="e.g. 3:45"
-              className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
-            />
-          </div>
-
           <div className="space-y-2">
             <label htmlFor="views" className="block text-sm font-medium text-on-surface-muted">
               Views

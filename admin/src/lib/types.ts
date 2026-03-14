@@ -38,7 +38,6 @@ export interface SurpriseContent {
   description: string | null;
   youtube_id: string;
   category: 'song' | 'short-film' | 'bts' | 'interview' | 'trailer';
-  duration: string | null;
   views: number;
   created_at: string;
 }

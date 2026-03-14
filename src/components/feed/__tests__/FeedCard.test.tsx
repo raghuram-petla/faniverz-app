@@ -117,21 +117,12 @@ jest.mock('../FollowButton', () => ({
 }));
 
 jest.mock('../FeedVideoPlayer', () => ({
-  FeedVideoPlayer: ({
-    isActive,
-    youtubeId,
-    duration,
-  }: {
-    isActive: boolean;
-    youtubeId: string;
-    duration: string | null;
-  }) => {
+  FeedVideoPlayer: ({ isActive, youtubeId }: { isActive: boolean; youtubeId: string }) => {
     const { View, Text } = require('react-native');
     return (
       <View testID="feed-video-player">
         <Text>{isActive ? 'Playing' : 'Paused'}</Text>
         <Text>{youtubeId}</Text>
-        {duration ? <Text>{duration}</Text> : null}
       </View>
     );
   },
@@ -153,7 +144,6 @@ const makeItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   source_id: 'v1',
   thumbnail_url: 'https://example.com/thumb.jpg',
   youtube_id: 'abc123',
-  duration: '2:30',
   is_pinned: false,
   is_featured: false,
   display_order: 0,
@@ -202,16 +192,6 @@ describe('FeedCard', () => {
     render(<FeedCard item={item} onPress={jest.fn()} />);
     // Title appears as both entity name and card title
     expect(screen.getAllByText('Test Trailer')).toHaveLength(2);
-  });
-
-  it('renders duration when present', () => {
-    render(<FeedCard item={makeItem({ duration: '3:45' })} onPress={jest.fn()} />);
-    expect(screen.getByText('3:45')).toBeTruthy();
-  });
-
-  it('does not render duration when null', () => {
-    render(<FeedCard item={makeItem({ duration: null })} onPress={jest.fn()} />);
-    expect(screen.queryByText('2:30')).toBeNull();
   });
 
   it('calls onPress with item when pressed', () => {

@@ -24,7 +24,6 @@ const defaultForm: MovieForm = {
   synopsis: '',
   trailer_url: '',
   in_theaters: false,
-  director: '',
   original_language: '',
   is_featured: false,
   backdrop_focus_x: null,
@@ -120,17 +119,6 @@ describe('BasicInfoSection', () => {
     const checkboxes = screen.getAllByRole('checkbox');
     // First checkbox is in_theaters, second is is_featured
     expect(checkboxes[0]).not.toBeChecked();
-  });
-
-  it('renders Director input', () => {
-    renderBasicInfo({ director: 'S.S. Rajamouli' });
-    expect(getFieldByLabel('Director')).toHaveValue('S.S. Rajamouli');
-  });
-
-  it('calls updateField when director changes', () => {
-    const props = renderBasicInfo();
-    fireEvent.change(getFieldByLabel('Director'), { target: { value: 'Trivikram' } });
-    expect(props.updateField).toHaveBeenCalledWith('director', 'Trivikram');
   });
 
   it('renders Original Language select', () => {

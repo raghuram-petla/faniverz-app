@@ -71,7 +71,6 @@ const makeVideo = (overrides: Partial<MovieVideo> = {}): MovieVideo => ({
   description: null,
   video_type: 'trailer',
   video_date: null,
-  duration: '3:20',
   display_order: 0,
   created_at: '',
   ...overrides,

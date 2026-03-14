@@ -144,7 +144,6 @@ function makeItem(overrides: Partial<NewsFeedItem> = {}): NewsFeedItem {
     source_id: 'src-1',
     thumbnail_url: 'https://example.com/thumb.jpg',
     youtube_id: 'abc123',
-    duration: '2:30',
     is_pinned: false,
     is_featured: false,
     display_order: 0,

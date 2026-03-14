@@ -132,7 +132,7 @@ export function ImageUploadField({
         </div>
       )}
       {showUrlCaption && url && (
-        <p className="mt-2 text-xs text-on-surface-disabled truncate">{url}</p>
+        <p className="mt-2 text-xs text-on-surface-subtle truncate">{url}</p>
       )}
     </div>
   );

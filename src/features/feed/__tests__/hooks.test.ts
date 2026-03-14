@@ -68,7 +68,6 @@ const mockItem = {
   source_id: null,
   thumbnail_url: null,
   youtube_id: 'abc',
-  duration: null,
   is_pinned: false,
   is_featured: false,
   display_order: 0,

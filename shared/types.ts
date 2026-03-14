@@ -139,7 +139,6 @@ export interface MovieVideo {
   description: string | null;
   video_type: VideoType;
   video_date: string | null;
-  duration: string | null;
   display_order: number;
   created_at: string;
 }
@@ -168,7 +167,6 @@ export interface NewsFeedItem {
   source_id: string | null;
   thumbnail_url: string | null;
   youtube_id: string | null;
-  duration: string | null;
   is_pinned: boolean;
   is_featured: boolean;
   display_order: number;

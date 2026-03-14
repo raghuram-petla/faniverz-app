@@ -117,7 +117,6 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
             <Ionicons name={iconName} size={11} color={colors.white} />
             <Text style={styles.categoryBadgeText}>{catLabel.toUpperCase()}</Text>
           </View>
-          {item.duration ? <Text style={styles.featuredDuration}>{item.duration}</Text> : null}
           <Text style={styles.featuredViews}>
             {formatViews(item.views)} {t('common.views')}
           </Text>

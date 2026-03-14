@@ -13,7 +13,7 @@ export interface ImageVariantsPanelProps {
 
 function StatusDot({ status }: { status: VariantInfo['status'] }) {
   if (status === 'checking') {
-    return <Loader2 className="w-3 h-3 text-zinc-400 animate-spin" />;
+    return <Loader2 className="w-3 h-3 text-on-surface-muted animate-spin" />;
   }
   if (status === 'ok') {
     return <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />;
@@ -33,7 +33,7 @@ function SummaryDot({
   totalCount: number;
   isChecking: boolean;
 }) {
-  if (isChecking) return <Loader2 className="w-3 h-3 text-zinc-400 animate-spin" />;
+  if (isChecking) return <Loader2 className="w-3 h-3 text-on-surface-muted animate-spin" />;
   if (readyCount === totalCount)
     return <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />;
   if (readyCount > 0) return <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />;
@@ -54,7 +54,7 @@ function CopyButton({ url }: { url: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="p-1 rounded hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
+      className="p-1 rounded hover:bg-surface-elevated text-on-surface-muted hover:text-on-surface transition-colors"
       title="Copy URL"
     >
       {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
@@ -74,20 +74,20 @@ function VariantRow({ variant, thumbnailUrl }: { variant: VariantInfo; thumbnail
   const specs = variant.width ? `${variant.width}px @ q${variant.quality}` : 'Full size';
 
   return (
-    <div className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-zinc-800/50">
+    <div className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-surface-elevated">
       <img
         src={thumbnailUrl}
         alt={variant.label}
-        className="h-12 w-auto rounded bg-zinc-800 flex-shrink-0"
+        className="h-12 w-auto rounded bg-surface-elevated flex-shrink-0"
       />
       <span
-        className={`text-xs font-medium px-2 py-0.5 rounded ${LABEL_COLORS[variant.label] ?? 'bg-zinc-700 text-zinc-300'}`}
+        className={`text-xs font-medium px-2 py-0.5 rounded ${LABEL_COLORS[variant.label] ?? 'bg-surface-elevated text-on-surface-muted'}`}
       >
         {variant.label}
       </span>
-      <span className="text-xs text-zinc-400 w-24 flex-shrink-0">{specs}</span>
+      <span className="text-xs text-on-surface-muted w-24 flex-shrink-0">{specs}</span>
       <StatusDot status={variant.status} />
-      <span className="text-xs text-zinc-500 truncate flex-1 min-w-0">{variant.url}</span>
+      <span className="text-xs text-on-surface-subtle truncate flex-1 min-w-0">{variant.url}</span>
       <CopyButton url={variant.url} />
     </div>
   );
@@ -111,11 +111,11 @@ export function ImageVariantsPanel({ originalUrl, variantType }: ImageVariantsPa
   const thumbnailUrl = variants.find((v) => v.label === 'SM')?.url ?? variants[0]?.url;
 
   return (
-    <div className="mt-2 border border-zinc-700/50 rounded-lg overflow-hidden">
+    <div className="mt-2 border border-outline-subtle rounded-lg overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-400 hover:bg-zinc-800/50 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-on-surface-muted hover:bg-surface-elevated transition-colors"
       >
         {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         <SummaryDot readyCount={readyCount} totalCount={totalCount} isChecking={isChecking} />
@@ -123,7 +123,7 @@ export function ImageVariantsPanel({ originalUrl, variantType }: ImageVariantsPa
       </button>
 
       {open && (
-        <div className="border-t border-zinc-700/50 px-1 py-1 space-y-0.5">
+        <div className="border-t border-outline-subtle px-1 py-1 space-y-0.5">
           {variants.map((v) => (
             <VariantRow key={v.label} variant={v} thumbnailUrl={thumbnailUrl} />
           ))}
@@ -132,7 +132,7 @@ export function ImageVariantsPanel({ originalUrl, variantType }: ImageVariantsPa
               type="button"
               onClick={recheck}
               disabled={isChecking}
-              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-on-surface-muted hover:text-on-surface disabled:opacity-50 px-2 py-1 rounded hover:bg-surface-elevated transition-colors"
             >
               <RefreshCw className={`w-3 h-3 ${isChecking ? 'animate-spin' : ''}`} />
               Recheck

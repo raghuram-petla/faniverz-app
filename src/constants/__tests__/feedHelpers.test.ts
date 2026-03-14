@@ -25,7 +25,6 @@ const makeFeedItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   source_id: null,
   thumbnail_url: null,
   youtube_id: null,
-  duration: null,
   is_pinned: false,
   is_featured: false,
   display_order: 0,
