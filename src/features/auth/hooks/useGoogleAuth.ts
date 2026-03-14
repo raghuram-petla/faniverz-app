@@ -7,16 +7,15 @@ export function useGoogleAuth() {
   const [error, setError] = useState<string | null>(null);
   const configured = useRef(false);
 
-  // @edge: GoogleSignin.configure is called lazily on first signIn, not at hook mount. If EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
-  // is undefined, configure() silently accepts it — the error only surfaces later in signIn() as a cryptic
-  // "DEVELOPER_ERROR" (Android) or "invalid_client" (iOS), not a missing-config error.
-  // @invariant: configured ref persists across renders but not across component remounts. If the component
-  // unmounts and remounts, configure() runs again, which is safe (idempotent) but wasteful.
   const signInWithGoogle = async () => {
     if (!configured.current) {
-      GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      });
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+      if (!webClientId) {
+        throw new Error(
+          'Google Sign-In is not configured: missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
+        );
+      }
+      GoogleSignin.configure({ webClientId });
       configured.current = true;
     }
 

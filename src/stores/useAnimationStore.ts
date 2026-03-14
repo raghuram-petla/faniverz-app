@@ -17,8 +17,9 @@ export const useAnimationStore = create<AnimationState>((set) => ({
   loaded: false,
   setAnimationsEnabled: (enabled) => {
     set({ animationsEnabled: enabled });
-    // @sideeffect async write not awaited — UI updates immediately, storage write is best-effort
-    AsyncStorage.setItem(STORAGE_KEYS.ANIMATIONS_ENABLED, String(enabled));
+    AsyncStorage.setItem(STORAGE_KEYS.ANIMATIONS_ENABLED, String(enabled)).catch((err) =>
+      console.warn('Failed to persist animation preference', err),
+    );
   },
   loadFromStorage: async () => {
     const stored = await AsyncStorage.getItem(STORAGE_KEYS.ANIMATIONS_ENABLED);

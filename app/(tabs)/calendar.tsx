@@ -89,7 +89,9 @@ export default function CalendarScreen() {
     const map = new Map<string, Movie[]>();
 
     for (const movie of filteredMovies) {
-      const key = movie.release_date ?? '';
+      // @edge: skip movies with null release_date to avoid Invalid Date grouping
+      if (!movie.release_date) continue;
+      const key = movie.release_date;
       if (!map.has(key)) map.set(key, []);
       map.get(key)?.push(movie);
     }

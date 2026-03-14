@@ -24,9 +24,6 @@ export function useProfile() {
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user?.id ?? ''),
     enabled: !!user?.id,
-    // @edge: 30-minute staleTime means profile changes made outside the app (admin panel, another device)
-    // won't reflect until staleTime expires or a manual invalidation occurs. useUpdateProfile and useSetUsername
-    // both call invalidateQueries to force refresh, but direct DB edits (e.g., admin changing a user's role) are invisible.
-    staleTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes — balances freshness with avoiding excessive refetches
   });
 }

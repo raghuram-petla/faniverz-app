@@ -12,9 +12,6 @@ interface CalendarState {
   clearFilters: () => void;
 }
 
-// @edge captured at module load time — not reactive to midnight crossing
-const now = new Date();
-
 // @invariant null values for year/month/day mean "use current date" — resolved by consumers
 export const useCalendarStore = create<CalendarState>((set) => ({
   selectedYear: null,
@@ -33,10 +30,12 @@ export const useCalendarStore = create<CalendarState>((set) => ({
 
   // @edge wraps month overflow/underflow across year boundaries (Dec->Jan, Jan->Dec)
   // @sideeffect clears selectedDay on month navigation to prevent invalid day selection
+  // @contract: uses fresh Date() on each call to avoid stale midnight crossing
   navigateMonth: (direction) =>
     set((state) => {
-      const currentMonth = state.selectedMonth ?? now.getMonth();
-      const currentYear = state.selectedYear ?? now.getFullYear();
+      const fresh = new Date();
+      const currentMonth = state.selectedMonth ?? fresh.getMonth();
+      const currentYear = state.selectedYear ?? fresh.getFullYear();
       let newMonth = currentMonth + direction;
       let newYear = currentYear;
       if (newMonth > 11) {

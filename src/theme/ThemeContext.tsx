@@ -76,9 +76,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     [isDark, mode, setMode],
   );
 
-  // @edge renders null until AsyncStorage load completes — can cause layout flicker if load is slow
-  if (!loaded) return null;
-
+  // @contract: renders children with system-derived theme even before AsyncStorage loads,
+  // preventing blank screen flicker. Once loaded, the saved preference takes effect.
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 

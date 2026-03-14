@@ -40,11 +40,15 @@ export function PhoneOtpModal({
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
 
   /** @sideeffect calls onSendOtp and advances to OTP step on success */
-  /** @boundary errors are caught and surfaced via the error prop from parent */
   const handleSend = async () => {
-    if (!phone.trim()) return;
+    const trimmed = phone.trim();
+    if (!trimmed) return;
+    // @contract: validate E.164-ish format (+ followed by 7-15 digits)
+    if (!/^\+\d{7,15}$/.test(trimmed.replace(/[\s()-]/g, ''))) {
+      return; // silently reject — placeholder shows expected format
+    }
     try {
-      await onSendOtp(phone.trim());
+      await onSendOtp(trimmed);
       setStep('otp');
     } catch {
       // error surfaced via props

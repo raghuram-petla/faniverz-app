@@ -20,7 +20,14 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '@/lib/supabase';
 
 describe('useGoogleAuth', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID = 'test-client-id';
+  });
+
+  afterEach(() => {
+    delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  });
 
   it('returns initial state', () => {
     const { result } = renderHook(() => useGoogleAuth());

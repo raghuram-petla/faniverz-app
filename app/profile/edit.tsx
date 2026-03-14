@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -48,14 +48,15 @@ export default function EditProfileScreen() {
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
 
-  // @sync: populates form fields when profile data arrives from the server
-  // @nullable: all profile fields may be null for new users
+  // @contract: only populates form on initial load to avoid overwriting user's unsaved edits
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (profile) {
+    if (profile && !initializedRef.current) {
       setDisplayName(profile.display_name ?? '');
       setPhone(profile.phone ?? '');
       setLocation(profile.location ?? '');
       setBio(profile.bio ?? '');
+      initializedRef.current = true;
     }
   }, [profile]);
 

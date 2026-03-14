@@ -1,21 +1,22 @@
 import { Linking, Share } from 'react-native';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 import { WEBVIEW_BASE_URL } from '@/constants/webview';
+import { sanitizeYoutubeId } from '@/utils/sanitizeYoutubeId';
 
 /**
  * Builds the HTML wrapper for embedding a YouTube video.
  */
-// @boundary generates raw HTML injected into WebView — youtubeId must be sanitized upstream
-// @edge no XSS sanitization — callers must ensure youtubeId contains only [a-zA-Z0-9_-]
 // @invariant autoplay=1 and playsinline=1 are always set; rel=0 disables related videos
 export function buildYouTubeEmbedHtml(youtubeId: string, autoMute = false): string {
+  const safeId = sanitizeYoutubeId(youtubeId);
+  if (!safeId) return '<html><body style="background:#000"></body></html>';
   const muteParam = autoMute ? '&mute=1' : '';
   return `<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>*{margin:0;padding:0}body{background:#000;overflow:hidden}
 iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}</style>
 </head><body>
-<iframe src="https://www.youtube.com/embed/${youtubeId}?autoplay=1&playsinline=1${muteParam}&rel=0"
+<iframe src="https://www.youtube.com/embed/${safeId}?autoplay=1&playsinline=1${muteParam}&rel=0"
   allowfullscreen webkitallowfullscreen mozallowfullscreen></iframe>
 </body></html>`;
 }

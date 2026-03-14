@@ -73,6 +73,24 @@ export async function verifyAdmin(authHeader: string | null): Promise<User | nul
   return user;
 }
 
+/** Same as verifyAdmin but also returns the admin's role_id for role-based access control. */
+export async function verifyAdminWithRole(
+  authHeader: string | null,
+): Promise<{ user: User; role: string } | null> {
+  const user = await verifyBearer(authHeader);
+  if (!user) return null;
+
+  const supabase = getSupabaseAdmin();
+  const { data: adminRole } = await supabase
+    .from('admin_user_roles')
+    .select('role_id, status')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!adminRole || adminRole.status === 'blocked') return null;
+  return { user, role: adminRole.role_id };
+}
+
 /**
  * Build a standard 500 error response from a caught error.
  */

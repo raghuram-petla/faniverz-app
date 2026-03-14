@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Actor, ActorCredit, FavoriteActor } from '@/types';
+import { escapeLike } from '@/utils/escapeLike';
 
 // @coupling: returns FavoriteActor with nested actor:actors(*) join. No FK constraint on actor_id,
 // so orphaned favorites (deleted actor) are filtered out to prevent null crashes.
@@ -15,9 +16,10 @@ export async function fetchFavoriteActors(userId: string): Promise<FavoriteActor
 }
 
 export async function addFavoriteActor(userId: string, actorId: string): Promise<void> {
+  // @contract: upsert prevents constraint violation on rapid double-tap
   const { error } = await supabase
     .from('favorite_actors')
-    .insert({ user_id: userId, actor_id: actorId });
+    .upsert({ user_id: userId, actor_id: actorId }, { onConflict: 'user_id,actor_id' });
 
   if (error) throw error;
 }
@@ -32,13 +34,13 @@ export async function removeFavoriteActor(userId: string, actorId: string): Prom
   if (error) throw error;
 }
 
-// @boundary: query is interpolated directly into the ilike pattern — special Postgres LIKE characters (%, _) in the search term are not escaped. A search for "100%" would match any actor whose name contains "100" followed by any character. This is unlikely for actor names but is a latent injection vector.
 // @edge: no ordering specified — Supabase returns in insertion order. Results for common names like "Ram" could return 20 results in arbitrary order, with the most relevant match possibly excluded by the limit.
 export async function searchActors(query: string): Promise<Actor[]> {
+  const escaped = escapeLike(query);
   const { data, error } = await supabase
     .from('actors')
     .select('*')
-    .ilike('name', `%${query}%`)
+    .ilike('name', `%${escaped}%`)
     .limit(20);
 
   if (error) throw error;
@@ -52,8 +54,7 @@ export async function fetchActorById(id: string): Promise<Actor | null> {
   return data;
 }
 
-// @coupling: joins movie:movies(*) — the ActorCredit type expects movie as optional Movie. The client-side sort uses movie.release_date which could be null. Null release_dates sort as '' (empty string) which sorts before all dates, pushing announced movies (no release_date) to the bottom of the "newest first" list. This is correct behavior but may confuse users expecting announced movies at the top.
-// @edge: no filter on credit_type — returns BOTH cast and crew entries. If an actor is credited as both cast and crew on the same movie (e.g., actor + producer), the movie appears twice in the filmography list.
+// @coupling: joins movie:movies(*) — the ActorCredit type expects movie as optional Movie.
 export async function fetchActorFilmography(actorId: string): Promise<ActorCredit[]> {
   const { data, error } = await supabase
     .from('movie_cast')
@@ -62,8 +63,16 @@ export async function fetchActorFilmography(actorId: string): Promise<ActorCredi
 
   if (error) throw error;
 
+  // Deduplicate by movie_id — actor credited as both cast + crew shows once (keep first credit)
+  const seen = new Set<string>();
+  const deduped = (data ?? []).filter((c) => {
+    if (!c.movie_id || seen.has(c.movie_id)) return false;
+    seen.add(c.movie_id);
+    return true;
+  });
+
   // Sort by movie release_date descending (newest first)
-  return (data ?? []).sort((a, b) => {
+  return deduped.sort((a, b) => {
     const dateA = (a as ActorCredit).movie?.release_date ?? '';
     const dateB = (b as ActorCredit).movie?.release_date ?? '';
     return dateB.localeCompare(dateA);

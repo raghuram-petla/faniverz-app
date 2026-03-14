@@ -126,11 +126,15 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
 
   const startImpersonation = useCallback(async (targetUserId: string) => {
     const user = realUserRef.current;
-    // Guard: only root/super_admin can impersonate (hierarchy enforced)
     if (!user || (user.role !== 'super_admin' && user.role !== 'root')) return;
     try {
       const target = await buildTargetUser(targetUserId);
       if (!target) return;
+      // @contract: prevent privilege escalation — super_admin cannot impersonate root
+      if (user.role === 'super_admin' && target.role === 'root') {
+        window.alert('super_admin cannot impersonate a root user');
+        return;
+      }
       await endActiveSession(user.id);
       await supabase.from('admin_impersonation_sessions').insert({
         real_user_id: user.id,
@@ -146,8 +150,12 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
 
   const startRoleImpersonation = useCallback(async (role: AdminRoleId, phIds: string[] = []) => {
     const user = realUserRef.current;
-    // Guard: only root/super_admin can impersonate (hierarchy enforced)
     if (!user || (user.role !== 'super_admin' && user.role !== 'root')) return;
+    // @contract: prevent privilege escalation — super_admin cannot assume root role
+    if (user.role === 'super_admin' && role === 'root') {
+      window.alert('super_admin cannot impersonate root role');
+      return;
+    }
     try {
       await endActiveSession(user.id);
       await supabase.from('admin_impersonation_sessions').insert({

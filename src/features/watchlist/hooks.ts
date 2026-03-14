@@ -108,7 +108,7 @@ export function useWatchlistMutations() {
         movieId,
       ]);
       queryClient.setQueryData<WatchlistEntry | null>(['watchlist', 'check', userId, movieId], {
-        id: `temp-${Date.now()}`,
+        id: `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         user_id: userId,
         movie_id: movieId,
         status: 'watchlist',

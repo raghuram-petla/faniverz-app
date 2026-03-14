@@ -154,7 +154,7 @@ describe('WatchedMoviesScreen', () => {
     expect(screen.getByText('profile.watchTime')).toBeTruthy();
     // 2 movies: avg rating = (4.0 + 3.0) / 2 = 3.5
     expect(screen.getByText('3.5')).toBeTruthy();
-    // Watch time: no runtime set → fallback 90 each → 2 * 90 = 180 min = 3h
+    // Watch time: no runtime set → fallback 90 each → 2 * 90 = 180 min = 3h 0m
     expect(screen.getByText('3h')).toBeTruthy();
   });
 
@@ -185,9 +185,9 @@ describe('WatchedMoviesScreen', () => {
 
     render(<WatchedMoviesScreen />);
 
-    // 150 + 120 = 270 min = 4h (formatWatchTime truncates)
-    // Without runtime, fallback 90*2 = 180 min = 3h — so 4h proves actual runtimes are used
-    expect(screen.getByText('4h')).toBeTruthy();
+    // 150 + 120 = 270 min = 4h 30m
+    // Without runtime, fallback 90*2 = 180 min = 3h — so 4h 30m proves actual runtimes are used
+    expect(screen.getByText('4h 30m')).toBeTruthy();
   });
 
   it('shows sort dropdown with default "Recently Watched"', () => {

@@ -125,28 +125,32 @@ describe('formatMemberSince', () => {
 });
 
 describe('formatWatchTime', () => {
-  it('formats 270 minutes as "4h"', () => {
-    expect(formatWatchTime(270)).toBe('4h');
+  it('formats 270 minutes as "4h 30m"', () => {
+    expect(formatWatchTime(270)).toBe('4h 30m');
   });
 
   it('formats 60 minutes as "1h"', () => {
     expect(formatWatchTime(60)).toBe('1h');
   });
 
-  it('formats 0 minutes as "0h"', () => {
-    expect(formatWatchTime(0)).toBe('0h');
+  it('formats 0 minutes as "0m"', () => {
+    expect(formatWatchTime(0)).toBe('0m');
   });
 
-  it('formats 59 minutes as "0h" (floors to hours)', () => {
-    expect(formatWatchTime(59)).toBe('0h');
+  it('formats 59 minutes as "59m"', () => {
+    expect(formatWatchTime(59)).toBe('59m');
   });
 
   it('formats 120 minutes as "2h"', () => {
     expect(formatWatchTime(120)).toBe('2h');
   });
 
-  it('formats 150 minutes as "2h" (floors partial hours)', () => {
-    expect(formatWatchTime(150)).toBe('2h');
+  it('formats 150 minutes as "2h 30m"', () => {
+    expect(formatWatchTime(150)).toBe('2h 30m');
+  });
+
+  it('formats negative input as "0m"', () => {
+    expect(formatWatchTime(-10)).toBe('0m');
   });
 });
 

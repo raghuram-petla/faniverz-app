@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { generateVariants, type ImageVariant } from '@/lib/image-resize';
 import { getR2Client } from '@/lib/r2-client';
 import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/upload-config';
-import { verifyAdmin } from '@/lib/sync-helpers';
+import { verifyAdminWithRole } from '@/lib/sync-helpers';
 
 export interface UploadConfig {
   bucket: string;
@@ -20,9 +20,16 @@ export interface UploadConfig {
 export function createUploadHandler(config: UploadConfig) {
   return async function POST(request: NextRequest) {
     try {
-      const user = await verifyAdmin(request.headers.get('authorization'));
-      if (!user) {
+      const adminResult = await verifyAdminWithRole(request.headers.get('authorization'));
+      if (!adminResult) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      // @contract: ph_admin can only upload to production_house-scoped buckets
+      if (adminResult.role === 'production_house_admin' && !config.bucket.includes('production')) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions for this upload type' },
+          { status: 403 },
+        );
       }
 
       const r2 = getR2Client();

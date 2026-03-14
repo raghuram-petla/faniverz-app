@@ -165,7 +165,13 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         promises.push(removeTheatricalRun.mutateAsync({ id: runId, movieId: id }));
       }
 
-      await Promise.all(promises);
+      // @contract: allSettled so partial failures don't prevent other operations from completing
+      const results = await Promise.allSettled(promises);
+      const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+      if (failures.length > 0) {
+        const msgs = failures.map((f) => f.reason?.message ?? String(f.reason));
+        alert(`${failures.length} operation(s) failed:\n${msgs.join('\n')}`);
+      }
       resetPendingState();
       setInitialForm({ ...form });
       setSaveStatus('success');

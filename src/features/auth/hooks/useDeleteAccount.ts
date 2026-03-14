@@ -2,8 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '../providers/AuthProvider';
 
-// @sideeffect: delete_user_account RPC cascades through ALL user data (follows, reviews, watchlist, favorites, feed votes, comments, push_tokens). Non-reversible — no soft-delete.
-// @edge: signOut runs after RPC success — if signOut fails (network), user is authenticated with a deleted account. AuthProvider's onAuthStateChange won't fire, leaving stale session in UI until app restart.
+// @sideeffect: delete_user_account RPC cascades through ALL user data. Non-reversible — no soft-delete.
 export function useDeleteAccount() {
   const { user } = useAuth();
 
@@ -14,8 +13,13 @@ export function useDeleteAccount() {
         target_user_id: user.id,
       });
       if (error) throw error;
-      // Sign out after deletion
-      await supabase.auth.signOut();
+      // @contract: signOut failure after successful deletion is caught and ignored —
+      // the account is already gone, so a stale session will fail on next API call anyway.
+      try {
+        await supabase.auth.signOut();
+      } catch {
+        // Account deleted successfully; signOut failure is non-critical
+      }
     },
   });
 }

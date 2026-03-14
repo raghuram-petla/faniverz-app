@@ -44,11 +44,15 @@ export function formatMemberSince(dateStr: string | null | undefined): string {
 }
 
 /**
- * Format minutes as hours string (e.g., 270 -> "4h").
+ * Format minutes as hours+minutes string (e.g., 270 -> "4h 30m", 45 -> "45m").
  */
 export function formatWatchTime(minutes: number): string {
+  if (minutes <= 0) return '0m';
   const h = Math.floor(minutes / 60);
-  return `${h}h`;
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }
 
 /**
@@ -57,5 +61,6 @@ export function formatWatchTime(minutes: number): string {
 // @nullable both input and return — callers must handle null
 export function extractReleaseYear(dateStr?: string | null): number | null {
   if (!dateStr) return null;
-  return new Date(dateStr).getFullYear();
+  const year = new Date(dateStr).getFullYear();
+  return isNaN(year) ? null : year;
 }

@@ -18,14 +18,14 @@ describe('ThemeProvider', () => {
     (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
   });
 
-  it('renders null before loading completes', () => {
+  it('renders children with default theme before loading completes', () => {
     (AsyncStorage.getItem as jest.Mock).mockImplementation(() => new Promise(() => {}));
-    const { toJSON } = render(
+    const { getByText } = render(
       <ThemeProvider>
         <Text>Child</Text>
       </ThemeProvider>,
     );
-    expect(toJSON()).toBeNull();
+    expect(getByText('Child')).toBeTruthy();
   });
 
   it('renders children after loading', async () => {

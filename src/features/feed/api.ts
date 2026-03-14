@@ -160,25 +160,29 @@ export async function removeFeedVote(feedItemId: string, userId: string): Promis
   if (error) throw error;
 }
 
-// @edge: Supabase .in() filter has an implicit URL length limit (~2000 chars). With UUID feed_item_ids (36 chars each), this breaks around ~50 IDs. If a user scrolls through many pages and collects 50+ visible feed item IDs, the query silently truncates or fails. Currently PAGE_SIZE=15 so this is safe for 3 pages, but batching is not implemented.
-// @assumes: vote_type column is constrained to 'up'|'down' via CHECK in DB, so the cast to 'up' | 'down' is safe. If the constraint is relaxed to allow other values, the cast hides them from TypeScript.
+// @contract: batches .in() calls in chunks of 40 to stay within URL length limits (~2000 chars)
 export async function fetchUserVotes(
   userId: string,
   feedItemIds: string[],
 ): Promise<Record<string, 'up' | 'down'>> {
   if (feedItemIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from('feed_votes')
-    .select('feed_item_id, vote_type')
-    .eq('user_id', userId)
-    .in('feed_item_id', feedItemIds);
-
-  if (error) throw error;
-
+  const BATCH_SIZE = 40;
   const votes: Record<string, 'up' | 'down'> = {};
-  for (const row of data ?? []) {
-    votes[row.feed_item_id] = row.vote_type as 'up' | 'down';
+
+  for (let i = 0; i < feedItemIds.length; i += BATCH_SIZE) {
+    const batch = feedItemIds.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .from('feed_votes')
+      .select('feed_item_id, vote_type')
+      .eq('user_id', userId)
+      .in('feed_item_id', batch);
+
+    if (error) throw error;
+    for (const row of data ?? []) {
+      votes[row.feed_item_id] = row.vote_type as 'up' | 'down';
+    }
   }
+
   return votes;
 }

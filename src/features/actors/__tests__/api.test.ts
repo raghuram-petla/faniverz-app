@@ -1,7 +1,7 @@
 const mockSelect = jest.fn();
 const mockEq = jest.fn();
 const mockOrder = jest.fn();
-const mockInsert = jest.fn();
+const mockUpsert = jest.fn();
 const mockDelete = jest.fn();
 const mockIlike = jest.fn();
 const mockLimit = jest.fn();
@@ -11,7 +11,7 @@ jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: jest.fn(() => ({
       select: mockSelect,
-      insert: mockInsert,
+      upsert: mockUpsert,
       delete: mockDelete,
     })),
   },
@@ -74,16 +74,19 @@ describe('actors api', () => {
   });
 
   describe('addFavoriteActor', () => {
-    it('inserts a favorite actor record', async () => {
-      mockInsert.mockResolvedValue({ error: null });
+    it('upserts a favorite actor record', async () => {
+      mockUpsert.mockResolvedValue({ error: null });
 
       await addFavoriteActor('u1', 'actor-1');
       expect(supabase.from).toHaveBeenCalledWith('favorite_actors');
-      expect(mockInsert).toHaveBeenCalledWith({ user_id: 'u1', actor_id: 'actor-1' });
+      expect(mockUpsert).toHaveBeenCalledWith(
+        { user_id: 'u1', actor_id: 'actor-1' },
+        { onConflict: 'user_id,actor_id' },
+      );
     });
 
     it('throws on error', async () => {
-      mockInsert.mockResolvedValue({ error: new Error('Duplicate') });
+      mockUpsert.mockResolvedValue({ error: new Error('Duplicate') });
 
       await expect(addFavoriteActor('u1', 'actor-1')).rejects.toThrow('Duplicate');
     });

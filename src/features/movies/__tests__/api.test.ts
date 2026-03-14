@@ -332,6 +332,7 @@ describe('movies api', () => {
     it('queries movie_platforms then fetches movies', async () => {
       const mockPlatformSelect = jest.fn();
       const mockPlatformEq = jest.fn();
+      const mockPlatformLimit = jest.fn();
       const mockMoviesIn = jest.fn();
 
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
@@ -342,7 +343,11 @@ describe('movies api', () => {
       });
 
       mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }, { movie_id: 'm2' }] });
+      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
+      mockPlatformLimit.mockResolvedValue({
+        data: [{ movie_id: 'm1' }, { movie_id: 'm2' }],
+        error: null,
+      });
       mockSelect.mockReturnValue({ in: mockMoviesIn });
       mockMoviesIn.mockReturnValue({ order: mockOrder });
       mockOrder.mockResolvedValue({
@@ -358,6 +363,7 @@ describe('movies api', () => {
     it('returns empty array when no movies for platform', async () => {
       const mockPlatformSelect = jest.fn();
       const mockPlatformEq = jest.fn();
+      const mockPlatformLimit = jest.fn();
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'movie_platforms') {
           return { select: mockPlatformSelect };
@@ -365,7 +371,8 @@ describe('movies api', () => {
         return { select: mockSelect };
       });
       mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockResolvedValue({ data: [] });
+      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
+      mockPlatformLimit.mockResolvedValue({ data: [], error: null });
 
       const result = await fetchMoviesByPlatform('unknown');
       expect(result).toEqual([]);
@@ -374,6 +381,7 @@ describe('movies api', () => {
     it('throws on error', async () => {
       const mockPlatformSelect = jest.fn();
       const mockPlatformEq = jest.fn();
+      const mockPlatformLimit = jest.fn();
       const mockMoviesIn = jest.fn();
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'movie_platforms') {
@@ -382,7 +390,8 @@ describe('movies api', () => {
         return { select: mockSelect };
       });
       mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockResolvedValue({ data: [{ movie_id: 'm1' }] });
+      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
+      mockPlatformLimit.mockResolvedValue({ data: [{ movie_id: 'm1' }], error: null });
       mockSelect.mockReturnValue({ in: mockMoviesIn });
       mockMoviesIn.mockReturnValue({ order: mockOrder });
       mockOrder.mockResolvedValue({ data: null, error: new Error('Platform fetch failed') });

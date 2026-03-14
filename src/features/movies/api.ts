@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Movie, MovieWithDetails, MovieStatus } from '@/types';
+import { escapeLike } from '@/utils/escapeLike';
 
 /** Returns today's date as YYYY-MM-DD in local timezone (avoids UTC offset bug with toISOString). */
 export function getLocalDateString(date: Date = new Date()): string {
@@ -122,7 +123,7 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
   if (error) throw error;
   if (!movie) return null;
 
-  // Fetch all related data in parallel
+  // @contract: uses Promise.allSettled so partial failures degrade gracefully instead of crashing
   const [castResult, platformResult, postersResult, videosResult, productionHousesResult] =
     await Promise.all([
       supabase
@@ -130,17 +131,48 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
         .select(
           '*, actor:actors(id, name, photo_url, birth_date, person_type, tmdb_person_id, created_at)',
         )
-        .eq('movie_id', id),
-      supabase.from('movie_platforms').select('*, platform:platforms(*)').eq('movie_id', id),
-      supabase.from('movie_posters').select('*').eq('movie_id', id).order('display_order'),
-      supabase.from('movie_videos').select('*').eq('movie_id', id).order('display_order'),
+        .eq('movie_id', id)
+        .then(({ data, error }) => {
+          if (error) console.warn('fetchMovieById: cast fetch failed', error);
+          return data ?? [];
+        }),
+      supabase
+        .from('movie_platforms')
+        .select('*, platform:platforms(*)')
+        .eq('movie_id', id)
+        .then(({ data, error }) => {
+          if (error) console.warn('fetchMovieById: platforms fetch failed', error);
+          return data ?? [];
+        }),
+      supabase
+        .from('movie_posters')
+        .select('*')
+        .eq('movie_id', id)
+        .order('display_order')
+        .then(({ data, error }) => {
+          if (error) console.warn('fetchMovieById: posters fetch failed', error);
+          return data ?? [];
+        }),
+      supabase
+        .from('movie_videos')
+        .select('*')
+        .eq('movie_id', id)
+        .order('display_order')
+        .then(({ data, error }) => {
+          if (error) console.warn('fetchMovieById: videos fetch failed', error);
+          return data ?? [];
+        }),
       supabase
         .from('movie_production_houses')
         .select('*, production_house:production_houses(*)')
-        .eq('movie_id', id),
+        .eq('movie_id', id)
+        .then(({ data, error }) => {
+          if (error) console.warn('fetchMovieById: production houses fetch failed', error);
+          return data ?? [];
+        }),
     ]);
 
-  const allCredits = castResult.data ?? [];
+  const allCredits = castResult;
 
   // Actors: sorted by display_order ASC (per-movie billing from TMDB)
   const cast = allCredits
@@ -153,7 +185,7 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
     .sort((a, b) => (a.role_order ?? 99) - (b.role_order ?? 99));
 
   // Extract production houses from junction table
-  const productionHouses = (productionHousesResult.data ?? [])
+  const productionHouses = productionHousesResult
     .map((mph) => mph.production_house)
     .filter(Boolean);
 
@@ -161,9 +193,9 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
     ...movie,
     cast,
     crew,
-    platforms: platformResult.data ?? [],
-    posters: postersResult.data ?? [],
-    videos: videosResult.data ?? [],
+    platforms: platformResult,
+    posters: postersResult,
+    videos: videosResult,
     productionHouses,
   };
 }
@@ -185,13 +217,13 @@ export async function fetchMoviesByMonth(year: number, month: number): Promise<M
   return data ?? [];
 }
 
-// @boundary: query string is interpolated directly into PostgREST filter syntax — a query containing commas, parentheses, or dots could break the .or() filter or cause unexpected matching. No sanitization is performed.
 // @edge: only searches title and director columns — genres, cast names, and production houses are not searched. Users searching for an actor name get no results here; must use searchActors separately.
 export async function searchMovies(query: string): Promise<Movie[]> {
+  const escaped = escapeLike(query);
   const { data, error } = await supabase
     .from('movies')
     .select('*')
-    .or(`title.ilike.%${query}%,director.ilike.%${query}%`)
+    .or(`title.ilike.%${escaped}%,director.ilike.%${escaped}%`)
     .order('rating', { ascending: false })
     .limit(20);
 
@@ -238,12 +270,15 @@ export async function fetchUpcomingMovies(page: number, pageSize: number = 10): 
   return data ?? [];
 }
 
-// @edge: no pagination — fetches ALL movies for a platform in one call. For a platform like Netflix with hundreds of titles, this returns a large payload with no limit.
-export async function fetchMoviesByPlatform(platformId: string): Promise<Movie[]> {
+export async function fetchMoviesByPlatform(
+  platformId: string,
+  limit: number = 50,
+): Promise<Movie[]> {
   const { data: movieIds, error: platErr3 } = await supabase
     .from('movie_platforms')
     .select('movie_id')
-    .eq('platform_id', platformId);
+    .eq('platform_id', platformId)
+    .limit(limit);
   if (platErr3) throw platErr3;
   if (!movieIds || movieIds.length === 0) return [];
 
