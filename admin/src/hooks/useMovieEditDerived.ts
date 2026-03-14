@@ -31,6 +31,7 @@ interface TheatricalRun {
   id: string;
   movie_id: string;
   release_date: string;
+  end_date: string | null;
   label: string | null;
   created_at: string;
 }
@@ -200,6 +201,7 @@ export function useMovieEditDerived(params: {
         id: `pending-run-${i}`,
         movie_id: id,
         release_date: r.release_date,
+        end_date: null,
         label: r.label,
         created_at: '',
       })),

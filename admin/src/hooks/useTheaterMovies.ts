@@ -88,16 +88,24 @@ export function useTheaterSearch(search: string) {
   });
 }
 
-// @sideeffect Removes a movie from theaters: sets in_theaters = false
+// @sideeffect Removes a movie from theaters: sets in_theaters = false + closes active theatrical run
 export function useRemoveFromTheaters() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { movieId: string }) => {
-      await crudFetch('PATCH', {
-        table: 'movies',
-        id: params.movieId,
-        data: { in_theaters: false },
-      });
+    mutationFn: async (params: { movieId: string; endDate: string }) => {
+      // @contract Close the active run (end_date IS NULL) and flip the in_theaters flag in parallel
+      await Promise.all([
+        crudFetch('PATCH', {
+          table: 'movies',
+          id: params.movieId,
+          data: { in_theaters: false },
+        }),
+        supabase
+          .from('movie_theatrical_runs')
+          .update({ end_date: params.endDate })
+          .eq('movie_id', params.movieId)
+          .is('end_date', null),
+      ]);
     },
     onSuccess: () => invalidateAll(queryClient),
   });

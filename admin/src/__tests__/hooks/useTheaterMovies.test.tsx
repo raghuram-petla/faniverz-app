@@ -160,21 +160,28 @@ describe('useTheaterSearch', () => {
 });
 
 describe('useRemoveFromTheaters', () => {
-  it('calls PATCH to set in_theaters=false', async () => {
+  it('calls PATCH on movies + updates theatrical run end_date', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({}),
     } as Response);
 
+    // @contract supabase.from().update().eq().is() chain for closing the active run
+    const mockIs = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockEq = vi.fn().mockReturnValue({ is: mockIs });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
     const { result } = renderHook(() => useRemoveFromTheaters(), { wrapper: createWrapper() });
 
     await act(async () => {
-      result.current.mutate({ movieId: 'movie-1' });
+      result.current.mutate({ movieId: 'movie-1', endDate: '2026-03-14' });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
+    // Verifies the crudFetch call for flipping in_theaters
     expect(fetchSpy).toHaveBeenCalledWith(
       '/api/admin-crud',
       expect.objectContaining({
@@ -182,6 +189,12 @@ describe('useRemoveFromTheaters', () => {
         body: JSON.stringify({ table: 'movies', id: 'movie-1', data: { in_theaters: false } }),
       }),
     );
+
+    // Verifies the supabase call for closing the active run
+    expect(mockFrom).toHaveBeenCalledWith('movie_theatrical_runs');
+    expect(mockUpdate).toHaveBeenCalledWith({ end_date: '2026-03-14' });
+    expect(mockEq).toHaveBeenCalledWith('movie_id', 'movie-1');
+    expect(mockIs).toHaveBeenCalledWith('end_date', null);
 
     fetchSpy.mockRestore();
   });

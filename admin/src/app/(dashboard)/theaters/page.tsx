@@ -9,7 +9,7 @@ import {
 } from '@/hooks/useTheaterMovies';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { Loader2, Check } from 'lucide-react';
-import { MovieListItem } from '@/components/theaters/MovieListItem';
+import { MovieColumn } from '@/components/theaters/MovieColumn';
 import { ManualAddPanel } from '@/components/theaters/ManualAddPanel';
 import { PendingChangesSection } from '@/components/theaters/PendingChangesSection';
 
@@ -110,7 +110,9 @@ export default function TheatersPage() {
         ...additions.map(([movieId, c]) =>
           addToTheaters.mutateAsync({ movieId, startDate: c.date, label: c.label ?? null }),
         ),
-        ...removals.map(([movieId]) => removeFromTheaters.mutateAsync({ movieId })),
+        ...removals.map(([movieId, c]) =>
+          removeFromTheaters.mutateAsync({ movieId, endDate: c.date }),
+        ),
       ]);
       setPendingChanges(new Map());
       setSaveStatus('success');
@@ -229,86 +231,33 @@ export default function TheatersPage() {
 
       {/* Two columns — In Theaters | Upcoming */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* In Theaters */}
-        <section>
-          <h2 className="text-lg font-semibold text-on-surface mb-3">
-            In Theaters
-            {!isLoading && (
-              <span className="ml-2 text-sm font-normal text-on-surface-muted">
-                ({movies.length})
-              </span>
-            )}
-          </h2>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
-            </div>
-          ) : movies.length === 0 ? (
-            <div className="bg-surface-card border border-outline rounded-xl p-8 text-center text-on-surface-subtle text-sm">
-              No movies currently in theaters
-            </div>
-          ) : (
-            <div className="bg-surface-card border border-outline rounded-xl p-1.5 space-y-0.5 ">
-              {movies.map((movie) => (
-                <MovieListItem
-                  key={movie.id}
-                  id={movie.id}
-                  title={movie.title}
-                  posterUrl={movie.poster_url}
-                  releaseDate={movie.release_date}
-                  isOn={isEffectivelyOn(movie.id, true)}
-                  pendingDate={getPendingDate(movie.id)}
-                  onToggle={(d) => handleToggle(movie.id, movie.title, movie.poster_url, false, d)}
-                  onRevert={() => removePendingChange(movie.id)}
-                  onDateChange={(d) => updatePendingDate(movie.id, d)}
-                  dateLabel="End date"
-                  maxDate={today}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Upcoming */}
-        <section>
-          <h2 className="text-lg font-semibold text-on-surface mb-3">
-            Upcoming
-            {!upcomingLoading && (
-              <span className="ml-2 text-sm font-normal text-on-surface-muted">
-                ({upcoming.length})
-              </span>
-            )}
-          </h2>
-          {upcomingLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
-            </div>
-          ) : upcoming.length === 0 ? (
-            <div className="bg-surface-card border border-outline rounded-xl p-8 text-center text-on-surface-subtle text-sm">
-              No upcoming releases
-            </div>
-          ) : (
-            <div className="bg-surface-card border border-outline rounded-xl p-1.5 space-y-0.5 ">
-              {upcoming.map((movie) => (
-                <MovieListItem
-                  key={movie.id}
-                  id={movie.id}
-                  title={movie.title}
-                  posterUrl={movie.poster_url}
-                  releaseDate={movie.release_date}
-                  isOn={isEffectivelyOn(movie.id, false)}
-                  pendingDate={getPendingDate(movie.id)}
-                  onToggle={(d) => handleToggle(movie.id, movie.title, movie.poster_url, true, d)}
-                  onRevert={() => removePendingChange(movie.id)}
-                  onDateChange={(d) => updatePendingDate(movie.id, d)}
-                  dateLabel="Start date"
-                  minDate={today}
-                  subtitle={movie.release_date ? daysUntil(movie.release_date) : undefined}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+        <MovieColumn
+          title="In Theaters"
+          movies={movies}
+          isLoading={isLoading}
+          emptyText="No movies currently in theaters"
+          isEffectivelyOn={(id) => isEffectivelyOn(id, true)}
+          getPendingDate={getPendingDate}
+          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, false, d)}
+          onRevert={removePendingChange}
+          onDateChange={updatePendingDate}
+          dateLabel="End date"
+          maxDate={today}
+        />
+        <MovieColumn
+          title="Upcoming"
+          movies={upcoming}
+          isLoading={upcomingLoading}
+          emptyText="No upcoming releases"
+          isEffectivelyOn={(id) => isEffectivelyOn(id, false)}
+          getPendingDate={getPendingDate}
+          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, true, d)}
+          onRevert={removePendingChange}
+          onDateChange={updatePendingDate}
+          dateLabel="Start date"
+          minDate={today}
+          getSubtitle={(m) => (m.release_date ? daysUntil(m.release_date) : undefined)}
+        />
       </div>
     </div>
   );

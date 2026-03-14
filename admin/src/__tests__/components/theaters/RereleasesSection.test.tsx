@@ -22,6 +22,7 @@ const mockRereleases = [
     id: 'run-1',
     movie_id: 'movie-1',
     release_date: '2026-04-20',
+    end_date: null,
     label: 'IMAX Re-release',
     created_at: '',
     movies: {

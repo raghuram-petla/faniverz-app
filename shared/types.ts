@@ -51,6 +51,7 @@ export interface MovieTheatricalRun {
   id: string;
   movie_id: string;
   release_date: string;
+  end_date: string | null;
   label: string | null;
   created_at: string;
 }

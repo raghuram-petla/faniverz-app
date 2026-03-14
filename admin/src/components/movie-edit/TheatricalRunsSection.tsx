@@ -8,6 +8,7 @@ interface TheatricalRun {
   id: string;
   movie_id: string;
   release_date: string;
+  end_date: string | null;
   label: string | null;
   created_at: string;
 }
@@ -52,13 +53,24 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
               key={run.id}
               className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3"
             >
-              <span className="text-on-surface font-medium flex-1">{run.release_date}</span>
+              {/* @contract Date range: release_date → end_date (or "Now" if still active) */}
+              <div className="flex-1 min-w-0">
+                <span className="text-on-surface font-medium">{run.release_date}</span>
+                <span className="text-on-surface-muted mx-1.5">→</span>
+                {run.end_date ? (
+                  <span className="text-on-surface font-medium">{run.end_date}</span>
+                ) : (
+                  <span className="text-xs bg-green-600/20 text-green-400 px-2 py-0.5 rounded">
+                    Now
+                  </span>
+                )}
+              </div>
               {run.label ? (
-                <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">
+                <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded shrink-0">
                   {run.label}
                 </span>
               ) : (
-                <span className="text-xs bg-input text-on-surface-subtle px-2 py-0.5 rounded">
+                <span className="text-xs bg-input text-on-surface-subtle px-2 py-0.5 rounded shrink-0">
                   Original
                 </span>
               )}

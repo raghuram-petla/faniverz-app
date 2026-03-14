@@ -2,9 +2,30 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { PendingChangesSection } from '@/components/theaters/PendingChangesSection';
 
 const mockChanges = [
-  { movieId: '1', title: 'Movie A', inTheaters: true, date: '2026-03-14', label: null },
-  { movieId: '2', title: 'Movie B', inTheaters: false, date: '2026-03-14', label: null },
-  { movieId: '3', title: 'Movie C', inTheaters: true, date: '2026-04-01', label: 'Re-release' },
+  {
+    movieId: '1',
+    title: 'Movie A',
+    posterUrl: null,
+    inTheaters: true,
+    date: '2026-03-14',
+    label: null,
+  },
+  {
+    movieId: '2',
+    title: 'Movie B',
+    posterUrl: null,
+    inTheaters: false,
+    date: '2026-03-14',
+    label: null,
+  },
+  {
+    movieId: '3',
+    title: 'Movie C',
+    posterUrl: null,
+    inTheaters: true,
+    date: '2026-04-01',
+    label: 'Re-release',
+  },
 ];
 
 const defaultProps = {
@@ -74,7 +95,14 @@ describe('PendingChangesSection', () => {
       <PendingChangesSection
         {...defaultProps}
         changes={[
-          { movieId: '2', title: 'Movie B', inTheaters: false, date: '2026-03-14', label: null },
+          {
+            movieId: '2',
+            title: 'Movie B',
+            posterUrl: null,
+            inTheaters: false,
+            date: '2026-03-14',
+            label: null,
+          },
         ]}
       />,
     );
@@ -87,7 +115,14 @@ describe('PendingChangesSection', () => {
       <PendingChangesSection
         {...defaultProps}
         changes={[
-          { movieId: '1', title: 'Movie A', inTheaters: true, date: '2026-03-14', label: null },
+          {
+            movieId: '1',
+            title: 'Movie A',
+            posterUrl: null,
+            inTheaters: true,
+            date: '2026-03-14',
+            label: null,
+          },
         ]}
       />,
     );
