@@ -86,6 +86,7 @@ describe('DashboardPage', () => {
   it('renders quick action links', () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Add Movie')).toBeInTheDocument();
+    expect(screen.getByText('In Theaters')).toBeInTheDocument();
     expect(screen.getByText('Add Actor')).toBeInTheDocument();
     expect(screen.getByText('Add Feed Post')).toBeInTheDocument();
     expect(screen.getByText('Add OTT Release')).toBeInTheDocument();

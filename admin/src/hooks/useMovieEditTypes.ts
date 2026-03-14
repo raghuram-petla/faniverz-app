@@ -20,6 +20,7 @@ export interface MovieForm {
   synopsis: string;
   trailer_url: string;
   in_theaters: boolean;
+  premiere_date: string;
   original_language: string;
   is_featured: boolean;
   backdrop_focus_x: number | null;
@@ -115,6 +116,7 @@ export interface MovieEditHandlerDeps {
     synopsis: string | null;
     trailer_url: string | null;
     in_theaters: boolean;
+    premiere_date: string | null;
     original_language: string | null;
     is_featured: boolean;
     backdrop_focus_x: number | null;

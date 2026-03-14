@@ -88,6 +88,15 @@ export function BasicInfoSection({
           value={form.release_date}
           onValueChange={(v) => updateField('release_date', v)}
         />
+        {/* @nullable premiere_date — only set when movie has advance premiere shows */}
+        <FormInput
+          label="Premiere Date (optional)"
+          type="date"
+          value={form.premiere_date}
+          onValueChange={(v) => updateField('premiere_date', v)}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <FormField label="Currently In Theaters">
           <label className="flex items-center gap-3 bg-input rounded-xl px-4 py-3 cursor-pointer">
             <input
@@ -101,8 +110,6 @@ export function BasicInfoSection({
             </span>
           </label>
         </FormField>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
         <FormSelect
           label="Original Language"
           value={form.original_language}

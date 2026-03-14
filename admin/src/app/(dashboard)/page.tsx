@@ -12,6 +12,7 @@ import {
   Star,
   MessageSquare,
   MessageCircle,
+  Clapperboard,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -29,6 +30,14 @@ export default function DashboardPage() {
       color: 'text-red-500',
       bgColor: 'bg-red-600/20',
       show: true,
+    },
+    {
+      label: 'In Theaters',
+      href: '/theaters',
+      icon: Clapperboard,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-600/20',
+      show: canViewPage('theaters'),
     },
     {
       label: 'Add Actor',

@@ -18,6 +18,7 @@ export type AdminPage =
   | 'sync'
   | 'audit'
   | 'app-users'
+  | 'theaters'
   | 'users';
 
 /** Entity types that support CRUD */
@@ -48,6 +49,7 @@ const ALL_PAGES: Set<AdminPage> = new Set([
   'sync',
   'audit',
   'app-users',
+  'theaters',
   'users',
 ]);
 
@@ -74,6 +76,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'cast',
     'production-houses',
     'ott',
+    'theaters',
     'audit',
   ]),
 };

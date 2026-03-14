@@ -1,5 +1,5 @@
 'use client';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Check,
@@ -13,7 +13,6 @@ import {
   Users,
   Calendar,
 } from 'lucide-react';
-import Link from 'next/link';
 import { useMovieEditState } from '@/hooks/useMovieEditState';
 import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
 import { PreviewPanel } from '@/components/movie-edit/PreviewPanel';
@@ -33,6 +32,7 @@ import {
 // @coupling: seven sub-sections (BasicInfo, Videos, Posters, Platforms, ProductionHouses, Cast, TheatricalRuns) extracted to movie-edit components
 export default function EditMoviePage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
 
   const {
     isLoading,
@@ -97,9 +97,12 @@ export default function EditMoviePage() {
       <div className="sticky top-0 z-30 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-3 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/movies" className="p-2 rounded-lg bg-input hover:bg-input-active">
+            <button
+              onClick={() => router.back()}
+              className="p-2 rounded-lg bg-input hover:bg-input-active"
+            >
               <ArrowLeft className="w-4 h-4 text-on-surface" />
-            </Link>
+            </button>
             <h1 className="text-2xl font-bold text-on-surface">Edit Movie</h1>
             {saveStatus === 'success' && (
               <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2.5 py-0.5 rounded-full font-medium">

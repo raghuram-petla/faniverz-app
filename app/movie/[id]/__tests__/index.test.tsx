@@ -91,6 +91,7 @@ const mockMovie = {
   id: 'movie-1',
   title: 'Pushpa 2',
   in_theaters: true,
+  premiere_date: null,
   release_date: '2025-03-15',
   poster_url: 'https://example.com/poster.jpg',
   backdrop_url: 'https://example.com/backdrop.jpg',
@@ -301,6 +302,7 @@ describe('MovieDetailScreen', () => {
     const upcomingMovie = {
       ...mockMovie,
       in_theaters: false,
+      premiere_date: null,
       release_date: '2099-01-01',
       rating: 0,
       review_count: 0,
@@ -385,6 +387,7 @@ describe('MovieDetailScreen', () => {
     const upcomingMovie = {
       ...mockMovie,
       in_theaters: false,
+      premiere_date: null,
       release_date: '2099-01-01',
       rating: 0,
       review_count: 0,
@@ -462,7 +465,7 @@ describe('MovieDetailScreen', () => {
   });
 
   it('renders streaming status badge for ott movies', () => {
-    const ottMovie = { ...mockMovie, in_theaters: false };
+    const ottMovie = { ...mockMovie, in_theaters: false, premiere_date: null };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: ottMovie });
     render(<MovieDetailScreen />);
     expect(screen.getByText('Streaming')).toBeTruthy();
@@ -475,7 +478,7 @@ describe('MovieDetailScreen', () => {
       isActive: false,
       onPress: mockActionPress,
     });
-    const ottMovie = { ...mockMovie, in_theaters: false };
+    const ottMovie = { ...mockMovie, in_theaters: false, premiere_date: null };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: ottMovie });
     render(<MovieDetailScreen />);
     expect(screen.getByLabelText('Save Pushpa 2')).toBeTruthy();

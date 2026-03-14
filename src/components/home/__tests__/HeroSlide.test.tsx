@@ -22,6 +22,7 @@ const baseMock: Movie = {
   tmdb_id: null,
   title: 'Pushpa 2',
   in_theaters: true,
+  premiere_date: null,
   release_date: '2025-03-01',
   poster_url: null,
   backdrop_url: null,
@@ -157,7 +158,13 @@ describe('HeroSlide', () => {
   });
 
   it('renders Save button for streaming movie', () => {
-    const streamingMovie: Movie = { ...baseMock, id: '2', title: 'Kalki', in_theaters: false };
+    const streamingMovie: Movie = {
+      ...baseMock,
+      id: '2',
+      title: 'Kalki',
+      in_theaters: false,
+      premiere_date: null,
+    };
     const { getByLabelText } = render(
       <HeroSlide {...defaultProps} movie={streamingMovie} platforms={mockPlatforms} />,
     );
@@ -165,7 +172,13 @@ describe('HeroSlide', () => {
   });
 
   it('shows Saved state when isInWatchlist is true', () => {
-    const streamingMovie: Movie = { ...baseMock, id: '2', title: 'Kalki', in_theaters: false };
+    const streamingMovie: Movie = {
+      ...baseMock,
+      id: '2',
+      title: 'Kalki',
+      in_theaters: false,
+      premiere_date: null,
+    };
     const { getByLabelText } = render(
       <HeroSlide
         {...defaultProps}

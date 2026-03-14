@@ -40,6 +40,7 @@ const mockMovie: Movie = {
   synopsis: '',
   director: 'Sukumar',
   in_theaters: true,
+  premiere_date: null,
   original_language: 'te',
   backdrop_focus_x: null,
   backdrop_focus_y: null,

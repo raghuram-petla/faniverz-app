@@ -72,6 +72,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
           synopsis: form.synopsis || null,
           trailer_url: form.trailer_url || null,
           in_theaters: form.in_theaters,
+          premiere_date: form.premiere_date || null,
           original_language: form.original_language || null,
           is_featured: form.is_featured,
           backdrop_focus_x: form.backdrop_focus_x,

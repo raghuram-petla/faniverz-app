@@ -40,6 +40,7 @@ const mockMovie = {
   productionHouses: [],
   platforms: [],
   in_theaters: true,
+  premiere_date: null,
 } as any;
 
 const baseProps = { movie: mockMovie, movieStatus: 'in_theaters' as any, releaseYear: 2024 };

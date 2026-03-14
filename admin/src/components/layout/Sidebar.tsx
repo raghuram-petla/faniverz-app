@@ -100,8 +100,9 @@ export function Sidebar() {
     <aside
       className={`${collapsed ? 'w-[68px]' : 'w-64'} bg-surface-card border-r border-outline min-h-screen p-4 flex flex-col transition-[width] duration-200`}
     >
-      {/* @contract logo swaps between full image and compact text based on collapsed state */}
-      <div className="flex justify-center mb-4">
+      {/* @contract logo swaps between full image and compact icon based on collapsed state */}
+      {/* @invariant fixed h-[79px] keeps nav items at same vertical position in both states */}
+      <div className="flex justify-center items-start mb-0 h-[79px]">
         {collapsed ? (
           <Image
             src="/logo-header.png"
@@ -123,7 +124,7 @@ export function Sidebar() {
 
       <button
         onClick={toggle}
-        className={`mb-4 flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg text-on-surface-muted hover:bg-surface-elevated hover:text-on-surface transition-colors w-full`}
+        className={`mb-2 flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg text-on-surface-muted hover:bg-surface-elevated hover:text-on-surface transition-colors w-full`}
         aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
@@ -137,11 +138,9 @@ export function Sidebar() {
             {section.label && (
               <div className="mt-5 mb-3">
                 <div className="border-t border-outline" />
-                {!collapsed && (
-                  <p className="px-3 mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-on-surface-muted">
-                    {section.label}
-                  </p>
-                )}
+                <p className="px-3 mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-on-surface-muted">
+                  {collapsed ? section.label?.[0] : section.label}
+                </p>
               </div>
             )}
             <div className="space-y-1">

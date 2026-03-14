@@ -87,6 +87,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: 'https://example.com/poster.jpg',
           rating: 4.5,
           in_theaters: true,
+          premiere_date: null,
         },
       },
       {
@@ -101,6 +102,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: 'https://example.com/poster2.jpg',
           rating: 3.8,
           in_theaters: true,
+          premiere_date: null,
         },
       },
     ];
@@ -125,6 +127,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 4.0,
           in_theaters: true,
+          premiere_date: null,
         },
       },
       {
@@ -139,6 +142,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 3.0,
           in_theaters: true,
+          premiere_date: null,
         },
       },
     ];
@@ -222,6 +226,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 3.0,
           in_theaters: true,
+          premiere_date: null,
         },
       },
       {
@@ -236,6 +241,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 4.5,
           in_theaters: true,
+          premiere_date: null,
         },
       },
     ];
@@ -270,6 +276,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 4.0,
           in_theaters: true,
+          premiere_date: null,
         },
       },
       {
@@ -284,6 +291,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 3.5,
           in_theaters: true,
+          premiere_date: null,
         },
       },
     ];
@@ -324,6 +332,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 4.5,
           in_theaters: true,
+          premiere_date: null,
         },
       },
     ];
@@ -349,6 +358,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 4.0,
           in_theaters: true,
+          premiere_date: null,
         },
       },
       {
@@ -363,6 +373,7 @@ describe('WatchedMoviesScreen', () => {
           poster_url: null,
           rating: 3.8,
           in_theaters: true,
+          premiere_date: null,
         },
       },
     ];

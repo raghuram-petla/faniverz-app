@@ -31,6 +31,7 @@ export interface Movie {
   synopsis: string | null;
   director: string | null;
   in_theaters: boolean;
+  premiere_date: string | null;
   original_language: string | null;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;

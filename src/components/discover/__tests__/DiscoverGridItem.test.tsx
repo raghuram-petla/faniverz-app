@@ -75,6 +75,7 @@ const baseMovie: Movie = {
   synopsis: 'A test movie',
   director: 'Test Director',
   in_theaters: false,
+  premiere_date: null,
   original_language: null,
   backdrop_focus_x: null,
   backdrop_focus_y: null,

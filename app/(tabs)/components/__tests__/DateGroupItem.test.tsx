@@ -21,6 +21,7 @@ const makeMovie = (id: string, title: string) => ({
   id,
   title,
   in_theaters: true,
+  premiere_date: null,
   release_date: '2025-03-15',
   poster_url: null,
   backdrop_url: null,

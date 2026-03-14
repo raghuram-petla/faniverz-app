@@ -41,6 +41,7 @@ const mockMovie: Movie = {
   synopsis: null,
   director: 'Sukumar',
   in_theaters: true,
+  premiere_date: null,
   rating: 4.5,
   review_count: 100,
   is_featured: false,
@@ -77,6 +78,7 @@ describe('MovieCard', () => {
     const upcomingMovie = {
       ...mockMovie,
       in_theaters: false,
+      premiere_date: null,
       release_date: '2099-01-01',
       rating: 0,
     };
@@ -95,7 +97,7 @@ describe('MovieCard', () => {
         display_order: 1,
       },
     ];
-    const ottMovie = { ...mockMovie, in_theaters: false };
+    const ottMovie = { ...mockMovie, in_theaters: false, premiere_date: null };
     const { UNSAFE_queryAllByType } = render(<MovieCard movie={ottMovie} platforms={platforms} />);
     expect(UNSAFE_queryAllByType).toBeTruthy();
   });

@@ -66,6 +66,7 @@ const mockMovie = {
   productionHouses: [],
   platforms: [],
   in_theaters: true,
+  premiere_date: null,
 } as any;
 
 const onExploreMedia = jest.fn();

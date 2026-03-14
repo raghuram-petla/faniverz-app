@@ -36,6 +36,7 @@ const defaultForm: MovieForm = {
   synopsis: '',
   trailer_url: '',
   in_theaters: false,
+  premiere_date: '',
   original_language: 'te',
   is_featured: false,
   backdrop_focus_x: null,

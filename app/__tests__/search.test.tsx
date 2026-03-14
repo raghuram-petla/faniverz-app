@@ -41,6 +41,7 @@ const mockResults: Movie[] = [
     tmdb_id: null,
     title: 'Pushpa 2',
     in_theaters: true,
+    premiere_date: null,
     release_date: '2024-12-05',
     poster_url: null,
     backdrop_url: null,
@@ -337,7 +338,7 @@ describe('SearchScreen', () => {
   });
 
   it('shows Streaming badge for ott movie in results', () => {
-    const ottResult = { ...mockResults[0], id: 'ott-1', in_theaters: false };
+    const ottResult = { ...mockResults[0], id: 'ott-1', in_theaters: false, premiere_date: null };
     mockUseUniversalSearch.mockReturnValue({
       data: { movies: [ottResult], actors: [], productionHouses: [] },
     });
@@ -362,6 +363,7 @@ describe('SearchScreen', () => {
       ...mockResults[0],
       id: 'up-1',
       in_theaters: false,
+      premiere_date: null,
       release_date: '2099-01-01',
     };
     mockUseUniversalSearch.mockReturnValue({

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAdminMovies, useDeleteMovie } from '@/hooks/useAdminMovies';
 import { usePermissions } from '@/hooks/usePermissions';
 import { formatDate } from '@/lib/utils';
-import { Plus, Edit, Trash2, Loader2, Film } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Film, Pencil } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { LoadMoreButton } from '@/components/common/LoadMoreButton';
@@ -117,23 +117,31 @@ export default function MoviesPage() {
             </thead>
             <tbody className="divide-y divide-outline-subtle">
               {movies.map((movie) => (
-                <tr key={movie.id} className="hover:bg-surface-elevated">
+                <tr key={movie.id} className="hover:bg-surface-elevated group">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      {movie.poster_url ? (
-                        <img
-                          src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
-                          alt=""
-                          className="w-10 h-14 rounded object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-14 rounded bg-input flex items-center justify-center">
-                          <Film className="w-4 h-4 text-on-surface-subtle" />
+                      <Link href={`/movies/${movie.id}`} className="relative shrink-0">
+                        {movie.poster_url ? (
+                          <img
+                            src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
+                            alt=""
+                            className="w-10 h-14 rounded object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-14 rounded bg-input flex items-center justify-center">
+                            <Film className="w-4 h-4 text-on-surface-subtle" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/50 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Pencil className="w-3 h-3 text-white" />
                         </div>
-                      )}
-                      <span className="font-medium text-on-surface truncate max-w-[200px] inline-block align-middle">
+                      </Link>
+                      <Link
+                        href={`/movies/${movie.id}`}
+                        className="font-medium text-on-surface hover:text-red-400 transition-colors truncate max-w-[200px] inline-block align-middle"
+                      >
                         {movie.title}
-                      </span>
+                      </Link>
                     </div>
                   </td>
                   <td className="px-4 py-3">

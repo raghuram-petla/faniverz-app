@@ -31,6 +31,7 @@ const mockMovie: Movie = {
   synopsis: null,
   director: 'Chandoo Mondeti',
   in_theaters: true,
+  premiere_date: null,
   rating: 4.7,
   review_count: 6234,
   is_featured: false,
@@ -71,7 +72,7 @@ describe('MovieListItem', () => {
   });
 
   it('renders OTT platform names when provided', () => {
-    const ottMovie = { ...mockMovie, in_theaters: false };
+    const ottMovie = { ...mockMovie, in_theaters: false, premiere_date: null };
     const { getByText } = render(<MovieListItem movie={ottMovie} platforms={mockPlatforms} />);
     expect(getByText('Netflix')).toBeTruthy();
     expect(getByText('Aha')).toBeTruthy();
@@ -83,7 +84,13 @@ describe('MovieListItem', () => {
   });
 
   it('does not show rating for upcoming movies', () => {
-    const upcoming = { ...mockMovie, in_theaters: false, release_date: '2099-01-01', rating: 0 };
+    const upcoming = {
+      ...mockMovie,
+      in_theaters: false,
+      premiere_date: null,
+      release_date: '2099-01-01',
+      rating: 0,
+    };
     const { queryByText } = render(<MovieListItem movie={upcoming} />);
     expect(queryByText('/ 5')).toBeNull();
   });
