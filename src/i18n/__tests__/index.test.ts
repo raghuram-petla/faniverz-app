@@ -48,10 +48,10 @@ describe('i18n initialization', () => {
     const initConfig = mockInit.mock.calls[0][0];
     expect(initConfig.resources).toHaveProperty('en');
     expect(initConfig.resources).toHaveProperty('te');
-    expect(initConfig.fallbackLng).toBe('en');
+    expect(initConfig.fallbackLng).toBe('te');
   });
 
-  it('defaults to English for non-Telugu device language', async () => {
+  it('defaults to English when device language is English', async () => {
     let languageReady: Promise<void>;
     jest.isolateModules(() => {
       const mod = require('../index');

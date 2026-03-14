@@ -28,7 +28,7 @@ const INITIAL_FORM: MovieForm = {
   synopsis: '',
   trailer_url: '',
   in_theaters: false,
-  original_language: '',
+  original_language: 'te',
   is_featured: false,
   backdrop_focus_x: null,
   backdrop_focus_y: null,

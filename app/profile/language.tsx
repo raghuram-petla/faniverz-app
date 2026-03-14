@@ -28,7 +28,7 @@ const LANGUAGES: Language[] = [
 export default function LanguageScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<string>(i18n.language ?? 'en');
+  const [selected, setSelected] = useState<string>(i18n.language ?? 'te');
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 

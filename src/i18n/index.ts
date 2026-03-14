@@ -6,10 +6,10 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import en from './en.json';
 import te from './te.json';
 
-// @sync: languageReady promise must resolve before i18n.t() calls return stored preference. Components rendering before this resolves get 'en' fallback regardless of user's saved language.
-// @edge: only 'en' and 'te' supported — any other device languageCode (e.g. 'hi', 'ta') silently falls back to 'en'. No user-facing notification of unsupported language.
-const deviceLanguage = getLocales()[0]?.languageCode ?? 'en';
-const supportedLanguage = deviceLanguage === 'te' ? 'te' : 'en';
+// @sync: languageReady promise must resolve before i18n.t() calls return stored preference. Components rendering before this resolves get 'te' fallback regardless of user's saved language.
+// @edge: only 'en' and 'te' supported — any other device languageCode (e.g. 'hi', 'ta') silently falls back to 'te'. No user-facing notification of unsupported language.
+const deviceLanguage = getLocales()[0]?.languageCode ?? 'te';
+const supportedLanguage = deviceLanguage === 'en' ? 'en' : 'te';
 
 /** Resolves when stored language preference has been loaded */
 export const languageReady: Promise<void> = AsyncStorage.getItem(STORAGE_KEYS.PREFERRED_LANG)
@@ -27,7 +27,7 @@ export const languageReady: Promise<void> = AsyncStorage.getItem(STORAGE_KEYS.PR
         te: { translation: te },
       },
       lng,
-      fallbackLng: 'en',
+      fallbackLng: 'te',
       interpolation: {
         escapeValue: false,
       },
