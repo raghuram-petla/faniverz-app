@@ -1,5 +1,15 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Sidebar } from '@/components/layout/Sidebar';
+
+const mockToggle = vi.fn();
+let mockCollapsed = false;
+
+vi.mock('@/hooks/useSidebarState', () => ({
+  useSidebarState: () => ({
+    collapsed: mockCollapsed,
+    toggle: mockToggle,
+  }),
+}));
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -63,6 +73,11 @@ vi.mock('@/hooks/usePermissions', () => ({
 }));
 
 describe('Sidebar', () => {
+  beforeEach(() => {
+    mockCollapsed = false;
+    mockToggle.mockClear();
+  });
+
   it('renders all nav items for super admin', () => {
     render(<Sidebar />);
 
@@ -96,5 +111,46 @@ describe('Sidebar', () => {
   it('has the Faniverz branding logo', () => {
     render(<Sidebar />);
     expect(screen.getByAltText('Faniverz')).toBeInTheDocument();
+  });
+
+  it('renders collapse toggle button next to Content header', () => {
+    render(<Sidebar />);
+    expect(screen.getByLabelText('Collapse sidebar')).toBeInTheDocument();
+  });
+
+  it('calls toggle when collapse button is clicked', () => {
+    render(<Sidebar />);
+    fireEvent.click(screen.getByLabelText('Collapse sidebar'));
+    expect(mockToggle).toHaveBeenCalledOnce();
+  });
+
+  it('hides labels and section headers when collapsed', () => {
+    mockCollapsed = true;
+    render(<Sidebar />);
+
+    // Nav labels should not be visible
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Movies')).not.toBeInTheDocument();
+
+    // Section headers should not be visible
+    expect(screen.queryByText('Content')).not.toBeInTheDocument();
+    expect(screen.queryByText('Moderation')).not.toBeInTheDocument();
+
+    // Expand button should still be visible
+    expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+  });
+
+  it('shows expand button when collapsed', () => {
+    mockCollapsed = true;
+    render(<Sidebar />);
+    expect(screen.getByLabelText('Expand sidebar')).toBeInTheDocument();
+  });
+
+  it('shows icon logo when collapsed', () => {
+    mockCollapsed = true;
+    render(<Sidebar />);
+    const logo = screen.getByAltText('Faniverz');
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute('src', expect.stringContaining('logo-icon'));
   });
 });

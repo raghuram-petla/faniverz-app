@@ -18,8 +18,11 @@ import {
   FileText,
   Shield,
   UsersRound,
+  Clapperboard,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useSidebarState } from '@/hooks/useSidebarState';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import type { AdminPage } from '@/hooks/usePermissions';
 import type { LucideIcon } from 'lucide-react';
 
@@ -44,6 +47,7 @@ const navSections: NavSection[] = [
     label: 'Content',
     items: [
       { href: '/movies', label: 'Movies', icon: Film, page: 'movies' },
+      { href: '/theaters', label: 'In Theaters', icon: Clapperboard, page: 'theaters' },
       { href: '/cast', label: 'Cast/Actors', icon: Users, page: 'cast' },
       {
         href: '/production-houses',
@@ -80,6 +84,7 @@ const navSections: NavSection[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { canViewPage } = usePermissions();
+  const { collapsed, toggle } = useSidebarState();
 
   // @coupling usePermissions — empty sections are pruned so they don't show headers with no links
   const visibleSections = navSections
@@ -89,27 +94,54 @@ export function Sidebar() {
     }))
     .filter((section) => section.items.length > 0);
 
+  const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
+
   return (
-    <aside className="w-64 bg-surface-card border-r border-outline min-h-screen p-4">
-      <div className="flex justify-center mb-8">
-        <Image
-          src="/logo-full.png"
-          alt="Faniverz"
-          width={220}
-          height={79}
-          className="object-contain"
-        />
+    <aside
+      className={`${collapsed ? 'w-[68px]' : 'w-64'} bg-surface-card border-r border-outline min-h-screen p-4 flex flex-col transition-[width] duration-200`}
+    >
+      {/* @contract logo swaps between full image and compact text based on collapsed state */}
+      <div className="flex justify-center mb-4">
+        {collapsed ? (
+          <Image
+            src="/logo-header.png"
+            alt="Faniverz"
+            width={36}
+            height={36}
+            className="object-contain"
+          />
+        ) : (
+          <Image
+            src="/logo-full.png"
+            alt="Faniverz"
+            width={220}
+            height={79}
+            className="object-contain"
+          />
+        )}
       </div>
 
-      <nav className="space-y-4">
+      <button
+        onClick={toggle}
+        className={`mb-4 flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2 rounded-lg text-on-surface-muted hover:bg-surface-elevated hover:text-on-surface transition-colors w-full`}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        <ToggleIcon className="w-5 h-5 shrink-0" />
+        {!collapsed && <span className="text-sm font-medium">Collapse</span>}
+      </button>
+
+      <nav className="space-y-4 flex-1">
         {visibleSections.map((section, idx) => (
           <div key={section.label ?? idx}>
             {section.label && (
               <div className="mt-5 mb-3">
                 <div className="border-t border-outline" />
-                <p className="px-3 mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-on-surface-muted">
-                  {section.label}
-                </p>
+                {!collapsed && (
+                  <p className="px-3 mt-3 text-xs font-extrabold uppercase tracking-[0.2em] text-on-surface-muted">
+                    {section.label}
+                  </p>
+                )}
               </div>
             )}
             <div className="space-y-1">
@@ -122,14 +154,15 @@ export function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    title={collapsed ? item.label : undefined}
+                    className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-red-600 text-white'
                         : 'text-on-surface-muted hover:bg-surface-elevated hover:text-on-surface'
                     }`}
                   >
-                    <Icon className="w-5 h-5" />
-                    {item.label}
+                    <Icon className="w-5 h-5 shrink-0" />
+                    {!collapsed && item.label}
                   </Link>
                 );
               })}

@@ -8,8 +8,9 @@ import { ImpersonationBar } from '@/components/layout/ImpersonationBar';
 import { AccessDenied } from '@/components/common/AccessDenied';
 import { ImpersonationProvider } from '@/hooks/useImpersonation';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { SidebarContext, useSidebarProvider } from '@/hooks/useSidebarState';
 import { Loader2 } from 'lucide-react';
 import type { AdminPage } from '@/hooks/usePermissions';
 
@@ -19,6 +20,7 @@ import type { AdminPage } from '@/hooks/usePermissions';
 // and DashboardContent renders the page without checking canViewPage.
 const ROUTE_PAGE_MAP: Record<string, AdminPage> = {
   '/movies': 'movies',
+  '/theaters': 'theaters',
   '/cast': 'cast',
   '/production-houses': 'production-houses',
   '/ott': 'ott',
@@ -61,6 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const queryClient = getQueryClient();
   const { user, isLoading, isAccessDenied } = useAuth();
   const router = useRouter();
+  const sidebarState = useSidebarProvider();
 
   // @sideeffect: redirects to /login via router.replace (not push), so the dashboard
   // URL is removed from browser history. After login, AuthProvider redirects back to '/'
@@ -89,16 +92,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <QueryClientProvider client={queryClient}>
       <ImpersonationProvider>
-        <div className="flex min-h-screen bg-surface">
-          <Sidebar />
-          <div className="flex-1 flex flex-col">
-            <Header />
-            <ImpersonationBar />
-            <main className="flex-1 p-6">
-              <DashboardContent>{children}</DashboardContent>
-            </main>
+        <SidebarContext.Provider value={sidebarState}>
+          <div className="flex min-h-screen bg-surface">
+            <Sidebar />
+            <div className="flex-1 flex flex-col">
+              <Header />
+              <ImpersonationBar />
+              <main className="flex-1 p-6">
+                <DashboardContent>{children}</DashboardContent>
+              </main>
+            </div>
           </div>
-        </div>
+        </SidebarContext.Provider>
       </ImpersonationProvider>
     </QueryClientProvider>
   );
