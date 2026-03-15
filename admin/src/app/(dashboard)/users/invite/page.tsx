@@ -90,7 +90,7 @@ export default function InviteAdminPage() {
           href="/users"
           className="flex items-center gap-2 text-on-surface-muted hover:text-on-surface text-sm"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to User Management
+          <ArrowLeft className="w-4 h-4" /> Back to Admin Management
         </Link>
 
         <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-4">
@@ -129,7 +129,7 @@ export default function InviteAdminPage() {
             onClick={() => router.push('/users')}
             className="w-full bg-input hover:bg-input-hover text-on-surface px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            Back to User Management
+            Back to Admin Management
           </button>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function InviteAdminPage() {
         href="/users"
         className="flex items-center gap-2 text-on-surface-muted hover:text-on-surface text-sm"
       >
-        <ArrowLeft className="w-4 h-4" /> Back to User Management
+        <ArrowLeft className="w-4 h-4" /> Back to Admin Management
       </Link>
 
       <div className="bg-surface-card border border-outline rounded-xl p-6">

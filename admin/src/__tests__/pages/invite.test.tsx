@@ -70,9 +70,9 @@ describe('InviteAdminPage', () => {
     expect(screen.getByText('Invite New Admin')).toBeInTheDocument();
   });
 
-  it('renders "Back to User Management" link', () => {
+  it('renders "Back to Admin Management" link', () => {
     renderWithProviders(<InviteAdminPage />);
-    expect(screen.getByText('Back to User Management')).toBeInTheDocument();
+    expect(screen.getByText('Back to Admin Management')).toBeInTheDocument();
   });
 
   it('renders email input with placeholder "admin@example.com"', () => {

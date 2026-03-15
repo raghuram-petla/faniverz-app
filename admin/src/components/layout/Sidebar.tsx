@@ -75,7 +75,7 @@ const navSections: NavSection[] = [
       { href: '/sync', label: 'Sync', icon: RefreshCw, page: 'sync' },
       { href: '/audit', label: 'Audit Log', icon: FileText, page: 'audit' },
       { href: '/app-users', label: 'App Users', icon: UsersRound, page: 'app-users' },
-      { href: '/users', label: 'User Management', icon: Shield, page: 'users' },
+      { href: '/users', label: 'Admin Management', icon: Shield, page: 'users' },
     ],
   },
 ];
