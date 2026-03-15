@@ -97,6 +97,159 @@ describe('ActorSearchDropdown', () => {
     expect(onSelect).toHaveBeenCalledWith(mockActors[0]);
   });
 
+  it('shows quick-add button when no results and onQuickAdd provided', () => {
+    render(
+      <ActorSearchDropdown
+        actors={[]}
+        searchQuery="New Actor"
+        onSearchChange={vi.fn()}
+        onSelect={vi.fn()}
+        selectedActorId=""
+        onQuickAdd={vi.fn()}
+      />,
+    );
+    fireEvent.focus(screen.getByPlaceholderText('Type to search\u2026'));
+    expect(screen.getByText('Create "New Actor"')).toBeInTheDocument();
+  });
+
+  it('does not show quick-add button when onQuickAdd is not provided', () => {
+    render(
+      <ActorSearchDropdown
+        actors={[]}
+        searchQuery="New Actor"
+        onSearchChange={vi.fn()}
+        onSelect={vi.fn()}
+        selectedActorId=""
+      />,
+    );
+    fireEvent.focus(screen.getByPlaceholderText('Type to search\u2026'));
+    expect(screen.queryByText(/Create/)).not.toBeInTheDocument();
+  });
+
+  it('calls onQuickAdd with trimmed name when quick-add clicked', () => {
+    const onQuickAdd = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ActorSearchDropdown
+        actors={[]}
+        searchQuery="  New Actor  "
+        onSearchChange={vi.fn()}
+        onSelect={vi.fn()}
+        selectedActorId=""
+        onQuickAdd={onQuickAdd}
+      />,
+    );
+    fireEvent.focus(screen.getByPlaceholderText('Type to search\u2026'));
+    fireEvent.click(screen.getByText('Create "New Actor"'));
+    expect(onQuickAdd).toHaveBeenCalledWith('New Actor');
+  });
+
+  it('shows "Creating\u2026" when quickAddPending is true', () => {
+    render(
+      <ActorSearchDropdown
+        actors={[]}
+        searchQuery="New Actor"
+        onSearchChange={vi.fn()}
+        onSelect={vi.fn()}
+        selectedActorId=""
+        onQuickAdd={vi.fn()}
+        quickAddPending={true}
+      />,
+    );
+    fireEvent.focus(screen.getByPlaceholderText('Type to search\u2026'));
+    expect(screen.getByText('Creating\u2026')).toBeInTheDocument();
+  });
+
+  it('selects actor with ArrowDown + Enter', () => {
+    const onSelect = vi.fn();
+    render(
+      <ActorSearchDropdown
+        actors={mockActors}
+        searchQuery="Ma"
+        onSearchChange={vi.fn()}
+        onSelect={onSelect}
+        selectedActorId=""
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith(mockActors[0]);
+  });
+
+  it('navigates to second actor with two ArrowDown presses', () => {
+    const onSelect = vi.fn();
+    render(
+      <ActorSearchDropdown
+        actors={mockActors}
+        searchQuery="Ma"
+        onSearchChange={vi.fn()}
+        onSelect={onSelect}
+        selectedActorId=""
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith(mockActors[1]);
+  });
+
+  it('wraps around with ArrowUp from top', () => {
+    const onSelect = vi.fn();
+    render(
+      <ActorSearchDropdown
+        actors={mockActors}
+        searchQuery="Ma"
+        onSearchChange={vi.fn()}
+        onSelect={onSelect}
+        selectedActorId=""
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith(mockActors[1]);
+  });
+
+  it('closes dropdown on Escape', () => {
+    render(
+      <ActorSearchDropdown
+        actors={mockActors}
+        searchQuery="Ma"
+        onSearchChange={vi.fn()}
+        onSelect={vi.fn()}
+        selectedActorId=""
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    expect(screen.getByText('Mahesh Babu')).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.queryByText('Mahesh Babu')).not.toBeInTheDocument();
+  });
+
+  it('selects quick-add with keyboard when no actors match', () => {
+    const onQuickAdd = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ActorSearchDropdown
+        actors={[]}
+        searchQuery="New Actor"
+        onSearchChange={vi.fn()}
+        onSelect={vi.fn()}
+        selectedActorId=""
+        onQuickAdd={onQuickAdd}
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onQuickAdd).toHaveBeenCalledWith('New Actor');
+  });
+
   it('does not show dropdown when selectedActorId is set', () => {
     render(
       <ActorSearchDropdown

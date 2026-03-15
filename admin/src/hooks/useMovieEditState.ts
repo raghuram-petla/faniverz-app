@@ -62,7 +62,7 @@ export function useMovieEditState(id: string) {
 
   const { data: castData = [] } = useMovieCast(id);
   const [castSearchQuery, setCastSearchQuery] = useState('');
-  const { data: actorsData } = useAdminActors(castSearchQuery);
+  const { data: actorsData } = useAdminActors(castSearchQuery.trim());
   const actors = actorsData?.pages.flat() ?? [];
   const addCast = useAddCast();
   const removeCast = useRemoveCast();

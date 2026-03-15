@@ -1,11 +1,12 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { arrayMove } from '@dnd-kit/sortable';
 import { type DragEndEvent } from '@dnd-kit/core';
 import type { MovieCast, Actor } from '@/lib/types';
 import { FormInput, FormSelect } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
+import { useCreateActor } from '@/hooks/useAdminCast';
 import { ActorSearchDropdown } from './ActorSearchDropdown';
 import { SortableList } from './SortableCastList';
 
@@ -66,6 +67,25 @@ export function CastSection({
   onReorder,
 }: Props) {
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
+  const createActor = useCreateActor();
+
+  // @sideeffect creates actor with just a name, then auto-selects in the form
+  const handleQuickAdd = useCallback(
+    async (name: string) => {
+      const personType = castForm.credit_type === 'crew' ? 'technician' : 'actor';
+      const created = await createActor.mutateAsync({
+        name,
+        person_type: personType,
+        photo_url: null,
+        birth_date: null,
+        height_cm: null,
+      } as Partial<Actor>);
+      const newActor = created as Actor;
+      setCastForm((p) => ({ ...p, actor_id: newActor.id }));
+      setCastSearchQuery(newActor.name);
+    },
+    [castForm.credit_type, createActor, setCastSearchQuery],
+  );
 
   // @invariant cast and crew are rendered in separate drag-and-drop lists
   const castItems = useMemo(
@@ -165,7 +185,7 @@ export function CastSection({
             actors={actors}
             searchQuery={castSearchQuery}
             onSearchChange={(q) => {
-              setCastSearchQuery(q);
+              setCastSearchQuery(q.trimStart());
               setCastForm((p) => ({ ...p, actor_id: '' }));
             }}
             onSelect={(a) => {
@@ -173,6 +193,8 @@ export function CastSection({
               setCastSearchQuery(a.name);
             }}
             selectedActorId={castForm.actor_id}
+            onQuickAdd={handleQuickAdd}
+            quickAddPending={createActor.isPending}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
