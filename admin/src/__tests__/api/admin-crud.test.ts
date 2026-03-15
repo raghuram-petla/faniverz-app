@@ -2,31 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 
 const mockGetUser = vi.fn();
-const mockUpdateFn = vi.fn();
-const mockInsertFn = vi.fn();
-const mockDeleteFn = vi.fn();
-
-// Build chainable query mock — supports .eq(), .select(), .single(), and direct await
-function chainable(finalResult: unknown) {
-  const makeProxy = (): unknown =>
-    new Proxy(
-      {},
-      {
-        get: (_target, prop) => {
-          // Make it thenable so `await query` resolves to finalResult
-          if (prop === 'then') {
-            return (resolve: (v: unknown) => void) => resolve(finalResult);
-          }
-          if (prop === 'single' || prop === 'maybeSingle') {
-            return () => Promise.resolve(finalResult);
-          }
-          // Any other method returns a new chainable proxy
-          return () => makeProxy();
-        },
-      },
-    );
-  return makeProxy();
-}
+const mockRpc = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
@@ -45,27 +21,17 @@ vi.mock('@supabase/supabase-js', () => ({
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
     from: () => ({
-      // For verifyAdmin
       select: () => ({
         eq: () => ({
           single: () =>
             Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
         }),
       }),
-      // For mutations
-      update: (...args: unknown[]) => {
-        mockUpdateFn(...args);
-        return chainable({ data: { id: 'test-id', name: 'Updated' }, error: null });
-      },
-      insert: (...args: unknown[]) => {
-        mockInsertFn(...args);
-        return chainable({ data: { id: 'new-id', name: 'Created' }, error: null });
-      },
-      delete: (...args: unknown[]) => {
-        mockDeleteFn(...args);
-        return chainable({ error: null });
-      },
     }),
+    rpc: (...args: unknown[]) => {
+      mockRpc(...args);
+      return Promise.resolve({ data: { id: 'test-id', title: 'Test' }, error: null });
+    },
   }),
 }));
 
@@ -102,19 +68,37 @@ describe('PATCH /api/admin-crud', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 403 for disallowed tables', async () => {
-    const res = await PATCH(
-      makeRequest('PATCH', { table: 'profiles', id: '1', data: { name: 'X' } }),
-    );
-    expect(res.status).toBe(403);
-  });
-
-  it('updates and returns the row for allowed tables', async () => {
+  it('calls admin_crud RPC with correct params', async () => {
     const res = await PATCH(
       makeRequest('PATCH', { table: 'movies', id: 'test-id', data: { title: 'Updated' } }),
     );
     expect(res.status).toBe(200);
-    expect(mockUpdateFn).toHaveBeenCalledWith({ title: 'Updated' });
+    expect(mockRpc).toHaveBeenCalledWith('admin_crud', {
+      p_admin_id: 'admin-1',
+      p_table: 'movies',
+      p_operation: 'update',
+      p_data: { title: 'Updated' },
+      p_id: 'test-id',
+      p_filters: null,
+    });
+  });
+
+  it('passes filters when id is not provided', async () => {
+    await PATCH(
+      makeRequest('PATCH', {
+        table: 'movie_platforms',
+        filters: { movie_id: 'm1', platform_id: 'aha' },
+        data: { available_from: '2026-01-01' },
+      }),
+    );
+    expect(mockRpc).toHaveBeenCalledWith('admin_crud', {
+      p_admin_id: 'admin-1',
+      p_table: 'movie_platforms',
+      p_operation: 'update',
+      p_data: { available_from: '2026-01-01' },
+      p_id: null,
+      p_filters: { movie_id: 'm1', platform_id: 'aha' },
+    });
   });
 });
 
@@ -125,15 +109,22 @@ describe('POST /api/admin-crud', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 403 for disallowed tables', async () => {
-    const res = await POST(makeRequest('POST', { table: 'profiles', data: { name: 'X' } }));
-    expect(res.status).toBe(403);
+  it('returns 400 when table or data is missing', async () => {
+    const res = await POST(makeRequest('POST', { table: 'movies' }));
+    expect(res.status).toBe(400);
   });
 
-  it('inserts and returns the row for allowed tables', async () => {
+  it('calls admin_crud RPC with insert operation', async () => {
     const res = await POST(makeRequest('POST', { table: 'movies', data: { title: 'New' } }));
     expect(res.status).toBe(200);
-    expect(mockInsertFn).toHaveBeenCalledWith({ title: 'New' });
+    expect(mockRpc).toHaveBeenCalledWith('admin_crud', {
+      p_admin_id: 'admin-1',
+      p_table: 'movies',
+      p_operation: 'insert',
+      p_data: { title: 'New' },
+      p_id: null,
+      p_filters: null,
+    });
   });
 });
 
@@ -149,16 +140,17 @@ describe('DELETE /api/admin-crud', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 403 for disallowed tables', async () => {
-    const res = await DELETE(makeRequest('DELETE', { table: 'profiles', id: '1' }));
-    expect(res.status).toBe(403);
-  });
-
-  it('deletes by id for allowed tables', async () => {
+  it('calls admin_crud RPC with delete operation by id', async () => {
     const res = await DELETE(makeRequest('DELETE', { table: 'movies', id: 'del-1' }));
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toEqual({ success: true });
+    expect(mockRpc).toHaveBeenCalledWith('admin_crud', {
+      p_admin_id: 'admin-1',
+      p_table: 'movies',
+      p_operation: 'delete',
+      p_data: null,
+      p_id: 'del-1',
+      p_filters: null,
+    });
   });
 
   it('accepts filters for composite-key deletes', async () => {
@@ -169,5 +161,13 @@ describe('DELETE /api/admin-crud', () => {
       }),
     );
     expect(res.status).toBe(200);
+    expect(mockRpc).toHaveBeenCalledWith('admin_crud', {
+      p_admin_id: 'admin-1',
+      p_table: 'movie_production_houses',
+      p_operation: 'delete',
+      p_data: null,
+      p_id: null,
+      p_filters: { movie_id: 'm1', production_house_id: 'ph1' },
+    });
   });
 });

@@ -7,7 +7,13 @@ import { useEffectiveUser } from '@/hooks/useImpersonation';
 import { AUDIT_ENTITY_TYPES, ADMIN_ROLE_LABELS } from '@/lib/types';
 import type { AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { actionStyles, formatDetails } from '@/components/audit/auditUtils';
+import {
+  actionStyles,
+  formatDetails,
+  getEntityDisplayName,
+  canRevert,
+} from '@/components/audit/auditUtils';
+import { RevertButton } from '@/components/audit/RevertButton';
 import { Shield, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
@@ -82,7 +88,7 @@ export default function AuditLogPage() {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Search by admin email, entity type, entity ID..."
+              placeholder="Search by admin email, entity type, entity name..."
               isLoading={isFetching}
               className="flex-1 min-w-[200px]"
             />
@@ -169,7 +175,7 @@ export default function AuditLogPage() {
                   Entity Type
                 </th>
                 <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
-                  Entity ID
+                  Entity
                 </th>
                 <th className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
                   Timestamp
@@ -224,9 +230,10 @@ export default function AuditLogPage() {
                         {entry.entity_type}
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-on-surface-muted text-sm font-mono">
-                          {entry.entity_id ? `${entry.entity_id.slice(0, 8)}...` : '—'}
-                          {/* @edge Truncated UUID for readability; full ID visible in expanded details */}
+                        {/* @edge Shows human-readable name from details; falls back to truncated ID */}
+                        <span className="text-on-surface text-sm">
+                          {getEntityDisplayName(entry.entity_type, entry.details) ??
+                            (entry.entity_id ? `${entry.entity_id.slice(0, 8)}...` : '—')}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-on-surface-muted text-sm">
@@ -236,7 +243,7 @@ export default function AuditLogPage() {
                     {isExpanded && (
                       <tr key={`${entry.id}-details`} className="border-b border-outline-subtle">
                         <td colSpan={6} className="px-6 py-4 bg-surface">
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <p className="text-xs font-medium text-on-surface-subtle uppercase tracking-wider">
                               {entry.action === 'update' ? 'Changes' : 'Details'}
                             </p>
@@ -245,6 +252,16 @@ export default function AuditLogPage() {
                                 {formatDetails(entry.action, entry.details)}
                               </pre>
                             </div>
+                            {canRevert(entry.action, entry.details) && (
+                              <RevertButton
+                                entryId={entry.id}
+                                action={entry.action}
+                                revertedAt={entry.reverted_at}
+                                revertedByName={
+                                  entry.reverted_by_display_name ?? entry.reverted_by_email
+                                }
+                              />
+                            )}
                           </div>
                         </td>
                       </tr>

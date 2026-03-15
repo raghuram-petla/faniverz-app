@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getChangedFields, formatDetails, actionStyles } from '@/components/audit/auditUtils';
+import {
+  getChangedFields,
+  formatDetails,
+  actionStyles,
+  getEntityDisplayName,
+  canRevert,
+  getRevertDescription,
+} from '@/components/audit/auditUtils';
 
 describe('getChangedFields', () => {
   it('returns changed fields when old and new differ', () => {
@@ -139,6 +146,73 @@ describe('formatDetails', () => {
   });
 });
 
+describe('getEntityDisplayName', () => {
+  it('returns title for movies from new', () => {
+    expect(getEntityDisplayName('movies', { new: { title: 'Pushpa 2' } })).toBe('Pushpa 2');
+  });
+
+  it('returns name for actors from new', () => {
+    expect(getEntityDisplayName('actors', { new: { name: 'Allu Arjun' } })).toBe('Allu Arjun');
+  });
+
+  it('returns name for platforms', () => {
+    expect(getEntityDisplayName('platforms', { new: { name: 'Netflix' } })).toBe('Netflix');
+  });
+
+  it('returns name for production_houses', () => {
+    expect(getEntityDisplayName('production_houses', { new: { name: 'Mythri' } })).toBe('Mythri');
+  });
+
+  it('returns character_name for movie_cast', () => {
+    expect(getEntityDisplayName('movie_cast', { new: { character_name: 'Pushpa Raj' } })).toBe(
+      'Pushpa Raj',
+    );
+  });
+
+  it('returns title for notifications', () => {
+    expect(getEntityDisplayName('notifications', { new: { title: 'New Release' } })).toBe(
+      'New Release',
+    );
+  });
+
+  it('returns title for surprise_content', () => {
+    expect(getEntityDisplayName('surprise_content', { new: { title: 'BTS Video' } })).toBe(
+      'BTS Video',
+    );
+  });
+
+  it('returns poster_type for movie_posters', () => {
+    expect(getEntityDisplayName('movie_posters', { new: { poster_type: 'landscape' } })).toBe(
+      'landscape',
+    );
+  });
+
+  it('returns status for movie_theatrical_runs', () => {
+    expect(getEntityDisplayName('movie_theatrical_runs', { new: { status: 'running' } })).toBe(
+      'running',
+    );
+  });
+
+  it('falls back to old when new is missing (delete)', () => {
+    expect(getEntityDisplayName('movies', { old: { title: 'Deleted Movie' } })).toBe(
+      'Deleted Movie',
+    );
+  });
+
+  it('returns null when no details entity found', () => {
+    expect(getEntityDisplayName('movies', {})).toBeNull();
+  });
+
+  it('returns null when name field is missing from entity', () => {
+    expect(getEntityDisplayName('movies', { new: { year: 2025 } })).toBeNull();
+  });
+
+  it('tries title then name for unknown entity types', () => {
+    expect(getEntityDisplayName('unknown_type', { new: { title: 'Test' } })).toBe('Test');
+    expect(getEntityDisplayName('unknown_type', { new: { name: 'Test' } })).toBe('Test');
+  });
+});
+
 describe('actionStyles', () => {
   it('has create, update, delete, and sync keys', () => {
     expect(Object.keys(actionStyles)).toEqual(['create', 'update', 'delete', 'sync']);
@@ -177,5 +251,53 @@ describe('actionStyles', () => {
       expect(style).toHaveProperty('bg');
       expect(style).toHaveProperty('text');
     }
+  });
+});
+
+describe('canRevert', () => {
+  it('returns true for update with old data', () => {
+    expect(canRevert('update', { old: { title: 'X' }, new: { title: 'Y' } })).toBe(true);
+  });
+
+  it('returns true for create with new data', () => {
+    expect(canRevert('create', { new: { title: 'X' } })).toBe(true);
+  });
+
+  it('returns true for delete with old data', () => {
+    expect(canRevert('delete', { old: { title: 'X' } })).toBe(true);
+  });
+
+  it('returns false for sync action', () => {
+    expect(canRevert('sync', { old: {}, new: {} })).toBe(false);
+  });
+
+  it('returns false for update without old data', () => {
+    expect(canRevert('update', { new: { title: 'X' } })).toBe(false);
+  });
+
+  it('returns false for delete without old data', () => {
+    expect(canRevert('delete', { new: { title: 'X' } })).toBe(false);
+  });
+
+  it('returns false for create without new data', () => {
+    expect(canRevert('create', { old: { title: 'X' } })).toBe(false);
+  });
+});
+
+describe('getRevertDescription', () => {
+  it('returns correct description for update', () => {
+    expect(getRevertDescription('update')).toBe('Restore previous values');
+  });
+
+  it('returns correct description for create', () => {
+    expect(getRevertDescription('create')).toBe('Delete this entity');
+  });
+
+  it('returns correct description for delete', () => {
+    expect(getRevertDescription('delete')).toBe('Re-create this entity');
+  });
+
+  it('returns fallback for unknown action', () => {
+    expect(getRevertDescription('sync')).toBe('Revert this change');
   });
 });
