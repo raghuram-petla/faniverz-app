@@ -9,7 +9,10 @@ import { useAddTheatricalRun } from '@/hooks/useAdminTheatricalRuns';
 import { useAddVideo } from '@/hooks/useAdminVideos';
 import { useAddPoster } from '@/hooks/useAdminPosters';
 import { useAddMovieProductionHouse } from '@/hooks/useMovieProductionHouses';
-import { useAdminProductionHouses } from '@/hooks/useAdminProductionHouses';
+import {
+  useAdminProductionHouses,
+  useCreateProductionHouse,
+} from '@/hooks/useAdminProductionHouses';
 import { useAddMoviePlatform } from '@/hooks/useAdminOtt';
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
@@ -47,8 +50,10 @@ export function useMovieAddState() {
   const { data: actorsData } = useAdminActors(castSearchQuery);
   const actors = actorsData?.pages.flat() ?? [];
   const { data: allPlatforms = [] } = useAdminPlatforms();
-  const { data: allProductionHousesData } = useAdminProductionHouses();
-  const allProductionHouses = allProductionHousesData?.pages.flat() ?? [];
+  const [phSearchQuery, setPHSearchQuery] = useState('');
+  const { data: phSearchData } = useAdminProductionHouses(phSearchQuery.trim());
+  const phSearchResults = phSearchData?.pages.flat() ?? [];
+  const createProductionHouse = useCreateProductionHouse();
 
   // Mutations
   const createMovie = useCreateMovie();
@@ -212,7 +217,10 @@ export function useMovieAddState() {
     castSearchQuery,
     setCastSearchQuery,
     allPlatforms,
-    allProductionHouses,
+    phSearchResults,
+    phSearchQuery,
+    setPHSearchQuery,
+    createProductionHouse,
     pendingPlatformAdds: pending.pendingPlatformAdds,
     pendingPHAdds: pending.pendingPHAdds,
     isDirty: derived.isDirty,

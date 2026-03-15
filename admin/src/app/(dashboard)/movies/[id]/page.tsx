@@ -75,7 +75,10 @@ export default function EditMoviePage() {
     castSearchQuery,
     setCastSearchQuery,
     allPlatforms,
-    allProductionHouses,
+    phSearchResults,
+    phSearchQuery,
+    setPHSearchQuery,
+    createProductionHouse,
     pendingPlatformAdds,
     pendingPHAdds,
     pendingRunEndIds,
@@ -279,10 +282,24 @@ export default function EditMoviePage() {
             </h2>
             <ProductionHousesSection
               visibleProductionHouses={visibleProductionHouses}
-              allProductionHouses={allProductionHouses}
+              productionHouses={phSearchResults}
+              searchQuery={phSearchQuery}
+              onSearchChange={setPHSearchQuery}
               onAdd={(ph) => setPendingPHAdds((prev) => [...prev, ph])}
               onRemove={handlePHRemove}
               pendingPHAdds={pendingPHAdds}
+              onQuickAdd={async (name) => {
+                const created = await createProductionHouse.mutateAsync({
+                  name,
+                  logo_url: null,
+                });
+                setPendingPHAdds((prev) => [
+                  ...prev,
+                  { production_house_id: created.id, _ph: created },
+                ]);
+                setPHSearchQuery('');
+              }}
+              quickAddPending={createProductionHouse.isPending}
             />
           </div>
 

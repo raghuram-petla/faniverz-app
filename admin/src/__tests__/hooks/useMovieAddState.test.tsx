@@ -45,6 +45,7 @@ vi.mock('@/hooks/useMovieProductionHouses', () => ({
 
 vi.mock('@/hooks/useAdminProductionHouses', () => ({
   useAdminProductionHouses: () => ({ data: { pages: [] } }),
+  useCreateProductionHouse: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('@/hooks/useAdminOtt', () => ({

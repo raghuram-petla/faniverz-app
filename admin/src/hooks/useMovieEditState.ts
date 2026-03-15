@@ -28,7 +28,10 @@ import {
   useAddMovieProductionHouse,
   useRemoveMovieProductionHouse,
 } from '@/hooks/useMovieProductionHouses';
-import { useAdminProductionHouses } from '@/hooks/useAdminProductionHouses';
+import {
+  useAdminProductionHouses,
+  useCreateProductionHouse,
+} from '@/hooks/useAdminProductionHouses';
 import {
   useMoviePlatforms,
   useAddMoviePlatform,
@@ -85,8 +88,10 @@ export function useMovieEditState(id: string) {
   const { data: movieProductionHouses = [] } = useMovieProductionHouses(id);
   const addMovieProductionHouse = useAddMovieProductionHouse();
   const removeMovieProductionHouse = useRemoveMovieProductionHouse();
-  const { data: allProductionHousesData } = useAdminProductionHouses();
-  const allProductionHouses = allProductionHousesData?.pages.flat() ?? [];
+  const [phSearchQuery, setPHSearchQuery] = useState('');
+  const { data: phSearchData } = useAdminProductionHouses(phSearchQuery.trim());
+  const phSearchResults = phSearchData?.pages.flat() ?? [];
+  const createProductionHouse = useCreateProductionHouse();
 
   const { data: moviePlatforms = [] } = useMoviePlatforms(id);
   const { data: allPlatforms = [] } = useAdminPlatforms();
@@ -121,15 +126,12 @@ export function useMovieEditState(id: string) {
   // Pending changes (deferred to Save)
   const pending = useMovieEditPendingState();
 
-  // Track initial form state for dirty detection
   const [initialForm, setInitialForm] = useState<MovieForm | null>(null);
 
-  // Save & Delete state
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
   // @sideeffect Hydrates form state from server data when movie loads or refreshes
-  // @edge Overwrites local form on every movie data change — pending edits are lost on refetch
   useEffect(() => {
     if (movie) {
       const loaded: MovieForm = {
@@ -154,7 +156,6 @@ export function useMovieEditState(id: string) {
       pending.resetPendingState();
     }
   }, [movie]);
-  // @sideeffect Auto-clears 'success' save status after 3s for transient toast UX
   useEffect(() => {
     if (saveStatus === 'success') {
       const timer = setTimeout(() => setSaveStatus('idle'), 3000);
@@ -162,7 +163,6 @@ export function useMovieEditState(id: string) {
     }
   }, [saveStatus]);
 
-  // Derived visible lists + isDirty
   const derived = useMovieEditDerived({
     id,
     castData,
@@ -176,10 +176,8 @@ export function useMovieEditState(id: string) {
     ...pending,
   });
 
-  // Warn on unsaved navigation
   useUnsavedChangesWarning(derived.isDirty);
 
-  // @coupling Passes full dependency graph to handler factory — any new pending state must be added here
   const handlers = createMovieEditHandlers({
     id,
     form,
@@ -258,11 +256,13 @@ export function useMovieEditState(id: string) {
     castSearchQuery,
     setCastSearchQuery,
     allPlatforms,
-    allProductionHouses,
+    phSearchResults,
+    phSearchQuery,
+    setPHSearchQuery,
+    createProductionHouse,
     pendingPlatformAdds: pending.pendingPlatformAdds,
     pendingPHAdds: pending.pendingPHAdds,
     pendingRunEndIds: pending.pendingRunEndIds,
-    // Exposed for FormChangesDock integration
     initialForm,
     pendingCastAdds: pending.pendingCastAdds,
     pendingCastRemoveIds: pending.pendingCastRemoveIds,

@@ -1,9 +1,8 @@
 'use client';
-import { useState } from 'react';
-import { Building2, Plus, X } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Building2, Plus, X, Loader2 } from 'lucide-react';
 import type { ProductionHouse } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
-import { INPUT_CLASSES } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
 
 type PendingPH = {
@@ -18,22 +17,100 @@ interface MovieProductionHouse {
   production_house?: ProductionHouse;
 }
 
-interface Props {
+// @contract controlled typeahead — parent provides filtered list and manages search state
+export interface Props {
   visibleProductionHouses: MovieProductionHouse[];
-  allProductionHouses: ProductionHouse[];
+  productionHouses: ProductionHouse[];
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
   onAdd: (ph: PendingPH) => void;
   onRemove: (phId: string, isPending: boolean) => void;
   pendingPHAdds: PendingPH[];
+  // @contract quick-add callback — creates PH with just a name; auto-selects on completion
+  onQuickAdd?: (name: string) => Promise<void>;
+  quickAddPending?: boolean;
 }
 
 export function ProductionHousesSection({
   visibleProductionHouses,
-  allProductionHouses,
+  productionHouses,
+  searchQuery,
+  onSearchChange,
   onAdd,
   onRemove,
   pendingPHAdds,
+  onQuickAdd,
+  quickAddPending,
 }: Props) {
-  const [selectedId, setSelectedId] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  // @contract -1 = nothing highlighted; 0..N-1 = PH item; N = quick-add button
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // @invariant already-added PHs are excluded from search results
+  const filtered = productionHouses.filter(
+    (ph) => !visibleProductionHouses.some((mph) => mph.production_house_id === ph.id),
+  );
+
+  const showDropdown = dropdownOpen && searchQuery.length >= 2;
+  const hasQuickAdd = onQuickAdd && filtered.length === 0 && searchQuery.trim().length >= 2;
+  const totalItems = filtered.length + (hasQuickAdd ? 1 : 0);
+
+  // @sideeffect reset highlight when results or dropdown visibility changes
+  useEffect(() => {
+    setHighlightIndex(-1);
+  }, [filtered.length, showDropdown]);
+
+  // @sideeffect scroll highlighted item into view
+  useEffect(() => {
+    if (highlightIndex < 0 || !listRef.current) return;
+    const items = listRef.current.querySelectorAll('[data-dropdown-item]');
+    const el = items[highlightIndex] as HTMLElement | undefined;
+    el?.scrollIntoView?.({ block: 'nearest' });
+  }, [highlightIndex]);
+
+  // @sideeffect close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = useCallback(
+    (ph: ProductionHouse) => {
+      onAdd({ production_house_id: ph.id, _ph: ph });
+      onSearchChange('');
+      setDropdownOpen(false);
+    },
+    [onAdd, onSearchChange],
+  );
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (!showDropdown || totalItems === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightIndex((prev) => (prev < totalItems - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightIndex((prev) => (prev > 0 ? prev - 1 : totalItems - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightIndex >= 0 && highlightIndex < filtered.length) {
+        handleSelect(filtered[highlightIndex]);
+      } else if (highlightIndex === filtered.length && hasQuickAdd) {
+        onQuickAdd!(searchQuery.trim());
+      }
+    } else if (e.key === 'Escape') {
+      setDropdownOpen(false);
+      setHighlightIndex(-1);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -82,38 +159,75 @@ export function ProductionHousesSection({
 
       <div className="bg-surface-elevated rounded-xl p-4 space-y-3">
         <p className="text-sm font-semibold text-on-surface-muted">Add Production House</p>
-        <div className="flex gap-3">
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className={`flex-1 ${INPUT_CLASSES.compact}`}
-          >
-            <option value="">Select production house…</option>
-            {/* @invariant already-added production houses are excluded from the dropdown */}
-            {allProductionHouses
-              .filter(
-                (ph) => !visibleProductionHouses.some((mph) => mph.production_house_id === ph.id),
-              )
-              .map((ph) => (
-                <option key={ph.id} value={ph.id}>
-                  {ph.name}
-                </option>
-              ))}
-          </select>
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            disabled={!selectedId}
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => {
-              const ph = allProductionHouses.find((p) => p.id === selectedId);
-              onAdd({ production_house_id: selectedId, _ph: ph });
-              setSelectedId('');
+        <div ref={wrapperRef} className="relative">
+          <input
+            type="text"
+            placeholder="Type to search…"
+            value={searchQuery}
+            onChange={(e) => {
+              onSearchChange(e.target.value);
+              setDropdownOpen(true);
             }}
-          >
-            Add
-          </Button>
+            onFocus={() => setDropdownOpen(true)}
+            onKeyDown={handleKeyDown}
+            className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
+          />
+          {/* @edge dropdown only opens with >= 2 chars */}
+          {showDropdown && (
+            <div
+              ref={listRef}
+              className="absolute z-40 top-full mt-1 left-0 right-0 bg-surface border border-outline rounded-lg shadow-xl max-h-48 overflow-y-auto"
+            >
+              {filtered.length > 0 ? (
+                filtered.map((ph, i) => (
+                  <button
+                    key={ph.id}
+                    type="button"
+                    data-dropdown-item
+                    onClick={() => handleSelect(ph)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-on-surface hover:bg-input text-left ${i === highlightIndex ? 'bg-input' : ''}`}
+                  >
+                    <div className="w-6 h-6 rounded bg-input overflow-hidden shrink-0 flex items-center justify-center">
+                      {/* @nullable logo_url — falls back to Building2 icon */}
+                      {ph.logo_url ? (
+                        <img
+                          src={getImageUrl(ph.logo_url, 'sm') ?? ph.logo_url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Building2 className="w-3 h-3 text-on-surface-subtle" />
+                      )}
+                    </div>
+                    {ph.name}
+                  </button>
+                ))
+              ) : (
+                <>
+                  <p className="px-3 py-2 text-sm text-on-surface-subtle">
+                    No matching production houses
+                  </p>
+                  {/* @sideeffect quick-add creates PH in DB and auto-adds to movie */}
+                  {hasQuickAdd && (
+                    <button
+                      type="button"
+                      data-dropdown-item
+                      disabled={quickAddPending}
+                      onClick={() => onQuickAdd!(searchQuery.trim())}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-status-red hover:bg-input rounded-b-lg disabled:opacity-50 ${highlightIndex === 0 ? 'bg-input' : ''}`}
+                    >
+                      {quickAddPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      {quickAddPending ? 'Creating…' : `Create "${searchQuery.trim()}"`}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

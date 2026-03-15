@@ -93,7 +93,7 @@ export function PlatformsSection({
           <select
             value={selectedPlatformId}
             onChange={(e) => setSelectedPlatformId(e.target.value)}
-            className={`flex-1 ${INPUT_CLASSES.compact}`}
+            className={`flex-[3] min-w-0 ${INPUT_CLASSES.compact}`}
           >
             <option value="">Select platform…</option>
             {/* @invariant already-added platforms are excluded from the dropdown */}
@@ -110,7 +110,7 @@ export function PlatformsSection({
             value={availableFrom}
             onChange={(e) => setAvailableFrom(e.target.value)}
             placeholder="Available from"
-            className={INPUT_CLASSES.compact}
+            className={`flex-[2] min-w-0 ${INPUT_CLASSES.compact}`}
           />
           <Button
             type="button"
