@@ -248,6 +248,7 @@ let totalProcessed = 0;
 let skippedExisting = 0;
 let migratedExternal = 0;
 let generatedVariants = 0;
+let skippedBroken = 0;
 let failed = 0;
 const manualFixSql: string[] = [];
 
@@ -338,11 +339,15 @@ async function backfillSource(source: ImageSource) {
 
   // ── Handle external URLs: download → upload to R2 with variants → update DB ──
   if (externals.length > 0) {
-    console.log(`  External URLs to migrate: ${externals.length}`);
+    process.stdout.write(`  Migrating ${externals.length} external URLs... `);
     await pLimit(externals, 3, async ({ id, url, key }) => {
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${url}`);
+        if (!response.ok) {
+          // 404s on seed/placeholder URLs are expected — skip quietly
+          skippedBroken++;
+          return;
+        }
         const buffer = Buffer.from(await response.arrayBuffer());
         const contentType = response.headers.get('content-type') ?? 'image/jpeg';
 
@@ -369,7 +374,6 @@ async function backfillSource(source: ImageSource) {
           );
           failed++;
         } else {
-          console.log(`\n    [${id}] ${url} → ${newUrl} (rows affected: ${count})`);
           migratedExternal++;
           process.stdout.write('M');
         }
@@ -380,9 +384,11 @@ async function backfillSource(source: ImageSource) {
     });
   }
 
+  if (externals.length > 0) console.log(''); // newline after progress dots
+
   // ── Handle R2 URLs missing variants: download original → generate & upload variants ──
   if (missingVariants.length > 0) {
-    console.log(`  R2 images missing variants: ${missingVariants.length}`);
+    process.stdout.write(`  Generating variants for ${missingVariants.length} R2 images... `);
     await pLimit(missingVariants, 3, async ({ id, key }) => {
       try {
         const getResult = await r2.send(new GetObjectCommand({ Bucket: source.bucket, Key: key }));
@@ -416,6 +422,8 @@ async function backfillSource(source: ImageSource) {
     });
   }
 
+  if (missingVariants.length > 0) console.log(''); // newline after progress dots
+
   if (externals.length === 0 && missingVariants.length === 0) {
     console.log('  Nothing to do.');
   }
@@ -438,6 +446,7 @@ async function main() {
   console.log('\n\n=== Summary ===');
   console.log(`  Total rows checked    : ${totalProcessed}`);
   console.log(`  Already complete      : ${skippedExisting}`);
+  console.log(`  Skipped (broken URLs) : ${skippedBroken}`);
   console.log(`  Migrated from external: ${migratedExternal}`);
   console.log(`  Generated variants    : ${generatedVariants}`);
   console.log(`  Failed                : ${failed}`);

@@ -7,6 +7,7 @@ import type { Actor, MovieCast } from '@/lib/types';
 
 // @coupling: createCrudHooks — paginated list/single/create/update/delete for actors table
 // @edge: enabledFn skips queries for 1-char search strings to avoid noisy partial matches
+// @sideeffect Actor name/photo changes affect cast views that JOIN with actors table
 const actorsCrud = createCrudHooks<Actor>({
   table: 'actors',
   queryKeyBase: 'actors',
@@ -15,6 +16,7 @@ const actorsCrud = createCrudHooks<Actor>({
   orderAscending: true,
   searchField: 'name',
   enabledFn: (s) => s.length >= 2 || s === '',
+  extraInvalidateKeys: [['admin', 'cast']],
 });
 
 export const useAdminActors = actorsCrud.usePaginatedList;

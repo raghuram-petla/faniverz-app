@@ -206,10 +206,18 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
   }
 
   // @sideeffect Deletes movie and redirects to /movies — cascades handled by DB FK constraints
+  // @sideeffect Also invalidates theater + dashboard caches since the deleted movie may be in theaters
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
       try {
         await deleteMovie.mutateAsync(id);
+        queryClient.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'upcoming-movies'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'upcoming-rereleases'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'ott'] });
         router.push('/movies');
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : JSON.stringify(err);

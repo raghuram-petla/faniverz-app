@@ -86,6 +86,10 @@ else
   info "Supabase started"
 fi
 
+# Detect LAN IP so the mobile device/emulator can reach Supabase and MinIO
+LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
+if [ "$LAN_IP" = "" ]; then LAN_IP="localhost"; fi
+
 # Capture Supabase keys
 SUPABASE_URL="http://127.0.0.1:54321"
 SUPABASE_ANON_KEY=$(supabase status --output json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['ANON_KEY'])" 2>/dev/null || echo "")
@@ -113,9 +117,6 @@ MINIO_SECRET_KEY="minioadmin"
 MINIO_PORT=9000
 MINIO_CONSOLE_PORT=9001
 
-# Detect LAN IP so the mobile device/emulator can reach MinIO
-LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
-if [ "$LAN_IP" = "" ]; then LAN_IP="localhost"; fi
 info "Detected LAN IP: ${LAN_IP}"
 
 MINIO_ENDPOINT="http://${LAN_IP}:${MINIO_PORT}"

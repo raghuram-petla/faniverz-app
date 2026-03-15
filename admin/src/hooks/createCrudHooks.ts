@@ -26,6 +26,8 @@ export interface CrudConfig {
   select?: string;
   /** Custom enabled logic for list queries */
   enabledFn?: (search: string) => boolean;
+  /** Additional query key prefixes to invalidate on any mutation */
+  extraInvalidateKeys?: readonly string[][];
 }
 
 // @contract T must have an 'id' field — used for single-item invalidation and update/delete keys
@@ -42,10 +44,17 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     paginated = true,
     pageSize = DEFAULT_PAGE_SIZE,
     enabledFn,
+    extraInvalidateKeys = [],
   } = config;
 
   const listKey = ['admin', queryKeyBase] as const;
   const singleKey = (id: string) => ['admin', singleKeyBase, id] as const;
+
+  function invalidateExtra(qc: ReturnType<typeof useQueryClient>) {
+    for (const key of extraInvalidateKeys) {
+      qc.invalidateQueries({ queryKey: key });
+    }
+  }
 
   function usePaginatedList(search = '') {
     return useInfiniteQuery({
@@ -114,6 +123,7 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
       },
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: [...listKey] });
+        invalidateExtra(qc);
       },
       onError: (error: Error) => {
         window.alert(error.message || 'Operation failed');
@@ -131,6 +141,7 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
       onSuccess: (data: T) => {
         qc.invalidateQueries({ queryKey: [...listKey] });
         qc.invalidateQueries({ queryKey: singleKey(data.id) });
+        invalidateExtra(qc);
       },
       onError: (error: Error) => {
         window.alert(error.message || 'Operation failed');
@@ -149,6 +160,7 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
       onSuccess: (id: string) => {
         qc.invalidateQueries({ queryKey: [...listKey] });
         qc.invalidateQueries({ queryKey: singleKey(id) });
+        invalidateExtra(qc);
       },
       onError: (error: Error) => {
         window.alert(error.message || 'Operation failed');

@@ -1983,83 +1983,83 @@ FROM movies m WHERE m.title = 'Hanu-Man' ON CONFLICT DO NOTHING;
 -- 8. Movie Posters (20 — triggers auto-populate news_feed)
 -- -----------------------------------------------------------------------------
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_first_look.jpg', 'First Look Poster', 'The iconic first look of Pushpa Raj with the tagline "The Rule Begins".', '2024-04-01', true, 1
+SELECT m.id, 'https://placehold.co/500x750/1a1a2e/eee?text=Pushpa+2+First+Look', 'First Look Poster', 'The iconic first look of Pushpa Raj with the tagline "The Rule Begins".', '2024-04-01', true, 1
 FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_motion.jpg', 'Character Poster - Pushpa', 'Allu Arjun as Pushpa Raj — mass avatar.', '2024-06-15', false, 2
+SELECT m.id, 'https://placehold.co/500x750/2d1b69/eee?text=Pushpa+2+Character', 'Character Poster - Pushpa', 'Allu Arjun as Pushpa Raj — mass avatar.', '2024-06-15', false, 2
 FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_bday.jpg', 'Birthday Special Poster', 'Special poster released on Allu Arjun''s birthday.', '2024-04-08', false, 3
+SELECT m.id, 'https://placehold.co/500x750/8b0000/eee?text=Pushpa+2+Birthday', 'Birthday Special Poster', 'Special poster released on Allu Arjun''s birthday.', '2024-04-08', false, 3
 FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/devara_first_look.jpg', 'First Look Poster', 'Jr NTR''s fierce look from the sea — "Fear has a new name".', '2024-03-20', true, 1
+SELECT m.id, 'https://placehold.co/500x750/0a3d62/eee?text=Devara+First+Look', 'First Look Poster', 'Jr NTR''s fierce look from the sea — "Fear has a new name".', '2024-03-20', true, 1
 FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/devara_char.jpg', 'Character Poster - Janhvi', 'Janhvi Kapoor''s character reveal from Devara.', '2024-07-20', false, 2
+SELECT m.id, 'https://placehold.co/500x750/1e3a5f/eee?text=Devara+Janhvi', 'Character Poster - Janhvi', 'Janhvi Kapoor''s character reveal from Devara.', '2024-07-20', false, 2
 FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_first_look.jpg', 'First Look Poster', 'The epic reveal of Prabhas as Bhairava.', '2024-01-15', true, 1
+SELECT m.id, 'https://placehold.co/500x750/4a0e0e/eee?text=Kalki+First+Look', 'First Look Poster', 'The epic reveal of Prabhas as Bhairava.', '2024-01-15', true, 1
 FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_amitabh.jpg', 'Character Poster - Ashwatthama', 'Amitabh Bachchan as the immortal Ashwatthama.', '2024-02-10', false, 2
+SELECT m.id, 'https://placehold.co/500x750/3c1361/eee?text=Kalki+Ashwatthama', 'Character Poster - Ashwatthama', 'Amitabh Bachchan as the immortal Ashwatthama.', '2024-02-10', false, 2
 FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_deepika.jpg', 'Character Poster - Sumathi', 'Deepika Padukone as the mysterious Sumathi.', '2024-03-08', false, 3
+SELECT m.id, 'https://placehold.co/500x750/5b2c6f/eee?text=Kalki+Sumathi', 'Character Poster - Sumathi', 'Deepika Padukone as the mysterious Sumathi.', '2024-03-08', false, 3
 FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/gamechanger_fl.jpg', 'First Look Poster', 'Ram Charan in a powerful IAS officer avatar.', '2024-03-27', true, 1
+SELECT m.id, 'https://placehold.co/500x750/0b5345/eee?text=Game+Changer+FL', 'First Look Poster', 'Ram Charan in a powerful IAS officer avatar.', '2024-03-27', true, 1
 FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/gamechanger_diwali.jpg', 'Diwali Special Poster', 'Festival special poster with the entire cast.', '2024-11-01', false, 2
+SELECT m.id, 'https://placehold.co/500x750/6b3a0a/eee?text=Game+Changer+Diwali', 'Diwali Special Poster', 'Festival special poster with the entire cast.', '2024-11-01', false, 2
 FROM movies m WHERE m.title = 'Game Changer' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/lucky_first_look.jpg', 'First Look Poster', 'Nani as the mild-mannered banker with a secret.', '2024-07-01', true, 1
+SELECT m.id, 'https://placehold.co/500x750/2c3e50/eee?text=Lucky+Baskhar+FL', 'First Look Poster', 'Nani as the mild-mannered banker with a secret.', '2024-07-01', true, 1
 FROM movies m WHERE m.title = 'Lucky Baskhar' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/ssmb29_fl.jpg', 'First Look Poster', 'Mahesh Babu''s stunning transformation for Rajamouli''s vision.', '2025-01-09', true, 1
+SELECT m.id, 'https://placehold.co/500x750/1b1464/eee?text=SSMB+29+FL', 'First Look Poster', 'Mahesh Babu''s stunning transformation for Rajamouli''s vision.', '2025-01-09', true, 1
 FROM movies m WHERE m.title = 'SSMB 29' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/tillu2_fl.jpg', 'First Look Poster', 'Tillu is back — funnier and crazier.', '2024-02-15', true, 1
+SELECT m.id, 'https://placehold.co/500x750/c0392b/eee?text=Tillu+Square+FL', 'First Look Poster', 'Tillu is back — funnier and crazier.', '2024-02-15', true, 1
 FROM movies m WHERE m.title = 'Tillu Square' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/hanuman_fl.jpg', 'First Look Poster', 'A small-town hero with a divine destiny.', '2023-12-01', true, 1
+SELECT m.id, 'https://placehold.co/500x750/e67e22/eee?text=Hanu-Man+FL', 'First Look Poster', 'A small-town hero with a divine destiny.', '2023-12-01', true, 1
 FROM movies m WHERE m.title = 'Hanu-Man' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/guntur_fl.jpg', 'First Look Poster', 'Mahesh Babu in a massy Trivikram entertainer.', '2023-12-25', true, 1
+SELECT m.id, 'https://placehold.co/500x750/7d3c98/eee?text=Guntur+Kaaram+FL', 'First Look Poster', 'Mahesh Babu in a massy Trivikram entertainer.', '2023-12-25', true, 1
 FROM movies m WHERE m.title = 'Guntur Kaaram' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/matka_fl.jpg', 'First Look Poster', 'Varun Tej''s retro-styled character reveal.', '2024-08-15', true, 1
+SELECT m.id, 'https://placehold.co/500x750/784212/eee?text=Matka+FL', 'First Look Poster', 'Varun Tej''s retro-styled character reveal.', '2024-08-15', true, 1
 FROM movies m WHERE m.title = 'Matka' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/pushpa2_release.jpg', 'Release Day Poster', 'The grand release day poster — "Wildfire has arrived".', '2024-12-05', false, 4
+SELECT m.id, 'https://placehold.co/500x750/922b21/eee?text=Pushpa+2+Release', 'Release Day Poster', 'The grand release day poster — "Wildfire has arrived".', '2024-12-05', false, 4
 FROM movies m WHERE m.title = 'Pushpa 2: The Rule' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/kalki_1000cr.jpg', '₹1000 Crore Poster', 'Celebrating Kalki 2898 AD crossing the ₹1000 crore milestone.', '2024-07-10', false, 4
+SELECT m.id, 'https://placehold.co/500x750/d4ac0d/333?text=Kalki+1000Cr', '₹1000 Crore Poster', 'Celebrating Kalki 2898 AD crossing the ₹1000 crore milestone.', '2024-07-10', false, 4
 FROM movies m WHERE m.title = 'Kalki 2898 AD' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/devara_release.jpg', 'Release Day Poster', 'The storm arrives — Devara in cinemas now.', '2024-09-27', false, 3
+SELECT m.id, 'https://placehold.co/500x750/154360/eee?text=Devara+Release', 'Release Day Poster', 'The storm arrives — Devara in cinemas now.', '2024-09-27', false, 3
 FROM movies m WHERE m.title = 'Devara: Part 1' ON CONFLICT DO NOTHING;
 
 INSERT INTO movie_posters (movie_id, image_url, title, description, poster_date, is_main, display_order)
-SELECT m.id, 'https://image.tmdb.org/t/p/w500/lucky_success.jpg', 'Blockbuster Poster', 'Lucky Baskhar declared a blockbuster!', '2024-10-20', false, 2
+SELECT m.id, 'https://placehold.co/500x750/1a5276/eee?text=Lucky+Blockbuster', 'Blockbuster Poster', 'Lucky Baskhar declared a blockbuster!', '2024-10-20', false, 2
 FROM movies m WHERE m.title = 'Lucky Baskhar' ON CONFLICT DO NOTHING;
 
 -- -----------------------------------------------------------------------------

@@ -131,9 +131,12 @@ export function useImportMovies() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (tmdbIds: number[]) => syncApi<ImportMoviesResponse>('import-movies', { tmdbIds }),
+    // @sideeffect Import creates movies + actors + cast/crew — invalidate all affected caches
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
@@ -147,10 +150,13 @@ export function useRefreshMovie() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (movieId: string) => syncApi<RefreshMovieResponse>('refresh-movie', { movieId }),
+    // @sideeffect Refresh may update cast/crew — invalidate cast cache for the movie
     onSuccess: (_data, movieId) => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
       qc.invalidateQueries({ queryKey: ['admin', 'movie', movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'cast', movieId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
@@ -163,10 +169,12 @@ export function useRefreshActor() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (actorId: string) => syncApi<RefreshActorResponse>('refresh-actor', { actorId }),
+    // @sideeffect Actor name/photo changes affect cast views that JOIN with actors
     onSuccess: (_data, actorId) => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
       qc.invalidateQueries({ queryKey: ['admin', 'actor', actorId] });
       qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');

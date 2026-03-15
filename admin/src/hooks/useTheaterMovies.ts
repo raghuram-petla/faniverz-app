@@ -116,8 +116,14 @@ export function useRemoveFromTheaters() {
           .eq('movie_id', params.movieId)
           .is('end_date', null),
       ]);
+      return params.movieId;
     },
-    onSuccess: () => invalidateAll(queryClient),
+    // @sideeffect Also invalidate single movie + theatrical-runs so edit page shows fresh data
+    onSuccess: (movieId: string) => {
+      invalidateAll(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'movie', movieId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'theatrical-runs', movieId] });
+    },
   });
 }
 
@@ -142,7 +148,13 @@ export function useAddToTheaters() {
           },
         }),
       ]);
+      return params.movieId;
     },
-    onSuccess: () => invalidateAll(queryClient),
+    // @sideeffect Also invalidate single movie + theatrical-runs so edit page shows fresh data
+    onSuccess: (movieId: string) => {
+      invalidateAll(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'movie', movieId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'theatrical-runs', movieId] });
+    },
   });
 }

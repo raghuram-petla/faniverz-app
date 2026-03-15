@@ -7,12 +7,14 @@ import type { NewsFeedItem, FeedType } from '@/lib/types';
 
 const QUERY_KEY = ['admin', 'news-feed'];
 
+// @sideeffect Feed item deletion cascades comments via FK — invalidate comments cache
 const crud = createCrudHooks<NewsFeedItem>({
   table: 'news_feed',
   queryKeyBase: 'news-feed',
   orderBy: 'published_at',
   orderAscending: false,
   paginated: false,
+  extraInvalidateKeys: [['admin', 'comments']],
 });
 
 // Custom list: multi-column ordering + JOIN + feed_type filter

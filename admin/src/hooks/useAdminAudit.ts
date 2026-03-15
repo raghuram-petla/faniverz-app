@@ -1,5 +1,5 @@
 'use client';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { AuditLogEntry } from '@/lib/types';
 
@@ -27,6 +27,8 @@ function sanitizeSearchTerm(term: string): string {
 export function useAdminAuditLog(filters?: AuditFilters) {
   return useInfiniteQuery({
     queryKey: ['admin', 'audit', filters],
+    // @contract Audit data is time-sensitive — always refetch when page is visited
+    staleTime: 0,
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -73,5 +75,44 @@ export function useAdminAuditLog(filters?: AuditFilters) {
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
+  });
+}
+
+// @contract Calls the /api/audit/revert endpoint to revert a single audit entry
+// @sideeffect Nuclear cache invalidation: reverts can touch any audited table, so
+// we invalidate ALL ['admin', ...] queries. Reverts are rare; the refetch cost is
+// negligible compared to showing stale data on entity edit pages.
+export function useRevertAuditEntry() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (auditEntryId: string) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const res = await fetch('/api/audit/revert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ auditEntryId }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Revert failed' }));
+        throw new Error(err.error ?? 'Revert failed');
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      // @invariant A revert can modify any audited table (movies, actors, platforms,
+      // cast, posters, etc.) and cascading invalidation is fragile — miss one key and
+      // you get stale data. Nuclear invalidation guarantees correctness.
+      queryClient.invalidateQueries({ queryKey: ['admin'] });
+    },
   });
 }
