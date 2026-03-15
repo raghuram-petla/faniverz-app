@@ -79,7 +79,7 @@ export default function CastPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-status-red animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,7 +127,7 @@ export default function CastPage() {
                         onError: (err: Error) => alert(`Error: ${err.message}`),
                       });
                   }}
-                  className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
+                  className="p-2 rounded-lg text-on-surface-subtle hover:text-status-red hover:bg-red-600/10"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

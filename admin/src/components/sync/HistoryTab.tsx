@@ -67,7 +67,7 @@ export function HistoryTab() {
         </select>
         <div className="flex-1" />
         {hasRunning && (
-          <span className="flex items-center gap-1.5 text-xs text-blue-400">
+          <span className="flex items-center gap-1.5 text-xs text-status-blue">
             <Loader2 className="w-3 h-3 animate-spin" /> Auto-refreshing
           </span>
         )}

@@ -45,7 +45,7 @@ export function MovieColumn({
       </h2>
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-status-red animate-spin" />
         </div>
       ) : movies.length === 0 ? (
         <div className="bg-surface-card border border-outline rounded-xl p-8 text-center text-on-surface-subtle text-sm">

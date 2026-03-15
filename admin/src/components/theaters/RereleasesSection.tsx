@@ -67,11 +67,13 @@ export function RereleasesSection({ rereleases, daysUntil }: RereleasesSectionPr
                   {formatDate(run.release_date)}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-xs bg-purple-600/20 text-purple-400 px-2 py-0.5 rounded font-medium">
+                  <span className="text-xs bg-purple-600/20 text-status-purple px-2 py-0.5 rounded font-medium">
                     {run.label ?? 'Re-release'}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-blue-400">{daysUntil(run.release_date)}</td>
+                <td className="px-4 py-3 text-sm text-status-blue">
+                  {daysUntil(run.release_date)}
+                </td>
                 <td className="px-4 py-3">
                   <Link
                     href={`/movies/${run.movies.id}`}

@@ -145,7 +145,7 @@ export default function PlatformsPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openEdit(platform)}
-                      className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
+                      className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
                       title="Edit platform"
                     >
                       <Pencil className="w-4 h-4" />
@@ -153,7 +153,7 @@ export default function PlatformsPage() {
                     <button
                       onClick={() => handleDelete(platform.id)}
                       disabled={deletePlatform.isPending}
-                      className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                      className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                       title="Delete platform"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -212,7 +212,9 @@ export default function PlatformsPage() {
               />
 
               {(createPlatform.isError || updatePlatform.isError) && (
-                <p className="text-red-400 text-sm">Failed to save platform. Please try again.</p>
+                <p className="text-status-red text-sm">
+                  Failed to save platform. Please try again.
+                </p>
               )}
 
               <div className="flex items-center gap-3 pt-2">

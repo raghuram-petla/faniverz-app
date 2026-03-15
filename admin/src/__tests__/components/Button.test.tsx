@@ -26,7 +26,7 @@ describe('Button', () => {
     render(<Button variant="danger">Delete</Button>);
     const btn = screen.getByRole('button');
     expect(btn.className).toContain('bg-red-600/20');
-    expect(btn.className).toContain('text-red-400');
+    expect(btn.className).toContain('text-status-red');
   });
 
   it('renders icon alongside children', () => {

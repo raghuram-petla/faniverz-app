@@ -93,7 +93,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
-        <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-status-red animate-spin" />
       </div>
     );
   }

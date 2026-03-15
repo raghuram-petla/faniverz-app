@@ -16,10 +16,10 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: 'bg-red-600 text-on-surface font-semibold hover:bg-red-700 disabled:opacity-50',
   secondary:
     'bg-input text-on-surface-muted hover:bg-input-hover hover:text-on-surface disabled:opacity-50',
-  danger: 'bg-red-600/20 text-red-400 hover:bg-red-600/30',
+  danger: 'bg-red-600/20 text-status-red hover:bg-red-600/30',
   ghost: 'text-on-surface-muted hover:text-on-surface transition-colors',
   blue: 'bg-blue-600 text-white font-semibold hover:bg-blue-700 shrink-0',
-  icon: 'rounded hover:bg-input text-on-surface-subtle hover:text-red-400',
+  icon: 'rounded hover:bg-input text-on-surface-subtle hover:text-status-red',
   'overlay-yellow': 'bg-yellow-500 text-black font-semibold hover:bg-yellow-400',
   'overlay-red': 'bg-red-600 text-white font-semibold hover:bg-red-700',
 };

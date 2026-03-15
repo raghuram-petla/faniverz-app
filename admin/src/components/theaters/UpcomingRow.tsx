@@ -31,7 +31,9 @@ export function UpcomingRow({ movie, countdown }: UpcomingRowProps) {
               {movie.title}
             </span>
             {movie.premiere_date && (
-              <p className="text-xs text-amber-400">Premiere: {formatDate(movie.premiere_date)}</p>
+              <p className="text-xs text-status-amber">
+                Premiere: {formatDate(movie.premiere_date)}
+              </p>
             )}
           </div>
         </div>
@@ -39,7 +41,7 @@ export function UpcomingRow({ movie, countdown }: UpcomingRowProps) {
       <td className="px-4 py-3 text-sm text-on-surface-muted">
         {movie.release_date ? formatDate(movie.release_date) : '—'}
       </td>
-      <td className="px-4 py-3 text-sm text-blue-400">{countdown}</td>
+      <td className="px-4 py-3 text-sm text-status-blue">{countdown}</td>
       <td className="px-4 py-3">
         <Link
           href={`/movies/${movie.id}`}

@@ -12,16 +12,20 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Loader2 } from 'lucide-react';
 import { MovieColumn } from '@/components/theaters/MovieColumn';
 import { ManualAddPanel } from '@/components/theaters/ManualAddPanel';
-import { PendingChangesDock } from '@/components/theaters/PendingChangesSection';
+import { PendingChangesDock, type DateAction } from '@/components/theaters/PendingChangesSection';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 
 // @contract Pending change: toggle direction + date + movie title for display + optional label
+// @edge When inTheaters=true and date < releaseDate, dateAction determines what gets updated
+
 interface PendingChange {
   inTheaters: boolean;
   date: string;
   title: string;
   posterUrl: string | null;
   label?: string | null;
+  releaseDate: string | null;
+  dateAction: DateAction;
 }
 
 function daysUntil(dateStr: string): string {
@@ -57,10 +61,18 @@ export default function TheatersPage() {
       posterUrl: string | null,
       inTheaters: boolean,
       defaultDate: string,
+      releaseDate: string | null,
     ) => {
       setPendingChanges((prev) => {
         const next = new Map(prev);
-        next.set(movieId, { inTheaters, date: defaultDate, title, posterUrl });
+        next.set(movieId, {
+          inTheaters,
+          date: defaultDate,
+          title,
+          posterUrl,
+          releaseDate,
+          dateAction: 'none',
+        });
         return next;
       });
     },
@@ -73,6 +85,16 @@ export default function TheatersPage() {
       if (!existing) return prev;
       const next = new Map(prev);
       next.set(movieId, { ...existing, date });
+      return next;
+    });
+  }, []);
+
+  const updatePendingDateAction = useCallback((movieId: string, action: DateAction) => {
+    setPendingChanges((prev) => {
+      const existing = prev.get(movieId);
+      if (!existing) return prev;
+      const next = new Map(prev);
+      next.set(movieId, { ...existing, dateAction: action });
       return next;
     });
   }, []);
@@ -94,9 +116,17 @@ export default function TheatersPage() {
 
     try {
       await Promise.all([
-        ...additions.map(([movieId, c]) =>
-          addToTheaters.mutateAsync({ movieId, startDate: c.date, label: c.label ?? null }),
-        ),
+        ...additions.map(([movieId, c]) => {
+          const premiereDate = c.dateAction === 'premiere' ? c.date : null;
+          const newReleaseDate = c.dateAction === 'release_changed' ? c.date : null;
+          return addToTheaters.mutateAsync({
+            movieId,
+            startDate: c.date,
+            label: c.label ?? null,
+            premiereDate,
+            newReleaseDate,
+          });
+        }),
         ...removals.map(([movieId, c]) =>
           removeFromTheaters.mutateAsync({ movieId, endDate: c.date }),
         ),
@@ -128,10 +158,19 @@ export default function TheatersPage() {
     posterUrl: string | null,
     startDate: string,
     label: string | null,
+    releaseDate: string | null,
   ) {
     setPendingChanges((prev) => {
       const next = new Map(prev);
-      next.set(movieId, { inTheaters: true, date: startDate, title, posterUrl, label });
+      next.set(movieId, {
+        inTheaters: true,
+        date: startDate,
+        title,
+        posterUrl,
+        label,
+        releaseDate,
+        dateAction: 'none',
+      });
       return next;
     });
   }
@@ -167,7 +206,7 @@ export default function TheatersPage() {
           emptyText="No movies currently in theaters"
           isEffectivelyOn={(id) => isEffectivelyOn(id, true)}
           getPendingDate={getPendingDate}
-          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, false, d)}
+          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, false, d, m.release_date)}
           onRevert={removePendingChange}
           onDateChange={updatePendingDate}
           dateLabel="End date"
@@ -180,11 +219,11 @@ export default function TheatersPage() {
           emptyText="No upcoming releases"
           isEffectivelyOn={(id) => isEffectivelyOn(id, false)}
           getPendingDate={getPendingDate}
-          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, true, d)}
+          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, true, d, m.release_date)}
           onRevert={removePendingChange}
           onDateChange={updatePendingDate}
           dateLabel="Start date"
-          minDate={today}
+          maxDate={today}
           getSubtitle={(m) => (m.release_date ? daysUntil(m.release_date) : undefined)}
         />
       </div>
@@ -192,12 +231,13 @@ export default function TheatersPage() {
       {/* @sideeffect Sticky bottom dock — pending changes + actions.
           Centered floating panel, doesn't overlap sidebar. */}
       {(isDirty || saveStatus === 'success') && (
-        <div className="sticky bottom-4 z-40 max-w-2xl mx-auto rounded-2xl border border-dock-border bg-dock shadow-dock">
+        <div className="sticky bottom-4 z-40 max-w-2xl mx-auto mt-6 rounded-2xl border border-dock-border bg-dock shadow-dock">
           {isDirty && (
             <>
               <PendingChangesDock
                 changes={pendingEntries}
                 onDateChange={updatePendingDate}
+                onDateActionChange={updatePendingDateAction}
                 onRemove={removePendingChange}
                 today={today}
               />
@@ -205,10 +245,10 @@ export default function TheatersPage() {
               <div className="px-4 py-2.5 border-t border-outline flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-amber opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-status-amber" />
                   </span>
-                  <span className="text-sm font-medium text-amber-400">
+                  <span className="text-sm font-medium text-status-amber">
                     {changeCount} unsaved change{changeCount !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -238,7 +278,7 @@ export default function TheatersPage() {
             </>
           )}
           {saveStatus === 'success' && !isDirty && (
-            <div className="px-4 py-3 flex items-center gap-2 text-green-400">
+            <div className="px-4 py-3 flex items-center gap-2 text-status-green">
               <span className="flex items-center gap-1.5 text-sm font-medium">
                 ✓ Changes saved successfully
               </span>

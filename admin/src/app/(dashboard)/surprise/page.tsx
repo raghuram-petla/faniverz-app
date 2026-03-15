@@ -8,10 +8,10 @@ import Link from 'next/link';
 // @edge Unknown categories fall back to bg-input/text-on-surface-muted via nullish coalesce in render
 const categoryColors: Record<string, { bg: string; text: string }> = {
   song: { bg: 'bg-pink-600/20', text: 'text-pink-400' },
-  'short-film': { bg: 'bg-purple-600/20', text: 'text-purple-400' },
-  bts: { bg: 'bg-yellow-600/20', text: 'text-yellow-400' },
-  interview: { bg: 'bg-blue-600/20', text: 'text-blue-400' },
-  trailer: { bg: 'bg-red-600/20', text: 'text-red-400' },
+  'short-film': { bg: 'bg-purple-600/20', text: 'text-status-purple' },
+  bts: { bg: 'bg-yellow-600/20', text: 'text-status-yellow' },
+  interview: { bg: 'bg-blue-600/20', text: 'text-status-blue' },
+  trailer: { bg: 'bg-red-600/20', text: 'text-status-red' },
 };
 
 export default function SurpriseContentPage() {
@@ -95,7 +95,7 @@ export default function SurpriseContentPage() {
                       <div className="flex items-center justify-end gap-1">
                         <Link
                           href={`/surprise/${item.id}`}
-                          className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
+                          className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
                           title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
@@ -104,7 +104,7 @@ export default function SurpriseContentPage() {
                           <button
                             onClick={() => handleDelete(item.id)}
                             disabled={deleteItem.isPending}
-                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                             title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />

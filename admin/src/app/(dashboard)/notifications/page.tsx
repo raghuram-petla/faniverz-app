@@ -15,17 +15,17 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 // @coupling Status/type style maps must cover all notifications.status and notifications.type DB enum values
 const statusStyles: Record<string, { bg: string; text: string }> = {
-  pending: { bg: 'bg-yellow-600/20', text: 'text-yellow-400' },
-  sent: { bg: 'bg-green-600/20', text: 'text-green-400' },
-  failed: { bg: 'bg-red-600/20', text: 'text-red-400' },
+  pending: { bg: 'bg-yellow-600/20', text: 'text-status-yellow' },
+  sent: { bg: 'bg-green-600/20', text: 'text-status-green' },
+  failed: { bg: 'bg-red-600/20', text: 'text-status-red' },
   cancelled: { bg: 'bg-input', text: 'text-on-surface-subtle' },
 };
 
 const typeStyles: Record<string, { bg: string; text: string }> = {
-  release: { bg: 'bg-purple-600/20', text: 'text-purple-400' },
-  watchlist: { bg: 'bg-blue-600/20', text: 'text-blue-400' },
-  trending: { bg: 'bg-orange-600/20', text: 'text-orange-400' },
-  reminder: { bg: 'bg-green-600/20', text: 'text-green-400' },
+  release: { bg: 'bg-purple-600/20', text: 'text-status-purple' },
+  watchlist: { bg: 'bg-blue-600/20', text: 'text-status-blue' },
+  trending: { bg: 'bg-orange-600/20', text: 'text-status-orange' },
+  reminder: { bg: 'bg-green-600/20', text: 'text-status-green' },
 };
 
 export default function NotificationsPage() {
@@ -202,7 +202,7 @@ export default function NotificationsPage() {
                           <button
                             onClick={() => handleCancel(notification.id)}
                             disabled={cancelNotification.isPending}
-                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                             title="Cancel"
                           >
                             <XCircle className="w-4 h-4" />
@@ -212,7 +212,7 @@ export default function NotificationsPage() {
                           <button
                             onClick={() => handleRetry(notification.id)}
                             disabled={retryNotification.isPending}
-                            className="p-2 text-on-surface-subtle hover:text-green-400 transition-colors disabled:opacity-50"
+                            className="p-2 text-on-surface-subtle hover:text-status-green transition-colors disabled:opacity-50"
                             title="Retry"
                           >
                             <RotateCcw className="w-4 h-4" />

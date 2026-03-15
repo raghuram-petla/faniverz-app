@@ -103,7 +103,7 @@ export function BasicInfoSection({
             onValueChange={(v) => updateField('premiere_date', v)}
           />
           {errorFor('premiere_date') && (
-            <p className="text-xs text-red-400 mt-1">{errorFor('premiere_date')!.message}</p>
+            <p className="text-xs text-status-red mt-1">{errorFor('premiere_date')!.message}</p>
           )}
         </div>
       </div>
@@ -121,7 +121,7 @@ export function BasicInfoSection({
             </span>
           </label>
           {errorFor('in_theaters') && (
-            <p className="text-xs text-red-400 mt-1">{errorFor('in_theaters')!.message}</p>
+            <p className="text-xs text-status-red mt-1">{errorFor('in_theaters')!.message}</p>
           )}
         </FormField>
         <FormSelect
@@ -153,7 +153,7 @@ export function BasicInfoSection({
             onValueChange={(v) => updateField('runtime', v)}
           />
           {errorFor('runtime') && (
-            <p className="text-xs text-red-400 mt-1">{errorFor('runtime')!.message}</p>
+            <p className="text-xs text-status-red mt-1">{errorFor('runtime')!.message}</p>
           )}
         </div>
         <FormSelect

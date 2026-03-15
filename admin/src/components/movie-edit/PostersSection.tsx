@@ -63,7 +63,7 @@ export function PostersSection({ visiblePosters, posterUrl, onAdd, onRemove, onS
       {posterUrl && visiblePosters.length === 0 && (
         <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-blue-400 font-medium">
+            <p className="text-sm text-status-blue font-medium">
               This movie has a poster but no gallery entries.
             </p>
             <p className="text-xs text-on-surface-subtle mt-1">Import it as the main poster?</p>

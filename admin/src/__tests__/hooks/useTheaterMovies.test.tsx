@@ -237,6 +237,76 @@ describe('useAddToTheaters', () => {
     fetchSpy.mockRestore();
   });
 
+  it('includes premiere_date in PATCH when premiereDate is provided', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as Response);
+
+    const { result } = renderHook(() => useAddToTheaters(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({
+        movieId: 'movie-1',
+        startDate: '2026-03-14',
+        label: null,
+        premiereDate: '2026-03-14',
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movies',
+          id: 'movie-1',
+          data: { in_theaters: true, premiere_date: '2026-03-14' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
+  });
+
+  it('includes release_date in PATCH when newReleaseDate is provided', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as Response);
+
+    const { result } = renderHook(() => useAddToTheaters(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({
+        movieId: 'movie-1',
+        startDate: '2026-03-14',
+        label: null,
+        newReleaseDate: '2026-03-14',
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movies',
+          id: 'movie-1',
+          data: { in_theaters: true, release_date: '2026-03-14' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
+  });
+
   it('sends null label when no label provided', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,

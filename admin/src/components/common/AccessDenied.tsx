@@ -12,9 +12,9 @@ export function AccessDenied() {
     <div className="min-h-screen flex items-center justify-center bg-surface">
       <div className="text-center max-w-md mx-auto px-6">
         {isBlocked ? (
-          <Ban className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <Ban className="w-16 h-16 text-status-red mx-auto mb-4" />
         ) : (
-          <ShieldX className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <ShieldX className="w-16 h-16 text-status-red mx-auto mb-4" />
         )}
         <h1 className="text-2xl font-bold text-on-surface mb-2">
           {isBlocked ? 'Access Blocked' : 'Access Denied'}
@@ -25,7 +25,7 @@ export function AccessDenied() {
             : "You don't have access to Faniverz Admin. If you believe this is an error, please contact your administrator."}
         </p>
         {isBlocked && blockedReason && (
-          <p className="text-sm text-red-400 bg-red-600/10 rounded-lg px-4 py-3 mb-6">
+          <p className="text-sm text-status-red bg-red-600/10 rounded-lg px-4 py-3 mb-6">
             Reason: {blockedReason}
           </p>
         )}

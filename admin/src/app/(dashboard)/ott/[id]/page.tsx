@@ -110,7 +110,7 @@ export default function EditOttReleasePage() {
         </Link>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center">
-            <Tv className="w-5 h-5 text-purple-500" />
+            <Tv className="w-5 h-5 text-status-purple" />
           </div>
           <h1 className="text-2xl font-bold text-on-surface">Edit OTT Release</h1>
         </div>
@@ -163,7 +163,7 @@ export default function EditOttReleasePage() {
         </div>
 
         {updateRelease.isError && (
-          <p className="text-red-400 text-sm">
+          <p className="text-status-red text-sm">
             {updateRelease.error instanceof Error
               ? updateRelease.error.message
               : 'Failed to update'}

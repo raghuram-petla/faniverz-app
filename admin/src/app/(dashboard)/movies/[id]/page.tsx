@@ -166,7 +166,7 @@ export default function EditMoviePage() {
   if (isLoading)
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-status-red animate-spin" />
       </div>
     );
 
@@ -186,7 +186,7 @@ export default function EditMoviePage() {
         {!isReadOnly && (
           <button
             onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-status-red hover:bg-red-600/30 text-sm"
           >
             <Trash2 className="w-4 h-4" /> Delete
           </button>

@@ -91,11 +91,11 @@ export function AdminFeedCard({
         </div>
         <p className="text-sm text-on-surface font-medium truncate">{item.title}</p>
         <div className="flex items-center gap-3 mt-0.5">
-          <span className="flex items-center gap-1 text-xs text-green-400">
+          <span className="flex items-center gap-1 text-xs text-status-green">
             <ArrowUp className="w-3 h-3" />
             {item.upvote_count}
           </span>
-          <span className="flex items-center gap-1 text-xs text-red-400">
+          <span className="flex items-center gap-1 text-xs text-status-red">
             <ArrowDown className="w-3 h-3" />
             {item.downvote_count}
           </span>
@@ -108,7 +108,7 @@ export function AdminFeedCard({
           onClick={() => onTogglePin(item.id, !item.is_pinned)}
           className={`p-1.5 rounded-lg transition-colors ${
             item.is_pinned
-              ? 'bg-red-600/20 text-red-400'
+              ? 'bg-red-600/20 text-status-red'
               : 'text-on-surface-subtle hover:text-on-surface-muted hover:bg-input'
           }`}
           title={item.is_pinned ? 'Unpin' : 'Pin to top'}
@@ -119,7 +119,7 @@ export function AdminFeedCard({
           onClick={() => onToggleFeature(item.id, !item.is_featured)}
           className={`p-1.5 rounded-lg transition-colors ${
             item.is_featured
-              ? 'bg-yellow-600/20 text-yellow-400'
+              ? 'bg-yellow-600/20 text-status-yellow'
               : 'text-on-surface-subtle hover:text-on-surface-muted hover:bg-input'
           }`}
           title={item.is_featured ? 'Unfeature' : 'Feature'}
@@ -135,7 +135,7 @@ export function AdminFeedCard({
         </button>
         <button
           onClick={() => onDelete(item.id)}
-          className="p-1.5 rounded-lg text-on-surface-subtle hover:text-red-400 hover:bg-input"
+          className="p-1.5 rounded-lg text-on-surface-subtle hover:text-status-red hover:bg-input"
           title="Delete"
         >
           <Trash2 className="w-4 h-4" />

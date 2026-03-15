@@ -92,9 +92,9 @@ export default function OttReleasesPage() {
                   </td>
                   <td className="px-6 py-4">
                     {release.available_from ? (
-                      <span className="text-blue-400 text-sm">{release.available_from}</span>
+                      <span className="text-status-blue text-sm">{release.available_from}</span>
                     ) : (
-                      <span className="text-green-400 text-sm">Live now</span>
+                      <span className="text-status-green text-sm">Live now</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -102,7 +102,7 @@ export default function OttReleasesPage() {
                       {/* @contract Edit route uses tilde-separated composite key in URL */}
                       <Link
                         href={`/ott/${release.movie_id}~${release.platform_id}`}
-                        className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
+                        className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
                         title="Edit"
                       >
                         <Pencil className="w-4 h-4" />
@@ -112,7 +112,7 @@ export default function OttReleasesPage() {
                         <button
                           onClick={() => handleDelete(release.movie_id, release.platform_id)}
                           disabled={deleteRelease.isPending}
-                          className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                          className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                           title="Delete release"
                         >
                           <Trash2 className="w-4 h-4" />

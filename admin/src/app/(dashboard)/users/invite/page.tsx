@@ -97,7 +97,7 @@ export default function InviteAdminPage() {
         <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-4">
           <div className="text-center">
             <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center mx-auto mb-3">
-              <Check className="w-6 h-6 text-green-500" />
+              <Check className="w-6 h-6 text-status-green" />
             </div>
             <h2 className="text-lg font-bold text-on-surface">Invitation Created</h2>
             <p className="text-sm text-on-surface-muted mt-1">

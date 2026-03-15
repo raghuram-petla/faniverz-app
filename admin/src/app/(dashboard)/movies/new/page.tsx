@@ -86,7 +86,7 @@ export default function NewMoviePage() {
             </Link>
             <h1 className="text-2xl font-bold text-on-surface">Add Movie</h1>
             {isDirty && (
-              <span className="text-xs bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-medium">
+              <span className="text-xs bg-amber-500/20 text-status-amber px-2.5 py-0.5 rounded-full font-medium">
                 Unsaved changes
               </span>
             )}

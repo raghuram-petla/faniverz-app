@@ -215,7 +215,7 @@ export function BackdropFocalPicker({
           <button
             type="button"
             onClick={onClear}
-            className="text-xs text-red-400 hover:text-red-300"
+            className="text-xs text-status-red hover:text-status-red-hover"
           >
             Reset to Center
           </button>

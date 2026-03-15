@@ -105,7 +105,7 @@ export function DiscoverTab() {
       />
 
       {discover.isError && (
-        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-status-red text-sm">
           {discover.error instanceof Error ? discover.error.message : 'Discovery failed'}
         </div>
       )}

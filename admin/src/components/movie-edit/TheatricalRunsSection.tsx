@@ -81,17 +81,17 @@ export function TheatricalRunsSection({
                 {run.end_date ? (
                   <span className="text-on-surface font-medium">{run.end_date}</span>
                 ) : pendingEndRunIds?.has(run.id) ? (
-                  <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">
+                  <span className="text-xs bg-amber-500/20 text-status-amber px-2 py-0.5 rounded">
                     Ending (unsaved)
                   </span>
                 ) : (
-                  <span className="text-xs bg-green-600/20 text-green-400 px-2 py-0.5 rounded">
+                  <span className="text-xs bg-green-600/20 text-status-green px-2 py-0.5 rounded">
                     Now
                   </span>
                 )}
               </div>
               {run.label ? (
-                <span className="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded shrink-0">
+                <span className="text-xs bg-blue-600/20 text-status-blue px-2 py-0.5 rounded shrink-0">
                   {run.label}
                 </span>
               ) : (
@@ -111,7 +111,7 @@ export function TheatricalRunsSection({
                     aria-label={`End run ${run.release_date}`}
                     title="End theatrical run"
                   >
-                    <Square className="w-3.5 h-3.5 text-amber-400" />
+                    <Square className="w-3.5 h-3.5 text-status-amber" />
                   </Button>
                 )}
               <Button
@@ -148,7 +148,7 @@ export function TheatricalRunsSection({
             onValueChange={(v) => setRunForm((p) => ({ ...p, label: v }))}
           />
         </div>
-        {runError && <p className="text-xs text-red-400">{runError}</p>}
+        {runError && <p className="text-xs text-status-red">{runError}</p>}
         <Button
           type="submit"
           variant="primary"

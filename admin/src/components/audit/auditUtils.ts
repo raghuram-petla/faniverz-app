@@ -99,8 +99,8 @@ export function getRevertDescription(action: string): string {
 }
 
 export const actionStyles: Record<string, { bg: string; text: string }> = {
-  create: { bg: 'bg-green-600/20', text: 'text-green-400' },
-  update: { bg: 'bg-blue-600/20', text: 'text-blue-400' },
-  delete: { bg: 'bg-red-600/20', text: 'text-red-400' },
-  sync: { bg: 'bg-purple-600/20', text: 'text-purple-400' },
+  create: { bg: 'bg-green-600/20', text: 'text-status-green' },
+  update: { bg: 'bg-blue-600/20', text: 'text-status-blue' },
+  delete: { bg: 'bg-red-600/20', text: 'text-status-red' },
+  sync: { bg: 'bg-purple-600/20', text: 'text-status-purple' },
 };

@@ -74,20 +74,20 @@ export function MovieListItem({
         <div className="flex-1 min-w-0">
           <Link
             href={`/movies/${id}`}
-            className="text-sm font-medium text-on-surface hover:text-red-400 transition-colors truncate block"
+            className="text-sm font-medium text-on-surface hover:text-status-red transition-colors truncate block"
           >
             {title}
           </Link>
           {releaseDate && (
             <p className="text-xs text-on-surface-muted mt-0.5">{formatDate(releaseDate)}</p>
           )}
-          {subtitle && <p className="text-xs text-blue-400 mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-xs text-status-blue mt-0.5">{subtitle}</p>}
         </div>
 
         {/* Pending date — shown inline between title and toggle */}
         {hasPending && (
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-xs text-amber-400">{dateLabel}</span>
+            <span className="text-xs text-status-amber">{dateLabel}</span>
             <input
               type="date"
               value={pendingDate}

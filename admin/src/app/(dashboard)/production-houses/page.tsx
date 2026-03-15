@@ -100,7 +100,7 @@ export default function ProductionHousesPage() {
                   <button
                     type="button"
                     onClick={() => setForm((p) => ({ ...p, logo_url: '' }))}
-                    className="p-1 text-red-400 hover:text-red-300"
+                    className="p-1 text-status-red hover:text-status-red-hover"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -182,7 +182,7 @@ export default function ProductionHousesPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-status-red animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -230,7 +230,7 @@ export default function ProductionHousesPage() {
                       onClick={() => {
                         if (confirm('Delete this production house?')) deleteHouse.mutate(house.id);
                       }}
-                      className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
+                      className="p-2 rounded-lg text-on-surface-subtle hover:text-status-red hover:bg-red-600/10"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

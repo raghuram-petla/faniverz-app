@@ -102,7 +102,7 @@ export default function ProfilePage() {
         {user?.role && (
           <div>
             <label className="block text-sm text-on-surface-muted mb-1">Role</label>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-red-600/10 text-red-500 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-600/10 text-status-red font-medium">
               {ADMIN_ROLE_LABELS[user.role]}
             </span>
           </div>

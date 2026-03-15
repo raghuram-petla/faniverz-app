@@ -227,28 +227,28 @@ describe('actionStyles', () => {
   it('has correct create style', () => {
     expect(actionStyles.create).toEqual({
       bg: 'bg-green-600/20',
-      text: 'text-green-400',
+      text: 'text-status-green',
     });
   });
 
   it('has correct update style', () => {
     expect(actionStyles.update).toEqual({
       bg: 'bg-blue-600/20',
-      text: 'text-blue-400',
+      text: 'text-status-blue',
     });
   });
 
   it('has correct delete style', () => {
     expect(actionStyles.delete).toEqual({
       bg: 'bg-red-600/20',
-      text: 'text-red-400',
+      text: 'text-status-red',
     });
   });
 
   it('has correct sync style', () => {
     expect(actionStyles.sync).toEqual({
       bg: 'bg-purple-600/20',
-      text: 'text-purple-400',
+      text: 'text-status-purple',
     });
   });
 

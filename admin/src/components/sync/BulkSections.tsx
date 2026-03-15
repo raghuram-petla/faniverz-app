@@ -41,7 +41,7 @@ export function StaleMoviesSection({
     <div className="bg-surface-card border border-outline rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Film className="w-5 h-5 text-blue-400" />
+          <Film className="w-5 h-5 text-status-blue" />
           <h2 className="text-lg font-semibold text-on-surface">Stale Movies</h2>
         </div>
         <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export function MissingBiosSection({
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Users className="w-5 h-5 text-green-400" />
+        <Users className="w-5 h-5 text-status-green" />
         <h2 className="text-lg font-semibold text-on-surface">Missing Actor Bios</h2>
       </div>
 
@@ -222,12 +222,12 @@ export function BulkProgressPanel({ progress }: BulkProgressPanelProps) {
         </p>
       )}
       {progress.completed === progress.total && (
-        <p className="text-xs text-green-400">
+        <p className="text-xs text-status-green">
           Complete! {progress.errors.length > 0 && `${progress.errors.length} errors.`}
         </p>
       )}
       {progress.errors.length > 0 && (
-        <div className="text-xs text-red-400 space-y-0.5 max-h-20 overflow-y-auto">
+        <div className="text-xs text-status-red space-y-0.5 max-h-20 overflow-y-auto">
           {progress.errors.map((e, i) => (
             <p key={i}>{e}</p>
           ))}

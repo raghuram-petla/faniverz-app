@@ -138,7 +138,7 @@ export default function AuditLogPage() {
       </div>
 
       {isError && (
-        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-400">
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
           Error loading audit log: {error instanceof Error ? error.message : 'Unknown error'}
         </div>
       )}
@@ -199,7 +199,7 @@ export default function AuditLogPage() {
                           )}
                           {/* @edge Impersonation trail: shows who the admin was acting as */}
                           {entry.impersonating_role && (
-                            <p className="text-amber-500 text-xs mt-0.5">
+                            <p className="text-status-amber text-xs mt-0.5">
                               as{' '}
                               {entry.impersonating_display_name ||
                                 entry.impersonating_email ||

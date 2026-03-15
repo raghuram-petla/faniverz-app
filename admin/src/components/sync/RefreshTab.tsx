@@ -35,7 +35,7 @@ function RefreshMovieSection() {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Film className="w-5 h-5 text-blue-400" />
+        <Film className="w-5 h-5 text-status-blue" />
         <h2 className="text-lg font-semibold text-on-surface">Refresh Movie</h2>
       </div>
 
@@ -96,7 +96,7 @@ function RefreshMovieSection() {
                     Synced {formatRelativeTime(selectedMovie.tmdb_last_synced_at)}
                   </span>
                 ) : (
-                  <span className="text-xs text-yellow-400">Never synced</span>
+                  <span className="text-xs text-status-yellow">Never synced</span>
                 )}
               </div>
             </div>
@@ -115,18 +115,18 @@ function RefreshMovieSection() {
             </button>
           </div>
           {!selectedMovie.tmdb_id && (
-            <p className="text-xs text-yellow-400 mt-2">
+            <p className="text-xs text-status-yellow mt-2">
               This movie has no TMDB ID and cannot be refreshed.
             </p>
           )}
           {refreshMovie.isSuccess && (
-            <p className="text-xs text-green-400 mt-2">
+            <p className="text-xs text-status-green mt-2">
               Refreshed — {refreshMovie.data?.result?.castCount ?? 0} cast,{' '}
               {refreshMovie.data?.result?.crewCount ?? 0} crew
             </p>
           )}
           {refreshMovie.isError && (
-            <p className="text-xs text-red-400 mt-2">
+            <p className="text-xs text-status-red mt-2">
               {refreshMovie.error instanceof Error ? refreshMovie.error.message : 'Refresh failed'}
             </p>
           )}
@@ -155,7 +155,7 @@ function RefreshActorSection() {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
-        <Users className="w-5 h-5 text-green-400" />
+        <Users className="w-5 h-5 text-status-green" />
         <h2 className="text-lg font-semibold text-on-surface">Refresh Actor</h2>
       </div>
 
@@ -207,17 +207,17 @@ function RefreshActorSection() {
               <p className="text-on-surface font-medium">{selectedActor.name}</p>
               <div className="flex items-center gap-3 mt-1 flex-wrap">
                 <span
-                  className={`text-xs ${selectedActor.biography ? 'text-green-400' : 'text-yellow-400'}`}
+                  className={`text-xs ${selectedActor.biography ? 'text-status-green' : 'text-status-yellow'}`}
                 >
                   Bio: {selectedActor.biography ? '✓' : '✗'}
                 </span>
                 <span
-                  className={`text-xs ${selectedActor.photo_url ? 'text-green-400' : 'text-yellow-400'}`}
+                  className={`text-xs ${selectedActor.photo_url ? 'text-status-green' : 'text-status-yellow'}`}
                 >
                   Photo: {selectedActor.photo_url ? '✓' : '✗'}
                 </span>
                 <span
-                  className={`text-xs ${selectedActor.birth_date ? 'text-green-400' : 'text-yellow-400'}`}
+                  className={`text-xs ${selectedActor.birth_date ? 'text-status-green' : 'text-status-yellow'}`}
                 >
                   DOB: {selectedActor.birth_date ? '✓' : '✗'}
                 </span>
@@ -238,15 +238,15 @@ function RefreshActorSection() {
             </button>
           </div>
           {!selectedActor.tmdb_person_id && (
-            <p className="text-xs text-yellow-400 mt-2">No TMDB person ID. Cannot refresh.</p>
+            <p className="text-xs text-status-yellow mt-2">No TMDB person ID. Cannot refresh.</p>
           )}
           {refreshActor.isSuccess && (
-            <p className="text-xs text-green-400 mt-2">
+            <p className="text-xs text-status-green mt-2">
               Refreshed. Updated: {refreshActor.data?.result?.fields?.join(', ') || 'no changes'}
             </p>
           )}
           {refreshActor.isError && (
-            <p className="text-xs text-red-400 mt-2">
+            <p className="text-xs text-status-red mt-2">
               {refreshActor.error instanceof Error ? refreshActor.error.message : 'Refresh failed'}
             </p>
           )}

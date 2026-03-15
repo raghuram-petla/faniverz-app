@@ -99,7 +99,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
             {targetUser.display_name && (
               <p className="text-sm text-on-surface-subtle">{targetUser.email}</p>
             )}
-            <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-600/10 text-red-500 mt-1">
+            <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-red-600/10 text-status-red mt-1">
               {ADMIN_ROLE_LABELS[targetUser.role_id]}
             </span>
             {targetUser.ph_assignments.length > 0 && (

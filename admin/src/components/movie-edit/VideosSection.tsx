@@ -67,7 +67,7 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
       {trailerUrl && visibleVideos.length === 0 && (
         <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-blue-400 font-medium">
+            <p className="text-sm text-status-blue font-medium">
               This movie has a trailer URL but no videos.
             </p>
             <p className="text-xs text-on-surface-subtle mt-1">
@@ -115,7 +115,7 @@ export function VideosSection({ visibleVideos, trailerUrl, movieTitle, onAdd, on
               <div className="flex-1 min-w-0">
                 <p className="text-on-surface font-medium text-sm truncate">{video.title}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs bg-purple-600/20 text-purple-400 px-2 py-0.5 rounded">
+                  <span className="text-xs bg-purple-600/20 text-status-purple px-2 py-0.5 rounded">
                     {VIDEO_TYPES.find((t) => t.value === video.video_type)?.label ??
                       video.video_type}
                   </span>

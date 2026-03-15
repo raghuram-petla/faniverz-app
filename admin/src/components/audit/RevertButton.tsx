@@ -22,7 +22,7 @@ export function RevertButton({ entryId, action, revertedAt, revertedByName }: Re
   if (revertedAt) {
     return (
       <div className="flex items-center gap-2 text-xs text-on-surface-subtle">
-        <Check className="w-3.5 h-3.5 text-green-400" />
+        <Check className="w-3.5 h-3.5 text-status-green" />
         <span>
           Reverted{revertedByName ? ` by ${revertedByName}` : ''} on {formatDateTime(revertedAt)}
         </span>
@@ -33,7 +33,7 @@ export function RevertButton({ entryId, action, revertedAt, revertedByName }: Re
   if (confirming) {
     return (
       <div className="flex items-center gap-3">
-        <span className="text-xs text-amber-400">{getRevertDescription(action)}?</span>
+        <span className="text-xs text-status-amber">{getRevertDescription(action)}?</span>
         <button
           className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
           disabled={revertMutation.isPending}
@@ -62,7 +62,7 @@ export function RevertButton({ entryId, action, revertedAt, revertedByName }: Re
   return (
     <div className="flex items-center gap-3">
       <button
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-elevated text-on-surface-muted hover:text-amber-400 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-elevated text-on-surface-muted hover:text-status-amber transition-colors"
         onClick={(e) => {
           e.stopPropagation();
           setConfirming(true);
@@ -72,7 +72,7 @@ export function RevertButton({ entryId, action, revertedAt, revertedByName }: Re
         Revert
       </button>
       {revertMutation.isError && (
-        <span className="text-xs text-red-400">{revertMutation.error.message}</span>
+        <span className="text-xs text-status-red">{revertMutation.error.message}</span>
       )}
     </div>
   );

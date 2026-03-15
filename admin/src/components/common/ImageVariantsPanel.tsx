@@ -57,16 +57,16 @@ function CopyButton({ url }: { url: string }) {
       className="p-1 rounded hover:bg-surface-elevated text-on-surface-muted hover:text-on-surface transition-colors"
       title="Copy URL"
     >
-      {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+      {copied ? <Check className="w-3 h-3 text-status-green" /> : <Copy className="w-3 h-3" />}
     </button>
   );
 }
 
 const LABEL_COLORS: Record<string, string> = {
-  Original: 'bg-blue-600/20 text-blue-400',
+  Original: 'bg-blue-600/20 text-status-blue',
   SM: 'bg-emerald-600/20 text-emerald-400',
-  MD: 'bg-purple-600/20 text-purple-400',
-  LG: 'bg-orange-600/20 text-orange-400',
+  MD: 'bg-purple-600/20 text-status-purple',
+  LG: 'bg-orange-600/20 text-status-orange',
 };
 
 function VariantRow({ variant, thumbnailUrl }: { variant: VariantInfo; thumbnailUrl: string }) {

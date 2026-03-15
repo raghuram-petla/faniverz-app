@@ -14,7 +14,7 @@ function RatingStars({ rating }: { rating: number }) {
       {Array.from({ length: 5 }, (_, i) => (
         <Star
           key={i}
-          className={`w-3.5 h-3.5 ${i < rating ? 'text-yellow-500 fill-yellow-500' : 'text-outline'}`}
+          className={`w-3.5 h-3.5 ${i < rating ? 'text-status-yellow fill-status-yellow' : 'text-outline'}`}
         />
       ))}
     </span>
@@ -101,7 +101,7 @@ export default function ReviewsPage() {
       </div>
 
       {isError && (
-        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-400">
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
           Error loading reviews: {error instanceof Error ? error.message : 'Unknown error'}
         </div>
       )}
@@ -156,7 +156,7 @@ export default function ReviewsPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-on-surface-muted max-w-xs">
                     {review.contains_spoiler && (
-                      <span className="inline-block px-1.5 py-0.5 rounded text-xs bg-red-600/20 text-red-400 mr-2">
+                      <span className="inline-block px-1.5 py-0.5 rounded text-xs bg-red-600/20 text-status-red mr-2">
                         Spoiler
                       </span>
                     )}
@@ -182,7 +182,7 @@ export default function ReviewsPage() {
                           <button
                             onClick={saveEdit}
                             disabled={updateReview.isPending}
-                            className="p-2 text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
+                            className="p-2 text-status-green hover:text-status-green transition-colors disabled:opacity-50"
                             title="Save"
                           >
                             <Check className="w-4 h-4" />
@@ -199,7 +199,7 @@ export default function ReviewsPage() {
                         <>
                           <button
                             onClick={() => startEdit(review)}
-                            className="p-2 text-on-surface-subtle hover:text-blue-500 transition-colors"
+                            className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
                             title="Edit review"
                           >
                             <Pencil className="w-4 h-4" />
@@ -207,7 +207,7 @@ export default function ReviewsPage() {
                           <button
                             onClick={() => handleDelete(review.id)}
                             disabled={deleteReview.isPending}
-                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                             title="Delete review"
                           >
                             <Trash2 className="w-4 h-4" />

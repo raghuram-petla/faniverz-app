@@ -140,7 +140,7 @@ export default function EditFeedItemPage() {
           <button
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="flex items-center gap-2 text-red-400 hover:text-red-300 disabled:opacity-50"
+            className="flex items-center gap-2 text-status-red hover:text-status-red-hover disabled:opacity-50"
           >
             <Trash2 className="w-4 h-4" />
             Delete
@@ -178,7 +178,7 @@ export default function EditFeedItemPage() {
           Content: {item.content_type}
         </span>
         {item.movie?.title ? (
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-600/20 text-blue-400">
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-600/20 text-status-blue">
             Movie: {item.movie.title}
           </span>
         ) : null}

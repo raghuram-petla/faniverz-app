@@ -19,6 +19,7 @@ export interface ManualAddPanelProps {
     posterUrl: string | null,
     startDate: string,
     label: string | null,
+    releaseDate: string | null,
   ) => void;
   isAdding: boolean;
 }
@@ -44,6 +45,7 @@ export function ManualAddPanel({
       selectedMovie.poster_url,
       startDate,
       label || null,
+      selectedMovie.release_date,
     );
     setSelectedMovie(null);
     setStartDate(new Date().toISOString().split('T')[0]);
@@ -101,7 +103,7 @@ export function ManualAddPanel({
                         </p>
                       </div>
                       {alreadyInTheaters && (
-                        <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/15 px-2 py-0.5 rounded-full font-medium shrink-0">
+                        <span className="flex items-center gap-1 text-xs text-status-green bg-green-500/15 px-2 py-0.5 rounded-full font-medium shrink-0">
                           <Check className="w-3 h-3" /> In Theaters
                         </span>
                       )}
@@ -157,7 +159,7 @@ export function ManualAddPanel({
                     setLabel('');
                     setSearch('');
                   }}
-                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-status-red bg-red-500/10 hover:bg-red-500/20 rounded-md transition-colors"
                 >
                   <X className="w-3 h-3" />
                   Clear
@@ -169,7 +171,7 @@ export function ManualAddPanel({
             <div className="space-y-3">
               <div>
                 <label className="block text-sm text-on-surface-muted mb-1">
-                  Start Date <span className="text-red-500">*</span>
+                  Start Date <span className="text-status-red">*</span>
                 </label>
                 <input
                   type="date"

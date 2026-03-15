@@ -128,15 +128,25 @@ export function useRemoveFromTheaters() {
 
 // @sideeffect Adds a movie to theaters: creates theatrical run + sets in_theaters = true
 // @contract Both operations happen in parallel; partial failure leaves inconsistent state
+// @edge premiereDate sets movies.premiere_date; newReleaseDate updates movies.release_date
 export function useAddToTheaters() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { movieId: string; startDate: string; label: string | null }) => {
+    mutationFn: async (params: {
+      movieId: string;
+      startDate: string;
+      label: string | null;
+      premiereDate?: string | null;
+      newReleaseDate?: string | null;
+    }) => {
+      const moviePatch: Record<string, unknown> = { in_theaters: true };
+      if (params.premiereDate) moviePatch.premiere_date = params.premiereDate;
+      if (params.newReleaseDate) moviePatch.release_date = params.newReleaseDate;
       await Promise.all([
         crudFetch('PATCH', {
           table: 'movies',
           id: params.movieId,
-          data: { in_theaters: true },
+          data: moviePatch,
         }),
         crudFetch('POST', {
           table: 'movie_theatrical_runs',

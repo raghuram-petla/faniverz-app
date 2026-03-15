@@ -95,7 +95,7 @@ export function AdminsTable({
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-xs font-medium text-red-400">
+                      <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-xs font-medium text-status-red">
                         {(u.display_name ?? '?')[0]?.toUpperCase() ?? '?'}
                       </div>
                     )}
@@ -129,8 +129,8 @@ export function AdminsTable({
                     <span
                       className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium ${
                         u.role_id === 'root'
-                          ? 'bg-amber-600/10 text-amber-500'
-                          : 'bg-red-600/10 text-red-500'
+                          ? 'bg-amber-600/10 text-status-amber'
+                          : 'bg-red-600/10 text-status-red'
                       }`}
                     >
                       {ADMIN_ROLE_LABELS[u.role_id]}
@@ -140,13 +140,13 @@ export function AdminsTable({
                 <td className="px-6 py-4">
                   {u.status === 'blocked' ? (
                     <span
-                      className="inline-flex items-center gap-1 text-red-400 text-xs font-medium"
+                      className="inline-flex items-center gap-1 text-status-red text-xs font-medium"
                       title={u.blocked_reason ?? ''}
                     >
                       <Ban className="w-3 h-3" /> Blocked
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-green-400 text-xs font-medium">
+                    <span className="inline-flex items-center gap-1 text-status-green text-xs font-medium">
                       <ShieldCheck className="w-3 h-3" /> Active
                     </span>
                   )}
@@ -172,7 +172,7 @@ export function AdminsTable({
                       u.status === 'active' && (
                         <button
                           onClick={() => onImpersonate(u)}
-                          className="p-2 text-on-surface-subtle hover:text-amber-500 transition-colors"
+                          className="p-2 text-on-surface-subtle hover:text-status-amber transition-colors"
                           title="Impersonate"
                         >
                           <Eye className="w-4 h-4" />
@@ -181,7 +181,7 @@ export function AdminsTable({
                     {canManage && u.status === 'active' && (
                       <button
                         onClick={() => onBlock(u)}
-                        className="p-2 text-on-surface-subtle hover:text-orange-500 transition-colors"
+                        className="p-2 text-on-surface-subtle hover:text-status-orange transition-colors"
                         title="Block"
                       >
                         <Ban className="w-4 h-4" />
@@ -190,7 +190,7 @@ export function AdminsTable({
                     {canManage && u.status === 'blocked' && (
                       <button
                         onClick={() => onUnblock(u.id)}
-                        className="p-2 text-on-surface-subtle hover:text-green-500 transition-colors"
+                        className="p-2 text-on-surface-subtle hover:text-status-green transition-colors"
                         title="Unblock"
                       >
                         <ShieldCheck className="w-4 h-4" />
@@ -200,7 +200,7 @@ export function AdminsTable({
                       <button
                         onClick={() => onRevoke(u.id, u.role_id)}
                         disabled={isRevokePending}
-                        className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                        className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                         title="Revoke access"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -20,7 +20,7 @@ export function BlockAdminModal({ target, onConfirm, onClose, isPending }: Block
       <div className="bg-surface-card rounded-xl p-6 w-full max-w-md border border-outline shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Ban className="w-5 h-5 text-red-500" />
+            <Ban className="w-5 h-5 text-status-red" />
             <h2 className="text-lg font-semibold text-on-surface">Block Admin</h2>
           </div>
           <button onClick={onClose} className="text-on-surface-subtle hover:text-on-surface">
@@ -35,7 +35,7 @@ export function BlockAdminModal({ target, onConfirm, onClose, isPending }: Block
         </p>
 
         <label className="block text-sm font-medium text-on-surface mb-1">
-          Reason <span className="text-red-500">*</span>
+          Reason <span className="text-status-red">*</span>
         </label>
         <textarea
           value={reason}

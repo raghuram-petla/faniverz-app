@@ -41,9 +41,9 @@ export function DiscoverResults({
         <p className="text-sm text-on-surface-muted">
           Found <span className="text-on-surface font-medium">{results.length}</span> movies
           {' · '}
-          <span className="text-green-400">{existingSet.size} imported</span>
+          <span className="text-status-green">{existingSet.size} imported</span>
           {' · '}
-          <span className="text-blue-400">{newMovies.length} new</span>
+          <span className="text-status-blue">{newMovies.length} new</span>
         </p>
         <div className="flex items-center gap-2">
           {newMovies.length > 0 && (
@@ -143,15 +143,17 @@ export function ImportProgressList({ items }: ImportProgressListProps) {
           {p.status === 'pending' && (
             <div className="w-4 h-4 rounded-full border-2 border-on-surface-disabled" />
           )}
-          {p.status === 'importing' && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
-          {p.status === 'done' && <CheckCircle className="w-4 h-4 text-green-400" />}
-          {p.status === 'failed' && <XCircle className="w-4 h-4 text-red-400" />}
+          {p.status === 'importing' && (
+            <Loader2 className="w-4 h-4 text-status-blue animate-spin" />
+          )}
+          {p.status === 'done' && <CheckCircle className="w-4 h-4 text-status-green" />}
+          {p.status === 'failed' && <XCircle className="w-4 h-4 text-status-red" />}
           <span
             className={
               p.status === 'done'
                 ? 'text-on-surface'
                 : p.status === 'failed'
-                  ? 'text-red-400'
+                  ? 'text-status-red'
                   : 'text-on-surface-muted'
             }
           >
@@ -162,7 +164,7 @@ export function ImportProgressList({ items }: ImportProgressListProps) {
               ({p.result.castCount} cast, {p.result.crewCount} crew)
             </span>
           )}
-          {p.error && <span className="text-xs text-red-400">{p.error}</span>}
+          {p.error && <span className="text-xs text-status-red">{p.error}</span>}
         </div>
       ))}
     </div>

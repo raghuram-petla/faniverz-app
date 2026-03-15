@@ -113,13 +113,13 @@ export default function ComposeNotificationPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-          <Bell className="w-5 h-5 text-yellow-500" />
+          <Bell className="w-5 h-5 text-status-yellow" />
         </div>
         <h1 className="text-2xl font-bold text-on-surface">Compose Notification</h1>
       </div>
 
       <div className="flex items-center gap-3 bg-blue-600/10 border border-blue-600/30 rounded-lg p-4">
-        <AlertTriangle className="w-5 h-5 text-blue-500 flex-shrink-0" />
+        <AlertTriangle className="w-5 h-5 text-status-blue flex-shrink-0" />
         <p className="text-sm text-on-surface-muted">
           Push notifications are sent via the <strong>send-push</strong> edge function. Broadcast
           mode fans out to all registered devices. Users must have the app installed with push
@@ -165,8 +165,8 @@ export default function ComposeNotificationPage() {
                 placeholder="User email address"
                 className={inputClass}
               />
-              {resolvedUserId && <p className="text-sm text-green-400">User found</p>}
-              {userLookupError && <p className="text-sm text-red-400">{userLookupError}</p>}
+              {resolvedUserId && <p className="text-sm text-status-green">User found</p>}
+              {userLookupError && <p className="text-sm text-status-red">{userLookupError}</p>}
             </div>
           )}
         </div>
@@ -277,7 +277,7 @@ export default function ComposeNotificationPage() {
         </div>
 
         {createNotification.isError && (
-          <p className="text-red-400 text-sm">
+          <p className="text-status-red text-sm">
             {createNotification.error instanceof Error
               ? createNotification.error.message
               : 'Failed to create notification'}

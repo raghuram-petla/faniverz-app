@@ -67,7 +67,7 @@ export function MovieSearchField({
       )}
       {movieId && (
         <div className="flex items-center gap-2">
-          <span className="text-sm text-green-400">Selected</span>
+          <span className="text-sm text-status-green">Selected</span>
           <button
             type="button"
             onClick={onClear}

@@ -22,7 +22,7 @@ function UserAvatar({ url, name }: { url: string | null; name: string | null }) 
   }
 
   return (
-    <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-xs font-medium text-red-400">
+    <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-xs font-medium text-status-red">
       {initials}
     </div>
   );
@@ -93,7 +93,7 @@ export default function AppUsersPage() {
       />
 
       {isError && (
-        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-400">
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
           Error loading users: {error instanceof Error ? error.message : 'Unknown error'}
         </div>
       )}
@@ -222,7 +222,7 @@ function UserTable({
                         <button
                           onClick={onSaveEdit}
                           disabled={isSaving}
-                          className="p-2 text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
+                          className="p-2 text-status-green hover:text-status-green transition-colors disabled:opacity-50"
                           title="Save"
                         >
                           <Check className="w-4 h-4" />
@@ -239,7 +239,7 @@ function UserTable({
                       <>
                         <button
                           onClick={() => onStartEdit(user)}
-                          className="p-2 text-on-surface-subtle hover:text-blue-500 transition-colors"
+                          className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
                           title="Edit profile"
                         >
                           <Pencil className="w-4 h-4" />
@@ -247,7 +247,7 @@ function UserTable({
                         <button
                           onClick={() => onBan(user)}
                           disabled={isBanning}
-                          className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                          className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                           title="Ban user"
                         >
                           <Ban className="w-4 h-4" />

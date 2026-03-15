@@ -148,21 +148,21 @@ describe('statusStyles', () => {
   it('has correct running style', () => {
     expect(statusStyles.running).toEqual({
       bg: 'bg-blue-600/20',
-      text: 'text-blue-400',
+      text: 'text-status-blue',
     });
   });
 
   it('has correct success style', () => {
     expect(statusStyles.success).toEqual({
       bg: 'bg-green-600/20',
-      text: 'text-green-400',
+      text: 'text-status-green',
     });
   });
 
   it('has correct failed style', () => {
     expect(statusStyles.failed).toEqual({
       bg: 'bg-red-600/20',
-      text: 'text-red-400',
+      text: 'text-status-red',
     });
   });
 

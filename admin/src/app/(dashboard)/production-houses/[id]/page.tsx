@@ -107,7 +107,7 @@ export default function EditProductionHousePage() {
   if (isLoading)
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-status-red animate-spin" />
       </div>
     );
 
@@ -123,7 +123,7 @@ export default function EditProductionHousePage() {
         {!isReadOnly && (
           <button
             onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-status-red hover:bg-red-600/30 text-sm"
           >
             <Trash2 className="w-4 h-4" /> Delete
           </button>
@@ -179,7 +179,7 @@ export default function EditProductionHousePage() {
                 <button
                   type="button"
                   onClick={() => setForm((p) => ({ ...p, logo_url: '' }))}
-                  className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-surface-elevated rounded-lg"
+                  className="flex items-center gap-2 text-sm text-status-red hover:text-status-red-hover px-3 py-1.5 bg-surface-elevated rounded-lg"
                 >
                   <X className="w-3.5 h-3.5" /> Remove
                 </button>

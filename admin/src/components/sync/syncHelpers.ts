@@ -30,9 +30,9 @@ export function formatRelativeTime(dateStr: string): string {
 }
 
 export const statusStyles: Record<string, { bg: string; text: string }> = {
-  running: { bg: 'bg-blue-600/20', text: 'text-blue-400' },
-  success: { bg: 'bg-green-600/20', text: 'text-green-400' },
-  failed: { bg: 'bg-red-600/20', text: 'text-red-400' },
+  running: { bg: 'bg-blue-600/20', text: 'text-status-blue' },
+  success: { bg: 'bg-green-600/20', text: 'text-status-green' },
+  failed: { bg: 'bg-red-600/20', text: 'text-status-red' },
 };
 
 // @edge: CURRENT_YEAR is computed at module load time (import), NOT at render time.

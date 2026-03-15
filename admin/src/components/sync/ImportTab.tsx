@@ -61,7 +61,7 @@ export function ImportTab() {
       />
 
       {lookup.isError && (
-        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-status-red text-sm">
           {lookup.error instanceof Error ? lookup.error.message : 'Lookup failed'}
         </div>
       )}
@@ -75,12 +75,12 @@ export function ImportTab() {
       )}
 
       {importMovies.isSuccess && (
-        <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-green-400 text-sm">
+        <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">
           Import completed successfully.
         </div>
       )}
       {refreshActor.isSuccess && (
-        <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-green-400 text-sm">
+        <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">
           Actor refreshed successfully. Updated fields:{' '}
           {refreshActor.data?.result?.fields?.join(', ') || 'none'}
         </div>
@@ -206,11 +206,11 @@ function MoviePreview({ result, isPending, onImport }: MoviePreviewProps) {
           )}
           <div className="flex items-center gap-3 pt-2">
             {result.existsInDb ? (
-              <span className="inline-flex items-center gap-1.5 text-sm text-green-400">
+              <span className="inline-flex items-center gap-1.5 text-sm text-status-green">
                 <CheckCircle className="w-4 h-4" /> Already in database
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-sm text-yellow-400">
+              <span className="inline-flex items-center gap-1.5 text-sm text-status-yellow">
                 <AlertCircle className="w-4 h-4" /> Not in database
               </span>
             )}

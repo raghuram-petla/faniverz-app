@@ -90,7 +90,7 @@ export function ImageUploadField({
             <button
               type="button"
               onClick={onRemove}
-              className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 px-3 py-1.5 bg-surface-elevated rounded-lg"
+              className="flex items-center gap-2 text-sm text-status-red hover:text-status-red-hover px-3 py-1.5 bg-surface-elevated rounded-lg"
             >
               <X className="w-3.5 h-3.5" /> Remove
             </button>

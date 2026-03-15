@@ -73,7 +73,7 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
       )}
       <button
         onClick={onRemove}
-        className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-red-400"
+        className="p-1 rounded hover:bg-input text-on-surface-subtle hover:text-status-red"
         aria-label={`Remove ${entry.actor?.name}`}
       >
         <X className="w-4 h-4" />

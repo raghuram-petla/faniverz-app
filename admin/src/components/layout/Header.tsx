@@ -71,7 +71,7 @@ export function Header() {
                   {user?.email ?? 'Admin'}
                 </p>
                 {user?.role && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-600/10 text-red-500 font-medium inline-block mt-1">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-600/10 text-status-red font-medium inline-block mt-1">
                     {ADMIN_ROLE_LABELS[user.role]}
                   </span>
                 )}
@@ -115,7 +115,7 @@ export function Header() {
                     setShowModal(true);
                     setMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-amber-500 hover:bg-input transition-colors"
+                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-status-amber hover:bg-input transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Impersonate
@@ -127,7 +127,7 @@ export function Header() {
                   signOut();
                   setMenuOpen(false);
                 }}
-                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-input transition-colors"
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-status-red hover:bg-input transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Sign out

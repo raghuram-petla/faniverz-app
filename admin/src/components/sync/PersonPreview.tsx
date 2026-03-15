@@ -41,7 +41,7 @@ export function PersonPreview({ result, isPending, onRefresh }: PersonPreviewPro
           <div className="flex items-center gap-3 pt-2">
             {result.existsInDb ? (
               <>
-                <span className="inline-flex items-center gap-1.5 text-sm text-green-400">
+                <span className="inline-flex items-center gap-1.5 text-sm text-status-green">
                   <CheckCircle className="w-4 h-4" /> In database
                 </span>
                 <button

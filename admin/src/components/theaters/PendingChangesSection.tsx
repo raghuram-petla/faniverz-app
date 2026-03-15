@@ -1,9 +1,12 @@
 'use client';
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { X, Plus, Minus, Film, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Plus, Minus, Film, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import { getImageUrl } from '@shared/imageUrl';
+import { formatDate } from '@/lib/utils';
 
 // @contract Displays all pending changes as a staging area before Save
+export type DateAction = 'premiere' | 'release_changed' | 'none';
+
 export interface PendingChangeItem {
   movieId: string;
   title: string;
@@ -11,11 +14,14 @@ export interface PendingChangeItem {
   inTheaters: boolean;
   date: string;
   label?: string | null;
+  releaseDate: string | null;
+  dateAction: DateAction;
 }
 
 export interface PendingChangesDockProps {
   changes: PendingChangeItem[];
   onDateChange: (movieId: string, date: string) => void;
+  onDateActionChange: (movieId: string, action: DateAction) => void;
   onRemove: (movieId: string) => void;
   today: string;
 }
@@ -26,6 +32,7 @@ const ROW_HEIGHT = 44;
 export function PendingChangesDock({
   changes,
   onDateChange,
+  onDateActionChange,
   onRemove,
   today,
 }: PendingChangesDockProps) {
@@ -76,7 +83,7 @@ export function PendingChangesDock({
       >
         {additions.length > 0 && (
           <>
-            <p className="text-xs font-medium text-green-400 uppercase tracking-wider px-1">
+            <p className="text-xs font-medium text-status-green uppercase tracking-wider px-1">
               Adding to theaters
             </p>
             {additions.map((c) => (
@@ -84,16 +91,17 @@ export function PendingChangesDock({
                 key={c.movieId}
                 change={c}
                 onDateChange={onDateChange}
+                onDateActionChange={onDateActionChange}
                 onRemove={onRemove}
                 dateLabel="Start date"
-                minDate={today}
+                maxDate={today}
               />
             ))}
           </>
         )}
         {removals.length > 0 && (
           <>
-            <p className="text-xs font-medium text-red-400 uppercase tracking-wider px-1">
+            <p className="text-xs font-medium text-status-red uppercase tracking-wider px-1">
               Removing from theaters
             </p>
             {removals.map((c) => (
@@ -124,9 +132,11 @@ export function PendingChangesDock({
 }
 
 // @contract Compact pending change row for the bottom dock
+// @edge When inTheaters=true and date < releaseDate, shows date impact radio group
 function DockRow({
   change,
   onDateChange,
+  onDateActionChange,
   onRemove,
   dateLabel,
   maxDate,
@@ -134,52 +144,105 @@ function DockRow({
 }: {
   change: PendingChangeItem;
   onDateChange: (movieId: string, date: string) => void;
+  onDateActionChange?: (movieId: string, action: DateAction) => void;
   onRemove: (movieId: string) => void;
   dateLabel: string;
   maxDate?: string;
   minDate?: string;
 }) {
+  const isEarlyStart = change.inTheaters && change.releaseDate && change.date < change.releaseDate;
+
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5 bg-dock-row rounded-lg">
-      <button
-        onClick={() => onRemove(change.movieId)}
-        className="p-0.5 rounded text-on-surface-muted hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-        aria-label={`Undo ${change.title}`}
-      >
-        <X className="w-3 h-3" />
-      </button>
-      <div className={`p-0.5 rounded ${change.inTheaters ? 'bg-green-600/20' : 'bg-red-600/20'}`}>
-        {change.inTheaters ? (
-          <Plus className="w-2.5 h-2.5 text-green-400" />
-        ) : (
-          <Minus className="w-2.5 h-2.5 text-red-400" />
-        )}
-      </div>
-      {change.posterUrl ? (
-        <img
-          src={getImageUrl(change.posterUrl, 'sm') ?? change.posterUrl}
-          alt=""
-          className="w-6 h-8 rounded object-cover shrink-0"
-        />
-      ) : (
-        <div className="w-6 h-8 rounded bg-input flex items-center justify-center shrink-0">
-          <Film className="w-2.5 h-2.5 text-on-surface-subtle" />
+    <div className="space-y-0">
+      <div className="flex items-center gap-2 px-2 py-1.5 bg-dock-row rounded-lg">
+        <button
+          onClick={() => onRemove(change.movieId)}
+          className="p-0.5 rounded text-on-surface-muted hover:text-status-red hover:bg-red-500/10 transition-colors shrink-0"
+          aria-label={`Undo ${change.title}`}
+        >
+          <X className="w-3 h-3" />
+        </button>
+        <div className={`p-0.5 rounded ${change.inTheaters ? 'bg-green-600/20' : 'bg-red-600/20'}`}>
+          {change.inTheaters ? (
+            <Plus className="w-2.5 h-2.5 text-status-green" />
+          ) : (
+            <Minus className="w-2.5 h-2.5 text-status-red" />
+          )}
         </div>
-      )}
-      <span className="text-xs font-medium text-on-surface truncate flex-1 min-w-0">
-        {change.title}
-      </span>
-      <div className="flex items-center gap-1 shrink-0">
-        <span className="text-[10px] text-on-surface-muted">{dateLabel}</span>
-        <input
-          type="date"
-          value={change.date}
-          onChange={(e) => onDateChange(change.movieId, e.target.value)}
-          max={maxDate}
-          min={minDate}
-          className="bg-input rounded px-1 py-0.5 text-[11px] text-on-surface outline-none focus:ring-1 focus:ring-red-600 w-[110px]"
-        />
+        {change.posterUrl ? (
+          <img
+            src={getImageUrl(change.posterUrl, 'sm') ?? change.posterUrl}
+            alt=""
+            className="w-6 h-8 rounded object-cover shrink-0"
+          />
+        ) : (
+          <div className="w-6 h-8 rounded bg-input flex items-center justify-center shrink-0">
+            <Film className="w-2.5 h-2.5 text-on-surface-subtle" />
+          </div>
+        )}
+        <span className="text-xs font-medium text-on-surface truncate flex-1 min-w-0">
+          {change.title}
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-[10px] text-on-surface-muted">{dateLabel}</span>
+          <input
+            type="date"
+            value={change.date}
+            onChange={(e) => onDateChange(change.movieId, e.target.value)}
+            max={maxDate}
+            min={minDate}
+            className="bg-input rounded px-1 py-0.5 text-[11px] text-on-surface outline-none focus:ring-1 focus:ring-red-600 w-[110px]"
+          />
+        </div>
       </div>
+      {isEarlyStart && (
+        <DateActionPicker
+          movieId={change.movieId}
+          dateAction={change.dateAction}
+          releaseDate={change.releaseDate!}
+          onDateActionChange={onDateActionChange!}
+        />
+      )}
+    </div>
+  );
+}
+
+// @contract Inline radio group shown when start date is before release date
+function DateActionPicker({
+  movieId,
+  dateAction,
+  releaseDate,
+  onDateActionChange,
+}: {
+  movieId: string;
+  dateAction: DateAction;
+  releaseDate: string;
+  onDateActionChange: (movieId: string, action: DateAction) => void;
+}) {
+  const options: { value: DateAction; label: string }[] = [
+    { value: 'premiere', label: `Set as premiere (release date stays ${formatDate(releaseDate)})` },
+    { value: 'release_changed', label: 'Update release date to match' },
+    { value: 'none', label: 'No date update' },
+  ];
+
+  return (
+    <div className="ml-8 px-2 py-1.5 flex items-center gap-3 text-[11px]">
+      <AlertTriangle className="w-3 h-3 text-status-amber shrink-0" />
+      <span className="text-status-amber shrink-0">Before release date:</span>
+      {options.map((opt) => (
+        <label key={opt.value} className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="radio"
+            name={`date-action-${movieId}`}
+            checked={dateAction === opt.value}
+            onChange={() => onDateActionChange(movieId, opt.value)}
+            className="accent-red-600 w-3 h-3"
+          />
+          <span className={dateAction === opt.value ? 'text-on-surface' : 'text-on-surface-muted'}>
+            {opt.label}
+          </span>
+        </label>
+      ))}
     </div>
   );
 }

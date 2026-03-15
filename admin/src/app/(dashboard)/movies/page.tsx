@@ -15,10 +15,10 @@ import { getImageUrl } from '@shared/imageUrl';
 
 // @coupling Must stay in sync with shared MOVIE_STATUS_CONFIG keys
 const STATUS_BADGE_CLASSES: Record<string, string> = {
-  announced: 'bg-amber-600/20 text-amber-400',
-  upcoming: 'bg-blue-600/20 text-blue-400',
-  in_theaters: 'bg-red-600/20 text-red-400',
-  streaming: 'bg-purple-600/20 text-purple-400',
+  announced: 'bg-amber-600/20 text-status-amber',
+  upcoming: 'bg-blue-600/20 text-status-blue',
+  in_theaters: 'bg-red-600/20 text-status-red',
+  streaming: 'bg-purple-600/20 text-status-purple',
   released: 'bg-gray-600/20 text-gray-400',
 };
 
@@ -89,7 +89,7 @@ export default function MoviesPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-status-red animate-spin" />
         </div>
       ) : (
         <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
@@ -136,7 +136,7 @@ export default function MoviesPage() {
                       </Link>
                       <Link
                         href={`/movies/${movie.id}`}
-                        className="font-medium text-on-surface hover:text-red-400 transition-colors truncate max-w-[200px] inline-block align-middle"
+                        className="font-medium text-on-surface hover:text-status-red transition-colors truncate max-w-[200px] inline-block align-middle"
                       >
                         {movie.title}
                       </Link>
@@ -158,7 +158,7 @@ export default function MoviesPage() {
                     {movie.release_date ? formatDate(movie.release_date) : '—'}
                     {/* @nullable release_date absent for announced movies */}
                   </td>
-                  <td className="px-4 py-3 text-sm text-yellow-400">
+                  <td className="px-4 py-3 text-sm text-status-yellow">
                     {movie.rating > 0 ? `★ ${movie.rating.toFixed(1)}` : '—'}
                   </td>
                   <td className="px-4 py-3">
@@ -178,7 +178,7 @@ export default function MoviesPage() {
                                 onError: (err: Error) => alert(`Error: ${err.message}`),
                               });
                           }}
-                          className="p-2 rounded-lg text-on-surface-subtle hover:text-red-500 hover:bg-red-600/10"
+                          className="p-2 rounded-lg text-on-surface-subtle hover:text-status-red hover:bg-red-600/10"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

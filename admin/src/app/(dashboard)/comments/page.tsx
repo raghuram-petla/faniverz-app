@@ -72,7 +72,7 @@ export default function CommentsPage() {
       </div>
 
       {isError && (
-        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-red-400">
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
           Error loading comments: {error instanceof Error ? error.message : 'Unknown error'}
         </div>
       )}
@@ -143,7 +143,7 @@ export default function CommentsPage() {
                           <button
                             onClick={saveEdit}
                             disabled={updateComment.isPending}
-                            className="p-2 text-green-500 hover:text-green-400 transition-colors disabled:opacity-50"
+                            className="p-2 text-status-green hover:text-status-green transition-colors disabled:opacity-50"
                             title="Save"
                           >
                             <Check className="w-4 h-4" />
@@ -160,7 +160,7 @@ export default function CommentsPage() {
                         <>
                           <button
                             onClick={() => startEdit(comment.id, comment.body)}
-                            className="p-2 text-on-surface-subtle hover:text-blue-500 transition-colors"
+                            className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
                             title="Edit comment"
                           >
                             <Pencil className="w-4 h-4" />
@@ -168,7 +168,7 @@ export default function CommentsPage() {
                           <button
                             onClick={() => handleDelete(comment.id)}
                             disabled={deleteComment.isPending}
-                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
                             title="Delete comment"
                           >
                             <Trash2 className="w-4 h-4" />

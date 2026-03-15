@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Light theme (default) */
 :root {
   --surface: #FFFFFF;
@@ -17,10 +19,19 @@
   --outline-subtle: rgba(0, 0, 0, 0.06);
   --overlay: rgba(0, 0, 0, 0.5);
   --overlay-heavy: rgba(0, 0, 0, 0.8);
-  --dock: #E4E4E7;
-  --dock-row: #D4D4D8;
-  --dock-border: #C4C4C8;
+  --dock: #FAFAFA;
+  --dock-row: #F4F4F5;
+  --dock-border: #E4E4E7;
   --dock-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 #F0F0F2, inset 0 -2px 4px rgba(0, 0, 0, 0.04);
+  /* Status colors — darker shades for light backgrounds */
+  --status-red: #dc2626;
+  --status-red-hover: #b91c1c;
+  --status-green: #16a34a;
+  --status-blue: #2563eb;
+  --status-amber: #d97706;
+  --status-yellow: #ca8a04;
+  --status-purple: #9333ea;
+  --status-orange: #ea580c;
 }
 
 /* Dark theme */
@@ -42,6 +53,15 @@
   --dock-row: #2C2C30;
   --dock-border: #3F3F46;
   --dock-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 #333338, inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+  /* Status colors — brighter shades for dark backgrounds */
+  --status-red: #f87171;
+  --status-red-hover: #fca5a5;
+  --status-green: #4ade80;
+  --status-blue: #60a5fa;
+  --status-amber: #fbbf24;
+  --status-yellow: #facc15;
+  --status-purple: #c084fc;
+  --status-orange: #fb923c;
 }
 
 @theme inline {
@@ -66,6 +86,14 @@
   --shadow-dock: var(--dock-shadow);
   --color-background: var(--surface);
   --color-foreground: var(--on-surface);
+  --color-status-red: var(--status-red);
+  --color-status-red-hover: var(--status-red-hover);
+  --color-status-green: var(--status-green);
+  --color-status-blue: var(--status-blue);
+  --color-status-amber: var(--status-amber);
+  --color-status-yellow: var(--status-yellow);
+  --color-status-purple: var(--status-purple);
+  --color-status-orange: var(--status-orange);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

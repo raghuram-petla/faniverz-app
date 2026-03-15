@@ -93,7 +93,7 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
               <button
                 type="button"
                 onClick={() => setForm((p) => ({ ...p, photo_url: '' }))}
-                className="p-1 text-red-400 hover:text-red-300"
+                className="p-1 text-status-red hover:text-status-red-hover"
               >
                 <X className="w-4 h-4" />
               </button>

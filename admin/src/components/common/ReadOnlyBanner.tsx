@@ -10,7 +10,7 @@ export function ReadOnlyBanner() {
   if (!isReadOnly) return null;
 
   return (
-    <div className="flex items-center gap-2 bg-amber-600/20 px-4 py-2 text-sm text-amber-400">
+    <div className="flex items-center gap-2 bg-amber-600/20 px-4 py-2 text-sm text-status-amber">
       <Eye className="h-4 w-4 shrink-0" />
       <span>You are in read-only mode. Changes are disabled.</span>
     </div>

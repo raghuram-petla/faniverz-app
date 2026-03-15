@@ -49,7 +49,7 @@ export function FormChangesDock({
   if (!isDirty && saveStatus !== 'success') return null;
 
   return (
-    <div className="sticky bottom-4 z-40 max-w-2xl mx-auto rounded-2xl border border-dock-border bg-dock shadow-dock">
+    <div className="sticky bottom-4 z-40 max-w-2xl mx-auto mt-6 rounded-2xl border border-dock-border bg-dock shadow-dock">
       {isDirty && (
         <>
           {/* Changes list with scroll indicators */}
@@ -87,10 +87,10 @@ export function FormChangesDock({
           <div className="px-4 py-2.5 border-t border-outline flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-amber opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-status-amber" />
               </span>
-              <span className="text-sm font-medium text-amber-400">
+              <span className="text-sm font-medium text-status-amber">
                 {changeCount} unsaved change{changeCount !== 1 ? 's' : ''}
               </span>
             </div>
@@ -121,7 +121,7 @@ export function FormChangesDock({
       )}
 
       {saveStatus === 'success' && !isDirty && (
-        <div className="px-4 py-3 flex items-center gap-2 text-green-400">
+        <div className="px-4 py-3 flex items-center gap-2 text-status-green">
           <span className="flex items-center gap-1.5 text-sm font-medium">
             ✓ Changes saved successfully
           </span>
@@ -144,7 +144,7 @@ function ChangeRow({
       {onRevert && (
         <button
           onClick={() => onRevert(change.key)}
-          className="p-0.5 rounded text-on-surface-muted hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+          className="p-0.5 rounded text-on-surface-muted hover:text-status-red hover:bg-red-500/10 transition-colors shrink-0"
           aria-label={`Undo ${change.label}`}
         >
           <X className="w-3 h-3" />
@@ -153,9 +153,11 @@ function ChangeRow({
       <span className="font-medium text-on-surface-muted w-24 shrink-0 truncate">
         {change.label}
       </span>
-      <span className="text-red-400 line-through truncate max-w-[200px]">{change.oldDisplay}</span>
+      <span className="text-status-red line-through truncate max-w-[200px]">
+        {change.oldDisplay}
+      </span>
       <ArrowRight className="w-3 h-3 text-on-surface-subtle shrink-0" />
-      <span className="text-green-400 truncate max-w-[200px] flex-1">{change.newDisplay}</span>
+      <span className="text-status-green truncate max-w-[200px] flex-1">{change.newDisplay}</span>
     </div>
   );
 }

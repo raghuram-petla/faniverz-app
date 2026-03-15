@@ -154,7 +154,7 @@ export default function EditSurpriseContentPage() {
           </Link>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-yellow-500" />
+              <Sparkles className="w-5 h-5 text-status-yellow" />
             </div>
             <h1 className="text-2xl font-bold text-on-surface">Edit Content</h1>
           </div>
@@ -163,7 +163,7 @@ export default function EditSurpriseContentPage() {
           <button
             onClick={handleDelete}
             disabled={deleteItem.isPending}
-            className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50"
+            className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-status-red px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50"
           >
             <Trash2 className="w-4 h-4" />
             Delete
@@ -269,7 +269,7 @@ export default function EditSurpriseContentPage() {
         </div>
 
         {updateItem.isError && (
-          <p className="text-red-400 text-sm">
+          <p className="text-status-red text-sm">
             {updateItem.error instanceof Error
               ? updateItem.error.message
               : 'Failed to update content'}
