@@ -84,7 +84,7 @@ describe('Sidebar', () => {
     const navLabels = [
       'Dashboard',
       'Movies',
-      'Cast/Actors',
+      'Artists',
       'OTT Releases',
       'Platforms',
       'Surprise Content',

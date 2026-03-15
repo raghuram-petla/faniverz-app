@@ -8,7 +8,7 @@ const ROUTE_BREADCRUMB_MAP: Record<string, { section: string | null; page: strin
   '/': { section: null, page: 'Dashboard' },
   '/movies': { section: 'Content', page: 'Movies' },
   '/theaters': { section: 'Content', page: 'In Theaters' },
-  '/cast': { section: 'Content', page: 'Cast/Actors' },
+  '/cast': { section: 'Content', page: 'Artists' },
   '/production-houses': { section: 'Content', page: 'Production Houses' },
   '/ott': { section: 'Content', page: 'OTT Releases' },
   '/platforms': { section: 'Content', page: 'Platforms' },

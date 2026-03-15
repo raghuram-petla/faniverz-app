@@ -48,7 +48,7 @@ const navSections: NavSection[] = [
     items: [
       { href: '/movies', label: 'Movies', icon: Film, page: 'movies' },
       { href: '/theaters', label: 'In Theaters', icon: Clapperboard, page: 'theaters' },
-      { href: '/cast', label: 'Cast/Actors', icon: Users, page: 'cast' },
+      { href: '/cast', label: 'Artists', icon: Users, page: 'cast' },
       {
         href: '/production-houses',
         label: 'Production Houses',
