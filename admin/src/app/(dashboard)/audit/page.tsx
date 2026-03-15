@@ -220,9 +220,10 @@ export default function AuditLogPage() {
                         {entry.entity_type}
                       </td>
                       <td className="px-6 py-4">
-                        {/* @edge Shows human-readable name from details; falls back to truncated ID */}
+                        {/* @edge Shows human-readable name from details or DB-resolved display name; falls back to truncated ID */}
                         <span className="text-on-surface text-sm">
-                          {getEntityDisplayName(entry.entity_type, entry.details) ??
+                          {entry.entity_display_name ??
+                            getEntityDisplayName(entry.entity_type, entry.details) ??
                             (entry.entity_id ? `${entry.entity_id.slice(0, 8)}...` : '—')}
                         </span>
                       </td>

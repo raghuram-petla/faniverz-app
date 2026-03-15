@@ -75,6 +75,7 @@ export interface AuditLogEntry {
   reverted_by: string | null;
   reverted_by_display_name: string | null;
   reverted_by_email: string | null;
+  entity_display_name: string | null;
 }
 
 // @coupling: AUDIT_ENTITY_TYPES must match all entity_type values written by audit log triggers/hooks

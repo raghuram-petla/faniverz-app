@@ -187,10 +187,16 @@ describe('getEntityDisplayName', () => {
     );
   });
 
-  it('returns status for movie_theatrical_runs', () => {
-    expect(getEntityDisplayName('movie_theatrical_runs', { new: { status: 'running' } })).toBe(
-      'running',
+  it('returns label for movie_theatrical_runs', () => {
+    expect(getEntityDisplayName('movie_theatrical_runs', { new: { label: 'Re-release' } })).toBe(
+      'Re-release',
     );
+  });
+
+  it('returns null for movie_theatrical_runs without label', () => {
+    expect(
+      getEntityDisplayName('movie_theatrical_runs', { new: { movie_id: 'some-uuid' } }),
+    ).toBeNull();
   });
 
   it('falls back to old when new is missing (delete)', () => {

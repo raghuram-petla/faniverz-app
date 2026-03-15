@@ -61,7 +61,9 @@ export function getEntityDisplayName(
     case 'movie_posters':
       return (entity.poster_type as string) ?? null;
     case 'movie_theatrical_runs':
-      return (entity.status as string) ?? null;
+      // @edge movie_theatrical_runs only has movie_id (UUID), not the movie title;
+      // entity_display_name from the DB view resolves this — return label as fallback
+      return (entity.label as string) ?? null;
     case 'movie_platforms':
       return (entity.platform_name as string) ?? null;
     case 'movie_production_houses':
