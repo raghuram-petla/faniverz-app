@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { PendingChangesSection } from '@/components/theaters/PendingChangesSection';
+import { PendingChangesDock } from '@/components/theaters/PendingChangesSection';
 
 const mockChanges = [
   {
@@ -35,49 +35,38 @@ const defaultProps = {
   today: '2026-03-14',
 };
 
-describe('PendingChangesSection', () => {
+describe('PendingChangesDock', () => {
   it('returns null when no changes', () => {
-    const { container } = render(<PendingChangesSection {...defaultProps} changes={[]} />);
+    const { container } = render(<PendingChangesDock {...defaultProps} changes={[]} />);
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders heading with count', () => {
-    render(<PendingChangesSection {...defaultProps} />);
-    expect(screen.getByText('Pending Changes')).toBeInTheDocument();
-    expect(screen.getByText('(3)')).toBeInTheDocument();
-  });
-
   it('renders "Adding to theaters" group', () => {
-    render(<PendingChangesSection {...defaultProps} />);
+    render(<PendingChangesDock {...defaultProps} />);
     expect(screen.getByText('Adding to theaters')).toBeInTheDocument();
   });
 
   it('renders "Removing from theaters" group', () => {
-    render(<PendingChangesSection {...defaultProps} />);
+    render(<PendingChangesDock {...defaultProps} />);
     expect(screen.getByText('Removing from theaters')).toBeInTheDocument();
   });
 
   it('renders all movie titles', () => {
-    render(<PendingChangesSection {...defaultProps} />);
+    render(<PendingChangesDock {...defaultProps} />);
     expect(screen.getByText('Movie A')).toBeInTheDocument();
     expect(screen.getByText('Movie B')).toBeInTheDocument();
     expect(screen.getByText('Movie C')).toBeInTheDocument();
   });
 
-  it('renders label when present', () => {
-    render(<PendingChangesSection {...defaultProps} />);
-    expect(screen.getByText('Re-release')).toBeInTheDocument();
-  });
-
   it('renders date inputs with correct values', () => {
-    render(<PendingChangesSection {...defaultProps} />);
+    render(<PendingChangesDock {...defaultProps} />);
     const dateInputs = screen.getAllByDisplayValue('2026-03-14');
     expect(dateInputs.length).toBe(2);
   });
 
   it('calls onDateChange when date is edited', () => {
     const onDateChange = vi.fn();
-    render(<PendingChangesSection {...defaultProps} onDateChange={onDateChange} />);
+    render(<PendingChangesDock {...defaultProps} onDateChange={onDateChange} />);
     const dateInputs = screen.getAllByDisplayValue('2026-03-14');
     fireEvent.change(dateInputs[0], { target: { value: '2026-03-15' } });
     expect(onDateChange).toHaveBeenCalledWith('1', '2026-03-15');
@@ -85,14 +74,14 @@ describe('PendingChangesSection', () => {
 
   it('calls onRemove when undo button is clicked', () => {
     const onRemove = vi.fn();
-    render(<PendingChangesSection {...defaultProps} onRemove={onRemove} />);
+    render(<PendingChangesDock {...defaultProps} onRemove={onRemove} />);
     fireEvent.click(screen.getByLabelText('Undo Movie A'));
     expect(onRemove).toHaveBeenCalledWith('1');
   });
 
   it('applies max date to removal rows', () => {
     render(
-      <PendingChangesSection
+      <PendingChangesDock
         {...defaultProps}
         changes={[
           {
@@ -112,7 +101,7 @@ describe('PendingChangesSection', () => {
 
   it('applies min date to addition rows', () => {
     render(
-      <PendingChangesSection
+      <PendingChangesDock
         {...defaultProps}
         changes={[
           {

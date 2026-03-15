@@ -1,28 +1,32 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { useAdminOttReleases, useUpdateOttRelease } from '@/hooks/useAdminOtt';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { useFormChanges } from '@/hooks/useFormChanges';
+import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { Tv, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import type { FieldConfig } from '@/hooks/useFormChanges';
+
+const FIELD_CONFIG: FieldConfig[] = [
+  { key: 'availableFrom', label: 'Available From', type: 'date' },
+  { key: 'streamingUrl', label: 'Streaming URL', type: 'text' },
+];
 
 export default function EditOttReleasePage() {
-  const router = useRouter();
   const params = useParams();
-  // @boundary: compositeId is URL-encoded as "movieId~platformId" — splitting on '~' recovers both FKs
-  // @assumes: route param always contains exactly one '~' separator
   const compositeId = params.id as string;
   const [movieId, platformId] = compositeId.split('~');
 
-  // @coupling: fetches ALL releases then filters client-side; works at current scale but won't scale to thousands
   const { data: releases, isLoading } = useAdminOttReleases();
-  // @nullable: release is undefined when loading or when compositeId doesn't match any record
   const release = releases?.find((r) => r.movie_id === movieId && r.platform_id === platformId);
   const updateRelease = useUpdateOttRelease();
 
   const [availableFrom, setAvailableFrom] = useState('');
   const [streamingUrl, setStreamingUrl] = useState('');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const initialRef = useRef<{ availableFrom: string; streamingUrl: string } | null>(null);
 
   useEffect(() => {
@@ -37,20 +41,20 @@ export default function EditOttReleasePage() {
     }
   }, [release]);
 
-  const isDirty = useMemo(() => {
-    if (!initialRef.current) return false;
-    return (
-      availableFrom !== initialRef.current.availableFrom ||
-      streamingUrl !== initialRef.current.streamingUrl
-    );
-  }, [availableFrom, streamingUrl]);
+  const currentValues = useMemo(
+    () => ({ availableFrom, streamingUrl }),
+    [availableFrom, streamingUrl],
+  );
+  const { changes, isDirty, changeCount } = useFormChanges(
+    FIELD_CONFIG,
+    initialRef.current,
+    currentValues,
+  );
 
   useUnsavedChangesWarning(isDirty);
 
-  // @sideeffect: mutates ott_releases row via Supabase, then navigates to /ott on success
-  // @edge: empty strings coerced to null — blank date means "available now"
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  function handleSave() {
+    setSaveStatus('saving');
     updateRelease.mutate(
       {
         movieId,
@@ -59,10 +63,27 @@ export default function EditOttReleasePage() {
         streaming_url: streamingUrl || null,
       },
       {
-        onSuccess: () => router.push('/ott'),
+        onSuccess: () => {
+          initialRef.current = { availableFrom, streamingUrl };
+          setSaveStatus('success');
+          setTimeout(() => setSaveStatus('idle'), 3000);
+        },
+        onError: () => setSaveStatus('idle'),
       },
     );
-  };
+  }
+
+  const handleDiscard = useCallback(() => {
+    if (!initialRef.current) return;
+    setAvailableFrom(initialRef.current.availableFrom);
+    setStreamingUrl(initialRef.current.streamingUrl);
+  }, []);
+
+  const handleRevertField = useCallback((key: string) => {
+    if (!initialRef.current) return;
+    if (key === 'availableFrom') setAvailableFrom(initialRef.current.availableFrom);
+    if (key === 'streamingUrl') setStreamingUrl(initialRef.current.streamingUrl);
+  }, []);
 
   if (isLoading) {
     return (
@@ -101,10 +122,7 @@ export default function EditOttReleasePage() {
         </span>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-surface-card border border-outline rounded-xl p-6 space-y-6"
-      >
+      <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-6">
         <div className="space-y-2">
           <label
             htmlFor="available_from"
@@ -147,24 +165,16 @@ export default function EditOttReleasePage() {
               : 'Failed to update'}
           </p>
         )}
+      </div>
 
-        <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={updateRelease.isPending}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg transition-colors font-medium"
-          >
-            {updateRelease.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            Save Changes
-          </button>
-          <Link
-            href="/ott"
-            className="px-6 py-2.5 text-on-surface-muted hover:text-on-surface transition-colors"
-          >
-            Cancel
-          </Link>
-        </div>
-      </form>
+      <FormChangesDock
+        changes={changes}
+        changeCount={changeCount}
+        saveStatus={saveStatus}
+        onSave={handleSave}
+        onDiscard={handleDiscard}
+        onRevertField={handleRevertField}
+      />
     </div>
   );
 }

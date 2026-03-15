@@ -2,7 +2,6 @@
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
-  Check,
   Loader2,
   Trash2,
   FileText,
@@ -14,6 +13,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useMovieEditState } from '@/hooks/useMovieEditState';
+import { useMovieEditChanges } from '@/hooks/useMovieEditChanges';
+import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
 import { PreviewPanel } from '@/components/movie-edit/PreviewPanel';
 import {
@@ -76,12 +77,86 @@ export default function EditMoviePage() {
     pendingPlatformAdds,
     pendingPHAdds,
     pendingRunEndIds,
-    isDirty,
     isSaving,
     saveStatus,
     handleSubmit,
     handleDelete,
+    // FormChangesDock integration
+    initialForm,
+    setInitialForm,
+    pendingCastAdds,
+    pendingCastRemoveIds,
+    localCastOrder,
+    pendingVideoAdds,
+    pendingVideoRemoveIds,
+    pendingPosterAdds,
+    pendingPosterRemoveIds,
+    pendingMainPosterId,
+    pendingPlatformRemoveIds,
+    pendingPHRemoveIds,
+    pendingRunAdds,
+    pendingRunRemoveIds,
+    castData,
+    videosData,
+    postersData,
+    moviePlatforms,
+    movieProductionHouses,
+    theatricalRuns,
+    resetPendingState,
+    setPendingCastRemoveIds,
+    setPendingVideoRemoveIds,
+    setPendingPosterRemoveIds,
+    setPendingPlatformRemoveIds,
+    setPendingPHRemoveIds,
+    setPendingRunRemoveIds,
+    setPendingRunEndIds,
   } = useMovieEditState(id);
+
+  const { changes, changeCount, onRevertField, onDiscard } = useMovieEditChanges({
+    form,
+    initialForm,
+    setForm,
+    setInitialForm,
+    pendingCastAdds,
+    pendingCastRemoveIds,
+    localCastOrder,
+    castData,
+    setPendingCastAdds,
+    setPendingCastRemoveIds,
+    setLocalCastOrder,
+    pendingVideoAdds,
+    pendingVideoRemoveIds,
+    videosData,
+    setPendingVideoAdds,
+    setPendingVideoRemoveIds,
+    pendingPosterAdds,
+    pendingPosterRemoveIds,
+    pendingMainPosterId,
+    postersData,
+    setPendingPosterAdds,
+    setPendingPosterRemoveIds,
+    setPendingMainPosterId,
+    pendingPlatformAdds,
+    pendingPlatformRemoveIds,
+    moviePlatforms,
+    setPendingPlatformAdds,
+    setPendingPlatformRemoveIds,
+    pendingPHAdds,
+    pendingPHRemoveIds,
+    movieProductionHouses,
+    setPendingPHAdds,
+    setPendingPHRemoveIds,
+    pendingRunAdds,
+    pendingRunRemoveIds,
+    pendingRunEndIds,
+    theatricalRuns,
+    setPendingRunAdds,
+    setPendingRunRemoveIds,
+    setPendingRunEndIds,
+    resetPendingState,
+  });
+
+  const dockSaveStatus = isSaving ? ('saving' as const) : saveStatus;
 
   // @sync: useActiveSection uses IntersectionObserver to highlight the section nav based on scroll position
   const { activeId: activeSection, scrollTo } = useActiveSection(MOVIE_SECTIONS.map((s) => s.id));
@@ -95,57 +170,23 @@ export default function EditMoviePage() {
 
   return (
     <div className="max-w-6xl">
-      {/* ─── Sticky Header ─── */}
-      <div className="sticky top-0 z-30 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-3 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="p-2 rounded-lg bg-input hover:bg-input-active"
-            >
-              <ArrowLeft className="w-4 h-4 text-on-surface" />
-            </button>
-            <h1 className="text-2xl font-bold text-on-surface">Edit Movie</h1>
-            {saveStatus === 'success' && (
-              <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2.5 py-0.5 rounded-full font-medium">
-                <Check className="w-3 h-3" /> Saved successfully
-              </span>
-            )}
-            {isDirty && (
-              <span className="text-xs bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-medium">
-                Unsaved changes
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {/* @sideeffect: handleSubmit persists all pending adds/removes/field changes in a single batch to Supabase */}
-            {/* @invariant: button is disabled until at least one field diverges from the server snapshot (isDirty) */}
-            <button
-              onClick={() => handleSubmit()}
-              disabled={!isDirty || isSaving}
-              className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all ${
-                isDirty && !isSaving
-                  ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/25'
-                  : 'bg-surface-elevated text-on-surface-disabled cursor-not-allowed'
-              }`}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </button>
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
-            >
-              <Trash2 className="w-4 h-4" /> Delete
-            </button>
-          </div>
+      {/* ─── Header ─── */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="p-2 rounded-lg bg-input hover:bg-input-active"
+          >
+            <ArrowLeft className="w-4 h-4 text-on-surface" />
+          </button>
+          <h1 className="text-2xl font-bold text-on-surface">Edit Movie</h1>
         </div>
+        <button
+          onClick={handleDelete}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
+        >
+          <Trash2 className="w-4 h-4" /> Delete
+        </button>
       </div>
 
       {/* ─── Section Nav ─── */}
@@ -280,6 +321,15 @@ export default function EditMoviePage() {
         {/* @coupling: PreviewPanel renders a device-framed mobile movie detail preview, mirrors the mobile MovieDetail screen */}
         <PreviewPanel form={form} />
       </div>
+
+      <FormChangesDock
+        changes={changes}
+        changeCount={changeCount}
+        saveStatus={dockSaveStatus}
+        onSave={() => handleSubmit()}
+        onDiscard={onDiscard}
+        onRevertField={onRevertField}
+      />
     </div>
   );
 }

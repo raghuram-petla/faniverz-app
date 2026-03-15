@@ -1,16 +1,25 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { useFormChanges } from '@/hooks/useFormChanges';
+import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { useAdminFeedItem, useUpdateFeedItem, useDeleteFeedItem } from '@/hooks/useAdminFeed';
+import type { FieldConfig } from '@/hooks/useFormChanges';
+
+const FIELD_CONFIG: FieldConfig[] = [
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'description', label: 'Description', type: 'text' },
+  { key: 'isPinned', label: 'Pinned', type: 'boolean' },
+  { key: 'isFeatured', label: 'Featured', type: 'boolean' },
+];
 
 export default function EditFeedItemPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  // @coupling: useAdminFeedItem joins feed_items with movies for the movie badge display
   const { data: item, isLoading } = useAdminFeedItem(id);
   const updateMutation = useUpdateFeedItem();
   const deleteMutation = useDeleteFeedItem();
@@ -19,6 +28,7 @@ export default function EditFeedItemPage() {
   const [description, setDescription] = useState('');
   const [isPinned, setIsPinned] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const initialRef = useRef<{
     title: string;
     description: string;
@@ -42,23 +52,20 @@ export default function EditFeedItemPage() {
     }
   }, [item]);
 
-  const isDirty = useMemo(() => {
-    if (!initialRef.current) return false;
-    return (
-      title !== initialRef.current.title ||
-      description !== initialRef.current.description ||
-      isPinned !== initialRef.current.isPinned ||
-      isFeatured !== initialRef.current.isFeatured
-    );
-  }, [title, description, isPinned, isFeatured]);
+  const currentValues = useMemo(
+    () => ({ title, description, isPinned, isFeatured }),
+    [title, description, isPinned, isFeatured],
+  );
+  const { changes, isDirty, changeCount } = useFormChanges(
+    FIELD_CONFIG,
+    initialRef.current,
+    currentValues,
+  );
 
   useUnsavedChangesWarning(isDirty);
 
-  // @sideeffect: updates feed_items row in Supabase, navigates to /feed on success
-  // @edge: empty description coerced to null to avoid storing blank strings in DB
-  // @contract: type assertion needed because mutateAsync expects full NewsFeedItem but we only send a partial update
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  async function handleSave() {
+    setSaveStatus('saving');
     try {
       await updateMutation.mutateAsync({
         id,
@@ -67,13 +74,32 @@ export default function EditFeedItemPage() {
         is_pinned: isPinned,
         is_featured: isFeatured,
       } as Partial<import('@/lib/types').NewsFeedItem> & { id: string });
-      router.push('/feed');
+      initialRef.current = { title, description, isPinned, isFeatured };
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err) {
+      setSaveStatus('idle');
       alert(`Error: ${err instanceof Error ? err.message : 'Operation failed'}`);
     }
-  };
+  }
 
-  // @sideeffect: hard-deletes the feed_items row — no soft-delete/undo
+  const handleDiscard = useCallback(() => {
+    if (!initialRef.current) return;
+    setTitle(initialRef.current.title);
+    setDescription(initialRef.current.description);
+    setIsPinned(initialRef.current.isPinned);
+    setIsFeatured(initialRef.current.isFeatured);
+  }, []);
+
+  const handleRevertField = useCallback((key: string) => {
+    if (!initialRef.current) return;
+    const init = initialRef.current;
+    if (key === 'title') setTitle(init.title);
+    if (key === 'description') setDescription(init.description);
+    if (key === 'isPinned') setIsPinned(init.isPinned);
+    if (key === 'isFeatured') setIsFeatured(init.isFeatured);
+  }, []);
+
   const handleDelete = async () => {
     if (!confirm('Delete this feed item?')) return;
     try {
@@ -118,8 +144,6 @@ export default function EditFeedItemPage() {
         </button>
       </div>
 
-      {/* Source info */}
-      {/* @invariant: items with source_table are auto-generated — edits here may be overwritten by source sync */}
       {item.source_table ? (
         <div className="bg-surface-elevated rounded-lg px-4 py-3 text-sm text-on-surface-muted">
           Auto-generated from <span className="font-mono text-on-surface">{item.source_table}</span>{' '}
@@ -127,8 +151,6 @@ export default function EditFeedItemPage() {
         </div>
       ) : null}
 
-      {/* Preview */}
-      {/* @edge: youtube_id takes priority over thumbnail_url when both exist */}
       {item.youtube_id ? (
         <div className="rounded-xl overflow-hidden aspect-video bg-surface-elevated">
           <iframe
@@ -144,7 +166,6 @@ export default function EditFeedItemPage() {
         </div>
       ) : null}
 
-      {/* Info badges */}
       <div className="flex gap-2 flex-wrap">
         <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-input text-on-surface-muted">
           Type: {item.feed_type}
@@ -159,7 +180,7 @@ export default function EditFeedItemPage() {
         ) : null}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-5">
         <div>
           <label className="block text-sm font-medium text-on-surface mb-2">Title *</label>
           <input
@@ -201,24 +222,16 @@ export default function EditFeedItemPage() {
             <span className="text-sm text-on-surface">Featured</span>
           </label>
         </div>
+      </div>
 
-        <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={updateMutation.isPending || !title}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-medium"
-          >
-            {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Save Changes
-          </button>
-          <Link
-            href="/feed"
-            className="px-6 py-3 rounded-lg border border-outline text-on-surface-muted hover:bg-surface-elevated"
-          >
-            Cancel
-          </Link>
-        </div>
-      </form>
+      <FormChangesDock
+        changes={changes}
+        changeCount={changeCount}
+        saveStatus={saveStatus}
+        onSave={handleSave}
+        onDiscard={handleDiscard}
+        onRevertField={handleRevertField}
+      />
     </div>
   );
 }

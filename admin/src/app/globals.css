@@ -17,6 +17,10 @@
   --outline-subtle: rgba(0, 0, 0, 0.06);
   --overlay: rgba(0, 0, 0, 0.5);
   --overlay-heavy: rgba(0, 0, 0, 0.8);
+  --dock: #E4E4E7;
+  --dock-row: #D4D4D8;
+  --dock-border: #C4C4C8;
+  --dock-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 #F0F0F2, inset 0 -2px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* Dark theme */
@@ -34,6 +38,10 @@
   --on-surface-disabled: rgba(255, 255, 255, 0.2);
   --outline: rgba(255, 255, 255, 0.1);
   --outline-subtle: rgba(255, 255, 255, 0.06);
+  --dock: #222226;
+  --dock-row: #2C2C30;
+  --dock-border: #3F3F46;
+  --dock-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 #333338, inset 0 -2px 4px rgba(0, 0, 0, 0.3);
 }
 
 @theme inline {
@@ -52,6 +60,10 @@
   --color-outline-subtle: var(--outline-subtle);
   --color-overlay: var(--overlay);
   --color-overlay-heavy: var(--overlay-heavy);
+  --color-dock: var(--dock);
+  --color-dock-row: var(--dock-row);
+  --color-dock-border: var(--dock-border);
+  --shadow-dock: var(--dock-shadow);
   --color-background: var(--surface);
   --color-foreground: var(--on-surface);
   --font-sans: var(--font-geist-sans);

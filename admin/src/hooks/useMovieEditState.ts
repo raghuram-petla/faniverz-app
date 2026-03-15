@@ -154,7 +154,6 @@ export function useMovieEditState(id: string) {
       pending.resetPendingState();
     }
   }, [movie]);
-
   // @sideeffect Auto-clears 'success' save status after 3s for transient toast UX
   useEffect(() => {
     if (saveStatus === 'success') {
@@ -263,6 +262,35 @@ export function useMovieEditState(id: string) {
     pendingPlatformAdds: pending.pendingPlatformAdds,
     pendingPHAdds: pending.pendingPHAdds,
     pendingRunEndIds: pending.pendingRunEndIds,
+    // Exposed for FormChangesDock integration
+    initialForm,
+    pendingCastAdds: pending.pendingCastAdds,
+    pendingCastRemoveIds: pending.pendingCastRemoveIds,
+    localCastOrder: pending.localCastOrder,
+    pendingVideoAdds: pending.pendingVideoAdds,
+    pendingVideoRemoveIds: pending.pendingVideoRemoveIds,
+    pendingPosterAdds: pending.pendingPosterAdds,
+    pendingPosterRemoveIds: pending.pendingPosterRemoveIds,
+    pendingMainPosterId: pending.pendingMainPosterId,
+    pendingPlatformRemoveIds: pending.pendingPlatformRemoveIds,
+    pendingPHRemoveIds: pending.pendingPHRemoveIds,
+    pendingRunAdds: pending.pendingRunAdds,
+    pendingRunRemoveIds: pending.pendingRunRemoveIds,
+    castData,
+    videosData,
+    postersData,
+    moviePlatforms,
+    movieProductionHouses,
+    theatricalRuns,
+    resetPendingState: pending.resetPendingState,
+    setPendingCastRemoveIds: pending.setPendingCastRemoveIds,
+    setPendingVideoRemoveIds: pending.setPendingVideoRemoveIds,
+    setPendingPosterRemoveIds: pending.setPendingPosterRemoveIds,
+    setPendingPlatformRemoveIds: pending.setPendingPlatformRemoveIds,
+    setPendingPHRemoveIds: pending.setPendingPHRemoveIds,
+    setPendingRunRemoveIds: pending.setPendingRunRemoveIds,
+    setPendingRunEndIds: pending.setPendingRunEndIds,
+    setInitialForm,
     isDirty: derived.isDirty,
     isSaving,
     saveStatus,

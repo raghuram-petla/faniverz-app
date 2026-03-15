@@ -1,17 +1,41 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminActor, useUpdateActor, useDeleteActor } from '@/hooks/useAdminCast';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import { ArrowLeft, Loader2, Trash2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { useFormChanges } from '@/hooks/useFormChanges';
+import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { DEVICES } from '@shared/constants';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { ActorDetailPreview } from '@/components/preview/ActorDetailPreview';
 import { ActorFormFields } from '@/components/cast-edit/ActorFormFields';
 import type { ActorFormState } from '@/components/cast-edit/ActorFormFields';
+import type { FieldConfig } from '@/hooks/useFormChanges';
+
+const FIELD_CONFIG: FieldConfig[] = [
+  { key: 'name', label: 'Name', type: 'text' },
+  { key: 'photo_url', label: 'Photo', type: 'image' },
+  {
+    key: 'person_type',
+    label: 'Type',
+    type: 'select',
+    options: { actor: 'Actor', technician: 'Technician' },
+  },
+  { key: 'birth_date', label: 'Date of Birth', type: 'date' },
+  {
+    key: 'gender',
+    label: 'Gender',
+    type: 'select',
+    options: { '0': 'Not set', '1': 'Female', '2': 'Male', '3': 'Non-binary' },
+  },
+  { key: 'biography', label: 'Biography', type: 'text' },
+  { key: 'place_of_birth', label: 'Place of Birth', type: 'text' },
+  { key: 'height_cm', label: 'Height (cm)', type: 'number' },
+];
 
 export default function EditActorPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +44,6 @@ export default function EditActorPage() {
   const updateActor = useUpdateActor();
   const deleteActor = useDeleteActor();
   const [device, setDevice] = useState(DEVICES[1]);
-  // @boundary: uploads go through /api/upload/actor-photo which stores to Supabase Storage + generates variants
   const { upload, uploading } = useImageUpload('/api/upload/actor-photo');
 
   const [form, setForm] = useState<ActorFormState>({
@@ -35,9 +58,8 @@ export default function EditActorPage() {
   });
 
   const initialFormRef = useRef<ActorFormState | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
 
-  // @sync: populates form from server data on first load; re-runs if actor refetches
-  // @nullable: all optional fields default to empty string for controlled inputs
   useEffect(() => {
     if (actor) {
       const loaded: ActorFormState = {
@@ -55,11 +77,11 @@ export default function EditActorPage() {
     }
   }, [actor]);
 
-  const isDirty = useMemo(() => {
-    if (!initialFormRef.current) return false;
-    const keys = Object.keys(form) as (keyof ActorFormState)[];
-    return keys.some((k) => form[k] !== initialFormRef.current![k]);
-  }, [form]);
+  const { changes, isDirty, changeCount } = useFormChanges(
+    FIELD_CONFIG,
+    initialFormRef.current,
+    form,
+  );
 
   useUnsavedChangesWarning(isDirty);
 
@@ -76,10 +98,8 @@ export default function EditActorPage() {
     }
   }
 
-  // @sideeffect: updates actors row in Supabase, navigates to /cast on success
-  // @edge: empty strings coerced to null for all optional fields; gender/height_cm converted from string to number
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave() {
+    setSaveStatus('saving');
     try {
       await updateActor.mutateAsync({
         id,
@@ -92,14 +112,25 @@ export default function EditActorPage() {
         place_of_birth: form.place_of_birth || null,
         height_cm: form.height_cm ? Number(form.height_cm) : null,
       });
-      router.push('/cast');
+      initialFormRef.current = { ...form };
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err: unknown) {
+      setSaveStatus('idle');
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       alert(`Save failed: ${msg}`);
     }
   }
 
-  // @sideeffect: hard-deletes actor row — DB CASCADE removes movie_cast join records referencing this actor
+  const handleDiscard = useCallback(() => {
+    if (initialFormRef.current) setForm(initialFormRef.current);
+  }, []);
+
+  const handleRevertField = useCallback((key: string) => {
+    if (!initialFormRef.current) return;
+    setForm((prev) => ({ ...prev, [key]: initialFormRef.current![key as keyof ActorFormState] }));
+  }, []);
+
   async function handleDelete() {
     if (confirm('Are you sure? This cannot be undone.')) {
       try {
@@ -137,31 +168,15 @@ export default function EditActorPage() {
       </div>
 
       <div className="flex gap-8">
-        {/* Left column — Edit form */}
-        <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
+        <div className="flex-1 min-w-0 space-y-4">
           <ActorFormFields
             form={form}
             uploading={uploading}
             onFieldChange={updateField}
             onPhotoUpload={handlePhotoUpload}
           />
+        </div>
 
-          <button
-            type="submit"
-            disabled={updateActor.isPending}
-            className="w-full bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 hover:bg-red-700 flex items-center justify-center gap-2"
-          >
-            {updateActor.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            Save Changes
-          </button>
-        </form>
-
-        {/* Right column — Live preview */}
-        {/* @coupling: ActorDetailPreview mirrors the mobile ActorDetail screen layout for WYSIWYG editing */}
         <div className="w-[340px] shrink-0 sticky top-6 self-start space-y-4">
           <DeviceSelector selected={device} onChange={setDevice} />
           <div className="flex justify-center">
@@ -180,6 +195,15 @@ export default function EditActorPage() {
           </div>
         </div>
       </div>
+
+      <FormChangesDock
+        changes={changes}
+        changeCount={changeCount}
+        saveStatus={saveStatus}
+        onSave={handleSave}
+        onDiscard={handleDiscard}
+        onRevertField={handleRevertField}
+      />
     </div>
   );
 }

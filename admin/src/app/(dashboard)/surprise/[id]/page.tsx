@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useAdminSurpriseItem,
@@ -8,11 +8,25 @@ import {
   useDeleteSurprise,
 } from '@/hooks/useAdminSurprise';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { useFormChanges } from '@/hooks/useFormChanges';
+import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { Sparkles, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import type { FieldConfig } from '@/hooks/useFormChanges';
 
 // @contract: categories must match the surprise_content.category CHECK constraint in the database
 const categories = ['song', 'short-film', 'bts', 'interview', 'trailer'] as const;
+const CATEGORY_OPTIONS: Record<string, string> = Object.fromEntries(
+  categories.map((c) => [c, c.charAt(0).toUpperCase() + c.slice(1).replace('-', ' ')]),
+);
+
+const FIELD_CONFIG: FieldConfig[] = [
+  { key: 'title', label: 'Title', type: 'text' },
+  { key: 'description', label: 'Description', type: 'text' },
+  { key: 'youtubeId', label: 'YouTube ID', type: 'text' },
+  { key: 'category', label: 'Category', type: 'select', options: CATEGORY_OPTIONS },
+  { key: 'views', label: 'Views', type: 'number' },
+];
 
 export default function EditSurpriseContentPage() {
   const params = useParams();
@@ -28,6 +42,7 @@ export default function EditSurpriseContentPage() {
   const [youtubeId, setYoutubeId] = useState('');
   const [category, setCategory] = useState<string>('');
   const [views, setViews] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const initialRef = useRef<{
     title: string;
     description: string;
@@ -36,8 +51,6 @@ export default function EditSurpriseContentPage() {
     views: number;
   } | null>(null);
 
-  // @sync: populates local form state from server data when item loads
-  // @nullable: description may be null in DB — default to empty string for controlled inputs
   useEffect(() => {
     if (item) {
       const loaded = {
@@ -56,23 +69,20 @@ export default function EditSurpriseContentPage() {
     }
   }, [item]);
 
-  const isDirty = useMemo(() => {
-    if (!initialRef.current) return false;
-    return (
-      title !== initialRef.current.title ||
-      description !== initialRef.current.description ||
-      youtubeId !== initialRef.current.youtubeId ||
-      category !== initialRef.current.category ||
-      views !== initialRef.current.views
-    );
-  }, [title, description, youtubeId, category, views]);
+  const currentValues = useMemo(
+    () => ({ title, description, youtubeId, category, views }),
+    [title, description, youtubeId, category, views],
+  );
+  const { changes, isDirty, changeCount } = useFormChanges(
+    FIELD_CONFIG,
+    initialRef.current,
+    currentValues,
+  );
 
   useUnsavedChangesWarning(isDirty);
 
-  // @sideeffect: updates surprise_content row in Supabase, navigates to /surprise on success
-  // @edge: empty description coerced to null; views defaults to 0 from initial state
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  function handleSave() {
+    setSaveStatus('saving');
     updateItem.mutate(
       {
         id,
@@ -82,11 +92,37 @@ export default function EditSurpriseContentPage() {
         category: category as (typeof categories)[number],
         views,
       },
-      { onSuccess: () => router.push('/surprise') },
+      {
+        onSuccess: () => {
+          initialRef.current = { title, description, youtubeId, category, views };
+          setSaveStatus('success');
+          setTimeout(() => setSaveStatus('idle'), 3000);
+        },
+        onError: () => setSaveStatus('idle'),
+      },
     );
-  };
+  }
 
-  // @sideeffect: hard-deletes surprise_content row — no soft-delete/undo
+  const handleDiscard = useCallback(() => {
+    if (!initialRef.current) return;
+    const init = initialRef.current;
+    setTitle(init.title);
+    setDescription(init.description);
+    setYoutubeId(init.youtubeId);
+    setCategory(init.category);
+    setViews(init.views);
+  }, []);
+
+  const handleRevertField = useCallback((key: string) => {
+    if (!initialRef.current) return;
+    const init = initialRef.current;
+    if (key === 'title') setTitle(init.title);
+    if (key === 'description') setDescription(init.description);
+    if (key === 'youtubeId') setYoutubeId(init.youtubeId);
+    if (key === 'category') setCategory(init.category);
+    if (key === 'views') setViews(init.views);
+  }, []);
+
   const handleDelete = () => {
     if (!confirm('Delete this surprise content? This cannot be undone.')) return;
     deleteItem.mutate(id, { onSuccess: () => router.push('/surprise') });
@@ -131,7 +167,6 @@ export default function EditSurpriseContentPage() {
         </button>
       </div>
 
-      {/* YouTube Preview */}
       {youtubeId && (
         <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <div className="aspect-video">
@@ -146,10 +181,7 @@ export default function EditSurpriseContentPage() {
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-surface-card border border-outline rounded-xl p-6 space-y-6"
-      >
+      <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-6">
         <div className="space-y-2">
           <label htmlFor="title" className="block text-sm font-medium text-on-surface-muted">
             Title
@@ -237,24 +269,16 @@ export default function EditSurpriseContentPage() {
               : 'Failed to update content'}
           </p>
         )}
+      </div>
 
-        <div className="flex items-center gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={updateItem.isPending}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {updateItem.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            Update Content
-          </button>
-          <Link
-            href="/surprise"
-            className="px-6 py-2.5 text-on-surface-muted hover:text-on-surface transition-colors"
-          >
-            Cancel
-          </Link>
-        </div>
-      </form>
+      <FormChangesDock
+        changes={changes}
+        changeCount={changeCount}
+        saveStatus={saveStatus}
+        onSave={handleSave}
+        onDiscard={handleDiscard}
+        onRevertField={handleRevertField}
+      />
     </div>
   );
 }

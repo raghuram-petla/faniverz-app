@@ -1,6 +1,16 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AddActorForm } from '@/components/cast/AddActorForm';
 
+vi.mock('@/lib/supabase-browser', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { access_token: 'test-token' } },
+      }),
+    },
+  },
+}));
+
 vi.mock('lucide-react', () => ({
   Loader2: (props: Record<string, unknown>) => <div data-testid="loader-icon" {...props} />,
   Upload: (props: Record<string, unknown>) => <div data-testid="upload-icon" {...props} />,

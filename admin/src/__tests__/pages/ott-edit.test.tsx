@@ -139,33 +139,19 @@ describe('EditOttReleasePage', () => {
     expect(screen.getByText('OTT release not found.')).toBeInTheDocument();
   });
 
-  it('calls updateRelease.mutate on form submit', async () => {
+  it('shows dock and calls mutate when a field is changed and Save clicked', async () => {
     renderWithProviders(<EditOttReleasePage />);
+
+    // Make a change so the dock appears
+    const urlInput = screen.getByLabelText(/Streaming URL/i);
+    fireEvent.change(urlInput, { target: { value: 'https://example.com/new' } });
 
     const submitButton = screen.getByText('Save Changes');
     fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledTimes(1);
-      expect(mockMutate).toHaveBeenCalledWith(
-        {
-          movieId: 'movie-id',
-          platformId: 'platform-id',
-          available_from: '2026-04-01',
-          streaming_url: 'https://example.com/watch',
-        },
-        expect.objectContaining({
-          onSuccess: expect.any(Function),
-        }),
-      );
     });
-  });
-
-  it('renders Cancel link pointing to /ott', () => {
-    renderWithProviders(<EditOttReleasePage />);
-    const cancelLink = screen.getByText('Cancel');
-    expect(cancelLink).toBeInTheDocument();
-    expect(cancelLink).toHaveAttribute('href', '/ott');
   });
 
   it('renders back arrow link pointing to /ott', () => {

@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
+vi.mock('@/lib/supabase-browser', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { access_token: 'test-token' } },
+      }),
+    },
+  },
+}));
+
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
@@ -26,6 +36,7 @@ describe('uploadImage', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/upload/test', {
       method: 'POST',
       body: expect.any(FormData),
+      headers: { Authorization: 'Bearer test-token' },
     });
   });
 
