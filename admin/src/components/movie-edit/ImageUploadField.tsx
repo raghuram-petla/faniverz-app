@@ -20,6 +20,8 @@ interface ImageUploadFieldProps {
   onReset?: () => void;
   /** Label for the reset button */
   resetLabel?: string;
+  /** Hide the label text (useful when a parent subheading already provides it) */
+  hideLabel?: boolean;
 }
 
 export function ImageUploadField({
@@ -34,6 +36,7 @@ export function ImageUploadField({
   onRemove,
   onReset,
   resetLabel = 'Reset',
+  hideLabel = false,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [imgError, setImgError] = useState(false);
@@ -47,7 +50,7 @@ export function ImageUploadField({
 
   return (
     <div>
-      <label className="block text-sm text-on-surface-muted mb-1">{label}</label>
+      {!hideLabel && <label className="block text-sm text-on-surface-muted mb-1">{label}</label>}
       <input
         ref={inputRef}
         type="file"

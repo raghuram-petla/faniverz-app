@@ -168,14 +168,15 @@ describe('handleCastRemove', () => {
 });
 
 describe('handlePosterRemove', () => {
-  it('removes pending poster by index', () => {
+  it('removes pending poster by stable _id', () => {
     const handlers = createCommonFormHandlers(deps);
-    handlers.handlePosterRemove('pending-poster-0', true);
+    handlers.handlePosterRemove('pending-poster-abc123', true);
 
     expect(deps.setPendingPosterAdds).toHaveBeenCalledTimes(1);
     const updater = (deps.setPendingPosterAdds as ReturnType<typeof vi.fn>).mock.calls[0][0];
     const items = [
       {
+        _id: 'pending-poster-abc123',
         image_url: 'url1',
         title: 'P1',
         description: null,

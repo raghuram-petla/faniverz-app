@@ -3,9 +3,6 @@ import { useMemo } from 'react';
 import type { MovieForm } from '@/hooks/useMovieEditState';
 import { FormInput, FormSelect, FormTextarea, FormField } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
-import { ImageUploadField } from './ImageUploadField';
-import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
-import { BackdropFocalPicker } from './BackdropFocalPicker';
 import { validateMovieForm, type ValidationError } from '@/lib/movie-validation';
 
 const genres = [
@@ -40,25 +37,13 @@ const CERTIFICATION_OPTIONS = [
   { value: 'A', label: 'A' },
 ];
 
-// @contract largest movie-edit section — title, dates, images, genres, synopsis, focal point
-interface BasicInfoSectionProps {
+// @contract movie basic info — title, dates, genres, synopsis, certification, language, toggles
+export interface BasicInfoSectionProps {
   form: MovieForm;
   setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
   // @boundary updateField accepts string | string[] | boolean to handle text, genres array, and toggles
   updateField: (field: string, value: string | string[] | boolean) => void;
   toggleGenre: (genre: string) => void;
-  uploadingPoster: boolean;
-  uploadingBackdrop: boolean;
-  posterInputRef: React.RefObject<HTMLInputElement | null>;
-  backdropInputRef: React.RefObject<HTMLInputElement | null>;
-  handleImageUpload: (
-    file: File,
-    endpoint: string,
-    field: 'poster_url' | 'backdrop_url',
-    setUploading: (v: boolean) => void,
-  ) => Promise<void>;
-  setUploadingPoster: (v: boolean) => void;
-  setUploadingBackdrop: (v: boolean) => void;
   onSubmit: (e?: React.FormEvent) => Promise<void>;
 }
 
@@ -67,11 +52,6 @@ export function BasicInfoSection({
   setForm,
   updateField,
   toggleGenre,
-  uploadingPoster,
-  uploadingBackdrop,
-  handleImageUpload,
-  setUploadingPoster,
-  setUploadingBackdrop,
   onSubmit,
 }: BasicInfoSectionProps) {
   const errors = useMemo(() => validateMovieForm(form), [form]);
@@ -163,49 +143,6 @@ export function BasicInfoSection({
           onValueChange={(v) => updateField('certification', v)}
         />
       </div>
-      {/* @coupling poster + backdrop each use ImageUploadField + ImageVariantsPanel for CDN pipeline visibility */}
-      <ImageUploadField
-        label="Poster"
-        url={form.poster_url}
-        uploading={uploadingPoster}
-        uploadEndpoint="/api/upload/movie-poster"
-        previewAlt="Poster preview"
-        previewClassName="w-20 h-28"
-        onUpload={(file, endpoint) =>
-          handleImageUpload(file, endpoint, 'poster_url', setUploadingPoster)
-        }
-        onRemove={() => updateField('poster_url', '')}
-      />
-      <ImageVariantsPanel originalUrl={form.poster_url} variantType="poster" />
-
-      {/* Backdrop */}
-      <ImageUploadField
-        label="Backdrop"
-        url={form.backdrop_url}
-        uploading={uploadingBackdrop}
-        uploadEndpoint="/api/upload/movie-backdrop"
-        previewAlt="Backdrop preview"
-        previewClassName="w-40 h-[90px]"
-        showUrlCaption={false}
-        onUpload={(file, endpoint) =>
-          handleImageUpload(file, endpoint, 'backdrop_url', setUploadingBackdrop)
-        }
-        onRemove={() => updateField('backdrop_url', '')}
-      />
-      {form.backdrop_url && (
-        <p className="text-xs text-on-surface-subtle truncate">{form.backdrop_url}</p>
-      )}
-      <ImageVariantsPanel originalUrl={form.backdrop_url} variantType="backdrop" />
-
-      {/* @sync focal point picker output feeds into the preview panel via form.backdrop_focus_x/y */}
-      <BackdropFocalPicker
-        backdropUrl={form.backdrop_url}
-        focusX={form.backdrop_focus_x}
-        focusY={form.backdrop_focus_y}
-        onChange={(x, y) => setForm((p) => ({ ...p, backdrop_focus_x: x, backdrop_focus_y: y }))}
-        onClear={() => setForm((p) => ({ ...p, backdrop_focus_x: null, backdrop_focus_y: null }))}
-      />
-
       {/* Synopsis */}
       <FormTextarea
         label="Synopsis"

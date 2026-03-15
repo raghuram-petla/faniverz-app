@@ -1,12 +1,17 @@
 export { ImageUploadField } from './ImageUploadField';
 export { VideosSection } from './VideosSection';
 export { PostersSection } from './PostersSection';
+export type { PostersSectionProps } from './PostersSection';
 export { PlatformsSection } from './PlatformsSection';
 export { ProductionHousesSection } from './ProductionHousesSection';
 export { CastSection } from './CastSection';
 export { TheatricalRunsSection } from './TheatricalRunsSection';
 export { BasicInfoSection } from './BasicInfoSection';
+export type { BasicInfoSectionProps } from './BasicInfoSection';
 export { PreviewPanel } from './PreviewPanel';
-export { SectionNav, MOVIE_SECTIONS, useActiveSection } from './SectionNav';
+export { SectionHeading, PosterGalleryCard } from './PosterGalleryCard';
+export { SectionCard } from './SectionCard';
+export { SectionNav, MOVIE_SECTIONS } from './SectionNav';
+export type { MovieSectionId, SectionNavProps } from './SectionNav';
 export type { PendingCastAdd } from './CastSection';
 export type { PendingRun } from './TheatricalRunsSection';

@@ -42,11 +42,28 @@ describe('PlatformsSection', () => {
     onAdd: vi.fn(),
     onRemove: vi.fn(),
     pendingPlatformAdds: [],
+    showAddForm: false,
+    onCloseAddForm: vi.fn(),
   };
 
-  it('renders "Add OTT Platform" section', () => {
-    render(<PlatformsSection {...defaultProps} />);
-    expect(screen.getByText('Add OTT Platform')).toBeInTheDocument();
+  it('hides form when showAddForm is false', () => {
+    render(<PlatformsSection {...defaultProps} showAddForm={false} />);
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('shows form when showAddForm is true', () => {
+    render(<PlatformsSection {...defaultProps} showAddForm={true} />);
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByText('Add')).toBeInTheDocument();
+  });
+
+  it('calls onCloseAddForm when Cancel is clicked', () => {
+    const onCloseAddForm = vi.fn();
+    render(
+      <PlatformsSection {...defaultProps} showAddForm={true} onCloseAddForm={onCloseAddForm} />,
+    );
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(onCloseAddForm).toHaveBeenCalled();
   });
 
   it('renders platform logo image when logo_url is present', () => {
@@ -146,6 +163,7 @@ describe('PlatformsSection', () => {
     render(
       <PlatformsSection
         {...defaultProps}
+        showAddForm={true}
         visiblePlatforms={[
           {
             movie_id: 'm1',
@@ -165,7 +183,7 @@ describe('PlatformsSection', () => {
 
   it('calls onAdd with selected platform', () => {
     const onAdd = vi.fn();
-    render(<PlatformsSection {...defaultProps} onAdd={onAdd} />);
+    render(<PlatformsSection {...defaultProps} showAddForm={true} onAdd={onAdd} />);
 
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'netflix' } });
@@ -180,7 +198,7 @@ describe('PlatformsSection', () => {
   });
 
   it('disables Add button when no platform selected', () => {
-    render(<PlatformsSection {...defaultProps} />);
+    render(<PlatformsSection {...defaultProps} showAddForm={true} />);
     expect(screen.getByText('Add')).toBeDisabled();
   });
 });

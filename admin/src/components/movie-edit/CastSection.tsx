@@ -55,6 +55,8 @@ interface Props {
   onAdd: (cast: PendingCastAdd) => void;
   onRemove: (id: string, isPending: boolean) => void;
   onReorder: (newOrder: string[]) => void;
+  showAddForm: boolean;
+  onCloseAddForm: () => void;
 }
 
 export function CastSection({
@@ -65,6 +67,8 @@ export function CastSection({
   onAdd,
   onRemove,
   onReorder,
+  showAddForm,
+  onCloseAddForm,
 }: Props) {
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
   const createActor = useCreateActor();
@@ -140,10 +144,89 @@ export function CastSection({
     });
     setCastForm(EMPTY_CAST_FORM);
     setCastSearchQuery('');
+    onCloseAddForm();
   }
 
   return (
     <div className="space-y-6">
+      {showAddForm && (
+        <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
+          <p className="text-sm font-semibold text-on-surface-muted">Add Cast / Crew</p>
+          <div className="grid grid-cols-2 gap-3">
+            <FormSelect
+              label="Type"
+              variant="compact"
+              value={castForm.credit_type}
+              options={CREDIT_TYPE_OPTIONS}
+              onValueChange={(v) =>
+                setCastForm((p) => ({
+                  ...p,
+                  credit_type: v as 'cast' | 'crew',
+                  role_order: '',
+                }))
+              }
+            />
+            <ActorSearchDropdown
+              actors={actors}
+              searchQuery={castSearchQuery}
+              onSearchChange={(q) => {
+                setCastSearchQuery(q.trimStart());
+                setCastForm((p) => ({ ...p, actor_id: '' }));
+              }}
+              onSelect={(a) => {
+                setCastForm((p) => ({ ...p, actor_id: a.id }));
+                setCastSearchQuery(a.name);
+              }}
+              selectedActorId={castForm.actor_id}
+              onQuickAdd={handleQuickAdd}
+              quickAddPending={createActor.isPending}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormInput
+              label={castForm.credit_type === 'cast' ? 'Character Name' : 'Role Title'}
+              variant="compact"
+              type="text"
+              placeholder={castForm.credit_type === 'cast' ? 'e.g. Arjun' : 'e.g. Director'}
+              value={castForm.role_name}
+              onValueChange={(v) => setCastForm((p) => ({ ...p, role_name: v }))}
+            />
+            {castForm.credit_type === 'crew' && (
+              <FormSelect
+                label="Role Order"
+                variant="compact"
+                value={castForm.role_order}
+                options={ROLE_ORDER_OPTIONS}
+                placeholder="Select role…"
+                onValueChange={(v) => setCastForm((p) => ({ ...p, role_order: v }))}
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={!castForm.actor_id}
+              icon={<Plus className="w-4 h-4" />}
+            >
+              Add Entry
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                onCloseAddForm();
+                setCastForm(EMPTY_CAST_FORM);
+                setCastSearchQuery('');
+              }}
+              className="text-on-surface-muted px-4 py-2 rounded-lg text-sm hover:bg-input"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
       {/* Cast Section */}
       <div className="space-y-3">
         <h3 className="text-base font-bold text-on-surface">Cast</h3>
@@ -163,70 +246,6 @@ export function CastSection({
           <p className="text-sm text-on-surface-disabled">No crew members added yet.</p>
         )}
       </div>
-
-      {/* Add Form */}
-      <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-on-surface-muted">Add Cast / Crew</p>
-        <div className="grid grid-cols-2 gap-3">
-          <FormSelect
-            label="Type"
-            variant="compact"
-            value={castForm.credit_type}
-            options={CREDIT_TYPE_OPTIONS}
-            onValueChange={(v) =>
-              setCastForm((p) => ({
-                ...p,
-                credit_type: v as 'cast' | 'crew',
-                role_order: '',
-              }))
-            }
-          />
-          <ActorSearchDropdown
-            actors={actors}
-            searchQuery={castSearchQuery}
-            onSearchChange={(q) => {
-              setCastSearchQuery(q.trimStart());
-              setCastForm((p) => ({ ...p, actor_id: '' }));
-            }}
-            onSelect={(a) => {
-              setCastForm((p) => ({ ...p, actor_id: a.id }));
-              setCastSearchQuery(a.name);
-            }}
-            selectedActorId={castForm.actor_id}
-            onQuickAdd={handleQuickAdd}
-            quickAddPending={createActor.isPending}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FormInput
-            label={castForm.credit_type === 'cast' ? 'Character Name' : 'Role Title'}
-            variant="compact"
-            type="text"
-            placeholder={castForm.credit_type === 'cast' ? 'e.g. Arjun' : 'e.g. Director'}
-            value={castForm.role_name}
-            onValueChange={(v) => setCastForm((p) => ({ ...p, role_name: v }))}
-          />
-          {castForm.credit_type === 'crew' && (
-            <FormSelect
-              label="Role Order"
-              variant="compact"
-              value={castForm.role_order}
-              options={ROLE_ORDER_OPTIONS}
-              placeholder="Select role…"
-              onValueChange={(v) => setCastForm((p) => ({ ...p, role_order: v }))}
-            />
-          )}
-        </div>
-        <Button
-          type="submit"
-          variant="primary"
-          size="md"
-          disabled={!castForm.actor_id}
-          icon={<Plus className="w-4 h-4" />}
-        >
-          Add Entry
-        </Button>
-      </form>
     </div>
   );
 }

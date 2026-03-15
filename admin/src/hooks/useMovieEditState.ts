@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
@@ -101,8 +101,6 @@ export function useMovieEditState(id: string) {
   // Upload state
   const [uploadingPoster, setUploadingPoster] = useState(false);
   const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
-  const posterInputRef = useRef<HTMLInputElement>(null);
-  const backdropInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [form, setForm] = useState<MovieForm>({
@@ -228,8 +226,6 @@ export function useMovieEditState(id: string) {
     setUploadingPoster,
     uploadingBackdrop,
     setUploadingBackdrop,
-    posterInputRef,
-    backdropInputRef,
     handleImageUpload: handlers.handleImageUpload,
     setPendingVideoAdds: pending.setPendingVideoAdds,
     setPendingPosterAdds: pending.setPendingPosterAdds,

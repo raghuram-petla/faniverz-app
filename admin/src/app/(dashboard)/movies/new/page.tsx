@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import {
   ArrowLeft,
   Loader2,
@@ -9,12 +10,13 @@ import {
   Building2,
   Users,
   Calendar,
+  Plus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useMovieAddState } from '@/hooks/useMovieAddState';
-import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
-import { PreviewPanel } from '@/components/movie-edit/PreviewPanel';
+import { Button } from '@/components/common/Button';
 import {
+  BasicInfoSection,
   VideosSection,
   PostersSection,
   PlatformsSection,
@@ -22,61 +24,31 @@ import {
   CastSection,
   TheatricalRunsSection,
   SectionNav,
-  MOVIE_SECTIONS,
-  useActiveSection,
+  SectionCard,
+  PreviewPanel,
 } from '@/components/movie-edit';
+import type { MovieSectionId } from '@/components/movie-edit';
 
-// @coupling: useMovieAddState manages identical section state as useMovieEditState but without server-load; both share movie-edit components
+// @coupling: useMovieAddState manages identical section state as useMovieEditState but without server-load
 export default function NewMoviePage() {
-  const {
-    form,
-    setForm,
-    updateField,
-    toggleGenre,
-    uploadingPoster,
-    setUploadingPoster,
-    uploadingBackdrop,
-    setUploadingBackdrop,
-    posterInputRef,
-    backdropInputRef,
-    handleImageUpload,
-    setPendingVideoAdds,
-    setPendingPosterAdds,
-    setPendingPlatformAdds,
-    setPendingPHAdds,
-    setPendingCastAdds,
-    setPendingRunAdds,
-    setPendingMainPosterId,
-    setLocalCastOrder,
-    handleVideoRemove,
-    handlePosterRemove,
-    handlePlatformRemove,
-    handlePHRemove,
-    handleCastRemove,
-    handleRunRemove,
-    visibleCast,
-    visibleVideos,
-    visiblePosters,
-    visiblePlatforms,
-    visibleProductionHouses,
-    visibleRuns,
-    actors,
-    castSearchQuery,
-    setCastSearchQuery,
-    allPlatforms,
-    phSearchResults,
-    phSearchQuery,
-    setPHSearchQuery,
-    createProductionHouse,
-    pendingPlatformAdds,
-    pendingPHAdds,
-    isDirty,
-    isSaving,
-    handleSubmit,
-  } = useMovieAddState();
+  const [activeSection, setActiveSection] = useState<MovieSectionId>('basic-info');
+  const [addFormOpen, setAddFormOpen] = useState<string | null>(null);
+  const s = useMovieAddState();
 
-  // @sync: useActiveSection uses IntersectionObserver to highlight the section nav based on scroll position
-  const { activeId: activeSection, scrollTo } = useActiveSection(MOVIE_SECTIONS.map((s) => s.id));
+  function addButton(key: string, label: string) {
+    if (addFormOpen === key) return undefined;
+    return (
+      <Button
+        size="sm"
+        variant="primary"
+        icon={<Plus className="w-3.5 h-3.5" />}
+        onClick={() => setAddFormOpen(key)}
+      >
+        {label}
+      </Button>
+    );
+  }
+  const closeAdd = () => setAddFormOpen(null);
 
   return (
     <div className="max-w-6xl">
@@ -88,24 +60,22 @@ export default function NewMoviePage() {
               <ArrowLeft className="w-4 h-4 text-on-surface" />
             </Link>
             <h1 className="text-2xl font-bold text-on-surface">Add Movie</h1>
-            {isDirty && (
+            {s.isDirty && (
               <span className="text-xs bg-amber-500/20 text-status-amber px-2.5 py-0.5 rounded-full font-medium">
                 Unsaved changes
               </span>
             )}
           </div>
-          {/* @sideeffect: handleSubmit creates the movie row + all related join records (cast, platforms, posters, etc.) in a single batch */}
-          {/* @invariant: button disabled until at least one field is filled (isDirty) */}
           <button
-            onClick={() => handleSubmit()}
-            disabled={!isDirty || isSaving}
+            onClick={() => s.handleSubmit()}
+            disabled={!s.isDirty || s.isSaving}
             className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all ${
-              isDirty && !isSaving
+              s.isDirty && !s.isSaving
                 ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/25'
                 : 'bg-surface-elevated text-on-surface-disabled cursor-not-allowed'
             }`}
           >
-            {isSaving ? (
+            {s.isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Creating…
@@ -117,149 +87,131 @@ export default function NewMoviePage() {
         </div>
       </div>
 
-      {/* ─── Section Nav ─── */}
-      <SectionNav activeSection={activeSection} onScrollTo={scrollTo} />
+      <SectionNav activeSection={activeSection} onSectionChange={setActiveSection} />
 
       <div className="flex gap-8 mt-6">
-        {/* Left column — Form */}
         <div className="flex-1 min-w-0 space-y-6">
-          <div
-            id="basic-info"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5" /> Basic Info
-            </h2>
-            <BasicInfoSection
-              form={form}
-              setForm={setForm}
-              updateField={updateField}
-              toggleGenre={toggleGenre}
-              uploadingPoster={uploadingPoster}
-              uploadingBackdrop={uploadingBackdrop}
-              posterInputRef={posterInputRef}
-              backdropInputRef={backdropInputRef}
-              handleImageUpload={handleImageUpload}
-              setUploadingPoster={setUploadingPoster}
-              setUploadingBackdrop={setUploadingBackdrop}
-              onSubmit={handleSubmit}
-            />
-          </div>
+          {activeSection === 'basic-info' && (
+            <SectionCard title="Basic Info" icon={FileText}>
+              <BasicInfoSection
+                form={s.form}
+                setForm={s.setForm}
+                updateField={s.updateField}
+                toggleGenre={s.toggleGenre}
+                onSubmit={s.handleSubmit}
+              />
+            </SectionCard>
+          )}
 
-          <div
-            id="videos"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Play className="w-5 h-5" /> Videos
-            </h2>
-            <VideosSection
-              visibleVideos={visibleVideos}
-              trailerUrl={form.trailer_url}
-              movieTitle={form.title}
-              onAdd={(video) => setPendingVideoAdds((prev) => [...prev, video])}
-              onRemove={handleVideoRemove}
-            />
-          </div>
+          {activeSection === 'posters' && (
+            <SectionCard title="Posters" icon={Film}>
+              <PostersSection
+                visiblePosters={s.visiblePosters}
+                onAdd={(poster) => s.setPendingPosterAdds((prev) => [...prev, poster])}
+                onRemove={s.handlePosterRemove}
+                onSetMain={(posterId) => s.setPendingMainPosterId(posterId)}
+                form={s.form}
+                setForm={s.setForm}
+                updateField={s.updateField}
+                uploadingBackdrop={s.uploadingBackdrop}
+                handleImageUpload={s.handleImageUpload}
+                setUploadingBackdrop={s.setUploadingBackdrop}
+              />
+            </SectionCard>
+          )}
 
-          <div
-            id="posters"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Film className="w-5 h-5" /> Poster Gallery
-            </h2>
-            <PostersSection
-              visiblePosters={visiblePosters}
-              posterUrl={form.poster_url}
-              onAdd={(poster) => setPendingPosterAdds((prev) => [...prev, poster])}
-              onRemove={handlePosterRemove}
-              onSetMain={(posterId) => setPendingMainPosterId(posterId)}
-            />
-          </div>
+          {activeSection === 'videos' && (
+            <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add Video')}>
+              <VideosSection
+                visibleVideos={s.visibleVideos}
+                trailerUrl={s.form.trailer_url}
+                movieTitle={s.form.title}
+                onAdd={(video) => s.setPendingVideoAdds((prev) => [...prev, video])}
+                onRemove={s.handleVideoRemove}
+                showAddForm={addFormOpen === 'videos'}
+                onCloseAddForm={closeAdd}
+              />
+            </SectionCard>
+          )}
 
-          <div
-            id="platforms"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Tv className="w-5 h-5" /> OTT Platforms
-            </h2>
-            <PlatformsSection
-              visiblePlatforms={visiblePlatforms}
-              allPlatforms={allPlatforms}
-              onAdd={(platform) => setPendingPlatformAdds((prev) => [...prev, platform])}
-              onRemove={handlePlatformRemove}
-              pendingPlatformAdds={pendingPlatformAdds}
-            />
-          </div>
+          {activeSection === 'cast-crew' && (
+            <>
+              <SectionCard
+                title="Production Houses"
+                icon={Building2}
+                action={addButton('ph', 'Add')}
+              >
+                <ProductionHousesSection
+                  visibleProductionHouses={s.visibleProductionHouses}
+                  productionHouses={s.phSearchResults}
+                  searchQuery={s.phSearchQuery}
+                  onSearchChange={s.setPHSearchQuery}
+                  onAdd={(ph) => s.setPendingPHAdds((prev) => [...prev, ph])}
+                  onRemove={s.handlePHRemove}
+                  pendingPHAdds={s.pendingPHAdds}
+                  onQuickAdd={async (name) => {
+                    const created = await s.createProductionHouse.mutateAsync({
+                      name,
+                      logo_url: null,
+                    });
+                    s.setPendingPHAdds((prev) => [
+                      ...prev,
+                      { production_house_id: created.id, _ph: created },
+                    ]);
+                    s.setPHSearchQuery('');
+                  }}
+                  quickAddPending={s.createProductionHouse.isPending}
+                  showAddForm={addFormOpen === 'ph'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+              <SectionCard title="Cast & Crew" icon={Users} action={addButton('cast', 'Add')}>
+                <CastSection
+                  visibleCast={s.visibleCast}
+                  actors={s.actors}
+                  castSearchQuery={s.castSearchQuery}
+                  setCastSearchQuery={s.setCastSearchQuery}
+                  onAdd={(cast) => s.setPendingCastAdds((prev) => [...prev, cast])}
+                  onRemove={s.handleCastRemove}
+                  onReorder={(newOrder) => s.setLocalCastOrder(newOrder)}
+                  showAddForm={addFormOpen === 'cast'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+            </>
+          )}
 
-          <div
-            id="production-houses"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5" /> Production Houses
-            </h2>
-            <ProductionHousesSection
-              visibleProductionHouses={visibleProductionHouses}
-              productionHouses={phSearchResults}
-              searchQuery={phSearchQuery}
-              onSearchChange={setPHSearchQuery}
-              onAdd={(ph) => setPendingPHAdds((prev) => [...prev, ph])}
-              onRemove={handlePHRemove}
-              pendingPHAdds={pendingPHAdds}
-              onQuickAdd={async (name) => {
-                const created = await createProductionHouse.mutateAsync({
-                  name,
-                  logo_url: null,
-                });
-                setPendingPHAdds((prev) => [
-                  ...prev,
-                  { production_house_id: created.id, _ph: created },
-                ]);
-                setPHSearchQuery('');
-              }}
-              quickAddPending={createProductionHouse.isPending}
-            />
-          </div>
-
-          <div
-            id="cast-crew"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5" /> Cast & Crew
-            </h2>
-            <CastSection
-              visibleCast={visibleCast}
-              actors={actors}
-              castSearchQuery={castSearchQuery}
-              setCastSearchQuery={setCastSearchQuery}
-              onAdd={(cast) => setPendingCastAdds((prev) => [...prev, cast])}
-              onRemove={handleCastRemove}
-              onReorder={(newOrder) => setLocalCastOrder(newOrder)}
-            />
-          </div>
-
-          <div
-            id="theatrical-runs"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Calendar className="w-5 h-5" /> Theatrical Runs
-            </h2>
-            <TheatricalRunsSection
-              visibleRuns={visibleRuns}
-              onAdd={(run) => setPendingRunAdds((prev) => [...prev, run])}
-              onRemove={handleRunRemove}
-            />
-          </div>
+          {activeSection === 'releases' && (
+            <>
+              <SectionCard
+                title="Theatrical Runs"
+                icon={Calendar}
+                action={addButton('runs', 'Add Run')}
+              >
+                <TheatricalRunsSection
+                  visibleRuns={s.visibleRuns}
+                  onAdd={(run) => s.setPendingRunAdds((prev) => [...prev, run])}
+                  onRemove={s.handleRunRemove}
+                  showAddForm={addFormOpen === 'runs'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+              <SectionCard title="OTT Platforms" icon={Tv} action={addButton('platforms', 'Add')}>
+                <PlatformsSection
+                  visiblePlatforms={s.visiblePlatforms}
+                  allPlatforms={s.allPlatforms}
+                  onAdd={(p) => s.setPendingPlatformAdds((prev) => [...prev, p])}
+                  onRemove={s.handlePlatformRemove}
+                  pendingPlatformAdds={s.pendingPlatformAdds}
+                  showAddForm={addFormOpen === 'platforms'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+            </>
+          )}
         </div>
 
-        {/* Right column — Preview */}
-        {/* @coupling: PreviewPanel renders a device-framed mobile movie detail preview, mirrors the mobile MovieDetail screen */}
-        <PreviewPanel form={form} />
+        <PreviewPanel form={s.form} />
       </div>
     </div>
   );

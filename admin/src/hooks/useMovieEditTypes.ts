@@ -38,6 +38,8 @@ export type PendingVideoAdd = {
 };
 
 export type PendingPosterAdd = {
+  // @contract stable client-side ID — survives array reordering/removal unlike index-based IDs
+  _id: string;
   image_url: string;
   title: string;
   description: string | null;
@@ -49,6 +51,8 @@ export type PendingPosterAdd = {
 export type PendingPlatformAdd = {
   platform_id: string;
   available_from: string | null;
+  // @nullable streaming_url — direct link to the movie on this OTT platform
+  streaming_url: string | null;
   _platform?: OTTPlatform;
 };
 
@@ -136,13 +140,14 @@ export interface MovieEditHandlerDeps {
   updateCastOrder: MutateAsync<{ movieId: string; items: { id: string; display_order: number }[] }>;
   addVideo: MutateAsync<{ movie_id: string } & PendingVideoAdd>;
   removeVideo: MutateAsync<{ id: string; movieId: string }>;
-  addPoster: MutateAsync<{ movie_id: string } & PendingPosterAdd>;
+  addPoster: MutateAsync<{ movie_id: string } & Omit<PendingPosterAdd, '_id'>>;
   removePoster: MutateAsync<{ id: string; movieId: string }>;
   setMainPoster: MutateAsync<{ id: string; movieId: string }>;
   addMoviePlatform: MutateAsync<{
     movie_id: string;
     platform_id: string;
     available_from: string | null;
+    streaming_url?: string | null;
   }>;
   removeMoviePlatform: MutateAsync<{ movieId: string; platformId: string }>;
   addMovieProductionHouse: MutateAsync<{ movieId: string; productionHouseId: string }>;
@@ -162,4 +167,86 @@ export interface MovieEditHandlerDeps {
   setSaveStatus: React.Dispatch<React.SetStateAction<'idle' | 'success'>>;
   setUploadingPoster: (v: boolean) => void;
   setUploadingBackdrop: (v: boolean) => void;
+}
+
+// ── Change-tracking types (used by useMovieEditChanges + revert helper) ──
+
+// Minimal interfaces for server data lookups (only fields needed for display names)
+export interface CastRow {
+  id: string;
+  actor?: { name: string } | null;
+  character_name?: string | null;
+}
+export interface VideoRow {
+  id: string;
+  title: string;
+}
+export interface PosterRow {
+  id: string;
+  title: string;
+}
+export interface PlatformRow {
+  platform_id: string;
+  platform?: { name: string } | null;
+}
+export interface PHRow {
+  production_house_id: string;
+  production_house?: { name: string } | null;
+}
+export interface RunRow {
+  id: string;
+  release_date: string;
+  label?: string | null;
+}
+
+// @contract params for useMovieEditChanges — all pending state + server data for change diffing
+export interface UseMovieEditChangesParams {
+  form: MovieForm;
+  initialForm: MovieForm | null;
+  setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
+  setInitialForm: React.Dispatch<React.SetStateAction<MovieForm | null>>;
+  // Cast
+  pendingCastAdds: PendingCastAdd[];
+  pendingCastRemoveIds: Set<string>;
+  localCastOrder: string[] | null;
+  castData: CastRow[];
+  setPendingCastAdds: React.Dispatch<React.SetStateAction<PendingCastAdd[]>>;
+  setPendingCastRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setLocalCastOrder: (order: string[] | null) => void;
+  // Videos
+  pendingVideoAdds: PendingVideoAdd[];
+  pendingVideoRemoveIds: Set<string>;
+  videosData: VideoRow[];
+  setPendingVideoAdds: React.Dispatch<React.SetStateAction<PendingVideoAdd[]>>;
+  setPendingVideoRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  // Posters
+  pendingPosterAdds: PendingPosterAdd[];
+  pendingPosterRemoveIds: Set<string>;
+  pendingMainPosterId: string | null;
+  postersData: PosterRow[];
+  setPendingPosterAdds: React.Dispatch<React.SetStateAction<PendingPosterAdd[]>>;
+  setPendingPosterRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setPendingMainPosterId: (id: string | null) => void;
+  // Platforms
+  pendingPlatformAdds: PendingPlatformAdd[];
+  pendingPlatformRemoveIds: Set<string>;
+  moviePlatforms: PlatformRow[];
+  setPendingPlatformAdds: React.Dispatch<React.SetStateAction<PendingPlatformAdd[]>>;
+  setPendingPlatformRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  // Production Houses
+  pendingPHAdds: PendingPHAdd[];
+  pendingPHRemoveIds: Set<string>;
+  movieProductionHouses: PHRow[];
+  setPendingPHAdds: React.Dispatch<React.SetStateAction<PendingPHAdd[]>>;
+  setPendingPHRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  // Theatrical Runs
+  pendingRunAdds: PendingRun[];
+  pendingRunRemoveIds: Set<string>;
+  pendingRunEndIds: Map<string, string>;
+  theatricalRuns: RunRow[];
+  setPendingRunAdds: React.Dispatch<React.SetStateAction<PendingRun[]>>;
+  setPendingRunRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setPendingRunEndIds: React.Dispatch<React.SetStateAction<Map<string, string>>>;
+  // Reset
+  resetPendingState: () => void;
 }

@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -11,14 +12,15 @@ import {
   Building2,
   Users,
   Calendar,
+  Plus,
 } from 'lucide-react';
 import { useMovieEditState } from '@/hooks/useMovieEditState';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useMovieEditChanges } from '@/hooks/useMovieEditChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
-import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
-import { PreviewPanel } from '@/components/movie-edit/PreviewPanel';
+import { Button } from '@/components/common/Button';
 import {
+  BasicInfoSection,
   VideosSection,
   PostersSection,
   PlatformsSection,
@@ -26,147 +28,83 @@ import {
   CastSection,
   TheatricalRunsSection,
   SectionNav,
-  MOVIE_SECTIONS,
-  useActiveSection,
+  SectionCard,
+  PreviewPanel,
 } from '@/components/movie-edit';
+import type { MovieSectionId } from '@/components/movie-edit';
 
-// @coupling: entire edit state (form, pending adds/removes, dirty tracking, save) is managed by useMovieEditState hook
-// @coupling: seven sub-sections (BasicInfo, Videos, Posters, Platforms, ProductionHouses, Cast, TheatricalRuns) extracted to movie-edit components
+// @coupling: entire edit state managed by useMovieEditState; 5 tabs with conditional rendering
 export default function EditMoviePage() {
   const { isReadOnly } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [activeSection, setActiveSection] = useState<MovieSectionId>('basic-info');
+  const [addFormOpen, setAddFormOpen] = useState<string | null>(null);
 
-  const {
-    isLoading,
-    form,
-    setForm,
-    updateField,
-    toggleGenre,
-    uploadingPoster,
-    setUploadingPoster,
-    uploadingBackdrop,
-    setUploadingBackdrop,
-    posterInputRef,
-    backdropInputRef,
-    handleImageUpload,
-    setPendingVideoAdds,
-    setPendingPosterAdds,
-    setPendingPlatformAdds,
-    setPendingPHAdds,
-    setPendingCastAdds,
-    setPendingRunAdds,
-    setPendingMainPosterId,
-    setLocalCastOrder,
-    handleVideoRemove,
-    handlePosterRemove,
-    handlePlatformRemove,
-    handlePHRemove,
-    handleCastRemove,
-    handleRunRemove,
-    handleRunEnd,
-    visibleCast,
-    visibleVideos,
-    visiblePosters,
-    visiblePlatforms,
-    visibleProductionHouses,
-    visibleRuns,
-    actors,
-    castSearchQuery,
-    setCastSearchQuery,
-    allPlatforms,
-    phSearchResults,
-    phSearchQuery,
-    setPHSearchQuery,
-    createProductionHouse,
-    pendingPlatformAdds,
-    pendingPHAdds,
-    pendingRunEndIds,
-    isSaving,
-    saveStatus,
-    handleSubmit,
-    handleDelete,
-    // FormChangesDock integration
-    initialForm,
-    setInitialForm,
-    pendingCastAdds,
-    pendingCastRemoveIds,
-    localCastOrder,
-    pendingVideoAdds,
-    pendingVideoRemoveIds,
-    pendingPosterAdds,
-    pendingPosterRemoveIds,
-    pendingMainPosterId,
-    pendingPlatformRemoveIds,
-    pendingPHRemoveIds,
-    pendingRunAdds,
-    pendingRunRemoveIds,
-    castData,
-    videosData,
-    postersData,
-    moviePlatforms,
-    movieProductionHouses,
-    theatricalRuns,
-    resetPendingState,
-    setPendingCastRemoveIds,
-    setPendingVideoRemoveIds,
-    setPendingPosterRemoveIds,
-    setPendingPlatformRemoveIds,
-    setPendingPHRemoveIds,
-    setPendingRunRemoveIds,
-    setPendingRunEndIds,
-  } = useMovieEditState(id);
-
+  const editState = useMovieEditState(id);
   const { changes, changeCount, onRevertField, onDiscard } = useMovieEditChanges({
-    form,
-    initialForm,
-    setForm,
-    setInitialForm,
-    pendingCastAdds,
-    pendingCastRemoveIds,
-    localCastOrder,
-    castData,
-    setPendingCastAdds,
-    setPendingCastRemoveIds,
-    setLocalCastOrder,
-    pendingVideoAdds,
-    pendingVideoRemoveIds,
-    videosData,
-    setPendingVideoAdds,
-    setPendingVideoRemoveIds,
-    pendingPosterAdds,
-    pendingPosterRemoveIds,
-    pendingMainPosterId,
-    postersData,
-    setPendingPosterAdds,
-    setPendingPosterRemoveIds,
-    setPendingMainPosterId,
-    pendingPlatformAdds,
-    pendingPlatformRemoveIds,
-    moviePlatforms,
-    setPendingPlatformAdds,
-    setPendingPlatformRemoveIds,
-    pendingPHAdds,
-    pendingPHRemoveIds,
-    movieProductionHouses,
-    setPendingPHAdds,
-    setPendingPHRemoveIds,
-    pendingRunAdds,
-    pendingRunRemoveIds,
-    pendingRunEndIds,
-    theatricalRuns,
-    setPendingRunAdds,
-    setPendingRunRemoveIds,
-    setPendingRunEndIds,
-    resetPendingState,
+    form: editState.form,
+    initialForm: editState.initialForm,
+    setForm: editState.setForm,
+    setInitialForm: editState.setInitialForm,
+    pendingCastAdds: editState.pendingCastAdds,
+    pendingCastRemoveIds: editState.pendingCastRemoveIds,
+    localCastOrder: editState.localCastOrder,
+    castData: editState.castData,
+    setPendingCastAdds: editState.setPendingCastAdds,
+    setPendingCastRemoveIds: editState.setPendingCastRemoveIds,
+    setLocalCastOrder: editState.setLocalCastOrder,
+    pendingVideoAdds: editState.pendingVideoAdds,
+    pendingVideoRemoveIds: editState.pendingVideoRemoveIds,
+    videosData: editState.videosData,
+    setPendingVideoAdds: editState.setPendingVideoAdds,
+    setPendingVideoRemoveIds: editState.setPendingVideoRemoveIds,
+    pendingPosterAdds: editState.pendingPosterAdds,
+    pendingPosterRemoveIds: editState.pendingPosterRemoveIds,
+    pendingMainPosterId: editState.pendingMainPosterId,
+    postersData: editState.postersData,
+    setPendingPosterAdds: editState.setPendingPosterAdds,
+    setPendingPosterRemoveIds: editState.setPendingPosterRemoveIds,
+    setPendingMainPosterId: editState.setPendingMainPosterId,
+    pendingPlatformAdds: editState.pendingPlatformAdds,
+    pendingPlatformRemoveIds: editState.pendingPlatformRemoveIds,
+    moviePlatforms: editState.moviePlatforms,
+    setPendingPlatformAdds: editState.setPendingPlatformAdds,
+    setPendingPlatformRemoveIds: editState.setPendingPlatformRemoveIds,
+    pendingPHAdds: editState.pendingPHAdds,
+    pendingPHRemoveIds: editState.pendingPHRemoveIds,
+    movieProductionHouses: editState.movieProductionHouses,
+    setPendingPHAdds: editState.setPendingPHAdds,
+    setPendingPHRemoveIds: editState.setPendingPHRemoveIds,
+    pendingRunAdds: editState.pendingRunAdds,
+    pendingRunRemoveIds: editState.pendingRunRemoveIds,
+    pendingRunEndIds: editState.pendingRunEndIds,
+    theatricalRuns: editState.theatricalRuns,
+    setPendingRunAdds: editState.setPendingRunAdds,
+    setPendingRunRemoveIds: editState.setPendingRunRemoveIds,
+    setPendingRunEndIds: editState.setPendingRunEndIds,
+    resetPendingState: editState.resetPendingState,
   });
 
-  const dockSaveStatus = isSaving ? ('saving' as const) : saveStatus;
+  const dockSaveStatus = editState.isSaving ? ('saving' as const) : editState.saveStatus;
 
-  // @sync: useActiveSection uses IntersectionObserver to highlight the section nav based on scroll position
-  const { activeId: activeSection, scrollTo } = useActiveSection(MOVIE_SECTIONS.map((s) => s.id));
+  // @contract renders a "+ Add" button for SectionCard action slot; controls which form is open
+  function addButton(key: string, label: string) {
+    if (addFormOpen === key || isReadOnly) return undefined;
+    return (
+      <Button
+        size="sm"
+        variant="primary"
+        icon={<Plus className="w-3.5 h-3.5" />}
+        onClick={() => setAddFormOpen(key)}
+      >
+        {label}
+      </Button>
+    );
+  }
+  const closeAdd = () => setAddFormOpen(null);
 
-  if (isLoading)
+  if (editState.isLoading)
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-status-red animate-spin" />
@@ -188,7 +126,7 @@ export default function EditMoviePage() {
         </div>
         {!isReadOnly && (
           <button
-            onClick={handleDelete}
+            onClick={editState.handleDelete}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-status-red hover:bg-red-600/30 text-sm"
           >
             <Trash2 className="w-4 h-4" /> Delete
@@ -196,158 +134,143 @@ export default function EditMoviePage() {
         )}
       </div>
 
-      {/* ─── Section Nav ─── */}
-      <SectionNav activeSection={activeSection} onScrollTo={scrollTo} />
+      {/* ─── Section Nav (5 tabs) ─── */}
+      <SectionNav activeSection={activeSection} onSectionChange={setActiveSection} />
 
       <div className={`flex gap-8 mt-6${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}>
-        {/* Left column — Edit form */}
+        {/* Left column — Active tab content */}
         <div className="flex-1 min-w-0 space-y-6">
-          <div
-            id="basic-info"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <FileText className="w-5 h-5" /> Basic Info
-            </h2>
-            <BasicInfoSection
-              form={form}
-              setForm={setForm}
-              updateField={updateField}
-              toggleGenre={toggleGenre}
-              uploadingPoster={uploadingPoster}
-              uploadingBackdrop={uploadingBackdrop}
-              posterInputRef={posterInputRef}
-              backdropInputRef={backdropInputRef}
-              handleImageUpload={handleImageUpload}
-              setUploadingPoster={setUploadingPoster}
-              setUploadingBackdrop={setUploadingBackdrop}
-              onSubmit={handleSubmit}
-            />
-          </div>
+          {activeSection === 'basic-info' && (
+            <SectionCard title="Basic Info" icon={FileText}>
+              <BasicInfoSection
+                form={editState.form}
+                setForm={editState.setForm}
+                updateField={editState.updateField}
+                toggleGenre={editState.toggleGenre}
+                onSubmit={editState.handleSubmit}
+              />
+            </SectionCard>
+          )}
 
-          <div
-            id="videos"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Play className="w-5 h-5" /> Videos
-            </h2>
-            <VideosSection
-              visibleVideos={visibleVideos}
-              trailerUrl={form.trailer_url}
-              movieTitle={form.title}
-              onAdd={(video) => setPendingVideoAdds((prev) => [...prev, video])}
-              onRemove={handleVideoRemove}
-            />
-          </div>
+          {activeSection === 'posters' && (
+            <SectionCard title="Posters" icon={Film}>
+              <PostersSection
+                visiblePosters={editState.visiblePosters}
+                onAdd={(poster) => editState.setPendingPosterAdds((prev) => [...prev, poster])}
+                onRemove={editState.handlePosterRemove}
+                onSetMain={(posterId) => editState.setPendingMainPosterId(posterId)}
+                form={editState.form}
+                setForm={editState.setForm}
+                updateField={editState.updateField}
+                uploadingBackdrop={editState.uploadingBackdrop}
+                handleImageUpload={editState.handleImageUpload}
+                setUploadingBackdrop={editState.setUploadingBackdrop}
+              />
+            </SectionCard>
+          )}
 
-          <div
-            id="posters"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Film className="w-5 h-5" /> Poster Gallery
-            </h2>
-            <PostersSection
-              visiblePosters={visiblePosters}
-              posterUrl={form.poster_url}
-              onAdd={(poster) => setPendingPosterAdds((prev) => [...prev, poster])}
-              onRemove={handlePosterRemove}
-              onSetMain={(posterId) => setPendingMainPosterId(posterId)}
-            />
-          </div>
+          {activeSection === 'videos' && (
+            <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add Video')}>
+              <VideosSection
+                visibleVideos={editState.visibleVideos}
+                trailerUrl={editState.form.trailer_url}
+                movieTitle={editState.form.title}
+                onAdd={(video) => editState.setPendingVideoAdds((prev) => [...prev, video])}
+                onRemove={editState.handleVideoRemove}
+                showAddForm={addFormOpen === 'videos'}
+                onCloseAddForm={closeAdd}
+              />
+            </SectionCard>
+          )}
 
-          <div
-            id="platforms"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Tv className="w-5 h-5" /> OTT Platforms
-            </h2>
-            <PlatformsSection
-              visiblePlatforms={visiblePlatforms}
-              allPlatforms={allPlatforms}
-              onAdd={(platform) => setPendingPlatformAdds((prev) => [...prev, platform])}
-              onRemove={handlePlatformRemove}
-              pendingPlatformAdds={pendingPlatformAdds}
-            />
-          </div>
+          {activeSection === 'cast-crew' && (
+            <>
+              <SectionCard
+                title="Production Houses"
+                icon={Building2}
+                action={addButton('ph', 'Add')}
+              >
+                <ProductionHousesSection
+                  visibleProductionHouses={editState.visibleProductionHouses}
+                  productionHouses={editState.phSearchResults}
+                  searchQuery={editState.phSearchQuery}
+                  onSearchChange={editState.setPHSearchQuery}
+                  onAdd={(ph) => editState.setPendingPHAdds((prev) => [...prev, ph])}
+                  onRemove={editState.handlePHRemove}
+                  pendingPHAdds={editState.pendingPHAdds}
+                  onQuickAdd={async (name) => {
+                    const created = await editState.createProductionHouse.mutateAsync({
+                      name,
+                      logo_url: null,
+                    });
+                    editState.setPendingPHAdds((prev) => [
+                      ...prev,
+                      { production_house_id: created.id, _ph: created },
+                    ]);
+                    editState.setPHSearchQuery('');
+                  }}
+                  quickAddPending={editState.createProductionHouse.isPending}
+                  showAddForm={addFormOpen === 'ph'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+              <SectionCard title="Cast & Crew" icon={Users} action={addButton('cast', 'Add')}>
+                <CastSection
+                  visibleCast={editState.visibleCast}
+                  actors={editState.actors}
+                  castSearchQuery={editState.castSearchQuery}
+                  setCastSearchQuery={editState.setCastSearchQuery}
+                  onAdd={(cast) => editState.setPendingCastAdds((prev) => [...prev, cast])}
+                  onRemove={editState.handleCastRemove}
+                  onReorder={(newOrder) => editState.setLocalCastOrder(newOrder)}
+                  showAddForm={addFormOpen === 'cast'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+            </>
+          )}
 
-          <div
-            id="production-houses"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5" /> Production Houses
-            </h2>
-            <ProductionHousesSection
-              visibleProductionHouses={visibleProductionHouses}
-              productionHouses={phSearchResults}
-              searchQuery={phSearchQuery}
-              onSearchChange={setPHSearchQuery}
-              onAdd={(ph) => setPendingPHAdds((prev) => [...prev, ph])}
-              onRemove={handlePHRemove}
-              pendingPHAdds={pendingPHAdds}
-              onQuickAdd={async (name) => {
-                const created = await createProductionHouse.mutateAsync({
-                  name,
-                  logo_url: null,
-                });
-                setPendingPHAdds((prev) => [
-                  ...prev,
-                  { production_house_id: created.id, _ph: created },
-                ]);
-                setPHSearchQuery('');
-              }}
-              quickAddPending={createProductionHouse.isPending}
-            />
-          </div>
-
-          <div
-            id="cast-crew"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5" /> Cast & Crew
-            </h2>
-            <CastSection
-              visibleCast={visibleCast}
-              actors={actors}
-              castSearchQuery={castSearchQuery}
-              setCastSearchQuery={setCastSearchQuery}
-              onAdd={(cast) => setPendingCastAdds((prev) => [...prev, cast])}
-              onRemove={handleCastRemove}
-              onReorder={(newOrder) => setLocalCastOrder(newOrder)}
-            />
-          </div>
-
-          <div
-            id="theatrical-runs"
-            className="scroll-mt-[100px] bg-surface-muted border border-outline-subtle rounded-xl p-6"
-          >
-            <h2 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <Calendar className="w-5 h-5" /> Theatrical Runs
-            </h2>
-            <TheatricalRunsSection
-              visibleRuns={visibleRuns}
-              onAdd={(run) => setPendingRunAdds((prev) => [...prev, run])}
-              onRemove={handleRunRemove}
-              onEndRun={handleRunEnd}
-              pendingEndRunIds={new Set(pendingRunEndIds.keys())}
-            />
-          </div>
+          {activeSection === 'releases' && (
+            <>
+              <SectionCard
+                title="Theatrical Runs"
+                icon={Calendar}
+                action={addButton('runs', 'Add Run')}
+              >
+                <TheatricalRunsSection
+                  visibleRuns={editState.visibleRuns}
+                  onAdd={(run) => editState.setPendingRunAdds((prev) => [...prev, run])}
+                  onRemove={editState.handleRunRemove}
+                  onEndRun={editState.handleRunEnd}
+                  pendingEndRunIds={new Set(editState.pendingRunEndIds.keys())}
+                  showAddForm={addFormOpen === 'runs'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+              <SectionCard title="OTT Platforms" icon={Tv} action={addButton('platforms', 'Add')}>
+                <PlatformsSection
+                  visiblePlatforms={editState.visiblePlatforms}
+                  allPlatforms={editState.allPlatforms}
+                  onAdd={(p) => editState.setPendingPlatformAdds((prev) => [...prev, p])}
+                  onRemove={editState.handlePlatformRemove}
+                  pendingPlatformAdds={editState.pendingPlatformAdds}
+                  showAddForm={addFormOpen === 'platforms'}
+                  onCloseAddForm={closeAdd}
+                />
+              </SectionCard>
+            </>
+          )}
         </div>
 
         {/* Right column — Preview */}
-        {/* @coupling: PreviewPanel renders a device-framed mobile movie detail preview, mirrors the mobile MovieDetail screen */}
-        <PreviewPanel form={form} />
+        <PreviewPanel form={editState.form} />
       </div>
 
       <FormChangesDock
         changes={changes}
         changeCount={changeCount}
         saveStatus={dockSaveStatus}
-        onSave={() => handleSubmit()}
+        onSave={() => editState.handleSubmit()}
         onDiscard={onDiscard}
         onRevertField={onRevertField}
       />

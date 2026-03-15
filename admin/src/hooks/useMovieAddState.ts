@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import type React from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateMovie } from '@/hooks/useAdminMovies';
@@ -68,8 +68,6 @@ export function useMovieAddState() {
   const [form, setForm] = useState<MovieForm>(INITIAL_FORM);
   const [uploadingPoster, setUploadingPoster] = useState(false);
   const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
-  const posterInputRef = useRef<HTMLInputElement>(null);
-  const backdropInputRef = useRef<HTMLInputElement>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Pending state
@@ -105,9 +103,15 @@ export function useMovieAddState() {
     }
     setIsSaving(true);
     try {
+      // @contract sync poster_url from the main poster in the gallery
+      const mainPendingPoster = pending.pendingPosterAdds.find((p) =>
+        pending.pendingMainPosterId ? p._id === pending.pendingMainPosterId : p.is_main,
+      );
+      const effectivePosterUrl = mainPendingPoster ? mainPendingPoster.image_url : form.poster_url;
+
       const movie = await createMovie.mutateAsync({
         title: form.title,
-        poster_url: form.poster_url || null,
+        poster_url: effectivePosterUrl || null,
         backdrop_url: form.backdrop_url || null,
         release_date: form.release_date || null,
         runtime: form.runtime ? Number(form.runtime) : null,
@@ -145,13 +149,14 @@ export function useMovieAddState() {
       for (const v of pending.pendingVideoAdds) {
         promises.push(addVideo.mutateAsync({ movie_id: movieId, ...v }));
       }
-      // @edge Main poster selection: if pendingMainPosterId matches this poster's index, override is_main
-      for (let i = 0; i < pending.pendingPosterAdds.length; i++) {
-        const p = pending.pendingPosterAdds[i];
+      // @contract apply pendingMainPosterId override; uses stable _id for matching
+      for (const p of pending.pendingPosterAdds) {
         const isMain = pending.pendingMainPosterId
-          ? pending.pendingMainPosterId === `pending-poster-${i}`
+          ? p._id === pending.pendingMainPosterId
           : p.is_main;
-        promises.push(addPoster.mutateAsync({ movie_id: movieId, ...p, is_main: isMain }));
+        const { _id, ...posterData } = p;
+        void _id;
+        promises.push(addPoster.mutateAsync({ movie_id: movieId, ...posterData, is_main: isMain }));
       }
       for (const p of pending.pendingPlatformAdds) {
         promises.push(
@@ -159,6 +164,7 @@ export function useMovieAddState() {
             movie_id: movieId,
             platform_id: p.platform_id,
             available_from: p.available_from,
+            streaming_url: p.streaming_url,
           }),
         );
       }
@@ -197,8 +203,6 @@ export function useMovieAddState() {
     setUploadingPoster,
     uploadingBackdrop,
     setUploadingBackdrop,
-    posterInputRef,
-    backdropInputRef,
     setPendingVideoAdds: pending.setPendingVideoAdds,
     setPendingPosterAdds: pending.setPendingPosterAdds,
     setPendingPlatformAdds: pending.setPendingPlatformAdds,

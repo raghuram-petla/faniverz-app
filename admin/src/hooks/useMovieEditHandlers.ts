@@ -71,11 +71,17 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
 
     setIsSaving(true);
     try {
+      // @contract compute poster_url: if a pending poster will be main, sync poster_url to its image
+      const pendingMainPoster = pendingPosterAdds.find((p) =>
+        pendingMainPosterId ? p._id === pendingMainPosterId : p.is_main,
+      );
+      const effectivePosterUrl = pendingMainPoster ? pendingMainPoster.image_url : form.poster_url;
+
       const promises: Promise<unknown>[] = [
         updateMovie.mutateAsync({
           id,
           title: form.title,
-          poster_url: form.poster_url || null,
+          poster_url: effectivePosterUrl || null,
           backdrop_url: form.backdrop_url || null,
           release_date: form.release_date || null,
           runtime: form.runtime ? Number(form.runtime) : null,
@@ -129,14 +135,40 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       for (const videoId of pendingVideoRemoveIds) {
         promises.push(removeVideo.mutateAsync({ id: videoId, movieId: id }));
       }
-      for (const p of pendingPosterAdds) {
-        promises.push(addPoster.mutateAsync({ movie_id: id, ...p }));
+      // @contract compute is_main for each pending poster using pendingMainPosterId override
+      const pendingPostersToAdd = pendingPosterAdds.map((p) => {
+        const isMain = pendingMainPosterId ? p._id === pendingMainPosterId : p.is_main;
+        const { _id, ...posterData } = p;
+        void _id;
+        return { movie_id: id, ...posterData, is_main: isMain };
+      });
+      const willInsertMain = pendingPostersToAdd.some((p) => p.is_main);
+
+      // @edge if a pending poster will be main, unset is_main on existing DB posters first
+      // (must be sequential — DB unique constraint rejects two is_main=true rows)
+      if (willInsertMain) {
+        const { crudFetch } = await import('@/lib/admin-crud-client');
+        await crudFetch('PATCH', {
+          table: 'movie_posters',
+          filters: { movie_id: id, is_main: true },
+          data: { is_main: false },
+          returnOne: false,
+        }).catch(() => {
+          // If no main poster exists, PATCH may return empty — that's OK
+        });
+      }
+      for (const p of pendingPostersToAdd) {
+        promises.push(addPoster.mutateAsync(p));
       }
       for (const posterId of pendingPosterRemoveIds) {
         promises.push(removePoster.mutateAsync({ id: posterId, movieId: id }));
       }
-      // @edge Main poster can only be set on existing (server) posters — pending posters' is_main is set on add
-      if (pendingMainPosterId && !pendingMainPosterId.startsWith('pending-')) {
+      // @edge setMainPoster only for existing DB posters — skip pending, legacy, and removed
+      if (
+        pendingMainPosterId &&
+        !pendingMainPosterId.startsWith('pending-poster') &&
+        !pendingPosterRemoveIds.has(pendingMainPosterId)
+      ) {
         promises.push(setMainPoster.mutateAsync({ id: pendingMainPosterId, movieId: id }));
       }
       for (const p of pendingPlatformAdds) {
@@ -145,6 +177,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
             movie_id: id,
             platform_id: p.platform_id,
             available_from: p.available_from,
+            streaming_url: p.streaming_url,
           }),
         );
       }

@@ -30,6 +30,8 @@ interface Props {
   onEndRun?: (id: string, endDate: string) => void;
   // @contract set of run IDs already queued for ending (to show pending state in UI)
   pendingEndRunIds?: Set<string>;
+  showAddForm: boolean;
+  onCloseAddForm: () => void;
 }
 
 export function TheatricalRunsSection({
@@ -38,6 +40,8 @@ export function TheatricalRunsSection({
   onRemove,
   onEndRun,
   pendingEndRunIds,
+  showAddForm,
+  onCloseAddForm,
 }: Props) {
   const [runForm, setRunForm] = useState({ release_date: '', label: '' });
   const [runError, setRunError] = useState('');
@@ -58,6 +62,7 @@ export function TheatricalRunsSection({
     // @nullable label — empty string coerced to null for DB storage
     onAdd({ release_date: runForm.release_date, label: runForm.label || null });
     setRunForm({ release_date: '', label: '' });
+    onCloseAddForm();
   }
 
   return (
@@ -67,6 +72,53 @@ export function TheatricalRunsSection({
         theaters.
       </p>
 
+      {showAddForm && (
+        <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <FormInput
+              label="Release Date"
+              required
+              variant="compact"
+              type="date"
+              value={runForm.release_date}
+              onValueChange={(v) => setRunForm((p) => ({ ...p, release_date: v }))}
+            />
+            <FormInput
+              label="Label"
+              variant="compact"
+              type="text"
+              placeholder="e.g. Re-release, Director's Cut"
+              value={runForm.label}
+              onValueChange={(v) => setRunForm((p) => ({ ...p, label: v }))}
+            />
+          </div>
+          {runError && <p className="text-xs text-status-red">{runError}</p>}
+          <div className="flex items-center gap-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={!runForm.release_date}
+              icon={<Plus className="w-4 h-4" />}
+            >
+              Add Run
+            </Button>
+            <button
+              type="button"
+              onClick={() => {
+                onCloseAddForm();
+                setRunForm({ release_date: '', label: '' });
+                setRunError('');
+              }}
+              className="text-on-surface-muted px-4 py-2 rounded-lg text-sm hover:bg-input"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Run list — below add form */}
       {visibleRuns.length > 0 && (
         <div className="space-y-2">
           {visibleRuns.map((run) => (
@@ -74,7 +126,6 @@ export function TheatricalRunsSection({
               key={run.id}
               className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3"
             >
-              {/* @contract Date range: release_date → end_date (or "Now" if still active) */}
               <div className="flex-1 min-w-0">
                 <span className="text-on-surface font-medium">{run.release_date}</span>
                 <span className="text-on-surface-muted mx-1.5">→</span>
@@ -99,7 +150,6 @@ export function TheatricalRunsSection({
                   Original
                 </span>
               )}
-              {/* @edge End Run only shown for active (no end_date), non-pending, non-queued runs */}
               {!run.end_date &&
                 !run.id.startsWith('pending-run-') &&
                 !pendingEndRunIds?.has(run.id) &&
@@ -117,7 +167,6 @@ export function TheatricalRunsSection({
               <Button
                 variant="icon"
                 size="sm"
-                // @invariant pending runs use 'pending-run-' prefix to distinguish from DB rows
                 onClick={() => onRemove(run.id, run.id.startsWith('pending-run-'))}
                 aria-label={`Remove run ${run.release_date}`}
               >
@@ -127,38 +176,6 @@ export function TheatricalRunsSection({
           ))}
         </div>
       )}
-
-      <form onSubmit={handleSubmit} className="bg-surface-elevated rounded-xl p-4 space-y-3">
-        <p className="text-sm font-semibold text-on-surface-muted">Add Theatrical Run</p>
-        <div className="grid grid-cols-2 gap-3">
-          <FormInput
-            label="Release Date"
-            required
-            variant="compact"
-            type="date"
-            value={runForm.release_date}
-            onValueChange={(v) => setRunForm((p) => ({ ...p, release_date: v }))}
-          />
-          <FormInput
-            label="Label"
-            variant="compact"
-            type="text"
-            placeholder="e.g. Re-release, Director's Cut"
-            value={runForm.label}
-            onValueChange={(v) => setRunForm((p) => ({ ...p, label: v }))}
-          />
-        </div>
-        {runError && <p className="text-xs text-status-red">{runError}</p>}
-        <Button
-          type="submit"
-          variant="primary"
-          size="md"
-          disabled={!runForm.release_date}
-          icon={<Plus className="w-4 h-4" />}
-        >
-          Add Run
-        </Button>
-      </form>
     </div>
   );
 }

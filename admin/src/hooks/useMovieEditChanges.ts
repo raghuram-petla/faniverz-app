@@ -1,15 +1,10 @@
 import { useMemo, useCallback } from 'react';
 import { useFormChanges } from '@/hooks/useFormChanges';
 import type { FieldConfig, FieldChange } from '@/hooks/useFormChanges';
-import type { MovieForm } from '@/hooks/useMovieEditTypes';
-import type {
-  PendingVideoAdd,
-  PendingPosterAdd,
-  PendingPlatformAdd,
-  PendingPHAdd,
-} from '@/hooks/useMovieEditTypes';
-import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
-import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
+import type { MovieForm, UseMovieEditChangesParams } from '@/hooks/useMovieEditTypes';
+import { revertEntity } from './useMovieEditChangesRevert';
+
+export type { UseMovieEditChangesParams } from '@/hooks/useMovieEditTypes';
 
 // @contract Basic info fields tracked in the dock
 const BASIC_FIELD_CONFIG: FieldConfig[] = [
@@ -33,85 +28,6 @@ const BASIC_FIELD_CONFIG: FieldConfig[] = [
   { key: 'backdrop_focus_x', label: 'Focal Point X', type: 'number' },
   { key: 'backdrop_focus_y', label: 'Focal Point Y', type: 'number' },
 ];
-
-// Minimal interfaces for server data lookups (only fields we need for display names)
-interface CastRow {
-  id: string;
-  actor?: { name: string } | null;
-  character_name?: string | null;
-}
-interface VideoRow {
-  id: string;
-  title: string;
-}
-interface PosterRow {
-  id: string;
-  title: string;
-}
-interface PlatformRow {
-  platform_id: string;
-  platform?: { name: string } | null;
-}
-interface PHRow {
-  production_house_id: string;
-  production_house?: { name: string } | null;
-}
-interface RunRow {
-  id: string;
-  release_date: string;
-  label?: string | null;
-}
-
-export interface UseMovieEditChangesParams {
-  form: MovieForm;
-  initialForm: MovieForm | null;
-  setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
-  setInitialForm: React.Dispatch<React.SetStateAction<MovieForm | null>>;
-  // Cast
-  pendingCastAdds: PendingCastAdd[];
-  pendingCastRemoveIds: Set<string>;
-  localCastOrder: string[] | null;
-  castData: CastRow[];
-  setPendingCastAdds: React.Dispatch<React.SetStateAction<PendingCastAdd[]>>;
-  setPendingCastRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  setLocalCastOrder: (order: string[] | null) => void;
-  // Videos
-  pendingVideoAdds: PendingVideoAdd[];
-  pendingVideoRemoveIds: Set<string>;
-  videosData: VideoRow[];
-  setPendingVideoAdds: React.Dispatch<React.SetStateAction<PendingVideoAdd[]>>;
-  setPendingVideoRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  // Posters
-  pendingPosterAdds: PendingPosterAdd[];
-  pendingPosterRemoveIds: Set<string>;
-  pendingMainPosterId: string | null;
-  postersData: PosterRow[];
-  setPendingPosterAdds: React.Dispatch<React.SetStateAction<PendingPosterAdd[]>>;
-  setPendingPosterRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  setPendingMainPosterId: (id: string | null) => void;
-  // Platforms
-  pendingPlatformAdds: PendingPlatformAdd[];
-  pendingPlatformRemoveIds: Set<string>;
-  moviePlatforms: PlatformRow[];
-  setPendingPlatformAdds: React.Dispatch<React.SetStateAction<PendingPlatformAdd[]>>;
-  setPendingPlatformRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  // Production Houses
-  pendingPHAdds: PendingPHAdd[];
-  pendingPHRemoveIds: Set<string>;
-  movieProductionHouses: PHRow[];
-  setPendingPHAdds: React.Dispatch<React.SetStateAction<PendingPHAdd[]>>;
-  setPendingPHRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  // Theatrical Runs
-  pendingRunAdds: PendingRun[];
-  pendingRunRemoveIds: Set<string>;
-  pendingRunEndIds: Map<string, string>;
-  theatricalRuns: RunRow[];
-  setPendingRunAdds: React.Dispatch<React.SetStateAction<PendingRun[]>>;
-  setPendingRunRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-  setPendingRunEndIds: React.Dispatch<React.SetStateAction<Map<string, string>>>;
-  // Reset
-  resetPendingState: () => void;
-}
 
 function makeChange(key: string, label: string, oldDisp: string, newDisp: string): FieldChange {
   return {
@@ -177,8 +93,8 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
       result.push(makeChange(`entity:video-remove-${id}`, 'Videos', vid?.title ?? id, '(removed)'));
     });
     // Posters
-    params.pendingPosterAdds.forEach((p, i) => {
-      result.push(makeChange(`entity:poster-add-${i}`, 'Posters', '(empty)', `+ ${p.title}`));
+    params.pendingPosterAdds.forEach((p) => {
+      result.push(makeChange(`entity:poster-add-${p._id}`, 'Posters', '(empty)', `+ ${p.title}`));
     });
     params.pendingPosterRemoveIds.forEach((id) => {
       const poster = params.postersData.find((p) => p.id === id);
@@ -313,80 +229,4 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
   }, [initialForm, setForm, params.resetPendingState]);
 
   return { changes, changeCount: changes.length, onRevertField, onDiscard };
-}
-
-// @sideeffect Undoes a single entity-level pending change
-function revertEntity(key: string, p: UseMovieEditChangesParams) {
-  if (key.startsWith('entity:cast-add-')) {
-    const idx = parseInt(key.split('-').pop()!, 10);
-    p.setPendingCastAdds((prev) => prev.filter((_, i) => i !== idx));
-  } else if (key.startsWith('entity:cast-remove-')) {
-    const id = key.replace('entity:cast-remove-', '');
-    p.setPendingCastRemoveIds((prev) => {
-      const s = new Set(prev);
-      s.delete(id);
-      return s;
-    });
-  } else if (key === 'entity:cast-reorder') {
-    p.setLocalCastOrder(null);
-  } else if (key.startsWith('entity:video-add-')) {
-    const idx = parseInt(key.split('-').pop()!, 10);
-    p.setPendingVideoAdds((prev) => prev.filter((_, i) => i !== idx));
-  } else if (key.startsWith('entity:video-remove-')) {
-    const id = key.replace('entity:video-remove-', '');
-    p.setPendingVideoRemoveIds((prev) => {
-      const s = new Set(prev);
-      s.delete(id);
-      return s;
-    });
-  } else if (key.startsWith('entity:poster-add-')) {
-    const idx = parseInt(key.split('-').pop()!, 10);
-    p.setPendingPosterAdds((prev) => prev.filter((_, i) => i !== idx));
-  } else if (key.startsWith('entity:poster-remove-')) {
-    const id = key.replace('entity:poster-remove-', '');
-    p.setPendingPosterRemoveIds((prev) => {
-      const s = new Set(prev);
-      s.delete(id);
-      return s;
-    });
-  } else if (key === 'entity:main-poster') {
-    p.setPendingMainPosterId(null);
-  } else if (key.startsWith('entity:platform-add-')) {
-    const idx = parseInt(key.split('-').pop()!, 10);
-    p.setPendingPlatformAdds((prev) => prev.filter((_, i) => i !== idx));
-  } else if (key.startsWith('entity:platform-remove-')) {
-    const id = key.replace('entity:platform-remove-', '');
-    p.setPendingPlatformRemoveIds((prev) => {
-      const s = new Set(prev);
-      s.delete(id);
-      return s;
-    });
-  } else if (key.startsWith('entity:ph-add-')) {
-    const idx = parseInt(key.split('-').pop()!, 10);
-    p.setPendingPHAdds((prev) => prev.filter((_, i) => i !== idx));
-  } else if (key.startsWith('entity:ph-remove-')) {
-    const id = key.replace('entity:ph-remove-', '');
-    p.setPendingPHRemoveIds((prev) => {
-      const s = new Set(prev);
-      s.delete(id);
-      return s;
-    });
-  } else if (key.startsWith('entity:run-add-')) {
-    const idx = parseInt(key.split('-').pop()!, 10);
-    p.setPendingRunAdds((prev) => prev.filter((_, i) => i !== idx));
-  } else if (key.startsWith('entity:run-remove-')) {
-    const id = key.replace('entity:run-remove-', '');
-    p.setPendingRunRemoveIds((prev) => {
-      const s = new Set(prev);
-      s.delete(id);
-      return s;
-    });
-  } else if (key.startsWith('entity:run-end-')) {
-    const id = key.replace('entity:run-end-', '');
-    p.setPendingRunEndIds((prev) => {
-      const m = new Map(prev);
-      m.delete(id);
-      return m;
-    });
-  }
 }

@@ -98,8 +98,8 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
 
   function handlePosterRemove(posterId: string, isPending: boolean) {
     if (isPending) {
-      const idx = Number(posterId.replace('pending-poster-', ''));
-      setPendingPosterAdds((prev) => prev.filter((_, i) => i !== idx));
+      // @contract uses stable _id — no index-shift bugs on removal
+      setPendingPosterAdds((prev) => prev.filter((p) => p._id !== posterId));
     } else {
       setPendingPosterRemoveIds((prev) => new Set([...prev, posterId]));
     }

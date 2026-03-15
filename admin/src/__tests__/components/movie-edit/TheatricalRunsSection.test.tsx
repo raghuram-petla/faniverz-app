@@ -24,6 +24,8 @@ const defaultProps = {
   visibleRuns: [],
   onAdd: vi.fn(),
   onRemove: vi.fn(),
+  showAddForm: false,
+  onCloseAddForm: vi.fn(),
 };
 
 describe('TheatricalRunsSection', () => {
@@ -32,11 +34,28 @@ describe('TheatricalRunsSection', () => {
     expect(screen.getByText(/Track original release/)).toBeInTheDocument();
   });
 
-  it('renders the add form', () => {
-    render(<TheatricalRunsSection {...defaultProps} />);
-    expect(screen.getByText('Add Theatrical Run')).toBeInTheDocument();
+  it('hides form when showAddForm is false', () => {
+    render(<TheatricalRunsSection {...defaultProps} showAddForm={false} />);
+    expect(screen.queryByText(/Release Date/)).not.toBeInTheDocument();
+  });
+
+  it('shows form when showAddForm is true', () => {
+    render(<TheatricalRunsSection {...defaultProps} showAddForm={true} />);
     expect(screen.getByText(/Release Date/)).toBeInTheDocument();
     expect(screen.getByText(/Label/)).toBeInTheDocument();
+  });
+
+  it('calls onCloseAddForm when Cancel is clicked', () => {
+    const onCloseAddForm = vi.fn();
+    render(
+      <TheatricalRunsSection
+        {...defaultProps}
+        showAddForm={true}
+        onCloseAddForm={onCloseAddForm}
+      />,
+    );
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(onCloseAddForm).toHaveBeenCalled();
   });
 
   it('renders runs with release_date and end_date', () => {
@@ -82,7 +101,7 @@ describe('TheatricalRunsSection', () => {
 
   it('calls onAdd when form is submitted', () => {
     const onAdd = vi.fn();
-    render(<TheatricalRunsSection {...defaultProps} onAdd={onAdd} />);
+    render(<TheatricalRunsSection {...defaultProps} showAddForm={true} onAdd={onAdd} />);
 
     // FormInput renders <label>text</label><input> without htmlFor — select date input by type
     const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
@@ -94,19 +113,25 @@ describe('TheatricalRunsSection', () => {
 
   it('does not call onAdd when release_date is empty', () => {
     const onAdd = vi.fn();
-    render(<TheatricalRunsSection {...defaultProps} onAdd={onAdd} />);
+    render(<TheatricalRunsSection {...defaultProps} showAddForm={true} onAdd={onAdd} />);
+    // Click the submit Add Run button
     fireEvent.click(screen.getByText('Add Run'));
     expect(onAdd).not.toHaveBeenCalled();
   });
 
   it('resets form after successful add', () => {
     const onAdd = vi.fn();
-    render(<TheatricalRunsSection {...defaultProps} onAdd={onAdd} />);
+    const { rerender } = render(
+      <TheatricalRunsSection {...defaultProps} showAddForm={true} onAdd={onAdd} />,
+    );
 
     const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
     fireEvent.change(dateInput, { target: { value: '2026-06-01' } });
     fireEvent.click(screen.getByText('Add Run'));
 
-    expect(dateInput.value).toBe('');
+    // After submit, re-render with showAddForm true to verify reset
+    rerender(<TheatricalRunsSection {...defaultProps} showAddForm={true} onAdd={onAdd} />);
+    const newDateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    expect(newDateInput.value).toBe('');
   });
 });

@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
-import { createRef } from 'react';
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -9,16 +8,6 @@ vi.mock('@/lib/supabase-browser', () => ({
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
     },
   },
-}));
-
-vi.mock('@/components/movie-edit/ImageUploadField', () => ({
-  ImageUploadField: (props: { label: string }) => (
-    <div data-testid={`image-upload-${props.label.toLowerCase()}`} />
-  ),
-}));
-
-vi.mock('@/components/movie-edit/BackdropFocalPicker', () => ({
-  BackdropFocalPicker: () => <div data-testid="backdrop-focal-picker" />,
 }));
 
 const defaultForm: MovieForm = {
@@ -57,13 +46,6 @@ function renderBasicInfo(overrides: Partial<MovieForm> = {}) {
     setForm: vi.fn(),
     updateField: vi.fn(),
     toggleGenre: vi.fn(),
-    uploadingPoster: false,
-    uploadingBackdrop: false,
-    posterInputRef: createRef<HTMLInputElement>(),
-    backdropInputRef: createRef<HTMLInputElement>(),
-    handleImageUpload: vi.fn(),
-    setUploadingPoster: vi.fn(),
-    setUploadingBackdrop: vi.fn(),
     onSubmit: vi.fn(),
   };
   render(<BasicInfoSection {...props} />);

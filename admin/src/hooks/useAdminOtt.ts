@@ -144,6 +144,7 @@ export function useAddMoviePlatform() {
       movie_id: string;
       platform_id: string;
       available_from?: string | null;
+      streaming_url?: string | null;
     }) => {
       return crudFetch<MoviePlatform>('POST', { table: 'movie_platforms', data: release });
     },

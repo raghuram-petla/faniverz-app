@@ -15,6 +15,9 @@ vi.mock('@/hooks/useMovieAddState', () => ({
       synopsis: '',
       trailer_url: '',
       in_theaters: false,
+      premiere_date: '',
+      original_language: '',
+      is_featured: false,
       backdrop_focus_x: null,
       backdrop_focus_y: null,
     },
@@ -25,8 +28,6 @@ vi.mock('@/hooks/useMovieAddState', () => ({
     setUploadingPoster: vi.fn(),
     uploadingBackdrop: false,
     setUploadingBackdrop: vi.fn(),
-    posterInputRef: { current: null },
-    backdropInputRef: { current: null },
     handleImageUpload: vi.fn(),
     setPendingVideoAdds: vi.fn(),
     setPendingPosterAdds: vi.fn(),
@@ -64,13 +65,8 @@ vi.mock('@/hooks/useMovieAddState', () => ({
   }),
 }));
 
-vi.mock('@/components/movie-edit/BasicInfoSection', () => ({
-  BasicInfoSection: () => <div data-testid="basic-info-section" />,
-}));
-vi.mock('@/components/movie-edit/PreviewPanel', () => ({
-  PreviewPanel: () => <div data-testid="preview-panel" />,
-}));
 vi.mock('@/components/movie-edit', () => ({
+  BasicInfoSection: () => <div data-testid="basic-info-section" />,
   VideosSection: () => <div data-testid="videos-section" />,
   PostersSection: () => <div data-testid="posters-section" />,
   PlatformsSection: () => <div data-testid="platforms-section" />,
@@ -78,8 +74,17 @@ vi.mock('@/components/movie-edit', () => ({
   CastSection: () => <div data-testid="cast-section" />,
   TheatricalRunsSection: () => <div data-testid="theatrical-runs-section" />,
   SectionNav: () => <div data-testid="section-nav" />,
-  MOVIE_SECTIONS: [],
-  useActiveSection: () => ({ activeId: 'basic-info', scrollTo: vi.fn() }),
+  SectionCard: ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div data-testid={`section-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>{children}</div>
+  ),
+  PreviewPanel: () => <div data-testid="preview-panel" />,
+  MOVIE_SECTIONS: [
+    { id: 'basic-info', label: 'Basic Info' },
+    { id: 'posters', label: 'Posters' },
+    { id: 'videos', label: 'Videos' },
+    { id: 'cast-crew', label: 'Cast & Crew' },
+    { id: 'releases', label: 'Releases' },
+  ],
 }));
 
 vi.mock('next/link', () => ({
@@ -128,15 +133,19 @@ describe('NewMoviePage', () => {
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   });
 
-  it('renders all section components', () => {
+  it('renders Basic Info tab content by default', () => {
     renderPage();
     expect(screen.getByTestId('basic-info-section')).toBeInTheDocument();
-    expect(screen.getByTestId('videos-section')).toBeInTheDocument();
-    expect(screen.getByTestId('posters-section')).toBeInTheDocument();
-    expect(screen.getByTestId('platforms-section')).toBeInTheDocument();
-    expect(screen.getByTestId('production-houses-section')).toBeInTheDocument();
-    expect(screen.getByTestId('cast-section')).toBeInTheDocument();
-    expect(screen.getByTestId('theatrical-runs-section')).toBeInTheDocument();
+  });
+
+  it('does not render other tab sections when Basic Info is active', () => {
+    renderPage();
+    expect(screen.queryByTestId('videos-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('posters-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('cast-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('theatrical-runs-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('platforms-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('production-houses-section')).not.toBeInTheDocument();
   });
 
   it('renders SectionNav', () => {

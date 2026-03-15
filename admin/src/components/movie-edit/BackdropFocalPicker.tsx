@@ -127,8 +127,7 @@ export function BackdropFocalPicker({
   return (
     <div>
       <label className="block text-sm text-on-surface-muted mb-1">
-        Backdrop Focal Point{' '}
-        <span className="text-on-surface-disabled font-normal">— {directionHint}</span>
+        Focal Point <span className="text-on-surface-disabled font-normal">— {directionHint}</span>
       </label>
 
       <div

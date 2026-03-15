@@ -157,14 +157,16 @@ export function useMovieEditDerived(params: {
   const visiblePosters = useMemo(() => {
     const items = [
       ...postersData.filter((p) => !pendingPosterRemoveIds.has(p.id)),
-      ...pendingPosterAdds.map((p, i) => ({
+      ...pendingPosterAdds.map((p) => ({
         ...p,
-        id: `pending-poster-${i}`,
+        id: p._id,
         movie_id: id,
         created_at: '',
       })),
     ];
-    if (pendingMainPosterId) {
+    // @edge only apply override if pendingMainPosterId actually exists in items
+    // (prevents orphaned references when the main poster is removed)
+    if (pendingMainPosterId && items.some((p) => p.id === pendingMainPosterId)) {
       return items.map((p) => ({ ...p, is_main: p.id === pendingMainPosterId }));
     }
     return items;
@@ -178,6 +180,7 @@ export function useMovieEditDerived(params: {
         movie_id: id,
         platform_id: p.platform_id,
         available_from: p.available_from,
+        streaming_url: p.streaming_url,
         platform: p._platform,
       })),
     ],

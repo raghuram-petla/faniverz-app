@@ -71,6 +71,7 @@ describe('useMovieEditPendingState', () => {
     act(() => {
       result.current.setPendingPosterAdds([
         {
+          _id: 'pending-poster-test-1',
           image_url: 'url',
           title: 'Poster',
           description: null,
@@ -92,7 +93,9 @@ describe('useMovieEditPendingState', () => {
     const { result } = renderHook(() => useMovieEditPendingState());
 
     act(() => {
-      result.current.setPendingPlatformAdds([{ platform_id: 'pl1', available_from: '2025-01-01' }]);
+      result.current.setPendingPlatformAdds([
+        { platform_id: 'pl1', available_from: '2025-01-01', streaming_url: null },
+      ]);
       result.current.setPendingPlatformRemoveIds(new Set(['pl2']));
     });
 
@@ -152,7 +155,9 @@ describe('useMovieEditPendingState', () => {
       ]);
       result.current.setPendingPosterRemoveIds(new Set(['p1']));
       result.current.setPendingMainPosterId('p2');
-      result.current.setPendingPlatformAdds([{ platform_id: 'pl1', available_from: null }]);
+      result.current.setPendingPlatformAdds([
+        { platform_id: 'pl1', available_from: null, streaming_url: null },
+      ]);
       result.current.setPendingPHAdds([{ production_house_id: 'ph1' }]);
       result.current.setPendingRunAdds([{ release_date: '2025-01-01', label: null }]);
     });

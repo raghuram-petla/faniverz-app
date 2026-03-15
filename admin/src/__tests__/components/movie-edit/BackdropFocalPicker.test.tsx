@@ -29,7 +29,7 @@ describe('BackdropFocalPicker', () => {
 
   it('renders backdrop image and label when url is provided', () => {
     const { container } = render(<BackdropFocalPicker {...defaultProps} />);
-    expect(screen.getByText(/Backdrop Focal Point/)).toBeInTheDocument();
+    expect(screen.getByText(/Focal Point/)).toBeInTheDocument();
     const img = container.querySelector('img');
     expect(img).toBeTruthy();
     expect(img?.src).toContain('backdrop.jpg');

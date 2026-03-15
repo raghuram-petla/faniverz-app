@@ -33,25 +33,46 @@ describe('ProductionHousesSection', () => {
     onAdd: vi.fn(),
     onRemove: vi.fn(),
     pendingPHAdds: [],
+    showAddForm: false,
+    onCloseAddForm: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders "Add Production House" section', () => {
-    render(<ProductionHousesSection {...defaultProps} />);
-    expect(screen.getByText('Add Production House')).toBeInTheDocument();
+  it('hides form when showAddForm is false', () => {
+    render(<ProductionHousesSection {...defaultProps} showAddForm={false} />);
+    expect(screen.queryByPlaceholderText('Type to search…')).not.toBeInTheDocument();
   });
 
-  it('renders search input with placeholder', () => {
-    render(<ProductionHousesSection {...defaultProps} />);
+  it('shows form when showAddForm is true', () => {
+    render(<ProductionHousesSection {...defaultProps} showAddForm={true} />);
     expect(screen.getByPlaceholderText('Type to search…')).toBeInTheDocument();
+  });
+
+  it('calls onCloseAddForm when Cancel is clicked', () => {
+    const onCloseAddForm = vi.fn();
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        onCloseAddForm={onCloseAddForm}
+      />,
+    );
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(onCloseAddForm).toHaveBeenCalled();
   });
 
   it('calls onSearchChange when user types', () => {
     const onSearchChange = vi.fn();
-    render(<ProductionHousesSection {...defaultProps} onSearchChange={onSearchChange} />);
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        onSearchChange={onSearchChange}
+      />,
+    );
     fireEvent.change(screen.getByPlaceholderText('Type to search…'), {
       target: { value: 'My' },
     });
@@ -59,27 +80,41 @@ describe('ProductionHousesSection', () => {
   });
 
   it('shows dropdown with PH names when query >= 2 chars', () => {
-    render(<ProductionHousesSection {...defaultProps} searchQuery="My" />);
+    render(<ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="My" />);
     fireEvent.focus(screen.getByPlaceholderText('Type to search…'));
     expect(screen.getByText('Mythri Movie Makers')).toBeInTheDocument();
     expect(screen.getByText('Haarika & Hassine')).toBeInTheDocument();
   });
 
   it('does not show dropdown when query < 2 chars', () => {
-    render(<ProductionHousesSection {...defaultProps} searchQuery="M" />);
+    render(<ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="M" />);
     fireEvent.focus(screen.getByPlaceholderText('Type to search…'));
     expect(screen.queryByText('Mythri Movie Makers')).not.toBeInTheDocument();
   });
 
   it('shows "No matching production houses" when query >= 2 and no results', () => {
-    render(<ProductionHousesSection {...defaultProps} productionHouses={[]} searchQuery="Xy" />);
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        productionHouses={[]}
+        searchQuery="Xy"
+      />,
+    );
     fireEvent.focus(screen.getByPlaceholderText('Type to search…'));
     expect(screen.getByText('No matching production houses')).toBeInTheDocument();
   });
 
   it('calls onAdd when a PH is clicked in dropdown', () => {
     const onAdd = vi.fn();
-    render(<ProductionHousesSection {...defaultProps} onAdd={onAdd} searchQuery="My" />);
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        onAdd={onAdd}
+        searchQuery="My"
+      />,
+    );
     fireEvent.focus(screen.getByPlaceholderText('Type to search…'));
     fireEvent.click(screen.getByText('Mythri Movie Makers'));
     expect(onAdd).toHaveBeenCalledWith({
@@ -93,6 +128,7 @@ describe('ProductionHousesSection', () => {
     render(
       <ProductionHousesSection
         {...defaultProps}
+        showAddForm={true}
         onSearchChange={onSearchChange}
         searchQuery="My"
       />,
@@ -164,6 +200,7 @@ describe('ProductionHousesSection', () => {
     render(
       <ProductionHousesSection
         {...defaultProps}
+        showAddForm={true}
         searchQuery="My"
         visibleProductionHouses={[
           { movie_id: 'm1', production_house_id: 'ph1', production_house: mockPH },
@@ -183,6 +220,7 @@ describe('ProductionHousesSection', () => {
     render(
       <ProductionHousesSection
         {...defaultProps}
+        showAddForm={true}
         productionHouses={[]}
         searchQuery="New Studio"
         onQuickAdd={vi.fn()}
@@ -194,7 +232,12 @@ describe('ProductionHousesSection', () => {
 
   it('does not show quick-add when onQuickAdd is not provided', () => {
     render(
-      <ProductionHousesSection {...defaultProps} productionHouses={[]} searchQuery="New Studio" />,
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        productionHouses={[]}
+        searchQuery="New Studio"
+      />,
     );
     fireEvent.focus(screen.getByPlaceholderText('Type to search…'));
     expect(screen.queryByText(/Create/)).not.toBeInTheDocument();
@@ -205,6 +248,7 @@ describe('ProductionHousesSection', () => {
     render(
       <ProductionHousesSection
         {...defaultProps}
+        showAddForm={true}
         productionHouses={[]}
         searchQuery="  New Studio  "
         onQuickAdd={onQuickAdd}
@@ -219,6 +263,7 @@ describe('ProductionHousesSection', () => {
     render(
       <ProductionHousesSection
         {...defaultProps}
+        showAddForm={true}
         productionHouses={[]}
         searchQuery="New Studio"
         onQuickAdd={vi.fn()}
@@ -231,7 +276,14 @@ describe('ProductionHousesSection', () => {
 
   it('selects PH with ArrowDown + Enter', () => {
     const onAdd = vi.fn();
-    render(<ProductionHousesSection {...defaultProps} onAdd={onAdd} searchQuery="My" />);
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        onAdd={onAdd}
+        searchQuery="My"
+      />,
+    );
     const input = screen.getByPlaceholderText('Type to search…');
     fireEvent.focus(input);
     fireEvent.keyDown(input, { key: 'ArrowDown' });
@@ -244,7 +296,14 @@ describe('ProductionHousesSection', () => {
 
   it('navigates to second PH with two ArrowDown presses', () => {
     const onAdd = vi.fn();
-    render(<ProductionHousesSection {...defaultProps} onAdd={onAdd} searchQuery="My" />);
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        onAdd={onAdd}
+        searchQuery="My"
+      />,
+    );
     const input = screen.getByPlaceholderText('Type to search…');
     fireEvent.focus(input);
     fireEvent.keyDown(input, { key: 'ArrowDown' });
@@ -258,7 +317,14 @@ describe('ProductionHousesSection', () => {
 
   it('wraps around with ArrowUp from top', () => {
     const onAdd = vi.fn();
-    render(<ProductionHousesSection {...defaultProps} onAdd={onAdd} searchQuery="My" />);
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        onAdd={onAdd}
+        searchQuery="My"
+      />,
+    );
     const input = screen.getByPlaceholderText('Type to search…');
     fireEvent.focus(input);
     fireEvent.keyDown(input, { key: 'ArrowUp' });
@@ -270,7 +336,7 @@ describe('ProductionHousesSection', () => {
   });
 
   it('closes dropdown on Escape', () => {
-    render(<ProductionHousesSection {...defaultProps} searchQuery="My" />);
+    render(<ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="My" />);
     const input = screen.getByPlaceholderText('Type to search…');
     fireEvent.focus(input);
     expect(screen.getByText('Mythri Movie Makers')).toBeInTheDocument();
@@ -283,6 +349,7 @@ describe('ProductionHousesSection', () => {
     render(
       <ProductionHousesSection
         {...defaultProps}
+        showAddForm={true}
         productionHouses={[]}
         searchQuery="New Studio"
         onQuickAdd={onQuickAdd}
