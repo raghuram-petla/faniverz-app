@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
+import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/import-movies
@@ -13,8 +13,11 @@ import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers
 export async function POST(request: NextRequest) {
   try {
     // @boundary: admin-only — import creates significant DB state
-    const user = await verifyAdmin(request.headers.get('authorization'));
-    if (!user) {
+    const auth = await verifyAdminCanMutate(request.headers.get('authorization'));
+    if (auth === 'viewer_readonly') {
+      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
+    }
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

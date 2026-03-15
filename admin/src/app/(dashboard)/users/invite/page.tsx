@@ -15,6 +15,7 @@ const INVITABLE_ROLES: { value: AdminRoleId; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin — Full access + user management' },
   { value: 'admin', label: 'Admin — Full content access' },
   { value: 'production_house_admin', label: 'PH Admin — Scoped to production house(s)' },
+  { value: 'viewer', label: 'Viewer — Read-only access to all data' },
 ];
 
 export default function InviteAdminPage() {

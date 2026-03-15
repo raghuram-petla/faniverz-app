@@ -13,6 +13,7 @@ import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 import Link from 'next/link';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { FieldConfig } from '@/hooks/useFormChanges';
 
 const FIELD_CONFIG: FieldConfig[] = [
@@ -22,6 +23,7 @@ const FIELD_CONFIG: FieldConfig[] = [
 ];
 
 export default function EditProductionHousePage() {
+  const { isReadOnly } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: house, isLoading } = useAdminProductionHouse(id);
@@ -118,15 +120,17 @@ export default function EditProductionHousePage() {
           </Link>
           <h1 className="text-2xl font-bold text-on-surface">Edit Production House</h1>
         </div>
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
-        >
-          <Trash2 className="w-4 h-4" /> Delete
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleDelete}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
+          >
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+        )}
       </div>
 
-      <div className="space-y-4">
+      <div className={`space-y-4${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}>
         <div>
           <label className="block text-sm text-on-surface-muted mb-1">Name *</label>
           <input

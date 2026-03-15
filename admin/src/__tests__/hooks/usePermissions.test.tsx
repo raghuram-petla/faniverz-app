@@ -18,10 +18,14 @@ const ALL_PAGES: AdminPage[] = [
   'ott',
   'platforms',
   'surprise',
+  'feed',
   'notifications',
+  'reviews',
+  'comments',
   'sync',
   'audit',
   'app-users',
+  'theaters',
   'users',
 ];
 
@@ -32,6 +36,7 @@ const ALL_ENTITIES: AdminEntity[] = [
   'ott_release',
   'platform',
   'surprise',
+  'news_feed',
   'notification',
   'sync',
 ];
@@ -186,12 +191,16 @@ describe('usePermissions', () => {
         'cast',
         'production-houses',
         'ott',
+        'theaters',
         'audit',
       ];
       const denied: AdminPage[] = [
         'platforms',
         'surprise',
+        'feed',
         'notifications',
+        'reviews',
+        'comments',
         'sync',
         'app-users',
         'users',
@@ -410,6 +419,102 @@ describe('usePermissions', () => {
       expect(result.current.canManageAdmin('production_house_admin')).toBe(false);
       expect(result.current.canManageAdmin('super_admin')).toBe(false);
       expect(result.current.canManageAdmin('root')).toBe(false);
+    });
+  });
+
+  // Viewer role — read-only access
+  describe('viewer role', () => {
+    it('isViewer and isReadOnly are true, other flags false', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.isViewer).toBe(true);
+      expect(result.current.isReadOnly).toBe(true);
+      expect(result.current.isRoot).toBe(false);
+      expect(result.current.isSuperAdmin).toBe(false);
+      expect(result.current.isAdmin).toBe(false);
+      expect(result.current.isPHAdmin).toBe(false);
+    });
+
+    it('canViewPage returns true for ALL pages', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const page of ALL_PAGES) {
+        expect(result.current.canViewPage(page)).toBe(true);
+      }
+    });
+
+    it('canCreate returns false for ALL entities', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const entity of ALL_ENTITIES) {
+        expect(result.current.canCreate(entity)).toBe(false);
+      }
+    });
+
+    it('canUpdate returns false for ALL entities', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const entity of ALL_ENTITIES) {
+        expect(result.current.canUpdate(entity)).toBe(false);
+      }
+    });
+
+    it('canDelete returns false for ALL entities', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const entity of ALL_ENTITIES) {
+        expect(result.current.canDelete(entity)).toBe(false);
+      }
+    });
+
+    it('canManageAdmin returns false for ALL roles', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.canManageAdmin('root')).toBe(false);
+      expect(result.current.canManageAdmin('super_admin')).toBe(false);
+      expect(result.current.canManageAdmin('admin')).toBe(false);
+      expect(result.current.canManageAdmin('production_house_admin')).toBe(false);
+      expect(result.current.canManageAdmin('viewer')).toBe(false);
+    });
+
+    it('auditScope is "all"', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+
+      expect(result.current.auditScope).toBe('all');
+    });
+  });
+
+  // All non-viewer roles can manage viewer
+  describe('canManageAdmin viewer target', () => {
+    it('root can manage viewer', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canManageAdmin('viewer')).toBe(true);
+    });
+
+    it('super_admin can manage viewer', () => {
+      setUser(makeUser({ role: 'super_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canManageAdmin('viewer')).toBe(true);
+    });
+
+    it('admin can manage viewer', () => {
+      setUser(makeUser({ role: 'admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canManageAdmin('viewer')).toBe(true);
+    });
+
+    it('production_house_admin can manage viewer', () => {
+      setUser(makeUser({ role: 'production_house_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canManageAdmin('viewer')).toBe(true);
     });
   });
 

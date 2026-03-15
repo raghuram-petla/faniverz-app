@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 export default function OttReleasesPage() {
   // @coupling usePermissions gates both data scoping (PH filter) and delete button visibility
-  const { isPHAdmin, productionHouseIds, canDelete } = usePermissions();
+  const { isPHAdmin, productionHouseIds, canDelete, isReadOnly } = usePermissions();
   // @boundary PH admins only see releases for their production house movies
   const { data: releases, isLoading } = useAdminOttReleases(
     isPHAdmin ? productionHouseIds : undefined,
@@ -22,13 +22,15 @@ export default function OttReleasesPage() {
   return (
     <div className="space-y-6">
       <div className="flex">
-        <Link
-          href="/ott/new"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Add Release
-        </Link>
+        {!isReadOnly && (
+          <Link
+            href="/ott/new"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Add Release
+          </Link>
+        )}
       </div>
 
       {isLoading ? (

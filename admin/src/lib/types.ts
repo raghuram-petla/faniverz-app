@@ -154,18 +154,19 @@ export interface FeedComment {
 // RBAC Types
 //
 // @invariant: Role hierarchy (highest → lowest):
-//   root > super_admin > admin > production_house_admin
+//   root > super_admin > admin > production_house_admin > viewer
 //
 // @contract: Each role can only manage/impersonate roles BELOW it:
-//   root         → can manage super_admin, admin, PH admin
-//   super_admin  → can manage admin, PH admin (NOT other super_admins)
-//   admin        → can manage PH admin only
-//   PH admin     → cannot manage anyone
+//   root         → can manage super_admin, admin, PH admin, viewer
+//   super_admin  → can manage admin, PH admin, viewer
+//   admin        → can manage PH admin, viewer
+//   PH admin     → can manage viewer only
+//   viewer       → cannot manage anyone (read-only)
 //
 // @boundary: root is SQL-only — cannot be assigned via the admin UI.
 // ============================================================
 
-export type AdminRoleId = 'root' | 'super_admin' | 'admin' | 'production_house_admin';
+export type AdminRoleId = 'root' | 'super_admin' | 'admin' | 'production_house_admin' | 'viewer';
 
 export interface AdminPHAssignment {
   user_id: string;
@@ -200,6 +201,7 @@ export const ADMIN_ROLE_LABELS: Record<AdminRoleId, string> = {
   super_admin: 'Super Admin',
   admin: 'Admin',
   production_house_admin: 'PH Admin',
+  viewer: 'Viewer',
 };
 
 /** Admin user with role + PH assignment details — used by user management */

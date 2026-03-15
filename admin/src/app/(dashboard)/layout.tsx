@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { ImpersonationBar } from '@/components/layout/ImpersonationBar';
 import { AccessDenied } from '@/components/common/AccessDenied';
+import { ReadOnlyBanner } from '@/components/common/ReadOnlyBanner';
 import { ImpersonationProvider } from '@/hooks/useImpersonation';
 import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
@@ -41,9 +42,12 @@ function getPageForRoute(pathname: string): AdminPage | null {
   return null;
 }
 
+// @contract Last path segments that create new resources — blocked for read-only viewers
+const CREATE_SEGMENTS = new Set(['new', 'compose', 'invite']);
+
 /** Inner layout that uses usePermissions (must be inside ImpersonationProvider) */
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { canViewPage } = usePermissions();
+  const { canViewPage, isReadOnly } = usePermissions();
   const pathname = usePathname();
   const requiredPage = getPageForRoute(pathname);
 
@@ -52,6 +56,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <div className="text-center py-20">
         <h2 className="text-xl font-semibold text-on-surface mb-2">Page Not Accessible</h2>
         <p className="text-on-surface-muted">You don&apos;t have permission to access this page.</p>
+      </div>
+    );
+  }
+
+  // @contract Block viewers from create/compose/invite pages
+  const lastSegment = pathname.split('/').pop() ?? '';
+  if (isReadOnly && CREATE_SEGMENTS.has(lastSegment)) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-xl font-semibold text-on-surface mb-2">Read-Only Access</h2>
+        <p className="text-on-surface-muted">Viewer role cannot create or modify content.</p>
       </div>
     );
   }
@@ -98,6 +113,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex-1 flex flex-col">
               <Header />
               <ImpersonationBar />
+              <ReadOnlyBanner />
               <main className="flex-1 p-6">
                 <DashboardContent>{children}</DashboardContent>
               </main>

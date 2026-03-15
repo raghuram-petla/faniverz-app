@@ -92,6 +92,23 @@ export async function verifyAdminWithRole(
 }
 
 /**
+ * Verify a Bearer token, check admin role, AND reject viewer (read-only) role.
+ * Use this for all mutation endpoints (POST/PATCH/DELETE).
+ * Returns the user or null (unauthenticated/blocked) or 'viewer_readonly' string.
+ *
+ * @boundary Centralizes viewer mutation blocking — all write endpoints should use this
+ * instead of verifyAdmin for mutation handlers.
+ */
+export async function verifyAdminCanMutate(
+  authHeader: string | null,
+): Promise<{ user: User; role: string } | null | 'viewer_readonly'> {
+  const result = await verifyAdminWithRole(authHeader);
+  if (!result) return null;
+  if (result.role === 'viewer') return 'viewer_readonly';
+  return result;
+}
+
+/**
  * Build a standard 500 error response from a caught error.
  */
 export function errorResponse(label: string, err: unknown, status = 500): NextResponse {

@@ -7,6 +7,7 @@ import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { Loader2, Ban, Pencil, X, Check } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const PAGE_SIZE = 50;
 
@@ -29,6 +30,7 @@ function UserAvatar({ url, name }: { url: string | null; name: string | null }) 
 
 // @contract Server-side pagination (not cursor-based) — page index sent to API
 export default function AppUsersPage() {
+  const { isReadOnly } = usePermissions();
   // @sync Page resets to 0 on search change via handleSearchChange
   const [page, setPage] = useState(0);
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
@@ -117,6 +119,7 @@ export default function AppUsersPage() {
             onBan={handleBan}
             isBanning={banUser.isPending}
             isSaving={updateProfile.isPending}
+            isReadOnly={isReadOnly}
           />
 
           {totalPages > 1 && (
@@ -147,6 +150,7 @@ interface UserTableProps {
   onBan: (u: EndUserProfile) => void;
   isBanning: boolean;
   isSaving: boolean;
+  isReadOnly: boolean;
 }
 
 function UserTable({
@@ -160,6 +164,7 @@ function UserTable({
   onBan,
   isBanning,
   isSaving,
+  isReadOnly,
 }: UserTableProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
@@ -212,7 +217,7 @@ function UserTable({
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {isEditing ? (
+                    {isReadOnly ? null : isEditing ? (
                       <>
                         <button
                           onClick={onSaveEdit}

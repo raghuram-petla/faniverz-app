@@ -1,6 +1,7 @@
 'use client';
 
 import { useAdminSurprise, useDeleteSurprise } from '@/hooks/useAdminSurprise';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -14,6 +15,7 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
 };
 
 export default function SurpriseContentPage() {
+  const { isReadOnly } = usePermissions();
   const { data: items, isLoading } = useAdminSurprise();
   const deleteItem = useDeleteSurprise();
 
@@ -25,13 +27,15 @@ export default function SurpriseContentPage() {
   return (
     <div className="space-y-6">
       <div className="flex">
-        <Link
-          href="/surprise/new"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Add Content
-        </Link>
+        {!isReadOnly && (
+          <Link
+            href="/surprise/new"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Add Content
+          </Link>
+        )}
       </div>
 
       {isLoading ? (
@@ -96,14 +100,16 @@ export default function SurpriseContentPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Link>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          disabled={deleteItem.isPending}
-                          className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {!isReadOnly && (
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deleteItem.isPending}
+                            className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

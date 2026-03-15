@@ -35,7 +35,7 @@ function getStatusBadge(movie: Movie) {
 
 export default function MoviesPage() {
   // @coupling usePermissions gates data scoping, delete button, and edit visibility
-  const { isPHAdmin, productionHouseIds, canDelete } = usePermissions();
+  const { isPHAdmin, productionHouseIds, canDelete, isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [statusFilter, setStatusFilter] = useState<string>('');
   // @boundary PH admins see only their production house movies via productionHouseIds filter
@@ -66,12 +66,14 @@ export default function MoviesPage() {
             <option value="streaming">Streaming</option>
             <option value="released">Released</option>
           </select>
-          <Link
-            href="/movies/new"
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 ml-auto shrink-0"
-          >
-            <Plus className="w-4 h-4" /> Add Movie
-          </Link>
+          {!isReadOnly && (
+            <Link
+              href="/movies/new"
+              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 ml-auto shrink-0"
+            >
+              <Plus className="w-4 h-4" /> Add Movie
+            </Link>
+          )}
         </div>
         {search.length === 1 && (
           <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>

@@ -14,7 +14,7 @@ import { getImageUrl } from '@shared/imageUrl';
 export default function CastPage() {
   const { user } = useAuth();
   // @coupling isPHAdmin restricts edit visibility; canDelete gates deletion by ownership
-  const { isPHAdmin, canDelete } = usePermissions();
+  const { isPHAdmin, canDelete, isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminActors(debouncedSearch);
@@ -57,12 +57,14 @@ export default function CastPage() {
             placeholder="Search actors..."
             isLoading={isFetching}
           />
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 ml-auto shrink-0"
-          >
-            <Plus className="w-4 h-4" /> Add Actor
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 ml-auto shrink-0"
+            >
+              <Plus className="w-4 h-4" /> Add Actor
+            </button>
+          )}
         </div>
         {search.length === 1 && (
           <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>

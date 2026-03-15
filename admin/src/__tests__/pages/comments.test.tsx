@@ -6,6 +6,10 @@ import CommentsPage from '@/app/(dashboard)/comments/page';
 const mockMutate = vi.fn();
 const mockSetSearch = vi.fn();
 
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isReadOnly: false }),
+}));
+
 vi.mock('@/hooks/useAdminComments', () => ({
   useAdminComments: vi.fn(),
   useDeleteComment: vi.fn(),

@@ -13,6 +13,7 @@ import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { ActorDetailPreview } from '@/components/preview/ActorDetailPreview';
 import { ActorFormFields } from '@/components/cast-edit/ActorFormFields';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { ActorFormState } from '@/components/cast-edit/ActorFormFields';
 import type { FieldConfig } from '@/hooks/useFormChanges';
 
@@ -38,6 +39,7 @@ const FIELD_CONFIG: FieldConfig[] = [
 ];
 
 export default function EditActorPage() {
+  const { isReadOnly } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: actor, isLoading } = useAdminActor(id);
@@ -159,15 +161,17 @@ export default function EditActorPage() {
           </Link>
           <h1 className="text-2xl font-bold text-on-surface">Edit Actor</h1>
         </div>
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 bg-red-600/20 text-red-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600/30"
-        >
-          <Trash2 className="w-4 h-4" /> Delete
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleDelete}
+            className="flex items-center gap-2 bg-red-600/20 text-red-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600/30"
+          >
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+        )}
       </div>
 
-      <div className="flex gap-8">
+      <div className={`flex gap-8${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}>
         <div className="flex-1 min-w-0 space-y-4">
           <ActorFormFields
             form={form}

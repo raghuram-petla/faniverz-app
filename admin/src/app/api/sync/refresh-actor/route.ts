@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { processActorRefresh, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
+import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/refresh-actor
@@ -12,8 +12,11 @@ import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers
 // @sideeffect: updates actors table with latest TMDB data; writes sync_log entry
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyAdmin(request.headers.get('authorization'));
-    if (!user) {
+    const auth = await verifyAdminCanMutate(request.headers.get('authorization'));
+    if (auth === 'viewer_readonly') {
+      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
+    }
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

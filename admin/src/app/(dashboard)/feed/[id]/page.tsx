@@ -8,6 +8,7 @@ import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { useAdminFeedItem, useUpdateFeedItem, useDeleteFeedItem } from '@/hooks/useAdminFeed';
 import type { FieldConfig } from '@/hooks/useFormChanges';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const FIELD_CONFIG: FieldConfig[] = [
   { key: 'title', label: 'Title', type: 'text' },
@@ -17,6 +18,7 @@ const FIELD_CONFIG: FieldConfig[] = [
 ];
 
 export default function EditFeedItemPage() {
+  const { isReadOnly } = usePermissions();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
@@ -134,14 +136,16 @@ export default function EditFeedItemPage() {
           </Link>
           <h1 className="text-2xl font-bold text-on-surface">Edit Feed Item</h1>
         </div>
-        <button
-          onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-          className="flex items-center gap-2 text-red-400 hover:text-red-300 disabled:opacity-50"
-        >
-          <Trash2 className="w-4 h-4" />
-          Delete
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="flex items-center gap-2 text-red-400 hover:text-red-300 disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </button>
+        )}
       </div>
 
       {item.source_table ? (
@@ -180,7 +184,7 @@ export default function EditFeedItemPage() {
         ) : null}
       </div>
 
-      <div className="space-y-5">
+      <div className={`space-y-5${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}>
         <div>
           <label className="block text-sm font-medium text-on-surface mb-2">Title *</label>
           <input

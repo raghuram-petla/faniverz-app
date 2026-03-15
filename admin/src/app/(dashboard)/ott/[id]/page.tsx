@@ -9,6 +9,7 @@ import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { Tv, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { FieldConfig } from '@/hooks/useFormChanges';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const FIELD_CONFIG: FieldConfig[] = [
   { key: 'availableFrom', label: 'Available From', type: 'date' },
@@ -16,6 +17,7 @@ const FIELD_CONFIG: FieldConfig[] = [
 ];
 
 export default function EditOttReleasePage() {
+  const { isReadOnly } = usePermissions();
   const params = useParams();
   const compositeId = params.id as string;
   const [movieId, platformId] = compositeId.split('~');
@@ -122,7 +124,9 @@ export default function EditOttReleasePage() {
         </span>
       </div>
 
-      <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-6">
+      <div
+        className={`bg-surface-card border border-outline rounded-xl p-6 space-y-6${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}
+      >
         <div className="space-y-2">
           <label
             htmlFor="available_from"

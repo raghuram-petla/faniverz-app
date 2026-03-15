@@ -5,6 +5,10 @@ import ReviewsPage from '@/app/(dashboard)/reviews/page';
 const mockMutate = vi.fn();
 const mockSetSearch = vi.fn();
 
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isReadOnly: false }),
+}));
+
 vi.mock('@/hooks/useAdminReviews', () => ({
   useAdminReviews: vi.fn(),
   useDeleteReview: vi.fn(),

@@ -13,6 +13,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { useMovieEditState } from '@/hooks/useMovieEditState';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useMovieEditChanges } from '@/hooks/useMovieEditChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
@@ -32,6 +33,7 @@ import {
 // @coupling: entire edit state (form, pending adds/removes, dirty tracking, save) is managed by useMovieEditState hook
 // @coupling: seven sub-sections (BasicInfo, Videos, Posters, Platforms, ProductionHouses, Cast, TheatricalRuns) extracted to movie-edit components
 export default function EditMoviePage() {
+  const { isReadOnly } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
@@ -181,18 +183,20 @@ export default function EditMoviePage() {
           </button>
           <h1 className="text-2xl font-bold text-on-surface">Edit Movie</h1>
         </div>
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
-        >
-          <Trash2 className="w-4 h-4" /> Delete
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleDelete}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 text-sm"
+          >
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
+        )}
       </div>
 
       {/* ─── Section Nav ─── */}
       <SectionNav activeSection={activeSection} onScrollTo={scrollTo} />
 
-      <div className="flex gap-8 mt-6">
+      <div className={`flex gap-8 mt-6${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}>
         {/* Left column — Edit form */}
         <div className="flex-1 min-w-0 space-y-6">
           <div

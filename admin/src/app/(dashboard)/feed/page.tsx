@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Plus, Loader2 } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import Link from 'next/link';
 import {
   useAdminFeed,
@@ -18,6 +19,7 @@ import type { FeedType } from '@/lib/types';
 import type { DragEndEvent } from '@dnd-kit/core';
 
 export default function FeedPage() {
+  const { isReadOnly } = usePermissions();
   const router = useRouter();
   // @contract Filter 'all' maps to undefined (no server-side filter applied)
   const [filter, setFilter] = useState<FeedType | 'all'>('all');
@@ -71,13 +73,15 @@ export default function FeedPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <FeedFilterTabs selected={filter} onChange={setFilter} />
-        <Link
-          href="/feed/new"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Add Update
-        </Link>
+        {!isReadOnly && (
+          <Link
+            href="/feed/new"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Add Update
+          </Link>
+        )}
       </div>
 
       {isLoading ? (

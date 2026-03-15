@@ -8,6 +8,7 @@ import {
   useRemoveFromTheaters,
 } from '@/hooks/useTheaterMovies';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Loader2 } from 'lucide-react';
 import { MovieColumn } from '@/components/theaters/MovieColumn';
 import { ManualAddPanel } from '@/components/theaters/ManualAddPanel';
@@ -29,6 +30,7 @@ function daysUntil(dateStr: string): string {
 }
 
 export default function TheatersPage() {
+  const { isReadOnly } = usePermissions();
   const { data: theaterMovies, isLoading } = useTheaterMovies();
   const { data: upcomingMovies, isLoading: upcomingLoading } = useUpcomingMovies();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
@@ -142,18 +144,22 @@ export default function TheatersPage() {
   return (
     <div className="space-y-6">
       {/* Add a Movie */}
-      <ManualAddPanel
-        search={search}
-        setSearch={setSearch}
-        debouncedSearch={debouncedSearch}
-        isSearching={isSearching}
-        results={results}
-        onAdd={handleManualAdd}
-        isAdding={addToTheaters.isPending}
-      />
+      {!isReadOnly && (
+        <ManualAddPanel
+          search={search}
+          setSearch={setSearch}
+          debouncedSearch={debouncedSearch}
+          isSearching={isSearching}
+          results={results}
+          onAdd={handleManualAdd}
+          isAdding={addToTheaters.isPending}
+        />
+      )}
 
       {/* Two columns — In Theaters | Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div
+        className={`grid grid-cols-1 lg:grid-cols-2 gap-6${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}
+      >
         <MovieColumn
           title="In Theaters"
           movies={movies}

@@ -7,7 +7,7 @@ const mockFrom: any = vi.fn();
 const mockUpdateUserById = vi.fn();
 
 vi.mock('@/lib/sync-helpers', () => ({
-  verifyAdmin: (...args: unknown[]) => mockVerifyAdmin(...args),
+  verifyAdminCanMutate: (...args: unknown[]) => mockVerifyAdmin(...args),
   errorResponse: (_label: string, err: unknown) => ({
     body: { error: err instanceof Error ? err.message : 'manage-user failed' },
     status: 500,
@@ -58,7 +58,10 @@ beforeEach(() => {
   mockUpdateUserById.mockReset();
 
   // Default: admin is authenticated
-  mockVerifyAdmin.mockResolvedValue({ id: 'admin-1', email: 'admin@test.com' });
+  mockVerifyAdmin.mockResolvedValue({
+    user: { id: 'admin-1', email: 'admin@test.com' },
+    role: 'admin',
+  });
 });
 
 describe('POST /api/manage-user', () => {

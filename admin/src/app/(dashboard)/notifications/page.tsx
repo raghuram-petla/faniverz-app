@@ -11,6 +11,7 @@ import {
 import { formatDateTime } from '@/lib/utils';
 import { Bell, RotateCcw, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // @coupling Status/type style maps must cover all notifications.status and notifications.type DB enum values
 const statusStyles: Record<string, { bg: string; text: string }> = {
@@ -28,6 +29,7 @@ const typeStyles: Record<string, { bg: string; text: string }> = {
 };
 
 export default function NotificationsPage() {
+  const { isReadOnly } = usePermissions();
   // @contract Empty string means "all" — filters only sent when non-empty
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -95,39 +97,43 @@ export default function NotificationsPage() {
 
         <div className="flex-1" />
 
-        <button
-          onClick={handleBulkRetry}
-          disabled={bulkRetry.isPending}
-          className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
-        >
-          {bulkRetry.isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RotateCcw className="w-4 h-4" />
-          )}
-          Retry All Failed
-        </button>
+        {!isReadOnly && (
+          <>
+            <button
+              onClick={handleBulkRetry}
+              disabled={bulkRetry.isPending}
+              className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+            >
+              {bulkRetry.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RotateCcw className="w-4 h-4" />
+              )}
+              Retry All Failed
+            </button>
 
-        <button
-          onClick={handleBulkCancel}
-          disabled={bulkCancel.isPending}
-          className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
-        >
-          {bulkCancel.isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <XCircle className="w-4 h-4" />
-          )}
-          Cancel All Pending
-        </button>
+            <button
+              onClick={handleBulkCancel}
+              disabled={bulkCancel.isPending}
+              className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+            >
+              {bulkCancel.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <XCircle className="w-4 h-4" />
+              )}
+              Cancel All Pending
+            </button>
 
-        <Link
-          href="/notifications/compose"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium shrink-0"
-        >
-          <Bell className="w-4 h-4" />
-          Compose
-        </Link>
+            <Link
+              href="/notifications/compose"
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium shrink-0"
+            >
+              <Bell className="w-4 h-4" />
+              Compose
+            </Link>
+          </>
+        )}
       </div>
 
       {isLoading ? (

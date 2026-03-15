@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdmin, errorResponse } from '@/lib/sync-helpers';
+import { verifyAdminCanMutate, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/manage-user
@@ -16,8 +16,11 @@ import { verifyAdmin, errorResponse } from '@/lib/sync-helpers';
 // @sideeffect: ban/unban mutates Supabase Auth user state; update-profile writes to profiles table
 export async function POST(req: NextRequest) {
   try {
-    const admin = await verifyAdmin(req.headers.get('authorization'));
-    if (!admin) {
+    const auth = await verifyAdminCanMutate(req.headers.get('authorization'));
+    if (auth === 'viewer_readonly') {
+      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
+    }
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

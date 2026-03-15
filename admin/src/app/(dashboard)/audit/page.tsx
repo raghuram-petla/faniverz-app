@@ -23,7 +23,7 @@ export default function AuditLogPage() {
   // @coupling useEffectiveUser returns impersonated user if active, real user otherwise
   const user = useEffectiveUser();
   // @boundary Audit visibility scoped: super_admins see all, others see only their entries
-  const { isSuperAdmin } = usePermissions();
+  const { isSuperAdmin, isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [actionFilter, setActionFilter] = useState('');
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
@@ -243,7 +243,7 @@ export default function AuditLogPage() {
                                 {formatDetails(entry.action, entry.details)}
                               </pre>
                             </div>
-                            {canRevert(entry.action, entry.details) && (
+                            {!isReadOnly && canRevert(entry.action, entry.details) && (
                               <RevertButton
                                 entryId={entry.id}
                                 action={entry.action}

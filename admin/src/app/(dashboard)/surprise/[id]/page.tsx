@@ -13,6 +13,7 @@ import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { Sparkles, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { FieldConfig } from '@/hooks/useFormChanges';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // @contract: categories must match the surprise_content.category CHECK constraint in the database
 const categories = ['song', 'short-film', 'bts', 'interview', 'trailer'] as const;
@@ -29,6 +30,7 @@ const FIELD_CONFIG: FieldConfig[] = [
 ];
 
 export default function EditSurpriseContentPage() {
+  const { isReadOnly } = usePermissions();
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
@@ -157,14 +159,16 @@ export default function EditSurpriseContentPage() {
             <h1 className="text-2xl font-bold text-on-surface">Edit Content</h1>
           </div>
         </div>
-        <button
-          onClick={handleDelete}
-          disabled={deleteItem.isPending}
-          className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50"
-        >
-          <Trash2 className="w-4 h-4" />
-          Delete
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={handleDelete}
+            disabled={deleteItem.isPending}
+            className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </button>
+        )}
       </div>
 
       {youtubeId && (
@@ -181,7 +185,9 @@ export default function EditSurpriseContentPage() {
         </div>
       )}
 
-      <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-6">
+      <div
+        className={`bg-surface-card border border-outline rounded-xl p-6 space-y-6${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}
+      >
         <div className="space-y-2">
           <label htmlFor="title" className="block text-sm font-medium text-on-surface-muted">
             Title

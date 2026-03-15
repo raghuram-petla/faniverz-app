@@ -8,6 +8,7 @@ import {
   useDeletePlatform,
 } from '@/hooks/useAdminPlatforms';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import type { OTTPlatform } from '@/lib/types';
 import { Monitor, Plus, Pencil, Trash2, X, Loader2 } from 'lucide-react';
@@ -23,6 +24,7 @@ interface PlatformFormData {
 const emptyForm: PlatformFormData = { name: '', logo_url: '' };
 
 export default function PlatformsPage() {
+  const { isReadOnly } = usePermissions();
   const { data: platforms, isLoading } = useAdminPlatforms();
   const createPlatform = useCreatePlatform();
   const updatePlatform = useUpdatePlatform();
@@ -96,13 +98,15 @@ export default function PlatformsPage() {
   return (
     <div className="space-y-6">
       <div className="flex">
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Add Platform
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Add Platform
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -137,23 +141,25 @@ export default function PlatformsPage() {
                     {platform.name}
                   </h3>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => openEdit(platform)}
-                    className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
-                    title="Edit platform"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(platform.id)}
-                    disabled={deletePlatform.isPending}
-                    className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
-                    title="Delete platform"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {!isReadOnly && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openEdit(platform)}
+                      className="p-2 text-on-surface-subtle hover:text-blue-400 transition-colors"
+                      title="Edit platform"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(platform.id)}
+                      disabled={deletePlatform.isPending}
+                      className="p-2 text-on-surface-subtle hover:text-red-500 transition-colors disabled:opacity-50"
+                      title="Delete platform"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

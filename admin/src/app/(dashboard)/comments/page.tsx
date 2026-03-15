@@ -5,9 +5,11 @@ import { useAdminComments, useDeleteComment, useUpdateComment } from '@/hooks/us
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // @contract Inline editing uses local state (editingId/editBody) — only one comment editable at a time
 export default function CommentsPage() {
+  const { isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   // @invariant At most one comment can be in edit mode (editingId is singular)
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -136,7 +138,7 @@ export default function CommentsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {editingId === comment.id ? (
+                      {isReadOnly ? null : editingId === comment.id ? (
                         <>
                           <button
                             onClick={saveEdit}

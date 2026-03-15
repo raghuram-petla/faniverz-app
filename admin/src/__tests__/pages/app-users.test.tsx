@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppUsersPage from '@/app/(dashboard)/app-users/page';
 
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isReadOnly: false }),
+}));
+
 vi.mock('@/hooks/useAdminEndUsers', () => ({
   useAdminEndUsers: vi.fn(),
   useBanUser: vi.fn(),

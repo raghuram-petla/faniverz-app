@@ -79,6 +79,7 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'theaters',
     'audit',
   ]),
+  viewer: ALL_PAGES,
 };
 
 /** Entities each role can CREATE */
@@ -87,6 +88,7 @@ const CREATE_ACCESS: Record<AdminRoleId, Set<AdminEntity>> = {
   super_admin: ALL_ENTITIES,
   admin: ALL_ENTITIES,
   production_house_admin: new Set(['movie', 'actor', 'ott_release']),
+  viewer: new Set(),
 };
 
 /**
@@ -97,7 +99,7 @@ const CREATE_ACCESS: Record<AdminRoleId, Set<AdminEntity>> = {
  * a root user impersonates as super_admin, they should see exactly what a real
  * super_admin would see, including which actions are available.
  *
- * Role hierarchy: root > super_admin > admin > production_house_admin
+ * Role hierarchy: root > super_admin > admin > production_house_admin > viewer
  * See AdminRoleId in types.ts for the full hierarchy documentation.
  */
 export function usePermissions() {
@@ -105,13 +107,16 @@ export function usePermissions() {
   const role = user?.role ?? null;
   const phIds = user?.productionHouseIds ?? [];
 
-  // @invariant Role hierarchy: root > super_admin > admin > production_house_admin
+  // @invariant Role hierarchy: root > super_admin > admin > production_house_admin > viewer
   // @coupling useEffectiveUser resolves impersonation — all checks use impersonated role
   const isRoot = role === 'root';
   // isSuperAdmin includes root — root inherits all super_admin privileges
   const isSuperAdmin = role === 'super_admin' || isRoot;
   const isAdmin = role === 'admin';
   const isPHAdmin = role === 'production_house_admin';
+  const isViewer = role === 'viewer';
+  // @contract isReadOnly gates all mutation UI — buttons, forms, save/delete actions
+  const isReadOnly = isViewer;
 
   /** Whether the current user can view a given page */
   function canViewPage(page: AdminPage): boolean {
@@ -133,6 +138,7 @@ export function usePermissions() {
   // @nullable ownerId — only checked for 'actor' entity by PH admins
   function canUpdate(entity: AdminEntity, ownerId?: string | null): boolean {
     if (!role) return false;
+    if (isViewer) return false;
     if (isRoot || isSuperAdmin || isAdmin) return CREATE_ACCESS[role].has(entity);
     if (!isPHAdmin) return false;
 
@@ -151,16 +157,19 @@ export function usePermissions() {
    * an admin with the given role.
    *
    * Enforces strict hierarchy — a role can only act on roles BELOW it:
-   *   root         → super_admin, admin, PH admin (everything except root)
-   *   super_admin  → admin, PH admin (NOT super_admin or root)
-   *   admin        → PH admin only
-   *   PH admin     → nobody
+   *   root         → super_admin, admin, PH admin, viewer
+   *   super_admin  → admin, PH admin, viewer
+   *   admin        → PH admin, viewer
+   *   PH admin     → viewer only
+   *   viewer       → nobody
    *
    * This is also used by AdminsTable to gate the impersonate (eye) button.
    * If you change this logic, update the impersonate button condition too.
    */
   function canManageAdmin(targetRole: AdminRoleId): boolean {
     if (!role) return false;
+    // @contract All non-viewer roles can manage viewers
+    if (targetRole === 'viewer') return !isViewer;
     if (isRoot) return targetRole !== 'root';
     if (role === 'super_admin')
       return targetRole === 'admin' || targetRole === 'production_house_admin';
@@ -174,6 +183,8 @@ export function usePermissions() {
     isSuperAdmin,
     isAdmin,
     isPHAdmin,
+    isViewer,
+    isReadOnly,
     productionHouseIds: phIds,
     canViewPage,
     canCreate,
@@ -181,7 +192,7 @@ export function usePermissions() {
     canDelete,
     canManageAdmin,
     // @sync Must match server-side audit RLS policy scoping rules
-    /** Audit log scope: root/super admin sees all, others see own */
-    auditScope: isSuperAdmin ? ('all' as const) : ('own' as const),
+    /** Audit log scope: root/super admin/viewer sees all, others see own */
+    auditScope: isSuperAdmin || isViewer ? ('all' as const) : ('own' as const),
   };
 }

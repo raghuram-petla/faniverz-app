@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdmin } from '@/lib/sync-helpers';
+import { verifyAdminCanMutate } from '@/lib/sync-helpers';
 
 // @contract POST { auditEntryId } → reverts the change via DB function
 // @sideeffect The DB function sets app.admin_user_id so the audit trigger
 // logs the revert under the admin who initiated it
 export async function POST(req: NextRequest) {
   try {
-    const user = await verifyAdmin(req.headers.get('authorization'));
-    if (!user) {
+    const auth = await verifyAdminCanMutate(req.headers.get('authorization'));
+    if (auth === 'viewer_readonly') {
+      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
+    }
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -21,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     // @boundary Single RPC call handles the entire revert in one transaction
     const { data, error } = await supabase.rpc('revert_audit_entry', {
-      p_admin_id: user.id,
+      p_admin_id: auth.user.id,
       p_entry_id: auditEntryId,
     });
 

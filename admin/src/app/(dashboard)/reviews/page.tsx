@@ -5,6 +5,7 @@ import { useAdminReviews, useDeleteReview, useUpdateReview } from '@/hooks/useAd
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { Star, Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import type { Review } from '@/lib/types';
 
 function RatingStars({ rating }: { rating: number }) {
@@ -22,6 +23,7 @@ function RatingStars({ rating }: { rating: number }) {
 
 // @contract Inline editing pattern matches CommentsPage — single item editable at a time
 export default function ReviewsPage() {
+  const { isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   // @contract ratingFilter=0 means "all ratings" — hook interprets 0 as no filter
   const [ratingFilter, setRatingFilter] = useState(0);
@@ -175,7 +177,7 @@ export default function ReviewsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {editingId === review.id ? (
+                      {!isReadOnly && editingId === review.id ? (
                         <>
                           <button
                             onClick={saveEdit}
@@ -193,7 +195,7 @@ export default function ReviewsPage() {
                             <X className="w-4 h-4" />
                           </button>
                         </>
-                      ) : (
+                      ) : !isReadOnly ? (
                         <>
                           <button
                             onClick={() => startEdit(review)}
@@ -211,7 +213,7 @@ export default function ReviewsPage() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </>
-                      )}
+                      ) : null}
                     </div>
                   </td>
                 </tr>

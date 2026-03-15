@@ -24,6 +24,10 @@ export function createUploadHandler(config: UploadConfig) {
       if (!adminResult) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+      // @contract: viewer role cannot upload — read-only access only
+      if (adminResult.role === 'viewer') {
+        return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
+      }
       // @contract: ph_admin can only upload to production_house-scoped buckets
       if (adminResult.role === 'production_house_admin' && !config.bucket.includes('production')) {
         return NextResponse.json(
