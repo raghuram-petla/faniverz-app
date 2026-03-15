@@ -19,6 +19,10 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
+vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
+  useUnsavedChangesWarning: vi.fn(),
+}));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
   usePathname: () => '/theaters',

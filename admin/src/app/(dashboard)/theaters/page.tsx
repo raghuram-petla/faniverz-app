@@ -43,10 +43,17 @@ export default function TheatersPage() {
   // @sideeffect Snapshot anchor position before state change, compensate after DOM update
   const anchorRef = useRef<HTMLDivElement>(null);
   const savedTopRef = useRef<number | null>(null);
+  const scrollToTopRef = useRef(false);
   const snapshotScroll = useCallback(() => {
     savedTopRef.current = anchorRef.current?.getBoundingClientRect().top ?? null;
   }, []);
   useLayoutEffect(() => {
+    if (scrollToTopRef.current) {
+      window.scrollTo(0, 0);
+      scrollToTopRef.current = false;
+      savedTopRef.current = null;
+      return;
+    }
     if (savedTopRef.current === null) return;
     const newTop = anchorRef.current?.getBoundingClientRect().top ?? 0;
     window.scrollBy(0, newTop - savedTopRef.current);
@@ -58,6 +65,8 @@ export default function TheatersPage() {
   const results = searchResults ?? [];
   const changeCount = pendingChanges.size;
   const isDirty = changeCount > 0;
+
+  useUnsavedChangesWarning(isDirty);
 
   const handleToggle = useCallback(
     (
@@ -123,8 +132,9 @@ export default function TheatersPage() {
     }
   }
 
+  // @sideeffect Clears all pending changes and scrolls to top before paint via layoutEffect
   const handleDiscard = () => {
-    snapshotScroll();
+    scrollToTopRef.current = true;
     setPendingChanges(new Map());
   };
 
@@ -176,7 +186,7 @@ export default function TheatersPage() {
               <button
                 onClick={handleDiscard}
                 disabled={saveStatus === 'saving'}
-                className="px-4 py-2 text-sm font-medium text-on-surface-muted hover:text-on-surface rounded-lg hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-input text-on-surface-muted hover:bg-input-hover hover:text-on-surface transition-colors disabled:opacity-50"
               >
                 Discard
               </button>

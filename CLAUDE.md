@@ -110,13 +110,15 @@ These rules were extracted from 60+ sessions and 160+ commits. They address recu
 15. **Never hardcode localhost URLs.** Always use environment variables for service endpoints.
 16. **Check migration numbering** before creating new migration files. Look at existing files to avoid version conflicts.
 
+17. **Every admin page with a form must use `useUnsavedChangesWarning`.** Import and call `useUnsavedChangesWarning(isDirty)` from `@/hooks/useUnsavedChangesWarning`. For edit pages, compute `isDirty` by comparing current form state to initial values stored in a `useRef` (set when server data loads). For create/new pages, `isDirty` should be true when any field has been filled in. This prevents users from accidentally losing unsaved work when navigating away.
+
 ### When Fixing Issues
 
-17. **Don't repeat failed approaches.** If "clear cache and reload" didn't work the first time, dig deeper into root cause (check DB state, check props being passed, check API responses).
-18. **Verify fixes end-to-end** before declaring them done. If the fix involves a backend change, verify the frontend actually receives the new data.
-19. **When the user says "still not working," investigate differently.** Don't apply the same fix again. Check a different layer (DB vs API vs component vs props chain).
+18. **Don't repeat failed approaches.** If "clear cache and reload" didn't work the first time, dig deeper into root cause (check DB state, check props being passed, check API responses).
+19. **Verify fixes end-to-end** before declaring them done. If the fix involves a backend change, verify the frontend actually receives the new data.
+20. **When the user says "still not working," investigate differently.** Don't apply the same fix again. Check a different layer (DB vs API vs component vs props chain).
 
 ### Visual/UI Changes
 
-20. **Expect 2-3 rounds of UI feedback.** For sizing/spacing changes, make conservative first attempts. Don't overshoot — it's easier to go bigger than to revert.
-21. **Ensure consistency across all screens.** If a component looks one way on the spotlight page, it must look the same on the movie detail page, search results, and feed cards.
+21. **Expect 2-3 rounds of UI feedback.** For sizing/spacing changes, make conservative first attempts. Don't overshoot — it's easier to go bigger than to revert.
+22. **Ensure consistency across all screens.** If a component looks one way on the spotlight page, it must look the same on the movie detail page, search results, and feed cards.

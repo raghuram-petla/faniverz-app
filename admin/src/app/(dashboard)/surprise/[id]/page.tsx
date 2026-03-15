@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useAdminSurpriseItem,
   useUpdateSurprise,
   useDeleteSurprise,
 } from '@/hooks/useAdminSurprise';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { Sparkles, ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -27,18 +28,46 @@ export default function EditSurpriseContentPage() {
   const [youtubeId, setYoutubeId] = useState('');
   const [category, setCategory] = useState<string>('');
   const [views, setViews] = useState(0);
+  const initialRef = useRef<{
+    title: string;
+    description: string;
+    youtubeId: string;
+    category: string;
+    views: number;
+  } | null>(null);
 
   // @sync: populates local form state from server data when item loads
   // @nullable: description may be null in DB — default to empty string for controlled inputs
   useEffect(() => {
     if (item) {
-      setTitle(item.title);
-      setDescription(item.description ?? '');
-      setYoutubeId(item.youtube_id);
-      setCategory(item.category);
-      setViews(item.views);
+      const loaded = {
+        title: item.title,
+        description: item.description ?? '',
+        youtubeId: item.youtube_id,
+        category: item.category,
+        views: item.views,
+      };
+      setTitle(loaded.title);
+      setDescription(loaded.description);
+      setYoutubeId(loaded.youtubeId);
+      setCategory(loaded.category);
+      setViews(loaded.views);
+      initialRef.current = loaded;
     }
   }, [item]);
+
+  const isDirty = useMemo(() => {
+    if (!initialRef.current) return false;
+    return (
+      title !== initialRef.current.title ||
+      description !== initialRef.current.description ||
+      youtubeId !== initialRef.current.youtubeId ||
+      category !== initialRef.current.category ||
+      views !== initialRef.current.views
+    );
+  }, [title, description, youtubeId, category, views]);
+
+  useUnsavedChangesWarning(isDirty);
 
   // @sideeffect: updates surprise_content row in Supabase, navigates to /surprise on success
   // @edge: empty description coerced to null; views defaults to 0 from initial state

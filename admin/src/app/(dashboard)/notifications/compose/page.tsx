@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateNotification } from '@/hooks/useAdminNotifications';
 import { useAllMovies } from '@/hooks/useAdminMovies';
@@ -8,6 +8,7 @@ import { Bell, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import { MovieSearchField } from '@/components/notifications/MovieSearchField';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { BROADCAST_USER_ID } from '@shared/constants';
 
 // @contract: notificationTypes must match notifications.type CHECK constraint in the database
@@ -31,6 +32,13 @@ export default function ComposeNotificationPage() {
   const [userEmail, setUserEmail] = useState('');
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [userLookupError, setUserLookupError] = useState('');
+
+  const isDirty = useMemo(
+    () => !!(type || title || message || movieId || scheduledFor || userEmail),
+    [type, title, message, movieId, scheduledFor, userEmail],
+  );
+
+  useUnsavedChangesWarning(isDirty);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

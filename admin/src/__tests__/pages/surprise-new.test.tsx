@@ -1,6 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import EditProductionHousePage from '@/app/(dashboard)/production-houses/[id]/page';
+import NewSurpriseContentPage from '@/app/(dashboard)/surprise/new/page';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -13,9 +15,6 @@ vi.mock('@/lib/supabase-browser', () => ({
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      gte: vi.fn().mockReturnThis(),
-      range: vi.fn().mockReturnThis(),
-      ilike: vi.fn().mockReturnThis(),
     })),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
@@ -27,14 +26,10 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
-  useUnsavedChangesWarning: vi.fn(),
-}));
-
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
-  usePathname: () => '/production-houses/ph-1',
-  useParams: () => ({ id: 'ph-1' }),
+  usePathname: () => '/surprise/new',
+  useParams: () => ({}),
 }));
 
 vi.mock('next/link', () => ({
@@ -53,6 +48,14 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
+  useUnsavedChangesWarning: vi.fn(),
+}));
+
+vi.mock('@/hooks/useAdminSurprise', () => ({
+  useCreateSurprise: () => ({ mutate: vi.fn(), isPending: false, isError: false, error: null }),
+}));
+
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -60,25 +63,19 @@ function renderWithProviders(ui: React.ReactElement) {
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-describe('EditProductionHousePage', () => {
-  it('renders "Edit Production House" heading after loading', async () => {
-    renderWithProviders(<EditProductionHousePage />);
-    await waitFor(() => {
-      expect(screen.getByText('Edit Production House')).toBeInTheDocument();
-    });
+describe('NewSurpriseContentPage', () => {
+  it('renders "Add Surprise Content" heading', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    expect(screen.getByText('Add Surprise Content')).toBeInTheDocument();
   });
 
-  it('renders "Delete" button', async () => {
-    renderWithProviders(<EditProductionHousePage />);
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+  it('renders title input', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    expect(screen.getByPlaceholderText('Enter title')).toBeInTheDocument();
   });
 
-  it('renders "Save Changes" submit button', async () => {
-    renderWithProviders(<EditProductionHousePage />);
-    await waitFor(() => {
-      expect(screen.getByText('Save Changes')).toBeInTheDocument();
-    });
+  it('calls useUnsavedChangesWarning hook', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    expect(useUnsavedChangesWarning).toHaveBeenCalled();
   });
 });

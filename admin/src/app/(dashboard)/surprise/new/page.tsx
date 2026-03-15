@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateSurprise } from '@/hooks/useAdminSurprise';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -18,6 +19,13 @@ export default function NewSurpriseContentPage() {
   const [youtubeId, setYoutubeId] = useState('');
   const [category, setCategory] = useState<string>('');
   const [views, setViews] = useState(0);
+
+  const isDirty = useMemo(
+    () => !!(title || description || youtubeId || category),
+    [title, description, youtubeId, category],
+  );
+
+  useUnsavedChangesWarning(isDirty);
 
   // @sideeffect: inserts into surprise_content table, navigates to /surprise on success
   // @edge: empty description coerced to null; views defaults to 0

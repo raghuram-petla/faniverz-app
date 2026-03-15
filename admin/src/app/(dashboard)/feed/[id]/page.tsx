@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { useAdminFeedItem, useUpdateFeedItem, useDeleteFeedItem } from '@/hooks/useAdminFeed';
 
 export default function EditFeedItemPage() {
@@ -18,15 +19,40 @@ export default function EditFeedItemPage() {
   const [description, setDescription] = useState('');
   const [isPinned, setIsPinned] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
+  const initialRef = useRef<{
+    title: string;
+    description: string;
+    isPinned: boolean;
+    isFeatured: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (item) {
-      setTitle(item.title);
-      setDescription(item.description ?? '');
-      setIsPinned(item.is_pinned);
-      setIsFeatured(item.is_featured);
+      const loaded = {
+        title: item.title,
+        description: item.description ?? '',
+        isPinned: item.is_pinned,
+        isFeatured: item.is_featured,
+      };
+      setTitle(loaded.title);
+      setDescription(loaded.description);
+      setIsPinned(loaded.isPinned);
+      setIsFeatured(loaded.isFeatured);
+      initialRef.current = loaded;
     }
   }, [item]);
+
+  const isDirty = useMemo(() => {
+    if (!initialRef.current) return false;
+    return (
+      title !== initialRef.current.title ||
+      description !== initialRef.current.description ||
+      isPinned !== initialRef.current.isPinned ||
+      isFeatured !== initialRef.current.isFeatured
+    );
+  }, [title, description, isPinned, isFeatured]);
+
+  useUnsavedChangesWarning(isDirty);
 
   // @sideeffect: updates feed_items row in Supabase, navigates to /feed on success
   // @edge: empty description coerced to null to avoid storing blank strings in DB

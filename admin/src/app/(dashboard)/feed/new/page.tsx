@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useCreateFeedItem } from '@/hooks/useAdminFeed';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import type { FeedType } from '@/lib/types';
 
 // @contract: FEED_TYPES must match feed_items.feed_type CHECK constraint in the database
@@ -49,6 +50,13 @@ export default function NewFeedItemPage() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [isPinned, setIsPinned] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
+
+  const isDirty = useMemo(
+    () => !!(title || description || youtubeId || thumbnailUrl || isPinned || isFeatured),
+    [title, description, youtubeId, thumbnailUrl, isPinned, isFeatured],
+  );
+
+  useUnsavedChangesWarning(isDirty);
 
   // @sync: switching feed type resets content type to the first option for the new type
   const handleFeedTypeChange = (type: FeedType) => {

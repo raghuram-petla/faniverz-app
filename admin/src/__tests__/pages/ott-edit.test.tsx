@@ -25,6 +25,10 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
+vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
+  useUnsavedChangesWarning: vi.fn(),
+}));
+
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, back: vi.fn() }),

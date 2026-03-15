@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   useAdminProductionHouse,
@@ -7,6 +7,7 @@ import {
   useDeleteProductionHouse,
 } from '@/hooks/useAdminProductionHouses';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 import Link from 'next/link';
@@ -25,16 +26,28 @@ export default function EditProductionHousePage() {
     logo_url: '',
     description: '',
   });
+  const initialFormRef = useRef<typeof form | null>(null);
 
   useEffect(() => {
     if (house) {
-      setForm({
+      const loaded = {
         name: house.name,
         logo_url: house.logo_url ?? '',
         description: house.description ?? '',
-      });
+      };
+      setForm(loaded);
+      initialFormRef.current = loaded;
     }
   }, [house]);
+
+  const isDirty = useMemo(() => {
+    if (!initialFormRef.current) return false;
+    return (Object.keys(form) as (keyof typeof form)[]).some(
+      (k) => form[k] !== initialFormRef.current![k],
+    );
+  }, [form]);
+
+  useUnsavedChangesWarning(isDirty);
 
   async function handleLogoUpload(file: File) {
     try {

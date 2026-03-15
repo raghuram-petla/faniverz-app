@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAdminOttReleases, useUpdateOttRelease } from '@/hooks/useAdminOtt';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { Tv, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,13 +23,29 @@ export default function EditOttReleasePage() {
 
   const [availableFrom, setAvailableFrom] = useState('');
   const [streamingUrl, setStreamingUrl] = useState('');
+  const initialRef = useRef<{ availableFrom: string; streamingUrl: string } | null>(null);
 
   useEffect(() => {
     if (release) {
-      setAvailableFrom(release.available_from ?? '');
-      setStreamingUrl(release.streaming_url ?? '');
+      const loaded = {
+        availableFrom: release.available_from ?? '',
+        streamingUrl: release.streaming_url ?? '',
+      };
+      setAvailableFrom(loaded.availableFrom);
+      setStreamingUrl(loaded.streamingUrl);
+      initialRef.current = loaded;
     }
   }, [release]);
+
+  const isDirty = useMemo(() => {
+    if (!initialRef.current) return false;
+    return (
+      availableFrom !== initialRef.current.availableFrom ||
+      streamingUrl !== initialRef.current.streamingUrl
+    );
+  }, [availableFrom, streamingUrl]);
+
+  useUnsavedChangesWarning(isDirty);
 
   // @sideeffect: mutates ott_releases row via Supabase, then navigates to /ott on success
   // @edge: empty strings coerced to null — blank date means "available now"

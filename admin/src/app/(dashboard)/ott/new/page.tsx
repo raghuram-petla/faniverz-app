@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAllMovies } from '@/hooks/useAdminMovies';
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import { useCreateOttRelease } from '@/hooks/useAdminOtt';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { Tv, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -19,6 +20,13 @@ export default function NewOttReleasePage() {
   const [platformId, setPlatformId] = useState('');
   const [availableFrom, setAvailableFrom] = useState('');
   const [streamingUrl, setStreamingUrl] = useState('');
+
+  const isDirty = useMemo(
+    () => !!(movieId || platformId || availableFrom || streamingUrl),
+    [movieId, platformId, availableFrom, streamingUrl],
+  );
+
+  useUnsavedChangesWarning(isDirty);
 
   // @sideeffect: inserts into ott_releases table, navigates to /ott on success
   // @contract: movieId + platformId form a composite PK — creating a duplicate will fail with a DB constraint error

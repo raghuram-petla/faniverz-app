@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminActor, useUpdateActor, useDeleteActor } from '@/hooks/useAdminCast';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { ArrowLeft, Loader2, Trash2, Save } from 'lucide-react';
 import Link from 'next/link';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { DEVICES } from '@shared/constants';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
@@ -33,11 +34,13 @@ export default function EditActorPage() {
     height_cm: '',
   });
 
+  const initialFormRef = useRef<ActorFormState | null>(null);
+
   // @sync: populates form from server data on first load; re-runs if actor refetches
   // @nullable: all optional fields default to empty string for controlled inputs
   useEffect(() => {
     if (actor) {
-      setForm({
+      const loaded: ActorFormState = {
         name: actor.name,
         photo_url: actor.photo_url ?? '',
         person_type: actor.person_type,
@@ -46,9 +49,19 @@ export default function EditActorPage() {
         biography: actor.biography ?? '',
         place_of_birth: actor.place_of_birth ?? '',
         height_cm: actor.height_cm != null ? String(actor.height_cm) : '',
-      });
+      };
+      setForm(loaded);
+      initialFormRef.current = loaded;
     }
   }, [actor]);
+
+  const isDirty = useMemo(() => {
+    if (!initialFormRef.current) return false;
+    const keys = Object.keys(form) as (keyof ActorFormState)[];
+    return keys.some((k) => form[k] !== initialFormRef.current![k]);
+  }, [form]);
+
+  useUnsavedChangesWarning(isDirty);
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
