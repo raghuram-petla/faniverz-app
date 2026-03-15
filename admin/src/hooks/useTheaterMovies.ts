@@ -88,7 +88,6 @@ export function useTheaterSearch(search: string) {
         .from('movies')
         .select('*')
         .ilike('title', `%${search}%`)
-        .eq('in_theaters', false)
         .order('release_date', { ascending: false })
         .limit(20);
       if (error) throw error;

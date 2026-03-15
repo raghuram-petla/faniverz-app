@@ -136,4 +136,42 @@ describe('ManualAddPanel', () => {
     fireEvent.click(screen.getByText('Change'));
     expect(screen.getByPlaceholderText('Search movies...')).toBeInTheDocument();
   });
+
+  it('shows "In Theaters" badge for movies already in theaters', () => {
+    const inTheaterMovie = {
+      ...mockMovie,
+      id: 'movie-2',
+      in_theaters: true,
+      title: 'Active Movie',
+    };
+    render(
+      <ManualAddPanel
+        {...defaultProps}
+        search="Active"
+        debouncedSearch="Active"
+        results={[inTheaterMovie]}
+      />,
+    );
+    expect(screen.getByText('In Theaters')).toBeInTheDocument();
+    expect(screen.getByText('Active Movie')).toBeInTheDocument();
+  });
+
+  it('does not open form when clicking a movie already in theaters', () => {
+    const inTheaterMovie = {
+      ...mockMovie,
+      id: 'movie-2',
+      in_theaters: true,
+      title: 'Active Movie',
+    };
+    render(
+      <ManualAddPanel
+        {...defaultProps}
+        search="Active"
+        debouncedSearch="Active"
+        results={[inTheaterMovie]}
+      />,
+    );
+    fireEvent.click(screen.getByText('Active Movie'));
+    expect(screen.queryByText('Start Date')).not.toBeInTheDocument();
+  });
 });

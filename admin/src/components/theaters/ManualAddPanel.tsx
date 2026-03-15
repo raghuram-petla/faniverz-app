@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Film, Loader2, Plus, Pencil, X } from 'lucide-react';
+import { Film, Loader2, Plus, Pencil, X, Check } from 'lucide-react';
 import { SearchInput } from '@/components/common/SearchInput';
 import { formatDate } from '@/lib/utils';
 import { getImageUrl } from '@shared/imageUrl';
@@ -68,31 +68,46 @@ export function ManualAddPanel({
             )}
             {debouncedSearch.length >= 2 && (
               <div className="space-y-1 max-h-[500px] overflow-y-auto">
-                {results.map((movie) => (
-                  <button
-                    key={movie.id}
-                    onClick={() => setSelectedMovie(movie)}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-elevated w-full text-left"
-                  >
-                    {movie.poster_url ? (
-                      <img
-                        src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
-                        alt=""
-                        className="w-8 h-11 rounded object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-11 rounded bg-input flex items-center justify-center shrink-0">
-                        <Film className="w-3 h-3 text-on-surface-subtle" />
+                {results.map((movie) => {
+                  const alreadyInTheaters = movie.in_theaters;
+                  return (
+                    <button
+                      key={movie.id}
+                      onClick={() => !alreadyInTheaters && setSelectedMovie(movie)}
+                      disabled={alreadyInTheaters}
+                      className={`flex items-center gap-3 p-2 rounded-lg w-full text-left ${
+                        alreadyInTheaters
+                          ? 'opacity-60 cursor-default'
+                          : 'hover:bg-surface-elevated cursor-pointer'
+                      }`}
+                    >
+                      {movie.poster_url ? (
+                        <img
+                          src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
+                          alt=""
+                          className="w-8 h-11 rounded object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-11 rounded bg-input flex items-center justify-center shrink-0">
+                          <Film className="w-3 h-3 text-on-surface-subtle" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-on-surface truncate">
+                          {movie.title}
+                        </p>
+                        <p className="text-xs text-on-surface-muted">
+                          {movie.release_date ? formatDate(movie.release_date) : 'No date'}
+                        </p>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-on-surface truncate">{movie.title}</p>
-                      <p className="text-xs text-on-surface-muted">
-                        {movie.release_date ? formatDate(movie.release_date) : 'No date'}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                      {alreadyInTheaters && (
+                        <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/15 px-2 py-0.5 rounded-full font-medium shrink-0">
+                          <Check className="w-3 h-3" /> In Theaters
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
                 {!isSearching && results.length === 0 && (
                   <p className="text-sm text-on-surface-subtle text-center py-4">No movies found</p>
                 )}
