@@ -4,10 +4,21 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
+vi.mock('@/lib/supabase-browser', () => ({
+  supabase: {
+    auth: {
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test' } }, error: null }),
+    },
+  },
+}));
+
 import { useImageVariants } from '@/hooks/useImageVariants';
 
 function mockCheckResponse(statuses: ('ok' | 'missing' | 'error')[]) {
   mockFetch.mockResolvedValueOnce({
+    ok: true,
     json: async () => ({
       results: statuses.map((status, i) => ({
         url: `url-${i}`,
@@ -31,6 +42,7 @@ describe('useImageVariants', () => {
 
   it('derives 4 variant URLs from the original URL', async () => {
     mockFetch.mockResolvedValueOnce({
+      ok: true,
       json: async () => ({
         results: [
           { url: 'https://r2.dev/abc.jpg', status: 'ok' },
@@ -108,6 +120,7 @@ describe('useImageVariants', () => {
 
   it('counts ready variants correctly', async () => {
     mockFetch.mockResolvedValueOnce({
+      ok: true,
       json: async () => ({
         results: [
           { url: 'https://r2.dev/abc.jpg', status: 'ok' },

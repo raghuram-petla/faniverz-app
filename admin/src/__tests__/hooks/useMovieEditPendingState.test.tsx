@@ -19,6 +19,7 @@ describe('useMovieEditPendingState', () => {
     expect(result.current.pendingPHRemoveIds).toEqual(new Set());
     expect(result.current.pendingRunAdds).toEqual([]);
     expect(result.current.pendingRunRemoveIds).toEqual(new Set());
+    expect(result.current.pendingRunEndIds).toEqual(new Map());
   });
 
   it('updates pending cast state', () => {
@@ -175,5 +176,6 @@ describe('useMovieEditPendingState', () => {
     expect(result.current.pendingPHRemoveIds).toEqual(new Set());
     expect(result.current.pendingRunAdds).toEqual([]);
     expect(result.current.pendingRunRemoveIds).toEqual(new Set());
+    expect(result.current.pendingRunEndIds).toEqual(new Map());
   });
 });

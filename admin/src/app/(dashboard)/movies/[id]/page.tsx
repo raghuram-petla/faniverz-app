@@ -61,6 +61,7 @@ export default function EditMoviePage() {
     handlePHRemove,
     handleCastRemove,
     handleRunRemove,
+    handleRunEnd,
     visibleCast,
     visibleVideos,
     visiblePosters,
@@ -74,6 +75,7 @@ export default function EditMoviePage() {
     allProductionHouses,
     pendingPlatformAdds,
     pendingPHAdds,
+    pendingRunEndIds,
     isDirty,
     isSaving,
     saveStatus,
@@ -268,6 +270,8 @@ export default function EditMoviePage() {
               visibleRuns={visibleRuns}
               onAdd={(run) => setPendingRunAdds((prev) => [...prev, run])}
               onRemove={handleRunRemove}
+              onEndRun={handleRunEnd}
+              pendingEndRunIds={new Set(pendingRunEndIds.keys())}
             />
           </div>
         </div>

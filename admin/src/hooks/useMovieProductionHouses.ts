@@ -43,6 +43,9 @@ export function useAddMovieProductionHouse() {
       qc.invalidateQueries({
         queryKey: ['admin', 'movie-production-houses', data.movieId],
       });
+      // @sideeffect: PH-scoped movie/OTT lists depend on junction table
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
@@ -71,6 +74,9 @@ export function useRemoveMovieProductionHouse() {
       qc.invalidateQueries({
         queryKey: ['admin', 'movie-production-houses', data.movieId],
       });
+      // @sideeffect: PH-scoped movie/OTT lists depend on junction table
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');

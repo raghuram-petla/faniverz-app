@@ -7,12 +7,25 @@ import type { MovieTheatricalRun } from '@/lib/types';
 const {
   useList: useMovieTheatricalRuns,
   useAdd: useAddTheatricalRun,
+  useUpdate: useUpdateTheatricalRun,
   useRemove: useRemoveTheatricalRun,
 } = createMovieChildHooks<MovieTheatricalRun>({
   table: 'movie_theatrical_runs',
   keySuffix: 'theatrical-runs',
   orderBy: 'release_date',
   orderAscending: true,
+  // @sideeffect: theatrical run changes affect In Theaters page views
+  extraInvalidateKeys: [
+    ['admin', 'theater-movies'],
+    ['admin', 'upcoming-movies'],
+    ['admin', 'upcoming-rereleases'],
+    ['admin', 'theater-search'],
+  ],
 });
 
-export { useMovieTheatricalRuns, useAddTheatricalRun, useRemoveTheatricalRun };
+export {
+  useMovieTheatricalRuns,
+  useAddTheatricalRun,
+  useUpdateTheatricalRun,
+  useRemoveTheatricalRun,
+};

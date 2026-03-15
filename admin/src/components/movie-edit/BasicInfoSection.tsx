@@ -1,10 +1,12 @@
 'use client';
+import { useMemo } from 'react';
 import type { MovieForm } from '@/hooks/useMovieEditState';
 import { FormInput, FormSelect, FormTextarea, FormField } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
 import { ImageUploadField } from './ImageUploadField';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
 import { BackdropFocalPicker } from './BackdropFocalPicker';
+import { validateMovieForm, type ValidationError } from '@/lib/movie-validation';
 
 const genres = [
   'Action',
@@ -72,6 +74,10 @@ export function BasicInfoSection({
   setUploadingBackdrop,
   onSubmit,
 }: BasicInfoSectionProps) {
+  const errors = useMemo(() => validateMovieForm(form), [form]);
+  const errorFor = (field: string): ValidationError | undefined =>
+    errors.find((e) => e.field === field);
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <FormInput
@@ -88,13 +94,18 @@ export function BasicInfoSection({
           value={form.release_date}
           onValueChange={(v) => updateField('release_date', v)}
         />
-        {/* @nullable premiere_date — only set when movie has advance premiere shows */}
-        <FormInput
-          label="Premiere Date (optional)"
-          type="date"
-          value={form.premiere_date}
-          onValueChange={(v) => updateField('premiere_date', v)}
-        />
+        <div>
+          {/* @nullable premiere_date — only set when movie has advance premiere shows */}
+          <FormInput
+            label="Premiere Date (optional)"
+            type="date"
+            value={form.premiere_date}
+            onValueChange={(v) => updateField('premiere_date', v)}
+          />
+          {errorFor('premiere_date') && (
+            <p className="text-xs text-red-400 mt-1">{errorFor('premiere_date')!.message}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Currently In Theaters">
@@ -109,6 +120,9 @@ export function BasicInfoSection({
               {form.in_theaters ? 'Yes — In Theaters' : 'No'}
             </span>
           </label>
+          {errorFor('in_theaters') && (
+            <p className="text-xs text-red-400 mt-1">{errorFor('in_theaters')!.message}</p>
+          )}
         </FormField>
         <FormSelect
           label="Original Language"
@@ -131,12 +145,17 @@ export function BasicInfoSection({
         </FormField>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <FormInput
-          label="Runtime (min)"
-          type="number"
-          value={form.runtime}
-          onValueChange={(v) => updateField('runtime', v)}
-        />
+        <div>
+          <FormInput
+            label="Runtime (min)"
+            type="number"
+            value={form.runtime}
+            onValueChange={(v) => updateField('runtime', v)}
+          />
+          {errorFor('runtime') && (
+            <p className="text-xs text-red-400 mt-1">{errorFor('runtime')!.message}</p>
+          )}
+        </div>
         <FormSelect
           label="Certification"
           value={form.certification}

@@ -1,6 +1,7 @@
 'use client';
 import type React from 'react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import type { QueryClient } from '@tanstack/react-query';
 import type { VideoType } from '@/lib/types';
 import type { MovieCast } from '@/lib/types';
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
@@ -65,6 +66,7 @@ export interface MovieEditHandlerDeps {
   form: MovieForm;
   setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
   router: AppRouterInstance;
+  queryClient: QueryClient;
   // @nullable Original movie data — null when movie hasn't loaded yet
   movieData?: {
     spotlight_focus_x: number | null;
@@ -86,6 +88,7 @@ export interface MovieEditHandlerDeps {
   setPendingPHRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingRunAdds: React.Dispatch<React.SetStateAction<PendingRun[]>>;
   setPendingRunRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setPendingRunEndIds: React.Dispatch<React.SetStateAction<Map<string, string>>>;
 
   // @nullable localCastOrder — null means no reorder has occurred (keep server order)
   localCastOrder: string[] | null;
@@ -102,6 +105,7 @@ export interface MovieEditHandlerDeps {
   pendingPHRemoveIds: Set<string>;
   pendingRunAdds: PendingRun[];
   pendingRunRemoveIds: Set<string>;
+  pendingRunEndIds: Map<string, string>;
 
   // Mutation objects
   updateMovie: MutateAsync<{
@@ -149,6 +153,7 @@ export interface MovieEditHandlerDeps {
     label: string | null;
   }>;
   removeTheatricalRun: MutateAsync<{ id: string; movieId: string }>;
+  updateTheatricalRun: MutateAsync<{ id: string; movieId: string; end_date: string }>;
 
   // Callbacks into main hook
   resetPendingState: () => void;

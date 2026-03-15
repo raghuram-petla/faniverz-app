@@ -84,6 +84,7 @@ export function useMovieEditDerived(params: {
   theatricalRuns: TheatricalRun[];
   pendingRunAdds: PendingRun[];
   pendingRunRemoveIds: Set<string>;
+  pendingRunEndIds: Map<string, string>;
   form: MovieForm;
   initialForm: MovieForm | null;
 }) {
@@ -109,6 +110,7 @@ export function useMovieEditDerived(params: {
     theatricalRuns,
     pendingRunAdds,
     pendingRunRemoveIds,
+    pendingRunEndIds,
     form,
     initialForm,
   } = params;
@@ -221,6 +223,7 @@ export function useMovieEditDerived(params: {
     if (pendingPlatformAdds.length > 0 || pendingPlatformRemoveIds.size > 0) return true;
     if (pendingPHAdds.length > 0 || pendingPHRemoveIds.size > 0) return true;
     if (pendingRunAdds.length > 0 || pendingRunRemoveIds.size > 0) return true;
+    if (pendingRunEndIds.size > 0) return true;
     // @contract: shallow field comparison avoids expensive JSON.stringify on every render
     const keys = Object.keys(form) as (keyof MovieForm)[];
     return keys.some((k) => form[k] !== initialForm[k]);
@@ -241,6 +244,7 @@ export function useMovieEditDerived(params: {
     pendingPHRemoveIds,
     pendingRunAdds,
     pendingRunRemoveIds,
+    pendingRunEndIds,
   ]);
 
   return {

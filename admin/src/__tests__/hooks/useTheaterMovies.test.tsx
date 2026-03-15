@@ -79,7 +79,8 @@ describe('useUpcomingMovies', () => {
   it('fetches movies with future release dates that are not in theaters', async () => {
     const movies = [{ id: '2', title: 'Upcoming Movie', release_date: '2026-12-01' }];
     const mockOrder = vi.fn().mockResolvedValue({ data: movies, error: null });
-    const mockGt = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockLte = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockGt = vi.fn().mockReturnValue({ lte: mockLte });
     const mockEq = vi.fn().mockReturnValue({ gt: mockGt });
 
     mockFrom.mockReturnValue({
@@ -107,7 +108,8 @@ describe('useUpcomingRereleases', () => {
       },
     ];
     const mockOrder = vi.fn().mockResolvedValue({ data: runs, error: null });
-    const mockGt = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockLte = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockGt = vi.fn().mockReturnValue({ lte: mockLte });
 
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({ gt: mockGt }),

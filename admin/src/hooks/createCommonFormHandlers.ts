@@ -26,6 +26,7 @@ export interface CommonFormDeps {
   setPendingCastRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingRunAdds: React.Dispatch<React.SetStateAction<PendingRun[]>>;
   setPendingRunRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setPendingRunEndIds: React.Dispatch<React.SetStateAction<Map<string, string>>>;
 }
 
 /**
@@ -48,6 +49,7 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     setPendingCastRemoveIds,
     setPendingRunAdds,
     setPendingRunRemoveIds,
+    setPendingRunEndIds,
   } = deps;
 
   // @contract field must match a key from MovieForm; no runtime validation
@@ -137,6 +139,11 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     }
   }
 
+  // @sideeffect: queues a run to have its end_date set on save
+  function handleRunEnd(runId: string, endDate: string) {
+    setPendingRunEndIds((prev) => new Map(prev).set(runId, endDate));
+  }
+
   return {
     updateField,
     handleImageUpload,
@@ -147,5 +154,6 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     handlePHRemove,
     handleCastRemove,
     handleRunRemove,
+    handleRunEnd,
   };
 }

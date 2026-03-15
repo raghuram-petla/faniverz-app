@@ -7,13 +7,16 @@ import { useEffect, useRef } from 'react';
  * @edge: Next.js App Router client-side navigation via router.push() is NOT intercepted.
  * Only <Link> clicks (which render as <a> tags) are caught by the click handler.
  * Programmatic navigation from hooks or callbacks bypasses this warning entirely.
- * @sideeffect: pushes a guard entry to browser history on mount. If the component
- * unmounts without the user navigating back (e.g. programmatic redirect), the guard
- * entry stays in history, causing an extra "back" press to return to the same page.
+ * @sideeffect: pushes a guard entry to browser history only when isDirty becomes true,
+ * and pops it when isDirty becomes false, so there is no stale guard entry.
  */
 export function useUnsavedChangesWarning(isDirty: boolean) {
   const isDirtyRef = useRef(isDirty);
   isDirtyRef.current = isDirty;
+  // @invariant: tracks whether a guard history entry is currently pushed
+  const hasGuardRef = useRef(false);
+  // @invariant: when true, the next popstate event is from our own cleanup — ignore it
+  const suppressPopRef = useRef(false);
 
   useEffect(() => {
     // Browser reload / close
@@ -43,27 +46,28 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
       }
     };
 
-    // Browser back / forward — push a guard entry with the same URL so pressing
-    // back pops the guard instead of actually navigating away.
-    let intentionalNav = false;
-    history.pushState(null, '', location.href);
-
     const handlePopState = () => {
-      if (intentionalNav) return;
+      // Ignore popstate triggered by our own guard cleanup
+      if (suppressPopRef.current) {
+        suppressPopRef.current = false;
+        return;
+      }
 
-      if (isDirtyRef.current) {
+      if (isDirtyRef.current && hasGuardRef.current) {
+        hasGuardRef.current = false;
         const confirmed = window.confirm(
           'You have unsaved changes. Are you sure you want to leave?',
         );
         if (!confirmed) {
           // Re-push the guard to stay on the page
           history.pushState(null, '', location.href);
+          hasGuardRef.current = true;
           return;
         }
       }
 
-      // Actually navigate back (past the guard entry)
-      intentionalNav = true;
+      // Actually navigate back
+      suppressPopRef.current = true;
       history.back();
     };
 
@@ -77,4 +81,18 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  // @sideeffect: push/pop guard entry as isDirty changes
+  useEffect(() => {
+    if (isDirty && !hasGuardRef.current) {
+      // Push guard entry when form becomes dirty
+      history.pushState(null, '', location.href);
+      hasGuardRef.current = true;
+    } else if (!isDirty && hasGuardRef.current) {
+      // Pop the guard entry when form becomes clean (e.g. after save)
+      hasGuardRef.current = false;
+      suppressPopRef.current = true;
+      history.back();
+    }
+  }, [isDirty]);
 }

@@ -45,6 +45,7 @@ function emptyParams(overrides: Record<string, unknown> = {}) {
     theatricalRuns: [],
     pendingRunAdds: [],
     pendingRunRemoveIds: new Set<string>(),
+    pendingRunEndIds: new Map<string, string>(),
     form: { ...defaultForm },
     initialForm: { ...defaultForm },
     ...overrides,

@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import type React from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateMovie } from '@/hooks/useAdminMovies';
+import { validateMovieForm, formatErrors } from '@/lib/movie-validation';
 import { useAdminActors, useAddCast } from '@/hooks/useAdminCast';
 import { useAddTheatricalRun } from '@/hooks/useAdminTheatricalRuns';
 import { useAddVideo } from '@/hooks/useAdminVideos';
@@ -92,8 +93,9 @@ export function useMovieAddState() {
   // @edge If Phase 1 succeeds but Phase 2 fails, movie exists without its relations
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
-    if (!form.title.trim()) {
-      alert('Title is required');
+    const validationErrors = validateMovieForm(form);
+    if (validationErrors.length > 0) {
+      alert(`Please fix the following errors:\n${formatErrors(validationErrors)}`);
       return;
     }
     setIsSaving(true);

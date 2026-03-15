@@ -93,7 +93,7 @@ describe('Sidebar', () => {
       'Comments',
       'Sync',
       'Audit Log',
-      'User Management',
+      'Admin Management',
     ];
 
     for (const label of navLabels) {
@@ -121,7 +121,7 @@ describe('Sidebar', () => {
   it('calls toggle when collapse button is clicked', () => {
     render(<Sidebar />);
     fireEvent.click(screen.getByLabelText('Collapse sidebar'));
-    expect(mockToggle).toHaveBeenCalledOnce();
+    expect(mockToggle).toHaveBeenCalledTimes(1);
   });
 
   it('hides labels and section headers when collapsed', () => {
@@ -151,6 +151,6 @@ describe('Sidebar', () => {
     render(<Sidebar />);
     const logo = screen.getByAltText('Faniverz');
     expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute('src', expect.stringContaining('logo-icon'));
+    expect(logo).toHaveAttribute('src', expect.stringContaining('logo-header'));
   });
 });

@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Square } from 'lucide-react';
 import { FormInput } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
+import { validateTheatricalRun } from '@/lib/movie-validation';
 
 interface TheatricalRun {
   id: string;
@@ -25,15 +26,35 @@ interface Props {
   onAdd: (run: PendingRun) => void;
   // @boundary isPending flag tells parent whether to remove from DB or just from pending state
   onRemove: (id: string, isPending: boolean) => void;
+  // @sideeffect queues an active run to have its end_date set on save
+  onEndRun?: (id: string, endDate: string) => void;
+  // @contract set of run IDs already queued for ending (to show pending state in UI)
+  pendingEndRunIds?: Set<string>;
 }
 
-export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
+export function TheatricalRunsSection({
+  visibleRuns,
+  onAdd,
+  onRemove,
+  onEndRun,
+  pendingEndRunIds,
+}: Props) {
   const [runForm, setRunForm] = useState({ release_date: '', label: '' });
+  const [runError, setRunError] = useState('');
 
   // @edge empty release_date silently bails — submit button is also disabled for it
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!runForm.release_date) return;
+
+    const existingDates = visibleRuns.map((r) => r.release_date);
+    const errors = validateTheatricalRun(runForm.release_date, existingDates);
+    if (errors.length > 0) {
+      setRunError(errors[0].message);
+      return;
+    }
+
+    setRunError('');
     // @nullable label — empty string coerced to null for DB storage
     onAdd({ release_date: runForm.release_date, label: runForm.label || null });
     setRunForm({ release_date: '', label: '' });
@@ -59,6 +80,10 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
                 <span className="text-on-surface-muted mx-1.5">→</span>
                 {run.end_date ? (
                   <span className="text-on-surface font-medium">{run.end_date}</span>
+                ) : pendingEndRunIds?.has(run.id) ? (
+                  <span className="text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded">
+                    Ending (unsaved)
+                  </span>
                 ) : (
                   <span className="text-xs bg-green-600/20 text-green-400 px-2 py-0.5 rounded">
                     Now
@@ -74,6 +99,21 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
                   Original
                 </span>
               )}
+              {/* @edge End Run only shown for active (no end_date), non-pending, non-queued runs */}
+              {!run.end_date &&
+                !run.id.startsWith('pending-run-') &&
+                !pendingEndRunIds?.has(run.id) &&
+                onEndRun && (
+                  <Button
+                    variant="icon"
+                    size="sm"
+                    onClick={() => onEndRun(run.id, new Date().toISOString().slice(0, 10))}
+                    aria-label={`End run ${run.release_date}`}
+                    title="End theatrical run"
+                  >
+                    <Square className="w-3.5 h-3.5 text-amber-400" />
+                  </Button>
+                )}
               <Button
                 variant="icon"
                 size="sm"
@@ -108,6 +148,7 @@ export function TheatricalRunsSection({ visibleRuns, onAdd, onRemove }: Props) {
             onValueChange={(v) => setRunForm((p) => ({ ...p, label: v }))}
           />
         </div>
+        {runError && <p className="text-xs text-red-400">{runError}</p>}
         <Button
           type="submit"
           variant="primary"

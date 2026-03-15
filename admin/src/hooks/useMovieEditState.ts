@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
 import {
   useMovieCast,
@@ -12,6 +13,7 @@ import {
 import {
   useMovieTheatricalRuns,
   useAddTheatricalRun,
+  useUpdateTheatricalRun,
   useRemoveTheatricalRun,
 } from '@/hooks/useAdminTheatricalRuns';
 import { useMovieVideos, useAddVideo, useRemoveVideo } from '@/hooks/useAdminVideos';
@@ -53,6 +55,7 @@ export type { OTTPlatform, ProductionHouse } from '@shared/types';
 // @coupling Delegates to useMovieEditDerived for visible lists and createMovieEditHandlers for actions
 export function useMovieEditState(id: string) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: movie, isLoading } = useAdminMovie(id);
   const updateMovie = useUpdateMovie();
   const deleteMovie = useDeleteMovie();
@@ -67,6 +70,7 @@ export function useMovieEditState(id: string) {
 
   const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);
   const addTheatricalRun = useAddTheatricalRun();
+  const updateTheatricalRun = useUpdateTheatricalRun();
   const removeTheatricalRun = useRemoveTheatricalRun();
 
   const { data: videosData = [] } = useMovieVideos(id);
@@ -182,6 +186,7 @@ export function useMovieEditState(id: string) {
     form,
     setForm,
     router,
+    queryClient,
     // @nullable movieData — null while movie is loading; handlers guard against this
     movieData: movie
       ? {
@@ -207,6 +212,7 @@ export function useMovieEditState(id: string) {
     addMovieProductionHouse,
     removeMovieProductionHouse,
     addTheatricalRun,
+    updateTheatricalRun,
     removeTheatricalRun,
     setInitialForm,
     setIsSaving,
@@ -242,6 +248,7 @@ export function useMovieEditState(id: string) {
     handlePHRemove: handlers.handlePHRemove,
     handleCastRemove: handlers.handleCastRemove,
     handleRunRemove: handlers.handleRunRemove,
+    handleRunEnd: handlers.handleRunEnd,
     visibleCast: derived.visibleCast,
     visibleVideos: derived.visibleVideos,
     visiblePosters: derived.visiblePosters,
@@ -255,6 +262,7 @@ export function useMovieEditState(id: string) {
     allProductionHouses,
     pendingPlatformAdds: pending.pendingPlatformAdds,
     pendingPHAdds: pending.pendingPHAdds,
+    pendingRunEndIds: pending.pendingRunEndIds,
     isDirty: derived.isDirty,
     isSaving,
     saveStatus,

@@ -32,9 +32,16 @@ export function useTheaterMovies() {
   });
 }
 
-// @contract Fetches movies with a future release_date that are NOT yet in theaters
+function oneMonthFromToday(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+// @contract Fetches movies with a future release_date (up to 1 month out) that are NOT yet in theaters
 export function useUpcomingMovies() {
   const today = new Date().toISOString().split('T')[0];
+  const maxDate = oneMonthFromToday();
   return useQuery({
     queryKey: ['admin', 'upcoming-movies', today],
     queryFn: async () => {
@@ -43,6 +50,7 @@ export function useUpcomingMovies() {
         .select('*')
         .eq('in_theaters', false)
         .gt('release_date', today)
+        .lte('release_date', maxDate)
         .order('release_date', { ascending: true });
       if (error) throw error;
       return data as Movie[];
@@ -50,9 +58,10 @@ export function useUpcomingMovies() {
   });
 }
 
-// @contract Fetches theatrical runs with future dates, joined with movie data
+// @contract Fetches theatrical runs with future dates (up to 1 month out), joined with movie data
 export function useUpcomingRereleases() {
   const today = new Date().toISOString().split('T')[0];
+  const maxDate = oneMonthFromToday();
   return useQuery({
     queryKey: ['admin', 'upcoming-rereleases', today],
     queryFn: async () => {
@@ -60,6 +69,7 @@ export function useUpcomingRereleases() {
         .from('movie_theatrical_runs')
         .select('*, movies!inner(id, title, poster_url, in_theaters)')
         .gt('release_date', today)
+        .lte('release_date', maxDate)
         .order('release_date', { ascending: true });
       if (error) throw error;
       return data as (MovieTheatricalRun & {

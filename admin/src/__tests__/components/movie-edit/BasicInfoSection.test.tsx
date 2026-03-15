@@ -3,6 +3,14 @@ import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
 import { createRef } from 'react';
 
+vi.mock('@/lib/supabase-browser', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    },
+  },
+}));
+
 vi.mock('@/components/movie-edit/ImageUploadField', () => ({
   ImageUploadField: (props: { label: string }) => (
     <div data-testid={`image-upload-${props.label.toLowerCase()}`} />
@@ -86,11 +94,6 @@ describe('BasicInfoSection', () => {
   it('renders Synopsis textarea', () => {
     renderBasicInfo({ synopsis: 'A great movie' });
     expect(getFieldByLabel('Synopsis')).toHaveValue('A great movie');
-  });
-
-  it('renders Trailer URL input', () => {
-    renderBasicInfo({ trailer_url: 'https://youtube.com/watch?v=abc' });
-    expect(getFieldByLabel('Trailer URL')).toHaveValue('https://youtube.com/watch?v=abc');
   });
 
   it('renders genre buttons', () => {

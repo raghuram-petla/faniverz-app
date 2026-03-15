@@ -56,8 +56,10 @@ export function useCreateOttRelease() {
     }) => {
       return crudFetch<MoviePlatform>('POST', { table: 'movie_platforms', data: release });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', data.movie_id] });
+      qc.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -88,6 +90,8 @@ export function useUpdateOttRelease() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -106,6 +110,8 @@ export function useDeleteOttRelease() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -144,6 +150,7 @@ export function useAddMoviePlatform() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', data.movie_id] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -165,6 +172,7 @@ export function useRemoveMoviePlatform() {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', variables.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');

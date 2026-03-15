@@ -22,6 +22,7 @@ function createMockDeps(): CommonFormDeps {
     setPendingCastRemoveIds: vi.fn(),
     setPendingRunAdds: vi.fn(),
     setPendingRunRemoveIds: vi.fn(),
+    setPendingRunEndIds: vi.fn(),
   };
 }
 

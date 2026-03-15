@@ -14,6 +14,8 @@ export interface MovieChildConfig {
   orderAscending?: boolean;
   /** Custom select string (default: '*') */
   select?: string;
+  /** Additional query key prefixes to invalidate on any mutation */
+  extraInvalidateKeys?: readonly string[][];
 }
 
 /**
@@ -31,9 +33,16 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
     orderBy = 'display_order',
     orderAscending = true,
     select = '*',
+    extraInvalidateKeys = [],
   } = config;
 
   const queryKey = (movieId: string) => ['admin', keySuffix, movieId] as const;
+
+  function invalidateExtra(qc: ReturnType<typeof useQueryClient>) {
+    for (const key of extraInvalidateKeys) {
+      qc.invalidateQueries({ queryKey: key });
+    }
+  }
 
   function useList(movieId: string) {
     return useQuery({
@@ -62,6 +71,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
       onSuccess: (_data: T, variables: Partial<T>) => {
         const movieId = (variables as Record<string, unknown>).movie_id as string;
         qc.invalidateQueries({ queryKey: queryKey(movieId) });
+        invalidateExtra(qc);
       },
       onError: (error: Error) => {
         window.alert(error.message || 'Operation failed');
@@ -83,6 +93,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
       },
       onSuccess: (data: T & { movieId: string }) => {
         qc.invalidateQueries({ queryKey: queryKey(data.movieId) });
+        invalidateExtra(qc);
       },
       onError: (error: Error) => {
         window.alert(error.message || 'Operation failed');
@@ -100,6 +111,7 @@ export function createMovieChildHooks<T>(config: MovieChildConfig) {
       },
       onSuccess: (_data: string, variables: { id: string; movieId: string }) => {
         qc.invalidateQueries({ queryKey: queryKey(variables.movieId) });
+        invalidateExtra(qc);
       },
       onError: (error: Error) => {
         window.alert(error.message || 'Operation failed');

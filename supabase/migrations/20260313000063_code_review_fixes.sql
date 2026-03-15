@@ -73,7 +73,7 @@ DO $$ BEGIN
   ) THEN
     ALTER TABLE entity_follows
       ADD CONSTRAINT entity_follows_no_self_follow
-      CHECK (entity_type != 'user' OR entity_id != user_id::text);
+      CHECK (entity_type != 'user' OR entity_id != user_id);
   END IF;
 END $$;
 
@@ -81,7 +81,7 @@ END $$;
 -- 6. Add CHECK on sync_logs: completed_at required for terminal statuses (#49)
 -- ============================================================
 -- First backfill any existing rows that violate the constraint
-UPDATE sync_logs SET completed_at = updated_at
+UPDATE sync_logs SET completed_at = started_at
   WHERE status IN ('success', 'failed') AND completed_at IS NULL;
 
 DO $$ BEGIN

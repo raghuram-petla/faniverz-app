@@ -33,6 +33,8 @@ export function useMovieEditPendingState() {
 
   const [pendingRunAdds, setPendingRunAdds] = useState<PendingRun[]>([]);
   const [pendingRunRemoveIds, setPendingRunRemoveIds] = useState<Set<string>>(new Set());
+  // @contract: maps run ID → end_date string; queued for PATCH on save
+  const [pendingRunEndIds, setPendingRunEndIds] = useState<Map<string, string>>(new Map());
 
   // @sideeffect: clears all 14 pending-state fields back to empty defaults
   function resetPendingState() {
@@ -50,6 +52,7 @@ export function useMovieEditPendingState() {
     setPendingPHRemoveIds(new Set());
     setPendingRunAdds([]);
     setPendingRunRemoveIds(new Set());
+    setPendingRunEndIds(new Map());
   }
 
   return {
@@ -81,6 +84,8 @@ export function useMovieEditPendingState() {
     setPendingRunAdds,
     pendingRunRemoveIds,
     setPendingRunRemoveIds,
+    pendingRunEndIds,
+    setPendingRunEndIds,
     resetPendingState,
   };
 }

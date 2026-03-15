@@ -159,7 +159,7 @@ describe('useMovieAddState', () => {
       await result.current.handleSubmit();
     });
 
-    expect(alertSpy).toHaveBeenCalledWith('Title is required');
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Title is required'));
     expect(mockCreateMovie).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });

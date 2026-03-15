@@ -52,6 +52,8 @@ export function useSetMainPoster() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'posters', data.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'movie', data.movieId] });
+      // @sideeffect: poster_url is displayed in movie list views
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Failed to set main poster');

@@ -2,6 +2,7 @@
 import type React from 'react';
 import type { MovieEditHandlerDeps } from '@/hooks/useMovieEditTypes';
 import { createCommonFormHandlers } from '@/hooks/createCommonFormHandlers';
+import { validateMovieForm, formatErrors } from '@/lib/movie-validation';
 
 // @coupling Consumes full MovieEditHandlerDeps — tightly coupled to useMovieEditState
 // @contract Returns all form handlers including shared ones from createCommonFormHandlers
@@ -10,6 +11,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     id,
     form,
     router,
+    queryClient,
     movieData,
     localCastOrder,
     pendingCastAdds,
@@ -25,6 +27,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     pendingPHRemoveIds,
     pendingRunAdds,
     pendingRunRemoveIds,
+    pendingRunEndIds,
     updateMovie,
     deleteMovie,
     addCast,
@@ -40,6 +43,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     addMovieProductionHouse,
     removeMovieProductionHouse,
     addTheatricalRun,
+    updateTheatricalRun,
     removeTheatricalRun,
     resetPendingState,
     setInitialForm,
@@ -57,6 +61,14 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
   // @assumes Pending IDs starting with 'pending-' are never sent as removals
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
+
+    // @boundary: validate form before persisting — block save on validation errors
+    const validationErrors = validateMovieForm(form);
+    if (validationErrors.length > 0) {
+      alert(`Please fix the following errors:\n${formatErrors(validationErrors)}`);
+      return;
+    }
+
     setIsSaving(true);
     try {
       const promises: Promise<unknown>[] = [
@@ -164,6 +176,11 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       for (const runId of pendingRunRemoveIds) {
         promises.push(removeTheatricalRun.mutateAsync({ id: runId, movieId: id }));
       }
+      for (const [runId, endDate] of pendingRunEndIds) {
+        promises.push(
+          updateTheatricalRun.mutateAsync({ id: runId, movieId: id, end_date: endDate }),
+        );
+      }
 
       // @contract: allSettled so partial failures don't prevent other operations from completing
       const results = await Promise.allSettled(promises);
@@ -175,6 +192,11 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       resetPendingState();
       setInitialForm({ ...form });
       setSaveStatus('success');
+      // @sideeffect: invalidate theater-related queries so navigating to In Theaters shows fresh data
+      queryClient.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'upcoming-movies'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'upcoming-rereleases'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       alert(`Save failed: ${msg}`);
