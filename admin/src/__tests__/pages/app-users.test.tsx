@@ -82,20 +82,6 @@ beforeEach(() => {
 
 describe('AppUsersPage', () => {
   describe('header', () => {
-    it('renders "App Users" heading', () => {
-      mockUseAdminEndUsers.mockReturnValue({
-        data: { users: mockUsers, totalCount: 2 },
-        isLoading: false,
-        isError: false,
-        error: null,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminEndUsers>);
-
-      renderWithProviders(<AppUsersPage />);
-
-      expect(screen.getByText('App Users')).toBeInTheDocument();
-    });
-
     it('shows total count when data is loaded', () => {
       mockUseAdminEndUsers.mockReturnValue({
         data: { users: mockUsers, totalCount: 125 },
@@ -107,7 +93,7 @@ describe('AppUsersPage', () => {
 
       renderWithProviders(<AppUsersPage />);
 
-      expect(screen.getByText('(125)')).toBeInTheDocument();
+      expect(screen.getByText('125 users')).toBeInTheDocument();
     });
 
     it('does not show count when data is undefined', () => {

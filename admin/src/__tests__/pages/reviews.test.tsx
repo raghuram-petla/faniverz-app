@@ -196,17 +196,6 @@ describe('ReviewsPage', () => {
       expect(spinner).toBeInTheDocument();
     });
 
-    it('renders "Reviews" heading while loading', () => {
-      mockUseAdminReviews.mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        isFetching: true,
-      } as unknown as ReturnType<typeof useAdminReviews>);
-
-      render(<ReviewsPage />);
-      expect(screen.getByText('Reviews')).toBeInTheDocument();
-    });
-
     it('does not show count badge while loading', () => {
       mockUseAdminReviews.mockReturnValue({
         data: undefined,
@@ -232,7 +221,7 @@ describe('ReviewsPage', () => {
       expect(screen.getByText('No reviews found.')).toBeInTheDocument();
     });
 
-    it('renders "Reviews" heading in empty state', () => {
+    it('shows count when reviews array is empty', () => {
       mockUseAdminReviews.mockReturnValue({
         data: [],
         isLoading: false,
@@ -240,18 +229,7 @@ describe('ReviewsPage', () => {
       } as unknown as ReturnType<typeof useAdminReviews>);
 
       render(<ReviewsPage />);
-      expect(screen.getByText('Reviews')).toBeInTheDocument();
-    });
-
-    it('shows count (0) when reviews array is empty', () => {
-      mockUseAdminReviews.mockReturnValue({
-        data: [],
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminReviews>);
-
-      render(<ReviewsPage />);
-      expect(screen.getByText('(0)')).toBeInTheDocument();
+      expect(screen.getByText('0 reviews')).toBeInTheDocument();
     });
   });
 
@@ -264,10 +242,9 @@ describe('ReviewsPage', () => {
       } as unknown as ReturnType<typeof useAdminReviews>);
     });
 
-    it('renders "Reviews" heading with count', () => {
+    it('renders review count', () => {
       render(<ReviewsPage />);
-      expect(screen.getByText('Reviews')).toBeInTheDocument();
-      expect(screen.getByText('(2)')).toBeInTheDocument();
+      expect(screen.getByText('2 reviews')).toBeInTheDocument();
     });
 
     it('renders table headers: Movie, User, Rating, Review, Date, Actions', () => {

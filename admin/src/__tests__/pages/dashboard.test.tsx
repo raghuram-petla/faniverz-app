@@ -63,11 +63,6 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('DashboardPage', () => {
-  it('renders "Dashboard" heading', () => {
-    renderWithProviders(<DashboardPage />);
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
-  });
-
   it('renders Movies stat card', () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText('Movies')).toBeInTheDocument();

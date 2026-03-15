@@ -141,12 +141,11 @@ describe('useTheaterSearch', () => {
     expect(result.current.isFetching).toBe(false);
   });
 
-  it('searches movies not in theaters when search >= 2 chars', async () => {
+  it('searches movies when search >= 2 chars', async () => {
     const results = [{ id: '2', title: 'Test Movie', in_theaters: false }];
     const mockLimit = vi.fn().mockResolvedValue({ data: results, error: null });
     const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
-    const mockEq = vi.fn().mockReturnValue({ order: mockOrder });
-    const mockIlike = vi.fn().mockReturnValue({ eq: mockEq });
+    const mockIlike = vi.fn().mockReturnValue({ order: mockOrder });
 
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({ ilike: mockIlike }),
@@ -156,7 +155,6 @@ describe('useTheaterSearch', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockIlike).toHaveBeenCalledWith('title', '%te%');
-    expect(mockEq).toHaveBeenCalledWith('in_theaters', false);
     expect(result.current.data).toEqual(results);
   });
 });

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
 import { DiscoverTab } from '@/components/sync/DiscoverTab';
 import { ImportTab } from '@/components/sync/ImportTab';
 import { RefreshTab } from '@/components/sync/RefreshTab';
@@ -17,16 +16,6 @@ export default function SyncPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
-          <RefreshCw className="w-5 h-5 text-blue-500" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-on-surface">Sync Command Center</h1>
-          <p className="text-sm text-on-surface-muted">Import and refresh data from TMDB</p>
-        </div>
-      </div>
-
       <div className="flex gap-1 bg-surface-card border border-outline rounded-xl p-1">
         {TABS.map((tab) => (
           <button

@@ -34,11 +34,6 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('PlatformsPage', () => {
-  it('renders "Platforms" heading', () => {
-    renderWithProviders(<PlatformsPage />);
-    expect(screen.getByText('Platforms')).toBeInTheDocument();
-  });
-
   it('renders "Add Platform" button', () => {
     renderWithProviders(<PlatformsPage />);
     expect(screen.getByText('Add Platform')).toBeInTheDocument();

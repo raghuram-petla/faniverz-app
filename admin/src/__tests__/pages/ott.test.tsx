@@ -104,11 +104,6 @@ describe('OttReleasesPage', () => {
     } as ReturnType<typeof useAdminOttReleases>);
   });
 
-  it('renders "OTT Releases" heading', () => {
-    renderWithProviders(<OttReleasesPage />);
-    expect(screen.getByText('OTT Releases')).toBeInTheDocument();
-  });
-
   it('renders "Add Release" button', () => {
     renderWithProviders(<OttReleasesPage />);
     expect(screen.getByText('Add Release')).toBeInTheDocument();

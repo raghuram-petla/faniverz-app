@@ -14,7 +14,7 @@ import {
   canRevert,
 } from '@/components/audit/auditUtils';
 import { RevertButton } from '@/components/audit/RevertButton';
-import { Shield, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { LoadMoreButton } from '@/components/common/LoadMoreButton';
@@ -69,17 +69,7 @@ export default function AuditLogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center">
-          <Shield className="w-5 h-5 text-purple-500" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-on-surface">Audit Log</h1>
-          {!isSuperAdmin && (
-            <p className="text-sm text-on-surface-muted mt-0.5">Showing your activity only</p>
-          )}
-        </div>
-      </div>
+      {!isSuperAdmin && <p className="text-sm text-on-surface-muted">Showing your activity only</p>}
 
       {/* Filters */}
       <div className="space-y-2">

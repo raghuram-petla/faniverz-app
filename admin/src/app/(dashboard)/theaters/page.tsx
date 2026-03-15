@@ -12,6 +12,7 @@ import { Loader2, Check } from 'lucide-react';
 import { MovieColumn } from '@/components/theaters/MovieColumn';
 import { ManualAddPanel } from '@/components/theaters/ManualAddPanel';
 import { PendingChangesSection } from '@/components/theaters/PendingChangesSection';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 
 // @contract Pending change: toggle direction + date + movie title for display + optional label
 interface PendingChange {
@@ -155,50 +156,47 @@ export default function TheatersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Save/Discard */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-on-surface">In Theaters</h1>
-          {saveStatus === 'success' && (
-            <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2.5 py-0.5 rounded-full font-medium">
-              <Check className="w-3 h-3" /> Saved
-            </span>
-          )}
-          {isDirty && saveStatus !== 'success' && (
-            <span className="text-xs bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-medium">
-              {changeCount} unsaved change{changeCount !== 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          {isDirty && (
-            <button
-              onClick={handleDiscard}
-              disabled={saveStatus === 'saving'}
-              className="px-4 py-2 text-sm font-medium text-on-surface-muted hover:text-on-surface rounded-lg hover:bg-surface-elevated transition-colors disabled:opacity-50"
-            >
-              Discard
-            </button>
-          )}
-          <button
-            onClick={handleSave}
-            disabled={!isDirty || saveStatus === 'saving'}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all ${
-              isDirty && saveStatus !== 'saving'
-                ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/25'
-                : 'bg-surface-elevated text-on-surface-disabled cursor-not-allowed'
-            }`}
-          >
-            {saveStatus === 'saving' ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-              </>
-            ) : (
-              'Save Changes'
+      {/* Header with Save/Discard — only shown when there are changes or save feedback */}
+      {(isDirty || saveStatus === 'success') && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {saveStatus === 'success' && (
+              <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2.5 py-0.5 rounded-full font-medium">
+                <Check className="w-3 h-3" /> Saved
+              </span>
             )}
-          </button>
+            {isDirty && saveStatus !== 'success' && (
+              <span className="text-xs bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full font-medium">
+                {changeCount} unsaved change{changeCount !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {isDirty && (
+              <button
+                onClick={handleDiscard}
+                disabled={saveStatus === 'saving'}
+                className="px-4 py-2 text-sm font-medium text-on-surface-muted hover:text-on-surface rounded-lg hover:bg-surface-elevated transition-colors disabled:opacity-50"
+              >
+                Discard
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={!isDirty || saveStatus === 'saving'}
+              className="flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/25"
+            >
+              {saveStatus === 'saving' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Pending Changes — staging area */}
       <PendingChangesSection

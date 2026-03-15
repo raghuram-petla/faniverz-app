@@ -6,7 +6,7 @@ import type { EndUserProfile } from '@/hooks/useAdminEndUsers';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { PaginationControls } from '@/components/common/PaginationControls';
-import { Users, Loader2, Ban, Pencil, X, Check } from 'lucide-react';
+import { Loader2, Ban, Pencil, X, Check } from 'lucide-react';
 
 const PAGE_SIZE = 50;
 
@@ -77,13 +77,11 @@ export default function AppUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
-          <Users className="w-5 h-5 text-blue-500" />
-        </div>
-        <h1 className="text-2xl font-bold text-on-surface">App Users</h1>
-        {data && <span className="text-sm text-on-surface-muted">({totalCount})</span>}
-      </div>
+      {data && (
+        <p className="text-sm text-on-surface-muted">
+          {totalCount} user{totalCount !== 1 ? 's' : ''}
+        </p>
+      )}
 
       <SearchInput
         value={search}

@@ -79,8 +79,6 @@ export default function ProfilePage() {
         Back to Dashboard
       </Link>
 
-      <h1 className="text-2xl font-bold text-on-surface mb-8">Profile</h1>
-
       <div className="bg-surface-card border border-outline rounded-xl p-6 space-y-6">
         <ImageUploadField
           label="Avatar"

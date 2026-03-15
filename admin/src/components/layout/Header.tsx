@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import { ImpersonateModal } from '@/components/users/ImpersonateModal';
 import { getImageUrl } from '@shared/imageUrl';
+import { Breadcrumb } from './Breadcrumb';
 
 const THEME_OPTIONS = [
   { key: 'system', icon: Monitor, label: 'System' },
@@ -43,9 +44,7 @@ export function Header() {
   return (
     <>
       <header className="h-16 bg-surface-card border-b border-outline flex items-center justify-between px-6">
-        <h2 className="text-lg font-semibold text-on-surface-subtle tracking-widest uppercase select-none">
-          Admin
-        </h2>
+        <Breadcrumb />
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}

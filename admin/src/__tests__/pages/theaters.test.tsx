@@ -49,15 +49,9 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('TheatersPage', () => {
-  it('renders "In Theaters" page heading', () => {
-    renderWithProviders(<TheatersPage />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('In Theaters');
-  });
-
   it('renders "In Theaters" section heading', () => {
     renderWithProviders(<TheatersPage />);
-    const headings = screen.getAllByText('In Theaters');
-    expect(headings.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('In Theaters')).toBeInTheDocument();
   });
 
   it('renders "Upcoming" section', () => {
@@ -75,11 +69,9 @@ describe('TheatersPage', () => {
     expect(screen.getByPlaceholderText('Search movies...')).toBeInTheDocument();
   });
 
-  it('renders Save Changes button (disabled by default)', () => {
+  it('hides Save Changes button when no changes pending', () => {
     renderWithProviders(<TheatersPage />);
-    const saveBtn = screen.getByText('Save Changes');
-    expect(saveBtn).toBeInTheDocument();
-    expect(saveBtn.closest('button')).toBeDisabled();
+    expect(screen.queryByText('Save Changes')).not.toBeInTheDocument();
   });
 
   it('does not show Discard button when no changes pending', () => {

@@ -38,6 +38,10 @@ vi.mock('next-themes', () => ({
   useTheme: () => ({ theme: 'system', setTheme: vi.fn() }),
 }));
 
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/',
+}));
+
 import { useAuth } from '@/components/providers/AuthProvider';
 import type { AdminUser } from '@/lib/types';
 
@@ -71,9 +75,10 @@ function openMenu() {
 describe('Header', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('renders "ADMIN" heading', () => {
+  it('renders breadcrumb with "ADMIN" link', () => {
     render(<Header />);
-    expect(screen.getByRole('heading', { name: /admin/i })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /breadcrumb/i })).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
   });
 
   it('renders user menu button', () => {

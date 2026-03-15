@@ -50,16 +50,6 @@ function renderWithProviders(ui: React.ReactElement) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('SyncPage', () => {
-  it('renders "Sync Command Center" heading', () => {
-    renderWithProviders(<SyncPage />);
-    expect(screen.getByText('Sync Command Center')).toBeInTheDocument();
-  });
-
-  it('renders subtitle', () => {
-    renderWithProviders(<SyncPage />);
-    expect(screen.getByText('Import and refresh data from TMDB')).toBeInTheDocument();
-  });
-
   it('renders all five tab buttons', () => {
     renderWithProviders(<SyncPage />);
     // Use getAllByText for "Discover" since it appears in tab + Discover button

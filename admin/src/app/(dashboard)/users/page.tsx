@@ -10,7 +10,7 @@ import {
   useUnblockAdmin,
 } from '@/hooks/useAdminUsers';
 import type { AdminUserWithDetails } from '@/lib/types';
-import { Shield, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ImpersonateModal } from '@/components/users/ImpersonateModal';
@@ -95,23 +95,6 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-red-600/20 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-red-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-on-surface">Admin Management</h1>
-        </div>
-        {isSuperAdmin && (
-          <Link
-            href="/users/invite"
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            <UserPlus className="w-4 h-4" /> Invite Admin
-          </Link>
-        )}
-      </div>
-
       {/* Tabs + status filter */}
       <div className="flex items-center gap-4">
         <div className="flex gap-1 bg-input rounded-lg p-1 w-fit">
@@ -143,6 +126,14 @@ export default function UsersPage() {
               </button>
             ))}
           </div>
+        )}
+        {isSuperAdmin && (
+          <Link
+            href="/users/invite"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors ml-auto shrink-0"
+          >
+            <UserPlus className="w-4 h-4" /> Invite Admin
+          </Link>
         )}
       </div>
 

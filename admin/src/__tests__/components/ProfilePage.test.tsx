@@ -67,11 +67,6 @@ import { useAuth } from '@/components/providers/AuthProvider';
 describe('ProfilePage', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('renders page heading', () => {
-    render(<ProfilePage />);
-    expect(screen.getByText('Profile')).toBeInTheDocument();
-  });
-
   it('displays user email', () => {
     render(<ProfilePage />);
     expect(screen.getByText('admin@test.com')).toBeInTheDocument();

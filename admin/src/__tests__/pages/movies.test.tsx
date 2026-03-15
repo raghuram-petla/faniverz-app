@@ -57,11 +57,6 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('MoviesPage', () => {
-  it('renders "Movies" heading', () => {
-    renderWithProviders(<MoviesPage />);
-    expect(screen.getByText('Movies')).toBeInTheDocument();
-  });
-
   it('renders search input', () => {
     renderWithProviders(<MoviesPage />);
     expect(screen.getByPlaceholderText('Search movies...')).toBeInTheDocument();

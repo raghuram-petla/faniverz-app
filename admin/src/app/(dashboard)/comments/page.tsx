@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAdminComments, useDeleteComment, useUpdateComment } from '@/hooks/useAdminComments';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
-import { MessageSquare, Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
+import { Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
 
 // @contract Inline editing uses local state (editingId/editBody) — only one comment editable at a time
 export default function CommentsPage() {
@@ -45,13 +45,11 @@ export default function CommentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center">
-          <MessageSquare className="w-5 h-5 text-purple-500" />
-        </div>
-        <h1 className="text-2xl font-bold text-on-surface">Comments</h1>
-        {comments && <span className="text-sm text-on-surface-muted">({comments.length})</span>}
-      </div>
+      {comments && (
+        <p className="text-sm text-on-surface-muted">
+          {comments.length} comment{comments.length !== 1 ? 's' : ''}
+        </p>
+      )}
 
       <div className="space-y-2">
         <SearchInput

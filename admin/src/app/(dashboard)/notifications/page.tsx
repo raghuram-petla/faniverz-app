@@ -67,22 +67,6 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-yellow-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-on-surface">Notifications</h1>
-        </div>
-        <Link
-          href="/notifications/compose"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
-        >
-          <Bell className="w-4 h-4" />
-          Compose
-        </Link>
-      </div>
-
       {/* Filters and Bulk Actions */}
       <div className="flex flex-wrap items-center gap-3">
         <select
@@ -136,6 +120,14 @@ export default function NotificationsPage() {
           )}
           Cancel All Pending
         </button>
+
+        <Link
+          href="/notifications/compose"
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium shrink-0"
+        >
+          <Bell className="w-4 h-4" />
+          Compose
+        </Link>
       </div>
 
       {isLoading ? (

@@ -129,11 +129,6 @@ describe('UsersPage', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders "Admin Management" heading', () => {
-    renderWithProviders(<UsersPage />);
-    expect(screen.getByText('Admin Management')).toBeInTheDocument();
-  });
-
   it('renders "Invite Admin" link', () => {
     renderWithProviders(<UsersPage />);
     expect(screen.getByText('Invite Admin')).toBeInTheDocument();

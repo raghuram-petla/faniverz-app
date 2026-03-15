@@ -2,7 +2,7 @@
 
 import { useAdminOttReleases, useDeleteOttRelease } from '@/hooks/useAdminOtt';
 import { usePermissions } from '@/hooks/usePermissions';
-import { Tv, Trash2, Plus, Loader2, Pencil } from 'lucide-react';
+import { Trash2, Plus, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OttReleasesPage() {
@@ -21,16 +21,10 @@ export default function OttReleasesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-purple-600/20 flex items-center justify-center">
-            <Tv className="w-5 h-5 text-purple-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-on-surface">OTT Releases</h1>
-        </div>
+      <div className="flex">
         <Link
           href="/ott/new"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           Add Release

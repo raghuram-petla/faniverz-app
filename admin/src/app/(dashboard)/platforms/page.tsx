@@ -95,16 +95,10 @@ export default function PlatformsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
-            <Monitor className="w-5 h-5 text-blue-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-on-surface">Platforms</h1>
-        </div>
+      <div className="flex">
         <button
           onClick={openAdd}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-medium ml-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           Add Platform

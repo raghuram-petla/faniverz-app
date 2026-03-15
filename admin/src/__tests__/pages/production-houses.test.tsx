@@ -73,11 +73,6 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('ProductionHousesPage', () => {
-  it('renders "Production Houses" heading', () => {
-    renderWithProviders(<ProductionHousesPage />);
-    expect(screen.getByText('Production Houses')).toBeInTheDocument();
-  });
-
   it('renders "Add Production House" button', () => {
     renderWithProviders(<ProductionHousesPage />);
     expect(screen.getByText('Add Production House')).toBeInTheDocument();

@@ -41,16 +41,6 @@ export default function CastPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-on-surface">Cast / Actors</h1>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700"
-        >
-          <Plus className="w-4 h-4" /> Add Actor
-        </button>
-      </div>
-
       {showAdd && (
         <AddActorForm
           onSubmit={handleAdd}
@@ -60,12 +50,20 @@ export default function CastPage() {
       )}
 
       <div className="space-y-2">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search actors..."
-          isLoading={isFetching}
-        />
+        <div className="flex gap-3 items-center">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search actors..."
+            isLoading={isFetching}
+          />
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 ml-auto shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Add Actor
+          </button>
+        </div>
         {search.length === 1 && (
           <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
         )}

@@ -39,11 +39,6 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('CastPage', () => {
-  it('renders "Cast / Actors" heading', () => {
-    renderWithProviders(<CastPage />);
-    expect(screen.getByText('Cast / Actors')).toBeInTheDocument();
-  });
-
   it('renders "Add Actor" button', () => {
     renderWithProviders(<CastPage />);
     expect(screen.getByText('Add Actor')).toBeInTheDocument();

@@ -163,18 +163,6 @@ describe('CommentsPage', () => {
   });
 
   describe('header', () => {
-    it('renders "Comments" heading', () => {
-      mockUseAdminComments.mockReturnValue({
-        data: mockComments,
-        isLoading: false,
-        isFetching: false,
-      } as unknown as ReturnType<typeof useAdminComments>);
-
-      renderWithProviders(<CommentsPage />);
-
-      expect(screen.getByText('Comments')).toBeInTheDocument();
-    });
-
     it('shows comment count when data is loaded', () => {
       mockUseAdminComments.mockReturnValue({
         data: mockComments,
@@ -184,7 +172,7 @@ describe('CommentsPage', () => {
 
       renderWithProviders(<CommentsPage />);
 
-      expect(screen.getByText('(2)')).toBeInTheDocument();
+      expect(screen.getByText('2 comments')).toBeInTheDocument();
     });
 
     it('does not show count when data is undefined', () => {

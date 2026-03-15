@@ -58,13 +58,11 @@ export default function ReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-yellow-600/20 flex items-center justify-center">
-          <Star className="w-5 h-5 text-yellow-500" />
-        </div>
-        <h1 className="text-2xl font-bold text-on-surface">Reviews</h1>
-        {reviews && <span className="text-sm text-on-surface-muted">({reviews.length})</span>}
-      </div>
+      {reviews && (
+        <p className="text-sm text-on-surface-muted">
+          {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+        </p>
+      )}
 
       <div className="space-y-2">
         <div className="flex gap-3">
