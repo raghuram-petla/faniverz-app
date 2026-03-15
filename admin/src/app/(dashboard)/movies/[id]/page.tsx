@@ -170,8 +170,8 @@ export default function EditMoviePage() {
 
   return (
     <div className="max-w-6xl">
-      {/* ─── Header ─── */}
-      <div className="flex items-center justify-between mb-6">
+      {/* ─── Sticky Header ─── */}
+      <div className="sticky top-0 z-30 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-3 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
