@@ -40,8 +40,16 @@ UPDATE actors SET photo_url = _strip_r2_base(photo_url) WHERE photo_url IS NOT N
 -- profiles.avatar_url
 UPDATE profiles SET avatar_url = _strip_r2_base(avatar_url) WHERE avatar_url IS NOT NULL;
 
--- platforms.logo_url
-UPDATE platforms SET logo_url = _strip_r2_base(logo_url) WHERE logo_url IS NOT NULL;
+-- platforms.logo_url (column added by migration 20240101000038; guard in case it doesn't exist)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'platforms' AND column_name = 'logo_url'
+  ) THEN
+    UPDATE platforms SET logo_url = _strip_r2_base(logo_url) WHERE logo_url IS NOT NULL;
+  END IF;
+END $$;
 
 -- production_houses.logo_url
 UPDATE production_houses SET logo_url = _strip_r2_base(logo_url) WHERE logo_url IS NOT NULL;
