@@ -94,38 +94,38 @@ describe('PostersSection', () => {
     expect(screen.getByTestId('backdrop-focal-picker')).toBeInTheDocument();
   });
 
-  it('hides add form by default and shows + Add Poster button', () => {
+  it('hides add form by default and shows + Add button', () => {
     renderPostersSection();
     expect(screen.queryByPlaceholderText(/First Look/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Add Poster/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add/ })).toBeInTheDocument();
   });
 
-  it('shows add form when + Add Poster is clicked', () => {
+  it('shows add form when + Add is clicked', () => {
     renderPostersSection();
-    fireEvent.click(screen.getByRole('button', { name: /Add Poster/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Add/ }));
     expect(screen.getByPlaceholderText(/First Look/)).toBeInTheDocument();
   });
 
   it('hides form on Cancel', () => {
     renderPostersSection();
-    fireEvent.click(screen.getByRole('button', { name: /Add Poster/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Add/ }));
     fireEvent.click(screen.getByText('Cancel'));
     expect(screen.queryByPlaceholderText(/First Look/)).not.toBeInTheDocument();
   });
 
   it('disables upload button when title is empty', () => {
     renderPostersSection();
-    fireEvent.click(screen.getByRole('button', { name: /Add Poster/ }));
-    const uploadBtn = screen.getByRole('button', { name: /Upload & Add Poster/ });
+    fireEvent.click(screen.getByRole('button', { name: /Add/ }));
+    const uploadBtn = screen.getByRole('button', { name: /Upload & Add/ });
     expect(uploadBtn).toBeDisabled();
   });
 
   it('enables upload button when title is filled', () => {
     renderPostersSection();
-    fireEvent.click(screen.getByRole('button', { name: /Add Poster/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Add/ }));
     const titleInput = screen.getByPlaceholderText(/First Look/);
     fireEvent.change(titleInput, { target: { value: 'Test Poster' } });
-    const uploadBtn = screen.getByRole('button', { name: /Upload & Add Poster/ });
+    const uploadBtn = screen.getByRole('button', { name: /Upload & Add/ });
     expect(uploadBtn).not.toBeDisabled();
   });
 

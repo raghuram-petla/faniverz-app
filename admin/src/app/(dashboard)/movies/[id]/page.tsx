@@ -170,7 +170,7 @@ export default function EditMoviePage() {
           )}
 
           {activeSection === 'videos' && (
-            <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add Video')}>
+            <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add')}>
               <VideosSection
                 visibleVideos={editState.visibleVideos}
                 trailerUrl={editState.form.trailer_url}
@@ -235,7 +235,7 @@ export default function EditMoviePage() {
               <SectionCard
                 title="Theatrical Runs"
                 icon={Calendar}
-                action={addButton('runs', 'Add Run')}
+                action={addButton('runs', 'Add')}
               >
                 <TheatricalRunsSection
                   visibleRuns={editState.visibleRuns}

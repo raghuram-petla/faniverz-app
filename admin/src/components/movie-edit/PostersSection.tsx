@@ -132,7 +132,7 @@ export function PostersSection({
                 icon={<Plus className="w-3.5 h-3.5" />}
                 onClick={() => setShowAddForm(true)}
               >
-                Add Poster
+                Add
               </Button>
             ) : undefined
           }

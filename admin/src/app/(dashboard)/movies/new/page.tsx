@@ -121,7 +121,7 @@ export default function NewMoviePage() {
           )}
 
           {activeSection === 'videos' && (
-            <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add Video')}>
+            <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add')}>
               <VideosSection
                 visibleVideos={s.visibleVideos}
                 trailerUrl={s.form.trailer_url}
@@ -186,7 +186,7 @@ export default function NewMoviePage() {
               <SectionCard
                 title="Theatrical Runs"
                 icon={Calendar}
-                action={addButton('runs', 'Add Run')}
+                action={addButton('runs', 'Add')}
               >
                 <TheatricalRunsSection
                   visibleRuns={s.visibleRuns}
