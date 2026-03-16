@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { Loader2, Upload, X } from 'lucide-react';
+import { getImageUrl } from '@shared/imageUrl';
 
 /** @contract onSubmit receives cleaned data with nulls for empty optional fields */
 export interface AddActorFormProps {
@@ -85,7 +86,7 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
           {form.photo_url ? (
             <div className="flex items-center gap-2 flex-1">
               <img
-                src={form.photo_url}
+                src={getImageUrl(form.photo_url, 'sm', 'ACTORS') ?? form.photo_url}
                 alt=""
                 className="w-9 h-9 rounded-full object-cover border border-outline shrink-0"
               />

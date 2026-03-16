@@ -6,6 +6,7 @@ import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { SpotlightPreview } from '@/components/preview/SpotlightPreview';
 import { MovieDetailPreview } from '@/components/preview/MovieDetailPreview';
 import { deriveMovieStatus } from '@shared/movieStatus';
+import { getImageUrl } from '@shared/imageUrl';
 import type { MovieForm } from '@/hooks/useMovieEditState';
 
 // SVG placeholders — visible against the black preview background.
@@ -73,7 +74,10 @@ export function PreviewPanel({ form }: PreviewPanelProps) {
         {previewMode === 'spotlight' ? (
           <SpotlightPreview
             title={form.title || 'Movie Title'}
-            backdropUrl={form.backdrop_url || PLACEHOLDER_BACKDROP}
+            backdropUrl={
+              (getImageUrl(form.backdrop_url, 'original', 'BACKDROPS') ?? form.backdrop_url) ||
+              PLACEHOLDER_BACKDROP
+            }
             movieStatus={deriveMovieStatus(
               {
                 release_date: form.release_date || null,
@@ -91,8 +95,14 @@ export function PreviewPanel({ form }: PreviewPanelProps) {
         ) : (
           <MovieDetailPreview
             title={form.title || 'Movie Title'}
-            backdropUrl={form.backdrop_url || PLACEHOLDER_BACKDROP}
-            posterUrl={form.poster_url || PLACEHOLDER_POSTER}
+            backdropUrl={
+              (getImageUrl(form.backdrop_url, 'original', 'BACKDROPS') ?? form.backdrop_url) ||
+              PLACEHOLDER_BACKDROP
+            }
+            posterUrl={
+              (getImageUrl(form.poster_url, 'sm', 'POSTERS') ?? form.poster_url) ||
+              PLACEHOLDER_POSTER
+            }
             movieStatus={deriveMovieStatus(
               {
                 release_date: form.release_date || null,

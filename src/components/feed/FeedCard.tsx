@@ -90,7 +90,8 @@ function FeedCardInner({
     if (!imageUrl) return;
     measureView(posterRef, (layout) => {
       openImage({
-        feedUrl: getImageUrl(imageUrl, 'md') ?? imageUrl,
+        // @assumes feed cards always render movie poster images — POSTERS bucket is correct here
+        feedUrl: getImageUrl(imageUrl, 'md', 'POSTERS') ?? imageUrl,
         fullUrl: imageUrl,
         sourceLayout: layout,
         sourceRef: posterRef,
@@ -189,7 +190,7 @@ function FeedCardInner({
               <Image
                 source={{
                   uri:
-                    (imageUrl ? getImageUrl(imageUrl, 'md') : null) ??
+                    (imageUrl ? getImageUrl(imageUrl, 'md', 'POSTERS') : null) ??
                     imageUrl ??
                     PLACEHOLDER_POSTER,
                 }}

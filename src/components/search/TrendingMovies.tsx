@@ -38,7 +38,7 @@ export function TrendingMovies({ movies, onMoviePress }: TrendingMoviesProps) {
             <Text style={styles.trendingRankText}>{index + 1}</Text>
           </View>
           <Image
-            source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
+            source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
             style={styles.trendingPoster}
             contentFit="cover"
           />

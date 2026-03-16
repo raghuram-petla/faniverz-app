@@ -24,16 +24,8 @@ export const R2_BUCKETS = {
   actorPhotos: 'faniverz-actor-photos',
 } as const;
 
-// @coupling: these env var names must match what's set in .env.local AND what
-// upload-handler.ts reads via config.baseUrlEnvVar. If a new bucket is added
-// (e.g. production house logos), it must be added here AND in R2_BUCKETS AND
-// the env var must be set, or uploads succeed but the returned URL is the
-// TMDB CDN fallback, silently mixing CDN sources in the DB.
-const R2_PUBLIC_URLS: Record<string, string | undefined> = {
-  'faniverz-movie-posters': process.env.R2_PUBLIC_BASE_URL_POSTERS,
-  'faniverz-movie-backdrops': process.env.R2_PUBLIC_BASE_URL_BACKDROPS,
-  'faniverz-actor-photos': process.env.R2_PUBLIC_BASE_URL_ACTORS,
-};
+// R2_PUBLIC_URLS removed — r2-sync now returns only the relative key, not a full URL.
+// Base URLs are supplied at runtime via NEXT_PUBLIC_/EXPO_PUBLIC_ env vars per client.
 
 // @edge: checks R2_ACCOUNT_ID but NOT R2_SECRET_ACCESS_KEY — if the secret is
 // missing but account ID and access key are set, the client is created but all
@@ -66,15 +58,19 @@ function getVariantsForBucket(bucket: string): ImageVariant[] {
 
 /**
  * Downloads an image from sourceUrl and uploads to R2 with resized variants.
- * Falls back to returning sourceUrl when R2 credentials are not configured.
+ * Returns the relative key on success, or sourceUrl as-is when R2 is not configured
+ * (so external CDN URLs like TMDB are stored in the DB and handled by getImageUrl's
+ * external-URL pass-through path).
  *
  * @param sourceUrl  URL to fetch the image from (e.g. TMDB CDN)
  * @param bucket     R2 bucket name (use R2_BUCKETS constants)
- * @param key        Object key, e.g. "{uuid}.jpg"
- * @returns          Public R2 URL, or sourceUrl if R2 is not configured
+ * @param key        Object key, e.g. "{tmdbId}.jpg"
+ * @returns          Relative key (e.g. "12345.jpg"), or sourceUrl if R2 is not configured
  */
 async function uploadImageFromUrl(sourceUrl: string, bucket: string, key: string): Promise<string> {
   const r2 = getR2Client();
+  // @edge: R2 not configured — return external URL (e.g. TMDB CDN) so caller stores a
+  // usable full URL. getImageUrl recognises TMDB as an external CDN and returns it as-is.
   if (!r2) return sourceUrl;
 
   const response = await fetch(sourceUrl);
@@ -124,21 +120,20 @@ async function uploadImageFromUrl(sourceUrl: string, bucket: string, key: string
     ),
   ]);
 
-  const base = R2_PUBLIC_URLS[bucket];
-  if (!base) {
-    console.warn(`No public URL configured for R2 bucket: ${bucket}`);
-    return sourceUrl;
-  }
-  return `${base.replace(/\/$/, '')}/${key}`;
+  // @contract: returns only the relative key (e.g. "12345.jpg"), not a full URL.
+  // The caller stores this key in the DB; base URLs are resolved at display time
+  // via NEXT_PUBLIC_/EXPO_PUBLIC_ env vars so no IP is baked into the database.
+  return key;
 }
 
 /**
  * Upload image from URL if path is not null.
  * Convenience wrapper that handles null paths.
  *
- * @contract: returns null for null tmdbPath (no upload attempted), R2 public URL on
- * success, or the original TMDB CDN URL as fallback when R2 is not configured or
- * the source fetch fails. Callers store whatever URL is returned directly in the DB.
+ * @contract: returns null for null tmdbPath (no upload attempted), a relative key (e.g.
+ * "12345.jpg") on successful R2 upload, or the original TMDB CDN full URL as fallback
+ * when R2 is not configured or the source fetch fails. Callers store whatever is returned
+ * in the DB; getImageUrl handles both relative keys and full external URLs at display time.
  * @nullable: tmdbPath is null when TMDB has no image for the entity (e.g. actor
  * without a profile photo). The DB column stores null, and the mobile app renders
  * a placeholder via PLACEHOLDER_AVATAR / PLACEHOLDER_POSTER constants.

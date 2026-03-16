@@ -52,6 +52,7 @@ jest.mock('@/components/profile/ProfileListSkeleton', () => ({
 
 jest.mock('@shared/imageUrl', () => ({
   getImageUrl: () => 'https://example.com/img.jpg',
+  entityTypeToBucket: (entityType: string) => entityType.toUpperCase(),
 }));
 
 jest.mock('@/components/common/PullToRefreshIndicator', () => ({

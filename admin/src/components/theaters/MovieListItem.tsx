@@ -56,7 +56,7 @@ export function MovieListItem({
         <Link href={`/movies/${id}`} className="relative shrink-0">
           {posterUrl ? (
             <img
-              src={getImageUrl(posterUrl, 'sm') ?? posterUrl}
+              src={getImageUrl(posterUrl, 'sm', 'POSTERS') ?? posterUrl}
               alt=""
               className="w-9 h-13 rounded object-cover"
             />

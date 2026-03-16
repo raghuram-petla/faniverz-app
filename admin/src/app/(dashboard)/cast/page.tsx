@@ -92,7 +92,7 @@ export default function CastPage() {
                 <div className="w-14 h-14 rounded-full bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {actor.photo_url ? (
                     <img
-                      src={getImageUrl(actor.photo_url, 'sm') ?? actor.photo_url}
+                      src={getImageUrl(actor.photo_url, 'sm', 'ACTORS') ?? actor.photo_url}
                       alt=""
                       className="w-full h-full object-cover"
                     />

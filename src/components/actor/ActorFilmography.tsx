@@ -70,7 +70,9 @@ export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProp
                 testID={`film-card-${movie.id}`}
               >
                 <Image
-                  source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
+                  source={{
+                    uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER,
+                  }}
                   style={styles.filmPoster}
                   contentFit="cover"
                   transition={200}

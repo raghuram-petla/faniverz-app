@@ -18,7 +18,7 @@ export function SearchResultActor({ actor, onPress }: SearchResultActorProps) {
   const { theme } = useTheme();
   const styles = createStyles(theme);
   /** @nullable photo_url — falls back to PLACEHOLDER_PHOTO for actors without images */
-  const photoUrl = getImageUrl(actor.photo_url, 'sm') ?? PLACEHOLDER_PHOTO;
+  const photoUrl = getImageUrl(actor.photo_url, 'sm', 'ACTORS') ?? PLACEHOLDER_PHOTO;
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} accessibilityLabel={actor.name}>

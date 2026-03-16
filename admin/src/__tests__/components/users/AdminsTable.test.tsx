@@ -345,7 +345,7 @@ describe('AdminsTable', () => {
       });
       const img = screen.getByAltText('Alice');
       expect(img).toBeInTheDocument();
-      expect(img).toHaveAttribute('src', 'https://cdn.example.com/avatar.jpg');
+      expect(img).toHaveAttribute('src', 'https://cdn.example.com/avatar_sm.jpg');
     });
 
     it('renders initials fallback when avatar_url is null', () => {

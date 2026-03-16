@@ -29,8 +29,8 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
       <Image
         source={{
           uri:
-            getImageUrl(movie.backdrop_url, 'md') ??
-            getImageUrl(movie.poster_url, 'md') ??
+            getImageUrl(movie.backdrop_url, 'md', 'BACKDROPS') ??
+            getImageUrl(movie.poster_url, 'md', 'POSTERS') ??
             PLACEHOLDER_POSTER,
         }}
         style={StyleSheet.absoluteFill}
@@ -57,7 +57,7 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
       <View style={styles.heroInfo}>
         <View style={styles.heroInfoRow}>
           <Image
-            source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
+            source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
             style={styles.heroPoster}
             contentFit="cover"
           />

@@ -75,7 +75,10 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
               >
                 {ph.logo_url && (
                   <Image
-                    source={{ uri: getImageUrl(ph.logo_url, 'sm') ?? PLACEHOLDER_POSTER }}
+                    source={{
+                      uri:
+                        getImageUrl(ph.logo_url, 'sm', 'PRODUCTION_HOUSES') ?? PLACEHOLDER_POSTER,
+                    }}
                     style={styles.productionHouseLogo}
                     contentFit="cover"
                   />

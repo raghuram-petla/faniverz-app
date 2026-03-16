@@ -33,7 +33,7 @@ export function DiscoverGridItem({ item, platforms, styles }: DiscoverGridItemPr
     >
       <View style={styles.gridPoster}>
         <Image
-          source={{ uri: getImageUrl(item.poster_url, 'md') ?? PLACEHOLDER_POSTER }}
+          source={{ uri: getImageUrl(item.poster_url, 'md', 'POSTERS') ?? PLACEHOLDER_POSTER }}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
         />

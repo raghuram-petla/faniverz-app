@@ -2,7 +2,7 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, entityTypeToBucket } from '@shared/imageUrl';
 import type { FeedEntityType } from '@shared/types';
 
 export interface FeedAvatarProps {
@@ -25,7 +25,7 @@ const FALLBACK_ICONS: Record<FeedEntityType, React.ComponentProps<typeof Ionicon
 export function FeedAvatar({ imageUrl, entityType, size = 52, label, onPress }: FeedAvatarProps) {
   const { theme } = useTheme();
   /** @nullable imageUrl — when null, resolvedUrl is null and fallback icon renders */
-  const resolvedUrl = getImageUrl(imageUrl, 'sm');
+  const resolvedUrl = getImageUrl(imageUrl, 'sm', entityTypeToBucket(entityType));
 
   const accessLabel = onPress ? `Navigate to ${label ?? 'entity'}` : label;
 

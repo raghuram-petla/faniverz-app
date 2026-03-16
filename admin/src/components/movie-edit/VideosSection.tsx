@@ -167,7 +167,7 @@ export function VideosSection({
 
       {/* ─── Video list — below add form ─── */}
       {displayVideos.length > 0 && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           {displayVideos.map((video) => {
             const isLegacy = video.id === 'legacy-trailer';
             return (

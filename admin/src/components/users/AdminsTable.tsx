@@ -2,6 +2,7 @@
 import { ADMIN_ROLE_LABELS } from '@/lib/types';
 import type { AdminUserWithDetails, AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
+import { getImageUrl } from '@shared/imageUrl';
 import { Loader2, Eye, Ban, ShieldCheck, Trash2 } from 'lucide-react';
 
 /**
@@ -90,7 +91,7 @@ export function AdminsTable({
                   <div className="flex items-center gap-3">
                     {u.avatar_url ? (
                       <img
-                        src={u.avatar_url}
+                        src={getImageUrl(u.avatar_url, 'sm', 'AVATARS') ?? u.avatar_url}
                         alt={u.display_name ?? 'Admin avatar'}
                         className="w-8 h-8 rounded-full object-cover"
                       />

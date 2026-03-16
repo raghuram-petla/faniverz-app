@@ -49,7 +49,7 @@ function SortableCastItem({ entry, onRemove }: { entry: MovieCast; onRemove: () 
       <div className="w-8 h-8 rounded-full bg-input overflow-hidden shrink-0 flex items-center justify-center">
         {entry.actor?.photo_url ? (
           <img
-            src={getImageUrl(entry.actor.photo_url, 'sm') ?? entry.actor.photo_url}
+            src={getImageUrl(entry.actor.photo_url, 'sm', 'ACTORS') ?? entry.actor.photo_url}
             alt={entry.actor.name}
             className="w-full h-full object-cover"
           />

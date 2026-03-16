@@ -83,6 +83,7 @@ export default function ProfilePage() {
         <ImageUploadField
           label="Avatar"
           url={avatarUrl}
+          bucket="AVATARS"
           uploading={uploading}
           uploadEndpoint="/api/upload/profile-avatar"
           previewAlt="Profile avatar"

@@ -5,6 +5,7 @@ import type { EnrichedFollow } from '@shared/types';
 
 jest.mock('@shared/imageUrl', () => ({
   getImageUrl: (url: string | null) => url,
+  entityTypeToBucket: (entityType: string) => entityType.toUpperCase(),
 }));
 
 const mockFollows: EnrichedFollow[] = [

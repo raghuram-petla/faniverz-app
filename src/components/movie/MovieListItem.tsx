@@ -55,7 +55,7 @@ export function MovieListItem({ movie, platforms, isPast, testID }: MovieListIte
       {/* Poster */}
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
           style={[styles.poster, isPast && styles.posterPast]}
           contentFit="cover"
           transition={200}

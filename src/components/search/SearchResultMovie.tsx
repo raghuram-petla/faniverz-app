@@ -30,7 +30,7 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
     <TouchableOpacity style={s.row} onPress={onPress} accessibilityLabel={movie.title}>
       <View style={s.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
           style={s.poster}
           contentFit="cover"
         />

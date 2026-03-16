@@ -69,7 +69,9 @@ export default function UserProfileScreen() {
           {/* Avatar */}
           <View style={styles.avatarSection}>
             <Image
-              source={{ uri: getImageUrl(profile.avatar_url, 'sm') ?? PLACEHOLDER_AVATAR }}
+              source={{
+                uri: getImageUrl(profile.avatar_url, 'sm', 'AVATARS') ?? PLACEHOLDER_AVATAR,
+              }}
               style={styles.avatar}
               contentFit="cover"
             />

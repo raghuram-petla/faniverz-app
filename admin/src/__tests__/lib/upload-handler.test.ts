@@ -165,7 +165,7 @@ describe('createUploadHandler', () => {
     expect(data.error).toContain('R2_PUBLIC_BASE_URL_TEST');
   });
 
-  it('uploads original + 3 variants and returns URL on success', async () => {
+  it('uploads original + 3 variants and returns relative key on success', async () => {
     vi.stubEnv('R2_PUBLIC_BASE_URL_TEST', 'https://cdn.example.com/test');
     mockSend.mockResolvedValue({});
 
@@ -174,7 +174,9 @@ describe('createUploadHandler', () => {
     expect(res.status).toBe(200);
 
     const data = await res.json();
-    expect(data.url).toMatch(/^https:\/\/cdn\.example\.com\/test\/[a-f0-9-]+\.png$/);
+    // @contract: returns only the relative key, not a full URL — base URL is supplied client-side
+    expect(data.url).toMatch(/^[a-f0-9-]+\.png$/);
+    expect(data.url).not.toContain('https://');
 
     // original + 3 variants = 4 uploads
     expect(mockSend).toHaveBeenCalledTimes(4);
@@ -189,17 +191,6 @@ describe('createUploadHandler', () => {
 
     const firstCall = mockSend.mock.calls[0][0] as { Bucket: string };
     expect(firstCall.Bucket).toBe('test-bucket');
-  });
-
-  it('strips trailing slash from base URL', async () => {
-    vi.stubEnv('R2_PUBLIC_BASE_URL_TEST', 'https://cdn.example.com/test/');
-    mockSend.mockResolvedValue({});
-
-    const file = new File(['img'], 'photo.png', { type: 'image/png' });
-    const res = await handler(makeRequest(makeFormData(file)));
-    const data = await res.json();
-    expect(data.url).not.toContain('test//');
-    expect(data.url).toMatch(/\/test\/[a-f0-9-]+\.png$/);
   });
 
   it('determines correct extension for each file type', async () => {

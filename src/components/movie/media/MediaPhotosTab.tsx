@@ -41,7 +41,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
       if (!ref.current) return;
       ref.current.measureInWindow((x: number, y: number, width: number, height: number) => {
         openImage({
-          feedUrl: getImageUrl(poster.image_url, 'sm') ?? poster.image_url,
+          feedUrl: getImageUrl(poster.image_url, 'sm', 'POSTERS') ?? poster.image_url,
           fullUrl: poster.image_url,
           sourceLayout: { x, y, width, height },
           sourceRef: ref,
@@ -77,7 +77,9 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
               accessibilityLabel={`View ${poster.title}`}
             >
               <Image
-                source={{ uri: getImageUrl(poster.image_url, 'sm') ?? PLACEHOLDER_POSTER }}
+                source={{
+                  uri: getImageUrl(poster.image_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER,
+                }}
                 style={styles.photoImage}
                 contentFit="cover"
               />

@@ -107,7 +107,7 @@ export function ReviewModal({
 
               <View style={styles.modalMovieInfo}>
                 <Image
-                  source={{ uri: getImageUrl(posterUrl, 'sm') ?? PLACEHOLDER_POSTER }}
+                  source={{ uri: getImageUrl(posterUrl, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
                   style={styles.modalPoster}
                   contentFit="cover"
                 />

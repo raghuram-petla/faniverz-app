@@ -34,7 +34,7 @@ describe('useImageVariants', () => {
   });
 
   it('returns empty variants when originalUrl is null', () => {
-    const { result } = renderHook(() => useImageVariants(null, 'poster'));
+    const { result } = renderHook(() => useImageVariants(null, 'poster', 'POSTERS'));
     expect(result.current.variants).toEqual([]);
     expect(result.current.totalCount).toBe(0);
     expect(result.current.readyCount).toBe(0);
@@ -53,7 +53,9 @@ describe('useImageVariants', () => {
       }),
     });
 
-    const { result } = renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'poster'));
+    const { result } = renderHook(() =>
+      useImageVariants('https://r2.dev/abc.jpg', 'poster', 'POSTERS'),
+    );
 
     await waitFor(() => expect(result.current.isChecking).toBe(false));
 
@@ -67,7 +69,9 @@ describe('useImageVariants', () => {
   it('maps poster variant specs correctly', async () => {
     mockCheckResponse(['ok', 'ok', 'ok', 'ok']);
 
-    const { result } = renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'poster'));
+    const { result } = renderHook(() =>
+      useImageVariants('https://r2.dev/abc.jpg', 'poster', 'POSTERS'),
+    );
 
     await waitFor(() => expect(result.current.isChecking).toBe(false));
 
@@ -84,7 +88,9 @@ describe('useImageVariants', () => {
   it('maps backdrop variant specs correctly', async () => {
     mockCheckResponse(['ok', 'ok', 'ok', 'ok']);
 
-    const { result } = renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'backdrop'));
+    const { result } = renderHook(() =>
+      useImageVariants('https://r2.dev/abc.jpg', 'backdrop', 'BACKDROPS'),
+    );
 
     await waitFor(() => expect(result.current.isChecking).toBe(false));
 
@@ -96,7 +102,9 @@ describe('useImageVariants', () => {
   it('maps photo variant specs correctly', async () => {
     mockCheckResponse(['ok', 'ok', 'ok', 'ok']);
 
-    const { result } = renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'photo'));
+    const { result } = renderHook(() =>
+      useImageVariants('https://r2.dev/abc.jpg', 'photo', 'ACTORS'),
+    );
 
     await waitFor(() => expect(result.current.isChecking).toBe(false));
 
@@ -108,7 +116,7 @@ describe('useImageVariants', () => {
   it('calls /api/image-check with all 4 URLs', async () => {
     mockCheckResponse(['ok', 'ok', 'ok', 'ok']);
 
-    renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'poster'));
+    renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'poster', 'POSTERS'));
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
 
@@ -131,7 +139,9 @@ describe('useImageVariants', () => {
       }),
     });
 
-    const { result } = renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'poster'));
+    const { result } = renderHook(() =>
+      useImageVariants('https://r2.dev/abc.jpg', 'poster', 'POSTERS'),
+    );
 
     await waitFor(() => expect(result.current.isChecking).toBe(false));
     expect(result.current.readyCount).toBe(3);
@@ -141,7 +151,9 @@ describe('useImageVariants', () => {
   it('sets all statuses to error on fetch failure', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-    const { result } = renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'poster'));
+    const { result } = renderHook(() =>
+      useImageVariants('https://r2.dev/abc.jpg', 'poster', 'POSTERS'),
+    );
 
     await waitFor(() => expect(result.current.isChecking).toBe(false));
     expect(result.current.variants.every((v) => v.status === 'error')).toBe(true);
@@ -150,7 +162,9 @@ describe('useImageVariants', () => {
   it('recheck re-triggers the fetch', async () => {
     mockCheckResponse(['ok', 'ok', 'ok', 'ok']);
 
-    const { result } = renderHook(() => useImageVariants('https://r2.dev/abc.jpg', 'poster'));
+    const { result } = renderHook(() =>
+      useImageVariants('https://r2.dev/abc.jpg', 'poster', 'POSTERS'),
+    );
 
     await waitFor(() => expect(result.current.isChecking).toBe(false));
     expect(mockFetch).toHaveBeenCalledTimes(1);

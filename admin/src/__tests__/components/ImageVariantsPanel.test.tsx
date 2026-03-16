@@ -56,7 +56,9 @@ describe('ImageVariantsPanel', () => {
   });
 
   it('renders nothing when originalUrl is null', () => {
-    const { container } = render(<ImageVariantsPanel originalUrl={null} variantType="poster" />);
+    const { container } = render(
+      <ImageVariantsPanel originalUrl={null} variantType="poster" bucket="POSTERS" />,
+    );
     expect(container.firstChild).toBeNull();
   });
 
@@ -68,12 +70,20 @@ describe('ImageVariantsPanel', () => {
       totalCount: 0,
       recheck: mockRecheck,
     });
-    const { container } = render(<ImageVariantsPanel originalUrl="" variantType="poster" />);
+    const { container } = render(
+      <ImageVariantsPanel originalUrl="" variantType="poster" bucket="POSTERS" />,
+    );
     expect(container.firstChild).toBeNull();
   });
 
   it('renders summary with correct counts', () => {
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
     expect(screen.getByText(/3\/4 variants ready/)).toBeInTheDocument();
   });
 
@@ -85,12 +95,24 @@ describe('ImageVariantsPanel', () => {
       totalCount: 4,
       recheck: mockRecheck,
     });
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
     expect(screen.getByText(/Checking variants\.\.\./)).toBeInTheDocument();
   });
 
   it('expands to show variant rows when clicked', () => {
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
 
     expect(screen.queryByText('Full size')).not.toBeInTheDocument();
 
@@ -104,7 +126,13 @@ describe('ImageVariantsPanel', () => {
   });
 
   it('shows specs for each variant when expanded', () => {
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
     fireEvent.click(screen.getByText(/3\/4 variants ready/));
 
     expect(screen.getByText('Full size')).toBeInTheDocument();
@@ -114,7 +142,13 @@ describe('ImageVariantsPanel', () => {
   });
 
   it('shows copy buttons for each variant when expanded', () => {
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
     fireEvent.click(screen.getByText(/3\/4 variants ready/));
 
     const copyButtons = screen.getAllByTitle('Copy URL');
@@ -125,7 +159,13 @@ describe('ImageVariantsPanel', () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
     fireEvent.click(screen.getByText(/3\/4 variants ready/));
 
     const copyButtons = screen.getAllByTitle('Copy URL');
@@ -137,7 +177,13 @@ describe('ImageVariantsPanel', () => {
   });
 
   it('calls recheck when Recheck button is clicked', () => {
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
     fireEvent.click(screen.getByText(/3\/4 variants ready/));
 
     fireEvent.click(screen.getByText('Recheck'));
@@ -145,12 +191,28 @@ describe('ImageVariantsPanel', () => {
   });
 
   it('passes correct variantType to the hook', () => {
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="backdrop" />);
-    expect(mockUseImageVariants).toHaveBeenCalledWith('https://r2.dev/abc.jpg', 'backdrop');
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="backdrop"
+        bucket="BACKDROPS"
+      />,
+    );
+    expect(mockUseImageVariants).toHaveBeenCalledWith(
+      'https://r2.dev/abc.jpg',
+      'backdrop',
+      'BACKDROPS',
+    );
   });
 
   it('renders all thumbnails using SM variant URL for efficiency', () => {
-    render(<ImageVariantsPanel originalUrl="https://r2.dev/abc.jpg" variantType="poster" />);
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
     fireEvent.click(screen.getByText(/3\/4 variants ready/));
 
     const images = screen.getAllByRole('img');

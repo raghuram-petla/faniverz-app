@@ -58,7 +58,9 @@ function NotificationItem({
       {/* Poster with type icon overlay */}
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(item.movie?.poster_url ?? null, 'sm') ?? PLACEHOLDER_POSTER }}
+          source={{
+            uri: getImageUrl(item.movie?.poster_url ?? null, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER,
+          }}
           style={styles.poster}
           contentFit="cover"
         />

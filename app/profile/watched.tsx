@@ -200,7 +200,7 @@ export default function WatchedMoviesScreen() {
               {row.map((entry) => {
                 const movie = entry.movie;
                 const posterUrl =
-                  getImageUrl(movie?.poster_url ?? null, 'sm') ?? PLACEHOLDER_POSTER;
+                  getImageUrl(movie?.poster_url ?? null, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER;
                 const title = movie?.title ?? 'Unknown';
                 const rating = movie?.rating ?? 0;
                 return (

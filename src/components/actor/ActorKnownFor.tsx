@@ -49,7 +49,9 @@ export function ActorKnownFor({ credits, onMoviePress }: ActorKnownForProps) {
               style={{ width: 110 }}
             >
               <Image
-                source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
+                source={{
+                  uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER,
+                }}
                 style={{ width: 110, height: 165, borderRadius: 10 }}
                 contentFit="cover"
                 transition={200}

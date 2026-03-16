@@ -68,7 +68,7 @@ export function ActorFormFields({
           <div className="flex items-center gap-4">
             <img
               /** @edge getImageUrl returns null if no variant exists; falls back to raw URL */
-              src={getImageUrl(form.photo_url, 'sm') ?? form.photo_url}
+              src={getImageUrl(form.photo_url, 'sm', 'ACTORS') ?? form.photo_url}
               alt="Photo preview"
               className="w-20 h-20 rounded-full object-cover border border-outline"
             />
@@ -114,7 +114,7 @@ export function ActorFormFields({
           <p className="mt-2 text-xs text-on-surface-disabled truncate">{form.photo_url}</p>
         )}
         {/** @coupling ImageVariantsPanel shows generated size variants (sm/md/lg) for the photo */}
-        <ImageVariantsPanel originalUrl={form.photo_url} variantType="photo" />
+        <ImageVariantsPanel originalUrl={form.photo_url} variantType="photo" bucket="ACTORS" />
       </div>
 
       {/* Person Type + DOB */}

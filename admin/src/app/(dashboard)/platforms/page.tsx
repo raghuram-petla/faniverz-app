@@ -128,7 +128,7 @@ export default function PlatformsPage() {
                 <div className="flex items-center gap-3">
                   {platform.logo_url ? (
                     <img
-                      src={getImageUrl(platform.logo_url, 'sm') ?? platform.logo_url}
+                      src={getImageUrl(platform.logo_url, 'sm', 'PLATFORMS') ?? platform.logo_url}
                       alt={platform.name}
                       className="w-12 h-12 rounded-lg object-contain border border-outline"
                     />
@@ -202,6 +202,7 @@ export default function PlatformsPage() {
               <ImageUploadField
                 label="Logo"
                 url={form.logo_url}
+                bucket="PLATFORMS"
                 uploading={uploading}
                 uploadEndpoint="/api/upload/platform-logo"
                 previewAlt="Platform logo"

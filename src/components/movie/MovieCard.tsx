@@ -68,7 +68,7 @@ export function MovieCard({
     >
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm') ?? PLACEHOLDER_POSTER }}
+          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
           style={styles.poster}
           contentFit="cover"
           transition={200}

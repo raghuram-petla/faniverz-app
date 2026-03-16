@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { PLACEHOLDER_POSTER, PLACEHOLDER_PHOTO } from '@/constants/placeholders';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, entityTypeToBucket } from '@shared/imageUrl';
 import { useTranslation } from 'react-i18next';
 import type { EnrichedFollow, FeedEntityType } from '@shared/types';
 import type { SemanticTheme } from '@shared/themes';
@@ -65,7 +65,8 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
         {preview.map((f) => {
           /** @contract actors get photo placeholder; all other entity types get poster placeholder */
           const placeholder = f.entity_type === 'actor' ? PLACEHOLDER_PHOTO : PLACEHOLDER_POSTER;
-          const imageUrl = getImageUrl(f.image_url, 'sm') ?? placeholder;
+          const imageUrl =
+            getImageUrl(f.image_url, 'sm', entityTypeToBucket(f.entity_type)) ?? placeholder;
           return (
             <TouchableOpacity
               key={`${f.entity_type}:${f.entity_id}`}

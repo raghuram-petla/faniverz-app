@@ -86,7 +86,7 @@ export default function EditProfileScreen() {
     );
   };
 
-  const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md') ?? PLACEHOLDER_AVATAR;
+  const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md', 'AVATARS') ?? PLACEHOLDER_AVATAR;
   const email = user?.email ?? '';
   const bioOverLimit = bio.length > BIO_LIMIT;
 

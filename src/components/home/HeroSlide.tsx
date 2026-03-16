@@ -52,8 +52,8 @@ export function HeroSlide({
         /** @nullable backdrop_url/poster_url may be null; falls back to PLACEHOLDER_POSTER */
         source={{
           uri:
-            getImageUrl(movie.backdrop_url, 'md') ??
-            getImageUrl(movie.poster_url, 'md') ??
+            getImageUrl(movie.backdrop_url, 'md', 'BACKDROPS') ??
+            getImageUrl(movie.poster_url, 'md', 'POSTERS') ??
             PLACEHOLDER_POSTER,
         }}
         style={styles.backdrop}

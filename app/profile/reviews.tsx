@@ -202,7 +202,7 @@ export default function MyReviewsScreen() {
         <View style={styles.reviewList}>
           {sorted.map((review) => {
             const posterUrl =
-              getImageUrl(review.movie?.poster_url ?? null, 'sm') ?? PLACEHOLDER_POSTER;
+              getImageUrl(review.movie?.poster_url ?? null, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER;
             const movieTitle = review.movie?.title ?? 'Unknown Movie';
             return (
               <View key={review.id} style={styles.reviewCard}>

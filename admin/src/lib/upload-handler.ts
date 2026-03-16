@@ -9,6 +9,9 @@ import { verifyAdminWithRole } from '@/lib/sync-helpers';
 export interface UploadConfig {
   bucket: string;
   variants: ImageVariant[];
+  // @contract: baseUrlEnvVar is no longer used to construct the stored URL — upload handler
+  // returns only the relative key. Kept in config so route files need no changes, and to
+  // validate that the NEXT_PUBLIC_ env var is configured (guards against misconfigured envs).
   baseUrlEnvVar: string;
   label: string;
 }
@@ -102,10 +105,12 @@ export function createUploadHandler(config: UploadConfig) {
         ),
       ]);
 
-      // @edge: the upload to R2 has already succeeded at this point — if baseUrlEnvVar
-      // is not configured, the image exists in R2 but we return 503. The admin gets an
-      // error and may retry, creating duplicate uploads. The already-uploaded image is
-      // unreachable because no public URL can be constructed for it.
+      // @contract: returns only the relative key (e.g. "abc123.jpg"), not a full URL.
+      // The base URL is supplied at runtime by the client via NEXT_PUBLIC_R2_BASE_URL_*
+      // env vars so that each developer's local IP is never baked into the database.
+      // @edge: baseUrlEnvVar is checked here purely as a config-sanity guard — if the
+      // NEXT_PUBLIC_ var is missing, images uploaded successfully would render broken
+      // in the admin UI. Returning 503 prompts the developer to fix their .env.local.
       const baseUrl = process.env[config.baseUrlEnvVar];
       if (!baseUrl) {
         return NextResponse.json(
@@ -114,8 +119,8 @@ export function createUploadHandler(config: UploadConfig) {
         );
       }
 
-      const url = `${baseUrl.replace(/\/$/, '')}/${key}`;
-      return NextResponse.json({ url });
+      // @sideeffect: key is the relative path stored in the DB; client reconstructs full URL
+      return NextResponse.json({ url: key });
     } catch (err) {
       console.error(`${config.label} upload failed:`, err);
       return NextResponse.json({ error: 'Upload failed' }, { status: 500 });

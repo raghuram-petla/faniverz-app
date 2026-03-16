@@ -3,12 +3,15 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, Copy, Check, RefreshCw, Loader2 } from 'lucide-react';
 import { useImageVariants, type VariantInfo } from '@/hooks/useImageVariants';
 import type { VariantType } from '@/lib/variant-config';
+import type { ImageBucket } from '@shared/imageUrl';
 
 // @contract collapsible panel that checks CDN variant availability for a given original image
 export interface ImageVariantsPanelProps {
   // @nullable null means no image uploaded yet — component renders nothing
   originalUrl: string | null;
   variantType: VariantType;
+  /** Bucket required to construct full URLs from relative keys stored in the DB */
+  bucket: ImageBucket;
 }
 
 function StatusDot({ status }: { status: VariantInfo['status'] }) {
@@ -93,11 +96,12 @@ function VariantRow({ variant, thumbnailUrl }: { variant: VariantInfo; thumbnail
   );
 }
 
-export function ImageVariantsPanel({ originalUrl, variantType }: ImageVariantsPanelProps) {
+export function ImageVariantsPanel({ originalUrl, variantType, bucket }: ImageVariantsPanelProps) {
   const [open, setOpen] = useState(false);
   const { variants, isChecking, readyCount, totalCount, recheck } = useImageVariants(
     originalUrl,
     variantType,
+    bucket,
   );
 
   // @edge no image uploaded — render nothing

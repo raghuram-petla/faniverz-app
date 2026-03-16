@@ -85,7 +85,7 @@ export function ManualAddPanel({
                     >
                       {movie.poster_url ? (
                         <img
-                          src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
+                          src={getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? movie.poster_url}
                           alt=""
                           className="w-8 h-11 rounded object-cover shrink-0"
                         />
@@ -127,7 +127,10 @@ export function ManualAddPanel({
             <div className="flex items-center gap-3 p-2 bg-surface-elevated rounded-lg">
               {selectedMovie.poster_url ? (
                 <img
-                  src={getImageUrl(selectedMovie.poster_url, 'sm') ?? selectedMovie.poster_url}
+                  src={
+                    getImageUrl(selectedMovie.poster_url, 'sm', 'POSTERS') ??
+                    selectedMovie.poster_url
+                  }
                   alt=""
                   className="w-10 h-14 rounded object-cover shrink-0"
                 />

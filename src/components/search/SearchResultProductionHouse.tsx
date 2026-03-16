@@ -18,7 +18,7 @@ export function SearchResultProductionHouse({ house, onPress }: SearchResultProd
   const { theme } = useTheme();
   const styles = createStyles(theme);
   /** @nullable logo_url — falls back to PLACEHOLDER_POSTER for studios without logos */
-  const logoUrl = getImageUrl(house.logo_url, 'sm') ?? PLACEHOLDER_POSTER;
+  const logoUrl = getImageUrl(house.logo_url, 'sm', 'PRODUCTION_HOUSES') ?? PLACEHOLDER_POSTER;
 
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} accessibilityLabel={house.name}>

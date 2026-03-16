@@ -33,8 +33,8 @@ export function MediaHeroHeader({
   const styles = createStyles(theme);
 
   const imageUri =
-    getImageUrl(movie.backdrop_url, 'md') ??
-    getImageUrl(movie.poster_url, 'md') ??
+    getImageUrl(movie.backdrop_url, 'md', 'BACKDROPS') ??
+    getImageUrl(movie.poster_url, 'md', 'POSTERS') ??
     PLACEHOLDER_POSTER;
 
   /** @nullable Focus point overrides; both axes must be non-null for contentPosition to apply */

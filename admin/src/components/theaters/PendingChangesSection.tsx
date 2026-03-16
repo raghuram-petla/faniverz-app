@@ -171,7 +171,7 @@ function DockRow({
         </div>
         {change.posterUrl ? (
           <img
-            src={getImageUrl(change.posterUrl, 'sm') ?? change.posterUrl}
+            src={getImageUrl(change.posterUrl, 'sm', 'POSTERS') ?? change.posterUrl}
             alt=""
             className="w-6 h-8 rounded object-cover shrink-0"
           />

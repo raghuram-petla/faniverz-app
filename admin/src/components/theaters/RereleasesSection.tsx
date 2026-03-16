@@ -49,7 +49,10 @@ export function RereleasesSection({ rereleases, daysUntil }: RereleasesSectionPr
                   <div className="flex items-center gap-3">
                     {run.movies.poster_url ? (
                       <img
-                        src={getImageUrl(run.movies.poster_url, 'sm') ?? run.movies.poster_url}
+                        src={
+                          getImageUrl(run.movies.poster_url, 'sm', 'POSTERS') ??
+                          run.movies.poster_url
+                        }
                         alt=""
                         className="w-10 h-14 rounded object-cover"
                       />

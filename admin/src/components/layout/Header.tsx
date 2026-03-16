@@ -54,7 +54,7 @@ export function Header() {
             {/* @nullable avatar_url — falls back to User icon; imgError handles broken URLs */}
             {user?.avatar_url && !imgError ? (
               <img
-                src={getImageUrl(user.avatar_url, 'sm') ?? user.avatar_url}
+                src={getImageUrl(user.avatar_url, 'sm', 'AVATARS') ?? user.avatar_url}
                 alt="Avatar"
                 className="w-9 h-9 rounded-full object-cover"
                 onError={() => setImgError(true)}

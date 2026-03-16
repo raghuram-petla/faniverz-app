@@ -119,7 +119,8 @@ export default function FavoriteActorsScreen() {
             <View key={rowIndex} style={styles.gridRow}>
               {row.map((fav) => {
                 const actor = fav.actor;
-                const photoUrl = getImageUrl(actor?.photo_url ?? null, 'sm') ?? PLACEHOLDER_PHOTO;
+                const photoUrl =
+                  getImageUrl(actor?.photo_url ?? null, 'sm', 'ACTORS') ?? PLACEHOLDER_PHOTO;
                 const name = actor?.name ?? 'Unknown';
                 return (
                   <TouchableOpacity

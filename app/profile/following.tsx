@@ -15,7 +15,7 @@ import type { EnrichedFollow, FeedEntityType } from '@shared/types';
 import { useEnrichedFollows, useUnfollowEntity } from '@/features/feed';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { PLACEHOLDER_POSTER, PLACEHOLDER_PHOTO } from '@/constants/placeholders';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, entityTypeToBucket } from '@shared/imageUrl';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -85,7 +85,8 @@ export default function FollowingScreen() {
   const renderItem = useCallback(
     ({ item }: { item: EnrichedFollow }) => {
       const placeholder = item.entity_type === 'actor' ? PLACEHOLDER_PHOTO : PLACEHOLDER_POSTER;
-      const imageUrl = getImageUrl(item.image_url, 'sm') ?? placeholder;
+      const imageUrl =
+        getImageUrl(item.image_url, 'sm', entityTypeToBucket(item.entity_type)) ?? placeholder;
       return (
         <TouchableOpacity
           style={styles.row}

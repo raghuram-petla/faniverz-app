@@ -19,7 +19,7 @@ export function MovieRow({ movie, isOn, onToggle }: MovieRowProps) {
         <div className="flex items-center gap-3">
           {movie.poster_url ? (
             <img
-              src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
+              src={getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? movie.poster_url}
               alt=""
               className="w-10 h-14 rounded object-cover"
             />

@@ -151,7 +151,7 @@ export function ProductionHousesSection({
                       <div className="w-6 h-6 rounded bg-input overflow-hidden shrink-0 flex items-center justify-center">
                         {ph.logo_url ? (
                           <img
-                            src={getImageUrl(ph.logo_url, 'sm') ?? ph.logo_url}
+                            src={getImageUrl(ph.logo_url, 'sm', 'PRODUCTION_HOUSES') ?? ph.logo_url}
                             alt=""
                             className="w-full h-full object-cover"
                           />
@@ -214,7 +214,7 @@ export function ProductionHousesSection({
                 {mph.production_house?.logo_url ? (
                   <img
                     src={
-                      getImageUrl(mph.production_house.logo_url, 'sm') ??
+                      getImageUrl(mph.production_house.logo_url, 'sm', 'PRODUCTION_HOUSES') ??
                       mph.production_house.logo_url
                     }
                     alt=""

@@ -109,7 +109,7 @@ export function ActorSearchDropdown({
                   {/* @nullable photo_url — falls back to generic User icon */}
                   {a.photo_url ? (
                     <img
-                      src={getImageUrl(a.photo_url, 'sm') ?? a.photo_url}
+                      src={getImageUrl(a.photo_url, 'sm', 'ACTORS') ?? a.photo_url}
                       alt=""
                       className="w-full h-full object-cover"
                     />

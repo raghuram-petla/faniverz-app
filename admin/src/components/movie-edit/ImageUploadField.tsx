@@ -1,11 +1,15 @@
 'use client';
 import { useRef, useState } from 'react';
 import { Loader2, Upload, X, ImageOff, RotateCcw } from 'lucide-react';
+import { getImageUrl, type ImageBucket } from '@shared/imageUrl';
 
 // @contract image upload with preview, change, remove, and optional reset actions
 interface ImageUploadFieldProps {
   label: string;
+  /** Relative key (e.g. "abc123.jpg") or full URL stored in form state */
   url: string;
+  /** Bucket used to construct the full display URL from a relative key */
+  bucket?: ImageBucket;
   uploading: boolean;
   uploadEndpoint: string;
   /** Alt text for the preview image */
@@ -27,6 +31,7 @@ interface ImageUploadFieldProps {
 export function ImageUploadField({
   label,
   url,
+  bucket,
   uploading,
   uploadEndpoint,
   previewAlt,
@@ -40,6 +45,16 @@ export function ImageUploadField({
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [imgError, setImgError] = useState(false);
+  // @contract: constructs full display URL from relative key; falls back to url as-is
+  // (handles both new relative keys after migration and legacy full URLs)
+  // @edge: if url looks like a relative key but bucket is missing, the raw key is used as src
+  // which renders a broken image — callers should always pass bucket for post-migration records
+  if (url && !url.startsWith('http') && !bucket) {
+    console.warn(
+      `ImageUploadField: url "${url}" looks like a relative key but no bucket was provided. Pass bucket to construct the correct display URL.`,
+    );
+  }
+  const displayUrl = bucket ? (getImageUrl(url, 'original', bucket) ?? url) : url;
 
   // @sideeffect delegates upload to parent; resets input value to allow re-selecting same file
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -70,7 +85,7 @@ export function ImageUploadField({
             </div>
           ) : (
             <img
-              src={url}
+              src={displayUrl}
               alt={previewAlt}
               className={`rounded-lg object-cover border border-outline ${previewClassName}`}
               onError={() => setImgError(true)}

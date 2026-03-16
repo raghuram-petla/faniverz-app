@@ -12,6 +12,7 @@ import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
+import { getImageUrl } from '@shared/imageUrl';
 import Link from 'next/link';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { FieldConfig } from '@/hooks/useFormChanges';
@@ -158,7 +159,7 @@ export default function EditProductionHousePage() {
           {form.logo_url ? (
             <div className="flex items-center gap-4">
               <img
-                src={form.logo_url}
+                src={getImageUrl(form.logo_url, 'original', 'PRODUCTION_HOUSES') ?? form.logo_url}
                 alt="Logo preview"
                 className="w-20 h-20 rounded-lg object-cover border border-outline"
               />
@@ -200,7 +201,11 @@ export default function EditProductionHousePage() {
               {uploading ? 'Uploading...' : 'Upload Logo'}
             </button>
           )}
-          <ImageVariantsPanel originalUrl={form.logo_url} variantType="photo" />
+          <ImageVariantsPanel
+            originalUrl={form.logo_url}
+            variantType="photo"
+            bucket="PRODUCTION_HOUSES"
+          />
         </div>
 
         <div>

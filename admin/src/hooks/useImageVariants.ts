@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
-import { getImageUrl, type ImageSize } from '@shared/imageUrl';
+import { getImageUrl, type ImageSize, type ImageBucket } from '@shared/imageUrl';
 import { VARIANT_SPECS, type VariantType } from '@/lib/variant-config';
 import { supabase } from '@/lib/supabase-browser';
 
@@ -23,13 +23,17 @@ const SIZE_LABELS: Record<string, string> = {
 
 // @contract: always returns exactly 4 variants (original, sm, md, lg) with initial status 'checking'
 // @assumes: specs array has at least 3 entries (sm, md, lg); original is index 0 so specs[i-1] is safe for i>=1
-function buildVariants(originalUrl: string, variantType: VariantType): VariantInfo[] {
+function buildVariants(
+  originalUrl: string,
+  variantType: VariantType,
+  bucket: ImageBucket,
+): VariantInfo[] {
   const specs = VARIANT_SPECS[variantType];
   const sizes: ImageSize[] = ['original', 'sm', 'md', 'lg'];
 
   return sizes.map((size, i) => ({
     label: SIZE_LABELS[size],
-    url: getImageUrl(originalUrl, size) ?? originalUrl,
+    url: getImageUrl(originalUrl, size, bucket) ?? originalUrl,
     width: size === 'original' ? null : specs[i - 1].width,
     quality: size === 'original' ? null : specs[i - 1].quality,
     status: 'checking' as const,
@@ -39,13 +43,17 @@ function buildVariants(originalUrl: string, variantType: VariantType): VariantIn
 // @boundary: POSTs to /api/image-check to verify variant availability via HEAD requests
 // @nullable: originalUrl — when null, variants are cleared and no check is performed
 // @sideeffect: fires network request on mount and whenever originalUrl/variantType changes
-export function useImageVariants(originalUrl: string | null, variantType: VariantType) {
+export function useImageVariants(
+  originalUrl: string | null,
+  variantType: VariantType,
+  bucket: ImageBucket,
+) {
   const [variants, setVariants] = useState<VariantInfo[]>([]);
   const [isChecking, setIsChecking] = useState(false);
 
   const checkAvailability = useCallback(
     async (url: string) => {
-      const built = buildVariants(url, variantType);
+      const built = buildVariants(url, variantType, bucket);
       setVariants(built);
       setIsChecking(true);
 

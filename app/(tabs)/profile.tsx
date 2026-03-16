@@ -65,7 +65,7 @@ export default function ProfileScreen() {
   const usernameDisplay = profile?.username ? `@${profile.username}` : null;
   const email = user?.email ?? '';
   // @nullable avatar_url can be null — falls back to PLACEHOLDER_AVATAR constant
-  const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md') ?? PLACEHOLDER_AVATAR;
+  const avatarUrl = getImageUrl(profile?.avatar_url ?? null, 'md', 'AVATARS') ?? PLACEHOLDER_AVATAR;
   const memberSince = formatMemberSince(user?.created_at);
 
   const userId = user?.id ?? '';
