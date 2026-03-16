@@ -40,6 +40,8 @@ export default function EditMoviePage() {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<MovieSectionId>('basic-info');
   const [addFormOpen, setAddFormOpen] = useState<string | null>(null);
+  // @contract tracks pending preview URL from the add-poster form (before gallery confirm)
+  const [pendingPreviewPosterUrl, setPendingPreviewPosterUrl] = useState<string | null>(null);
 
   const editState = useMovieEditState(id);
   const { changes, changeCount, onRevertField, onDiscard } = useMovieEditChanges({
@@ -62,6 +64,7 @@ export default function EditMoviePage() {
     pendingPosterAdds: editState.pendingPosterAdds,
     pendingPosterRemoveIds: editState.pendingPosterRemoveIds,
     pendingMainPosterId: editState.pendingMainPosterId,
+    savedMainPosterId: editState.savedMainPosterId,
     postersData: editState.postersData,
     setPendingPosterAdds: editState.setPendingPosterAdds,
     setPendingPosterRemoveIds: editState.setPendingPosterRemoveIds,
@@ -122,7 +125,12 @@ export default function EditMoviePage() {
           >
             <ArrowLeft className="w-4 h-4 text-on-surface" />
           </button>
-          <h1 className="text-2xl font-bold text-on-surface">Edit Movie</h1>
+          <h1 className="text-2xl font-bold text-on-surface">
+            Edit Movie
+            {editState.form.title && (
+              <span className="text-on-surface-muted font-normal"> — {editState.form.title}</span>
+            )}
+          </h1>
         </div>
         {!isReadOnly && (
           <button
@@ -159,6 +167,8 @@ export default function EditMoviePage() {
                 onAdd={(poster) => editState.setPendingPosterAdds((prev) => [...prev, poster])}
                 onRemove={editState.handlePosterRemove}
                 onSetMain={(posterId) => editState.setPendingMainPosterId(posterId)}
+                savedMainPosterId={editState.savedMainPosterId}
+                onPendingMainChange={setPendingPreviewPosterUrl}
                 form={editState.form}
                 setForm={editState.setForm}
                 updateField={editState.updateField}
@@ -263,7 +273,18 @@ export default function EditMoviePage() {
         </div>
 
         {/* Right column — Preview */}
-        <PreviewPanel form={editState.form} />
+        {/* @contract poster_url is overridden with the pending main poster's image_url so the
+            preview reflects Set Main changes immediately, before the edit is saved */}
+        {/* @contract pendingPreviewPosterUrl overrides when add-form "Set as main" is checked + image uploaded */}
+        <PreviewPanel
+          form={{
+            ...editState.form,
+            poster_url:
+              pendingPreviewPosterUrl ??
+              editState.visiblePosters.find((p) => p.is_main)?.image_url ??
+              editState.form.poster_url,
+          }}
+        />
       </div>
 
       <FormChangesDock

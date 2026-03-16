@@ -102,7 +102,8 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
         makeChange(`entity:poster-remove-${id}`, 'Posters', poster?.title ?? id, '(removed)'),
       );
     });
-    if (params.pendingMainPosterId) {
+    // @contract only show Main Poster change if the pending selection differs from the saved DB main
+    if (params.pendingMainPosterId && params.pendingMainPosterId !== params.savedMainPosterId) {
       result.push(makeChange('entity:main-poster', 'Main Poster', 'Current', 'Changed'));
     }
     // Platforms
@@ -187,6 +188,7 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
     params.pendingPosterRemoveIds,
     params.postersData,
     params.pendingMainPosterId,
+    params.savedMainPosterId,
     params.pendingPlatformAdds,
     params.pendingPlatformRemoveIds,
     params.moviePlatforms,

@@ -103,6 +103,8 @@ export interface MovieEditHandlerDeps {
   pendingPosterAdds: PendingPosterAdd[];
   pendingPosterRemoveIds: Set<string>;
   pendingMainPosterId: string | null;
+  // @assumes contains only DB-persisted posters (not pending adds) — used for effectivePosterUrl lookup
+  postersData: { id: string; image_url: string }[];
   pendingPlatformAdds: PendingPlatformAdd[];
   pendingPlatformRemoveIds: Set<string>;
   pendingPHAdds: PendingPHAdd[];
@@ -223,6 +225,7 @@ export interface UseMovieEditChangesParams {
   pendingPosterAdds: PendingPosterAdd[];
   pendingPosterRemoveIds: Set<string>;
   pendingMainPosterId: string | null;
+  savedMainPosterId: string | null;
   postersData: PosterRow[];
   setPendingPosterAdds: React.Dispatch<React.SetStateAction<PendingPosterAdd[]>>;
   setPendingPosterRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;

@@ -129,7 +129,16 @@ export function useMovieEditState(id: string) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
-  // @sideeffect Hydrates form state from server data when movie loads or refreshes
+  // @sideeffect Resets pending state when the movie id changes (navigation to different movie)
+  // @contract Does NOT reset on background refetches — only on id change to preserve unsaved edits
+  useEffect(() => {
+    pending.resetPendingState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // @sideeffect Hydrates form state from server data when movie loads or refetches
+  // @contract Does NOT reset pending state here — that is handled by the [id] effect above
+  // @edge Only updates form + initialForm; pending state is intentionally preserved across refetches
   useEffect(() => {
     if (movie) {
       const loaded: MovieForm = {
@@ -151,7 +160,6 @@ export function useMovieEditState(id: string) {
       };
       setForm(loaded);
       setInitialForm(loaded);
-      pending.resetPendingState();
     }
   }, [movie]);
   useEffect(() => {
@@ -192,6 +200,7 @@ export function useMovieEditState(id: string) {
         }
       : null,
     ...pending,
+    postersData,
     updateMovie,
     deleteMovie,
     addCast,
@@ -248,6 +257,7 @@ export function useMovieEditState(id: string) {
     visiblePlatforms: derived.visiblePlatforms,
     visibleProductionHouses: derived.visibleProductionHouses,
     visibleRuns: derived.visibleRuns,
+    savedMainPosterId: derived.savedMainPosterId,
     actors,
     castSearchQuery,
     setCastSearchQuery,

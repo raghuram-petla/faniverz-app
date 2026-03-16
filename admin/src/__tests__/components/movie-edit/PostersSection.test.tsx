@@ -52,6 +52,7 @@ function renderPostersSection(overrides: Record<string, unknown> = {}) {
     onAdd: vi.fn(),
     onRemove: vi.fn(),
     onSetMain: vi.fn(),
+    savedMainPosterId: null,
     form: defaultForm,
     setForm: vi.fn(),
     updateField: vi.fn(),
@@ -113,20 +114,22 @@ describe('PostersSection', () => {
     expect(screen.queryByPlaceholderText(/First Look/)).not.toBeInTheDocument();
   });
 
-  it('disables upload button when title is empty', () => {
+  it('shows Upload Image button in add form', () => {
     renderPostersSection();
     fireEvent.click(screen.getByRole('button', { name: /Add/ }));
-    const uploadBtn = screen.getByRole('button', { name: /Upload & Add/ });
-    expect(uploadBtn).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Upload Image/ })).toBeInTheDocument();
   });
 
-  it('enables upload button when title is filled', () => {
+  it('disables Add to Gallery button until both title and image are set', () => {
     renderPostersSection();
     fireEvent.click(screen.getByRole('button', { name: /Add/ }));
+    const confirmBtn = screen.getByRole('button', { name: /Add to Gallery/ });
+    // disabled with no title and no image
+    expect(confirmBtn).toBeDisabled();
+    // still disabled with only title (no uploaded image)
     const titleInput = screen.getByPlaceholderText(/First Look/);
     fireEvent.change(titleInput, { target: { value: 'Test Poster' } });
-    const uploadBtn = screen.getByRole('button', { name: /Upload & Add/ });
-    expect(uploadBtn).not.toBeDisabled();
+    expect(confirmBtn).toBeDisabled();
   });
 
   it('renders poster card list with title and date always visible', () => {
@@ -138,6 +141,19 @@ describe('PostersSection', () => {
   it('shows Main badge on main poster', () => {
     renderPostersSection({ visiblePosters: [MOCK_POSTER] });
     expect(screen.getByText('Main')).toBeInTheDocument();
+  });
+
+  it('disables remove button for main poster', () => {
+    renderPostersSection({ visiblePosters: [MOCK_POSTER] });
+    const removeBtn = screen.getByRole('button', { name: /Remove First Look/ });
+    expect(removeBtn).toBeDisabled();
+  });
+
+  it('enables remove button for non-main poster', () => {
+    const nonMain = { ...MOCK_POSTER, id: 'poster-2', is_main: false, title: 'Second Look' };
+    renderPostersSection({ visiblePosters: [MOCK_POSTER, nonMain] });
+    const removeBtn = screen.getByRole('button', { name: /Remove Second Look/ });
+    expect(removeBtn).not.toBeDisabled();
   });
 
   it('shows empty state when no posters', () => {

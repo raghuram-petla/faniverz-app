@@ -22,6 +22,7 @@ function makeParams(overrides: Partial<UseMovieEditChangesParams> = {}): UseMovi
     pendingPosterAdds: [],
     pendingPosterRemoveIds: new Set(),
     pendingMainPosterId: null,
+    savedMainPosterId: null,
     postersData: [],
     setPendingPosterAdds: vi.fn(),
     setPendingPosterRemoveIds: vi.fn(),

@@ -154,6 +154,7 @@ export function useMovieEditDerived(params: {
   );
 
   // @edge pendingMainPosterId overrides is_main on ALL posters — ensures exactly one main poster
+  // @edge also handles pending adds with is_main:true when pendingMainPosterId is not yet set
   const visiblePosters = useMemo(() => {
     const items = [
       ...postersData.filter((p) => !pendingPosterRemoveIds.has(p.id)),
@@ -164,10 +165,13 @@ export function useMovieEditDerived(params: {
         created_at: '',
       })),
     ];
-    // @edge only apply override if pendingMainPosterId actually exists in items
-    // (prevents orphaned references when the main poster is removed)
-    if (pendingMainPosterId && items.some((p) => p.id === pendingMainPosterId)) {
-      return items.map((p) => ({ ...p, is_main: p.id === pendingMainPosterId }));
+    // @contract effectiveMainId: explicit selection wins; fallback to any pending add with is_main=true
+    const effectiveMainId =
+      pendingMainPosterId && items.some((p) => p.id === pendingMainPosterId)
+        ? pendingMainPosterId
+        : (pendingPosterAdds.find((p) => p.is_main)?._id ?? null);
+    if (effectiveMainId) {
+      return items.map((p) => ({ ...p, is_main: p.id === effectiveMainId }));
     }
     return items;
   }, [postersData, pendingPosterAdds, pendingPosterRemoveIds, pendingMainPosterId, id]);
@@ -214,6 +218,12 @@ export function useMovieEditDerived(params: {
     [theatricalRuns, pendingRunAdds, pendingRunRemoveIds, id],
   );
 
+  // @contract savedMainPosterId reflects only the DB-persisted main poster — never changes during editing
+  const savedMainPosterId = useMemo(
+    () => postersData.find((p) => p.is_main)?.id ?? null,
+    [postersData],
+  );
+
   // @edge JSON.stringify comparison for form fields — deep equality check on objects with no circular refs
   // @assumes initialForm is null only before movie data loads (add flow sets it to INITIAL_FORM immediately)
   const isDirty = useMemo(() => {
@@ -222,7 +232,9 @@ export function useMovieEditDerived(params: {
     if (pendingCastAdds.length > 0 || pendingCastRemoveIds.size > 0) return true;
     if (pendingVideoAdds.length > 0 || pendingVideoRemoveIds.size > 0) return true;
     if (pendingPosterAdds.length > 0 || pendingPosterRemoveIds.size > 0) return true;
-    if (pendingMainPosterId !== null) return true;
+    // @contract only dirty if pending main differs from the saved DB main — re-selecting the
+    //           original main must not count as a change
+    if (pendingMainPosterId !== null && pendingMainPosterId !== savedMainPosterId) return true;
     if (pendingPlatformAdds.length > 0 || pendingPlatformRemoveIds.size > 0) return true;
     if (pendingPHAdds.length > 0 || pendingPHRemoveIds.size > 0) return true;
     if (pendingRunAdds.length > 0 || pendingRunRemoveIds.size > 0) return true;
@@ -241,6 +253,7 @@ export function useMovieEditDerived(params: {
     pendingPosterAdds,
     pendingPosterRemoveIds,
     pendingMainPosterId,
+    savedMainPosterId,
     pendingPlatformAdds,
     pendingPlatformRemoveIds,
     pendingPHAdds,
@@ -258,5 +271,6 @@ export function useMovieEditDerived(params: {
     visibleProductionHouses,
     visibleRuns,
     isDirty,
+    savedMainPosterId,
   };
 }

@@ -1,5 +1,6 @@
 'use client';
 import { Star, Calendar, X } from 'lucide-react';
+import { getImageUrl } from '@shared/imageUrl';
 
 // @contract reusable subheading with icon + uppercase label + bottom border + optional action slot
 export function SectionHeading({
@@ -24,7 +25,7 @@ export function SectionHeading({
   );
 }
 
-// @contract card row for a single poster — always-visible info (no hover needed)
+// @contract grid card for a single poster — image-first layout, 4 per row
 export function PosterGalleryCard({
   poster,
   onSetMain,
@@ -41,43 +42,48 @@ export function PosterGalleryCard({
   onRemove: (id: string, isPending: boolean) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3">
-      <img
-        src={poster.image_url}
-        alt={poster.title}
-        className="w-12 h-[72px] rounded-lg object-cover shrink-0"
-      />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-on-surface font-medium text-sm truncate">{poster.title}</p>
-          {poster.is_main && (
-            <span className="flex items-center gap-1 bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded text-xs font-bold shrink-0">
-              <Star className="w-3 h-3" /> Main
-            </span>
-          )}
-        </div>
+    <div className="bg-surface-elevated rounded-xl overflow-hidden flex flex-col">
+      {/* Poster image */}
+      <div className="relative">
+        <img
+          src={getImageUrl(poster.image_url, 'md', 'POSTERS') ?? poster.image_url}
+          alt={poster.title}
+          className="w-full aspect-[2/3] object-cover"
+        />
+        {/* @contract main badge overlaid on image top-left */}
+        {poster.is_main && (
+          <span className="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-yellow-500/90 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">
+            <Star className="w-2.5 h-2.5" /> Main
+          </span>
+        )}
+        {/* @contract remove button overlaid on image top-right */}
+        <button
+          onClick={() => onRemove(poster.id, poster.id.startsWith('pending-poster'))}
+          disabled={poster.is_main}
+          title={poster.is_main ? 'Set another poster as main before removing this one' : undefined}
+          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white hover:bg-red-600/80 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black/50"
+          aria-label={`Remove ${poster.title}`}
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* Info + actions */}
+      <div className="p-2 flex flex-col gap-1">
+        <p className="text-on-surface font-medium text-xs truncate">{poster.title}</p>
         {poster.poster_date && (
-          <p className="text-xs text-on-surface-subtle mt-0.5 flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> {poster.poster_date}
+          <p className="text-[10px] text-on-surface-subtle flex items-center gap-0.5">
+            <Calendar className="w-2.5 h-2.5" /> {poster.poster_date}
           </p>
         )}
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
         {!poster.is_main && (
           <button
             onClick={() => onSetMain(poster.id)}
-            className="text-xs bg-yellow-500/10 text-yellow-500 px-2.5 py-1.5 rounded-lg font-medium hover:bg-yellow-500/20"
+            className="mt-0.5 w-full text-[10px] bg-yellow-500/10 text-yellow-500 px-1.5 py-1 rounded font-medium hover:bg-yellow-500/20"
           >
             Set Main
           </button>
         )}
-        <button
-          onClick={() => onRemove(poster.id, poster.id.startsWith('pending-poster'))}
-          className="p-1.5 rounded-lg text-on-surface-subtle hover:bg-red-600/10 hover:text-status-red"
-          aria-label={`Remove ${poster.title}`}
-        >
-          <X className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );

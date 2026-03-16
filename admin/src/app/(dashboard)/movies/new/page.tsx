@@ -33,6 +33,8 @@ import type { MovieSectionId } from '@/components/movie-edit';
 export default function NewMoviePage() {
   const [activeSection, setActiveSection] = useState<MovieSectionId>('basic-info');
   const [addFormOpen, setAddFormOpen] = useState<string | null>(null);
+  // @contract tracks pending preview URL from the add-poster form (before gallery confirm)
+  const [pendingPreviewPosterUrl, setPendingPreviewPosterUrl] = useState<string | null>(null);
   const s = useMovieAddState();
 
   function addButton(key: string, label: string) {
@@ -110,6 +112,8 @@ export default function NewMoviePage() {
                 onAdd={(poster) => s.setPendingPosterAdds((prev) => [...prev, poster])}
                 onRemove={s.handlePosterRemove}
                 onSetMain={(posterId) => s.setPendingMainPosterId(posterId)}
+                savedMainPosterId={s.savedMainPosterId}
+                onPendingMainChange={setPendingPreviewPosterUrl}
                 form={s.form}
                 setForm={s.setForm}
                 updateField={s.updateField}
@@ -211,7 +215,13 @@ export default function NewMoviePage() {
           )}
         </div>
 
-        <PreviewPanel form={s.form} />
+        {/* @contract pendingPreviewPosterUrl overrides when add-form "Set as main" is checked + image uploaded */}
+        <PreviewPanel
+          form={{
+            ...s.form,
+            poster_url: pendingPreviewPosterUrl ?? s.form.poster_url,
+          }}
+        />
       </div>
     </div>
   );
