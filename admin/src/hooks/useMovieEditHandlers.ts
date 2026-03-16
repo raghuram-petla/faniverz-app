@@ -10,6 +10,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
   const {
     id,
     form,
+    setForm,
     router,
     queryClient,
     movieData,
@@ -21,6 +22,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     pendingPosterAdds,
     pendingPosterRemoveIds,
     pendingMainPosterId,
+    postersData,
     pendingPlatformAdds,
     pendingPlatformRemoveIds,
     pendingPHAdds,
@@ -71,11 +73,18 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
 
     setIsSaving(true);
     try {
-      // @contract compute poster_url: if a pending poster will be main, sync poster_url to its image
-      const pendingMainPoster = pendingPosterAdds.find((p) =>
-        pendingMainPosterId ? p._id === pendingMainPosterId : p.is_main,
-      );
-      const effectivePosterUrl = pendingMainPoster ? pendingMainPoster.image_url : form.poster_url;
+      // @contract compute poster_url: check pending adds first, then existing DB posters
+      // @edge when promoting an existing DB poster, look it up in postersData to avoid
+      //       racing updateMovie (old url) vs setMainPoster (new url) on movies.poster_url
+      const pendingMainPoster = pendingMainPosterId
+        ? pendingPosterAdds.find((p) => p._id === pendingMainPosterId)
+        : pendingPosterAdds.find((p) => p.is_main);
+      const existingMainPoster =
+        pendingMainPosterId && !pendingMainPoster
+          ? postersData.find((p) => p.id === pendingMainPosterId)
+          : null;
+      const effectivePosterUrl =
+        pendingMainPoster?.image_url ?? existingMainPoster?.image_url ?? form.poster_url;
 
       const promises: Promise<unknown>[] = [
         updateMovie.mutateAsync({
@@ -222,8 +231,12 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         const msgs = failures.map((f) => f.reason?.message ?? String(f.reason));
         alert(`${failures.length} operation(s) failed:\n${msgs.join('\n')}`);
       }
+      // @contract Use functional updaters to read latest state — avoids stale closure race where
+      //           useEffect updates form mid-await and setInitialForm({ ...form }) writes back stale data
+      const savedPosterUrl = effectivePosterUrl || form.poster_url;
       resetPendingState();
-      setInitialForm({ ...form });
+      setForm((prev) => ({ ...prev, poster_url: savedPosterUrl }));
+      setInitialForm((prev) => (prev ? { ...prev, poster_url: savedPosterUrl } : null));
       setSaveStatus('success');
       // @sideeffect: invalidate theater-related queries so navigating to In Theaters shows fresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });

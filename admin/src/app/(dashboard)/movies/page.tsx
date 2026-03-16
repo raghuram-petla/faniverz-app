@@ -121,7 +121,7 @@ export default function MoviesPage() {
                       <Link href={`/movies/${movie.id}`} className="relative shrink-0">
                         {movie.poster_url ? (
                           <img
-                            src={getImageUrl(movie.poster_url, 'sm') ?? movie.poster_url}
+                            src={getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? movie.poster_url}
                             alt=""
                             className="w-10 h-14 rounded object-cover"
                           />
