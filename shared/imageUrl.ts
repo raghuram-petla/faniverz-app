@@ -15,38 +15,30 @@ export type ImageBucket =
 /** Known external CDNs that don't have pre-generated _sm/_md/_lg variants. */
 const EXTERNAL_CDNS = ['image.tmdb.org', 'i.pravatar.cc'];
 
-// @contract: each bundle (Expo, Next.js) inlines its own prefixed env vars at build time.
-// The other platform's vars are undefined at runtime — the ?? chain picks whichever is set.
-// @coupling: env var names must match admin/.env.local (NEXT_PUBLIC_) and .env.local (EXPO_PUBLIC_).
+// @contract: each bundle inlines its own env vars at build time.
+// Expo uses EXPO_PUBLIC_R2_BASE_URL_*; Next.js exposes R2_PUBLIC_BASE_URL_* via next.config env.
+// @coupling: Next.js vars must be listed in admin/next.config.ts env block.
 // @contract: reads process.env at call time (not module init) so tests can inject env vars.
 function getBaseUrl(bucket: ImageBucket): string | undefined {
   switch (bucket) {
     case 'POSTERS':
-      return (
-        process.env.EXPO_PUBLIC_R2_BASE_URL_POSTERS ?? process.env.NEXT_PUBLIC_R2_BASE_URL_POSTERS
-      );
+      return process.env.EXPO_PUBLIC_R2_BASE_URL_POSTERS ?? process.env.R2_PUBLIC_BASE_URL_POSTERS;
     case 'BACKDROPS':
       return (
-        process.env.EXPO_PUBLIC_R2_BASE_URL_BACKDROPS ??
-        process.env.NEXT_PUBLIC_R2_BASE_URL_BACKDROPS
+        process.env.EXPO_PUBLIC_R2_BASE_URL_BACKDROPS ?? process.env.R2_PUBLIC_BASE_URL_BACKDROPS
       );
     case 'ACTORS':
-      return (
-        process.env.EXPO_PUBLIC_R2_BASE_URL_ACTORS ?? process.env.NEXT_PUBLIC_R2_BASE_URL_ACTORS
-      );
+      return process.env.EXPO_PUBLIC_R2_BASE_URL_ACTORS ?? process.env.R2_PUBLIC_BASE_URL_ACTORS;
     case 'AVATARS':
-      return (
-        process.env.EXPO_PUBLIC_R2_BASE_URL_AVATARS ?? process.env.NEXT_PUBLIC_R2_BASE_URL_AVATARS
-      );
+      return process.env.EXPO_PUBLIC_R2_BASE_URL_AVATARS ?? process.env.R2_PUBLIC_BASE_URL_AVATARS;
     case 'PLATFORMS':
       return (
-        process.env.EXPO_PUBLIC_R2_BASE_URL_PLATFORMS ??
-        process.env.NEXT_PUBLIC_R2_BASE_URL_PLATFORMS
+        process.env.EXPO_PUBLIC_R2_BASE_URL_PLATFORMS ?? process.env.R2_PUBLIC_BASE_URL_PLATFORMS
       );
     case 'PRODUCTION_HOUSES':
       return (
         process.env.EXPO_PUBLIC_R2_BASE_URL_PRODUCTION_HOUSES ??
-        process.env.NEXT_PUBLIC_R2_BASE_URL_PRODUCTION_HOUSES
+        process.env.R2_PUBLIC_BASE_URL_PRODUCTION_HOUSES
       );
     default:
       // @invariant: all ImageBucket values must be handled above — this line is unreachable
