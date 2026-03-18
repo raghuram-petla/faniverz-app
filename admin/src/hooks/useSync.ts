@@ -112,11 +112,16 @@ export interface StaleItemsResponse {
 // @boundary Proxy to /api/sync/* Next.js routes — server handles TMDB API key securely
 // @contract GET when body is undefined; POST with JSON body otherwise
 // @assumes caller is authenticated — getSession() returns null only when session has expired
+// @edge 401 from server means JWT expired mid-session (autoRefreshToken:false) — sign out
+//       so AuthProvider's onAuthStateChange fires null → DashboardLayout redirects to /login
 async function syncApi<T>(path: string, body?: unknown): Promise<T> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session) throw new Error('Not authenticated — please log in again.');
+  if (!session) {
+    void supabase.auth.signOut();
+    throw new Error('Session expired — please sign in again.');
+  }
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${session.access_token}`,
@@ -130,6 +135,10 @@ async function syncApi<T>(path: string, body?: unknown): Promise<T> {
   });
 
   const data = await res.json();
+  if (res.status === 401) {
+    void supabase.auth.signOut();
+    throw new Error('Session expired — please sign in again.');
+  }
   if (!res.ok) throw new Error(data.error ?? `Sync API error: ${res.status}`);
   return data as T;
 }

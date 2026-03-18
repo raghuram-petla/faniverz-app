@@ -58,18 +58,30 @@ export async function verifyBearer(authHeader: string | null): Promise<User | nu
  * separately by the caller. Currently only upload-handler.ts uses this, and it
  * allows any admin to upload images regardless of role.
  */
+// @boundary: two-step check — JWT validity via auth API, then admin role via service role DB
+// @edge: logs reason for failure so Vercel function logs show root cause of 401s
 export async function verifyAdmin(authHeader: string | null): Promise<User | null> {
   const user = await verifyBearer(authHeader);
-  if (!user) return null;
+  if (!user) {
+    console.warn('[verifyAdmin] verifyBearer failed — invalid or expired JWT');
+    return null;
+  }
 
   const supabase = getSupabaseAdmin();
-  const { data: adminRole } = await supabase
+  const { data: adminRole, error: roleError } = await supabase
     .from('admin_user_roles')
     .select('role_id, status')
     .eq('user_id', user.id)
     .single();
 
-  if (!adminRole || adminRole.status === 'blocked') return null;
+  if (roleError || !adminRole || adminRole.status === 'blocked') {
+    console.warn('[verifyAdmin] admin_user_roles check failed', {
+      userId: user.id,
+      roleError: roleError?.message,
+      adminRole,
+    });
+    return null;
+  }
   return user;
 }
 
@@ -78,16 +90,26 @@ export async function verifyAdminWithRole(
   authHeader: string | null,
 ): Promise<{ user: User; role: string } | null> {
   const user = await verifyBearer(authHeader);
-  if (!user) return null;
+  if (!user) {
+    console.warn('[verifyAdminWithRole] verifyBearer failed — invalid or expired JWT');
+    return null;
+  }
 
   const supabase = getSupabaseAdmin();
-  const { data: adminRole } = await supabase
+  const { data: adminRole, error: roleError } = await supabase
     .from('admin_user_roles')
     .select('role_id, status')
     .eq('user_id', user.id)
     .single();
 
-  if (!adminRole || adminRole.status === 'blocked') return null;
+  if (roleError || !adminRole || adminRole.status === 'blocked') {
+    console.warn('[verifyAdminWithRole] admin_user_roles check failed', {
+      userId: user.id,
+      roleError: roleError?.message,
+      adminRole,
+    });
+    return null;
+  }
   return { user, role: adminRole.role_id };
 }
 
