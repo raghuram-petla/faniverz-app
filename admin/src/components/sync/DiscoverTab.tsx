@@ -15,17 +15,21 @@ export function DiscoverTab() {
   const importMovies = useImportMovies();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
+  /** @edge tracks TMDB IDs imported this session — merged into existingSet so cards disappear */
+  const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
 
   /** @boundary DiscoverResult shape returned by useDiscoverMovies — cast needed due to mutation generic */
   const data = discover.data as DiscoverResult | undefined;
+  /** @edge tracks movies imported this session — merged into existingMovies for display */
+  const [importedMovieData, setImportedMovieData] = useState<ExistingMovieData[]>([]);
   /** @invariant existingSet rebuilt only when existingMovies changes — used to mark imported movies */
   const existingMovies = useMemo(
-    () => (data?.existingMovies ?? []) as ExistingMovieData[],
-    [data?.existingMovies],
+    () => [...((data?.existingMovies ?? []) as ExistingMovieData[]), ...importedMovieData],
+    [data?.existingMovies, importedMovieData],
   );
   const existingSet = useMemo(
-    () => new Set(existingMovies.map((m) => m.tmdb_id)),
-    [existingMovies],
+    () => new Set([...existingMovies.map((m) => m.tmdb_id), ...importedIds]),
+    [existingMovies, importedIds],
   );
   const newMovies = useMemo(
     () => (data?.results ?? []).filter((m) => !existingSet.has(m.id)),
@@ -37,6 +41,8 @@ export function DiscoverTab() {
   const handleDiscover = () => {
     setSelected(new Set());
     setImportProgress([]);
+    setImportedIds(new Set());
+    setImportedMovieData([]);
     discover.mutate({ year, month: month || undefined });
   };
 
@@ -67,6 +73,31 @@ export function DiscoverTab() {
       );
       try {
         const response = await importMovies.mutateAsync(batch);
+        // @sideeffect track successfully imported movies so they move to existing section
+        const successResults = response.results;
+        if (successResults.length > 0) {
+          setImportedIds((prev) => new Set([...prev, ...successResults.map((r) => r.tmdbId)]));
+          // Construct ExistingMovieData from import results + TMDB discover data
+          const tmdbResults = data?.results ?? [];
+          const newExisting: ExistingMovieData[] = successResults.map((r) => {
+            const tmdb = tmdbResults.find((m) => m.id === r.tmdbId);
+            return {
+              id: r.movieId,
+              tmdb_id: r.tmdbId,
+              title: r.title,
+              synopsis: null,
+              poster_url: tmdb?.poster_path
+                ? `https://image.tmdb.org/t/p/w500${tmdb.poster_path}`
+                : null,
+              backdrop_url: null,
+              trailer_url: null,
+              director: null,
+              runtime: null,
+              genres: null,
+            };
+          });
+          setImportedMovieData((prev) => [...prev, ...newExisting]);
+        }
         setImportProgress((prev) =>
           prev.map((p) => {
             if (!batch.includes(p.tmdbId)) return p;
@@ -142,6 +173,7 @@ export function DiscoverTab() {
           onDeselectAll={() => setSelected(new Set())}
           onImport={handleImport}
           onImportAllNew={handleImportAllNew}
+          importedIds={importedIds}
         />
       )}
 

@@ -32,6 +32,8 @@ export interface DiscoverResultsProps {
   onImport: () => void;
   /** @sideeffect selects all new movies and immediately triggers import */
   onImportAllNew: () => void;
+  /** TMDB IDs of movies imported this session */
+  importedIds?: Set<number>;
 }
 
 export function DiscoverResults({
@@ -47,6 +49,7 @@ export function DiscoverResults({
   onDeselectAll,
   onImport,
   onImportAllNew,
+  importedIds,
 }: DiscoverResultsProps) {
   return (
     <>
@@ -101,31 +104,26 @@ export function DiscoverResults({
                 key={movie.id}
                 onClick={() => onToggleSelect(movie.id)}
                 disabled={isImporting}
-                className={`relative bg-surface-card border rounded-xl overflow-hidden text-left transition-all ${
+                className={`relative bg-black rounded-xl overflow-hidden text-left transition-all ${
                   isSelected
-                    ? 'border-red-600 ring-1 ring-red-600'
-                    : 'border-outline hover:border-on-surface-subtle'
+                    ? 'ring-2 ring-red-600'
+                    : 'ring-1 ring-outline hover:ring-on-surface-subtle'
                 } disabled:cursor-default`}
               >
-                <div className="aspect-[2/3] bg-surface-muted">
-                  {/* @boundary TMDB image URL constructed from poster_path — depends on TMDB CDN */}
-                  {movie.poster_path ? (
-                    <img
-                      src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
-                      alt={movie.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Film className="w-8 h-8 text-on-surface-disabled" />
-                    </div>
-                  )}
-                </div>
+                {movie.poster_path ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+                    alt={movie.title}
+                    className="block w-full aspect-[2/3] object-cover rounded-t-xl"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="aspect-[2/3] bg-surface-muted flex items-center justify-center rounded-t-xl">
+                    <Film className="w-8 h-8 text-on-surface-disabled" />
+                  </div>
+                )}
                 <div className="p-1.5">
-                  <p className="text-xs font-medium text-on-surface line-clamp-2 leading-tight">
-                    {movie.title}
-                  </p>
+                  <p className="text-xs font-medium text-on-surface truncate">{movie.title}</p>
                   <p className="text-[10px] text-on-surface-subtle mt-0.5">
                     {movie.release_date || 'No date'}
                   </p>
@@ -141,7 +139,9 @@ export function DiscoverResults({
       </div>
 
       {/* @coupling ExistingMovieSync is only rendered when there are existing movies */}
-      {existingMovies.length > 0 && <ExistingMovieSync movies={existingMovies} />}
+      {existingMovies.length > 0 && (
+        <ExistingMovieSync movies={existingMovies} importedIds={importedIds} />
+      )}
     </>
   );
 }

@@ -19,10 +19,12 @@ import { FieldDiffPanel } from './FieldDiffPanel';
 
 export interface ExistingMovieSyncProps {
   movies: ExistingMovieData[];
+  /** TMDB IDs of movies imported this session — shown with "Just imported" badge */
+  importedIds?: Set<number>;
 }
 
 /** @contract collapsible section: header shows counts + bulk fill; body shows per-movie rows */
-export function ExistingMovieSync({ movies }: ExistingMovieSyncProps) {
+export function ExistingMovieSync({ movies, importedIds }: ExistingMovieSyncProps) {
   const [sectionOpen, setSectionOpen] = useState(false);
   // @edge gap count is always 0 here — real gaps can only be determined after
   // TMDB lookup (per-movie expand). "All fields match" is the default state.
@@ -88,7 +90,11 @@ export function ExistingMovieSync({ movies }: ExistingMovieSyncProps) {
       {sectionOpen && (
         <div className="divide-y divide-outline">
           {movies.map((movie) => (
-            <ExistingMovieRow key={movie.tmdb_id} movie={movie} />
+            <ExistingMovieRow
+              key={movie.tmdb_id}
+              movie={movie}
+              justImported={importedIds?.has(movie.tmdb_id) ?? false}
+            />
           ))}
         </div>
       )}
@@ -98,7 +104,13 @@ export function ExistingMovieSync({ movies }: ExistingMovieSyncProps) {
 
 // ── Per-movie row ─────────────────────────────────────────────────────────────
 
-function ExistingMovieRow({ movie }: { movie: ExistingMovieData }) {
+function ExistingMovieRow({
+  movie,
+  justImported,
+}: {
+  movie: ExistingMovieData;
+  justImported: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [appliedFields, setAppliedFields] = useState<string[]>([]);
   const lookup = useTmdbLookup();
@@ -111,6 +123,7 @@ function ExistingMovieRow({ movie }: { movie: ExistingMovieData }) {
       : null;
 
   const handleToggle = () => {
+    if (justImported) return; // no local data to compare yet — re-discover first
     if (!open && !tmdbData && !lookup.isPending) {
       lookup.mutate({ tmdbId: movie.tmdb_id, type: 'movie' });
     }
@@ -148,7 +161,11 @@ function ExistingMovieRow({ movie }: { movie: ExistingMovieData }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-on-surface truncate">{movie.title ?? '—'}</p>
-          <p className="text-xs text-status-green mt-0.5">All fields match</p>
+          <p
+            className={`text-xs mt-0.5 ${justImported ? 'text-status-blue' : 'text-status-green'}`}
+          >
+            {justImported ? 'Just imported' : 'All fields match'}
+          </p>
         </div>
         {open ? (
           <ChevronDown className="w-4 h-4 text-on-surface-muted shrink-0" />
