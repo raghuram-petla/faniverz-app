@@ -98,8 +98,11 @@ export function DiscoverResults({
         </div>
       </div>
 
-      {/* New-only grid — existing movies are shown in the section below */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      {/* New-only grid — auto-fill keeps cards ~100px wide; columns adjust to container */}
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))' }}
+      >
         {results
           .filter((m) => !existingSet.has(m.id))
           .map((movie) => {
@@ -130,11 +133,11 @@ export function DiscoverResults({
                     </div>
                   )}
                 </div>
-                <div className="p-2.5">
-                  <p className="text-sm font-medium text-on-surface line-clamp-2 leading-tight">
+                <div className="p-1.5">
+                  <p className="text-xs font-medium text-on-surface line-clamp-2 leading-tight">
                     {movie.title}
                   </p>
-                  <p className="text-xs text-on-surface-subtle mt-1">
+                  <p className="text-[10px] text-on-surface-subtle mt-0.5">
                     {movie.release_date || 'No date'}
                   </p>
                 </div>
