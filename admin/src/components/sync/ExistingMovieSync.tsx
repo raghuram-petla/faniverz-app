@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { ChevronRight, ChevronDown, Loader2, Film } from 'lucide-react';
 import { useTmdbLookup, useFillFields, type ExistingMovieData } from '@/hooks/useSync';
 import { countMissing, getMissingFields } from '@/lib/syncUtils';
+import { getImageUrl } from '@shared/imageUrl';
 import { useBulkFillMissing } from '@/hooks/useBulkFillMissing';
 import { FieldDiffPanel } from './FieldDiffPanel';
 
@@ -141,7 +142,7 @@ function ExistingMovieRow({ movie }: { movie: ExistingMovieData }) {
         <div className="w-10 h-14 bg-surface-muted rounded shrink-0 overflow-hidden">
           {movie.poster_url ? (
             <img
-              src={movie.poster_url}
+              src={getImageUrl(movie.poster_url, 'original', 'POSTERS') ?? movie.poster_url}
               alt={movie.title ?? ''}
               className="w-full h-full object-cover"
             />
