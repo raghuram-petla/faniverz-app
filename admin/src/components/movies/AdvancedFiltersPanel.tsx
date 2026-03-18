@@ -68,10 +68,13 @@ export function AdvancedFiltersPanel({
       {/* Text search filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Actor / Cast</label>
+          <label htmlFor="filter-actor" className="block text-xs text-on-surface-muted mb-1">
+            Actor / Cast
+          </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
             <input
+              id="filter-actor"
               type="text"
               placeholder="Search by actor name..."
               value={filters.actorSearch}
@@ -81,10 +84,13 @@ export function AdvancedFiltersPanel({
           </div>
         </div>
         <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Director</label>
+          <label htmlFor="filter-director" className="block text-xs text-on-surface-muted mb-1">
+            Director
+          </label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
             <input
+              id="filter-director"
               type="text"
               placeholder="Search by director name..."
               value={filters.directorSearch}
@@ -98,8 +104,11 @@ export function AdvancedFiltersPanel({
       {/* Dropdown filters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Release Year</label>
+          <label htmlFor="filter-release-year" className="block text-xs text-on-surface-muted mb-1">
+            Release Year
+          </label>
           <select
+            id="filter-release-year"
             value={filters.releaseYear}
             onChange={(e) => setFilter('releaseYear', e.target.value)}
             className={selectClasses}
@@ -135,8 +144,14 @@ export function AdvancedFiltersPanel({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Certification</label>
+          <label
+            htmlFor="filter-certification"
+            className="block text-xs text-on-surface-muted mb-1"
+          >
+            Certification
+          </label>
           <select
+            id="filter-certification"
             value={filters.certification}
             onChange={(e) => setFilter('certification', e.target.value)}
             className={selectClasses}
@@ -149,8 +164,11 @@ export function AdvancedFiltersPanel({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Language</label>
+          <label htmlFor="filter-language" className="block text-xs text-on-surface-muted mb-1">
+            Language
+          </label>
           <select
+            id="filter-language"
             value={filters.language}
             onChange={(e) => setFilter('language', e.target.value)}
             className={selectClasses}
@@ -167,8 +185,11 @@ export function AdvancedFiltersPanel({
       {/* Platform + Rating + Featured */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
-          <label className="block text-xs text-on-surface-muted mb-1">OTT Platform</label>
+          <label htmlFor="filter-platform" className="block text-xs text-on-surface-muted mb-1">
+            OTT Platform
+          </label>
           <select
+            id="filter-platform"
             value={filters.platformId}
             onChange={(e) => setFilter('platformId', e.target.value)}
             className={selectClasses}
@@ -182,8 +203,11 @@ export function AdvancedFiltersPanel({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Min Rating</label>
+          <label htmlFor="filter-min-rating" className="block text-xs text-on-surface-muted mb-1">
+            Min Rating
+          </label>
           <select
+            id="filter-min-rating"
             value={filters.minRating}
             onChange={(e) => setFilter('minRating', e.target.value)}
             className={selectClasses}

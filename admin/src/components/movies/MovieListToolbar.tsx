@@ -52,6 +52,7 @@ export function MovieListToolbar({
           isLoading={isFetching}
         />
         <select
+          aria-label="Status filter"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"

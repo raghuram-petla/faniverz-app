@@ -20,43 +20,54 @@ export interface AdvancedFilters {
   directorSearch: string;
 }
 
-// @contract: shared filter logic for both PH-scoped and unscoped movie queries
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyStatusFilter(query: any, statusFilter: string, today: string, pmIds: string[]) {
+// @contract Applies status filter conditions that don't use .in('id', ...)
+// Returns idScope (IDs to include) and excludeIds separately to avoid double .in() on same column
+function applyStatusFilter(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  query: any,
+  statusFilter: string,
+  today: string,
+  pmIds: string[],
+): { query: unknown; empty: boolean; includeIds: string[] | null; excludeIds: string[] } {
   if (statusFilter === 'upcoming') {
-    return { query: query.gt('release_date', today), empty: false };
-  } else if (statusFilter === 'in_theaters') {
-    return { query: query.eq('in_theaters', true), empty: false };
-  } else if (statusFilter === 'announced') {
-    return { query: query.is('release_date', null), empty: false };
-  } else if (statusFilter === 'streaming') {
-    if (pmIds.length === 0) return { query, empty: true };
     return {
-      query: query.in('id', pmIds).lte('release_date', today).eq('in_theaters', false),
+      query: query.gt('release_date', today),
       empty: false,
+      includeIds: null,
+      excludeIds: [],
+    };
+  } else if (statusFilter === 'in_theaters') {
+    return { query: query.eq('in_theaters', true), empty: false, includeIds: null, excludeIds: [] };
+  } else if (statusFilter === 'announced') {
+    return {
+      query: query.is('release_date', null),
+      empty: false,
+      includeIds: null,
+      excludeIds: [],
+    };
+  } else if (statusFilter === 'streaming') {
+    if (pmIds.length === 0) return { query, empty: true, includeIds: null, excludeIds: [] };
+    // @edge Return pmIds as includeIds instead of calling .in() — merged with other ID sets later
+    return {
+      query: query.lte('release_date', today).eq('in_theaters', false),
+      empty: false,
+      includeIds: pmIds,
+      excludeIds: [],
     };
   } else if (statusFilter === 'released') {
-    let q = query
+    const q = query
       .not('release_date', 'is', null)
       .lte('release_date', today)
       .eq('in_theaters', false);
-    if (pmIds.length > 0) {
-      q = q.not('id', 'in', `(${pmIds.join(',')})`);
-    }
-    return { query: q, empty: false };
+    return { query: q, empty: false, includeIds: null, excludeIds: pmIds };
   }
-  return { query, empty: false };
+  return { query, empty: false, includeIds: null, excludeIds: [] };
 }
 
-// @contract Applies direct column filters from AdvancedFilters to the Supabase query builder
+// @contract Applies direct column filters (not ID-based) from AdvancedFilters to query builder
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyAdvancedFilters(
-  query: any,
-  filters: AdvancedFilters | undefined,
-  actorMovieIds: string[] | null,
-  platformFilterIds: string[] | null,
-) {
-  if (!filters) return { query, empty: false };
+function applyColumnFilters(query: any, filters: AdvancedFilters | undefined) {
+  if (!filters) return query;
 
   if (filters.genres.length > 0) {
     query = query.overlaps('genres', filters.genres);
@@ -84,21 +95,15 @@ function applyAdvancedFilters(
   if (filters.directorSearch) {
     query = query.ilike('director', `%${filters.directorSearch}%`);
   }
+  return query;
+}
 
-  // @edge Actor + platform join-based filters: intersect IDs when both are active
-  if (actorMovieIds !== null && platformFilterIds !== null) {
-    const intersection = actorMovieIds.filter((id) => platformFilterIds.includes(id));
-    if (intersection.length === 0) return { query, empty: true };
-    query = query.in('id', intersection);
-  } else if (actorMovieIds !== null) {
-    if (actorMovieIds.length === 0) return { query, empty: true };
-    query = query.in('id', actorMovieIds);
-  } else if (platformFilterIds !== null) {
-    if (platformFilterIds.length === 0) return { query, empty: true };
-    query = query.in('id', platformFilterIds);
-  }
-
-  return { query, empty: false };
+// @invariant All ID-based include filters must be intersected in JS before a single .in('id', ...)
+// PostgREST overwrites duplicate column filters — multiple .in('id', ...) breaks silently
+function intersectIdSets(...sets: (string[] | null)[]): string[] | null {
+  const defined = sets.filter((s): s is string[] => s !== null);
+  if (defined.length === 0) return null;
+  return defined.reduce((acc, set) => acc.filter((id) => set.includes(id)));
 }
 
 const crud = createCrudHooks<Movie>({
@@ -182,38 +187,16 @@ export function useAdminMovies(
       const resolvedActorIds = hasActorSearch ? (actorMovieIds ?? []) : null;
       const resolvedPlatformIds = hasPlatformFilter ? (platformFilterIds ?? []) : null;
 
+      // Resolve PH scoping IDs
+      let phMovieIds: string[] | null = null;
       if (hasPHScope) {
         const { data: junctionData, error: jErr } = await supabase
           .from('movie_production_houses')
           .select('movie_id')
           .in('production_house_id', productionHouseIds);
         if (jErr) throw jErr;
-
-        const movieIds = [...new Set((junctionData ?? []).map((r) => r.movie_id))];
-        if (movieIds.length === 0) return [] as Movie[];
-
-        let query = supabase
-          .from('movies')
-          .select('*')
-          .in('id', movieIds)
-          .order('release_date', { ascending: false })
-          .range(from, to);
-        if (search) query = query.ilike('title', `%${search}%`);
-        const phResult = applyStatusFilter(query, statusFilter, today, pmIds);
-        if (phResult.empty) return [] as Movie[];
-        query = phResult.query;
-        const advResult = applyAdvancedFilters(
-          query,
-          advancedFilters,
-          resolvedActorIds,
-          resolvedPlatformIds,
-        );
-        if (advResult.empty) return [] as Movie[];
-        query = advResult.query;
-
-        const { data, error } = await query;
-        if (error) throw error;
-        return data as Movie[];
+        phMovieIds = [...new Set((junctionData ?? []).map((r) => r.movie_id))];
+        if (phMovieIds.length === 0) return [] as Movie[];
       }
 
       let query = supabase
@@ -221,18 +204,33 @@ export function useAdminMovies(
         .select('*')
         .order('release_date', { ascending: false })
         .range(from, to);
+
       if (search) query = query.ilike('title', `%${search}%`);
-      const result = applyStatusFilter(query, statusFilter, today, pmIds);
-      if (result.empty) return [] as Movie[];
-      query = result.query;
-      const advResult = applyAdvancedFilters(
-        query,
-        advancedFilters,
+
+      // Apply status filter — returns includeIds separately instead of .in()
+      const statusResult = applyStatusFilter(query, statusFilter, today, pmIds);
+      if (statusResult.empty) return [] as Movie[];
+      query = statusResult.query as typeof query;
+
+      // Apply column-based advanced filters (no .in() calls)
+      query = applyColumnFilters(query, advancedFilters);
+
+      // @invariant Merge all ID-based include sets into one .in('id', ...) call
+      const mergedIds = intersectIdSets(
+        phMovieIds,
+        statusResult.includeIds,
         resolvedActorIds,
         resolvedPlatformIds,
       );
-      if (advResult.empty) return [] as Movie[];
-      query = advResult.query;
+      if (mergedIds !== null) {
+        if (mergedIds.length === 0) return [] as Movie[];
+        query = query.in('id', mergedIds);
+      }
+
+      // Apply excludeIds from status filter (e.g., "released" excludes streaming movies)
+      if (statusResult.excludeIds.length > 0) {
+        query = query.not('id', 'in', `(${statusResult.excludeIds.join(',')})`);
+      }
 
       const { data, error } = await query;
       if (error) throw error;

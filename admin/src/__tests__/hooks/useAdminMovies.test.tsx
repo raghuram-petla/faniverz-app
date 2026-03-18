@@ -153,16 +153,18 @@ describe('useAdminMovies', () => {
       const platformIds = [{ movie_id: 'm1' }];
       const movies = [{ id: 'm1', title: 'Stream Movie' }];
 
+      // @contract After refactor, status filter returns includeIds instead of calling .in()
+      // The merged .in() is applied after column filters, so chain is: range → lte → eq → in → resolve
       mockFrom.mockImplementation((table: string) => {
         if (table === 'movie_platforms') {
           return {
             select: vi.fn().mockResolvedValue({ data: platformIds, error: null }),
           };
         }
-        const mockEq = vi.fn().mockResolvedValue({ data: movies, error: null });
+        const mockIn = vi.fn().mockResolvedValue({ data: movies, error: null });
+        const mockEq = vi.fn().mockReturnValue({ in: mockIn });
         const mockLte = vi.fn().mockReturnValue({ eq: mockEq });
-        const mockIn = vi.fn().mockReturnValue({ lte: mockLte });
-        const mockRange = vi.fn().mockReturnValue({ in: mockIn });
+        const mockRange = vi.fn().mockReturnValue({ lte: mockLte });
         return {
           select: vi.fn().mockReturnValue({
             order: vi.fn().mockReturnValue({ range: mockRange }),
@@ -176,6 +178,201 @@ describe('useAdminMovies', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(mockFrom).toHaveBeenCalledWith('movie_platforms');
+      // @invariant Verify single .in('id', ...) is called with merged platform movie IDs
+      expect(mockFrom).toHaveBeenCalledWith('movies');
+    });
+  });
+
+  describe('advanced filters', () => {
+    it('applies genre filter via overlaps', async () => {
+      const mockOverlaps = vi.fn().mockResolvedValue({ data: [], error: null });
+      const mockRange = vi.fn().mockReturnValue({ overlaps: mockOverlaps });
+
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({ range: mockRange }),
+        }),
+      });
+
+      const filters = {
+        genres: ['Action', 'Drama'],
+        releaseYear: '',
+        releaseMonth: '',
+        certification: '',
+        language: '',
+        platformId: '',
+        isFeatured: false,
+        minRating: '',
+        actorSearch: '',
+        directorSearch: '',
+      };
+
+      const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(mockOverlaps).toHaveBeenCalledWith('genres', ['Action', 'Drama']);
+    });
+
+    it('applies certification filter via eq', async () => {
+      const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+      const mockRange = vi.fn().mockReturnValue({ eq: mockEq });
+
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({ range: mockRange }),
+        }),
+      });
+
+      const filters = {
+        genres: [],
+        releaseYear: '',
+        releaseMonth: '',
+        certification: 'UA',
+        language: '',
+        platformId: '',
+        isFeatured: false,
+        minRating: '',
+        actorSearch: '',
+        directorSearch: '',
+      };
+
+      const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(mockEq).toHaveBeenCalledWith('certification', 'UA');
+    });
+
+    it('applies director search via ilike', async () => {
+      const mockIlike = vi.fn().mockResolvedValue({ data: [], error: null });
+      const mockRange = vi.fn().mockReturnValue({ ilike: mockIlike });
+
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({ range: mockRange }),
+        }),
+      });
+
+      const filters = {
+        genres: [],
+        releaseYear: '',
+        releaseMonth: '',
+        certification: '',
+        language: '',
+        platformId: '',
+        isFeatured: false,
+        minRating: '',
+        actorSearch: '',
+        directorSearch: 'Rajamouli',
+      };
+
+      const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+      expect(mockIlike).toHaveBeenCalledWith('director', '%Rajamouli%');
+    });
+
+    it('resolves actor search via movie_cast join query', async () => {
+      const mockActorIlike = vi.fn().mockResolvedValue({
+        data: [{ movie_id: 'm1' }, { movie_id: 'm2' }],
+        error: null,
+      });
+      const mockActorSelect = vi.fn().mockReturnValue({ ilike: mockActorIlike });
+
+      const mockIn = vi.fn().mockResolvedValue({ data: [{ id: 'm1' }], error: null });
+      const mockRange = vi.fn().mockReturnValue({ in: mockIn });
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'movie_cast') {
+          return { select: mockActorSelect };
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({ range: mockRange }),
+          }),
+        };
+      });
+
+      const filters = {
+        genres: [],
+        releaseYear: '',
+        releaseMonth: '',
+        certification: '',
+        language: '',
+        platformId: '',
+        isFeatured: false,
+        minRating: '',
+        actorSearch: 'Mahesh',
+        directorSearch: '',
+      };
+
+      const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockFrom).toHaveBeenCalledWith('movie_cast');
+      expect(mockActorSelect).toHaveBeenCalledWith('movie_id, actors!inner(name)');
+    });
+
+    it('returns empty when actor search yields no matching movies', async () => {
+      const mockActorIlike = vi.fn().mockResolvedValue({ data: [], error: null });
+      const mockActorSelect = vi.fn().mockReturnValue({ ilike: mockActorIlike });
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'movie_cast') {
+          return { select: mockActorSelect };
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            order: vi.fn().mockReturnValue({
+              range: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        };
+      });
+
+      const filters = {
+        genres: [],
+        releaseYear: '',
+        releaseMonth: '',
+        certification: '',
+        language: '',
+        platformId: '',
+        isFeatured: false,
+        minRating: '',
+        actorSearch: 'NonexistentActor',
+        directorSearch: '',
+      };
+
+      const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.pages.flat()).toEqual([]);
+    });
+
+    it('skips advanced filters when undefined is passed', async () => {
+      mockFrom.mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            range: vi.fn().mockResolvedValue({ data: [{ id: '1' }], error: null }),
+          }),
+        }),
+      });
+
+      const { result } = renderHook(() => useAdminMovies('', '', undefined, undefined), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.pages.flat()).toEqual([{ id: '1' }]);
     });
   });
 });
