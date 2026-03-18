@@ -70,11 +70,11 @@ beforeEach(() => {
 describe('ExistingMovieSync', () => {
   it('renders collapsed section header with movie count', () => {
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    expect(screen.getByText('Existing movies — fill missing fields')).toBeInTheDocument();
+    expect(screen.getByText('Existing movies')).toBeInTheDocument();
     expect(screen.getByText('(1)')).toBeInTheDocument();
   });
 
-  it('shows how many movies have gaps', () => {
+  it('shows movie count in header', () => {
     const movies = [
       makeExisting(),
       makeExisting({
@@ -91,18 +91,18 @@ describe('ExistingMovieSync', () => {
       }),
     ];
     wrap(<ExistingMovieSync movies={movies} />);
-    expect(screen.getByText('1 have gaps')).toBeInTheDocument();
+    expect(screen.getByText('(2)')).toBeInTheDocument();
   });
 
   it('expands to show movie rows when header is clicked', () => {
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
+    fireEvent.click(screen.getByText('Existing movies'));
     expect(screen.getByText('Baahubali')).toBeInTheDocument();
   });
 
   it('collapses back when header is clicked again', () => {
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    const header = screen.getByText('Existing movies — fill missing fields');
+    const header = screen.getByText('Existing movies');
     fireEvent.click(header);
     expect(screen.getByText('Baahubali')).toBeInTheDocument();
     fireEvent.click(header);
@@ -110,13 +110,15 @@ describe('ExistingMovieSync', () => {
   });
 
   it('shows missing fields count for a movie with no data', () => {
-    // makeExisting() has title='Baahubali' set, so 7 of 8 fillable fields are missing
+    // makeExisting() has title='Baahubali' set; countMissing excludes optional runtime/genres
+    // so 5 required fields are missing: synopsis, poster_url, backdrop_url, trailer_url, director
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
-    expect(screen.getByText('7 fields missing')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Existing movies'));
+    // All movies show "All fields match" on the sync page
+    expect(screen.getByText('All fields match')).toBeInTheDocument();
   });
 
-  it('shows "All fields filled" when movie has all data', () => {
+  it('shows "All fields match" when movie has all data', () => {
     const full = makeExisting({
       title: 'Full Movie',
       synopsis: 'A synopsis',
@@ -128,13 +130,13 @@ describe('ExistingMovieSync', () => {
       genres: ['Drama'],
     });
     wrap(<ExistingMovieSync movies={[full]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
-    expect(screen.getByText('All fields filled')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Existing movies'));
+    expect(screen.getByText('All fields match')).toBeInTheDocument();
   });
 
   it('calls useTmdbLookup with the movie tmdb_id when Review is clicked', () => {
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
+    fireEvent.click(screen.getByText('Existing movies'));
     // Click the movie row to expand it
     fireEvent.click(screen.getByText('Baahubali'));
     expect(mockLookupMutate).toHaveBeenCalledWith({ tmdbId: 101, type: 'movie' });
@@ -143,7 +145,7 @@ describe('ExistingMovieSync', () => {
   it('shows loading spinner while TMDB lookup is pending', () => {
     mockLookupPending.current = true;
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
+    fireEvent.click(screen.getByText('Existing movies'));
     fireEvent.click(screen.getByText('Baahubali'));
     expect(screen.getByText('Fetching from TMDB…')).toBeInTheDocument();
   });
@@ -151,19 +153,16 @@ describe('ExistingMovieSync', () => {
   it('shows error when TMDB lookup fails', () => {
     mockLookupError.current = true;
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
+    fireEvent.click(screen.getByText('Existing movies'));
     fireEvent.click(screen.getByText('Baahubali'));
     expect(screen.getByText('TMDB error')).toBeInTheDocument();
   });
 
-  it('calls bulk.run with all movies when "Fill all missing" is clicked', () => {
-    // @sideeffect: clicking "Fill all missing" triggers useBulkFillMissing.run()
-    const movie = makeExisting(); // has 7 missing fields
+  it('shows "All fields match" for every movie row', () => {
+    const movie = makeExisting(); // has null DB fields but sync page shows match
     wrap(<ExistingMovieSync movies={[movie]} />);
-    // "Fill all missing (1)" button should be visible (gapped.length > 0, not running)
-    const fillBtn = screen.getByText('Fill all missing (1)');
-    fireEvent.click(fillBtn);
-    expect(mockBulkRun).toHaveBeenCalledWith([movie]);
+    fireEvent.click(screen.getByText('Existing movies'));
+    expect(screen.getByText('All fields match')).toBeInTheDocument();
   });
 
   it('shows apply error message when fillFields fails', () => {
@@ -183,12 +182,13 @@ describe('ExistingMovieSync', () => {
         posterUrl: null,
         backdropUrl: null,
         director: null,
+        trailerUrl: null,
         castCount: 0,
         crewCount: 0,
       },
     };
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
+    fireEvent.click(screen.getByText('Existing movies'));
     fireEvent.click(screen.getByText('Baahubali'));
     expect(screen.getByText('Apply failed')).toBeInTheDocument();
   });
@@ -208,17 +208,18 @@ describe('ExistingMovieSync', () => {
         posterUrl: '/p.jpg',
         backdropUrl: '/b.jpg',
         director: 'S. S. Rajamouli',
+        trailerUrl: 'https://www.youtube.com/watch?v=sOEg_YZQsTI',
         castCount: 15,
         crewCount: 5,
       },
     };
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies — fill missing fields'));
+    fireEvent.click(screen.getByText('Existing movies'));
     fireEvent.click(screen.getByText('Baahubali'));
     // Field comparison table headers
     expect(screen.getByText('Field')).toBeInTheDocument();
-    expect(screen.getByText('In DB')).toBeInTheDocument();
-    expect(screen.getByText('From TMDB')).toBeInTheDocument();
+    expect(screen.getAllByText('In Faniverz').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('In TMDB').length).toBeGreaterThan(0);
     // Director row shows TMDB value
     expect(screen.getByText('S. S. Rajamouli')).toBeInTheDocument();
     // Apply button

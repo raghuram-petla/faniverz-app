@@ -187,13 +187,13 @@ describe('DiscoverTab', () => {
     expect(mockImportMutateAsync).toHaveBeenCalledWith([1]);
   });
 
-  it('shows gap count when existing movies have missing fields', () => {
+  it('does not show gap count on sync page', () => {
     mockDiscoverData.current = {
       results: [{ id: 100, title: 'Has Gaps', poster_path: null, release_date: '2024-01-01' }],
-      existingMovies: [makeExisting(100, 'Has Gaps')], // makeExisting has all nulls → has gaps
+      existingMovies: [makeExisting(100, 'Has Gaps')],
     };
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('1 with gaps')).toBeInTheDocument();
+    expect(screen.queryByText(/with gaps/)).not.toBeInTheDocument();
   });
 
   it('renders movie cards for new results', () => {
@@ -212,7 +212,7 @@ describe('DiscoverTab', () => {
       existingMovies: [makeExisting(100, 'Already Here')],
     };
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Existing movies — fill missing fields')).toBeInTheDocument();
+    expect(screen.getByText('Existing movies')).toBeInTheDocument();
   });
 
   it('shows "Select all new" button when there are new movies', () => {

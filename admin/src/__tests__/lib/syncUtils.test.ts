@@ -122,7 +122,8 @@ describe('getMissingFields', () => {
 });
 
 describe('countMissing', () => {
-  it('returns 7 for a movie with only title set', () => {
+  it('counts all null fillable fields', () => {
+    // makeMovie() has title set, everything else null = 7
     expect(countMissing(makeMovie())).toBe(7);
   });
 
@@ -144,8 +145,16 @@ describe('countMissing', () => {
     expect(countMissing(empty)).toBe(8);
   });
 
-  it('returns count equal to getMissingFields().length', () => {
-    const m = makeMovie({ synopsis: 'filled', poster_url: '/p.jpg' });
+  it('equals getMissingFields length', () => {
+    const m = makeMovie({
+      synopsis: 'filled',
+      poster_url: '/p.jpg',
+      backdrop_url: '/b.jpg',
+      trailer_url: 'https://youtu.be/abc',
+      director: 'Director',
+    });
+    // runtime and genres are still null = 2
     expect(countMissing(m)).toBe(getMissingFields(m).length);
+    expect(countMissing(m)).toBe(2);
   });
 });

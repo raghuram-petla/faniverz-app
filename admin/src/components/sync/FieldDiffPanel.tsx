@@ -13,63 +13,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 import type { FillableField } from '@/lib/syncUtils';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-type FieldStatus = 'missing' | 'changed' | 'same';
-
-/** @edge genres: sorted join for stable comparison regardless of TMDB order */
-function genreStatus(db: string[] | null, tmdb: string[]): FieldStatus {
-  if (!db?.length) return 'missing';
-  return [...db].sort().join(',') === [...tmdb].sort().join(',') ? 'same' : 'changed';
-}
-
-function getStatus(
-  movie: ExistingMovieData,
-  tmdb: LookupMovieData,
-  field: FillableField,
-): FieldStatus {
-  switch (field) {
-    case 'title':
-      if (!movie.title) return 'missing';
-      return movie.title === tmdb.title ? 'same' : 'changed';
-    case 'synopsis':
-      if (!movie.synopsis) return 'missing';
-      return movie.synopsis === tmdb.overview ? 'same' : 'changed';
-    case 'poster_url':
-      // @edge R2 URL vs TMDB CDN path are incomparable — always show as actionable
-      return !movie.poster_url ? 'missing' : 'changed';
-    case 'backdrop_url':
-      return !movie.backdrop_url ? 'missing' : 'changed';
-    case 'trailer_url':
-      // @edge extracted YouTube URL vs TMDB video list are incomparable
-      return !movie.trailer_url ? 'missing' : 'changed';
-    case 'director':
-      if (!movie.director) return 'missing';
-      return movie.director === tmdb.director ? 'same' : 'changed';
-    case 'runtime':
-      if (movie.runtime == null) return 'missing';
-      return movie.runtime === tmdb.runtime ? 'same' : 'changed';
-    case 'genres':
-      return genreStatus(movie.genres, tmdb.genres);
-    case 'cast':
-      return 'missing'; // always actionable — server guards against duplicate sync
-    default:
-      return 'missing';
-  }
-}
-
-function fmt(val: string | string[] | number | null | undefined): string {
-  if (val == null) return '';
-  if (Array.isArray(val)) return val.join(', ');
-  if (typeof val === 'number') return String(val);
-  return val;
-}
-
-function truncate(s: string | null | undefined, n = 80): string {
-  if (!s) return '';
-  return s.length > n ? s.slice(0, n) + '…' : s;
-}
+import { type FieldStatus, extractYouTubeId, getStatus, fmt, truncate } from './fieldDiffHelpers';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -103,8 +47,8 @@ export function FieldDiffPanel({
     {
       key: 'synopsis',
       label: 'Synopsis',
-      dbDisplay: truncate(movie.synopsis),
-      tmdbDisplay: truncate(tmdb.overview),
+      dbDisplay: movie.synopsis ?? '',
+      tmdbDisplay: tmdb.overview ?? '',
     },
     {
       key: 'poster_url',
@@ -121,8 +65,8 @@ export function FieldDiffPanel({
     {
       key: 'trailer_url',
       label: 'Trailer',
-      dbDisplay: movie.trailer_url ? '✓ set' : '',
-      tmdbDisplay: 'YouTube (will extract)',
+      dbDisplay: extractYouTubeId(movie.trailer_url) ?? (movie.trailer_url ? '✓ set' : ''),
+      tmdbDisplay: extractYouTubeId(tmdb.trailerUrl) ?? (tmdb.trailerUrl ? '✓ available' : ''),
     },
     {
       key: 'director',
@@ -133,8 +77,9 @@ export function FieldDiffPanel({
     {
       key: 'runtime',
       label: 'Runtime',
-      dbDisplay: movie.runtime != null ? `${movie.runtime} min` : '',
-      tmdbDisplay: tmdb.runtime != null ? `${tmdb.runtime} min` : '',
+      dbDisplay: movie.runtime ? `${movie.runtime} min` : '',
+      // @edge TMDB runtime=0 means unknown — display as empty
+      tmdbDisplay: tmdb.runtime ? `${tmdb.runtime} min` : '',
     },
     {
       key: 'genres',
@@ -144,11 +89,16 @@ export function FieldDiffPanel({
     },
   ];
 
-  const rows = DATA_FIELDS.map((f) => ({ ...f, status: getStatus(movie, tmdb, f.key) }));
+  const allRows = DATA_FIELDS.map((f) => ({ ...f, status: getStatus(movie, tmdb, f.key) }));
+  const [showAll, setShowAll] = useState(false);
+  const rows = showAll ? allRows : allRows.filter((r) => r.status !== 'same');
+  const sameCount = allRows.filter((r) => r.status === 'same').length;
 
   // Pre-check missing fields; leave changed fields unchecked by default
   const defaultSelected = new Set<FillableField>(
-    rows.filter((r) => r.status === 'missing' && !appliedFields.includes(r.key)).map((r) => r.key),
+    allRows
+      .filter((r) => r.status === 'missing' && !appliedFields.includes(r.key))
+      .map((r) => r.key),
   );
   const [selected, setSelected] = useState<Set<FillableField>>(defaultSelected);
   const [forceResyncCast, setForceResyncCast] = useState(false);
@@ -193,56 +143,122 @@ export function FieldDiffPanel({
   return (
     <div className="mt-3 space-y-3">
       {/* ── Field diff table ── */}
-      <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-x-3 gap-y-1.5 text-xs items-center">
-        <span />
-        <span className="text-on-surface-muted font-medium">Field</span>
-        <span className="text-on-surface-muted font-medium">In DB</span>
-        <span className="text-on-surface-muted font-medium">From TMDB</span>
-        <span className="text-on-surface-muted font-medium">Status</span>
-
-        {rows.map((row) => {
-          const isApplied = appliedFields.includes(row.key);
-          const isSame = row.status === 'same';
-          return [
-            <input
-              key={`chk-${row.key}`}
-              type="checkbox"
-              checked={isApplied || selected.has(row.key)}
-              disabled={isApplied || isSame || isSaving}
-              onChange={() => toggle(row.key)}
-              className="mt-0.5 accent-red-600"
-            />,
-            <span
-              key={`lbl-${row.key}`}
-              className={isApplied ? 'line-through text-on-surface-disabled' : 'text-on-surface'}
-            >
-              {row.label}
-            </span>,
-            <span
-              key={`db-${row.key}`}
-              className={
-                isSame
-                  ? 'text-on-surface-subtle'
-                  : row.status === 'missing'
-                    ? 'text-status-red'
-                    : 'text-on-surface-subtle'
-              }
-            >
-              {isApplied ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-status-green inline" />
-              ) : (
-                row.dbDisplay || '—'
-              )}
-            </span>,
-            <span key={`tmdb-${row.key}`} className="text-on-surface-subtle">
-              {row.tmdbDisplay || '—'}
-            </span>,
-            <span key={`status-${row.key}`} className={statusColor[row.status]}>
-              {isApplied ? '' : statusLabel[row.status]}
-            </span>,
-          ];
-        })}
-      </div>
+      {rows.length > 0 && (
+        <table className="w-full text-xs border-collapse">
+          <thead>
+            <tr>
+              <th className="text-left text-on-surface-muted font-bold py-1.5 pr-3 w-6" />
+              <th className="text-left text-on-surface-muted font-bold py-1.5 pr-3">Field</th>
+              <th className="text-left text-on-surface-muted font-bold py-1.5 pr-3">In Faniverz</th>
+              <th className="text-left text-on-surface-muted font-bold py-1.5 pr-3">In TMDB</th>
+              <th className="text-right text-on-surface-muted font-bold py-1.5">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => {
+              const isApplied = appliedFields.includes(row.key);
+              const rowBg = i % 2 === 1 ? 'bg-surface-elevated/50' : '';
+              const dbYtId = row.key === 'trailer_url' ? extractYouTubeId(movie.trailer_url) : null;
+              const tmdbYtId = row.key === 'trailer_url' ? extractYouTubeId(tmdb.trailerUrl) : null;
+              return (
+                <tr key={row.key} className={rowBg}>
+                  <td className="py-2 pr-3 align-top">
+                    <input
+                      type="checkbox"
+                      checked={isApplied || selected.has(row.key)}
+                      disabled={isApplied || isSaving}
+                      onChange={() => toggle(row.key)}
+                      className="accent-red-600"
+                    />
+                  </td>
+                  <td
+                    className={`py-2 pr-3 align-top ${isApplied ? 'line-through text-on-surface-disabled' : 'text-on-surface'}`}
+                  >
+                    {row.label}
+                  </td>
+                  <td
+                    className={`py-2 pr-3 align-top ${row.status === 'same' ? 'text-on-surface-subtle' : row.status === 'missing' ? 'text-status-red' : 'text-on-surface-subtle'}`}
+                  >
+                    {isApplied ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-status-green inline" />
+                    ) : (
+                      row.dbDisplay || '—'
+                    )}
+                    {row.key === 'poster_url' && movie.poster_url && (
+                      <img
+                        src={movie.poster_url}
+                        alt=""
+                        className="w-12 h-16 object-cover rounded mt-1"
+                      />
+                    )}
+                    {row.key === 'backdrop_url' && movie.backdrop_url && (
+                      <img
+                        src={movie.backdrop_url}
+                        alt=""
+                        className="w-24 h-14 object-cover rounded mt-1"
+                      />
+                    )}
+                    {dbYtId && (
+                      <a
+                        href={`https://www.youtube.com/watch?v=${dbYtId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={`https://img.youtube.com/vi/${dbYtId}/mqdefault.jpg`}
+                          alt=""
+                          className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
+                        />
+                      </a>
+                    )}
+                  </td>
+                  <td className="py-2 pr-3 align-top text-on-surface-subtle">
+                    {row.tmdbDisplay || '—'}
+                    {row.key === 'poster_url' && tmdb.posterUrl && (
+                      <img
+                        src={tmdb.posterUrl}
+                        alt=""
+                        className="w-12 h-16 object-cover rounded mt-1"
+                      />
+                    )}
+                    {row.key === 'backdrop_url' && tmdb.backdropUrl && (
+                      <img
+                        src={tmdb.backdropUrl}
+                        alt=""
+                        className="w-24 h-14 object-cover rounded mt-1"
+                      />
+                    )}
+                    {tmdbYtId && (
+                      <a
+                        href={`https://www.youtube.com/watch?v=${tmdbYtId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={`https://img.youtube.com/vi/${tmdbYtId}/mqdefault.jpg`}
+                          alt=""
+                          className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
+                        />
+                      </a>
+                    )}
+                  </td>
+                  <td className={`py-2 align-top text-right ${statusColor[row.status]}`}>
+                    {isApplied ? '' : statusLabel[row.status]}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      {sameCount > 0 && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="text-xs text-on-surface-muted hover:text-on-surface transition-colors"
+        >
+          {showAll ? 'Hide' : 'Show'} {sameCount} unchanged field{sameCount !== 1 ? 's' : ''}
+        </button>
+      )}
 
       {/* ── Cast re-sync row ── */}
       <div className="flex items-center gap-2 pt-1 border-t border-outline">

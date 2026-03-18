@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { getMovieDetails, getPersonDetails, TMDB_IMAGE } from '@/lib/tmdb';
+import { getMovieDetails, getPersonDetails, extractTrailerUrl, TMDB_IMAGE } from '@/lib/tmdb';
 import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
 
 /**
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
           posterUrl: detail.poster_path ? TMDB_IMAGE.poster(detail.poster_path) : null,
           backdropUrl: detail.backdrop_path ? TMDB_IMAGE.backdrop(detail.backdrop_path) : null,
           director,
+          trailerUrl: extractTrailerUrl(detail.videos.results),
           castCount: detail.credits.cast.length,
           crewCount: detail.credits.crew.length,
         },

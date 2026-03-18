@@ -48,6 +48,7 @@ describe('DiscoverResults', () => {
     gapCount: 0,
     onToggleSelect: vi.fn(),
     onSelectAllNew: vi.fn(),
+    onDeselectAll: vi.fn(),
     onImport: vi.fn(),
     onImportAllNew: vi.fn(),
   };
@@ -96,13 +97,13 @@ describe('DiscoverResults', () => {
         existingSet={new Set([1])}
       />,
     );
-    expect(screen.getByText('Existing movies — fill missing fields')).toBeInTheDocument();
+    expect(screen.getByText('Existing movies')).toBeInTheDocument();
     expect(screen.getByText('(1)')).toBeInTheDocument();
   });
 
   it('does not render ExistingMovieSync when existingMovies is empty', () => {
     wrap(<DiscoverResults {...defaultProps} />);
-    expect(screen.queryByText('Existing movies — fill missing fields')).not.toBeInTheDocument();
+    expect(screen.queryByText('Existing movies')).not.toBeInTheDocument();
   });
 
   it('shows "Selected" badge for selected movies', () => {
@@ -129,12 +130,22 @@ describe('DiscoverResults', () => {
     expect(onSelectAllNew).toHaveBeenCalled();
   });
 
-  it('shows import button when items are selected', () => {
+  it('shows deselect all and calls onDeselectAll when items are selected', () => {
+    const onDeselectAll = vi.fn();
+    wrap(
+      <DiscoverResults {...defaultProps} selected={new Set([1])} onDeselectAll={onDeselectAll} />,
+    );
+    expect(screen.getByText('Deselect all')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Deselect all'));
+    expect(onDeselectAll).toHaveBeenCalled();
+  });
+
+  it('import button shows selected count when items are selected', () => {
     wrap(<DiscoverResults {...defaultProps} selected={new Set([1])} />);
     expect(screen.getByText('Import 1 selected')).toBeInTheDocument();
   });
 
-  it('calls onImport when import button is clicked', () => {
+  it('calls onImport when import button clicked with selection', () => {
     const onImport = vi.fn();
     wrap(<DiscoverResults {...defaultProps} selected={new Set([1])} onImport={onImport} />);
     fireEvent.click(screen.getByText('Import 1 selected'));
@@ -159,14 +170,9 @@ describe('DiscoverResults', () => {
     expect(screen.getByText('No date')).toBeInTheDocument();
   });
 
-  it('shows gap count when gapCount > 0', () => {
-    wrap(<DiscoverResults {...defaultProps} gapCount={3} />);
-    expect(screen.getByText('3 with gaps')).toBeInTheDocument();
-  });
-
-  it('does not show gap count when gapCount is 0', () => {
-    wrap(<DiscoverResults {...defaultProps} gapCount={0} />);
-    expect(screen.queryByText(/with gaps/)).not.toBeInTheDocument();
+  it('shows 0 gaps in summary bar', () => {
+    wrap(<DiscoverResults {...defaultProps} />);
+    expect(screen.getByText('0 gaps')).toBeInTheDocument();
   });
 
   it('shows "Import all new" button when there are new movies', () => {
@@ -181,9 +187,10 @@ describe('DiscoverResults', () => {
     expect(onImportAllNew).toHaveBeenCalled();
   });
 
-  it('hides Import all new button when isImporting', () => {
+  it('disables import button when isImporting', () => {
     wrap(<DiscoverResults {...defaultProps} isImporting={true} />);
-    expect(screen.queryByText(/Import all new/)).not.toBeInTheDocument();
+    const btn = screen.getByText('Import all new (2)').closest('button')!;
+    expect(btn).toBeDisabled();
   });
 });
 

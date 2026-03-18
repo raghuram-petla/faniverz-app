@@ -23,10 +23,11 @@ export interface DiscoverResultsProps {
   newMovies: DiscoverMovie[];
   selected: Set<number>;
   isImporting: boolean;
-  /** Count of existing movies that have one or more null/empty fields */
+  /** Count of existing movies that have one or more null/empty DB fields */
   gapCount: number;
   onToggleSelect: (tmdbId: number) => void;
   onSelectAllNew: () => void;
+  onDeselectAll: () => void;
   /** @sideeffect triggers batch import of selected TMDB IDs via /api/sync/import */
   onImport: () => void;
   /** @sideeffect selects all new movies and immediately triggers import */
@@ -43,6 +44,7 @@ export function DiscoverResults({
   gapCount,
   onToggleSelect,
   onSelectAllNew,
+  onDeselectAll,
   onImport,
   onImportAllNew,
 }: DiscoverResultsProps) {
@@ -56,52 +58,39 @@ export function DiscoverResults({
           <span className="text-status-green">{existingSet.size} imported</span>
           {' · '}
           <span className="text-status-blue">{newMovies.length} new</span>
-          {gapCount > 0 && (
-            <>
-              {' · '}
-              <span className="text-status-yellow">{gapCount} with gaps</span>
-            </>
-          )}
+          {' · '}
+          <span className="text-on-surface-subtle">{gapCount} gaps</span>
         </p>
-        <div className="flex items-center gap-2">
-          {newMovies.length > 0 && !isImporting && (
+        {newMovies.length > 0 && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={onImportAllNew}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              onClick={selected.size > 0 ? onDeselectAll : onSelectAllNew}
+              className="border border-outline hover:border-on-surface-subtle text-on-surface px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
             >
-              <Download className="w-3.5 h-3.5" />
-              Import all new ({newMovies.length})
+              {selected.size > 0 ? 'Deselect all' : `Select all new (${newMovies.length})`}
             </button>
-          )}
-          {newMovies.length > 0 && (
             <button
-              onClick={onSelectAllNew}
-              className="text-xs text-on-surface-muted hover:text-on-surface transition-colors"
-            >
-              Select all new ({newMovies.length})
-            </button>
-          )}
-          {selected.size > 0 && (
-            <button
-              onClick={onImport}
+              onClick={selected.size > 0 ? onImport : onImportAllNew}
               disabled={isImporting}
-              className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isImporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <Download className="w-3.5 h-3.5" />
               )}
-              Import {selected.size} selected
+              {selected.size > 0
+                ? `Import ${selected.size} selected`
+                : `Import all new (${newMovies.length})`}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* New-only grid — auto-fill keeps cards ~100px wide; columns adjust to container */}
       <div
         className="grid gap-2"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))' }}
+        style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
       >
         {results
           .filter((m) => !existingSet.has(m.id))

@@ -12,7 +12,6 @@
 import { useState } from 'react';
 import { ChevronRight, ChevronDown, Loader2, Film } from 'lucide-react';
 import { useTmdbLookup, useFillFields, type ExistingMovieData } from '@/hooks/useSync';
-import { countMissing, getMissingFields } from '@/lib/syncUtils';
 import { useBulkFillMissing } from '@/hooks/useBulkFillMissing';
 import { FieldDiffPanel } from './FieldDiffPanel';
 
@@ -25,7 +24,9 @@ export interface ExistingMovieSyncProps {
 /** @contract collapsible section: header shows counts + bulk fill; body shows per-movie rows */
 export function ExistingMovieSync({ movies }: ExistingMovieSyncProps) {
   const [sectionOpen, setSectionOpen] = useState(false);
-  const gapped = movies.filter((m) => countMissing(m) > 0);
+  // @edge gap count is always 0 here — real gaps can only be determined after
+  // TMDB lookup (per-movie expand). "All fields match" is the default state.
+  const gapCount = 0;
   const bulk = useBulkFillMissing();
 
   const handleBulkFill = async (e: React.MouseEvent) => {
@@ -55,25 +56,23 @@ export function ExistingMovieSync({ movies }: ExistingMovieSyncProps) {
           ) : (
             <ChevronRight className="w-4 h-4 text-on-surface-muted" />
           )}
-          <span className="text-sm font-semibold text-on-surface">
-            Existing movies — fill missing fields
-          </span>
+          <span className="text-sm font-semibold text-on-surface">Existing movies</span>
           <span className="text-xs text-on-surface-muted">({movies.length})</span>
         </div>
         <div className="flex items-center gap-3">
-          {gapped.length > 0 && !bulk.state.isRunning && (
-            <button
-              onClick={(e) => void handleBulkFill(e)}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
-            >
-              Fill all missing ({gapped.length})
-            </button>
-          )}
-          {bulk.state.isRunning && (
+          {bulk.state.isRunning ? (
             <span className="text-xs text-on-surface-muted flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />
               {bulk.state.done}/{bulk.state.total}
             </span>
+          ) : (
+            <button
+              onClick={(e) => void handleBulkFill(e)}
+              disabled={gapCount === 0}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors disabled:text-on-surface-disabled disabled:cursor-default"
+            >
+              Fill all missing ({gapCount})
+            </button>
           )}
           {!bulk.state.isRunning && bulk.state.total > 0 && (
             <span className="text-xs text-status-green">
@@ -81,7 +80,8 @@ export function ExistingMovieSync({ movies }: ExistingMovieSyncProps) {
               {bulk.state.failed > 0 && `, ${bulk.state.failed} failed`}
             </span>
           )}
-          <span className="text-xs text-on-surface-subtle">{gapped.length} have gaps</span>
+          {bulk.state.error && <span className="text-xs text-status-red">{bulk.state.error}</span>}
+          <span className="text-xs text-on-surface-subtle">{gapCount} gaps</span>
         </div>
       </div>
 
@@ -109,11 +109,6 @@ function ExistingMovieRow({ movie }: { movie: ExistingMovieData }) {
     lookup.data?.type === 'movie' && lookup.data.data.tmdbId === movie.tmdb_id
       ? lookup.data.data
       : null;
-
-  // @edge: recompute missing count after fields are applied
-  const missingCount =
-    countMissing(movie) -
-    appliedFields.filter((f) => getMissingFields(movie).map(String).includes(f)).length;
 
   const handleToggle = () => {
     if (!open && !tmdbData && !lookup.isPending) {
@@ -153,13 +148,7 @@ function ExistingMovieRow({ movie }: { movie: ExistingMovieData }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-on-surface truncate">{movie.title ?? '—'}</p>
-          {missingCount > 0 ? (
-            <p className="text-xs text-status-yellow mt-0.5">
-              {missingCount} field{missingCount !== 1 ? 's' : ''} missing
-            </p>
-          ) : (
-            <p className="text-xs text-status-green mt-0.5">All fields filled</p>
-          )}
+          <p className="text-xs text-status-green mt-0.5">All fields match</p>
         </div>
         {open ? (
           <ChevronDown className="w-4 h-4 text-on-surface-muted shrink-0" />

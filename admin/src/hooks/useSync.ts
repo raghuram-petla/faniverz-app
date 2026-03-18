@@ -44,6 +44,7 @@ export interface LookupMovieData {
   posterUrl: string | null;
   backdropUrl: string | null;
   director: string | null;
+  trailerUrl: string | null;
   castCount: number;
   crewCount: number;
 }

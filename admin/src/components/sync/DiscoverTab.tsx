@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { useDiscoverMovies, useImportMovies } from '@/hooks/useSync';
 import type { DiscoverResult, ExistingMovieData } from '@/hooks/useSync';
-import { countMissing } from '@/lib/syncUtils';
 import { Globe, Loader2 } from 'lucide-react';
 import { CURRENT_YEAR, YEARS, MONTHS, type ImportProgress } from './syncHelpers';
 import { DiscoverResults, ImportProgressList } from './DiscoverResults';
@@ -32,11 +31,8 @@ export function DiscoverTab() {
     () => (data?.results ?? []).filter((m) => !existingSet.has(m.id)),
     [data?.results, existingSet],
   );
-  /** Count of existing movies that have one or more null/empty fields */
-  const gapCount = useMemo(
-    () => existingMovies.filter((m) => countMissing(m) > 0).length,
-    [existingMovies],
-  );
+  // @edge gap count is 0 — real gaps can only be determined after per-movie TMDB lookup
+  const gapCount = 0;
 
   const handleDiscover = () => {
     setSelected(new Set());
@@ -143,6 +139,7 @@ export function DiscoverTab() {
           gapCount={gapCount}
           onToggleSelect={toggleSelect}
           onSelectAllNew={selectAllNew}
+          onDeselectAll={() => setSelected(new Set())}
           onImport={handleImport}
           onImportAllNew={handleImportAllNew}
         />

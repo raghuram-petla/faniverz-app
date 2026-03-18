@@ -30,6 +30,7 @@ const makeTmdb = (overrides = {}) => ({
   posterUrl: '/p.jpg',
   backdropUrl: '/b.jpg',
   director: 'S. S. Rajamouli',
+  trailerUrl: 'https://www.youtube.com/watch?v=sOEg_YZQsTI',
   castCount: 15,
   crewCount: 5,
   ...overrides,
@@ -47,8 +48,8 @@ describe('FieldDiffPanel', () => {
       />,
     );
     expect(screen.getByText('Field')).toBeInTheDocument();
-    expect(screen.getByText('In DB')).toBeInTheDocument();
-    expect(screen.getByText('From TMDB')).toBeInTheDocument();
+    expect(screen.getAllByText('In Faniverz').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('In TMDB').length).toBeGreaterThan(0);
     expect(screen.getByText('Status')).toBeInTheDocument();
   });
 
@@ -68,7 +69,7 @@ describe('FieldDiffPanel', () => {
     expect(checkboxes.some((c) => c.checked)).toBe(true);
   });
 
-  it('shows "same" status for identical fields', () => {
+  it('hides rows with "same" status (only actionable rows shown)', () => {
     const movie = makeMovie({ title: 'Baahubali: The Beginning' });
     const tmdb = makeTmdb({ title: 'Baahubali: The Beginning' });
     render(
@@ -80,9 +81,8 @@ describe('FieldDiffPanel', () => {
         onApply={vi.fn()}
       />,
     );
-    // Title row should show "same"
-    const sameLabels = screen.getAllByText('same');
-    expect(sameLabels.length).toBeGreaterThan(0);
+    // Title is identical — its row should not appear
+    expect(screen.queryByText('same')).not.toBeInTheDocument();
   });
 
   it('shows "changed" status when DB and TMDB differ', () => {

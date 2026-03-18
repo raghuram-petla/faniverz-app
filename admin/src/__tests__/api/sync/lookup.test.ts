@@ -37,6 +37,10 @@ vi.mock('@/lib/supabase-admin', () => ({
 vi.mock('@/lib/tmdb', () => ({
   getMovieDetails: (...args: unknown[]) => mockGetMovieDetails(...args),
   getPersonDetails: (...args: unknown[]) => mockGetPersonDetails(...args),
+  extractTrailerUrl: (videos: Array<{ key: string; site: string; type: string }>) => {
+    const t = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
+    return t ? `https://www.youtube.com/watch?v=${t.key}` : null;
+  },
   TMDB_IMAGE: {
     poster: (path: string) => `https://image.tmdb.org/t/p/w500${path}`,
     backdrop: (path: string) => `https://image.tmdb.org/t/p/w1280${path}`,
@@ -121,6 +125,9 @@ describe('POST /api/sync/lookup', () => {
       credits: {
         cast: [{ name: 'Actor' }],
         crew: [{ job: 'Director', name: 'Director Name' }],
+      },
+      videos: {
+        results: [{ key: 'abc123', site: 'YouTube', type: 'Trailer' }],
       },
     });
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
