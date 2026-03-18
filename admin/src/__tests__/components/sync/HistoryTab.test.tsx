@@ -10,6 +10,7 @@ const mockLogsData = vi.hoisted(() => ({
         movies_added: number;
         movies_updated: number;
         errors: Record<string, unknown> | unknown[] | null;
+        details: string[] | null;
         started_at: string;
         completed_at: string | null;
       }>
@@ -106,6 +107,7 @@ describe('HistoryTab', () => {
         movies_added: 5,
         movies_updated: 3,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:01:30Z',
       },
@@ -128,6 +130,7 @@ describe('HistoryTab', () => {
         movies_added: 12,
         movies_updated: 7,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:01:30Z',
       },
@@ -151,6 +154,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:02:15Z',
       },
@@ -168,6 +172,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: null,
       },
@@ -185,6 +190,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: null,
       },
@@ -202,6 +208,7 @@ describe('HistoryTab', () => {
         movies_added: 5,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:01:00Z',
       },
@@ -219,6 +226,7 @@ describe('HistoryTab', () => {
         movies_added: 5,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:01:00Z',
       },
@@ -229,6 +237,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: { message: 'API error' },
+        details: null,
         started_at: '2024-01-15T11:00:00Z',
         completed_at: '2024-01-15T11:00:05Z',
       },
@@ -255,6 +264,7 @@ describe('HistoryTab', () => {
         movies_added: 5,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:01:00Z',
       },
@@ -265,6 +275,7 @@ describe('HistoryTab', () => {
         movies_added: 3,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T11:00:00Z',
         completed_at: '2024-01-15T11:00:30Z',
       },
@@ -292,6 +303,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: { message: 'Rate limit exceeded' },
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:00:05Z',
       },
@@ -314,6 +326,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: { error: 'something went wrong' },
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:00:05Z',
       },
@@ -329,7 +342,7 @@ describe('HistoryTab', () => {
     expect(screen.queryByText('Error Details')).not.toBeInTheDocument();
   });
 
-  it('does not expand row when log has no errors', () => {
+  it('does not expand row when log has no errors and no details', () => {
     mockLogsData.current = [
       {
         id: 'log-1',
@@ -338,6 +351,7 @@ describe('HistoryTab', () => {
         movies_added: 1,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:01:00Z',
       },
@@ -346,6 +360,52 @@ describe('HistoryTab', () => {
     const rows = getTableRows();
     fireEvent.click(rows[0]);
     expect(screen.queryByText('Error Details')).not.toBeInTheDocument();
+    expect(screen.queryByText('Items Processed')).not.toBeInTheDocument();
+  });
+
+  it('expands to show details when clicking a row with details', () => {
+    mockLogsData.current = [
+      {
+        id: 'log-1',
+        function_name: 'import-movies',
+        status: 'success',
+        movies_added: 2,
+        movies_updated: 0,
+        errors: null,
+        details: ['Pushpa 2', 'Devara'],
+        started_at: '2024-01-15T10:00:00Z',
+        completed_at: '2024-01-15T10:01:30Z',
+      },
+    ];
+    renderWithProvider(<HistoryTab />);
+    expect(screen.queryByText('Items Processed')).not.toBeInTheDocument();
+    const rows = getTableRows();
+    fireEvent.click(rows[0]);
+    expect(screen.getByText('Items Processed')).toBeInTheDocument();
+    expect(screen.getByText('Pushpa 2')).toBeInTheDocument();
+    expect(screen.getByText('Devara')).toBeInTheDocument();
+  });
+
+  it('shows both details and errors when both are present', () => {
+    mockLogsData.current = [
+      {
+        id: 'log-1',
+        function_name: 'import-movies',
+        status: 'success',
+        movies_added: 1,
+        movies_updated: 0,
+        errors: [{ tmdbId: 999, message: 'Not found' }],
+        details: ['Kalki 2898 AD'],
+        started_at: '2024-01-15T10:00:00Z',
+        completed_at: '2024-01-15T10:01:30Z',
+      },
+    ];
+    renderWithProvider(<HistoryTab />);
+    const rows = getTableRows();
+    fireEvent.click(rows[0]);
+    expect(screen.getByText('Items Processed')).toBeInTheDocument();
+    expect(screen.getByText('Kalki 2898 AD')).toBeInTheDocument();
+    expect(screen.getByText('Error Details')).toBeInTheDocument();
   });
 
   it('shows duration in seconds for short operations', () => {
@@ -357,6 +417,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:00:45Z',
       },
@@ -374,6 +435,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:01:00Z',
       },
@@ -384,6 +446,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T11:00:00Z',
         completed_at: '2024-01-15T11:01:00Z',
       },
@@ -394,6 +457,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: null,
+        details: null,
         started_at: '2024-01-15T12:00:00Z',
         completed_at: '2024-01-15T12:01:00Z',
       },
@@ -416,6 +480,7 @@ describe('HistoryTab', () => {
         movies_added: 0,
         movies_updated: 0,
         errors: ['Error 1', 'Error 2'],
+        details: null,
         started_at: '2024-01-15T10:00:00Z',
         completed_at: '2024-01-15T10:00:05Z',
       },

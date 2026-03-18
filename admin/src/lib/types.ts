@@ -103,6 +103,8 @@ export interface SyncLog {
   movies_added: number;
   movies_updated: number;
   errors: Record<string, unknown> | null;
+  /** @contract: list of item names processed (movie titles, actor names) */
+  details: string[] | null;
   started_at: string;
   completed_at: string | null;
 }

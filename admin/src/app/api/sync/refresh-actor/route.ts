@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       await completeSyncLog(supabase, syncLogId, {
         status: 'success',
         moviesUpdated: result.updated ? 1 : 0,
+        details: [actor.name],
       });
 
       return NextResponse.json({ syncLogId, result });

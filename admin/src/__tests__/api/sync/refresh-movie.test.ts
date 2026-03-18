@@ -117,7 +117,7 @@ describe('POST /api/sync/refresh-movie', () => {
   });
 
   it('refreshes movie and returns result', async () => {
-    mockSingle.mockResolvedValue({ data: { tmdb_id: 100, title: 'Test' }, error: null });
+    mockSingle.mockResolvedValue({ data: { tmdb_id: 100, title: 'Test Movie' }, error: null });
     mockProcessMovieFromTmdb.mockResolvedValue({ updated: true });
 
     const res = await POST(makeRequest({ movieId: 'movie-1' }));
@@ -125,5 +125,10 @@ describe('POST /api/sync/refresh-movie', () => {
     const data = await res.json();
     expect(data.syncLogId).toBe('sync-log-1');
     expect(data.result).toEqual({ updated: true });
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({ details: ['Test Movie'] }),
+    );
   });
 });

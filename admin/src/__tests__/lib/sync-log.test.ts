@@ -114,6 +114,7 @@ describe('completeSyncLog', () => {
       status: 'success',
       moviesAdded: 5,
       moviesUpdated: 3,
+      details: ['Pushpa 2', 'Devara'],
     });
 
     expect(mocks.mockUpdate).toHaveBeenCalledWith({
@@ -121,6 +122,7 @@ describe('completeSyncLog', () => {
       movies_added: 5,
       movies_updated: 3,
       errors: [],
+      details: ['Pushpa 2', 'Devara'],
       completed_at: '2024-06-15T13:00:00.000Z',
     });
   });
@@ -139,6 +141,7 @@ describe('completeSyncLog', () => {
       movies_added: 0,
       movies_updated: 0,
       errors,
+      details: [],
       completed_at: '2024-06-15T13:00:00.000Z',
     });
   });
@@ -161,7 +164,9 @@ describe('completeSyncLog', () => {
 
     await completeSyncLog(supabase, 'log-1', { status: 'success' });
 
-    expect(mocks.mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ errors: [] }));
+    expect(mocks.mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ errors: [], details: [] }),
+    );
   });
 
   it('defaults errors to empty array when errors array is empty', async () => {
@@ -169,7 +174,9 @@ describe('completeSyncLog', () => {
 
     await completeSyncLog(supabase, 'log-1', { status: 'success', errors: [] });
 
-    expect(mocks.mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ errors: [] }));
+    expect(mocks.mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ errors: [], details: [] }),
+    );
   });
 
   it('filters by sync log id', async () => {

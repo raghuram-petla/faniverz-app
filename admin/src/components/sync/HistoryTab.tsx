@@ -116,15 +116,17 @@ export function HistoryTab() {
                   (Array.isArray(log.errors)
                     ? log.errors.length > 0
                     : Object.keys(log.errors).length > 0);
+                const hasDetails = Array.isArray(log.details) && log.details.length > 0;
+                const isExpandable = hasErrors || hasDetails;
 
                 return (
                   <Fragment key={log.id}>
                     <tr
-                      className={`border-b border-outline-subtle hover:bg-surface-elevated transition-colors ${hasErrors ? 'cursor-pointer' : ''}`}
-                      onClick={() => hasErrors && toggleRow(log.id)}
+                      className={`border-b border-outline-subtle hover:bg-surface-elevated transition-colors ${isExpandable ? 'cursor-pointer' : ''}`}
+                      onClick={() => isExpandable && toggleRow(log.id)}
                     >
                       <td className="px-3 py-4 text-on-surface-disabled">
-                        {hasErrors &&
+                        {isExpandable &&
                           (isExpanded ? (
                             <ChevronDown className="w-4 h-4" />
                           ) : (
@@ -157,16 +159,37 @@ export function HistoryTab() {
                         {formatDuration(log.started_at, log.completed_at)}
                       </td>
                     </tr>
-                    {isExpanded && hasErrors && (
+                    {isExpanded && isExpandable && (
                       <tr className="border-b border-outline-subtle">
                         <td colSpan={7} className="px-6 py-4 bg-surface">
-                          <div className="space-y-2">
-                            <p className="text-xs font-medium text-on-surface-subtle uppercase tracking-wider">
-                              Error Details
-                            </p>
-                            <pre className="text-sm text-on-surface-muted bg-surface-elevated rounded-lg p-4 overflow-x-auto max-h-60 font-mono">
-                              {JSON.stringify(log.errors, null, 2)}
-                            </pre>
+                          <div className="space-y-3">
+                            {hasDetails && (
+                              <div className="space-y-2">
+                                <p className="text-xs font-medium text-on-surface-subtle uppercase tracking-wider">
+                                  Items Processed
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {log.details!.map((name, i) => (
+                                    <span
+                                      key={i}
+                                      className="inline-flex items-center px-2.5 py-1 rounded-md bg-surface-elevated text-sm text-on-surface"
+                                    >
+                                      {name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {hasErrors && (
+                              <div className="space-y-2">
+                                <p className="text-xs font-medium text-on-surface-subtle uppercase tracking-wider">
+                                  Error Details
+                                </p>
+                                <pre className="text-sm text-on-surface-muted bg-surface-elevated rounded-lg p-4 overflow-x-auto max-h-60 font-mono">
+                                  {JSON.stringify(log.errors, null, 2)}
+                                </pre>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>

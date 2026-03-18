@@ -106,7 +106,11 @@ describe('POST /api/sync/import-movies', () => {
   });
 
   it('imports movies and returns results', async () => {
-    mockProcessMovieFromTmdb.mockResolvedValue({ isNew: true, movieId: 'movie-1' });
+    mockProcessMovieFromTmdb.mockResolvedValue({
+      isNew: true,
+      movieId: 'movie-1',
+      title: 'Pushpa 2',
+    });
 
     const res = await POST(makeRequest({ tmdbIds: [100] }));
     expect(res.status).toBe(200);
@@ -114,6 +118,11 @@ describe('POST /api/sync/import-movies', () => {
     expect(data.syncLogId).toBe('sync-log-1');
     expect(data.results).toHaveLength(1);
     expect(data.errors).toHaveLength(0);
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({ details: ['Pushpa 2'] }),
+    );
   });
 
   it('records errors for failed movie imports', async () => {

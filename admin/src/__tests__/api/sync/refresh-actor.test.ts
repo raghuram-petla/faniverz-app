@@ -131,5 +131,10 @@ describe('POST /api/sync/refresh-actor', () => {
     const data = await res.json();
     expect(data.syncLogId).toBe('sync-log-1');
     expect(data.result).toEqual({ updated: true });
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({ details: ['Test Actor'] }),
+    );
   });
 });

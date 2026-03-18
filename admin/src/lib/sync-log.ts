@@ -36,6 +36,8 @@ export async function completeSyncLog(
     moviesAdded?: number;
     moviesUpdated?: number;
     errors?: unknown[];
+    /** @contract: item names processed — movie titles or actor names */
+    details?: string[];
   },
 ): Promise<void> {
   const { error } = await supabase
@@ -45,6 +47,7 @@ export async function completeSyncLog(
       movies_added: result.moviesAdded ?? 0,
       movies_updated: result.moviesUpdated ?? 0,
       errors: result.errors?.length ? result.errors : [],
+      details: result.details?.length ? result.details : [],
       completed_at: new Date().toISOString(),
     })
     .eq('id', syncLogId);

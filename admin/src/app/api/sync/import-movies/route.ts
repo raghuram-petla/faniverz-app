@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
       moviesAdded: added,
       moviesUpdated: updated,
       errors,
+      details: results.map((r) => r.title),
     });
 
     return NextResponse.json({ syncLogId, results, errors });
