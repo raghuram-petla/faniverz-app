@@ -34,7 +34,7 @@ vi.stubGlobal(
   'fetch',
   vi.fn().mockResolvedValue({
     ok: true,
-    json: () => Promise.resolve({ results: [], existingTmdbIds: [], items: [] }),
+    json: () => Promise.resolve({ results: [], existingMovies: [], items: [] }),
   }),
 );
 

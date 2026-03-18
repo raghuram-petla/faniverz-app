@@ -320,3 +320,26 @@ describe('createCrudHooks – enabledFn', () => {
     expect(result.current.fetchStatus).toBe('idle');
   });
 });
+
+// ── enabled guards ────────────────────────────────────────────
+
+describe('createCrudHooks – enabled guards', () => {
+  it('usePaginatedList is disabled when paginated=false', () => {
+    // @invariant: non-paginated config must not fire the paginated query
+    // even though useList always calls both hooks for stable hook order.
+    const { result } = renderHook(() => simpleCrud.usePaginatedList(), {
+      wrapper: createWrapper(),
+    });
+    // disabled by enabled:paginated (which is false for simpleCrud)
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('useSimpleList is disabled when paginated=true', () => {
+    // @invariant: paginated config must not fire the 5000-row simple query.
+    const { result } = renderHook(() => paginatedCrud.useSimpleList(), {
+      wrapper: createWrapper(),
+    });
+    // disabled by enabled:!paginated (which is false for paginatedCrud)
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+});

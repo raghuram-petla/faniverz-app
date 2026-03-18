@@ -75,14 +75,18 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
       initialPageParam: 0,
       getNextPageParam: (lastPage: T[], _allPages: T[][], lastPageParam: number) =>
         lastPage.length === pageSize ? lastPageParam + 1 : undefined,
-      enabled: enabledFn ? enabledFn(search) : true,
+      // @invariant paginated is a static factory param — guard prevents firing when not needed
+      enabled: paginated && (enabledFn ? enabledFn(search) : true),
     });
   }
 
   // @edge Hard limit of 5000 rows — no pagination; suitable only for small reference tables
+  // @invariant enabled:!paginated prevents a redundant 5000-row fetch when hook is called
+  // unconditionally alongside usePaginatedList (required by rules-of-hooks)
   function useSimpleList() {
     return useQuery({
       queryKey: [...listKey],
+      enabled: !paginated,
       queryFn: async () => {
         const { data, error } = await supabase
           .from(table)
@@ -95,11 +99,12 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
     });
   }
 
-  // @edge Conditional hook call — React rules technically violated but safe because
-  // paginated is a static config value that never changes between renders
+  // @invariant paginated is a static factory parameter — always calls both hooks so
+  // hook call order is stable across renders; returns appropriate result based on config
   function useList(search = '') {
-    if (paginated) return usePaginatedList(search);
-    return useSimpleList();
+    const paginatedResult = usePaginatedList(search);
+    const simpleResult = useSimpleList();
+    return paginated ? paginatedResult : simpleResult;
   }
 
   function useSingle(id: string) {

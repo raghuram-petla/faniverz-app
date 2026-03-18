@@ -31,8 +31,6 @@ export interface ImportMovieResult {
 
 /**
  * Import or refresh a single movie from TMDB.
- * Mirrors the logic from scripts/seed-telugu-movies.ts processMovie().
- *
  * - Fetches movie details + credits + videos from TMDB
  * - Uploads poster + backdrop to R2 with variants
  * - Upserts movie (onConflict: tmdb_id)
@@ -92,13 +90,16 @@ export async function processMovieFromTmdb(
         title: detail.title,
         synopsis: detail.overview || null,
         release_date: detail.release_date,
-        runtime: detail.runtime ?? null,
+        // @edge: TMDB returns 0 for unknown runtime — treat as null (0 fails app validation)
+        runtime: detail.runtime || null,
         genres,
         poster_url: posterUrl,
         backdrop_url: backdropUrl,
         trailer_url: trailerUrl,
         director,
-        in_theaters: false,
+        // @invariant: in_theaters is only set to false for NEW movies — never overwrite
+        // admin's manual setting on re-sync (e.g. movie currently showing in theaters).
+        ...(isNew && { in_theaters: false }),
         original_language: 'te',
         tmdb_last_synced_at: new Date().toISOString(),
       },
@@ -109,6 +110,33 @@ export async function processMovieFromTmdb(
 
   if (movieErr) throw new Error(`Movie upsert failed: ${movieErr.message}`);
   const movieId = movie.id as string;
+
+  // @sideeffect: keep movie_posters in sync with movies.poster_url so the admin
+  // poster gallery always shows the main poster for every imported movie.
+  // Uses select-then-update/insert because the partial unique index on (movie_id)
+  // WHERE is_main=true cannot be targeted by Supabase JS upsert onConflict.
+  if (posterUrl) {
+    const { data: existingMain } = await supabase
+      .from('movie_posters')
+      .select('id')
+      .eq('movie_id', movieId)
+      .eq('is_main', true)
+      .maybeSingle();
+    if (existingMain) {
+      await supabase
+        .from('movie_posters')
+        .update({ image_url: posterUrl })
+        .eq('id', existingMain.id);
+    } else {
+      await supabase.from('movie_posters').insert({
+        movie_id: movieId,
+        image_url: posterUrl,
+        title: 'Main Poster',
+        is_main: true,
+        display_order: 0,
+      });
+    }
+  }
 
   // @sideeffect: delete-then-reinsert is NOT atomic — if the process crashes between
   // delete and the cast insert loop, the movie has zero cast until the next re-sync.

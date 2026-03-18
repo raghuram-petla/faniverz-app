@@ -3,11 +3,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useAdminMovies, useDeleteMovie } from '@/hooks/useAdminMovies';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useMovieFilters } from '@/hooks/useMovieFilters';
 import { formatDate } from '@/lib/utils';
-import { Plus, Edit, Trash2, Loader2, Film, Pencil } from 'lucide-react';
+import { Edit, Trash2, Loader2, Film, Pencil } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
-import { SearchInput } from '@/components/common/SearchInput';
 import { LoadMoreButton } from '@/components/common/LoadMoreButton';
+import { MovieListToolbar } from '@/components/movies/MovieListToolbar';
 import { MOVIE_STATUS_CONFIG } from '@shared/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie } from '@/lib/types';
@@ -38,54 +39,53 @@ export default function MoviesPage() {
   const { isPHAdmin, productionHouseIds, canDelete, isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const {
+    filters,
+    setFilter,
+    toggleGenre,
+    clearAll,
+    activeFilterCount,
+    hasActiveFilters,
+    debouncedActorSearch,
+    debouncedDirectorSearch,
+  } = useMovieFilters();
+
+  // @contract Build resolved filters with debounced text values for the query hook
+  const resolvedFilters = {
+    ...filters,
+    actorSearch: debouncedActorSearch,
+    directorSearch: debouncedDirectorSearch,
+  };
+
   // @boundary PH admins see only their production house movies via productionHouseIds filter
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAdminMovies(debouncedSearch, statusFilter, isPHAdmin ? productionHouseIds : undefined);
+    useAdminMovies(
+      debouncedSearch,
+      statusFilter,
+      isPHAdmin ? productionHouseIds : undefined,
+      hasActiveFilters ? resolvedFilters : undefined,
+    );
   const movies = data?.pages.flat() ?? [];
   const deleteMovie = useDeleteMovie();
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="flex gap-3 items-center">
-          <SearchInput
-            value={search}
-            onChange={setSearch}
-            placeholder="Search movies..."
-            isLoading={isFetching}
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-          >
-            <option value="">All Status</option>
-            <option value="announced">Announced</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="in_theaters">In Theaters</option>
-            <option value="streaming">Streaming</option>
-            <option value="released">Released</option>
-          </select>
-          {!isReadOnly && (
-            <Link
-              href="/movies/new"
-              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 ml-auto shrink-0"
-            >
-              <Plus className="w-4 h-4" /> Add Movie
-            </Link>
-          )}
-        </div>
-        {search.length === 1 && (
-          <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
-        )}
-        {!isLoading && movies.length > 0 && (
-          <p className="text-xs text-on-surface-subtle">
-            Showing {movies.length} movie{movies.length !== 1 ? 's' : ''}
-            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
-            {statusFilter ? ` (${statusFilter})` : ''}
-          </p>
-        )}
-      </div>
+      <MovieListToolbar
+        search={search}
+        setSearch={setSearch}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        filters={filters}
+        setFilter={setFilter}
+        toggleGenre={toggleGenre}
+        clearAll={clearAll}
+        activeFilterCount={activeFilterCount}
+        hasActiveFilters={hasActiveFilters}
+        isFetching={isFetching}
+        isReadOnly={isReadOnly}
+        movieCount={isLoading ? 0 : movies.length}
+        debouncedSearch={debouncedSearch}
+      />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

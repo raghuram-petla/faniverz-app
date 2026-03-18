@@ -60,7 +60,7 @@ describe('useAdminMovies', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const cachedData = queryClient.getQueryData(['admin', 'movies', '', '', undefined]);
+    const cachedData = queryClient.getQueryData(['admin', 'movies', '', '', undefined, undefined]);
     expect(cachedData).toBeDefined();
   });
 

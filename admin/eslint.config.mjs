@@ -1,4 +1,5 @@
 import reactPlugin from 'eslint-plugin-react';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 
@@ -10,6 +11,7 @@ export default [
     files: ['**/*.{ts,tsx}'],
     plugins: {
       react: reactPlugin,
+      'react-hooks': reactHooksPlugin,
       '@typescript-eslint': tsPlugin,
     },
     languageOptions: {
@@ -32,6 +34,8 @@ export default [
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
 ];

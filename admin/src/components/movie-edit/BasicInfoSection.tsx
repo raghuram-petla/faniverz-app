@@ -4,38 +4,7 @@ import type { MovieForm } from '@/hooks/useMovieEditState';
 import { FormInput, FormSelect, FormTextarea, FormField } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
 import { validateMovieForm, type ValidationError } from '@/lib/movie-validation';
-
-const genres = [
-  'Action',
-  'Drama',
-  'Comedy',
-  'Romance',
-  'Thriller',
-  'Horror',
-  'Sci-Fi',
-  'Fantasy',
-  'Crime',
-  'Family',
-  'Adventure',
-  'Historical',
-];
-
-const LANGUAGE_OPTIONS = [
-  { value: '', label: 'Not set' },
-  { value: 'te', label: 'Telugu' },
-  { value: 'hi', label: 'Hindi' },
-  { value: 'ta', label: 'Tamil' },
-  { value: 'kn', label: 'Kannada' },
-  { value: 'ml', label: 'Malayalam' },
-  { value: 'en', label: 'English' },
-];
-
-const CERTIFICATION_OPTIONS = [
-  { value: '', label: 'None' },
-  { value: 'U', label: 'U' },
-  { value: 'UA', label: 'UA' },
-  { value: 'A', label: 'A' },
-];
+import { GENRES, LANGUAGE_OPTIONS, CERTIFICATION_OPTIONS } from '@/lib/movie-constants';
 
 // @contract movie basic info — title, dates, genres, synopsis, certification, language, toggles
 export interface BasicInfoSectionProps {
@@ -155,7 +124,7 @@ export function BasicInfoSection({
       <div>
         <label className="block text-sm text-on-surface-muted mb-2">Genres</label>
         <div className="flex flex-wrap gap-2">
-          {genres.map((genre) => (
+          {GENRES.map((genre) => (
             <Button
               key={genre}
               type="button"

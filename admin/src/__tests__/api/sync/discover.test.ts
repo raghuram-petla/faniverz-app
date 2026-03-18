@@ -104,15 +104,37 @@ describe('POST /api/sync/discover', () => {
     expect(res.status).toBe(503);
   });
 
-  it('discovers movies by year and returns existing tmdb ids', async () => {
+  it('discovers movies by year and returns full DB snapshots for existing movies', async () => {
+    // @contract: route selects id, tmdb_id, title, synopsis, poster_url, backdrop_url,
+    // trailer_url, director, runtime, genres — mock must return full ExistingMovieData shape
     mockDiscoverTeluguMovies.mockResolvedValue([{ id: 100 }, { id: 200 }]);
-    mockSelectIn.mockResolvedValue({ data: [{ tmdb_id: 100 }] });
+    mockSelectIn.mockResolvedValue({
+      data: [
+        {
+          id: 'uuid-100',
+          tmdb_id: 100,
+          title: 'Pushpa',
+          synopsis: null,
+          poster_url: null,
+          backdrop_url: null,
+          trailer_url: null,
+          director: null,
+          runtime: null,
+          genres: null,
+        },
+      ],
+    });
 
     const res = await POST(makeRequest({ year: 2025 }));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.results).toHaveLength(2);
-    expect(data.existingTmdbIds).toEqual([100]);
+    // Route now returns full DB snapshot for existing movies (not just IDs)
+    expect(data.existingMovies).toHaveLength(1);
+    expect(data.existingMovies[0].tmdb_id).toBe(100);
+    // Verify full shape is present in the response
+    expect(data.existingMovies[0]).toHaveProperty('id', 'uuid-100');
+    expect(data.existingMovies[0]).toHaveProperty('title', 'Pushpa');
   });
 
   it('discovers movies by year and month when month is provided', async () => {

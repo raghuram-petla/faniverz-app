@@ -5,9 +5,17 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
 
+// @boundary syncApi calls supabase.auth.getSession() for Bearer token —
+// must be mocked or all syncApi-backed hooks fail with TypeError before fetch
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: {
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { access_token: 'test-token' } },
+        error: null,
+      }),
+    },
   },
 }));
 
@@ -24,7 +32,11 @@ import {
   useStaleItems,
   useMovieSearch,
   useActorSearch,
+  useFillFields,
 } from '@/hooks/useSync';
+
+// All syncApi calls include Authorization: Bearer test-token
+const AUTH_HEADER = { Authorization: 'Bearer test-token' };
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -58,7 +70,7 @@ beforeEach(() => {
 
 describe('useDiscoverMovies', () => {
   it('calls POST /api/sync/discover with year and month', async () => {
-    const response = { results: [{ id: 1, title: 'Movie' }], existingTmdbIds: [] };
+    const response = { results: [{ id: 1, title: 'Movie' }], existingMovies: [] };
     mockFetchOk(response);
 
     const { result } = renderHook(() => useDiscoverMovies(), { wrapper: createWrapper() });
@@ -71,7 +83,7 @@ describe('useDiscoverMovies', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/discover', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
       body: JSON.stringify({ year: 2025, month: 3 }),
     });
     expect(result.current.data).toEqual(response);
@@ -113,7 +125,7 @@ describe('useTmdbLookup', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/lookup', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdbId: 123, type: 'movie' }),
     });
     expect(result.current.data).toEqual(response);
@@ -143,7 +155,7 @@ describe('useImportMovies', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/import-movies', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdbIds: [100, 200] }),
     });
   });
@@ -176,7 +188,7 @@ describe('useRefreshMovie', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/refresh-movie', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
       body: JSON.stringify({ movieId: 'movie-uuid' }),
     });
   });
@@ -202,7 +214,7 @@ describe('useRefreshActor', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/refresh-actor', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
       body: JSON.stringify({ actorId: 'actor-uuid' }),
     });
   });
@@ -221,7 +233,7 @@ describe('useStaleItems', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/stale-items?type=movies&days=30', {
       method: 'GET',
-      headers: {},
+      headers: { ...AUTH_HEADER },
       body: undefined,
     });
     expect(result.current.data).toEqual(response);
@@ -239,9 +251,33 @@ describe('useStaleItems', () => {
 
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/stale-items?type=actors-missing-bios', {
       method: 'GET',
-      headers: {},
+      headers: { ...AUTH_HEADER },
       body: undefined,
     });
+  });
+});
+
+// ── Fill Fields ───────────────────────────────────────────────────────────────
+
+describe('useFillFields', () => {
+  it('calls POST /api/sync/fill-fields with tmdbId and fields', async () => {
+    const response = { movieId: 'uuid-1', updatedFields: ['synopsis', 'director'] };
+    mockFetchOk(response);
+
+    const { result } = renderHook(() => useFillFields(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ tmdbId: 101, fields: ['synopsis', 'director'] });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/sync/fill-fields', {
+      method: 'POST',
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbId: 101, fields: ['synopsis', 'director'] }),
+    });
+    expect(result.current.data).toEqual(response);
   });
 });
 

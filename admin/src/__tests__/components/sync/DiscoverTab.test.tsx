@@ -24,6 +24,17 @@ vi.mock('@/hooks/useSync', () => ({
     mutateAsync: mockImportMutateAsync,
     isPending: false,
   }),
+  // ExistingMovieSync hooks — needed when existingMovies is non-empty
+  useTmdbLookup: () => ({ mutate: vi.fn(), isPending: false, isError: false, data: undefined }),
+  useFillFields: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+vi.mock('@/hooks/useBulkFillMissing', () => ({
+  useBulkFillMissing: () => ({
+    run: vi.fn(),
+    reset: vi.fn(),
+    state: { total: 0, done: 0, failed: 0, isRunning: false, error: null },
+  }),
 }));
 
 vi.mock('@/lib/supabase-browser', () => ({
@@ -56,6 +67,19 @@ function renderWithProvider(ui: React.ReactElement) {
   const qc = createQueryClient();
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
+
+const makeExisting = (tmdb_id: number, title: string) => ({
+  id: `uuid-${tmdb_id}`,
+  tmdb_id,
+  title,
+  synopsis: null,
+  poster_url: null,
+  backdrop_url: null,
+  trailer_url: null,
+  director: null,
+  runtime: null,
+  genres: null,
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -131,7 +155,7 @@ describe('DiscoverTab', () => {
         { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
         { id: 3, title: 'Movie C', poster_path: '/poster.jpg', release_date: '2024-03-01' },
       ],
-      existingTmdbIds: [1],
+      existingMovies: [makeExisting(1, 'Movie A')],
     };
     renderWithProvider(<DiscoverTab />);
     expect(screen.getByText('3')).toBeInTheDocument(); // total found
@@ -139,29 +163,62 @@ describe('DiscoverTab', () => {
     expect(screen.getByText('2 new')).toBeInTheDocument();
   });
 
-  it('renders movie cards for results', () => {
+  it('shows "Import all new" button for new movies', () => {
+    mockDiscoverData.current = {
+      results: [{ id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' }],
+      existingMovies: [],
+    };
+    renderWithProvider(<DiscoverTab />);
+    expect(screen.getByText('Import all new (1)')).toBeInTheDocument();
+  });
+
+  it('triggers batch import when "Import all new" is clicked', async () => {
+    // @sideeffect: handleImportAllNew calls runBatchImport which calls useImportMovies.mutateAsync
+    mockImportMutateAsync.mockResolvedValue({ syncLogId: 'log-1', results: [], errors: [] });
+    mockDiscoverData.current = {
+      results: [{ id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' }],
+      existingMovies: [],
+    };
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverTab />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (1)'));
+    });
+    expect(mockImportMutateAsync).toHaveBeenCalledWith([1]);
+  });
+
+  it('shows gap count when existing movies have missing fields', () => {
+    mockDiscoverData.current = {
+      results: [{ id: 100, title: 'Has Gaps', poster_path: null, release_date: '2024-01-01' }],
+      existingMovies: [makeExisting(100, 'Has Gaps')], // makeExisting has all nulls → has gaps
+    };
+    renderWithProvider(<DiscoverTab />);
+    expect(screen.getByText('1 with gaps')).toBeInTheDocument();
+  });
+
+  it('renders movie cards for new results', () => {
     mockDiscoverData.current = {
       results: [{ id: 100, title: 'Pushpa 2', poster_path: null, release_date: '2024-12-05' }],
-      existingTmdbIds: [],
+      existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
     expect(screen.getByText('Pushpa 2')).toBeInTheDocument();
     expect(screen.getByText('2024-12-05')).toBeInTheDocument();
   });
 
-  it('marks existing movies with "Imported" badge', () => {
+  it('shows ExistingMovieSync section for existing movies', () => {
     mockDiscoverData.current = {
       results: [{ id: 100, title: 'Already Here', poster_path: null, release_date: '2024-01-01' }],
-      existingTmdbIds: [100],
+      existingMovies: [makeExisting(100, 'Already Here')],
     };
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Imported')).toBeInTheDocument();
+    expect(screen.getByText('Existing movies — fill missing fields')).toBeInTheDocument();
   });
 
   it('shows "Select all new" button when there are new movies', () => {
     mockDiscoverData.current = {
       results: [{ id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' }],
-      existingTmdbIds: [],
+      existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
     expect(screen.getByText('Select all new (1)')).toBeInTheDocument();
@@ -170,7 +227,7 @@ describe('DiscoverTab', () => {
   it('selects a new movie when clicked and shows "Selected" badge', () => {
     mockDiscoverData.current = {
       results: [{ id: 200, title: 'Selectable', poster_path: null, release_date: '2024-06-01' }],
-      existingTmdbIds: [],
+      existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
     fireEvent.click(screen.getByText('Selectable'));
@@ -180,7 +237,7 @@ describe('DiscoverTab', () => {
   it('shows import button after selecting movies', () => {
     mockDiscoverData.current = {
       results: [{ id: 300, title: 'To Import', poster_path: null, release_date: '2024-07-01' }],
-      existingTmdbIds: [],
+      existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
     fireEvent.click(screen.getByText('To Import'));
@@ -190,7 +247,7 @@ describe('DiscoverTab', () => {
   it('deselects a movie when clicked again', () => {
     mockDiscoverData.current = {
       results: [{ id: 400, title: 'Toggle Me', poster_path: null, release_date: '2024-08-01' }],
-      existingTmdbIds: [],
+      existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
     fireEvent.click(screen.getByText('Toggle Me'));
@@ -199,14 +256,14 @@ describe('DiscoverTab', () => {
     expect(screen.queryByText('Selected')).not.toBeInTheDocument();
   });
 
-  it('select all new selects all non-existing movies', () => {
+  it('select all new excludes existing movies', () => {
     mockDiscoverData.current = {
       results: [
         { id: 500, title: 'New One', poster_path: null, release_date: '2024-01-01' },
         { id: 501, title: 'New Two', poster_path: null, release_date: '2024-02-01' },
         { id: 502, title: 'Existing', poster_path: null, release_date: '2024-03-01' },
       ],
-      existingTmdbIds: [502],
+      existingMovies: [makeExisting(502, 'Existing')],
     };
     renderWithProvider(<DiscoverTab />);
     fireEvent.click(screen.getByText('Select all new (2)'));
@@ -218,7 +275,7 @@ describe('DiscoverTab', () => {
       results: [
         { id: 600, title: 'Poster Movie', poster_path: '/abc.jpg', release_date: '2024-01-01' },
       ],
-      existingTmdbIds: [],
+      existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
     const img = screen.getByAltText('Poster Movie') as HTMLImageElement;
@@ -228,7 +285,7 @@ describe('DiscoverTab', () => {
   it('shows "No date" when release_date is empty', () => {
     mockDiscoverData.current = {
       results: [{ id: 700, title: 'No Date Movie', poster_path: null, release_date: '' }],
-      existingTmdbIds: [],
+      existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
     expect(screen.getByText('No date')).toBeInTheDocument();

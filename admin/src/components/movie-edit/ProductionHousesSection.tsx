@@ -92,7 +92,7 @@ export function ProductionHousesSection({
       setDropdownOpen(false);
       onCloseAddForm();
     },
-    [onAdd, onSearchChange],
+    [onAdd, onSearchChange, onCloseAddForm],
   );
 
   function handleKeyDown(e: React.KeyboardEvent) {

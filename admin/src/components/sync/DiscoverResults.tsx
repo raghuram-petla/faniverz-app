@@ -2,6 +2,8 @@
 
 import { Film, Loader2, Download, CheckCircle, XCircle } from 'lucide-react';
 import type { ImportProgress } from './syncHelpers';
+import type { ExistingMovieData } from '@/hooks/useSync';
+import { ExistingMovieSync } from './ExistingMovieSync';
 
 interface DiscoverMovie {
   id: number;
@@ -13,39 +15,64 @@ interface DiscoverMovie {
 /** @contract displays TMDB discover results with import status overlay per movie */
 export interface DiscoverResultsProps {
   results: DiscoverMovie[];
+  /** @boundary Full DB snapshots for existing movies — used for field-level diff UI */
+  existingMovies: ExistingMovieData[];
   /** @boundary Set of TMDB IDs already in our DB — these cards show "Imported" badge and are non-selectable */
   existingSet: Set<number>;
   /** @edge derived from results minus existingSet — used for "Select all new" count */
   newMovies: DiscoverMovie[];
   selected: Set<number>;
   isImporting: boolean;
+  /** Count of existing movies that have one or more null/empty fields */
+  gapCount: number;
   onToggleSelect: (tmdbId: number) => void;
   onSelectAllNew: () => void;
   /** @sideeffect triggers batch import of selected TMDB IDs via /api/sync/import */
   onImport: () => void;
+  /** @sideeffect selects all new movies and immediately triggers import */
+  onImportAllNew: () => void;
 }
 
 export function DiscoverResults({
   results,
+  existingMovies,
   existingSet,
   newMovies,
   selected,
   isImporting,
+  gapCount,
   onToggleSelect,
   onSelectAllNew,
   onImport,
+  onImportAllNew,
 }: DiscoverResultsProps) {
   return (
     <>
-      <div className="flex items-center justify-between">
+      {/* ── Summary bar ── */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-on-surface-muted">
-          Found <span className="text-on-surface font-medium">{results.length}</span> movies
+          Found <span className="text-on-surface font-medium">{results.length}</span>
           {' · '}
           <span className="text-status-green">{existingSet.size} imported</span>
           {' · '}
           <span className="text-status-blue">{newMovies.length} new</span>
+          {gapCount > 0 && (
+            <>
+              {' · '}
+              <span className="text-status-yellow">{gapCount} with gaps</span>
+            </>
+          )}
         </p>
         <div className="flex items-center gap-2">
+          {newMovies.length > 0 && !isImporting && (
+            <button
+              onClick={onImportAllNew}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Import all new ({newMovies.length})
+            </button>
+          )}
           {newMovies.length > 0 && (
             <button
               onClick={onSelectAllNew}
@@ -58,7 +85,7 @@ export function DiscoverResults({
             <button
               onClick={onImport}
               disabled={isImporting}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
             >
               {isImporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -71,60 +98,58 @@ export function DiscoverResults({
         </div>
       </div>
 
+      {/* New-only grid — existing movies are shown in the section below */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {results.map((movie) => {
-          const isExisting = existingSet.has(movie.id);
-          const isSelected = selected.has(movie.id);
-          return (
-            <button
-              key={movie.id}
-              onClick={() => !isExisting && onToggleSelect(movie.id)}
-              disabled={isExisting || isImporting}
-              className={`relative bg-surface-card border rounded-xl overflow-hidden text-left transition-all ${
-                isSelected
-                  ? 'border-red-600 ring-1 ring-red-600'
-                  : isExisting
-                    ? 'border-outline opacity-60'
+        {results
+          .filter((m) => !existingSet.has(m.id))
+          .map((movie) => {
+            const isSelected = selected.has(movie.id);
+            return (
+              <button
+                key={movie.id}
+                onClick={() => onToggleSelect(movie.id)}
+                disabled={isImporting}
+                className={`relative bg-surface-card border rounded-xl overflow-hidden text-left transition-all ${
+                  isSelected
+                    ? 'border-red-600 ring-1 ring-red-600'
                     : 'border-outline hover:border-on-surface-subtle'
-              } disabled:cursor-default`}
-            >
-              <div className="aspect-[2/3] bg-surface-muted">
-                {/* @boundary TMDB image URL constructed from poster_path — depends on TMDB CDN */}
-                {movie.poster_path ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
-                    alt={movie.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Film className="w-8 h-8 text-on-surface-disabled" />
+                } disabled:cursor-default`}
+              >
+                <div className="aspect-[2/3] bg-surface-muted">
+                  {/* @boundary TMDB image URL constructed from poster_path — depends on TMDB CDN */}
+                  {movie.poster_path ? (
+                    <img
+                      src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+                      alt={movie.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Film className="w-8 h-8 text-on-surface-disabled" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-2.5">
+                  <p className="text-sm font-medium text-on-surface line-clamp-2 leading-tight">
+                    {movie.title}
+                  </p>
+                  <p className="text-xs text-on-surface-subtle mt-1">
+                    {movie.release_date || 'No date'}
+                  </p>
+                </div>
+                {isSelected && (
+                  <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                    Selected
                   </div>
                 )}
-              </div>
-              <div className="p-2.5">
-                <p className="text-sm font-medium text-on-surface line-clamp-2 leading-tight">
-                  {movie.title}
-                </p>
-                <p className="text-xs text-on-surface-subtle mt-1">
-                  {movie.release_date || 'No date'}
-                </p>
-              </div>
-              {isExisting && (
-                <div className="absolute top-2 right-2 bg-green-600/90 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <CheckCircle className="w-2.5 h-2.5" /> Imported
-                </div>
-              )}
-              {isSelected && !isExisting && (
-                <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                  Selected
-                </div>
-              )}
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
       </div>
+
+      {/* @coupling ExistingMovieSync is only rendered when there are existing movies */}
+      {existingMovies.length > 0 && <ExistingMovieSync movies={existingMovies} />}
     </>
   );
 }

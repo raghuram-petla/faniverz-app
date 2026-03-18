@@ -228,7 +228,7 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
   const onDiscard = useCallback(() => {
     if (initialForm) setForm(initialForm);
     params.resetPendingState();
-  }, [initialForm, setForm, params.resetPendingState]);
+  }, [initialForm, setForm, params]);
 
   return { changes, changeCount: changes.length, onRevertField, onDiscard };
 }

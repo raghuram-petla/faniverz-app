@@ -90,7 +90,7 @@ export function useImageVariants(
         setIsChecking(false);
       }
     },
-    [variantType],
+    [variantType, bucket],
   );
 
   useEffect(() => {

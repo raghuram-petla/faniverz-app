@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { useDiscoverMovies, useImportMovies } from '@/hooks/useSync';
-import type { DiscoverResult } from '@/hooks/useSync';
+import type { DiscoverResult, ExistingMovieData } from '@/hooks/useSync';
+import { countMissing } from '@/lib/syncUtils';
 import { Globe, Loader2 } from 'lucide-react';
 import { CURRENT_YEAR, YEARS, MONTHS, type ImportProgress } from './syncHelpers';
 import { DiscoverResults, ImportProgressList } from './DiscoverResults';
@@ -18,11 +19,23 @@ export function DiscoverTab() {
 
   /** @boundary DiscoverResult shape returned by useDiscoverMovies — cast needed due to mutation generic */
   const data = discover.data as DiscoverResult | undefined;
-  /** @invariant existingSet rebuilt only when existingTmdbIds changes — used to mark imported movies */
-  const existingSet = useMemo(() => new Set(data?.existingTmdbIds ?? []), [data?.existingTmdbIds]);
+  /** @invariant existingSet rebuilt only when existingMovies changes — used to mark imported movies */
+  const existingMovies = useMemo(
+    () => (data?.existingMovies ?? []) as ExistingMovieData[],
+    [data?.existingMovies],
+  );
+  const existingSet = useMemo(
+    () => new Set(existingMovies.map((m) => m.tmdb_id)),
+    [existingMovies],
+  );
   const newMovies = useMemo(
     () => (data?.results ?? []).filter((m) => !existingSet.has(m.id)),
     [data?.results, existingSet],
+  );
+  /** Count of existing movies that have one or more null/empty fields */
+  const gapCount = useMemo(
+    () => existingMovies.filter((m) => countMissing(m) > 0).length,
+    [existingMovies],
   );
 
   const handleDiscover = () => {
@@ -43,20 +56,14 @@ export function DiscoverTab() {
   const selectAllNew = () => setSelected(new Set(newMovies.map((m) => m.id)));
 
   /**
-   * @sideeffect imports selected movies in batches of 5 via /api/sync/import
-   * @edge batch size of 5 prevents TMDB rate-limit hits; errors per-batch are captured individually
+   * @sideeffect Shared batch-import loop used by both handleImport and handleImportAllNew.
+   * @edge batch size of 5 prevents TMDB rate-limit hits; per-batch errors are captured individually
    */
-  const handleImport = async () => {
-    if (selected.size === 0) return;
-    const moviesList = (data?.results ?? []).filter((m) => selected.has(m.id));
-    const progress = moviesList.map((m) => ({
-      tmdbId: m.id,
-      title: m.title,
-      status: 'pending' as const,
-    }));
-    setImportProgress(progress);
-
-    const ids = moviesList.map((m) => m.id);
+  const runBatchImport = async (movies: Array<{ id: number; title: string }>) => {
+    setImportProgress(
+      movies.map((m) => ({ tmdbId: m.id, title: m.title, status: 'pending' as const })),
+    );
+    const ids = movies.map((m) => m.id);
     for (let i = 0; i < ids.length; i += 5) {
       const batch = ids.slice(i, i + 5);
       setImportProgress((prev) =>
@@ -91,7 +98,22 @@ export function DiscoverTab() {
     setSelected(new Set());
   };
 
+  // @invariant: derived from importProgress — must be declared before handlers that read it
   const isImporting = importProgress.some((p) => p.status === 'importing');
+
+  /** @sideeffect One-click import all new — skips the Select→Import two-step */
+  const handleImportAllNew = () => {
+    if (newMovies.length === 0 || isImporting) return;
+    setSelected(new Set(newMovies.map((m) => m.id)));
+    void runBatchImport(newMovies);
+  };
+
+  /** @sideeffect imports currently selected movies */
+  const handleImport = async () => {
+    if (selected.size === 0) return;
+    const moviesList = (data?.results ?? []).filter((m) => selected.has(m.id));
+    await runBatchImport(moviesList);
+  };
 
   return (
     <div className="space-y-6">
@@ -113,13 +135,16 @@ export function DiscoverTab() {
       {data && (
         <DiscoverResults
           results={data.results}
+          existingMovies={existingMovies}
           existingSet={existingSet}
           newMovies={newMovies}
           selected={selected}
           isImporting={isImporting}
+          gapCount={gapCount}
           onToggleSelect={toggleSelect}
           onSelectAllNew={selectAllNew}
           onImport={handleImport}
+          onImportAllNew={handleImportAllNew}
         />
       )}
 

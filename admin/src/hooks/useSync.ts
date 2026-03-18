@@ -3,12 +3,35 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { TmdbDiscoverMovie } from '@/lib/tmdb';
+// Re-export for consumers that only import from this module
+export type { FillableField } from '@/lib/syncUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/** Full DB snapshot of a movie that already exists — used for field-level diff. */
+export interface ExistingMovieData {
+  id: string;
+  tmdb_id: number;
+  title: string | null;
+  synopsis: string | null;
+  poster_url: string | null;
+  backdrop_url: string | null;
+  trailer_url: string | null;
+  director: string | null;
+  runtime: number | null;
+  genres: string[] | null;
+}
+
 export interface DiscoverResult {
   results: TmdbDiscoverMovie[];
-  existingTmdbIds: number[];
+  /** Full DB snapshots for movies already in our DB — derive existingTmdbIds via .map(m => m.tmdb_id) */
+  existingMovies: ExistingMovieData[];
+}
+
+export interface FillFieldsResponse {
+  movieId: string;
+  /** Field keys that were actually updated (e.g. 'cast' omitted if already had entries). */
+  updatedFields: string[];
 }
 
 export interface LookupMovieData {
@@ -88,10 +111,21 @@ export interface StaleItemsResponse {
 
 // @boundary Proxy to /api/sync/* Next.js routes — server handles TMDB API key securely
 // @contract GET when body is undefined; POST with JSON body otherwise
+// @assumes caller is authenticated — getSession() returns null only when session has expired
 async function syncApi<T>(path: string, body?: unknown): Promise<T> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not authenticated — please log in again.');
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${session.access_token}`,
+  };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+
   const res = await fetch(`/api/sync/${path}`, {
     method: body !== undefined ? 'POST' : 'GET',
-    headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+    headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
@@ -191,6 +225,32 @@ export function useStaleItems(type: 'movies' | 'actors-missing-bios', days?: num
   return useQuery({
     queryKey: ['admin', 'sync', 'stale', type, days],
     queryFn: () => syncApi<StaleItemsResponse>(`stale-items?${params.toString()}`),
+  });
+}
+
+/**
+ * Apply admin-selected fields to an existing movie from TMDB.
+ * Only the fields in the request are written — others are left untouched.
+ */
+// @sideeffect: updates movies row; may create actors + movie_cast rows for 'cast' field
+export function useFillFields() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      tmdbId,
+      fields,
+      forceResyncCast,
+    }: {
+      tmdbId: number;
+      fields: string[];
+      forceResyncCast?: boolean;
+    }) => syncApi<FillFieldsResponse>('fill-fields', { tmdbId, fields, forceResyncCast }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
+    },
+    // @contract: callers surface errors via fillFields.isError + fillFields.error
   });
 }
 

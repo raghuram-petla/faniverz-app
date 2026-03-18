@@ -9,7 +9,7 @@ import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers
  * Returns results + which tmdb_ids already exist in our DB.
  * Read-only — no DB writes.
  */
-// @contract: returns { results: TMDBMovie[], existingTmdbIds: number[] }
+// @contract: returns { results: TMDBMovie[], existingMovies: ExistingMovieData[] }
 export async function POST(request: NextRequest) {
   try {
     // @boundary: admin-only — prevents unauthenticated TMDB API usage
@@ -35,18 +35,22 @@ export async function POST(request: NextRequest) {
       ? await discoverTeluguMoviesByMonth(year, month, tmdb.apiKey)
       : await discoverTeluguMovies(year, tmdb.apiKey);
 
-    // Batch-check which tmdb_ids already exist in our DB
+    // Batch-check which tmdb_ids already exist in our DB, fetching all
+    // fillable fields so the frontend can show a field-level diff without
+    // a separate per-movie query.
     // @sync: read-only DB check — no writes, safe for repeated calls
     const tmdbIds = results.map((m) => m.id);
     const supabase = getSupabaseAdmin();
     const { data: existingRows } = await supabase
       .from('movies')
-      .select('tmdb_id')
+      .select(
+        'id, tmdb_id, title, synopsis, poster_url, backdrop_url, trailer_url, director, runtime, genres',
+      )
       .in('tmdb_id', tmdbIds);
 
-    const existingTmdbIds = (existingRows ?? []).map((r) => r.tmdb_id as number);
-
-    return NextResponse.json({ results, existingTmdbIds });
+    // @contract: existingMovies contains full DB snapshot — consumers derive
+    // existingTmdbIds as existingMovies.map(m => m.tmdb_id)
+    return NextResponse.json({ results, existingMovies: existingRows ?? [] });
   } catch (err) {
     return errorResponse('Discover', err);
   }

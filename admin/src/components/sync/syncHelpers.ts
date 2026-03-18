@@ -39,8 +39,12 @@ export const statusStyles: Record<string, { bg: string; text: string }> = {
 // If the admin panel stays open across midnight on Dec 31, the year dropdown still
 // shows the old year until the browser tab is reloaded. The "+1" in YEARS means
 // the dropdown includes next year for pre-release movie syncing.
+// @edge: YEARS extends back to 1900 — one year at a time, not bulk sync.
 export const CURRENT_YEAR = new Date().getFullYear();
-export const YEARS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR + 1 - i);
+export const YEARS = Array.from(
+  { length: CURRENT_YEAR + 2 - 1900 },
+  (_, i) => CURRENT_YEAR + 1 - i,
+);
 export const MONTHS = [
   'January',
   'February',

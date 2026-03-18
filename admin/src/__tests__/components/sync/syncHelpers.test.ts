@@ -89,16 +89,16 @@ describe('CURRENT_YEAR', () => {
 });
 
 describe('YEARS', () => {
-  it('contains 10 years', () => {
-    expect(YEARS).toHaveLength(10);
-  });
-
   it('starts with CURRENT_YEAR + 1', () => {
     expect(YEARS[0]).toBe(CURRENT_YEAR + 1);
   });
 
-  it('ends with CURRENT_YEAR - 8', () => {
-    expect(YEARS[9]).toBe(CURRENT_YEAR - 8);
+  it('ends with 1900', () => {
+    expect(YEARS[YEARS.length - 1]).toBe(1900);
+  });
+
+  it('contains the expected number of years (CURRENT_YEAR + 2 - 1900)', () => {
+    expect(YEARS).toHaveLength(CURRENT_YEAR + 2 - 1900);
   });
 
   it('is in descending order', () => {
