@@ -48,9 +48,21 @@ export async function POST(request: NextRequest) {
       )
       .in('tmdb_id', tmdbIds);
 
+    // @contract: resolve relative R2 keys to full URLs server-side so client components
+    // can use poster_url directly without needing env vars (Turbopack doesn't substitute
+    // process.env in client bundles for non-NEXT_PUBLIC_ vars)
+    const postersBase = process.env.R2_PUBLIC_BASE_URL_POSTERS?.replace(/\/$/, '');
+    const existingMovies = (existingRows ?? []).map((row) => ({
+      ...row,
+      poster_url:
+        row.poster_url && !row.poster_url.startsWith('http') && postersBase
+          ? `${postersBase}/${row.poster_url}`
+          : row.poster_url,
+    }));
+
     // @contract: existingMovies contains full DB snapshot — consumers derive
     // existingTmdbIds as existingMovies.map(m => m.tmdb_id)
-    return NextResponse.json({ results, existingMovies: existingRows ?? [] });
+    return NextResponse.json({ results, existingMovies });
   } catch (err) {
     return errorResponse('Discover', err);
   }
