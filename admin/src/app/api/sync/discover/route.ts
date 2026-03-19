@@ -60,9 +60,26 @@ export async function POST(request: NextRequest) {
           : row.poster_url,
     }));
 
-    // @contract: existingMovies contains full DB snapshot — consumers derive
-    // existingTmdbIds as existingMovies.map(m => m.tmdb_id)
-    return NextResponse.json({ results, existingMovies });
+    // @sideeffect check for title-based duplicates — movies in DB with matching titles but no tmdb_id
+    const existingTmdbIds = new Set(existingMovies.map((m) => m.tmdb_id));
+    const unmatchedTitles = results.filter((m) => !existingTmdbIds.has(m.id)).map((m) => m.title);
+    let duplicateSuspects: Record<number, { id: string; title: string }> = {};
+    if (unmatchedTitles.length > 0) {
+      const { data: suspects } = await supabase
+        .from('movies')
+        .select('id, title, tmdb_id')
+        .is('tmdb_id', null)
+        .in('title', unmatchedTitles);
+      if (suspects && suspects.length > 0) {
+        const suspectMap = new Map(suspects.map((s) => [s.title.toLowerCase(), s]));
+        for (const m of results) {
+          const match = suspectMap.get(m.title.toLowerCase());
+          if (match) duplicateSuspects[m.id] = { id: match.id, title: match.title };
+        }
+      }
+    }
+
+    return NextResponse.json({ results, existingMovies, duplicateSuspects });
   } catch (err) {
     return errorResponse('Discover', err);
   }

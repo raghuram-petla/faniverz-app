@@ -16,6 +16,7 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
   const importMovies = useImportMovies();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
+  const [gapCount, setGapCount] = useState<number | null>(null);
   const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
   const [importedMovieData, setImportedMovieData] = useState<ExistingMovieData[]>([]);
 
@@ -31,7 +32,6 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
     () => (data.results ?? []).filter((m) => !existingSet.has(m.id)),
     [data.results, existingSet],
   );
-  const gapCount = 0;
 
   const toggleSelect = (tmdbId: number) => {
     setSelected((prev) => {
@@ -136,6 +136,8 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
         onImport={handleImport}
         onImportAllNew={handleImportAllNew}
         importedIds={importedIds}
+        duplicateSuspects={data.duplicateSuspects}
+        onGapCountChange={setGapCount}
       />
       {importProgress.length > 0 && <ImportProgressList items={importProgress} />}
     </div>

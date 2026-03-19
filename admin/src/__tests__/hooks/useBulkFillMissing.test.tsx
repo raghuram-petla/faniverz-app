@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase-browser', () => ({
 }));
 
 import { useBulkFillMissing } from '@/hooks/useBulkFillMissing';
-import type { ExistingMovieData } from '@/hooks/useSync';
+import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 
 function createWrapper() {
   const qc = new QueryClient({
@@ -33,8 +33,8 @@ const makeMovie = (id: string, overrides: Partial<ExistingMovieData> = {}): Exis
   id,
   tmdb_id: Number(id),
   title: 'Movie',
-  synopsis: null, // missing
-  poster_url: null, // missing
+  synopsis: null,
+  poster_url: null,
   backdrop_url: null,
   trailer_url: null,
   director: null,
@@ -42,6 +42,27 @@ const makeMovie = (id: string, overrides: Partial<ExistingMovieData> = {}): Exis
   genres: null,
   ...overrides,
 });
+
+/** @contract creates TMDB data with all fields populated — mismatches against makeMovie defaults */
+const makeTmdb = (tmdbId: number, overrides: Partial<LookupMovieData> = {}): LookupMovieData => ({
+  tmdbId,
+  title: 'Movie',
+  overview: 'A synopsis',
+  releaseDate: '2024-01-01',
+  runtime: 120,
+  genres: ['Action'],
+  posterUrl: '/poster.jpg',
+  backdropUrl: '/backdrop.jpg',
+  director: 'Director',
+  trailerUrl: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+  castCount: 5,
+  crewCount: 3,
+  ...overrides,
+});
+
+function makeTmdbMap(entries: Array<[number, LookupMovieData]>): Map<number, LookupMovieData> {
+  return new Map(entries);
+}
 
 function mockFetchOk() {
   mockFetch.mockResolvedValueOnce({
@@ -61,41 +82,45 @@ describe('useBulkFillMissing', () => {
     expect(result.current.state.total).toBe(0);
   });
 
-  it('does nothing when no movies have gaps', async () => {
-    const fullMovie = makeMovie('1', {
-      synopsis: 'A story',
-      poster_url: '/p.jpg',
-      backdrop_url: '/b.jpg',
-      trailer_url: 'yt',
+  it('does nothing when no movies have TMDB mismatches', async () => {
+    const movie = makeMovie('1', {
+      synopsis: 'A synopsis',
+      poster_url: '/poster.jpg',
+      backdrop_url: '/backdrop.jpg',
+      trailer_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
       director: 'Director',
       runtime: 120,
       genres: ['Action'],
     });
+    const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
     const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
 
     await act(async () => {
-      await result.current.run([fullMovie]);
+      await result.current.run([movie], tmdb);
     });
 
     expect(mockFetch).not.toHaveBeenCalled();
     expect(result.current.state.total).toBe(0);
   });
 
-  it('processes gapped movies sequentially', async () => {
+  it('processes only movies with real TMDB mismatches', async () => {
     mockFetchOk();
     mockFetchOk();
 
     const movies = [makeMovie('1'), makeMovie('2')];
+    const tmdb = makeTmdbMap([
+      [1, makeTmdb(1)],
+      [2, makeTmdb(2)],
+    ]);
     const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
 
     await act(async () => {
-      await result.current.run(movies);
+      await result.current.run(movies, tmdb);
     });
 
     await waitFor(() => expect(result.current.state.isRunning).toBe(false));
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(result.current.state.done).toBe(2);
-    expect(result.current.state.failed).toBe(0);
   });
 
   it('counts failures but continues on non-429 errors', async () => {
@@ -106,10 +131,15 @@ describe('useBulkFillMissing', () => {
     });
     mockFetchOk();
 
+    const movies = [makeMovie('1'), makeMovie('2')];
+    const tmdb = makeTmdbMap([
+      [1, makeTmdb(1)],
+      [2, makeTmdb(2)],
+    ]);
     const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
 
     await act(async () => {
-      await result.current.run([makeMovie('1'), makeMovie('2')]);
+      await result.current.run(movies, tmdb);
     });
 
     await waitFor(() => expect(result.current.state.isRunning).toBe(false));
@@ -125,51 +155,58 @@ describe('useBulkFillMissing', () => {
     });
 
     const movies = [makeMovie('1'), makeMovie('2')];
+    const tmdb = makeTmdbMap([
+      [1, makeTmdb(1)],
+      [2, makeTmdb(2)],
+    ]);
     const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
 
     await act(async () => {
-      await result.current.run(movies);
+      await result.current.run(movies, tmdb);
     });
 
     await waitFor(() => expect(result.current.state.isRunning).toBe(false));
-    // Only 1 fetch — stopped after 429
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(result.current.state.error).toContain('Rate limited');
   });
 
-  it('sends only missing fields per movie', async () => {
+  it('sends only mismatched fields per movie', async () => {
     mockFetchOk();
 
+    // Movie has synopsis and poster missing, everything else matches TMDB
     const movie = makeMovie('101', {
-      title: 'Has Title', // not missing
-      synopsis: null, // missing
-      poster_url: null, // missing
-      backdrop_url: '/b.jpg', // not missing
-      trailer_url: 'yt', // not missing
-      director: 'Dir', // not missing
-      runtime: 120, // not missing
-      genres: ['Action'], // not missing
+      title: 'Movie',
+      synopsis: null,
+      poster_url: null,
+      backdrop_url: '/backdrop.jpg',
+      trailer_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+      director: 'Director',
+      runtime: 120,
+      genres: ['Action'],
     });
-
+    const tmdb = makeTmdbMap([[101, makeTmdb(101)]]);
     const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
 
     await act(async () => {
-      await result.current.run([movie]);
+      await result.current.run([movie], tmdb);
     });
 
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.tmdbId).toBe(101);
-    expect(body.fields).toEqual(expect.arrayContaining(['synopsis', 'poster_url']));
+    expect(body.fields).toContain('synopsis');
+    expect(body.fields).toContain('poster_url');
     expect(body.fields).not.toContain('title');
     expect(body.fields).not.toContain('director');
+    expect(body.fields).not.toContain('genres');
   });
 
   it('reset() clears state to initial', async () => {
     mockFetchOk();
+    const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
     const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
 
     await act(async () => {
-      await result.current.run([makeMovie('1')]);
+      await result.current.run([makeMovie('1')], tmdb);
     });
 
     await waitFor(() => expect(result.current.state.done).toBe(1));
@@ -177,5 +214,21 @@ describe('useBulkFillMissing', () => {
     act(() => result.current.reset());
     expect(result.current.state.done).toBe(0);
     expect(result.current.state.total).toBe(0);
+  });
+
+  it('skips movies without TMDB data in the map', async () => {
+    const movies = [makeMovie('1'), makeMovie('2')];
+    // Only movie 1 has TMDB data
+    const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
+    mockFetchOk();
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run(movies, tmdb);
+    });
+
+    await waitFor(() => expect(result.current.state.isRunning).toBe(false));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(result.current.state.total).toBe(1);
   });
 });

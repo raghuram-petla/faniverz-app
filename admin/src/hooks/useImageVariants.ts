@@ -55,6 +55,13 @@ export function useImageVariants(
     async (url: string) => {
       const built = buildVariants(url, variantType, bucket);
       setVariants(built);
+
+      // @edge skip API call if URLs couldn't be resolved (bare relative keys without base URL)
+      if (built.some((v) => !v.url.startsWith('http'))) {
+        setVariants((prev) => prev.map((v) => ({ ...v, status: 'error' as const })));
+        return;
+      }
+
       setIsChecking(true);
 
       try {

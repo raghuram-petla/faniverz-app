@@ -19,11 +19,13 @@ vi.mock('@/lib/sync-helpers', () => ({
   }),
 }));
 
+const mockIsNull = vi.fn();
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
     from: () => ({
       select: () => ({
         in: mockSelectIn,
+        is: () => ({ in: mockIsNull }),
       }),
     }),
   }),
@@ -64,6 +66,8 @@ describe('POST /api/sync/search', () => {
     mockSearchMovies.mockReset();
     mockSearchPersons.mockReset();
     mockSelectIn.mockReset();
+    mockIsNull.mockReset();
+    mockIsNull.mockResolvedValue({ data: [] });
 
     mockVerifyAdmin.mockResolvedValue({ id: 'user-1', email: 'admin@test.com' });
     mockEnsureTmdbApiKey.mockReturnValue({ ok: true, apiKey: 'test-tmdb-key' });
@@ -108,6 +112,7 @@ describe('POST /api/sync/search', () => {
     // Movies section
     expect(data.movies.results).toHaveLength(2);
     expect(data.movies.existingTmdbIds).toEqual([100]);
+    expect(data.movies.duplicateSuspects).toEqual({});
 
     // Actors section
     expect(data.actors.results).toHaveLength(2);

@@ -20,11 +20,13 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
+const mockIsNull = vi.fn().mockResolvedValue({ data: [] });
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
     from: () => ({
       select: () => ({
         in: mockSelectIn,
+        is: () => ({ in: mockIsNull }),
         eq: () => ({
           single: () =>
             Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),

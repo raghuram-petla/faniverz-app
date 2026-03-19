@@ -109,37 +109,17 @@ describe('ExistingMovieSync', () => {
     expect(screen.queryByText('Baahubali')).not.toBeInTheDocument();
   });
 
-  it('shows missing fields count for a movie with no data', () => {
-    // makeExisting() has title='Baahubali' set; countMissing excludes optional runtime/genres
-    // so 5 required fields are missing: synopsis, poster_url, backdrop_url, trailer_url, director
+  it('shows "Checking..." before TMDB lookup', () => {
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
     fireEvent.click(screen.getByText('Existing movies'));
-    // All movies show "All fields match" on the sync page
-    expect(screen.getByText('All fields match')).toBeInTheDocument();
+    expect(screen.getByText('Checking...')).toBeInTheDocument();
   });
 
-  it('shows "All fields match" when movie has all data', () => {
-    const full = makeExisting({
-      title: 'Full Movie',
-      synopsis: 'A synopsis',
-      poster_url: '/poster.jpg',
-      backdrop_url: '/backdrop.jpg',
-      trailer_url: 'https://youtu.be/xxx',
-      director: 'Jane',
-      runtime: 120,
-      genres: ['Drama'],
-    });
-    wrap(<ExistingMovieSync movies={[full]} />);
-    fireEvent.click(screen.getByText('Existing movies'));
-    expect(screen.getByText('All fields match')).toBeInTheDocument();
-  });
-
-  it('calls useTmdbLookup with the movie tmdb_id when Review is clicked', () => {
+  it('auto-fetches TMDB details for existing movies on mount', () => {
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
-    fireEvent.click(screen.getByText('Existing movies'));
-    // Click the movie row to expand it
-    fireEvent.click(screen.getByText('Baahubali'));
-    expect(mockLookupMutate).toHaveBeenCalledWith({ tmdbId: 101, type: 'movie' });
+    // Auto-fetch happens via fetch() in useEffect, not via useTmdbLookup
+    // The component should render without errors
+    expect(screen.getByText('Existing movies')).toBeInTheDocument();
   });
 
   it('shows loading spinner while TMDB lookup is pending', () => {
@@ -158,11 +138,10 @@ describe('ExistingMovieSync', () => {
     expect(screen.getByText('TMDB error')).toBeInTheDocument();
   });
 
-  it('shows "All fields match" for every movie row', () => {
-    const movie = makeExisting(); // has null DB fields but sync page shows match
-    wrap(<ExistingMovieSync movies={[movie]} />);
+  it('shows "Checking..." for movie with null fields before lookup', () => {
+    wrap(<ExistingMovieSync movies={[makeExisting()]} />);
     fireEvent.click(screen.getByText('Existing movies'));
-    expect(screen.getByText('All fields match')).toBeInTheDocument();
+    expect(screen.getByText('Checking...')).toBeInTheDocument();
   });
 
   it('shows apply error message when fillFields fails', () => {

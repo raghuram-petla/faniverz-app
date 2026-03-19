@@ -1,4 +1,4 @@
-import type { ImportMovieResult } from '@/hooks/useSync';
+import type { ImportMovieResult, ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 
 export interface ImportProgress {
   tmdbId: number;
@@ -59,3 +59,41 @@ export const MONTHS = [
   'November',
   'December',
 ];
+
+/** @contract merges applied TMDB field values into a local movie snapshot */
+export function applyTmdbFields(
+  movie: ExistingMovieData,
+  tmdb: LookupMovieData,
+  fields: string[],
+): ExistingMovieData {
+  const updated = { ...movie };
+  for (const f of fields) {
+    switch (f) {
+      case 'title':
+        updated.title = tmdb.title;
+        break;
+      case 'synopsis':
+        updated.synopsis = tmdb.overview;
+        break;
+      case 'poster_url':
+        updated.poster_url = tmdb.posterUrl;
+        break;
+      case 'backdrop_url':
+        updated.backdrop_url = tmdb.backdropUrl;
+        break;
+      case 'trailer_url':
+        updated.trailer_url = tmdb.trailerUrl;
+        break;
+      case 'director':
+        updated.director = tmdb.director;
+        break;
+      case 'runtime':
+        updated.runtime = tmdb.runtime;
+        break;
+      case 'genres':
+        updated.genres = tmdb.genres;
+        break;
+    }
+  }
+  return updated;
+}

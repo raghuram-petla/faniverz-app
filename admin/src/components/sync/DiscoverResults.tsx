@@ -1,8 +1,8 @@
 'use client';
 
-import { Film, Loader2, Download, CheckCircle, XCircle } from 'lucide-react';
+import { Film, Loader2, Download, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import type { ImportProgress } from './syncHelpers';
-import type { ExistingMovieData } from '@/hooks/useSync';
+import type { ExistingMovieData, DuplicateSuspect } from '@/hooks/useSync';
 import { ExistingMovieSync } from './ExistingMovieSync';
 
 interface DiscoverMovie {
@@ -23,8 +23,8 @@ export interface DiscoverResultsProps {
   newMovies: DiscoverMovie[];
   selected: Set<number>;
   isImporting: boolean;
-  /** Count of existing movies that have one or more null/empty DB fields */
-  gapCount: number;
+  /** Gap count from ExistingMovieSync — null while still loading */
+  gapCount: number | null;
   onToggleSelect: (tmdbId: number) => void;
   onSelectAllNew: () => void;
   onDeselectAll: () => void;
@@ -34,6 +34,10 @@ export interface DiscoverResultsProps {
   onImportAllNew: () => void;
   /** TMDB IDs of movies imported this session */
   importedIds?: Set<number>;
+  /** @nullable TMDB ID → local movie with matching title but no tmdb_id */
+  duplicateSuspects?: Record<number, DuplicateSuspect>;
+  /** @nullable callback from ExistingMovieSync to propagate gap count */
+  onGapCountChange?: (count: number | null) => void;
 }
 
 export function DiscoverResults({
@@ -50,6 +54,8 @@ export function DiscoverResults({
   onImport,
   onImportAllNew,
   importedIds,
+  duplicateSuspects,
+  onGapCountChange,
 }: DiscoverResultsProps) {
   return (
     <>
@@ -61,8 +67,20 @@ export function DiscoverResults({
           <span className="text-status-green">{existingSet.size} imported</span>
           {' · '}
           <span className="text-status-blue">{newMovies.length} new</span>
-          {' · '}
-          <span className="text-on-surface-subtle">{gapCount} gaps</span>
+          {gapCount !== null && (
+            <>
+              {' · '}
+              <span className={gapCount > 0 ? 'text-status-yellow' : 'text-status-green'}>
+                {gapCount} gaps
+              </span>
+            </>
+          )}
+          {gapCount === null && existingSet.size > 0 && (
+            <>
+              {' · '}
+              <span className="text-on-surface-subtle">checking gaps...</span>
+            </>
+          )}
         </p>
         {newMovies.length > 0 && (
           <div className="flex items-center gap-2">
@@ -99,48 +117,75 @@ export function DiscoverResults({
           .filter((m) => !existingSet.has(m.id))
           .map((movie) => {
             const isSelected = selected.has(movie.id);
+            const suspect = duplicateSuspects?.[movie.id];
             return (
-              <button
-                key={movie.id}
-                onClick={() => onToggleSelect(movie.id)}
-                disabled={isImporting}
-                className={`relative bg-black rounded-xl overflow-hidden text-left transition-all ${
-                  isSelected
-                    ? 'ring-2 ring-red-600'
-                    : 'ring-1 ring-outline hover:ring-on-surface-subtle'
-                } disabled:cursor-default`}
-              >
-                {movie.poster_path ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
-                    alt={movie.title}
-                    className="block w-full aspect-[2/3] object-cover rounded-t-xl"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="aspect-[2/3] bg-surface-muted flex items-center justify-center rounded-t-xl">
-                    <Film className="w-8 h-8 text-on-surface-disabled" />
+              <div key={movie.id}>
+                <button
+                  onClick={() => onToggleSelect(movie.id)}
+                  disabled={isImporting}
+                  className={`relative w-full bg-black rounded-xl overflow-hidden text-left transition-all ${
+                    suspect
+                      ? 'ring-2 ring-yellow-500'
+                      : isSelected
+                        ? 'ring-2 ring-red-600'
+                        : 'ring-1 ring-outline hover:ring-on-surface-subtle'
+                  } disabled:cursor-default`}
+                >
+                  {movie.poster_path ? (
+                    <img
+                      src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+                      alt={movie.title}
+                      className="block w-full aspect-[2/3] object-cover rounded-t-xl"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="aspect-[2/3] bg-surface-muted flex items-center justify-center rounded-t-xl">
+                      <Film className="w-8 h-8 text-on-surface-disabled" />
+                    </div>
+                  )}
+                  <div className="p-1.5">
+                    <p className="text-xs font-medium text-on-surface truncate">{movie.title}</p>
+                    <p className="text-[10px] text-on-surface-subtle mt-0.5">
+                      {movie.release_date || 'No date'}
+                    </p>
                   </div>
-                )}
-                <div className="p-1.5">
-                  <p className="text-xs font-medium text-on-surface truncate">{movie.title}</p>
-                  <p className="text-[10px] text-on-surface-subtle mt-0.5">
-                    {movie.release_date || 'No date'}
+                  {suspect && (
+                    <div className="absolute top-2 right-2 bg-yellow-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                      <AlertTriangle className="w-3 h-3" /> Duplicate?
+                    </div>
+                  )}
+                  {isSelected && !suspect && (
+                    <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                      Selected
+                    </div>
+                  )}
+                </button>
+                {suspect && (
+                  <p className="text-[10px] text-status-yellow mt-1 px-1">
+                    Already exists as &ldquo;{suspect.title}&rdquo; without TMDB ID.{' '}
+                    <a
+                      href={`/movies/${suspect.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline hover:text-yellow-300"
+                    >
+                      Edit it
+                    </a>{' '}
+                    to set TMDB ID instead.
                   </p>
-                </div>
-                {isSelected && (
-                  <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                    Selected
-                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
       </div>
 
       {/* @coupling ExistingMovieSync is only rendered when there are existing movies */}
       {existingMovies.length > 0 && (
-        <ExistingMovieSync movies={existingMovies} importedIds={importedIds} />
+        <ExistingMovieSync
+          movies={existingMovies}
+          importedIds={importedIds}
+          onGapCountChange={onGapCountChange}
+        />
       )}
     </>
   );

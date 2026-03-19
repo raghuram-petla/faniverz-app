@@ -48,10 +48,33 @@ export async function POST(request: NextRequest) {
         : { data: [] },
     ]);
 
+    // @sideeffect check for potential title-based duplicates — movies in DB with matching
+    // titles but no tmdb_id (manually added). Only check for TMDB movies not already matched.
+    const existingTmdbIds = (movieExisting.data ?? []).map((r) => r.tmdb_id as number);
+    const unmatchedTitles = movieResults
+      .filter((m) => !existingTmdbIds.includes(m.id))
+      .map((m) => m.title);
+    let duplicateSuspects: Record<number, { id: string; title: string }> = {};
+    if (unmatchedTitles.length > 0) {
+      const { data: suspects } = await supabase
+        .from('movies')
+        .select('id, title, tmdb_id')
+        .is('tmdb_id', null)
+        .in('title', unmatchedTitles);
+      if (suspects && suspects.length > 0) {
+        const suspectMap = new Map(suspects.map((s) => [s.title.toLowerCase(), s]));
+        for (const m of movieResults) {
+          const match = suspectMap.get(m.title.toLowerCase());
+          if (match) duplicateSuspects[m.id] = { id: match.id, title: match.title };
+        }
+      }
+    }
+
     return NextResponse.json({
       movies: {
         results: movieResults,
-        existingTmdbIds: (movieExisting.data ?? []).map((r) => r.tmdb_id as number),
+        existingTmdbIds,
+        duplicateSuspects,
       },
       actors: {
         results: personResults,

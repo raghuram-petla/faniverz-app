@@ -16,10 +16,18 @@ export interface ExistingMovieData {
   genres: string[] | null;
 }
 
+/** @contract Potential duplicate — a local movie with matching title but no tmdb_id */
+export interface DuplicateSuspect {
+  id: string;
+  title: string;
+}
+
 export interface DiscoverResult {
   results: TmdbDiscoverMovie[];
   /** Full DB snapshots for movies already in our DB — derive existingTmdbIds via .map(m => m.tmdb_id) */
   existingMovies: ExistingMovieData[];
+  /** @nullable TMDB ID → local movie with matching title but no tmdb_id */
+  duplicateSuspects?: Record<number, DuplicateSuspect>;
 }
 
 export interface FillFieldsResponse {
@@ -104,6 +112,10 @@ export interface StaleItemsResponse {
 
 /** @contract Response from /api/sync/search — combined movies + actors */
 export interface TmdbSearchAllResult {
-  movies: { results: TmdbDiscoverMovie[]; existingTmdbIds: number[] };
+  movies: {
+    results: TmdbDiscoverMovie[];
+    existingTmdbIds: number[];
+    duplicateSuspects?: Record<number, DuplicateSuspect>;
+  };
   actors: { results: TmdbSearchPerson[]; existingTmdbPersonIds: number[] };
 }

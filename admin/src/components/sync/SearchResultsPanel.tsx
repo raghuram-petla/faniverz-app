@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useImportMovies } from '@/hooks/useSync';
-import type { TmdbSearchAllResult } from '@/hooks/useSync';
-import { Film, Loader2, Download, CheckCircle } from 'lucide-react';
+import type { TmdbSearchAllResult, DuplicateSuspect } from '@/hooks/useSync';
+import { Film, Loader2, Download, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { ImportProgress } from './syncHelpers';
 import { ImportProgressList } from './DiscoverResults';
 import { ActorSearchResults } from './ActorSearchResults';
@@ -23,7 +23,11 @@ export function SearchResultsPanel({ data }: SearchResultsPanelProps) {
         <ActorSearchResults actors={data.actors.results} existingSet={actorExistingSet} />
       )}
       {data.movies.results.length > 0 && (
-        <MovieSearchResults movies={data.movies.results} existingSet={movieExistingSet} />
+        <MovieSearchResults
+          movies={data.movies.results}
+          existingSet={movieExistingSet}
+          duplicateSuspects={data.movies.duplicateSuspects}
+        />
       )}
       {data.movies.results.length === 0 && data.actors.results.length === 0 && (
         <p className="text-sm text-on-surface-muted">No results found.</p>
@@ -37,9 +41,10 @@ export function SearchResultsPanel({ data }: SearchResultsPanelProps) {
 interface MovieSearchResultsProps {
   movies: TmdbSearchAllResult['movies']['results'];
   existingSet: Set<number>;
+  duplicateSuspects?: Record<number, DuplicateSuspect>;
 }
 
-function MovieSearchResults({ movies, existingSet }: MovieSearchResultsProps) {
+function MovieSearchResults({ movies, existingSet, duplicateSuspects }: MovieSearchResultsProps) {
   const importMovies = useImportMovies();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
@@ -131,48 +136,71 @@ function MovieSearchResults({ movies, existingSet }: MovieSearchResultsProps) {
         {movies.map((movie) => {
           const exists = existingSet.has(movie.id);
           const isSelected = selected.has(movie.id);
+          const suspect = duplicateSuspects?.[movie.id];
           return (
-            <button
-              key={movie.id}
-              disabled={exists || isImporting}
-              onClick={() => toggleSelect(movie.id)}
-              className={`relative bg-black rounded-xl overflow-hidden text-left transition-all ${
-                exists
-                  ? 'opacity-60 cursor-default'
-                  : isSelected
-                    ? 'ring-2 ring-red-600'
-                    : 'ring-1 ring-outline hover:ring-on-surface-subtle'
-              } disabled:cursor-default`}
-            >
-              {movie.poster_path ? (
-                <img
-                  src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
-                  alt={movie.title}
-                  className="block w-full aspect-[2/3] object-cover rounded-t-xl"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="aspect-[2/3] bg-surface-muted flex items-center justify-center rounded-t-xl">
-                  <Film className="w-8 h-8 text-on-surface-disabled" />
+            <div key={movie.id}>
+              <button
+                disabled={exists || isImporting}
+                onClick={() => toggleSelect(movie.id)}
+                className={`relative w-full bg-black rounded-xl overflow-hidden text-left transition-all ${
+                  suspect && !exists
+                    ? 'ring-2 ring-yellow-500'
+                    : exists
+                      ? 'opacity-60 cursor-default'
+                      : isSelected
+                        ? 'ring-2 ring-red-600'
+                        : 'ring-1 ring-outline hover:ring-on-surface-subtle'
+                } disabled:cursor-default`}
+              >
+                {movie.poster_path ? (
+                  <img
+                    src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
+                    alt={movie.title}
+                    className="block w-full aspect-[2/3] object-cover rounded-t-xl"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="aspect-[2/3] bg-surface-muted flex items-center justify-center rounded-t-xl">
+                    <Film className="w-8 h-8 text-on-surface-disabled" />
+                  </div>
+                )}
+                <div className="p-1.5">
+                  <p className="text-xs font-medium text-on-surface truncate">{movie.title}</p>
+                  <p className="text-[10px] text-on-surface-subtle mt-0.5">
+                    {movie.release_date || 'No date'}
+                  </p>
                 </div>
-              )}
-              <div className="p-1.5">
-                <p className="text-xs font-medium text-on-surface truncate">{movie.title}</p>
-                <p className="text-[10px] text-on-surface-subtle mt-0.5">
-                  {movie.release_date || 'No date'}
+                {exists && (
+                  <div className="absolute top-2 right-2 bg-green-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <CheckCircle className="w-3 h-3" /> In DB
+                  </div>
+                )}
+                {suspect && !exists && (
+                  <div className="absolute top-2 right-2 bg-yellow-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                    <AlertTriangle className="w-3 h-3" /> Duplicate?
+                  </div>
+                )}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                    Selected
+                  </div>
+                )}
+              </button>
+              {suspect && !exists && (
+                <p className="text-[10px] text-status-yellow mt-1 px-1">
+                  Already exists as &ldquo;{suspect.title}&rdquo; without TMDB ID.{' '}
+                  <a
+                    href={`/movies/${suspect.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline hover:text-yellow-300"
+                  >
+                    Edit it
+                  </a>{' '}
+                  to set TMDB ID instead of importing.
                 </p>
-              </div>
-              {exists && (
-                <div className="absolute top-2 right-2 bg-green-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                  <CheckCircle className="w-3 h-3" /> In DB
-                </div>
               )}
-              {isSelected && (
-                <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                  Selected
-                </div>
-              )}
-            </button>
+            </div>
           );
         })}
       </div>
