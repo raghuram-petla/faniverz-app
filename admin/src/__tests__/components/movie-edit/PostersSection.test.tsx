@@ -28,6 +28,16 @@ vi.mock('@/components/movie-edit/BackdropFocalPicker', () => ({
   BackdropFocalPicker: () => <div data-testid="backdrop-focal-picker" />,
 }));
 
+vi.mock('@/hooks/useImageVariants', () => ({
+  useImageVariants: () => ({
+    variants: [],
+    isChecking: false,
+    readyCount: 0,
+    totalCount: 0,
+    recheck: vi.fn(),
+  }),
+}));
+
 const defaultForm: MovieForm = {
   title: 'Test Movie',
   poster_url: '',

@@ -1,6 +1,7 @@
 'use client';
-import { Star, Calendar, X } from 'lucide-react';
+import { Star, Calendar, X, Loader2 } from 'lucide-react';
 import { getImageUrl } from '@shared/imageUrl';
+import { useImageVariants } from '@/hooks/useImageVariants';
 
 // @contract reusable subheading with icon + uppercase label + bottom border + optional action slot
 export function SectionHeading({
@@ -84,7 +85,46 @@ export function PosterGalleryCard({
             Set Main
           </button>
         )}
+        {/* @contract compact variant status — colored dots per size */}
+        <PosterVariantStatus imageUrl={poster.image_url} />
       </div>
+    </div>
+  );
+}
+
+// @contract compact inline variant indicator — shows label + colored dot per variant size
+const STATUS_COLOR: Record<string, string> = {
+  ok: 'bg-green-500',
+  missing: 'bg-red-500',
+  error: 'bg-yellow-500',
+};
+
+export function PosterVariantStatus({ imageUrl }: { imageUrl: string }) {
+  const { variants, isChecking } = useImageVariants(imageUrl, 'poster', 'POSTERS');
+
+  if (isChecking && variants.length === 0) {
+    return (
+      <div className="flex items-center gap-1 mt-0.5">
+        <Loader2 className="w-2.5 h-2.5 text-on-surface-muted animate-spin" />
+        <span className="text-[9px] text-on-surface-muted">Checking...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap" data-testid="poster-variant-status">
+      {variants.map((v) => (
+        <span key={v.label} className="flex items-center gap-0.5" title={`${v.label}: ${v.status}`}>
+          <span className="text-[9px] text-on-surface-muted">{v.label}</span>
+          {v.status === 'checking' ? (
+            <Loader2 className="w-2 h-2 text-on-surface-muted animate-spin" />
+          ) : (
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${STATUS_COLOR[v.status] ?? 'bg-yellow-500'}`}
+            />
+          )}
+        </span>
+      ))}
     </div>
   );
 }

@@ -1,6 +1,27 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { PosterGalleryCard, SectionHeading } from '@/components/movie-edit/PosterGalleryCard';
+import {
+  PosterGalleryCard,
+  PosterVariantStatus,
+  SectionHeading,
+} from '@/components/movie-edit/PosterGalleryCard';
 import { Image } from 'lucide-react';
+
+const mockVariants = [
+  { label: 'Original', url: 'http://x/o.jpg', width: null, quality: null, status: 'ok' as const },
+  { label: 'SM', url: 'http://x/sm.jpg', width: 200, quality: 80, status: 'ok' as const },
+  { label: 'MD', url: 'http://x/md.jpg', width: 400, quality: 85, status: 'missing' as const },
+  { label: 'LG', url: 'http://x/lg.jpg', width: 800, quality: 90, status: 'ok' as const },
+];
+
+vi.mock('@/hooks/useImageVariants', () => ({
+  useImageVariants: () => ({
+    variants: mockVariants,
+    isChecking: false,
+    readyCount: 3,
+    totalCount: 4,
+    recheck: vi.fn(),
+  }),
+}));
 
 describe('SectionHeading', () => {
   it('renders icon and title', () => {
@@ -70,6 +91,11 @@ describe('PosterGalleryCard', () => {
     expect(onRemove).toHaveBeenCalledWith('poster-1', false);
   });
 
+  it('renders compact variant status', () => {
+    render(<PosterGalleryCard poster={basePoster} onSetMain={vi.fn()} onRemove={vi.fn()} />);
+    expect(screen.getByTestId('poster-variant-status')).toBeInTheDocument();
+  });
+
   it('does not show date when poster_date is null', () => {
     render(
       <PosterGalleryCard
@@ -79,5 +105,21 @@ describe('PosterGalleryCard', () => {
       />,
     );
     expect(screen.queryByText('2025-06-01')).not.toBeInTheDocument();
+  });
+});
+
+describe('PosterVariantStatus', () => {
+  it('renders all variant labels', () => {
+    render(<PosterVariantStatus imageUrl="https://example.com/poster.jpg" />);
+    expect(screen.getByText('Original')).toBeInTheDocument();
+    expect(screen.getByText('SM')).toBeInTheDocument();
+    expect(screen.getByText('MD')).toBeInTheDocument();
+    expect(screen.getByText('LG')).toBeInTheDocument();
+  });
+
+  it('shows status in title attribute', () => {
+    render(<PosterVariantStatus imageUrl="https://example.com/poster.jpg" />);
+    expect(screen.getByTitle('MD: missing')).toBeInTheDocument();
+    expect(screen.getByTitle('SM: ok')).toBeInTheDocument();
   });
 });
