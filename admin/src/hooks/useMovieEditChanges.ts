@@ -25,6 +25,7 @@ const BASIC_FIELD_CONFIG: FieldConfig[] = [
   { key: 'premiere_date', label: 'Premiere Date', type: 'date' },
   { key: 'original_language', label: 'Language', type: 'text' },
   { key: 'is_featured', label: 'Featured', type: 'boolean' },
+  { key: 'tmdb_id', label: 'TMDB ID', type: 'number' },
   { key: 'backdrop_focus_x', label: 'Focal Point X', type: 'number' },
   { key: 'backdrop_focus_y', label: 'Focal Point Y', type: 'number' },
 ];

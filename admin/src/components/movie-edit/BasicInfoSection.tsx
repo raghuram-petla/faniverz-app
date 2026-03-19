@@ -92,6 +92,12 @@ export function BasicInfoSection({
             </span>
           </label>
         </FormField>
+        <FormInput
+          label="TMDB ID"
+          type="number"
+          value={form.tmdb_id}
+          onValueChange={(v) => updateField('tmdb_id', v)}
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>

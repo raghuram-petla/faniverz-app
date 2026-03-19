@@ -80,6 +80,7 @@ export function useMovieEditState(id: string) {
     premiere_date: '',
     original_language: '',
     is_featured: false,
+    tmdb_id: '',
     backdrop_focus_x: null,
     backdrop_focus_y: null,
   });
@@ -118,6 +119,7 @@ export function useMovieEditState(id: string) {
         premiere_date: movie.premiere_date ?? '',
         original_language: movie.original_language ?? '',
         is_featured: movie.is_featured,
+        tmdb_id: movie.tmdb_id?.toString() ?? '',
         backdrop_focus_x: movie.backdrop_focus_x ?? null,
         backdrop_focus_y: movie.backdrop_focus_y ?? null,
       };

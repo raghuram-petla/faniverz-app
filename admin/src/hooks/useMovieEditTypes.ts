@@ -8,8 +8,8 @@ import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
 import type { OTTPlatform, ProductionHouse } from '@shared/types';
 
-// @contract MovieForm mirrors the editable subset of the movies table — non-editable fields
-// (tmdb_id, spotlight_focus_*, detail_focus_*) are preserved separately in movieData
+// @contract MovieForm mirrors the editable subset of the movies table
+// spotlight_focus_* and detail_focus_* are preserved separately in movieData
 export interface MovieForm {
   title: string;
   poster_url: string;
@@ -24,6 +24,8 @@ export interface MovieForm {
   premiere_date: string;
   original_language: string;
   is_featured: boolean;
+  /** @nullable TMDB ID — links manually-created movies to TMDB for dedup and sync */
+  tmdb_id: string;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;
 }
@@ -129,6 +131,7 @@ export interface MovieEditHandlerDeps {
     premiere_date: string | null;
     original_language: string | null;
     is_featured: boolean;
+    tmdb_id: number | null;
     backdrop_focus_x: number | null;
     backdrop_focus_y: number | null;
     spotlight_focus_x: number | null;

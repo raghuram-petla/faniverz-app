@@ -40,6 +40,7 @@ const defaultForm: MovieForm = {
   premiere_date: '',
   original_language: 'te',
   is_featured: false,
+  tmdb_id: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
 };

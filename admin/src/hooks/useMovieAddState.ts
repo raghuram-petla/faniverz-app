@@ -35,6 +35,7 @@ const INITIAL_FORM: MovieForm = {
   premiere_date: '',
   original_language: 'te',
   is_featured: false,
+  tmdb_id: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
 };
@@ -123,6 +124,7 @@ export function useMovieAddState() {
         premiere_date: form.premiere_date || null,
         original_language: form.original_language || null,
         is_featured: form.is_featured,
+        tmdb_id: form.tmdb_id ? Number(form.tmdb_id) : null,
         backdrop_focus_x: form.backdrop_focus_x,
         backdrop_focus_y: form.backdrop_focus_y,
         spotlight_focus_x: null,
