@@ -19,6 +19,7 @@ export type AdminPage =
   | 'audit'
   | 'app-users'
   | 'theaters'
+  | 'validations'
   | 'users';
 
 /** Entity types that support CRUD */
@@ -50,6 +51,7 @@ const ALL_PAGES: Set<AdminPage> = new Set([
   'audit',
   'app-users',
   'theaters',
+  'validations',
   'users',
 ]);
 

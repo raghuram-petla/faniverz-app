@@ -32,6 +32,7 @@ const ROUTE_PAGE_MAP: Record<string, AdminPage> = {
   '/sync': 'sync',
   '/audit': 'audit',
   '/app-users': 'app-users',
+  '/validations': 'validations',
   '/users': 'users',
 };
 

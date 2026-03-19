@@ -17,6 +17,7 @@ import {
   RefreshCw,
   FileText,
   Shield,
+  ShieldCheck,
   UsersRound,
   Clapperboard,
 } from 'lucide-react';
@@ -74,6 +75,7 @@ const navSections: NavSection[] = [
     items: [
       { href: '/sync', label: 'Sync', icon: RefreshCw, page: 'sync' },
       { href: '/audit', label: 'Audit Log', icon: FileText, page: 'audit' },
+      { href: '/validations', label: 'Validations', icon: ShieldCheck, page: 'validations' },
       { href: '/app-users', label: 'App Users', icon: UsersRound, page: 'app-users' },
       { href: '/users', label: 'Admin Management', icon: Shield, page: 'users' },
     ],

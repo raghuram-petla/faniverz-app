@@ -49,7 +49,11 @@ function getVariantsForBucket(bucket: string): ImageVariant[] {
  * @param key        Object key, e.g. "{tmdbId}.jpg"
  * @returns          Relative key (e.g. "12345.jpg"), or sourceUrl if R2 is not configured
  */
-async function uploadImageFromUrl(sourceUrl: string, bucket: string, key: string): Promise<string> {
+export async function uploadImageFromUrl(
+  sourceUrl: string,
+  bucket: string,
+  key: string,
+): Promise<string> {
   const r2 = getR2Client();
   // @edge: R2 not configured — return external URL (e.g. TMDB CDN) so caller stores a
   // usable full URL. getImageUrl recognises TMDB as an external CDN and returns it as-is.
