@@ -186,8 +186,8 @@ describe('FieldDiffPanel', () => {
         onApply={vi.fn()}
       />,
     );
-    const applyBtn = screen.getByRole('button', { name: /Apply/i });
-    expect(applyBtn).toBeDisabled();
+    // Apply button is hidden entirely when no fields are actionable
+    expect(screen.queryByRole('button', { name: /Apply/i })).not.toBeInTheDocument();
   });
 
   it('passes forceResyncCast=true when cast re-sync checkbox is checked', () => {

@@ -113,6 +113,19 @@ export function FieldDiffPanel({
     });
   }, [appliedFields]);
 
+  // @edge After bulk fill, movie prop updates and fields become 'same' — clear them from selected
+  useEffect(() => {
+    const sameKeys = new Set(allRows.filter((r) => r.status === 'same').map((r) => r.key));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const k of prev) {
+        if (sameKeys.has(k)) next.delete(k);
+      }
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movie]);
+
   const toggle = (key: FillableField) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -208,20 +221,22 @@ export function FieldDiffPanel({
         </span>
       </div>
 
-      {/* ── Apply button ── */}
-      <button
-        onClick={handleApply}
-        disabled={!canApply || isSaving}
-        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-      >
-        {isSaving ? (
-          <Loader2 className="w-3 h-3 animate-spin" />
-        ) : (
-          <CheckCircle2 className="w-3 h-3" />
-        )}
-        Apply {selected.size} selected field{selected.size !== 1 ? 's' : ''}
-        {forceResyncCast && ' + cast'}
-      </button>
+      {/* ── Apply button — hidden when nothing actionable ── */}
+      {(canApply || isSaving) && (
+        <button
+          onClick={handleApply}
+          disabled={!canApply || isSaving}
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {isSaving ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <CheckCircle2 className="w-3 h-3" />
+          )}
+          Apply {selected.size} selected field{selected.size !== 1 ? 's' : ''}
+          {forceResyncCast && ' + cast'}
+        </button>
+      )}
     </div>
   );
 }

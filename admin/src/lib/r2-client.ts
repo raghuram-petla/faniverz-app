@@ -8,10 +8,7 @@ import { S3Client } from '@aws-sdk/client-s3';
  *
  * Returns `null` when credentials are not configured.
  *
- * @coupling: used by upload-handler.ts for admin manual uploads. r2-sync.ts has its
- * own inline getR2Client() that does NOT support R2_ENDPOINT — so local dev with MinIO
- * works for manual uploads but NOT for TMDB sync image uploads. To test sync locally,
- * R2_ACCOUNT_ID must point to a real R2 account or the sync falls back to TMDB CDN URLs.
+ * @coupling: shared by upload-handler.ts (manual uploads) and r2-sync.ts (TMDB sync).
  * @edge: forcePathStyle is only enabled when R2_ENDPOINT is set. Without it, MinIO
  * requests fail because S3 virtual-hosted-style URLs don't resolve for localhost.
  */

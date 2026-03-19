@@ -7,6 +7,7 @@ export type { FillableField } from '@/lib/syncUtils';
 export type {
   ExistingMovieData,
   DiscoverResult,
+  DuplicateSuspect,
   FillFieldsResponse,
   LookupMovieData,
   LookupPersonData,
@@ -98,10 +99,14 @@ export function useImportMovies() {
   return useMutation({
     mutationFn: (tmdbIds: number[]) => syncApi<ImportMoviesResponse>('import-movies', { tmdbIds }),
     // @sideeffect Import creates movies + actors + cast/crew — invalidate all affected caches
+    // @coupling 'movie' (singular) is the single-movie cache used by edit pages
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
       qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actor'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
       qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (err) => {
@@ -201,9 +206,13 @@ export function useFillFields() {
       fields: string[];
       forceResyncCast?: boolean;
     }) => syncApi<FillFieldsResponse>('fill-fields', { tmdbId, fields, forceResyncCast }),
+    // @coupling 'movie' (singular) is the single-movie cache used by edit pages
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
       qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actor'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
     },
     // @contract: callers surface errors via fillFields.isError + fillFields.error

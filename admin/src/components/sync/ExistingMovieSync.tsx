@@ -1,39 +1,121 @@
 'use client';
 
-/**
- * Collapsible section for existing movies discovered during TMDB sync.
- * Per-movie expandable rows show field-level diff via FieldDiffPanel.
- * Section header exposes "Bulk fill missing" for all movies with gaps.
- *
- * @contract: renders a collapsible per-movie field-diff UI for existing movies
- * @coupling: useBulkFillMissing handles sequential fill; FieldDiffPanel handles diff UI
- */
+// @contract: collapsible per-movie field-diff UI for existing movies
+// @coupling: useBulkFillMissing handles sequential fill; FieldDiffPanel handles diff UI
 
-import { useState } from 'react';
-import { ChevronRight, ChevronDown, Loader2, Film } from 'lucide-react';
-import { useTmdbLookup, useFillFields, type ExistingMovieData } from '@/hooks/useSync';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { type ExistingMovieData, type LookupMovieData } from '@/hooks/useSync';
+import { supabase } from '@/lib/supabase-browser';
 import { useBulkFillMissing } from '@/hooks/useBulkFillMissing';
-import { FieldDiffPanel } from './FieldDiffPanel';
-
-// ── Main section component ────────────────────────────────────────────────────
+import { FILLABLE_DATA_FIELDS } from '@/lib/syncUtils';
+import { getStatus } from './fieldDiffHelpers';
+import { applyTmdbFields } from './syncHelpers';
+import { ExistingMovieRow } from './ExistingMovieRow';
 
 export interface ExistingMovieSyncProps {
   movies: ExistingMovieData[];
   /** TMDB IDs of movies imported this session — shown with "Just imported" badge */
   importedIds?: Set<number>;
+  /** @nullable callback to propagate gap count to parent for summary bar */
+  onGapCountChange?: (count: number | null) => void;
 }
 
 /** @contract collapsible section: header shows counts + bulk fill; body shows per-movie rows */
-export function ExistingMovieSync({ movies, importedIds }: ExistingMovieSyncProps) {
+export function ExistingMovieSync({
+  movies: moviesProp,
+  importedIds,
+  onGapCountChange,
+}: ExistingMovieSyncProps) {
   const [sectionOpen, setSectionOpen] = useState(false);
-  // @edge gap count is always 0 here — real gaps can only be determined after
-  // TMDB lookup (per-movie expand). "All fields match" is the default state.
-  const gapCount = 0;
   const bulk = useBulkFillMissing();
+  // @contract local movie state — updated after bulk fill to reflect applied fields
+  const [localMovies, setLocalMovies] = useState(moviesProp);
+  // @edge sync with prop when moviesProp changes (e.g. new discover)
+  useEffect(() => setLocalMovies(moviesProp), [moviesProp]);
+  const movies = localMovies;
+
+  // @sideeffect auto-fetch TMDB details for all existing movies on mount
+  const [tmdbMap, setTmdbMap] = useState<Map<number, LookupMovieData>>(new Map());
+  const [fetchingCount, setFetchingCount] = useState(0);
+
+  useEffect(() => {
+    const moviesToFetch = movies.filter(
+      (m) => !importedIds?.has(m.tmdb_id) && !tmdbMap.has(m.tmdb_id),
+    );
+    if (moviesToFetch.length === 0) return;
+
+    setFetchingCount(moviesToFetch.length);
+    let cancelled = false;
+
+    (async () => {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token || cancelled) return;
+
+      // @edge sequential fetches to avoid TMDB rate limits (40 req/10s)
+      for (const m of moviesToFetch) {
+        if (cancelled) break;
+        try {
+          const res = await fetch('/api/sync/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ tmdbId: m.tmdb_id, type: 'movie' }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.type === 'movie') {
+              setTmdbMap((prev) => new Map(prev).set(m.tmdb_id, data.data));
+            }
+          }
+        } catch {
+          /* skip failed lookups */
+        }
+        setFetchingCount((c) => c - 1);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [movies.length]);
+
+  // @contract gap count = total mismatched fields across all existing movies with TMDB data
+  const gapCount = useMemo(() => {
+    if (tmdbMap.size === 0) return 0;
+    let total = 0;
+    for (const m of movies) {
+      const tmdb = tmdbMap.get(m.tmdb_id);
+      if (!tmdb) continue;
+      total += FILLABLE_DATA_FIELDS.filter((f) => getStatus(m, tmdb, f) !== 'same').length;
+    }
+    return total;
+  }, [movies, tmdbMap]);
+
+  const isLoading = fetchingCount > 0;
+
+  useEffect(() => {
+    onGapCountChange?.(isLoading ? null : gapCount);
+  }, [gapCount, isLoading, onGapCountChange]);
+
+  // @sideeffect called by ExistingMovieRow after per-movie apply — update localMovies so gap count recalculates
+  const handleMovieUpdated = useCallback((updated: ExistingMovieData) => {
+    setLocalMovies((prev) => prev.map((m) => (m.tmdb_id === updated.tmdb_id ? updated : m)));
+  }, []);
 
   const handleBulkFill = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // don't toggle section
-    await bulk.run(movies);
+    e.stopPropagation();
+    await bulk.run(movies, tmdbMap);
+    // @sideeffect optimistically update all movies with TMDB values for gapped fields
+    setLocalMovies((prev) =>
+      prev.map((m) => {
+        const tmdb = tmdbMap.get(m.tmdb_id);
+        if (!tmdb) return m;
+        const gappedFields = FILLABLE_DATA_FIELDS.filter((f) => getStatus(m, tmdb, f) !== 'same');
+        return gappedFields.length > 0 ? applyTmdbFields(m, tmdb, gappedFields) : m;
+      }),
+    );
   };
 
   return (
@@ -62,19 +144,26 @@ export function ExistingMovieSync({ movies, importedIds }: ExistingMovieSyncProp
           <span className="text-xs text-on-surface-muted">({movies.length})</span>
         </div>
         <div className="flex items-center gap-3">
+          {isLoading && (
+            <span className="text-xs text-on-surface-muted flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> Checking {fetchingCount}...
+            </span>
+          )}
           {bulk.state.isRunning ? (
             <span className="text-xs text-on-surface-muted flex items-center gap-1">
               <Loader2 className="w-3 h-3 animate-spin" />
               {bulk.state.done}/{bulk.state.total}
             </span>
           ) : (
-            <button
-              onClick={(e) => void handleBulkFill(e)}
-              disabled={gapCount === 0}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors disabled:text-on-surface-disabled disabled:cursor-default"
-            >
-              Fill all missing ({gapCount})
-            </button>
+            !isLoading &&
+            gapCount > 0 && (
+              <button
+                onClick={(e) => void handleBulkFill(e)}
+                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+              >
+                Fill all missing ({gapCount})
+              </button>
+            )
           )}
           {!bulk.state.isRunning && bulk.state.total > 0 && (
             <span className="text-xs text-status-green">
@@ -83,7 +172,12 @@ export function ExistingMovieSync({ movies, importedIds }: ExistingMovieSyncProp
             </span>
           )}
           {bulk.state.error && <span className="text-xs text-status-red">{bulk.state.error}</span>}
-          <span className="text-xs text-on-surface-subtle">{gapCount} gaps</span>
+          {!isLoading && gapCount > 0 && (
+            <span className="text-xs text-status-yellow">{gapCount} gaps</span>
+          )}
+          {!isLoading && gapCount === 0 && tmdbMap.size > 0 && (
+            <span className="text-xs text-status-green">No gaps</span>
+          )}
         </div>
       </div>
 
@@ -94,113 +188,10 @@ export function ExistingMovieSync({ movies, importedIds }: ExistingMovieSyncProp
               key={movie.tmdb_id}
               movie={movie}
               justImported={importedIds?.has(movie.tmdb_id) ?? false}
+              prefetchedTmdb={tmdbMap.get(movie.tmdb_id) ?? null}
+              onMovieUpdated={handleMovieUpdated}
             />
           ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Per-movie row ─────────────────────────────────────────────────────────────
-
-function ExistingMovieRow({
-  movie,
-  justImported,
-}: {
-  movie: ExistingMovieData;
-  justImported: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [appliedFields, setAppliedFields] = useState<string[]>([]);
-  const lookup = useTmdbLookup();
-  const fillFields = useFillFields();
-
-  // @invariant: only show tmdb panel when the lookup result matches this movie's tmdb_id
-  const tmdbData =
-    lookup.data?.type === 'movie' && lookup.data.data.tmdbId === movie.tmdb_id
-      ? lookup.data.data
-      : null;
-
-  const handleToggle = () => {
-    if (justImported) return; // no local data to compare yet — re-discover first
-    if (!open && !tmdbData && !lookup.isPending) {
-      lookup.mutate({ tmdbId: movie.tmdb_id, type: 'movie' });
-    }
-    setOpen((o) => !o);
-  };
-
-  const handleApply = async (fields: string[], forceResyncCast: boolean) => {
-    const payload: { tmdbId: number; fields: string[]; forceResyncCast?: boolean } = {
-      tmdbId: movie.tmdb_id,
-      fields,
-    };
-    if (forceResyncCast) payload.forceResyncCast = true;
-    const res = await fillFields.mutateAsync(payload);
-    setAppliedFields((prev) => [...new Set([...prev, ...res.updatedFields])]);
-  };
-
-  return (
-    <div>
-      <button
-        onClick={handleToggle}
-        className="w-full flex items-center gap-3 px-5 py-3 hover:bg-surface-elevated transition-colors text-left"
-      >
-        <div className="w-10 h-14 bg-surface-muted rounded shrink-0 overflow-hidden">
-          {movie.poster_url ? (
-            <img
-              src={movie.poster_url}
-              alt={movie.title ?? ''}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Film className="w-4 h-4 text-on-surface-disabled" />
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-on-surface truncate">{movie.title ?? '—'}</p>
-          <p
-            className={`text-xs mt-0.5 ${justImported ? 'text-status-blue' : 'text-status-green'}`}
-          >
-            {justImported ? 'Just imported' : 'All fields match'}
-          </p>
-        </div>
-        {open ? (
-          <ChevronDown className="w-4 h-4 text-on-surface-muted shrink-0" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-on-surface-muted shrink-0" />
-        )}
-      </button>
-
-      {open && (
-        <div className="px-5 pb-4 bg-surface-muted/30">
-          {lookup.isPending && (
-            <div className="flex items-center gap-2 py-4 text-sm text-on-surface-muted">
-              <Loader2 className="w-4 h-4 animate-spin" /> Fetching from TMDB…
-            </div>
-          )}
-          {lookup.isError && (
-            <p className="py-3 text-sm text-status-red">
-              {lookup.error instanceof Error ? lookup.error.message : 'TMDB fetch failed'}
-            </p>
-          )}
-          {/* @contract: fillFields.isError surfaces the error inline so admin gets feedback */}
-          {fillFields.isError && (
-            <p className="py-2 text-sm text-status-red">
-              {fillFields.error instanceof Error ? fillFields.error.message : 'Apply failed'}
-            </p>
-          )}
-          {tmdbData && (
-            <FieldDiffPanel
-              movie={movie}
-              tmdb={tmdbData}
-              appliedFields={appliedFields}
-              isSaving={fillFields.isPending}
-              onApply={handleApply}
-            />
-          )}
         </div>
       )}
     </div>

@@ -3,13 +3,13 @@
  * Downloads images from external URLs (TMDB CDN) and uploads to R2 with variants.
  * Server-side only.
  *
- * @coupling: this file creates its OWN S3Client via getR2Client() — separate from
- * r2-client.ts which is used by upload-handler.ts. Both construct clients identically
- * but changes to one won't affect the other. If R2 credentials change, both files
- * need to work or both fail independently.
+ * @coupling: uses shared getR2Client() from r2-client.ts — same client used by
+ * upload-handler.ts for manual uploads. Supports both Cloudflare R2 (production)
+ * and MinIO (local dev via R2_ENDPOINT).
  */
 
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { getR2Client } from './r2-client';
 import {
   generateVariants,
   type ImageVariant,
@@ -23,24 +23,6 @@ export const R2_BUCKETS = {
   movieBackdrops: 'faniverz-movie-backdrops',
   actorPhotos: 'faniverz-actor-photos',
 } as const;
-
-// R2_PUBLIC_URLS removed — r2-sync now returns only the relative key, not a full URL.
-// Base URLs are supplied at runtime via NEXT_PUBLIC_/EXPO_PUBLIC_ env vars per client.
-
-// @edge: checks R2_ACCOUNT_ID but NOT R2_SECRET_ACCESS_KEY — if the secret is
-// missing but account ID and access key are set, the client is created but all
-// PutObject calls fail at runtime with a credentials error.
-function getR2Client(): S3Client | null {
-  if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID) return null;
-  return new S3Client({
-    region: 'auto',
-    endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-    },
-  });
-}
 
 /** Get the variant specs for a given bucket. */
 function getVariantsForBucket(bucket: string): ImageVariant[] {

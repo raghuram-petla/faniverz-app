@@ -128,6 +128,12 @@ describe('POST /api/image-check', () => {
     expect(res.status).toBe(200);
   });
 
+  it('allows TMDB image URLs (fallback when R2 not configured)', async () => {
+    mockFetch.mockResolvedValue({ ok: true });
+    const res = await POST(makeRequest({ urls: ['https://image.tmdb.org/t/p/w500/abc123.jpg'] }));
+    expect(res.status).toBe(200);
+  });
+
   it('allows local storage URLs in dev mode', async () => {
     const origUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321';

@@ -5,7 +5,8 @@ const MAX_URLS = 10;
 
 // @invariant: only CDN/storage domains allowed — prevents SSRF by restricting outbound HEAD requests
 // @edge: in local dev, Supabase storage serves from localhost/LAN IPs — must be allowed
-const ALLOWED_URL_PATTERNS = ['faniverz.com'];
+// @coupling: image.tmdb.org allowed because DB stores TMDB CDN URLs as fallback when R2 is unavailable
+const ALLOWED_URL_PATTERNS = ['faniverz.com', 'image.tmdb.org'];
 
 function isLocalDev(): boolean {
   return (

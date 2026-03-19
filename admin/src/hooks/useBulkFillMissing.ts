@@ -1,19 +1,14 @@
 'use client';
 
-/**
- * Sequential bulk fill of missing fields for all existing movies with gaps.
- * State lives in browser memory only — lost on page reload (by design).
- *
- * @contract: run() processes movies one at a time, stopping on 429 rate limit.
- * @sideeffect: calls /api/sync/fill-fields per movie; invalidates ['admin','movies'] once on completion.
- * @edge: errors other than 429 are counted as failures but processing continues.
- */
+// @contract: run() processes only movies with real TMDB mismatches, not just null fields.
+// @sideeffect: calls /api/sync/fill-fields per movie; invalidates ['admin','movies'] on completion.
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import type { ExistingMovieData } from '@/hooks/useSync';
-import { getMissingFields, countMissing } from '@/lib/syncUtils';
+import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
+import { FILLABLE_DATA_FIELDS, type FillableDataField } from '@/lib/syncUtils';
+import { getStatus } from '@/components/sync/fieldDiffHelpers';
 
 export interface BulkFillState {
   total: number;
@@ -31,13 +26,23 @@ const INITIAL_STATE: BulkFillState = {
   error: null,
 };
 
+/** @contract returns fields where local DB differs from TMDB (missing or changed) */
+function getGappedFields(movie: ExistingMovieData, tmdb: LookupMovieData): FillableDataField[] {
+  return FILLABLE_DATA_FIELDS.filter((f) => getStatus(movie, tmdb, f) !== 'same');
+}
+
 export function useBulkFillMissing() {
   const [state, setState] = useState<BulkFillState>(INITIAL_STATE);
   const qc = useQueryClient();
 
-  // @boundary: getSession() returns null when not logged in — bail early
-  const run = async (movies: ExistingMovieData[]) => {
-    const gapped = movies.filter((m) => countMissing(m) > 0);
+  /** @param tmdbMap pre-fetched TMDB data keyed by tmdb_id */
+  const run = async (movies: ExistingMovieData[], tmdbMap?: Map<number, LookupMovieData>) => {
+    // @contract only process movies with real TMDB mismatches
+    const gapped = movies.filter((m) => {
+      const tmdb = tmdbMap?.get(m.tmdb_id);
+      if (!tmdb) return false;
+      return getGappedFields(m, tmdb).length > 0;
+    });
     if (gapped.length === 0) return;
 
     const {
@@ -51,7 +56,8 @@ export function useBulkFillMissing() {
     setState({ total: gapped.length, done: 0, failed: 0, isRunning: true, error: null });
 
     for (const movie of gapped) {
-      const fields = getMissingFields(movie);
+      const tmdb = tmdbMap?.get(movie.tmdb_id);
+      const fields = tmdb ? getGappedFields(movie, tmdb) : [];
       if (fields.length === 0) {
         setState((s) => ({ ...s, done: s.done + 1 }));
         continue;
@@ -70,7 +76,6 @@ export function useBulkFillMissing() {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           if (res.status === 429) {
-            // @edge: stop entirely on rate limit — admin can retry later
             setState((s) => ({
               ...s,
               isRunning: false,
@@ -89,8 +94,10 @@ export function useBulkFillMissing() {
     }
 
     setState((s) => ({ ...s, isRunning: false }));
-    // @sideeffect: single invalidation after all movies processed — not per-movie
+    // @coupling 'movie' (singular) is the single-movie cache used by edit pages
     qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
   };
 
   const reset = () => setState(INITIAL_STATE);
