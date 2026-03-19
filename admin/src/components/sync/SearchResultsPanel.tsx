@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useImportMovies } from '@/hooks/useSync';
+import { useState, useMemo } from 'react';
+import { useImportMovies, useLinkTmdbId } from '@/hooks/useSync';
 import type { TmdbSearchAllResult, DuplicateSuspect } from '@/hooks/useSync';
-import { Film, Loader2, Download, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Film, Loader2, Download, CheckCircle, AlertTriangle, Link2 } from 'lucide-react';
 import type { ImportProgress } from './syncHelpers';
 import { ImportProgressList } from './DiscoverResults';
 import { ActorSearchResults } from './ActorSearchResults';
@@ -46,11 +46,31 @@ interface MovieSearchResultsProps {
 
 function MovieSearchResults({ movies, existingSet, duplicateSuspects }: MovieSearchResultsProps) {
   const importMovies = useImportMovies();
+  const linkTmdbId = useLinkTmdbId();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
+  const [linkedIds, setLinkedIds] = useState<Set<number>>(new Set());
+  const [linkingTmdbId, setLinkingTmdbId] = useState<number | null>(null);
 
-  const newMovies = movies.filter((m) => !existingSet.has(m.id));
+  // @contract merge linked IDs into existing set so linked movies show "In DB" badge
+  const effectiveExistingSet = useMemo(
+    () => (linkedIds.size > 0 ? new Set([...existingSet, ...linkedIds]) : existingSet),
+    [existingSet, linkedIds],
+  );
+  const newMovies = movies.filter(
+    (m) => !effectiveExistingSet.has(m.id) && !duplicateSuspects?.[m.id],
+  );
   const isImporting = importProgress.some((p) => p.status === 'importing');
+
+  const handleLinkDuplicate = async (tmdbId: number, suspect: DuplicateSuspect) => {
+    setLinkingTmdbId(tmdbId);
+    try {
+      await linkTmdbId.mutateAsync({ movieId: suspect.id, tmdbId });
+      setLinkedIds((prev) => new Set([...prev, tmdbId]));
+    } finally {
+      setLinkingTmdbId(null);
+    }
+  };
 
   const toggleSelect = (id: number) => {
     setSelected((prev) => {
@@ -134,14 +154,14 @@ function MovieSearchResults({ movies, existingSet, duplicateSuspects }: MovieSea
         style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}
       >
         {movies.map((movie) => {
-          const exists = existingSet.has(movie.id);
+          const exists = effectiveExistingSet.has(movie.id);
           const isSelected = selected.has(movie.id);
           const suspect = duplicateSuspects?.[movie.id];
           return (
             <div key={movie.id}>
               <button
-                disabled={exists || isImporting}
-                onClick={() => toggleSelect(movie.id)}
+                disabled={exists || isImporting || (!!suspect && !exists)}
+                onClick={() => !suspect && toggleSelect(movie.id)}
                 className={`relative w-full bg-black rounded-xl overflow-hidden text-left transition-all ${
                   suspect && !exists
                     ? 'ring-2 ring-yellow-500'
@@ -187,18 +207,33 @@ function MovieSearchResults({ movies, existingSet, duplicateSuspects }: MovieSea
                 )}
               </button>
               {suspect && !exists && (
-                <p className="text-[10px] text-status-yellow mt-1 px-1">
-                  Already exists as &ldquo;{suspect.title}&rdquo; without TMDB ID.{' '}
-                  <a
-                    href={`/movies/${suspect.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline hover:text-yellow-300"
-                  >
-                    Edit it
-                  </a>{' '}
-                  to set TMDB ID instead of importing.
-                </p>
+                <div className="mt-1 px-1 space-y-1">
+                  <p className="text-[10px] text-status-yellow">
+                    Matches &ldquo;{suspect.title}&rdquo; (no TMDB ID)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleLinkDuplicate(movie.id, suspect)}
+                      disabled={linkingTmdbId === movie.id}
+                      className="text-[10px] bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-0.5 rounded-full font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {linkingTmdbId === movie.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Link2 className="w-3 h-3" />
+                      )}
+                      Link to TMDB
+                    </button>
+                    <a
+                      href={`/movies/${suspect.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-on-surface-subtle underline hover:text-yellow-300"
+                    >
+                      Edit instead
+                    </a>
+                  </div>
+                </div>
               )}
             </div>
           );

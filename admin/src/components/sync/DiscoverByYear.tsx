@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useImportMovies } from '@/hooks/useSync';
-import type { DiscoverResult, ExistingMovieData } from '@/hooks/useSync';
+import { useImportMovies, useLinkTmdbId } from '@/hooks/useSync';
+import type { DiscoverResult, DuplicateSuspect, ExistingMovieData } from '@/hooks/useSync';
 import type { ImportProgress } from './syncHelpers';
 import { DiscoverResults, ImportProgressList } from './DiscoverResults';
 
@@ -14,11 +14,13 @@ export interface DiscoverByYearProps {
 /** @contract Renders discover-by-year results with batch import. Form lives in DiscoverTab. */
 export function DiscoverByYear({ data }: DiscoverByYearProps) {
   const importMovies = useImportMovies();
+  const linkTmdbId = useLinkTmdbId();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
   const [gapCount, setGapCount] = useState<number | null>(null);
   const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
   const [importedMovieData, setImportedMovieData] = useState<ExistingMovieData[]>([]);
+  const [linkingTmdbId, setLinkingTmdbId] = useState<number | null>(null);
 
   const existingMovies = useMemo(
     () => [...((data.existingMovies ?? []) as ExistingMovieData[]), ...importedMovieData],
@@ -28,10 +30,39 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
     () => new Set([...existingMovies.map((m) => m.tmdb_id), ...importedIds]),
     [existingMovies, importedIds],
   );
+  // @contract suspects are excluded from newMovies — they're shown separately with "Link to TMDB"
   const newMovies = useMemo(
-    () => (data.results ?? []).filter((m) => !existingSet.has(m.id)),
-    [data.results, existingSet],
+    () =>
+      (data.results ?? []).filter((m) => !existingSet.has(m.id) && !data.duplicateSuspects?.[m.id]),
+    [data.results, existingSet, data.duplicateSuspects],
   );
+
+  /** @sideeffect Links a local movie to a TMDB ID, then transitions it to the existing section */
+  const handleLinkDuplicate = async (tmdbId: number, suspect: DuplicateSuspect) => {
+    setLinkingTmdbId(tmdbId);
+    try {
+      await linkTmdbId.mutateAsync({ movieId: suspect.id, tmdbId });
+      const tmdbMovie = (data.results ?? []).find((m) => m.id === tmdbId);
+      const newExisting: ExistingMovieData = {
+        id: suspect.id,
+        tmdb_id: tmdbId,
+        title: suspect.title,
+        synopsis: null,
+        poster_url: tmdbMovie?.poster_path
+          ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}`
+          : null,
+        backdrop_url: null,
+        trailer_url: null,
+        director: null,
+        runtime: null,
+        genres: null,
+      };
+      setImportedMovieData((prev) => [...prev, newExisting]);
+      setImportedIds((prev) => new Set([...prev, tmdbId]));
+    } finally {
+      setLinkingTmdbId(null);
+    }
+  };
 
   const toggleSelect = (tmdbId: number) => {
     setSelected((prev) => {
@@ -137,6 +168,8 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
         onImportAllNew={handleImportAllNew}
         importedIds={importedIds}
         duplicateSuspects={data.duplicateSuspects}
+        onLinkDuplicate={handleLinkDuplicate}
+        linkingTmdbId={linkingTmdbId}
         onGapCountChange={setGapCount}
       />
       {importProgress.length > 0 && <ImportProgressList items={importProgress} />}

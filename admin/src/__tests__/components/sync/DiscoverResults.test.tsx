@@ -192,6 +192,60 @@ describe('DiscoverResults', () => {
     const btn = screen.getByText('Import all new (2)').closest('button')!;
     expect(btn).toBeDisabled();
   });
+
+  it('renders "Link to TMDB" button for duplicate suspects', () => {
+    const suspect = { id: 'uuid-99', title: 'Local Movie' };
+    wrap(
+      <DiscoverResults
+        {...defaultProps}
+        duplicateSuspects={{ 1: suspect }}
+        onLinkDuplicate={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Link to TMDB')).toBeInTheDocument();
+    expect(screen.getByText(/Matches/)).toBeInTheDocument();
+  });
+
+  it('calls onLinkDuplicate with tmdbId and suspect when button is clicked', () => {
+    const onLinkDuplicate = vi.fn();
+    const suspect = { id: 'uuid-99', title: 'Local Movie' };
+    wrap(
+      <DiscoverResults
+        {...defaultProps}
+        duplicateSuspects={{ 1: suspect }}
+        onLinkDuplicate={onLinkDuplicate}
+      />,
+    );
+    fireEvent.click(screen.getByText('Link to TMDB'));
+    expect(onLinkDuplicate).toHaveBeenCalledWith(1, suspect);
+  });
+
+  it('disables suspect card selection when onLinkDuplicate is provided', () => {
+    const onToggleSelect = vi.fn();
+    const suspect = { id: 'uuid-99', title: 'Local Movie' };
+    wrap(
+      <DiscoverResults
+        {...defaultProps}
+        onToggleSelect={onToggleSelect}
+        duplicateSuspects={{ 1: suspect }}
+        onLinkDuplicate={vi.fn()}
+      />,
+    );
+    // The card button for Movie A (id=1) should be disabled
+    const cardButton = screen.getByText('Movie A').closest('button')!;
+    expect(cardButton).toBeDisabled();
+  });
+
+  it('shows "Edit instead" link for suspects', () => {
+    wrap(
+      <DiscoverResults
+        {...defaultProps}
+        duplicateSuspects={{ 1: { id: 'uuid-99', title: 'Local Movie' } }}
+        onLinkDuplicate={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Edit instead')).toBeInTheDocument();
+  });
 });
 
 describe('ImportProgressList', () => {

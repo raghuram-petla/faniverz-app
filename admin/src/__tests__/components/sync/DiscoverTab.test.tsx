@@ -52,6 +52,10 @@ vi.mock('@/hooks/useSync', () => ({
     isPending: false,
     isSuccess: false,
   }),
+  useLinkTmdbId: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
   useImportActor: () => ({
     mutateAsync: vi.fn(),
     isPending: false,

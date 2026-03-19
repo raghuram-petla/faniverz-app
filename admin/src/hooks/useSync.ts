@@ -31,13 +31,9 @@ import type {
   TmdbSearchAllResult,
 } from '@/hooks/useSyncTypes';
 
-// ── API fetch helper ──────────────────────────────────────────────────────────
-
 // @boundary Proxy to /api/sync/* Next.js routes — server handles TMDB API key securely
 // @contract GET when body is undefined; POST with JSON body otherwise
-// @assumes caller is authenticated — getSession() returns null only when session has expired
-// @edge 401 from server means JWT expired mid-session (autoRefreshToken:false) — sign out
-//       so AuthProvider's onAuthStateChange fires null → DashboardLayout redirects to /login
+// @edge 401 → sign out so AuthProvider redirects to /login
 async function syncApi<T>(path: string, body?: unknown): Promise<T> {
   const {
     data: { session },
@@ -216,6 +212,39 @@ export function useFillFields() {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
     },
     // @contract: callers surface errors via fillFields.isError + fillFields.error
+  });
+}
+
+/** @sideeffect Sets tmdb_id on an existing movie — used for duplicate resolution on sync page */
+export function useLinkTmdbId() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ movieId, tmdbId }: { movieId: string; tmdbId: number }) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error('Session expired');
+      const res = await fetch('/api/admin-crud', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ table: 'movies', id: movieId, data: { tmdb_id: tmdbId } }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? 'Failed to link TMDB ID');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Failed to link TMDB ID');
+    },
   });
 }
 

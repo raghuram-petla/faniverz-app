@@ -3,11 +3,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const mockImportMutateAsync = vi.hoisted(() => vi.fn());
 
+const mockLinkMutateAsync = vi.hoisted(() => vi.fn());
+
 vi.mock('@/hooks/useSync', () => ({
   useImportMovies: () => ({
     mutateAsync: mockImportMutateAsync,
     isPending: false,
     isSuccess: false,
+  }),
+  useLinkTmdbId: () => ({
+    mutateAsync: mockLinkMutateAsync,
+    isPending: false,
   }),
   useTmdbLookup: () => ({ mutate: vi.fn(), isPending: false, isError: false, data: undefined }),
   useFillFields: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -199,5 +205,44 @@ describe('DiscoverByYear', () => {
     expect(screen.queryByText('Year')).not.toBeInTheDocument();
     expect(screen.queryByText('Month')).not.toBeInTheDocument();
     expect(screen.queryByText('Discover Movies by Year')).not.toBeInTheDocument();
+  });
+
+  it('excludes duplicate suspects from new movies count', () => {
+    const data = {
+      ...makeData([
+        { id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' },
+        { id: 2, title: 'Suspect Movie', poster_path: null, release_date: '2024-02-01' },
+      ]),
+      duplicateSuspects: { 2: { id: 'uuid-local', title: 'Suspect Movie' } },
+    };
+    renderWithProvider(<DiscoverByYear data={data} />);
+    // Only 1 new (not 2), because suspect is excluded
+    expect(screen.getByText('1 new')).toBeInTheDocument();
+    expect(screen.getByText('Select all new (1)')).toBeInTheDocument();
+  });
+
+  it('shows "Link to TMDB" button for duplicate suspect cards', () => {
+    const data = {
+      ...makeData([{ id: 5, title: 'Duplicate', poster_path: null, release_date: '2024-01-01' }]),
+      duplicateSuspects: { 5: { id: 'uuid-local', title: 'Duplicate' } },
+    };
+    renderWithProvider(<DiscoverByYear data={data} />);
+    expect(screen.getByText('Link to TMDB')).toBeInTheDocument();
+  });
+
+  it('links suspect to TMDB and moves it to existing section', async () => {
+    mockLinkMutateAsync.mockResolvedValue({ id: 'uuid-local' });
+    const data = {
+      ...makeData([{ id: 5, title: 'Duplicate', poster_path: null, release_date: '2024-01-01' }]),
+      duplicateSuspects: { 5: { id: 'uuid-local', title: 'Duplicate' } },
+    };
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Link to TMDB'));
+    });
+    expect(mockLinkMutateAsync).toHaveBeenCalledWith({ movieId: 'uuid-local', tmdbId: 5 });
+    // After linking, the movie should appear in existing section
+    expect(screen.getByText('Existing movies')).toBeInTheDocument();
   });
 });

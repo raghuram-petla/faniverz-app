@@ -1,6 +1,6 @@
 'use client';
 
-import { Film, Loader2, Download, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { Film, Loader2, Download, CheckCircle, XCircle, AlertTriangle, Link2 } from 'lucide-react';
 import type { ImportProgress } from './syncHelpers';
 import type { ExistingMovieData, DuplicateSuspect } from '@/hooks/useSync';
 import { ExistingMovieSync } from './ExistingMovieSync';
@@ -36,6 +36,10 @@ export interface DiscoverResultsProps {
   importedIds?: Set<number>;
   /** @nullable TMDB ID → local movie with matching title but no tmdb_id */
   duplicateSuspects?: Record<number, DuplicateSuspect>;
+  /** @sideeffect links a suspect's local movie to the TMDB ID */
+  onLinkDuplicate?: (tmdbId: number, suspect: DuplicateSuspect) => void;
+  /** TMDB ID currently being linked (for spinner state) */
+  linkingTmdbId?: number | null;
   /** @nullable callback from ExistingMovieSync to propagate gap count */
   onGapCountChange?: (count: number | null) => void;
 }
@@ -55,6 +59,8 @@ export function DiscoverResults({
   onImportAllNew,
   importedIds,
   duplicateSuspects,
+  onLinkDuplicate,
+  linkingTmdbId,
   onGapCountChange,
 }: DiscoverResultsProps) {
   return (
@@ -121,8 +127,8 @@ export function DiscoverResults({
             return (
               <div key={movie.id}>
                 <button
-                  onClick={() => onToggleSelect(movie.id)}
-                  disabled={isImporting}
+                  onClick={() => !suspect && onToggleSelect(movie.id)}
+                  disabled={isImporting || !!suspect}
                   className={`relative w-full bg-black rounded-xl overflow-hidden text-left transition-all ${
                     suspect
                       ? 'ring-2 ring-yellow-500'
@@ -161,18 +167,35 @@ export function DiscoverResults({
                   )}
                 </button>
                 {suspect && (
-                  <p className="text-[10px] text-status-yellow mt-1 px-1">
-                    Already exists as &ldquo;{suspect.title}&rdquo; without TMDB ID.{' '}
-                    <a
-                      href={`/movies/${suspect.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline hover:text-yellow-300"
-                    >
-                      Edit it
-                    </a>{' '}
-                    to set TMDB ID instead.
-                  </p>
+                  <div className="mt-1 px-1 space-y-1">
+                    <p className="text-[10px] text-status-yellow">
+                      Matches &ldquo;{suspect.title}&rdquo; (no TMDB ID)
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {onLinkDuplicate && (
+                        <button
+                          onClick={() => onLinkDuplicate(movie.id, suspect)}
+                          disabled={linkingTmdbId === movie.id}
+                          className="text-[10px] bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-0.5 rounded-full font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {linkingTmdbId === movie.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Link2 className="w-3 h-3" />
+                          )}
+                          Link to TMDB
+                        </button>
+                      )}
+                      <a
+                        href={`/movies/${suspect.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] text-on-surface-subtle underline hover:text-yellow-300"
+                      >
+                        Edit instead
+                      </a>
+                    </div>
+                  </div>
                 )}
               </div>
             );

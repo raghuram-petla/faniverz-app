@@ -9,11 +9,17 @@ const mockLookupState = vi.hoisted(() => ({
   data: undefined as unknown,
 }));
 
+const mockLinkMutateAsync = vi.hoisted(() => vi.fn());
+
 vi.mock('@/hooks/useSync', () => ({
   useImportMovies: () => ({
     mutateAsync: mockImportMutateAsync,
     isPending: false,
     isSuccess: false,
+  }),
+  useLinkTmdbId: () => ({
+    mutateAsync: mockLinkMutateAsync,
+    isPending: false,
   }),
   useTmdbLookup: () => ({
     mutate: mockLookupMutate,
@@ -240,5 +246,55 @@ describe('SearchResultsPanel', () => {
     };
     renderWithProvider(<SearchResultsPanel data={data} />);
     expect(screen.getByText('Select all new (2)')).toBeInTheDocument();
+  });
+
+  it('shows "Link to TMDB" button for duplicate suspects', () => {
+    const data = {
+      movies: {
+        ...makeMovieData([
+          { id: 500, title: 'Suspect', poster_path: null, release_date: '2024-01-01' },
+        ]),
+        duplicateSuspects: { 500: { id: 'uuid-local', title: 'Suspect' } },
+      },
+      actors: makeActorData([]),
+    };
+    renderWithProvider(<SearchResultsPanel data={data} />);
+    expect(screen.getByText('Link to TMDB')).toBeInTheDocument();
+    expect(screen.getByText('Edit instead')).toBeInTheDocument();
+  });
+
+  it('shows "In DB" badge after linking a duplicate suspect', async () => {
+    mockLinkMutateAsync.mockResolvedValue({ id: 'uuid-local' });
+    const data = {
+      movies: {
+        ...makeMovieData([
+          { id: 600, title: 'Link Me', poster_path: null, release_date: '2024-01-01' },
+        ]),
+        duplicateSuspects: { 600: { id: 'uuid-local', title: 'Link Me' } },
+      },
+      actors: makeActorData([]),
+    };
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<SearchResultsPanel data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Link to TMDB'));
+    });
+    expect(mockLinkMutateAsync).toHaveBeenCalledWith({ movieId: 'uuid-local', tmdbId: 600 });
+    expect(screen.getByText('In DB')).toBeInTheDocument();
+  });
+
+  it('excludes suspects from "Select all new" count', () => {
+    const data = {
+      movies: {
+        ...makeMovieData([
+          { id: 700, title: 'Real New', poster_path: null, release_date: '2024-01-01' },
+          { id: 701, title: 'Suspect', poster_path: null, release_date: '2024-02-01' },
+        ]),
+        duplicateSuspects: { 701: { id: 'uuid-local', title: 'Suspect' } },
+      },
+      actors: makeActorData([]),
+    };
+    renderWithProvider(<SearchResultsPanel data={data} />);
+    expect(screen.getByText('Select all new (1)')).toBeInTheDocument();
   });
 });
