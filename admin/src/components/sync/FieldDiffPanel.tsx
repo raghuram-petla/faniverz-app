@@ -13,7 +13,8 @@ import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 import type { FillableField } from '@/lib/syncUtils';
-import { type FieldStatus, extractYouTubeId, getStatus, fmt, truncate } from './fieldDiffHelpers';
+import { extractYouTubeId, getStatus, fmt } from './fieldDiffHelpers';
+import { FieldDiffRow } from './FieldDiffRow';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -127,18 +128,19 @@ export function FieldDiffPanel({
     void onApply(fields, forceResyncCast);
   };
 
-  const statusColor: Record<FieldStatus, string> = {
-    missing: 'text-status-green',
-    changed: 'text-status-yellow',
-    same: 'text-on-surface-disabled',
-  };
-  const statusLabel: Record<FieldStatus, string> = {
-    missing: 'missing',
-    changed: 'changed',
-    same: 'same',
-  };
-
   const canApply = selected.size > 0 || forceResyncCast;
+
+  // @contract Media URL map for poster/backdrop/trailer preview thumbnails in FieldDiffRow
+  const dbMediaUrls: Record<string, string | null> = {
+    poster_url: movie.poster_url ?? null,
+    backdrop_url: movie.backdrop_url ?? null,
+    trailer_url: movie.trailer_url ?? null,
+  };
+  const tmdbMediaUrls: Record<string, string | null> = {
+    poster_url: tmdb.posterUrl ?? null,
+    backdrop_url: tmdb.backdropUrl ?? null,
+    trailer_url: tmdb.trailerUrl ?? null,
+  };
 
   return (
     <div className="mt-3 space-y-3">
@@ -155,99 +157,23 @@ export function FieldDiffPanel({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => {
-              const isApplied = appliedFields.includes(row.key);
-              const rowBg = i % 2 === 1 ? 'bg-surface-elevated/50' : '';
-              const dbYtId = row.key === 'trailer_url' ? extractYouTubeId(movie.trailer_url) : null;
-              const tmdbYtId = row.key === 'trailer_url' ? extractYouTubeId(tmdb.trailerUrl) : null;
-              return (
-                <tr key={row.key} className={rowBg}>
-                  <td className="py-2 pr-3 align-top">
-                    <input
-                      type="checkbox"
-                      checked={isApplied || selected.has(row.key)}
-                      disabled={isApplied || isSaving}
-                      onChange={() => toggle(row.key)}
-                      className="accent-red-600"
-                    />
-                  </td>
-                  <td
-                    className={`py-2 pr-3 align-top ${isApplied ? 'line-through text-on-surface-disabled' : 'text-on-surface'}`}
-                  >
-                    {row.label}
-                  </td>
-                  <td
-                    className={`py-2 pr-3 align-top ${row.status === 'same' ? 'text-on-surface-subtle' : row.status === 'missing' ? 'text-status-red' : 'text-on-surface-subtle'}`}
-                  >
-                    {isApplied ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-status-green inline" />
-                    ) : (
-                      row.dbDisplay || '—'
-                    )}
-                    {row.key === 'poster_url' && movie.poster_url && (
-                      <img
-                        src={movie.poster_url}
-                        alt=""
-                        className="w-12 h-16 object-cover rounded mt-1"
-                      />
-                    )}
-                    {row.key === 'backdrop_url' && movie.backdrop_url && (
-                      <img
-                        src={movie.backdrop_url}
-                        alt=""
-                        className="w-24 h-14 object-cover rounded mt-1"
-                      />
-                    )}
-                    {dbYtId && (
-                      <a
-                        href={`https://www.youtube.com/watch?v=${dbYtId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={`https://img.youtube.com/vi/${dbYtId}/mqdefault.jpg`}
-                          alt=""
-                          className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
-                        />
-                      </a>
-                    )}
-                  </td>
-                  <td className="py-2 pr-3 align-top text-on-surface-subtle">
-                    {row.tmdbDisplay || '—'}
-                    {row.key === 'poster_url' && tmdb.posterUrl && (
-                      <img
-                        src={tmdb.posterUrl}
-                        alt=""
-                        className="w-12 h-16 object-cover rounded mt-1"
-                      />
-                    )}
-                    {row.key === 'backdrop_url' && tmdb.backdropUrl && (
-                      <img
-                        src={tmdb.backdropUrl}
-                        alt=""
-                        className="w-24 h-14 object-cover rounded mt-1"
-                      />
-                    )}
-                    {tmdbYtId && (
-                      <a
-                        href={`https://www.youtube.com/watch?v=${tmdbYtId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={`https://img.youtube.com/vi/${tmdbYtId}/mqdefault.jpg`}
-                          alt=""
-                          className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
-                        />
-                      </a>
-                    )}
-                  </td>
-                  <td className={`py-2 align-top text-right ${statusColor[row.status]}`}>
-                    {isApplied ? '' : statusLabel[row.status]}
-                  </td>
-                </tr>
-              );
-            })}
+            {rows.map((row, i) => (
+              <FieldDiffRow
+                key={row.key}
+                fieldKey={row.key}
+                label={row.label}
+                dbDisplay={row.dbDisplay}
+                tmdbDisplay={row.tmdbDisplay}
+                status={row.status}
+                isApplied={appliedFields.includes(row.key)}
+                isSelected={selected.has(row.key)}
+                isSaving={isSaving}
+                dbMediaUrl={dbMediaUrls[row.key]}
+                tmdbMediaUrl={tmdbMediaUrls[row.key]}
+                rowBg={i % 2 === 1 ? 'bg-surface-elevated/50' : ''}
+                onToggle={toggle}
+              />
+            ))}
           </tbody>
         </table>
       )}

@@ -2,46 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAdminMovie, useUpdateMovie, useDeleteMovie } from '@/hooks/useAdminMovies';
-import {
-  useMovieCast,
-  useAdminActors,
-  useAddCast,
-  useRemoveCast,
-  useUpdateCastOrder,
-} from '@/hooks/useAdminCast';
-import {
-  useMovieTheatricalRuns,
-  useAddTheatricalRun,
-  useUpdateTheatricalRun,
-  useRemoveTheatricalRun,
-} from '@/hooks/useAdminTheatricalRuns';
-import { useMovieVideos, useAddVideo, useRemoveVideo } from '@/hooks/useAdminVideos';
-import {
-  useMoviePosters,
-  useAddPoster,
-  useRemovePoster,
-  useSetMainPoster,
-} from '@/hooks/useAdminPosters';
-import {
-  useMovieProductionHouses,
-  useAddMovieProductionHouse,
-  useRemoveMovieProductionHouse,
-} from '@/hooks/useMovieProductionHouses';
-import {
-  useAdminProductionHouses,
-  useCreateProductionHouse,
-} from '@/hooks/useAdminProductionHouses';
-import {
-  useMoviePlatforms,
-  useAddMoviePlatform,
-  useRemoveMoviePlatform,
-} from '@/hooks/useAdminOtt';
-import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { createMovieEditHandlers } from '@/hooks/useMovieEditHandlers';
 import { useMovieEditDerived } from '@/hooks/useMovieEditDerived';
 import { useMovieEditPendingState } from '@/hooks/useMovieEditPendingState';
+import { useMovieEditData } from '@/hooks/useMovieEditData';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
 
 export type { MovieForm };
@@ -59,44 +24,42 @@ export type { OTTPlatform, ProductionHouse } from '@shared/types';
 export function useMovieEditState(id: string) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: movie, isLoading } = useAdminMovie(id);
-  const updateMovie = useUpdateMovie();
-  const deleteMovie = useDeleteMovie();
-
-  const { data: castData = [] } = useMovieCast(id);
-  const [castSearchQuery, setCastSearchQuery] = useState('');
-  const { data: actorsData } = useAdminActors(castSearchQuery.trim());
-  const actors = actorsData?.pages.flat() ?? [];
-  const addCast = useAddCast();
-  const removeCast = useRemoveCast();
-  const updateCastOrder = useUpdateCastOrder();
-
-  const { data: theatricalRuns = [] } = useMovieTheatricalRuns(id);
-  const addTheatricalRun = useAddTheatricalRun();
-  const updateTheatricalRun = useUpdateTheatricalRun();
-  const removeTheatricalRun = useRemoveTheatricalRun();
-
-  const { data: videosData = [] } = useMovieVideos(id);
-  const addVideo = useAddVideo();
-  const removeVideo = useRemoveVideo();
-
-  const { data: postersData = [] } = useMoviePosters(id);
-  const addPoster = useAddPoster();
-  const removePoster = useRemovePoster();
-  const setMainPoster = useSetMainPoster();
-
-  const { data: movieProductionHouses = [] } = useMovieProductionHouses(id);
-  const addMovieProductionHouse = useAddMovieProductionHouse();
-  const removeMovieProductionHouse = useRemoveMovieProductionHouse();
-  const [phSearchQuery, setPHSearchQuery] = useState('');
-  const { data: phSearchData } = useAdminProductionHouses(phSearchQuery.trim());
-  const phSearchResults = phSearchData?.pages.flat() ?? [];
-  const createProductionHouse = useCreateProductionHouse();
-
-  const { data: moviePlatforms = [] } = useMoviePlatforms(id);
-  const { data: allPlatforms = [] } = useAdminPlatforms();
-  const addMoviePlatform = useAddMoviePlatform();
-  const removeMoviePlatform = useRemoveMoviePlatform();
+  const data = useMovieEditData(id);
+  const {
+    movie,
+    isLoading,
+    updateMovie,
+    deleteMovie,
+    castData,
+    castSearchQuery,
+    setCastSearchQuery,
+    actors,
+    addCast,
+    removeCast,
+    updateCastOrder,
+    theatricalRuns,
+    addTheatricalRun,
+    updateTheatricalRun,
+    removeTheatricalRun,
+    videosData,
+    addVideo,
+    removeVideo,
+    postersData,
+    addPoster,
+    removePoster,
+    setMainPoster,
+    movieProductionHouses,
+    addMovieProductionHouse,
+    removeMovieProductionHouse,
+    phSearchQuery,
+    setPHSearchQuery,
+    phSearchResults,
+    createProductionHouse,
+    moviePlatforms,
+    allPlatforms,
+    addMoviePlatform,
+    removeMoviePlatform,
+  } = data;
 
   // Upload state
   const [uploadingPoster, setUploadingPoster] = useState(false);
