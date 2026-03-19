@@ -33,6 +33,8 @@ interface Props {
   movieTitle: string;
   onAdd: (video: PendingVideo) => void;
   onRemove: (id: string, isPending: boolean) => void;
+  // @contract clears the legacy trailer_url field on the movies table
+  onClearTrailerUrl: () => void;
   showAddForm: boolean;
   onCloseAddForm: () => void;
 }
@@ -43,6 +45,7 @@ export function VideosSection({
   movieTitle,
   onAdd,
   onRemove,
+  onClearTrailerUrl,
   showAddForm,
   onCloseAddForm,
 }: Props) {
@@ -188,16 +191,18 @@ export function VideosSection({
                       )}
                     </div>
                   </div>
-                  {!isLegacy && (
-                    <Button
-                      variant="icon"
-                      size="sm"
-                      onClick={() => onRemove(video.id, video.id.startsWith('pending-video-'))}
-                      aria-label={`Remove ${video.title}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="icon"
+                    size="sm"
+                    onClick={() =>
+                      isLegacy
+                        ? onClearTrailerUrl()
+                        : onRemove(video.id, video.id.startsWith('pending-video-'))
+                    }
+                    aria-label={`Remove ${video.title}`}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
                 <div className="overflow-hidden" style={{ aspectRatio: '16/9' }}>
                   <iframe

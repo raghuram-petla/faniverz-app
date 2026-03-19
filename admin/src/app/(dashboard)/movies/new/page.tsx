@@ -132,6 +132,7 @@ export default function NewMoviePage() {
                 movieTitle={s.form.title}
                 onAdd={(video) => s.setPendingVideoAdds((prev) => [...prev, video])}
                 onRemove={s.handleVideoRemove}
+                onClearTrailerUrl={() => s.updateField('trailer_url', '')}
                 showAddForm={addFormOpen === 'videos'}
                 onCloseAddForm={closeAdd}
               />

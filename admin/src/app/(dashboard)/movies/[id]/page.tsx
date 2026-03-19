@@ -90,7 +90,6 @@ export default function EditMoviePage() {
   });
 
   const dockSaveStatus = editState.isSaving ? ('saving' as const) : editState.saveStatus;
-
   // @contract renders a "+ Add" button for SectionCard action slot; controls which form is open
   function addButton(key: string, label: string) {
     if (addFormOpen === key || isReadOnly) return undefined;
@@ -187,6 +186,7 @@ export default function EditMoviePage() {
                 movieTitle={editState.form.title}
                 onAdd={(video) => editState.setPendingVideoAdds((prev) => [...prev, video])}
                 onRemove={editState.handleVideoRemove}
+                onClearTrailerUrl={() => editState.updateField('trailer_url', '')}
                 showAddForm={addFormOpen === 'videos'}
                 onCloseAddForm={closeAdd}
               />
