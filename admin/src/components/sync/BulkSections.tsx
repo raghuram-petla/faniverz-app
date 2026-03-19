@@ -1,7 +1,9 @@
 'use client';
 
 import { Film, Users, Loader2, Download, RefreshCw, Eye } from 'lucide-react';
-import { formatRelativeTime } from './syncHelpers';
+import { formatRelativeTime, CURRENT_YEAR } from './syncHelpers';
+
+const SINCE_YEARS = Array.from({ length: 20 }, (_, i) => CURRENT_YEAR - i);
 
 interface StaleItem {
   id: string;
@@ -19,6 +21,8 @@ interface StaleQueryResult {
 export interface StaleMoviesSectionProps {
   staleDays: number;
   onStaleDaysChange: (days: number) => void;
+  sinceYear: number;
+  onSinceYearChange: (year: number) => void;
   staleMovies: StaleQueryResult;
   showList: boolean;
   onToggleList: () => void;
@@ -31,6 +35,8 @@ export interface StaleMoviesSectionProps {
 export function StaleMoviesSection({
   staleDays,
   onStaleDaysChange,
+  sinceYear,
+  onSinceYearChange,
   staleMovies,
   showList,
   onToggleList,
@@ -38,14 +44,26 @@ export function StaleMoviesSection({
   isBulkRunning,
 }: StaleMoviesSectionProps) {
   return (
-    <div className="bg-surface-card border border-outline rounded-xl p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex-1 min-w-[300px] bg-surface-card border border-outline rounded-xl p-5">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Film className="w-5 h-5 text-status-blue" />
           <h2 className="text-lg font-semibold text-on-surface">Stale Movies</h2>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-on-surface-muted">Not synced in</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-on-surface-muted">From</span>
+          <select
+            value={sinceYear}
+            onChange={(e) => onSinceYearChange(Number(e.target.value))}
+            className="bg-input rounded-lg px-2 py-1 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
+          >
+            {SINCE_YEARS.map((y) => (
+              <option key={y} value={y}>
+                {y}+
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-on-surface-muted">not synced in</span>
           <select
             value={staleDays}
             onChange={(e) => onStaleDaysChange(Number(e.target.value))}
@@ -131,7 +149,7 @@ export function MissingBiosSection({
   isBulkRunning,
 }: MissingBiosSectionProps) {
   return (
-    <div className="bg-surface-card border border-outline rounded-xl p-5">
+    <div className="flex-1 min-w-[300px] bg-surface-card border border-outline rounded-xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Users className="w-5 h-5 text-status-green" />
         <h2 className="text-lg font-semibold text-on-surface">Missing Actor Bios</h2>

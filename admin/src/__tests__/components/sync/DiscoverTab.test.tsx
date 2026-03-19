@@ -125,37 +125,30 @@ beforeEach(() => {
 });
 
 describe('DiscoverTab', () => {
-  it('renders the "Search & Import" heading', () => {
-    renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Search & Import')).toBeInTheDocument();
-  });
-
   it('renders search input and discover controls', () => {
     renderWithProvider(<DiscoverTab />);
-    expect(
-      screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...'),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search movies, actors, or TMDB ID...')).toBeInTheDocument();
     expect(screen.getByText('All months')).toBeInTheDocument();
     expect(screen.getByText('Discover')).toBeInTheDocument();
   });
 
   it('shows "Search" button when input is text', () => {
     renderWithProvider(<DiscoverTab />);
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: 'Pushpa' } });
     expect(screen.getByText('Search')).toBeInTheDocument();
   });
 
   it('shows "Lookup" button when input is numeric', () => {
     renderWithProvider(<DiscoverTab />);
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: '12345' } });
     expect(screen.getByText('Lookup')).toBeInTheDocument();
   });
 
   it('calls useTmdbSearch when text query is submitted', () => {
     renderWithProvider(<DiscoverTab />);
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: 'Pushpa' } });
     fireEvent.click(screen.getByText('Search'));
     expect(mockSearchMutate).toHaveBeenCalledWith('Pushpa');
@@ -163,7 +156,7 @@ describe('DiscoverTab', () => {
 
   it('calls useTmdbLookup when numeric ID is submitted', () => {
     renderWithProvider(<DiscoverTab />);
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: '12345' } });
     fireEvent.click(screen.getByText('Lookup'));
     expect(mockLookupMutate).toHaveBeenCalledWith({ tmdbId: 12345, type: 'movie' });
@@ -215,7 +208,7 @@ describe('DiscoverTab', () => {
     };
     renderWithProvider(<DiscoverTab />);
     // Need to trigger search first to set resultMode
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: 'Movie' } });
     fireEvent.click(screen.getByText('Search'));
     // SearchResultsPanel renders movie heading
@@ -254,7 +247,7 @@ describe('DiscoverTab', () => {
       },
     };
     renderWithProvider(<DiscoverTab />);
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: '999' } });
     fireEvent.click(screen.getByText('Lookup'));
     expect(screen.getByText('Looked Up Movie')).toBeInTheDocument();
@@ -276,7 +269,7 @@ describe('DiscoverTab', () => {
       },
     };
     renderWithProvider(<DiscoverTab />);
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: '888' } });
     fireEvent.click(screen.getByText('Lookup'));
     expect(screen.getByText('Famous Actor')).toBeInTheDocument();
@@ -284,7 +277,7 @@ describe('DiscoverTab', () => {
 
   it('submits search on Enter key', () => {
     renderWithProvider(<DiscoverTab />);
-    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: 'Pushpa' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(mockSearchMutate).toHaveBeenCalledWith('Pushpa');

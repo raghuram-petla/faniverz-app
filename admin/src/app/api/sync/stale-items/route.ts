@@ -22,17 +22,28 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
+    // @nullable sinceYear — when provided, restricts results to movies released from that year onward
+    const sinceYear = searchParams.get('sinceYear')
+      ? parseInt(searchParams.get('sinceYear')!, 10)
+      : undefined;
+
     if (type === 'movies') {
       // @assumes: days defaults to 30 if not provided; movies not synced within that window are stale
       const days = parseInt(searchParams.get('days') ?? '30', 10);
       const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('movies')
         .select('id, title, tmdb_id, tmdb_last_synced_at')
         .not('tmdb_id', 'is', null)
         // @edge: movies with null tmdb_last_synced_at are treated as never-synced (most stale)
-        .or(`tmdb_last_synced_at.is.null,tmdb_last_synced_at.lt.${cutoff}`)
+        .or(`tmdb_last_synced_at.is.null,tmdb_last_synced_at.lt.${cutoff}`);
+
+      if (sinceYear) {
+        query = query.gte('release_date', `${sinceYear}-01-01`);
+      }
+
+      const { data, error } = await query
         .order('tmdb_last_synced_at', { ascending: true, nullsFirst: true })
         .limit(200);
 
@@ -42,6 +53,16 @@ export async function GET(request: NextRequest) {
 
     if (type === 'actors-missing-bios') {
       // @assumes: only actors with tmdb_person_id can have their bio fetched — excludes manual entries
+      // @edge: when sinceYear is set, only actors appearing in movies from that year onward are included
+      if (sinceYear) {
+        const { data, error } = await supabase.rpc('actors_missing_bios_since', {
+          since_year: sinceYear,
+          max_items: 200,
+        });
+        if (error) throw error;
+        return NextResponse.json({ type: 'actors-missing-bios', items: data ?? [] });
+      }
+
       const { data, error } = await supabase
         .from('actors')
         .select('id, name, tmdb_person_id')

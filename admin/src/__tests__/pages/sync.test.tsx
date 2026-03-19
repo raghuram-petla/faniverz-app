@@ -115,16 +115,14 @@ describe('SyncPage', () => {
     expect(screen.getByText('History')).toBeInTheDocument();
   });
 
-  it('defaults to Discover tab active showing "Search & Import" heading', () => {
+  it('defaults to Discover tab active with search input', () => {
     renderWithProviders(<SyncPage />);
-    expect(screen.getByText('Search & Import')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search movies, actors, or TMDB ID...')).toBeInTheDocument();
   });
 
   it('renders search input and discover controls in Discover tab', () => {
     renderWithProviders(<SyncPage />);
-    expect(
-      screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...'),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search movies, actors, or TMDB ID...')).toBeInTheDocument();
     const discoverButtons = screen.getAllByText('Discover');
     expect(discoverButtons.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('All months')).toBeInTheDocument();

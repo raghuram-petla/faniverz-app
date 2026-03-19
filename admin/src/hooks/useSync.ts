@@ -168,13 +168,18 @@ export function useRefreshActor() {
 }
 
 /** Fetch stale movies or actors missing bios. */
-// @nullable days param — omitted uses server default staleness threshold
-export function useStaleItems(type: 'movies' | 'actors-missing-bios', days?: number) {
+// @nullable days — omitted uses server default; sinceYear — restricts to movies from that year onward
+export function useStaleItems(
+  type: 'movies' | 'actors-missing-bios',
+  days?: number,
+  sinceYear?: number,
+) {
   const params = new URLSearchParams({ type });
   if (days !== undefined) params.set('days', String(days));
+  if (sinceYear !== undefined) params.set('sinceYear', String(sinceYear));
 
   return useQuery({
-    queryKey: ['admin', 'sync', 'stale', type, days],
+    queryKey: ['admin', 'sync', 'stale', type, days, sinceYear],
     queryFn: () => syncApi<StaleItemsResponse>(`stale-items?${params.toString()}`),
   });
 }

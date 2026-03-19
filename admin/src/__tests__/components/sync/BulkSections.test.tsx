@@ -9,6 +9,8 @@ describe('StaleMoviesSection', () => {
   const defaultProps = {
     staleDays: 30,
     onStaleDaysChange: vi.fn(),
+    sinceYear: 2023,
+    onSinceYearChange: vi.fn(),
     staleMovies: {
       data: { items: [] as { id: string; title?: string; tmdb_last_synced_at?: string | null }[] },
       isLoading: false,

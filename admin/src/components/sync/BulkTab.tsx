@@ -7,8 +7,9 @@ import { StaleMoviesSection, MissingBiosSection, BulkProgressPanel } from './Bul
 /** @contract orchestrates bulk TMDB sync: stale movie refresh + missing actor bio fetch */
 export function BulkTab() {
   const [staleDays, setStaleDays] = useState(30);
-  const staleMovies = useStaleItems('movies', staleDays);
-  const missingBios = useStaleItems('actors-missing-bios');
+  const [sinceYear, setSinceYear] = useState(new Date().getFullYear() - 3);
+  const staleMovies = useStaleItems('movies', staleDays, sinceYear);
+  const missingBios = useStaleItems('actors-missing-bios', undefined, sinceYear);
   const refreshMovie = useRefreshMovie();
   const refreshActor = useRefreshActor();
   const [showStaleList, setShowStaleList] = useState(false);
@@ -88,23 +89,27 @@ export function BulkTab() {
 
   return (
     <div className="space-y-6">
-      <StaleMoviesSection
-        staleDays={staleDays}
-        onStaleDaysChange={setStaleDays}
-        staleMovies={staleMovies}
-        showList={showStaleList}
-        onToggleList={() => setShowStaleList((v) => !v)}
-        onRefreshAll={handleBulkRefreshMovies}
-        isBulkRunning={isBulkRunning}
-      />
+      <div className="flex flex-wrap gap-4">
+        <StaleMoviesSection
+          staleDays={staleDays}
+          onStaleDaysChange={setStaleDays}
+          sinceYear={sinceYear}
+          onSinceYearChange={setSinceYear}
+          staleMovies={staleMovies}
+          showList={showStaleList}
+          onToggleList={() => setShowStaleList((v) => !v)}
+          onRefreshAll={handleBulkRefreshMovies}
+          isBulkRunning={isBulkRunning}
+        />
 
-      <MissingBiosSection
-        missingBios={missingBios}
-        showList={showBioList}
-        onToggleList={() => setShowBioList((v) => !v)}
-        onFetchAll={handleBulkRefreshActors}
-        isBulkRunning={isBulkRunning}
-      />
+        <MissingBiosSection
+          missingBios={missingBios}
+          showList={showBioList}
+          onToggleList={() => setShowBioList((v) => !v)}
+          onFetchAll={handleBulkRefreshActors}
+          isBulkRunning={isBulkRunning}
+        />
+      </div>
 
       {bulkProgress && <BulkProgressPanel progress={bulkProgress} />}
     </div>

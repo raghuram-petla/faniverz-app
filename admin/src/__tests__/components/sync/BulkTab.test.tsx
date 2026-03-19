@@ -91,7 +91,7 @@ describe('BulkTab', () => {
 
   it('renders stale days select with default 30 days', () => {
     renderWithProvider(<BulkTab />);
-    expect(screen.getByText('Not synced in')).toBeInTheDocument();
+    expect(screen.getByText('not synced in')).toBeInTheDocument();
     const select = screen.getByDisplayValue('30 days');
     expect(select).toBeInTheDocument();
   });
@@ -126,7 +126,7 @@ describe('BulkTab', () => {
     };
     renderWithProvider(<BulkTab />);
     expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByText(/movies/)).toBeInTheDocument();
+    expect(screen.getByText('Stale Movies')).toBeInTheDocument();
   });
 
   it('shows missing bios count when data is loaded', () => {
