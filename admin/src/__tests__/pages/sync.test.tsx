@@ -4,6 +4,58 @@ import { vi } from 'vitest';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
+vi.mock('@/hooks/useSync', () => ({
+  useTmdbSearch: () => ({
+    mutate: vi.fn(),
+    data: undefined,
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+  useDiscoverMovies: () => ({
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    data: undefined,
+    isPending: false,
+    isError: false,
+    error: null,
+  }),
+  useTmdbLookup: () => ({
+    mutate: vi.fn(),
+    reset: vi.fn(),
+    isPending: false,
+    isError: false,
+    data: undefined,
+  }),
+  useImportMovies: () => ({ mutateAsync: vi.fn(), isPending: false, isSuccess: false }),
+  useImportActor: () => ({ mutateAsync: vi.fn(), isPending: false, isSuccess: false, data: null }),
+  useRefreshActor: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    data: null,
+  }),
+  useFillFields: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRefreshMovie: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+    error: null,
+    data: null,
+  }),
+  useStaleItems: () => ({ data: undefined, isPending: false, isError: false, refetch: vi.fn() }),
+}));
+
+vi.mock('@/hooks/useBulkFillMissing', () => ({
+  useBulkFillMissing: () => ({
+    run: vi.fn(),
+    reset: vi.fn(),
+    state: { total: 0, done: 0, failed: 0, isRunning: false, error: null },
+  }),
+}));
+
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: vi.fn(() => ({
@@ -29,6 +81,10 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({}),
 }));
 
+vi.mock('@/hooks/useDebouncedSearch', () => ({
+  useDebouncedSearch: () => ({ search: '', setSearch: vi.fn(), debouncedSearch: '' }),
+}));
+
 // Mock fetch for sync API calls
 vi.stubGlobal(
   'fetch',
@@ -50,34 +106,28 @@ function renderWithProviders(ui: React.ReactElement) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('SyncPage', () => {
-  it('renders all five tab buttons', () => {
+  it('renders all three tab buttons', () => {
     renderWithProviders(<SyncPage />);
-    // Use getAllByText for "Discover" since it appears in tab + Discover button
+    // "Discover" appears in both the tab button and the DiscoverTab's Discover button
     const discoverButtons = screen.getAllByText('Discover');
     expect(discoverButtons.length).toBeGreaterThanOrEqual(1);
-    // Tab buttons specifically inside the tab bar
-    expect(screen.getByText('Import')).toBeInTheDocument();
-    expect(screen.getByText('Refresh')).toBeInTheDocument();
     expect(screen.getByText('Bulk')).toBeInTheDocument();
     expect(screen.getByText('History')).toBeInTheDocument();
   });
 
-  it('defaults to Discover tab active', () => {
+  it('defaults to Discover tab active showing "Search & Import" heading', () => {
     renderWithProviders(<SyncPage />);
-    expect(screen.getByText('Discover Movies')).toBeInTheDocument();
+    expect(screen.getByText('Search & Import')).toBeInTheDocument();
   });
 
-  it('switches to Import tab on click', () => {
+  it('renders search input and discover controls in Discover tab', () => {
     renderWithProviders(<SyncPage />);
-    fireEvent.click(screen.getByText('Import'));
-    expect(screen.getByText('Import by TMDB ID')).toBeInTheDocument();
-  });
-
-  it('switches to Refresh tab on click', () => {
-    renderWithProviders(<SyncPage />);
-    fireEvent.click(screen.getByText('Refresh'));
-    expect(screen.getByText('Refresh Movie')).toBeInTheDocument();
-    expect(screen.getByText('Refresh Actor')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...'),
+    ).toBeInTheDocument();
+    const discoverButtons = screen.getAllByText('Discover');
+    expect(discoverButtons.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('All months')).toBeInTheDocument();
   });
 
   it('switches to Bulk tab on click', () => {
@@ -93,27 +143,5 @@ describe('SyncPage', () => {
     // History tab has filter selects and a table
     const selects = screen.getAllByRole('combobox');
     expect(selects.length).toBeGreaterThanOrEqual(2); // status + function filters
-  });
-
-  it('renders Discover tab with year and month selectors', () => {
-    renderWithProviders(<SyncPage />);
-    expect(screen.getByText('Year')).toBeInTheDocument();
-    expect(screen.getByText('Month')).toBeInTheDocument();
-  });
-
-  it('renders Import tab with type label and TMDB ID input', () => {
-    renderWithProviders(<SyncPage />);
-    fireEvent.click(screen.getByText('Import'));
-
-    expect(screen.getByText('Type')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('e.g. 823464')).toBeInTheDocument();
-  });
-
-  it('renders Refresh tab with movie and actor search inputs', () => {
-    renderWithProviders(<SyncPage />);
-    fireEvent.click(screen.getByText('Refresh'));
-
-    expect(screen.getByPlaceholderText('Search movie by title...')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Search actor by name...')).toBeInTheDocument();
   });
 });

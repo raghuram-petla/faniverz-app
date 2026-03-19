@@ -1,215 +1,132 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useDiscoverMovies, useImportMovies } from '@/hooks/useSync';
-import type { DiscoverResult, ExistingMovieData } from '@/hooks/useSync';
-import { Globe, Loader2 } from 'lucide-react';
-import { CURRENT_YEAR, YEARS, MONTHS, type ImportProgress } from './syncHelpers';
-import { DiscoverResults, ImportProgressList } from './DiscoverResults';
+import { useState } from 'react';
+import {
+  useDiscoverMovies,
+  useTmdbSearch,
+  useTmdbLookup,
+  useImportMovies,
+  useImportActor,
+  useRefreshActor,
+} from '@/hooks/useSync';
+import type { LookupResult, TmdbSearchAllResult, DiscoverResult } from '@/hooks/useSync';
+import { Search, Globe, Loader2 } from 'lucide-react';
+import { CURRENT_YEAR, YEARS, MONTHS } from './syncHelpers';
+import { SearchResultsPanel } from './SearchResultsPanel';
+import { DiscoverByYear } from './DiscoverByYear';
+import { MoviePreview } from './MoviePreview';
+import { PersonPreview } from './PersonPreview';
 
-/** @contract discovers Telugu movies from TMDB by year/month and supports batch import */
+type ResultMode = 'search' | 'discover' | 'lookup';
+
+/** @contract Unified TMDB sync — search bar + discover by year, one results area */
 export function DiscoverTab() {
+  const [query, setQuery] = useState('');
   const [year, setYear] = useState(CURRENT_YEAR);
   const [month, setMonth] = useState(0);
-  const discover = useDiscoverMovies();
-  const importMovies = useImportMovies();
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
-  /** @edge tracks TMDB IDs imported this session — merged into existingSet so cards disappear */
-  const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
+  const [resultMode, setResultMode] = useState<ResultMode | null>(null);
+  /** @edge stores the label shown above results — set at trigger time, not from live input */
+  const [resultLabel, setResultLabel] = useState('');
 
-  /** @boundary DiscoverResult shape returned by useDiscoverMovies — cast needed due to mutation generic */
-  const data = discover.data as DiscoverResult | undefined;
-  /** @edge tracks movies imported this session — merged into existingMovies for display */
-  const [importedMovieData, setImportedMovieData] = useState<ExistingMovieData[]>([]);
-  /** @invariant existingSet rebuilt only when existingMovies changes — used to mark imported movies */
-  const existingMovies = useMemo(
-    () => [...((data?.existingMovies ?? []) as ExistingMovieData[]), ...importedMovieData],
-    [data?.existingMovies, importedMovieData],
-  );
-  const existingSet = useMemo(
-    () => new Set([...existingMovies.map((m) => m.tmdb_id), ...importedIds]),
-    [existingMovies, importedIds],
-  );
-  const newMovies = useMemo(
-    () => (data?.results ?? []).filter((m) => !existingSet.has(m.id)),
-    [data?.results, existingSet],
-  );
-  // @edge gap count is 0 — real gaps can only be determined after per-movie TMDB lookup
-  const gapCount = 0;
+  const search = useTmdbSearch();
+  const discover = useDiscoverMovies();
+  const lookup = useTmdbLookup();
+  const importMovies = useImportMovies();
+  const importActor = useImportActor();
+  const refreshActor = useRefreshActor();
+
+  const isNumeric = /^\d+$/.test(query.trim());
+  const isPending = search.isPending || lookup.isPending;
+
+  const handleSearch = () => {
+    if (!query.trim() || query.trim().length < 2) return;
+    if (isNumeric) {
+      lookup.mutate({ tmdbId: parseInt(query.trim(), 10), type: 'movie' });
+      setResultMode('lookup');
+      setResultLabel(`TMDB ID: ${query.trim()}`);
+    } else {
+      search.mutate(query.trim());
+      setResultMode('search');
+      setResultLabel(query.trim());
+    }
+  };
 
   const handleDiscover = () => {
-    setSelected(new Set());
-    setImportProgress([]);
-    setImportedIds(new Set());
-    setImportedMovieData([]);
+    const monthName = month ? MONTHS[month - 1] : '';
+    setResultLabel(monthName ? `${monthName} ${year}` : `${year}`);
     discover.mutate({ year, month: month || undefined });
+    setResultMode('discover');
   };
 
-  const toggleSelect = (tmdbId: number) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(tmdbId)) next.delete(tmdbId);
-      else next.add(tmdbId);
-      return next;
-    });
+  /** @sideeffect imports movie from TMDB ID lookup — no re-lookup to avoid flash */
+  const handleLookupImport = async () => {
+    const result = lookup.data as LookupResult | undefined;
+    if (!result || result.type !== 'movie') return;
+    await importMovies.mutateAsync([result.data.tmdbId]);
   };
 
-  const selectAllNew = () => setSelected(new Set(newMovies.map((m) => m.id)));
-
-  /**
-   * @sideeffect Shared batch-import loop used by both handleImport and handleImportAllNew.
-   * @edge batch size of 5 prevents TMDB rate-limit hits; per-batch errors are captured individually
-   */
-  const runBatchImport = async (movies: Array<{ id: number; title: string }>) => {
-    setImportProgress(
-      movies.map((m) => ({ tmdbId: m.id, title: m.title, status: 'pending' as const })),
-    );
-    const ids = movies.map((m) => m.id);
-    for (let i = 0; i < ids.length; i += 5) {
-      const batch = ids.slice(i, i + 5);
-      setImportProgress((prev) =>
-        prev.map((p) => (batch.includes(p.tmdbId) ? { ...p, status: 'importing' } : p)),
-      );
-      try {
-        const response = await importMovies.mutateAsync(batch);
-        // @sideeffect track successfully imported movies so they move to existing section
-        const successResults = response.results;
-        if (successResults.length > 0) {
-          setImportedIds((prev) => new Set([...prev, ...successResults.map((r) => r.tmdbId)]));
-          // Construct ExistingMovieData from import results + TMDB discover data
-          const tmdbResults = data?.results ?? [];
-          const newExisting: ExistingMovieData[] = successResults.map((r) => {
-            const tmdb = tmdbResults.find((m) => m.id === r.tmdbId);
-            return {
-              id: r.movieId,
-              tmdb_id: r.tmdbId,
-              title: r.title,
-              synopsis: null,
-              poster_url: tmdb?.poster_path
-                ? `https://image.tmdb.org/t/p/w500${tmdb.poster_path}`
-                : null,
-              backdrop_url: null,
-              trailer_url: null,
-              director: null,
-              runtime: null,
-              genres: null,
-            };
-          });
-          setImportedMovieData((prev) => [...prev, ...newExisting]);
-        }
-        setImportProgress((prev) =>
-          prev.map((p) => {
-            if (!batch.includes(p.tmdbId)) return p;
-            const result = response.results.find((r) => r.tmdbId === p.tmdbId);
-            const error = response.errors.find((e) => e.tmdbId === p.tmdbId);
-            if (error) return { ...p, status: 'failed', error: error.message };
-            if (result) return { ...p, status: 'done', result };
-            return { ...p, status: 'done' };
-          }),
-        );
-      } catch (err) {
-        setImportProgress((prev) =>
-          prev.map((p) =>
-            batch.includes(p.tmdbId)
-              ? {
-                  ...p,
-                  status: 'failed',
-                  error: err instanceof Error ? err.message : 'Import failed',
-                }
-              : p,
-          ),
-        );
-      }
-    }
-    setSelected(new Set());
+  const handleRefreshPerson = async () => {
+    const result = lookup.data as LookupResult | undefined;
+    if (!result || result.type !== 'person' || !result.existingId) return;
+    await refreshActor.mutateAsync(result.existingId);
   };
 
-  // @invariant: derived from importProgress — must be declared before handlers that read it
-  const isImporting = importProgress.some((p) => p.status === 'importing');
-
-  /** @sideeffect One-click import all new — skips the Select→Import two-step */
-  const handleImportAllNew = () => {
-    if (newMovies.length === 0 || isImporting) return;
-    setSelected(new Set(newMovies.map((m) => m.id)));
-    void runBatchImport(newMovies);
+  /** @sideeffect imports actor from TMDB — no re-lookup to avoid flash */
+  const handleImportPerson = async () => {
+    const result = lookup.data as LookupResult | undefined;
+    if (!result || result.type !== 'person') return;
+    await importActor.mutateAsync(result.data.tmdbPersonId);
   };
 
-  /** @sideeffect imports currently selected movies */
-  const handleImport = async () => {
-    if (selected.size === 0) return;
-    const moviesList = (data?.results ?? []).filter((m) => selected.has(m.id));
-    await runBatchImport(moviesList);
-  };
+  const lookupResult = lookup.data as LookupResult | undefined;
+  const searchData = search.data as TmdbSearchAllResult | undefined;
+  const discoverData = discover.data as DiscoverResult | undefined;
 
   return (
     <div className="space-y-6">
-      <DiscoverForm
-        year={year}
-        month={month}
-        isPending={discover.isPending}
-        onYearChange={setYear}
-        onMonthChange={setMonth}
-        onDiscover={handleDiscover}
-      />
-
-      {discover.isError && (
-        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-status-red text-sm">
-          {discover.error instanceof Error ? discover.error.message : 'Discovery failed'}
+      {/* ── Search OR Discover ── */}
+      <div className="max-w-2xl mx-auto bg-surface-card border border-outline rounded-xl p-5 space-y-4">
+        {/* Search */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-subtle" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="Search movies, actors, or TMDB ID..."
+              className="w-full bg-input rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface placeholder:text-on-surface-subtle outline-none focus:ring-2 focus:ring-red-600"
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            disabled={isPending || query.trim().length < 2}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shrink-0"
+          >
+            {isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Search className="w-4 h-4" />
+            )}
+            {isNumeric ? 'Lookup' : 'Search'}
+          </button>
         </div>
-      )}
 
-      {data && (
-        <DiscoverResults
-          results={data.results}
-          existingMovies={existingMovies}
-          existingSet={existingSet}
-          newMovies={newMovies}
-          selected={selected}
-          isImporting={isImporting}
-          gapCount={gapCount}
-          onToggleSelect={toggleSelect}
-          onSelectAllNew={selectAllNew}
-          onDeselectAll={() => setSelected(new Set())}
-          onImport={handleImport}
-          onImportAllNew={handleImportAllNew}
-          importedIds={importedIds}
-        />
-      )}
+        {/* OR divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-outline" />
+          <span className="text-xs font-medium text-on-surface-muted uppercase tracking-wider">
+            or
+          </span>
+          <div className="flex-1 h-px bg-outline" />
+        </div>
 
-      {importProgress.length > 0 && <ImportProgressList items={importProgress} />}
-    </div>
-  );
-}
-
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-export interface DiscoverFormProps {
-  year: number;
-  month: number;
-  isPending: boolean;
-  onYearChange: (year: number) => void;
-  onMonthChange: (month: number) => void;
-  onDiscover: () => void;
-}
-
-function DiscoverForm({
-  year,
-  month,
-  isPending,
-  onYearChange,
-  onMonthChange,
-  onDiscover,
-}: DiscoverFormProps) {
-  return (
-    <div className="bg-surface-card border border-outline rounded-xl p-5">
-      <h2 className="text-lg font-semibold text-on-surface mb-4">Discover Movies</h2>
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Year</label>
+        {/* Discover by year */}
+        <div className="flex items-center justify-center gap-2">
           <select
             value={year}
-            onChange={(e) => onYearChange(Number(e.target.value))}
+            onChange={(e) => setYear(Number(e.target.value))}
             className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           >
             {YEARS.map((y) => (
@@ -218,12 +135,9 @@ function DiscoverForm({
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className="block text-xs text-on-surface-muted mb-1">Month</label>
           <select
             value={month}
-            onChange={(e) => onMonthChange(Number(e.target.value))}
+            onChange={(e) => setMonth(Number(e.target.value))}
             className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           >
             <option value={0}>All months</option>
@@ -233,16 +147,77 @@ function DiscoverForm({
               </option>
             ))}
           </select>
+          <button
+            onClick={handleDiscover}
+            disabled={discover.isPending}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shrink-0"
+          >
+            {discover.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Globe className="w-4 h-4" />
+            )}
+            Discover
+          </button>
         </div>
-        <button
-          onClick={onDiscover}
-          disabled={isPending}
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-        >
-          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-          Discover
-        </button>
       </div>
+
+      {/* ── Error display ── */}
+      {(search.isError || lookup.isError || discover.isError) && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-status-red text-sm">
+          {(search.error ?? lookup.error ?? discover.error) instanceof Error
+            ? (search.error ?? lookup.error ?? discover.error)?.message
+            : 'Operation failed'}
+        </div>
+      )}
+
+      {/* ── Results area ── */}
+      {resultMode && resultLabel && (
+        <p className="text-sm text-on-surface-muted">
+          Results for{' '}
+          <span className="text-on-surface font-medium">&ldquo;{resultLabel}&rdquo;</span>
+        </p>
+      )}
+
+      {resultMode === 'search' && searchData && <SearchResultsPanel data={searchData} />}
+
+      {resultMode === 'discover' && discoverData && <DiscoverByYear data={discoverData} />}
+
+      {resultMode === 'lookup' && lookupResult?.type === 'movie' && (
+        <>
+          <MoviePreview
+            result={importMovies.isSuccess ? { ...lookupResult, existsInDb: true } : lookupResult}
+            isPending={importMovies.isPending}
+            onImport={handleLookupImport}
+          />
+          {importMovies.isSuccess && (
+            <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">
+              Import completed successfully.
+            </div>
+          )}
+        </>
+      )}
+
+      {resultMode === 'lookup' && lookupResult?.type === 'person' && (
+        <>
+          <PersonPreview
+            result={importActor.isSuccess ? { ...lookupResult, existsInDb: true } : lookupResult}
+            isPending={refreshActor.isPending || importActor.isPending}
+            onRefresh={handleRefreshPerson}
+            onImport={handleImportPerson}
+          />
+          {importActor.isSuccess && (
+            <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">
+              Actor imported: {importActor.data?.result?.name}
+            </div>
+          )}
+          {refreshActor.isSuccess && (
+            <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">
+              Actor refreshed. Updated: {refreshActor.data?.result?.fields?.join(', ') || 'none'}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

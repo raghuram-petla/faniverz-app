@@ -88,6 +88,13 @@ export interface TmdbPerson {
   gender: number;
 }
 
+export interface TmdbSearchPerson {
+  id: number;
+  name: string;
+  profile_path: string | null;
+  known_for_department: string | null;
+}
+
 // ── Crew role mapping ─────────────────────────────────────────────────────────
 
 // @coupling: these job titles must match TMDB's exact English strings — TMDB does not
@@ -258,4 +265,25 @@ export async function getPersonDetails(tmdbPersonId: number, apiKey: string): Pr
 export function extractTrailerUrl(videos: TmdbVideo[]): string | null {
   const trailer = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
   return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
+}
+
+// ── Search API ────────────────────────────────────────────────────────────────
+
+/** @boundary Search TMDB for Telugu movies by title. Returns first page (20 results). */
+export async function searchMovies(query: string, apiKey: string): Promise<TmdbDiscoverMovie[]> {
+  const data = await tmdbGet<{ results: TmdbDiscoverMovie[] }>('/search/movie', {
+    api_key: apiKey,
+    query,
+    with_original_language: 'te',
+  });
+  return data.results;
+}
+
+/** @boundary Search TMDB for persons by name. Returns first page (20 results). */
+export async function searchPersons(query: string, apiKey: string): Promise<TmdbSearchPerson[]> {
+  const data = await tmdbGet<{ results: TmdbSearchPerson[] }>('/search/person', {
+    api_key: apiKey,
+    query,
+  });
+  return data.results;
 }

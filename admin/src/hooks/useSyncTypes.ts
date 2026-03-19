@@ -1,4 +1,4 @@
-import type { TmdbDiscoverMovie } from '@/lib/tmdb';
+import type { TmdbDiscoverMovie, TmdbSearchPerson } from '@/lib/tmdb';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -100,4 +100,10 @@ export interface StaleItemsResponse {
   type: string;
   items: StaleItem[];
   days?: number;
+}
+
+/** @contract Response from /api/sync/search — combined movies + actors */
+export interface TmdbSearchAllResult {
+  movies: { results: TmdbDiscoverMovie[]; existingTmdbIds: number[] };
+  actors: { results: TmdbSearchPerson[]; existingTmdbPersonIds: number[] };
 }

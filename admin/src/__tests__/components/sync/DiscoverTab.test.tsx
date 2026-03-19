@@ -1,31 +1,70 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+const mockSearchMutate = vi.hoisted(() => vi.fn());
 const mockDiscoverMutate = vi.hoisted(() => vi.fn());
-const mockImportMutateAsync = vi.hoisted(() => vi.fn());
-const mockDiscoverReset = vi.hoisted(() => vi.fn());
-const mockDiscoverData = vi.hoisted(() => ({ current: undefined as unknown }));
+const mockLookupMutate = vi.hoisted(() => vi.fn());
+const mockSearchState = vi.hoisted(() => ({
+  isPending: false,
+  isError: false,
+  error: null as Error | null,
+  data: undefined as unknown,
+}));
 const mockDiscoverState = vi.hoisted(() => ({
   isPending: false,
   isError: false,
   error: null as Error | null,
+  data: undefined as unknown,
+}));
+const mockLookupState = vi.hoisted(() => ({
+  isPending: false,
+  isError: false,
+  error: null as Error | null,
+  data: undefined as unknown,
 }));
 
 vi.mock('@/hooks/useSync', () => ({
+  useTmdbSearch: () => ({
+    mutate: mockSearchMutate,
+    isPending: mockSearchState.isPending,
+    isError: mockSearchState.isError,
+    error: mockSearchState.error,
+    data: mockSearchState.data,
+  }),
   useDiscoverMovies: () => ({
     mutate: mockDiscoverMutate,
-    reset: mockDiscoverReset,
-    data: mockDiscoverData.current,
+    reset: vi.fn(),
     isPending: mockDiscoverState.isPending,
     isError: mockDiscoverState.isError,
     error: mockDiscoverState.error,
+    data: mockDiscoverState.data,
+  }),
+  useTmdbLookup: () => ({
+    mutate: mockLookupMutate,
+    reset: vi.fn(),
+    isPending: mockLookupState.isPending,
+    isError: mockLookupState.isError,
+    error: mockLookupState.error,
+    data: mockLookupState.data,
   }),
   useImportMovies: () => ({
-    mutateAsync: mockImportMutateAsync,
+    mutateAsync: vi.fn(),
     isPending: false,
+    isSuccess: false,
   }),
-  // ExistingMovieSync hooks — needed when existingMovies is non-empty
-  useTmdbLookup: () => ({ mutate: vi.fn(), isPending: false, isError: false, data: undefined }),
+  useImportActor: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    data: null,
+  }),
+  useRefreshActor: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    data: null,
+  }),
   useFillFields: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
@@ -35,6 +74,10 @@ vi.mock('@/hooks/useBulkFillMissing', () => ({
     reset: vi.fn(),
     state: { total: 0, done: 0, failed: 0, isRunning: false, error: null },
   }),
+}));
+
+vi.mock('@/hooks/useDebouncedSearch', () => ({
+  useDebouncedSearch: () => ({ search: '', setSearch: vi.fn(), debouncedSearch: '' }),
 }));
 
 vi.mock('@/lib/supabase-browser', () => ({
@@ -47,6 +90,7 @@ vi.mock('@/lib/supabase-browser', () => ({
       eq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
     })),
     auth: {
@@ -59,235 +103,190 @@ vi.mock('@/lib/supabase-browser', () => ({
 
 import { DiscoverTab } from '@/components/sync/DiscoverTab';
 
-function createQueryClient() {
-  return new QueryClient({ defaultOptions: { queries: { retry: false } } });
-}
-
 function renderWithProvider(ui: React.ReactElement) {
-  const qc = createQueryClient();
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
-const makeExisting = (tmdb_id: number, title: string) => ({
-  id: `uuid-${tmdb_id}`,
-  tmdb_id,
-  title,
-  synopsis: null,
-  poster_url: null,
-  backdrop_url: null,
-  trailer_url: null,
-  director: null,
-  runtime: null,
-  genres: null,
-});
-
 beforeEach(() => {
   vi.clearAllMocks();
-  mockDiscoverData.current = undefined;
+  mockSearchState.isPending = false;
+  mockSearchState.isError = false;
+  mockSearchState.error = null;
+  mockSearchState.data = undefined;
   mockDiscoverState.isPending = false;
   mockDiscoverState.isError = false;
   mockDiscoverState.error = null;
+  mockDiscoverState.data = undefined;
+  mockLookupState.isPending = false;
+  mockLookupState.isError = false;
+  mockLookupState.error = null;
+  mockLookupState.data = undefined;
 });
 
 describe('DiscoverTab', () => {
-  it('renders the discover form with year and month selects', () => {
+  it('renders the "Search & Import" heading', () => {
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Discover Movies')).toBeInTheDocument();
-    expect(screen.getByText('Year')).toBeInTheDocument();
-    expect(screen.getByText('Month')).toBeInTheDocument();
+    expect(screen.getByText('Search & Import')).toBeInTheDocument();
+  });
+
+  it('renders search input and discover controls', () => {
+    renderWithProvider(<DiscoverTab />);
+    expect(
+      screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('All months')).toBeInTheDocument();
     expect(screen.getByText('Discover')).toBeInTheDocument();
   });
 
-  it('renders the year select with current year selected', () => {
+  it('shows "Search" button when input is text', () => {
     renderWithProvider(<DiscoverTab />);
-    const currentYear = new Date().getFullYear();
-    const yearSelect = screen.getByText('Year').nextElementSibling as HTMLSelectElement;
-    expect(yearSelect.value).toBe(String(currentYear));
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: 'Pushpa' } });
+    expect(screen.getByText('Search')).toBeInTheDocument();
   });
 
-  it('renders the month select with "All months" as default', () => {
+  it('shows "Lookup" button when input is numeric', () => {
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('All months')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: '12345' } });
+    expect(screen.getByText('Lookup')).toBeInTheDocument();
   });
 
-  it('calls discover mutate when Discover button is clicked', () => {
+  it('calls useTmdbSearch when text query is submitted', () => {
+    renderWithProvider(<DiscoverTab />);
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: 'Pushpa' } });
+    fireEvent.click(screen.getByText('Search'));
+    expect(mockSearchMutate).toHaveBeenCalledWith('Pushpa');
+  });
+
+  it('calls useTmdbLookup when numeric ID is submitted', () => {
+    renderWithProvider(<DiscoverTab />);
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.click(screen.getByText('Lookup'));
+    expect(mockLookupMutate).toHaveBeenCalledWith({ tmdbId: 12345, type: 'movie' });
+  });
+
+  it('calls useDiscoverMovies when Discover is clicked', () => {
     renderWithProvider(<DiscoverTab />);
     fireEvent.click(screen.getByText('Discover'));
-    expect(mockDiscoverMutate).toHaveBeenCalledTimes(1);
+    expect(mockDiscoverMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ year: expect.any(Number) }),
+    );
   });
 
-  it('passes year and month to discover mutate', () => {
-    renderWithProvider(<DiscoverTab />);
-    const currentYear = new Date().getFullYear();
-    fireEvent.click(screen.getByText('Discover'));
-    expect(mockDiscoverMutate).toHaveBeenCalledWith({
-      year: currentYear,
-      month: undefined,
-    });
-  });
-
-  it('passes selected month to discover mutate', () => {
-    renderWithProvider(<DiscoverTab />);
-    const monthSelect = screen.getByText('Month').nextElementSibling as HTMLSelectElement;
-    fireEvent.change(monthSelect, { target: { value: '3' } });
-    fireEvent.click(screen.getByText('Discover'));
-    expect(mockDiscoverMutate).toHaveBeenCalledWith(expect.objectContaining({ month: 3 }));
-  });
-
-  it('shows error message when discover fails', () => {
-    mockDiscoverState.isError = true;
-    mockDiscoverState.error = new Error('TMDB API timeout');
+  it('shows error when search fails', () => {
+    mockSearchState.isError = true;
+    mockSearchState.error = new Error('TMDB API timeout');
     renderWithProvider(<DiscoverTab />);
     expect(screen.getByText('TMDB API timeout')).toBeInTheDocument();
   });
 
-  it('shows generic error when error is not an Error instance', () => {
+  it('shows error when discover fails', () => {
     mockDiscoverState.isError = true;
-    mockDiscoverState.error = null;
+    mockDiscoverState.error = new Error('Discover failed');
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Discovery failed')).toBeInTheDocument();
+    expect(screen.getByText('Discover failed')).toBeInTheDocument();
   });
 
-  it('shows results summary when data is returned', () => {
-    mockDiscoverData.current = {
-      results: [
-        { id: 1, title: 'Movie A', poster_path: null, release_date: '2024-01-01' },
-        { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
-        { id: 3, title: 'Movie C', poster_path: '/poster.jpg', release_date: '2024-03-01' },
-      ],
-      existingMovies: [makeExisting(1, 'Movie A')],
+  it('shows error when lookup fails', () => {
+    mockLookupState.isError = true;
+    mockLookupState.error = new Error('Lookup timeout');
+    renderWithProvider(<DiscoverTab />);
+    expect(screen.getByText('Lookup timeout')).toBeInTheDocument();
+  });
+
+  it('shows generic error when error is not an Error instance', () => {
+    mockSearchState.isError = true;
+    mockSearchState.error = null;
+    renderWithProvider(<DiscoverTab />);
+    expect(screen.getByText('Operation failed')).toBeInTheDocument();
+  });
+
+  it('shows SearchResultsPanel when search has data', () => {
+    mockSearchState.data = {
+      movies: {
+        results: [{ id: 1, title: 'Movie A', poster_path: null, release_date: '2024-01-01' }],
+        existingTmdbIds: [],
+      },
+      actors: { results: [], existingTmdbPersonIds: [] },
     };
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('3')).toBeInTheDocument(); // total found
-    expect(screen.getByText('1 imported')).toBeInTheDocument();
-    expect(screen.getByText('2 new')).toBeInTheDocument();
+    // Need to trigger search first to set resultMode
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: 'Movie' } });
+    fireEvent.click(screen.getByText('Search'));
+    // SearchResultsPanel renders movie heading
+    expect(screen.getByText('Movies (1)')).toBeInTheDocument();
   });
 
-  it('shows "Import all new" button for new movies', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' }],
+  it('shows DiscoverByYear when discover has data', () => {
+    mockDiscoverState.data = {
+      results: [{ id: 10, title: 'Discovered', poster_path: null, release_date: '2024-05-01' }],
       existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Import all new (1)')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Discover'));
+    // DiscoverByYear renders summary — the "1 new" text
+    expect(screen.getByText('1 new')).toBeInTheDocument();
   });
 
-  it('triggers batch import when "Import all new" is clicked', async () => {
-    // @sideeffect: handleImportAllNew calls runBatchImport which calls useImportMovies.mutateAsync
-    mockImportMutateAsync.mockResolvedValue({ syncLogId: 'log-1', results: [], errors: [] });
-    mockDiscoverData.current = {
-      results: [{ id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' }],
-      existingMovies: [],
+  it('shows MoviePreview when lookup returns movie data', () => {
+    mockLookupState.data = {
+      type: 'movie',
+      existsInDb: false,
+      existingId: null,
+      data: {
+        tmdbId: 999,
+        title: 'Looked Up Movie',
+        overview: 'desc',
+        releaseDate: '2024-01-01',
+        runtime: 120,
+        genres: ['Action'],
+        posterUrl: null,
+        backdropUrl: null,
+        director: 'Dir',
+        trailerUrl: null,
+        castCount: 5,
+        crewCount: 10,
+      },
     };
-    const { act } = await import('@testing-library/react');
     renderWithProvider(<DiscoverTab />);
-    await act(async () => {
-      fireEvent.click(screen.getByText('Import all new (1)'));
-    });
-    expect(mockImportMutateAsync).toHaveBeenCalledWith([1]);
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: '999' } });
+    fireEvent.click(screen.getByText('Lookup'));
+    expect(screen.getByText('Looked Up Movie')).toBeInTheDocument();
   });
 
-  it('does not show gap count on sync page', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 100, title: 'Has Gaps', poster_path: null, release_date: '2024-01-01' }],
-      existingMovies: [makeExisting(100, 'Has Gaps')],
+  it('shows PersonPreview when lookup returns person data', () => {
+    mockLookupState.data = {
+      type: 'person',
+      existsInDb: true,
+      existingId: 'actor-uuid',
+      data: {
+        tmdbPersonId: 888,
+        name: 'Famous Actor',
+        biography: 'Bio',
+        birthday: '1990-01-01',
+        placeOfBirth: 'India',
+        photoUrl: null,
+        gender: 2,
+      },
     };
     renderWithProvider(<DiscoverTab />);
-    expect(screen.queryByText(/with gaps/)).not.toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: '888' } });
+    fireEvent.click(screen.getByText('Lookup'));
+    expect(screen.getByText('Famous Actor')).toBeInTheDocument();
   });
 
-  it('renders movie cards for new results', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 100, title: 'Pushpa 2', poster_path: null, release_date: '2024-12-05' }],
-      existingMovies: [],
-    };
+  it('submits search on Enter key', () => {
     renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Pushpa 2')).toBeInTheDocument();
-    expect(screen.getByText('2024-12-05')).toBeInTheDocument();
-  });
-
-  it('shows ExistingMovieSync section for existing movies', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 100, title: 'Already Here', poster_path: null, release_date: '2024-01-01' }],
-      existingMovies: [makeExisting(100, 'Already Here')],
-    };
-    renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Existing movies')).toBeInTheDocument();
-  });
-
-  it('shows "Select all new" button when there are new movies', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' }],
-      existingMovies: [],
-    };
-    renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('Select all new (1)')).toBeInTheDocument();
-  });
-
-  it('selects a new movie when clicked and shows "Selected" badge', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 200, title: 'Selectable', poster_path: null, release_date: '2024-06-01' }],
-      existingMovies: [],
-    };
-    renderWithProvider(<DiscoverTab />);
-    fireEvent.click(screen.getByText('Selectable'));
-    expect(screen.getByText('Selected')).toBeInTheDocument();
-  });
-
-  it('shows import button after selecting movies', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 300, title: 'To Import', poster_path: null, release_date: '2024-07-01' }],
-      existingMovies: [],
-    };
-    renderWithProvider(<DiscoverTab />);
-    fireEvent.click(screen.getByText('To Import'));
-    expect(screen.getByText('Import 1 selected')).toBeInTheDocument();
-  });
-
-  it('deselects a movie when clicked again', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 400, title: 'Toggle Me', poster_path: null, release_date: '2024-08-01' }],
-      existingMovies: [],
-    };
-    renderWithProvider(<DiscoverTab />);
-    fireEvent.click(screen.getByText('Toggle Me'));
-    expect(screen.getByText('Selected')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Toggle Me'));
-    expect(screen.queryByText('Selected')).not.toBeInTheDocument();
-  });
-
-  it('select all new excludes existing movies', () => {
-    mockDiscoverData.current = {
-      results: [
-        { id: 500, title: 'New One', poster_path: null, release_date: '2024-01-01' },
-        { id: 501, title: 'New Two', poster_path: null, release_date: '2024-02-01' },
-        { id: 502, title: 'Existing', poster_path: null, release_date: '2024-03-01' },
-      ],
-      existingMovies: [makeExisting(502, 'Existing')],
-    };
-    renderWithProvider(<DiscoverTab />);
-    fireEvent.click(screen.getByText('Select all new (2)'));
-    expect(screen.getByText('Import 2 selected')).toBeInTheDocument();
-  });
-
-  it('renders poster image when poster_path is provided', () => {
-    mockDiscoverData.current = {
-      results: [
-        { id: 600, title: 'Poster Movie', poster_path: '/abc.jpg', release_date: '2024-01-01' },
-      ],
-      existingMovies: [],
-    };
-    renderWithProvider(<DiscoverTab />);
-    const img = screen.getByAltText('Poster Movie') as HTMLImageElement;
-    expect(img.src).toContain('https://image.tmdb.org/t/p/w200/abc.jpg');
-  });
-
-  it('shows "No date" when release_date is empty', () => {
-    mockDiscoverData.current = {
-      results: [{ id: 700, title: 'No Date Movie', poster_path: null, release_date: '' }],
-      existingMovies: [],
-    };
-    renderWithProvider(<DiscoverTab />);
-    expect(screen.getByText('No date')).toBeInTheDocument();
+    const input = screen.getByPlaceholderText('Search movies, actors, or enter TMDB ID...');
+    fireEvent.change(input, { target: { value: 'Pushpa' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(mockSearchMutate).toHaveBeenCalledWith('Pushpa');
   });
 });

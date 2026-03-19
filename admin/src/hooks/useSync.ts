@@ -17,6 +17,7 @@ export type {
   RefreshActorResponse,
   StaleItem,
   StaleItemsResponse,
+  TmdbSearchAllResult,
 } from '@/hooks/useSyncTypes';
 import type {
   DiscoverResult,
@@ -26,6 +27,7 @@ import type {
   RefreshMovieResponse,
   RefreshActorResponse,
   StaleItemsResponse,
+  TmdbSearchAllResult,
 } from '@/hooks/useSyncTypes';
 
 // ── API fetch helper ──────────────────────────────────────────────────────────
@@ -128,6 +130,25 @@ export function useRefreshMovie() {
   });
 }
 
+/** Import an actor directly from TMDB by their TMDB person ID. */
+export function useImportActor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tmdbPersonId: number) =>
+      syncApi<{
+        syncLogId: string;
+        result: { actorId: string; name: string; tmdbPersonId: number };
+      }>('import-actor', { tmdbPersonId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+    },
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Import failed');
+    },
+  });
+}
+
 /** Refresh an existing actor from TMDB. */
 export function useRefreshActor() {
   const qc = useQueryClient();
@@ -181,6 +202,16 @@ export function useFillFields() {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
     },
     // @contract: callers surface errors via fillFields.isError + fillFields.error
+  });
+}
+
+/** Search TMDB for both movies and actors by name. */
+export function useTmdbSearch() {
+  return useMutation({
+    mutationFn: (query: string) => syncApi<TmdbSearchAllResult>('search', { query }),
+    onError: (err) => {
+      window.alert(err instanceof Error ? err.message : 'Search failed');
+    },
   });
 }
 

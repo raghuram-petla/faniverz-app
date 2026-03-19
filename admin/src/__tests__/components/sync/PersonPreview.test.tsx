@@ -114,10 +114,13 @@ describe('PersonPreview', () => {
     expect(screen.getByText('Refresh from TMDB')).toBeInTheDocument();
   });
 
-  it('shows "Not in database" message when person is not in DB', () => {
+  it('shows "Not in database" and "Import Actor" button when person is not in DB', () => {
     const result = makePersonResult({ existsInDb: false });
-    render(<PersonPreview result={result} isPending={false} onRefresh={vi.fn()} />);
-    expect(screen.getByText('Not in database — import via movie import')).toBeInTheDocument();
+    render(
+      <PersonPreview result={result} isPending={false} onRefresh={vi.fn()} onImport={vi.fn()} />,
+    );
+    expect(screen.getByText('Not in database')).toBeInTheDocument();
+    expect(screen.getByText('Import Actor')).toBeInTheDocument();
   });
 
   it('does not show refresh button when person is not in DB', () => {

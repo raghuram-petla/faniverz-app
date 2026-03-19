@@ -1,6 +1,7 @@
 'use client';
 import { ACTOR_AVATAR_SIZE, GENDER_LABELS } from '@shared/constants';
 import { colors } from '@shared/colors';
+import { getImageUrl } from '@shared/imageUrl';
 
 interface ActorDetailPreviewProps {
   name: string;
@@ -101,7 +102,7 @@ export function ActorDetailPreview({
           >
             {photoUrl ? (
               <img
-                src={photoUrl}
+                src={getImageUrl(photoUrl, 'original', 'ACTORS') ?? photoUrl}
                 alt=""
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />

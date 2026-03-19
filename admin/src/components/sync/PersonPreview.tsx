@@ -1,16 +1,35 @@
-import { Users, Loader2, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { Users, Loader2, RefreshCw, Download, CheckCircle, AlertCircle, X } from 'lucide-react';
 import type { LookupResult } from '@/hooks/useSync';
 
 export interface PersonPreviewProps {
   result: LookupResult & { type: 'person' };
   isPending: boolean;
   onRefresh: () => void;
+  /** @nullable provided when person is not in DB — imports actor directly from TMDB */
+  onImport?: () => void;
+  /** @nullable close/dismiss handler */
+  onClose?: () => void;
 }
 
-/** @contract shows TMDB person details; refresh only available if person exists in DB */
-export function PersonPreview({ result, isPending, onRefresh }: PersonPreviewProps) {
+/** @contract shows TMDB person details; refresh if in DB, import if not */
+export function PersonPreview({
+  result,
+  isPending,
+  onRefresh,
+  onImport,
+  onClose,
+}: PersonPreviewProps) {
   return (
-    <div className="bg-surface-card border border-outline rounded-xl p-5">
+    <div className="bg-surface-card border border-outline rounded-xl p-5 relative">
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-on-surface-muted hover:text-on-surface transition-colors"
+          aria-label="Close details"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
       <div className="flex gap-5">
         {result.data.photoUrl ? (
           <img
@@ -58,9 +77,25 @@ export function PersonPreview({ result, isPending, onRefresh }: PersonPreviewPro
                 </button>
               </>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-sm text-on-surface-subtle">
-                <AlertCircle className="w-4 h-4" /> Not in database — import via movie import
-              </span>
+              <>
+                <span className="inline-flex items-center gap-1.5 text-sm text-status-yellow">
+                  <AlertCircle className="w-4 h-4" /> Not in database
+                </span>
+                {onImport && (
+                  <button
+                    onClick={onImport}
+                    disabled={isPending}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Import Actor
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
