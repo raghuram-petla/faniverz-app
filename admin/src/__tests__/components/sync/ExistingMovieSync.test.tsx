@@ -56,6 +56,9 @@ const makeExisting = (overrides: Partial<ExistingMovieData> = {}): ExistingMovie
   director: null,
   runtime: null,
   genres: null,
+  imdb_id: null,
+  title_te: null,
+  synopsis_te: null,
   ...overrides,
 });
 
@@ -164,6 +167,14 @@ describe('ExistingMovieSync', () => {
         trailerUrl: null,
         castCount: 0,
         crewCount: 0,
+        posterCount: 0,
+        backdropCount: 0,
+        videoCount: 0,
+        providerNames: [],
+        keywordCount: 0,
+        imdbId: null,
+        titleTe: null,
+        synopsisTe: null,
       },
     };
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
@@ -190,6 +201,14 @@ describe('ExistingMovieSync', () => {
         trailerUrl: 'https://www.youtube.com/watch?v=sOEg_YZQsTI',
         castCount: 15,
         crewCount: 5,
+        posterCount: 0,
+        backdropCount: 0,
+        videoCount: 0,
+        providerNames: [],
+        keywordCount: 0,
+        imdbId: null,
+        titleTe: null,
+        synopsisTe: null,
       },
     };
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);

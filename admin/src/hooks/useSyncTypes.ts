@@ -14,6 +14,15 @@ export interface ExistingMovieData {
   director: string | null;
   runtime: number | null;
   genres: string[] | null;
+  // @contract: extended fields for diff panel
+  imdb_id: string | null;
+  title_te: string | null;
+  synopsis_te: string | null;
+  poster_count?: number;
+  backdrop_count?: number;
+  video_count?: number;
+  platform_names?: string[];
+  keyword_count?: number;
 }
 
 /** @contract Potential duplicate — a local movie with matching title but no tmdb_id */
@@ -49,6 +58,15 @@ export interface LookupMovieData {
   trailerUrl: string | null;
   castCount: number;
   crewCount: number;
+  // @contract: extended counts from TMDB
+  posterCount: number;
+  backdropCount: number;
+  videoCount: number;
+  providerNames: string[];
+  keywordCount: number;
+  imdbId: string | null;
+  titleTe: string | null;
+  synopsisTe: string | null;
 }
 
 export interface LookupPersonData {

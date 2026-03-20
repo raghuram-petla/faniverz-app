@@ -4,6 +4,8 @@ import type { NextRequest } from 'next/server';
 const mockGetUser = vi.fn();
 const mockGetMovieDetails = vi.fn();
 const mockGetPersonDetails = vi.fn();
+const mockGetMovieImages = vi.fn();
+const mockGetWatchProviders = vi.fn();
 const mockMaybeSingle = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -37,6 +39,8 @@ vi.mock('@/lib/supabase-admin', () => ({
 vi.mock('@/lib/tmdb', () => ({
   getMovieDetails: (...args: unknown[]) => mockGetMovieDetails(...args),
   getPersonDetails: (...args: unknown[]) => mockGetPersonDetails(...args),
+  getMovieImages: (...args: unknown[]) => mockGetMovieImages(...args),
+  getWatchProviders: (...args: unknown[]) => mockGetWatchProviders(...args),
   extractTrailerUrl: (videos: Array<{ key: string; site: string; type: string }>) => {
     const t = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
     return t ? `https://www.youtube.com/watch?v=${t.key}` : null;
@@ -45,6 +49,13 @@ vi.mock('@/lib/tmdb', () => ({
     poster: (path: string) => `https://image.tmdb.org/t/p/w500${path}`,
     backdrop: (path: string) => `https://image.tmdb.org/t/p/w1280${path}`,
     profile: (path: string) => `https://image.tmdb.org/t/p/w185${path}`,
+  },
+}));
+
+vi.mock('@/lib/tmdbTypes', () => ({
+  extractTrailerUrl: (videos: Array<{ key: string; site: string; type: string }>) => {
+    const t = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
+    return t ? `https://www.youtube.com/watch?v=${t.key}` : null;
   },
 }));
 
@@ -77,7 +88,12 @@ describe('POST /api/sync/lookup', () => {
     mockGetUser.mockReset();
     mockGetMovieDetails.mockReset();
     mockGetPersonDetails.mockReset();
+    mockGetMovieImages.mockReset();
+    mockGetWatchProviders.mockReset();
     mockMaybeSingle.mockReset();
+
+    mockGetMovieImages.mockResolvedValue({ posters: [], backdrops: [], logos: [] });
+    mockGetWatchProviders.mockResolvedValue([]);
 
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-1', email: 'admin@test.com' } },

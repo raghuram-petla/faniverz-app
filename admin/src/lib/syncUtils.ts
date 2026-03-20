@@ -18,6 +18,13 @@ export const FILLABLE_DATA_FIELDS = [
   'director',
   'runtime',
   'genres',
+  'images',
+  'videos',
+  'watch_providers',
+  'keywords',
+  'imdb_id',
+  'title_te',
+  'synopsis_te',
 ] as const;
 
 export type FillableDataField = (typeof FILLABLE_DATA_FIELDS)[number];
@@ -39,6 +46,9 @@ export function getMissingFields(m: ExistingMovieData): FillableDataField[] {
   // so they're still included for bulk fill (server handles 0→null gracefully)
   if (m.runtime == null) missing.push('runtime');
   if (!m.genres?.length) missing.push('genres');
+  if (!m.imdb_id) missing.push('imdb_id');
+  if (!m.title_te) missing.push('title_te');
+  if (!m.synopsis_te) missing.push('synopsis_te');
   return missing;
 }
 

@@ -67,6 +67,27 @@ export function getStatus(
     }
     case 'genres':
       return genreStatus(movie.genres, tmdb.genres);
+    case 'images':
+      // @edge show as actionable if TMDB has more posters/backdrops than we have
+      return tmdb.posterCount > 1 || tmdb.backdropCount > 0 ? 'missing' : 'same';
+    case 'videos':
+      return tmdb.videoCount > 0 ? 'missing' : 'same';
+    case 'watch_providers':
+      return tmdb.providerNames.length > 0 ? 'missing' : 'same';
+    case 'keywords':
+      return tmdb.keywordCount > 0 ? 'missing' : 'same';
+    case 'imdb_id':
+      if (!movie.imdb_id && !tmdb.imdbId) return 'same';
+      if (!movie.imdb_id) return 'missing';
+      return movie.imdb_id === tmdb.imdbId ? 'same' : 'changed';
+    case 'title_te':
+      if (!movie.title_te && !tmdb.titleTe) return 'same';
+      if (!movie.title_te) return 'missing';
+      return movie.title_te === tmdb.titleTe ? 'same' : 'changed';
+    case 'synopsis_te':
+      if (!movie.synopsis_te && !tmdb.synopsisTe) return 'same';
+      if (!movie.synopsis_te) return 'missing';
+      return movie.synopsis_te === tmdb.synopsisTe ? 'same' : 'changed';
     case 'cast':
       return 'missing'; // always actionable — server guards against duplicate sync
     default:

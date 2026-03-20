@@ -40,6 +40,9 @@ const makeMovie = (id: string, overrides: Partial<ExistingMovieData> = {}): Exis
   director: null,
   runtime: null,
   genres: null,
+  imdb_id: null,
+  title_te: null,
+  synopsis_te: null,
   ...overrides,
 });
 
@@ -57,6 +60,14 @@ const makeTmdb = (tmdbId: number, overrides: Partial<LookupMovieData> = {}): Loo
   trailerUrl: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
   castCount: 5,
   crewCount: 3,
+  posterCount: 0,
+  backdropCount: 0,
+  videoCount: 0,
+  providerNames: [],
+  keywordCount: 0,
+  imdbId: null,
+  titleTe: null,
+  synopsisTe: null,
   ...overrides,
 });
 

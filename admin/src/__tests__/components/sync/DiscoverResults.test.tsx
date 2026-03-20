@@ -30,6 +30,9 @@ const makeExisting = (tmdb_id: number, title: string) => ({
   director: null,
   runtime: null,
   genres: null,
+  imdb_id: null,
+  title_te: null,
+  synopsis_te: null,
 });
 
 function wrap(ui: React.ReactElement) {

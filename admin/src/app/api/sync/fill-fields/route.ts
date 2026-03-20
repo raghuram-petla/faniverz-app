@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { getMovieDetails, extractTrailerUrl, extractKeyCrewMembers, TMDB_IMAGE } from '@/lib/tmdb';
+import { getMovieDetails, TMDB_IMAGE } from '@/lib/tmdb';
+import {
+  extractTrailerUrl,
+  extractKeyCrewMembers,
+  extractTeluguTranslation,
+} from '@/lib/tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
+import { syncAllImages } from '@/lib/sync-images';
+import { syncVideos, syncWatchProviders, syncKeywords } from '@/lib/sync-extended';
 
 /**
  * POST /api/sync/fill-fields
@@ -48,6 +55,9 @@ export async function POST(request: NextRequest) {
 
     const detail = await getMovieDetails(tmdbId, tmdb.apiKey);
     const tmpKey = String(tmdbId);
+
+    // @contract: extract Telugu translation once (used by title_te / synopsis_te cases below)
+    const { titleTe, synopsisTe } = extractTeluguTranslation(detail.translations);
 
     // @invariant: tmdb_last_synced_at always refreshed regardless of which
     // fields were requested — signals that this movie was reviewed by an admin.
@@ -108,7 +118,23 @@ export async function POST(request: NextRequest) {
           updatePayload.genres = detail.genres.map((g) => g.name);
           updatedFields.push('genres');
           break;
-        // 'cast' is handled separately after the movie update
+        case 'imdb_id':
+          updatePayload.imdb_id = detail.external_ids?.imdb_id ?? null;
+          if (updatePayload.imdb_id) updatedFields.push('imdb_id');
+          break;
+        case 'title_te':
+          if (titleTe) {
+            updatePayload.title_te = titleTe;
+            updatedFields.push('title_te');
+          }
+          break;
+        case 'synopsis_te':
+          if (synopsisTe) {
+            updatePayload.synopsis_te = synopsisTe;
+            updatedFields.push('synopsis_te');
+          }
+          break;
+        // 'cast', 'images', 'videos', 'watch_providers', 'keywords' handled after update
       }
     }
 
@@ -144,6 +170,32 @@ export async function POST(request: NextRequest) {
           display_order: 0,
         });
       }
+    }
+
+    // ── Extended sync: images, videos, watch providers, keywords ────────────────
+    if (fields.includes('images')) {
+      const { posterCount, backdropCount } = await syncAllImages(
+        movieId,
+        tmdbId,
+        tmdb.apiKey,
+        supabase,
+      );
+      if (posterCount > 0 || backdropCount > 0) updatedFields.push('images');
+    }
+
+    if (fields.includes('videos')) {
+      const videoCount = await syncVideos(movieId, detail.videos.results, supabase);
+      if (videoCount > 0) updatedFields.push('videos');
+    }
+
+    if (fields.includes('watch_providers')) {
+      const providerCount = await syncWatchProviders(movieId, tmdbId, tmdb.apiKey, supabase);
+      if (providerCount > 0) updatedFields.push('watch_providers');
+    }
+
+    if (fields.includes('keywords')) {
+      const keywordCount = await syncKeywords(movieId, detail, supabase);
+      if (keywordCount > 0) updatedFields.push('keywords');
     }
 
     // ── Cast / crew: sync when 'cast' is in fields OR forceResyncCast=true ──────

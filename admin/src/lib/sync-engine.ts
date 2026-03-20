@@ -13,8 +13,11 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getMovieDetails, extractTrailerUrl, extractKeyCrewMembers, TMDB_IMAGE } from './tmdb';
+import { getMovieDetails, TMDB_IMAGE } from './tmdb';
+import { extractTrailerUrl, extractKeyCrewMembers, extractTeluguTranslation } from './tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from './r2-sync';
+import { syncAllImages } from './sync-images';
+import { syncVideos, syncWatchProviders, syncKeywords } from './sync-extended';
 
 // ── Result types ──────────────────────────────────────────────────────────────
 
@@ -77,11 +80,13 @@ export async function processMovieFromTmdb(
 
   const isNew = !existing;
 
+  // @contract: extract Telugu translation and IMDb ID from extended response
+  const { titleTe, synopsisTe } = extractTeluguTranslation(detail.translations);
+  const imdbId = detail.external_ids?.imdb_id ?? null;
+
   // @invariant: upsert only writes TMDB-sourced fields — admin-curated fields
   // (certification, is_featured, release_type, ott_platform_id, ott_release_date)
   // are intentionally omitted so a re-sync never overwrites manual admin edits.
-  // @assumes: 'tmdb_id' has a UNIQUE constraint in the movies table — without it,
-  // onConflict silently inserts duplicates instead of updating.
   const { data: movie, error: movieErr } = await supabase
     .from('movies')
     .upsert(
@@ -90,18 +95,19 @@ export async function processMovieFromTmdb(
         title: detail.title,
         synopsis: detail.overview || null,
         release_date: detail.release_date,
-        // @edge: TMDB returns 0 for unknown runtime — treat as null (0 fails app validation)
         runtime: detail.runtime || null,
         genres,
         poster_url: posterUrl,
         backdrop_url: backdropUrl,
         trailer_url: trailerUrl,
         director,
-        // @invariant: in_theaters is only set to false for NEW movies — never overwrite
-        // admin's manual setting on re-sync (e.g. movie currently showing in theaters).
         ...(isNew && { in_theaters: false }),
         original_language: 'te',
         tmdb_last_synced_at: new Date().toISOString(),
+        // @contract: extended fields from expanded append_to_response
+        ...(imdbId && { imdb_id: imdbId }),
+        ...(titleTe && { title_te: titleTe }),
+        ...(synopsisTe && { synopsis_te: synopsisTe }),
       },
       { onConflict: 'tmdb_id', ignoreDuplicates: false },
     )
@@ -111,31 +117,18 @@ export async function processMovieFromTmdb(
   if (movieErr) throw new Error(`Movie upsert failed: ${movieErr.message}`);
   const movieId = movie.id as string;
 
-  // @sideeffect: keep movie_posters in sync with movies.poster_url so the admin
-  // poster gallery always shows the main poster for every imported movie.
-  // Uses select-then-update/insert because the partial unique index on (movie_id)
-  // WHERE is_main=true cannot be targeted by Supabase JS upsert onConflict.
-  if (posterUrl) {
-    const { data: existingMain } = await supabase
-      .from('movie_posters')
-      .select('id')
-      .eq('movie_id', movieId)
-      .eq('is_main', true)
-      .maybeSingle();
-    if (existingMain) {
-      await supabase
-        .from('movie_posters')
-        .update({ image_url: posterUrl })
-        .eq('id', existingMain.id);
-    } else {
-      await supabase.from('movie_posters').insert({
-        movie_id: movieId,
-        image_url: posterUrl,
-        title: 'Main Poster',
-        is_main: true,
-        display_order: 0,
-      });
-    }
+  // @sideeffect: extended sync — images first (updates movies.poster_url/backdrop_url),
+  // then videos, watch providers, keywords in parallel.
+  // Errors are logged but don't fail the overall import.
+  try {
+    await syncAllImages(movieId, tmdbId, apiKey, supabase);
+    await Promise.all([
+      syncVideos(movieId, detail.videos.results, supabase),
+      syncWatchProviders(movieId, tmdbId, apiKey, supabase),
+      syncKeywords(movieId, detail, supabase),
+    ]);
+  } catch (extErr) {
+    console.warn(`Extended sync partial failure for ${detail.title}:`, extErr);
   }
 
   // @sideeffect: delete-then-reinsert is NOT atomic — if the process crashes between

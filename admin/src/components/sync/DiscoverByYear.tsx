@@ -56,6 +56,9 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
         director: null,
         runtime: null,
         genres: null,
+        imdb_id: null,
+        title_te: null,
+        synopsis_te: null,
       };
       setImportedMovieData((prev) => [...prev, newExisting]);
       setImportedIds((prev) => new Set([...prev, tmdbId]));
@@ -106,6 +109,9 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
               director: null,
               runtime: null,
               genres: null,
+              imdb_id: null,
+              title_te: null,
+              synopsis_te: null,
             };
           });
           setImportedMovieData((prev) => [...prev, ...newExisting]);

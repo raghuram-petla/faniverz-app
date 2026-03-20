@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { getMovieDetails, getPersonDetails, extractTrailerUrl, TMDB_IMAGE } from '@/lib/tmdb';
+import {
+  getMovieDetails,
+  getPersonDetails,
+  getMovieImages,
+  getWatchProviders,
+  TMDB_IMAGE,
+} from '@/lib/tmdb';
+import { extractTrailerUrl } from '@/lib/tmdbTypes';
 import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
 
 /**
@@ -43,6 +50,15 @@ export async function POST(request: NextRequest) {
       // @nullable: director may be null if TMDB has no crew data or no Director job entry
       const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
 
+      // @boundary: fetch images + providers in parallel (2 extra API calls)
+      const [images, providers] = await Promise.all([
+        getMovieImages(tmdbId, tmdb.apiKey),
+        getWatchProviders(tmdbId, tmdb.apiKey),
+      ]);
+
+      // @contract: extract Telugu translation
+      const teTrans = detail.translations?.translations.find((t) => t.iso_639_1 === 'te');
+
       return NextResponse.json({
         type: 'movie',
         existsInDb: !!existing,
@@ -54,13 +70,21 @@ export async function POST(request: NextRequest) {
           releaseDate: detail.release_date,
           runtime: detail.runtime,
           genres: detail.genres.map((g) => g.name),
-          // @nullable: poster_path and backdrop_path may be null for obscure TMDB entries
           posterUrl: detail.poster_path ? TMDB_IMAGE.poster(detail.poster_path) : null,
           backdropUrl: detail.backdrop_path ? TMDB_IMAGE.backdrop(detail.backdrop_path) : null,
           director,
           trailerUrl: extractTrailerUrl(detail.videos.results),
           castCount: detail.credits.cast.length,
           crewCount: detail.credits.crew.length,
+          // @contract: extended counts for diff panel
+          posterCount: images.posters.length,
+          backdropCount: images.backdrops.length,
+          videoCount: detail.videos.results.filter((v) => v.site === 'YouTube').length,
+          providerNames: providers.map((p) => p.provider_name),
+          keywordCount: detail.keywords?.keywords?.length ?? 0,
+          imdbId: detail.external_ids?.imdb_id ?? null,
+          titleTe: teTrans?.data.title || null,
+          synopsisTe: teTrans?.data.overview || null,
         },
       });
     } else {

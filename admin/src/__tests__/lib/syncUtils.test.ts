@@ -16,13 +16,16 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
     director: null,
     runtime: null,
     genres: null,
+    imdb_id: null,
+    title_te: null,
+    synopsis_te: null,
     ...overrides,
   };
 }
 
 describe('FILLABLE_DATA_FIELDS', () => {
-  it('contains exactly 8 field keys', () => {
-    expect(FILLABLE_DATA_FIELDS).toHaveLength(8);
+  it('contains exactly 15 field keys', () => {
+    expect(FILLABLE_DATA_FIELDS).toHaveLength(15);
   });
 
   it('includes all expected data fields', () => {
@@ -35,6 +38,13 @@ describe('FILLABLE_DATA_FIELDS', () => {
       'director',
       'runtime',
       'genres',
+      'images',
+      'videos',
+      'watch_providers',
+      'keywords',
+      'imdb_id',
+      'title_te',
+      'synopsis_te',
     ];
     expect(FILLABLE_DATA_FIELDS).toEqual(expected);
   });
@@ -45,7 +55,7 @@ describe('FILLABLE_DATA_FIELDS', () => {
 });
 
 describe('getMissingFields', () => {
-  it('returns all 8 fields when only title is set', () => {
+  it('returns all missing fields when only title is set', () => {
     // makeMovie has title='Baahubali' set and everything else null
     const missing = getMissingFields(makeMovie());
     expect(missing).not.toContain('title');
@@ -56,7 +66,10 @@ describe('getMissingFields', () => {
     expect(missing).toContain('director');
     expect(missing).toContain('runtime');
     expect(missing).toContain('genres');
-    expect(missing).toHaveLength(7);
+    expect(missing).toContain('imdb_id');
+    expect(missing).toContain('title_te');
+    expect(missing).toContain('synopsis_te');
+    expect(missing).toHaveLength(10);
   });
 
   it('returns empty array when all fields are filled', () => {
@@ -69,6 +82,9 @@ describe('getMissingFields', () => {
       director: 'S. S. Rajamouli',
       runtime: 159,
       genres: ['Action', 'Drama'],
+      imdb_id: 'tt1234567',
+      title_te: 'బాహుబలి',
+      synopsis_te: 'ఒక మహాకావ్యం',
     });
     expect(getMissingFields(full)).toHaveLength(0);
   });
@@ -79,7 +95,6 @@ describe('getMissingFields', () => {
   });
 
   it('does not include runtime when runtime is 0 (valid falsy value)', () => {
-    // runtime=0 is technically a valid (if unusual) runtime — == null check handles this
     const m = makeMovie({ runtime: 0 });
     expect(getMissingFields(m)).not.toContain('runtime');
   });
@@ -108,7 +123,6 @@ describe('getMissingFields', () => {
     const m = makeMovie({
       synopsis: 'A story',
       poster_url: '/p.jpg',
-      // All other fields null
     });
     const missing = getMissingFields(m);
     expect(missing).not.toContain('synopsis');
@@ -119,12 +133,32 @@ describe('getMissingFields', () => {
     expect(missing).toContain('runtime');
     expect(missing).toContain('genres');
   });
+
+  it('includes imdb_id when null', () => {
+    expect(getMissingFields(makeMovie())).toContain('imdb_id');
+  });
+
+  it('excludes imdb_id when filled', () => {
+    expect(getMissingFields(makeMovie({ imdb_id: 'tt123' }))).not.toContain('imdb_id');
+  });
+
+  it('includes title_te and synopsis_te when null', () => {
+    const missing = getMissingFields(makeMovie());
+    expect(missing).toContain('title_te');
+    expect(missing).toContain('synopsis_te');
+  });
+
+  it('excludes title_te and synopsis_te when filled', () => {
+    const missing = getMissingFields(makeMovie({ title_te: 'తెలుగు', synopsis_te: 'కథ' }));
+    expect(missing).not.toContain('title_te');
+    expect(missing).not.toContain('synopsis_te');
+  });
 });
 
 describe('countMissing', () => {
   it('counts all null fillable fields', () => {
-    // makeMovie() has title set, everything else null = 7
-    expect(countMissing(makeMovie())).toBe(7);
+    // makeMovie() has title set, everything else null = 10
+    expect(countMissing(makeMovie())).toBe(10);
   });
 
   it('returns 0 for a fully filled movie', () => {
@@ -136,13 +170,16 @@ describe('countMissing', () => {
       director: 'S. S. Rajamouli',
       runtime: 159,
       genres: ['Action'],
+      imdb_id: 'tt123',
+      title_te: 'బాహుబలి',
+      synopsis_te: 'కథ',
     });
     expect(countMissing(full)).toBe(0);
   });
 
-  it('returns 8 when all fields including title are null', () => {
+  it('returns 11 when all fields including title are null', () => {
     const empty = makeMovie({ title: null });
-    expect(countMissing(empty)).toBe(8);
+    expect(countMissing(empty)).toBe(11);
   });
 
   it('equals getMissingFields length', () => {
@@ -153,8 +190,6 @@ describe('countMissing', () => {
       trailer_url: 'https://youtu.be/abc',
       director: 'Director',
     });
-    // runtime and genres are still null = 2
     expect(countMissing(m)).toBe(getMissingFields(m).length);
-    expect(countMissing(m)).toBe(2);
   });
 });

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const { data: existingRows } = await supabase
       .from('movies')
       .select(
-        'id, tmdb_id, title, synopsis, poster_url, backdrop_url, trailer_url, director, runtime, genres',
+        'id, tmdb_id, title, synopsis, poster_url, backdrop_url, trailer_url, director, runtime, genres, imdb_id, title_te, synopsis_te',
       )
       .in('tmdb_id', tmdbIds);
 
