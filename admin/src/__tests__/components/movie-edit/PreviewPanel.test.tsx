@@ -51,6 +51,8 @@ const defaultForm: MovieForm = {
   tmdb_id: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
 };
 
 describe('PreviewPanel', () => {

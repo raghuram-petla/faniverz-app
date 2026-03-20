@@ -106,7 +106,7 @@ describe('syncPosters', () => {
       expect.stringMatching(/^[0-9a-f-]+\.jpg$/),
     );
     // Should delete existing TMDB posters first
-    expect(supabase.from).toHaveBeenCalledWith('movie_posters');
+    expect(supabase.from).toHaveBeenCalledWith('movie_images');
     expect(supabase.delete).toHaveBeenCalled();
   });
 
@@ -141,7 +141,7 @@ describe('syncPosters', () => {
     await syncPosters(MOVIE_ID, TMDB_ID, { posters }, supabase as never);
 
     expect(supabase.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ is_main: false, display_order: 1 }),
+      expect.objectContaining({ is_main_poster: false, display_order: 1 }),
     );
   });
 
@@ -187,7 +187,7 @@ describe('syncBackdrops', () => {
     expect(mockUpload.mock.calls[2][0]).toBe('https://image.tmdb.org/t/p/w1280/low.jpg');
   });
 
-  it('uploads to R2 and inserts into movie_backdrops', async () => {
+  it('uploads to R2 and inserts into movie_images', async () => {
     const backdrops = [makeBackdrop({ file_path: '/bd.jpg', vote_average: 7.0 })];
 
     await syncBackdrops(MOVIE_ID, TMDB_ID, { backdrops }, supabase as never);
@@ -197,7 +197,7 @@ describe('syncBackdrops', () => {
       'faniverz-movie-backdrops',
       expect.stringMatching(/^[0-9a-f-]+\.jpg$/),
     );
-    expect(supabase.from).toHaveBeenCalledWith('movie_backdrops');
+    expect(supabase.from).toHaveBeenCalledWith('movie_images');
     expect(supabase.insert).toHaveBeenCalled();
   });
 

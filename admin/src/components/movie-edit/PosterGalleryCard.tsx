@@ -1,5 +1,5 @@
 'use client';
-import { Star, Calendar, X, Loader2 } from 'lucide-react';
+import { Calendar, X, Loader2 } from 'lucide-react';
 import { getImageUrl } from '@shared/imageUrl';
 import { useImageVariants } from '@/hooks/useImageVariants';
 
@@ -26,44 +26,44 @@ export function SectionHeading({
   );
 }
 
-// @contract grid card for a single poster — image-first layout, 4 per row
-export function PosterGalleryCard({
-  poster,
-  onSetMain,
-  onRemove,
-}: {
+// @contract grid card for a single image (poster or backdrop) — image-first layout, 4 per row
+// Main poster/backdrop selection is handled by MainImageSelector, not by this card
+export interface PosterGalleryCardProps {
   poster: {
     id: string;
     image_url: string;
-    title: string;
+    title: string | null;
+    image_type?: 'poster' | 'backdrop';
     poster_date?: string | null;
-    is_main: boolean;
+    is_main_poster: boolean;
+    is_main_backdrop: boolean;
   };
-  onSetMain: (id: string) => void;
   onRemove: (id: string, isPending: boolean) => void;
-}) {
+}
+
+export function PosterGalleryCard({ poster, onRemove }: PosterGalleryCardProps) {
+  // @contract cannot remove if it's the main poster or main backdrop
+  const isAnyMain = poster.is_main_poster || poster.is_main_backdrop;
+  const isBackdrop = poster.image_type === 'backdrop';
+  const bucket = isBackdrop ? 'BACKDROPS' : 'POSTERS';
+  const aspectClass = isBackdrop ? 'aspect-video' : 'aspect-[2/3]';
+
   return (
     <div className="bg-surface-elevated rounded-xl overflow-hidden flex flex-col">
-      {/* Poster image */}
+      {/* Image */}
       <div className="relative">
         <img
-          src={getImageUrl(poster.image_url, 'md', 'POSTERS') ?? poster.image_url}
-          alt={poster.title}
-          className="w-full aspect-[2/3] object-cover"
+          src={getImageUrl(poster.image_url, 'md', bucket) ?? poster.image_url}
+          alt={poster.title || 'Image'}
+          className={`w-full ${aspectClass} object-cover`}
         />
-        {/* @contract main badge overlaid on image top-left */}
-        {poster.is_main && (
-          <span className="absolute top-1.5 left-1.5 flex items-center gap-0.5 bg-yellow-500/90 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">
-            <Star className="w-2.5 h-2.5" /> Main
-          </span>
-        )}
         {/* @contract remove button overlaid on image top-right */}
         <button
           onClick={() => onRemove(poster.id, poster.id.startsWith('pending-poster'))}
-          disabled={poster.is_main}
-          title={poster.is_main ? 'Set another poster as main before removing this one' : undefined}
+          disabled={isAnyMain}
+          title={isAnyMain ? 'Unset as main before removing' : undefined}
           className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-black/50 text-white hover:bg-red-600/80 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-black/50"
-          aria-label={`Remove ${poster.title}`}
+          aria-label={`Remove ${poster.title || 'image'}`}
         >
           <X className="w-3 h-3" />
         </button>
@@ -71,22 +71,14 @@ export function PosterGalleryCard({
 
       {/* Info + actions */}
       <div className="p-2 flex flex-col gap-1">
-        <p className="text-on-surface font-medium text-xs truncate">{poster.title}</p>
+        <p className="text-on-surface font-medium text-xs truncate">{poster.title || 'Untitled'}</p>
         {poster.poster_date && (
           <p className="text-[10px] text-on-surface-subtle flex items-center gap-0.5">
             <Calendar className="w-2.5 h-2.5" /> {poster.poster_date}
           </p>
         )}
-        {!poster.is_main && (
-          <button
-            onClick={() => onSetMain(poster.id)}
-            className="mt-0.5 w-full text-[10px] bg-yellow-500/10 text-yellow-500 px-1.5 py-1 rounded font-medium hover:bg-yellow-500/20"
-          >
-            Set Main
-          </button>
-        )}
         {/* @contract compact variant status — colored dots per size */}
-        <PosterVariantStatus imageUrl={poster.image_url} />
+        <PosterVariantStatus imageUrl={poster.image_url} imageType={poster.image_type} />
       </div>
     </div>
   );
@@ -99,8 +91,16 @@ const STATUS_COLOR: Record<string, string> = {
   error: 'bg-yellow-500',
 };
 
-export function PosterVariantStatus({ imageUrl }: { imageUrl: string }) {
-  const { variants, isChecking } = useImageVariants(imageUrl, 'poster', 'POSTERS');
+export function PosterVariantStatus({
+  imageUrl,
+  imageType,
+}: {
+  imageUrl: string;
+  imageType?: 'poster' | 'backdrop';
+}) {
+  const variantType = imageType === 'backdrop' ? 'backdrop' : 'poster';
+  const bucket = imageType === 'backdrop' ? 'BACKDROPS' : 'POSTERS';
+  const { variants, isChecking } = useImageVariants(imageUrl, variantType, bucket);
 
   if (isChecking && variants.length === 0) {
     return (

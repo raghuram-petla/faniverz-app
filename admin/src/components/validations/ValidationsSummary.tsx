@@ -17,7 +17,7 @@ export interface ValidationsSummaryProps {
 const ENTITY_LABELS: Record<string, string> = {
   'movies:poster_url': 'Movie Posters',
   'movies:backdrop_url': 'Movie Backdrops',
-  'movie_posters:image_url': 'Poster Gallery',
+  'movie_images:image_url': 'Image Gallery',
   'actors:photo_url': 'Actor Photos',
   'platforms:logo_url': 'Platform Logos',
   'production_houses:logo_url': 'Production House Logos',
@@ -28,7 +28,7 @@ const ENTITY_LABELS: Record<string, string> = {
 const ENTITY_MAP: Record<string, ScanEntity> = {
   'movies:poster_url': 'movies',
   'movies:backdrop_url': 'movies',
-  'movie_posters:image_url': 'movie_posters',
+  'movie_images:image_url': 'movie_images',
   'actors:photo_url': 'actors',
   'platforms:logo_url': 'platforms',
   'production_houses:logo_url': 'production_houses',

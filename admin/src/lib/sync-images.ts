@@ -1,5 +1,6 @@
 /**
  * Image sync operations — posters and backdrops from TMDB images endpoint.
+ * All images stored in unified movie_images table with image_type discriminator.
  * Server-side only.
  *
  * @boundary: makes 1 TMDB API call (getMovieImages) for both posters + backdrops.
@@ -23,8 +24,8 @@ function sortByLanguagePriority(images: TmdbImage[]): TmdbImage[] {
 }
 
 /**
- * Sync all posters from TMDB images endpoint into movie_posters table.
- * Marks the highest-priority poster as is_main (Telugu > Hindi > English > null).
+ * Sync all posters from TMDB images endpoint into movie_images table.
+ * Marks the highest-priority poster as is_main_poster (Telugu > Hindi > English > null).
  *
  * @sideeffect: uploads each poster to R2; clears TMDB-synced posters and re-inserts.
  */
@@ -38,11 +39,12 @@ export async function syncPosters(
 
   const sorted = sortByLanguagePriority(images.posters);
 
-  // @sideeffect: clear TMDB-synced posters (keep manually added ones without tmdb_file_path)
+  // @sideeffect: clear TMDB-synced poster images (keep manually added ones without tmdb_file_path)
   await supabase
-    .from('movie_posters')
+    .from('movie_images')
     .delete()
     .eq('movie_id', movieId)
+    .eq('image_type', 'poster')
     .not('tmdb_file_path', 'is', null);
 
   let count = 0;
@@ -59,14 +61,15 @@ export async function syncPosters(
     if (isMain) {
       // Update or insert main poster
       const { data: existingMain } = await supabase
-        .from('movie_posters')
+        .from('movie_images')
         .select('id')
         .eq('movie_id', movieId)
-        .eq('is_main', true)
+        .eq('is_main_poster', true)
         .maybeSingle();
 
       const posterData = {
         image_url: imageUrl,
+        image_type: 'poster' as const,
         tmdb_file_path: poster.file_path,
         iso_639_1: poster.iso_639_1,
         width: poster.width,
@@ -75,24 +78,25 @@ export async function syncPosters(
       };
 
       if (existingMain) {
-        await supabase.from('movie_posters').update(posterData).eq('id', existingMain.id);
+        await supabase.from('movie_images').update(posterData).eq('id', existingMain.id);
       } else {
-        await supabase.from('movie_posters').insert({
+        await supabase.from('movie_images').insert({
           movie_id: movieId,
           ...posterData,
           title: 'Main Poster',
-          is_main: true,
+          is_main_poster: true,
           display_order: 0,
         });
       }
       // Keep movies.poster_url in sync
       await supabase.from('movies').update({ poster_url: imageUrl }).eq('id', movieId);
     } else {
-      await supabase.from('movie_posters').insert({
+      await supabase.from('movie_images').insert({
         movie_id: movieId,
         image_url: imageUrl,
+        image_type: 'poster',
         title: `Poster (${poster.iso_639_1 ?? 'no lang'})`,
-        is_main: false,
+        is_main_poster: false,
         display_order: i,
         tmdb_file_path: poster.file_path,
         iso_639_1: poster.iso_639_1,
@@ -108,7 +112,7 @@ export async function syncPosters(
 }
 
 /**
- * Sync all backdrops from TMDB images endpoint into movie_backdrops table.
+ * Sync all backdrops from TMDB images endpoint into movie_images table.
  * @sideeffect: uploads each backdrop to R2; replaces existing TMDB-synced backdrops.
  */
 export async function syncBackdrops(
@@ -121,11 +125,12 @@ export async function syncBackdrops(
 
   const sorted = [...images.backdrops].sort((a, b) => b.vote_average - a.vote_average);
 
-  // Clear existing TMDB-synced backdrops
+  // Clear existing TMDB-synced backdrop images
   await supabase
-    .from('movie_backdrops')
+    .from('movie_images')
     .delete()
     .eq('movie_id', movieId)
+    .eq('image_type', 'backdrop')
     .not('tmdb_file_path', 'is', null);
 
   let count = 0;
@@ -138,19 +143,28 @@ export async function syncBackdrops(
       key,
     );
 
-    if (i === 0) {
+    const isMainBackdrop = i === 0;
+    if (isMainBackdrop) {
+      // Unset existing main backdrop before setting new one
+      await supabase
+        .from('movie_images')
+        .update({ is_main_backdrop: false })
+        .eq('movie_id', movieId)
+        .eq('is_main_backdrop', true);
       await supabase.from('movies').update({ backdrop_url: imageUrl }).eq('id', movieId);
     }
 
-    await supabase.from('movie_backdrops').insert({
+    await supabase.from('movie_images').insert({
       movie_id: movieId,
       image_url: imageUrl,
+      image_type: 'backdrop',
+      is_main_backdrop: isMainBackdrop,
       tmdb_file_path: backdrop.file_path,
       width: backdrop.width,
       height: backdrop.height,
       iso_639_1: backdrop.iso_639_1,
       vote_average: backdrop.vote_average,
-      display_order: i,
+      display_order: i + 1000,
     });
     count++;
   }

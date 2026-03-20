@@ -43,6 +43,8 @@ const defaultForm: MovieForm = {
   tmdb_id: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
 };
 
 let deps: CommonFormDeps;
@@ -182,7 +184,9 @@ describe('handlePosterRemove', () => {
         title: 'P1',
         description: null,
         poster_date: null,
-        is_main: false,
+        is_main_poster: false,
+        is_main_backdrop: false,
+        image_type: 'poster',
         display_order: 0,
       },
     ];

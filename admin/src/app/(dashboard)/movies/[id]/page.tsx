@@ -33,6 +33,16 @@ import {
 } from '@/components/movie-edit';
 import type { MovieSectionId } from '@/components/movie-edit';
 
+/** @contract resolve R2 bucket from the selected image's type in the gallery */
+function getBucketForUrl(
+  images: Array<{ image_url: string; image_type?: string }>,
+  url: string,
+  fallback: 'POSTERS' | 'BACKDROPS',
+): 'POSTERS' | 'BACKDROPS' {
+  const t = images.find((p) => p.image_url === url)?.image_type;
+  return t === 'backdrop' ? 'BACKDROPS' : t === 'poster' ? 'POSTERS' : fallback;
+}
+
 // @coupling: entire edit state managed by useMovieEditState; 5 tabs with conditional rendering
 export default function EditMoviePage() {
   const { isReadOnly } = usePermissions();
@@ -165,15 +175,13 @@ export default function EditMoviePage() {
                 visiblePosters={editState.visiblePosters}
                 onAdd={(poster) => editState.setPendingPosterAdds((prev) => [...prev, poster])}
                 onRemove={editState.handlePosterRemove}
-                onSetMain={(posterId) => editState.setPendingMainPosterId(posterId)}
+                onSelectMainPoster={editState.handleSelectMainPoster}
+                onSelectMainBackdrop={editState.handleSelectMainBackdrop}
                 savedMainPosterId={editState.savedMainPosterId}
                 onPendingMainChange={setPendingPreviewPosterUrl}
                 form={editState.form}
                 setForm={editState.setForm}
                 updateField={editState.updateField}
-                uploadingBackdrop={editState.uploadingBackdrop}
-                handleImageUpload={editState.handleImageUpload}
-                setUploadingBackdrop={editState.setUploadingBackdrop}
               />
             </SectionCard>
           )}
@@ -273,17 +281,21 @@ export default function EditMoviePage() {
         </div>
 
         {/* Right column — Preview */}
-        {/* @contract poster_url is overridden with the pending main poster's image_url so the
-            preview reflects Set Main changes immediately, before the edit is saved */}
-        {/* @contract pendingPreviewPosterUrl overrides when add-form "Set as main" is checked + image uploaded */}
         <PreviewPanel
           form={{
             ...editState.form,
-            poster_url:
-              pendingPreviewPosterUrl ??
-              editState.visiblePosters.find((p) => p.is_main)?.image_url ??
-              editState.form.poster_url,
+            poster_url: pendingPreviewPosterUrl ?? editState.form.poster_url,
           }}
+          posterBucket={getBucketForUrl(
+            editState.visiblePosters,
+            editState.form.poster_url,
+            'POSTERS',
+          )}
+          backdropBucket={getBucketForUrl(
+            editState.visiblePosters,
+            editState.form.backdrop_url,
+            'BACKDROPS',
+          )}
         />
       </div>
 

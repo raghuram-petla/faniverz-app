@@ -1,6 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import type { MovieCast, VideoType } from '@/lib/types';
+import type { MovieCast, VideoType, MovieImage } from '@/lib/types';
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type {
   MovieForm,
@@ -48,17 +48,7 @@ interface VideoRow {
   created_at: string;
 }
 
-interface PosterRow {
-  id: string;
-  movie_id: string;
-  image_url: string;
-  title: string;
-  description: string | null;
-  poster_date: string | null;
-  is_main: boolean;
-  display_order: number;
-  created_at: string;
-}
+type PosterRow = MovieImage;
 
 // @contract All visible* arrays merge server data with pending adds, minus pending removes
 // @coupling Used by both useMovieEditState (edit flow) and useMovieAddState (add flow)
@@ -153,8 +143,8 @@ export function useMovieEditDerived(params: {
     [videosData, pendingVideoAdds, pendingVideoRemoveIds, id],
   );
 
-  // @edge pendingMainPosterId overrides is_main on ALL posters — ensures exactly one main poster
-  // @edge also handles pending adds with is_main:true when pendingMainPosterId is not yet set
+  // @edge pendingMainPosterId overrides is_main_poster on ALL posters — ensures exactly one main poster
+  // @edge also handles pending adds with is_main_poster:true when pendingMainPosterId is not yet set
   const visiblePosters = useMemo(() => {
     const items = [
       ...postersData.filter((p) => !pendingPosterRemoveIds.has(p.id)),
@@ -165,13 +155,13 @@ export function useMovieEditDerived(params: {
         created_at: '',
       })),
     ];
-    // @contract effectiveMainId: explicit selection wins; fallback to any pending add with is_main=true
+    // @contract effectiveMainId: explicit selection wins; fallback to any pending add with is_main_poster=true
     const effectiveMainId =
       pendingMainPosterId && items.some((p) => p.id === pendingMainPosterId)
         ? pendingMainPosterId
-        : (pendingPosterAdds.find((p) => p.is_main)?._id ?? null);
+        : (pendingPosterAdds.find((p) => p.is_main_poster)?._id ?? null);
     if (effectiveMainId) {
-      return items.map((p) => ({ ...p, is_main: p.id === effectiveMainId }));
+      return items.map((p) => ({ ...p, is_main_poster: p.id === effectiveMainId }));
     }
     return items;
   }, [postersData, pendingPosterAdds, pendingPosterRemoveIds, pendingMainPosterId, id]);
@@ -220,7 +210,7 @@ export function useMovieEditDerived(params: {
 
   // @contract savedMainPosterId reflects only the DB-persisted main poster — never changes during editing
   const savedMainPosterId = useMemo(
-    () => postersData.find((p) => p.is_main)?.id ?? null,
+    () => postersData.find((p) => p.is_main_poster)?.id ?? null,
     [postersData],
   );
 

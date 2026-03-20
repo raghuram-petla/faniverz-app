@@ -11,6 +11,7 @@ export type {
   MoviePlatform,
   WatchlistEntry,
   VideoType,
+  MovieImage,
   MoviePoster,
   MovieVideo,
   ProductionHouse,

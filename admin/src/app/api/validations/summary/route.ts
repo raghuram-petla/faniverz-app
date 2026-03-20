@@ -16,7 +16,7 @@ interface ScanConfig {
 const SCAN_CONFIGS: ScanConfig[] = [
   { table: 'movies', field: 'poster_url', label: 'Movie Posters' },
   { table: 'movies', field: 'backdrop_url', label: 'Movie Backdrops' },
-  { table: 'movie_posters', field: 'image_url', label: 'Poster Gallery' },
+  { table: 'movie_images', field: 'image_url', label: 'Image Gallery' },
   { table: 'actors', field: 'photo_url', label: 'Actor Photos' },
   { table: 'platforms', field: 'logo_url', label: 'Platform Logos' },
   { table: 'production_houses', field: 'logo_url', label: 'Production House Logos' },

@@ -2,7 +2,7 @@
 
 export type ScanEntity =
   | 'movies'
-  | 'movie_posters'
+  | 'movie_images'
   | 'actors'
   | 'platforms'
   | 'production_houses'

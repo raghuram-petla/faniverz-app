@@ -48,6 +48,8 @@ const mockMovie: Movie = {
   original_language: null,
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
   spotlight_focus_x: null,
   spotlight_focus_y: null,
   detail_focus_x: null,

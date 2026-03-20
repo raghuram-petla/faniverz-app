@@ -14,18 +14,10 @@ vi.mock('@/hooks/useImageUpload', () => ({
   useImageUpload: () => ({ upload: vi.fn(), uploading: false }),
 }));
 
-vi.mock('@/components/movie-edit/ImageUploadField', () => ({
-  ImageUploadField: (props: { label: string }) => (
-    <div data-testid={`image-upload-${props.label.toLowerCase()}`} />
+vi.mock('@/components/movie-edit/MainImageSelector', () => ({
+  MainImageSelector: (props: { label: string }) => (
+    <div data-testid={`main-image-selector-${props.label.toLowerCase().replace(/\s+/g, '-')}`} />
   ),
-}));
-
-vi.mock('@/components/common/ImageVariantsPanel', () => ({
-  ImageVariantsPanel: () => <div data-testid="image-variants-panel" />,
-}));
-
-vi.mock('@/components/movie-edit/BackdropFocalPicker', () => ({
-  BackdropFocalPicker: () => <div data-testid="backdrop-focal-picker" />,
 }));
 
 vi.mock('@/hooks/useImageVariants', () => ({
@@ -55,6 +47,8 @@ const defaultForm: MovieForm = {
   tmdb_id: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
 };
 
 function renderPostersSection(overrides: Record<string, unknown> = {}) {
@@ -62,14 +56,13 @@ function renderPostersSection(overrides: Record<string, unknown> = {}) {
     visiblePosters: [],
     onAdd: vi.fn(),
     onRemove: vi.fn(),
-    onSetMain: vi.fn(),
+    onSelectMainPoster: vi.fn(),
+    onSelectMainBackdrop: vi.fn(),
     savedMainPosterId: null,
+    onPendingMainChange: vi.fn(),
     form: defaultForm,
     setForm: vi.fn(),
     updateField: vi.fn(),
-    uploadingBackdrop: false,
-    handleImageUpload: vi.fn(),
-    setUploadingBackdrop: vi.fn(),
     ...overrides,
   };
   render(<PostersSection {...props} />);
@@ -83,27 +76,31 @@ const MOCK_POSTER = {
   title: 'First Look',
   description: null,
   poster_date: '2025-03-01',
-  is_main: true,
+  is_main_poster: true,
+  is_main_backdrop: false,
+  image_type: 'poster',
   display_order: 0,
   created_at: '2025-01-01',
 };
 
 describe('PostersSection', () => {
-  it('renders backdrop upload field (no separate main poster upload)', () => {
+  it('renders main image selectors for poster and backdrop', () => {
     renderPostersSection();
-    expect(screen.getByTestId('image-upload-backdrop')).toBeInTheDocument();
-    expect(screen.queryByTestId('image-upload-poster')).not.toBeInTheDocument();
+    expect(screen.getByTestId('main-image-selector-main-poster')).toBeInTheDocument();
+    expect(screen.getByTestId('main-image-selector-main-backdrop')).toBeInTheDocument();
   });
 
   it('renders section subheadings', () => {
     renderPostersSection();
-    expect(screen.getByText('Backdrop')).toBeInTheDocument();
-    expect(screen.getByText('Posters')).toBeInTheDocument();
+    expect(screen.getByText('Main Images')).toBeInTheDocument();
+    expect(screen.getByText('Images')).toBeInTheDocument();
   });
 
-  it('renders backdrop focal picker', () => {
+  it('does not render old backdrop upload or focal picker sections', () => {
     renderPostersSection();
-    expect(screen.getByTestId('backdrop-focal-picker')).toBeInTheDocument();
+    expect(screen.queryByText('Backdrop')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('image-upload-backdrop')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('backdrop-focal-picker')).not.toBeInTheDocument();
   });
 
   it('hides add form by default and shows + Add button', () => {
@@ -135,9 +132,7 @@ describe('PostersSection', () => {
     renderPostersSection();
     fireEvent.click(screen.getByRole('button', { name: /Add/ }));
     const confirmBtn = screen.getByRole('button', { name: /Add to Gallery/ });
-    // disabled with no title and no image
     expect(confirmBtn).toBeDisabled();
-    // still disabled with only title (no uploaded image)
     const titleInput = screen.getByPlaceholderText(/First Look/);
     fireEvent.change(titleInput, { target: { value: 'Test Poster' } });
     expect(confirmBtn).toBeDisabled();
@@ -149,11 +144,6 @@ describe('PostersSection', () => {
     expect(screen.getByText('2025-03-01')).toBeInTheDocument();
   });
 
-  it('shows Main badge on main poster', () => {
-    renderPostersSection({ visiblePosters: [MOCK_POSTER] });
-    expect(screen.getByText('Main')).toBeInTheDocument();
-  });
-
   it('disables remove button for main poster', () => {
     renderPostersSection({ visiblePosters: [MOCK_POSTER] });
     const removeBtn = screen.getByRole('button', { name: /Remove First Look/ });
@@ -161,7 +151,7 @@ describe('PostersSection', () => {
   });
 
   it('enables remove button for non-main poster', () => {
-    const nonMain = { ...MOCK_POSTER, id: 'poster-2', is_main: false, title: 'Second Look' };
+    const nonMain = { ...MOCK_POSTER, id: 'poster-2', is_main_poster: false, title: 'Second Look' };
     renderPostersSection({ visiblePosters: [MOCK_POSTER, nonMain] });
     const removeBtn = screen.getByRole('button', { name: /Remove Second Look/ });
     expect(removeBtn).not.toBeDisabled();
@@ -169,6 +159,6 @@ describe('PostersSection', () => {
 
   it('shows empty state when no posters', () => {
     renderPostersSection();
-    expect(screen.getByText('No posters added yet.')).toBeInTheDocument();
+    expect(screen.getByText('No images added yet.')).toBeInTheDocument();
   });
 });

@@ -69,11 +69,13 @@ export const createStyles = (t: SemanticTheme) =>
 
     // Photos tab
     photosTab: {},
+    photoFilterPills: { paddingBottom: 12 },
     photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
     photoCard: { width: CARD_WIDTH },
+    /** @contract Backdrops span full width so the 16:9 ratio renders at a usable size */
+    photoCardBackdrop: { width: '100%' },
     photoImage: {
       width: '100%',
-      aspectRatio: 2 / 3,
       borderRadius: 8,
       backgroundColor: t.surfaceElevated,
     },
@@ -91,6 +93,7 @@ export const createStyles = (t: SemanticTheme) =>
       zIndex: 2,
     },
     mainBadgeText: { fontSize: 9, fontWeight: '700', color: colors.yellow400 },
+    mainBadgeTextBlue: { fontSize: 9, fontWeight: '700', color: colors.blue400 },
 
     // Photo title overlay
     photoOverlay: {

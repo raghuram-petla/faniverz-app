@@ -34,6 +34,7 @@ vi.mock('@/hooks/useAdminPosters', () => ({
   useAddPoster: () => ({ mutateAsync: vi.fn() }),
   useRemovePoster: () => ({ mutateAsync: vi.fn() }),
   useSetMainPoster: () => ({ mutateAsync: vi.fn() }),
+  useSetMainBackdrop: () => ({ mutateAsync: vi.fn() }),
 }));
 
 vi.mock('@/hooks/useMovieProductionHouses', () => ({

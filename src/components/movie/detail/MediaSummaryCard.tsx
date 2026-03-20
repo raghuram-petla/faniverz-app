@@ -31,10 +31,19 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
     parts.push(
       `${videos.length} ${videos.length !== 1 ? t('movieDetail.videos') : t('movieDetail.video')}`,
     );
-  if (posters.length > 0)
-    parts.push(
-      `${posters.length} ${posters.length !== 1 ? t('movieDetail.photos') : t('movieDetail.photo')}`,
+  /** @contract Show separate poster/backdrop counts instead of a single "N Photos" count */
+  const posterCount = posters.filter((p) => p.image_type === 'poster').length;
+  const backdropCount = posters.filter((p) => p.image_type === 'backdrop').length;
+  const photoParts: string[] = [];
+  if (posterCount > 0)
+    photoParts.push(
+      `${posterCount} ${posterCount !== 1 ? t('movieDetail.posters') : t('movieDetail.poster')}`,
     );
+  if (backdropCount > 0)
+    photoParts.push(
+      `${backdropCount} ${backdropCount !== 1 ? t('movieDetail.backdrops') : t('movieDetail.backdrop')}`,
+    );
+  if (photoParts.length > 0) parts.push(photoParts.join(' · '));
   const summaryText = parts.join(' · ');
 
   return (

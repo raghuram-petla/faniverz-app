@@ -21,6 +21,7 @@ import {
   useAddPoster,
   useRemovePoster,
   useSetMainPoster,
+  useSetMainBackdrop,
 } from '@/hooks/useAdminPosters';
 import {
   useMovieProductionHouses,
@@ -66,6 +67,7 @@ export function useMovieEditData(id: string) {
   const addPoster = useAddPoster();
   const removePoster = useRemovePoster();
   const setMainPoster = useSetMainPoster();
+  const setMainBackdrop = useSetMainBackdrop();
 
   const { data: movieProductionHouses = [] } = useMovieProductionHouses(id);
   const addMovieProductionHouse = useAddMovieProductionHouse();
@@ -103,6 +105,7 @@ export function useMovieEditData(id: string) {
     addPoster,
     removePoster,
     setMainPoster,
+    setMainBackdrop,
     movieProductionHouses,
     addMovieProductionHouse,
     removeMovieProductionHouse,

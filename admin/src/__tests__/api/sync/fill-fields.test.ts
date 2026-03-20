@@ -59,7 +59,7 @@ vi.mock('@/lib/supabase-admin', () => ({
       if (table === 'actors') {
         return { upsert: () => mockActorUpsert() };
       }
-      if (table === 'movie_posters') {
+      if (table === 'movie_images') {
         return {
           select: () => ({
             eq: () => ({
@@ -306,8 +306,8 @@ describe('POST /api/sync/fill-fields', () => {
     expect(mockMovieUpdateCapture).toHaveBeenCalledWith(expect.objectContaining({ runtime: null }));
   });
 
-  it('inserts into movie_posters when poster_url is updated and no main poster exists', async () => {
-    // @contract: updating poster_url must mirror the new URL into movie_posters (is_main=true)
+  it('inserts into movie_images when poster_url is updated and no main poster exists', async () => {
+    // @contract: updating poster_url must mirror the new URL into movie_images (is_main_poster=true)
     // so the admin poster gallery shows the poster for newly imported movies.
     mockMoviePostersMainSelect.mockResolvedValue({ data: null, error: null }); // no existing main
 
@@ -316,7 +316,7 @@ describe('POST /api/sync/fill-fields', () => {
     expect(mockMoviePostersInsert).toHaveBeenCalled();
   });
 
-  it('updates existing movie_posters main row when one already exists', async () => {
+  it('updates existing movie_images main row when one already exists', async () => {
     // @contract: if a main poster row already exists, update its image_url rather than inserting
     mockMoviePostersMainSelect.mockResolvedValue({
       data: { id: 'poster-uuid' },

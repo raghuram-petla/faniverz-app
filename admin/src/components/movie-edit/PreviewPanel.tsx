@@ -33,9 +33,17 @@ const PLACEHOLDER_POSTER =
 // @coupling MovieForm from useMovieEditState — reads all visual fields for live preview
 interface PreviewPanelProps {
   form: MovieForm;
+  /** @contract R2 bucket for poster URL — varies when a backdrop image is set as main poster */
+  posterBucket?: 'POSTERS' | 'BACKDROPS';
+  /** @contract R2 bucket for backdrop URL — varies when a poster image is set as main backdrop */
+  backdropBucket?: 'POSTERS' | 'BACKDROPS';
 }
 
-export function PreviewPanel({ form }: PreviewPanelProps) {
+export function PreviewPanel({
+  form,
+  posterBucket = 'POSTERS',
+  backdropBucket = 'BACKDROPS',
+}: PreviewPanelProps) {
   const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
   // @assumes DEVICES[1] is a reasonable default device (iPhone-sized)
   const [device, setDevice] = useState(DEVICES[1]);
@@ -75,7 +83,7 @@ export function PreviewPanel({ form }: PreviewPanelProps) {
           <SpotlightPreview
             title={form.title || 'Movie Title'}
             backdropUrl={
-              (getImageUrl(form.backdrop_url, 'original', 'BACKDROPS') ?? form.backdrop_url) ||
+              (getImageUrl(form.backdrop_url, 'original', backdropBucket) ?? form.backdrop_url) ||
               PLACEHOLDER_BACKDROP
             }
             movieStatus={deriveMovieStatus(
@@ -96,11 +104,11 @@ export function PreviewPanel({ form }: PreviewPanelProps) {
           <MovieDetailPreview
             title={form.title || 'Movie Title'}
             backdropUrl={
-              (getImageUrl(form.backdrop_url, 'original', 'BACKDROPS') ?? form.backdrop_url) ||
+              (getImageUrl(form.backdrop_url, 'original', backdropBucket) ?? form.backdrop_url) ||
               PLACEHOLDER_BACKDROP
             }
             posterUrl={
-              (getImageUrl(form.poster_url, 'sm', 'POSTERS') ?? form.poster_url) ||
+              (getImageUrl(form.poster_url, 'sm', posterBucket) ?? form.poster_url) ||
               PLACEHOLDER_POSTER
             }
             movieStatus={deriveMovieStatus(
@@ -117,6 +125,8 @@ export function PreviewPanel({ form }: PreviewPanelProps) {
             releaseDate={form.release_date || null}
             focusX={form.backdrop_focus_x}
             focusY={form.backdrop_focus_y}
+            posterFocusX={form.poster_focus_x}
+            posterFocusY={form.poster_focus_y}
           />
         )}
       </DeviceFrame>

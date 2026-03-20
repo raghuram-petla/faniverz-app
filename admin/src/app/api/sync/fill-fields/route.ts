@@ -145,28 +145,29 @@ export async function POST(request: NextRequest) {
       .eq('id', movieId);
     if (updateErr) throw new Error(`Movie update failed: ${updateErr.message}`);
 
-    // @sideeffect: when poster_url was updated, mirror it into movie_posters so the
-    // admin poster gallery stays in sync. Partial unique index on (movie_id) WHERE is_main=true
+    // @sideeffect: when poster_url was updated, mirror it into movie_images so the
+    // admin image gallery stays in sync. Partial unique index on (movie_id) WHERE is_main_poster=true
     // prevents Supabase JS upsert onConflict — use select-then-update/insert instead.
     if (updatedFields.includes('poster_url') && updatePayload.poster_url) {
       const newPosterUrl = updatePayload.poster_url as string;
       const { data: existingMain } = await supabase
-        .from('movie_posters')
+        .from('movie_images')
         .select('id')
         .eq('movie_id', movieId)
-        .eq('is_main', true)
+        .eq('is_main_poster', true)
         .maybeSingle();
       if (existingMain) {
         await supabase
-          .from('movie_posters')
+          .from('movie_images')
           .update({ image_url: newPosterUrl })
           .eq('id', existingMain.id);
       } else {
-        await supabase.from('movie_posters').insert({
+        await supabase.from('movie_images').insert({
           movie_id: movieId,
           image_url: newPosterUrl,
+          image_type: 'poster',
           title: 'Main Poster',
-          is_main: true,
+          is_main_poster: true,
           display_order: 0,
         });
       }

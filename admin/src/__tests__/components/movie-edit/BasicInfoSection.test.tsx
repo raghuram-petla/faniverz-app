@@ -27,6 +27,8 @@ const defaultForm: MovieForm = {
   tmdb_id: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
 };
 
 /** Find an input/select/textarea that is a sibling of a label with the given text */

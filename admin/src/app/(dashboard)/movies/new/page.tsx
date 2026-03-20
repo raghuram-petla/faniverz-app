@@ -111,15 +111,15 @@ export default function NewMoviePage() {
                 visiblePosters={s.visiblePosters}
                 onAdd={(poster) => s.setPendingPosterAdds((prev) => [...prev, poster])}
                 onRemove={s.handlePosterRemove}
-                onSetMain={(posterId) => s.setPendingMainPosterId(posterId)}
+                onSelectMainPoster={(posterId) => s.setPendingMainPosterId(posterId)}
+                onSelectMainBackdrop={() => {
+                  /* no-op for new movie */
+                }}
                 savedMainPosterId={s.savedMainPosterId}
                 onPendingMainChange={setPendingPreviewPosterUrl}
                 form={s.form}
                 setForm={s.setForm}
                 updateField={s.updateField}
-                uploadingBackdrop={s.uploadingBackdrop}
-                handleImageUpload={s.handleImageUpload}
-                setUploadingBackdrop={s.setUploadingBackdrop}
               />
             </SectionCard>
           )}

@@ -38,6 +38,8 @@ const INITIAL_FORM: MovieForm = {
   tmdb_id: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
 };
 
 // @contract Returns a self-contained state bundle for the movie-add form
@@ -106,7 +108,7 @@ export function useMovieAddState() {
     try {
       // @contract sync poster_url from the main poster in the gallery
       const mainPendingPoster = pending.pendingPosterAdds.find((p) =>
-        pending.pendingMainPosterId ? p._id === pending.pendingMainPosterId : p.is_main,
+        pending.pendingMainPosterId ? p._id === pending.pendingMainPosterId : p.is_main_poster,
       );
       const effectivePosterUrl = mainPendingPoster ? mainPendingPoster.image_url : form.poster_url;
 
@@ -155,10 +157,12 @@ export function useMovieAddState() {
       for (const p of pending.pendingPosterAdds) {
         const isMain = pending.pendingMainPosterId
           ? p._id === pending.pendingMainPosterId
-          : p.is_main;
+          : p.is_main_poster;
         const { _id, ...posterData } = p;
         void _id;
-        promises.push(addPoster.mutateAsync({ movie_id: movieId, ...posterData, is_main: isMain }));
+        promises.push(
+          addPoster.mutateAsync({ movie_id: movieId, ...posterData, is_main_poster: isMain }),
+        );
       }
       for (const p of pending.pendingPlatformAdds) {
         promises.push(

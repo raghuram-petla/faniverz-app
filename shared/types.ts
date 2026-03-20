@@ -35,6 +35,8 @@ export interface Movie {
   original_language: string | null;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;
+  poster_focus_x: number | null;
+  poster_focus_y: number | null;
   spotlight_focus_x: number | null;
   spotlight_focus_y: number | null;
   detail_focus_x: number | null;
@@ -121,17 +123,27 @@ export interface WatchlistEntry {
   movie?: Movie;
 }
 
-export interface MoviePoster {
+export interface MovieImage {
   id: string;
   movie_id: string;
   image_url: string;
-  title: string;
+  image_type: 'poster' | 'backdrop';
+  is_main_poster: boolean;
+  is_main_backdrop: boolean;
+  title: string | null;
   description: string | null;
   poster_date: string | null;
-  is_main: boolean;
+  tmdb_file_path: string | null;
+  iso_639_1: string | null;
+  width: number | null;
+  height: number | null;
+  vote_average: number;
   display_order: number;
   created_at: string;
 }
+
+/** @deprecated Use MovieImage instead */
+export type MoviePoster = MovieImage;
 
 export interface MovieVideo {
   id: string;

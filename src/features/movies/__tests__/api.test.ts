@@ -131,8 +131,8 @@ describe('movies api', () => {
             }),
           };
         }
-        if (table === 'movie_posters' || table === 'movie_videos') {
-          const data = table === 'movie_posters' ? posters : videos;
+        if (table === 'movie_images' || table === 'movie_videos') {
+          const data = table === 'movie_images' ? posters : videos;
           return {
             select: jest.fn().mockReturnValue({
               eq: jest.fn().mockReturnValue({

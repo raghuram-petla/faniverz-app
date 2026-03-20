@@ -47,8 +47,8 @@ beforeEach(() => {
 describe('useMoviePosters', () => {
   it('fetches posters for a given movieId sorted by display_order', async () => {
     const mockPosters = [
-      { id: 'p1', movie_id: 'm1', title: 'Main Poster', is_main: true, display_order: 0 },
-      { id: 'p2', movie_id: 'm1', title: 'First Look', is_main: false, display_order: 1 },
+      { id: 'p1', movie_id: 'm1', title: 'Main Poster', is_main_poster: true, display_order: 0 },
+      { id: 'p2', movie_id: 'm1', title: 'First Look', is_main_poster: false, display_order: 1 },
     ];
 
     const mockOrder = vi.fn().mockResolvedValue({ data: mockPosters, error: null });
@@ -64,7 +64,7 @@ describe('useMoviePosters', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFrom).toHaveBeenCalledWith('movie_posters');
+    expect(mockFrom).toHaveBeenCalledWith('movie_images');
     expect(mockEq).toHaveBeenCalledWith('movie_id', 'm1');
     expect(mockOrder).toHaveBeenCalledWith('display_order', { ascending: true });
     expect(result.current.data).toEqual(mockPosters);
@@ -97,7 +97,9 @@ describe('useAddPoster', () => {
         movie_id: 'm1',
         image_url: 'https://r2.dev/x.jpg',
         title: 'New Poster',
-        is_main: false,
+        is_main_poster: false,
+        is_main_backdrop: false,
+        image_type: 'poster',
         display_order: 0,
       } as never);
     });
@@ -109,12 +111,14 @@ describe('useAddPoster', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
-          table: 'movie_posters',
+          table: 'movie_images',
           data: {
             movie_id: 'm1',
             image_url: 'https://r2.dev/x.jpg',
             title: 'New Poster',
-            is_main: false,
+            is_main_poster: false,
+            is_main_backdrop: false,
+            image_type: 'poster',
             display_order: 0,
           },
         }),
@@ -148,7 +152,7 @@ describe('useUpdatePoster', () => {
       expect.objectContaining({
         method: 'PATCH',
         body: JSON.stringify({
-          table: 'movie_posters',
+          table: 'movie_images',
           id: 'p1',
           data: { title: 'Updated Poster' },
         }),
@@ -177,7 +181,7 @@ describe('useRemovePoster', () => {
       '/api/admin-crud',
       expect.objectContaining({
         method: 'DELETE',
-        body: JSON.stringify({ table: 'movie_posters', id: 'p1' }),
+        body: JSON.stringify({ table: 'movie_images', id: 'p1' }),
       }),
     );
 
@@ -203,7 +207,7 @@ describe('useSetMainPoster', () => {
             id: 'p2',
             movie_id: 'm1',
             image_url: 'https://r2.dev/new.jpg',
-            is_main: true,
+            is_main_poster: true,
           }),
         } as Response;
       }
@@ -231,9 +235,9 @@ describe('useSetMainPoster', () => {
       expect.objectContaining({
         method: 'PATCH',
         body: JSON.stringify({
-          table: 'movie_posters',
-          filters: { movie_id: 'm1', is_main: true },
-          data: { is_main: false },
+          table: 'movie_images',
+          filters: { movie_id: 'm1', is_main_poster: true },
+          data: { is_main_poster: false },
           returnOne: false,
         }),
       }),
@@ -246,9 +250,9 @@ describe('useSetMainPoster', () => {
       expect.objectContaining({
         method: 'PATCH',
         body: JSON.stringify({
-          table: 'movie_posters',
+          table: 'movie_images',
           id: 'p2',
-          data: { is_main: true },
+          data: { is_main_poster: true },
         }),
       }),
     );

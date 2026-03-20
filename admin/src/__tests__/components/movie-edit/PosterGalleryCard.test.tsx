@@ -36,74 +36,59 @@ describe('PosterGalleryCard', () => {
     image_url: 'https://example.com/poster.jpg',
     title: 'First Look',
     poster_date: '2025-06-01',
-    is_main: false,
+    is_main_poster: false,
+    is_main_backdrop: false,
   };
 
   it('renders poster title and date', () => {
-    render(<PosterGalleryCard poster={basePoster} onSetMain={vi.fn()} onRemove={vi.fn()} />);
+    render(<PosterGalleryCard poster={basePoster} onRemove={vi.fn()} />);
     expect(screen.getByText('First Look')).toBeInTheDocument();
     expect(screen.getByText('2025-06-01')).toBeInTheDocument();
   });
 
   it('renders thumbnail image', () => {
-    render(<PosterGalleryCard poster={basePoster} onSetMain={vi.fn()} onRemove={vi.fn()} />);
+    render(<PosterGalleryCard poster={basePoster} onRemove={vi.fn()} />);
     expect(screen.getByAltText('First Look')).toBeInTheDocument();
   });
 
-  it('shows Set Main button for non-main posters', () => {
-    render(<PosterGalleryCard poster={basePoster} onSetMain={vi.fn()} onRemove={vi.fn()} />);
-    expect(screen.getByText('Set Main')).toBeInTheDocument();
+  it('does not show Set Main Poster button (removed from card)', () => {
+    render(<PosterGalleryCard poster={basePoster} onRemove={vi.fn()} />);
+    expect(screen.queryByText('Set Main Poster')).not.toBeInTheDocument();
   });
 
-  it('hides Set Main button for main poster', () => {
-    render(
-      <PosterGalleryCard
-        poster={{ ...basePoster, is_main: true }}
-        onSetMain={vi.fn()}
-        onRemove={vi.fn()}
-      />,
-    );
-    expect(screen.queryByText('Set Main')).not.toBeInTheDocument();
-  });
-
-  it('shows Main badge for main poster', () => {
-    render(
-      <PosterGalleryCard
-        poster={{ ...basePoster, is_main: true }}
-        onSetMain={vi.fn()}
-        onRemove={vi.fn()}
-      />,
-    );
-    expect(screen.getByText('Main')).toBeInTheDocument();
-  });
-
-  it('calls onSetMain when Set Main is clicked', () => {
-    const onSetMain = vi.fn();
-    render(<PosterGalleryCard poster={basePoster} onSetMain={onSetMain} onRemove={vi.fn()} />);
-    fireEvent.click(screen.getByText('Set Main'));
-    expect(onSetMain).toHaveBeenCalledWith('poster-1');
+  it('does not show Set Main Backdrop button (removed from card)', () => {
+    render(<PosterGalleryCard poster={basePoster} onRemove={vi.fn()} />);
+    expect(screen.queryByText('Set Main Backdrop')).not.toBeInTheDocument();
   });
 
   it('calls onRemove when remove button is clicked', () => {
     const onRemove = vi.fn();
-    render(<PosterGalleryCard poster={basePoster} onSetMain={vi.fn()} onRemove={onRemove} />);
+    render(<PosterGalleryCard poster={basePoster} onRemove={onRemove} />);
     fireEvent.click(screen.getByLabelText('Remove First Look'));
     expect(onRemove).toHaveBeenCalledWith('poster-1', false);
   });
 
+  it('disables remove button for main poster', () => {
+    render(
+      <PosterGalleryCard poster={{ ...basePoster, is_main_poster: true }} onRemove={vi.fn()} />,
+    );
+    expect(screen.getByLabelText('Remove First Look')).toBeDisabled();
+  });
+
+  it('disables remove button for main backdrop', () => {
+    render(
+      <PosterGalleryCard poster={{ ...basePoster, is_main_backdrop: true }} onRemove={vi.fn()} />,
+    );
+    expect(screen.getByLabelText('Remove First Look')).toBeDisabled();
+  });
+
   it('renders compact variant status', () => {
-    render(<PosterGalleryCard poster={basePoster} onSetMain={vi.fn()} onRemove={vi.fn()} />);
+    render(<PosterGalleryCard poster={basePoster} onRemove={vi.fn()} />);
     expect(screen.getByTestId('poster-variant-status')).toBeInTheDocument();
   });
 
   it('does not show date when poster_date is null', () => {
-    render(
-      <PosterGalleryCard
-        poster={{ ...basePoster, poster_date: null }}
-        onSetMain={vi.fn()}
-        onRemove={vi.fn()}
-      />,
-    );
+    render(<PosterGalleryCard poster={{ ...basePoster, poster_date: null }} onRemove={vi.fn()} />);
     expect(screen.queryByText('2025-06-01')).not.toBeInTheDocument();
   });
 });

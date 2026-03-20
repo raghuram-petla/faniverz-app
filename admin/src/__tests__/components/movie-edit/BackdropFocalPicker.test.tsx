@@ -40,16 +40,6 @@ describe('BackdropFocalPicker', () => {
     expect(screen.getByText(/loading…/)).toBeInTheDocument();
   });
 
-  it('shows default focus coordinates (50%, 50%) when focus is null', () => {
-    render(<BackdropFocalPicker {...defaultProps} />);
-    expect(screen.getByText(/50%, 50%/)).toBeInTheDocument();
-  });
-
-  it('shows actual focus coordinates when set', () => {
-    render(<BackdropFocalPicker {...defaultProps} focusX={0.3} focusY={0.7} />);
-    expect(screen.getByText(/30%, 70%/)).toBeInTheDocument();
-  });
-
   it('shows Reset button only when focus is set', () => {
     const { rerender } = render(<BackdropFocalPicker {...defaultProps} />);
     expect(screen.queryByText('Reset to Center')).not.toBeInTheDocument();

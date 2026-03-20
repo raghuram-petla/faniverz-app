@@ -1,93 +1,93 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useImageUpload } from '@/hooks/useImageUpload';
-import { Image, Upload, Loader2, RefreshCw, Check } from 'lucide-react';
+/**
+ * Form for adding a new image (poster or backdrop) to the gallery.
+ * Auto-detects image type based on dimensions (landscape = backdrop, portrait = poster).
+ *
+ * @contract Emits onConfirm with pending poster data when user clicks "Add to Gallery".
+ * Does not fire any DB mutations — parent defers to save.
+ */
+
+import { useState, useRef } from 'react';
+import { Upload, RefreshCw, Loader2, Check, Image } from 'lucide-react';
 import { Button } from '@/components/common/Button';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import type { PendingPosterAdd } from '@/hooks/useMovieEditTypes';
 import { getImageUrl } from '@shared/imageUrl';
 
 const emptyPosterForm = () => ({
   title: '',
   description: '',
-  // @contract default to today so the user rarely needs to change the date
   poster_date: new Date().toISOString().slice(0, 10),
 });
 
-// @contract PosterAddForm handles the upload + metadata entry for a single new poster
-// @coupling Parent (PostersSection) owns the gallery list; this component only emits onConfirm/onCancel
 export interface PosterAddFormProps {
   hasNoPosters: boolean;
   posterCount: number;
-  /** @sideeffect Called with pending poster data when user clicks "Add to Gallery" */
   onConfirm: (poster: PendingPosterAdd, pendingId: string) => void;
   onCancel: () => void;
-  /** @contract Called with image URL when a pending poster is eligible to be preview main, or null */
-  onPendingMainChange?: (url: string | null) => void;
+  onPendingMainChange?: (previewUrl: string | null) => void;
 }
 
-export function PosterAddForm({
-  hasNoPosters,
-  posterCount,
-  onConfirm,
-  onCancel,
-  onPendingMainChange,
-}: PosterAddFormProps) {
-  const [posterForm, setPosterForm] = useState(emptyPosterForm());
-  // @contract uploadedUrl holds the image key after upload — separate from form fields
+export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFormProps) {
+  const [posterForm, setPosterForm] = useState(emptyPosterForm);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
-  // @contract setAsMain defaults true when no posters exist (first poster is always main)
-  const [setAsMain, setSetAsMain] = useState(false);
-  const { upload, uploading } = useImageUpload('/api/upload/movie-poster');
+  const [detectedType, setDetectedType] = useState<'poster' | 'backdrop'>('poster');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // @contract notify parent whenever the pending-main preview URL changes
-  useEffect(() => {
-    const previewUrl = (hasNoPosters || setAsMain) && uploadedUrl ? uploadedUrl : null;
-    onPendingMainChange?.(previewUrl);
-  }, [uploadedUrl, setAsMain, hasNoPosters, onPendingMainChange]);
+  // @contract two upload hooks — one per bucket. Call the right one after detecting image type.
+  const posterUpload = useImageUpload('/api/upload/movie-poster');
+  const backdropUpload = useImageUpload('/api/upload/movie-backdrop');
+  const uploading = posterUpload.uploading || backdropUpload.uploading;
 
-  // @contract only uploads and stores the URL — does not add to gallery yet
+  // @contract detect image type from file dimensions, then upload to the correct endpoint
   async function handleUpload(file: File) {
     try {
-      const url = await upload(file);
+      const type = await detectImageType(file);
+      setDetectedType(type);
+      const uploader = type === 'backdrop' ? backdropUpload : posterUpload;
+      const url = await uploader.upload(file);
       setUploadedUrl(url);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
     }
   }
 
-  // @contract adds the poster to the pending gallery and resets the add form
-  // @assumes uploadedUrl and posterForm.title are non-empty (button is disabled otherwise)
   function handleConfirmAdd() {
     if (!uploadedUrl) return;
     const pendingId = `pending-poster-${crypto.randomUUID()}`;
-    const isMain = hasNoPosters || setAsMain;
     onConfirm(
       {
         _id: pendingId,
         image_url: uploadedUrl,
-        title: posterForm.title || 'Poster',
+        title: posterForm.title || (detectedType === 'backdrop' ? 'Backdrop' : 'Poster'),
         description: posterForm.description || null,
         poster_date: posterForm.poster_date || null,
-        is_main: isMain,
+        is_main_poster: false,
+        is_main_backdrop: false,
+        image_type: detectedType,
         display_order: posterCount,
       },
       pendingId,
     );
   }
 
+  const bucket = detectedType === 'backdrop' ? 'BACKDROPS' : 'POSTERS';
+  const previewClass = detectedType === 'backdrop' ? 'w-32 h-[72px]' : 'w-20 h-[120px]';
+
   return (
     <div className="bg-surface-elevated rounded-xl p-4 space-y-3 mb-4">
-      {/* ── Image area ── */}
       <div className="flex gap-4 items-start">
         {uploadedUrl ? (
           <div className="shrink-0 relative">
             <img
-              src={getImageUrl(uploadedUrl, 'sm', 'POSTERS') ?? uploadedUrl}
-              alt="Poster preview"
-              className="w-20 h-[120px] rounded-lg object-cover"
+              src={getImageUrl(uploadedUrl, 'sm', bucket) ?? uploadedUrl}
+              alt="Preview"
+              className={`rounded-lg object-cover ${previewClass}`}
             />
+            <span className="absolute bottom-1 left-1 bg-black/70 text-white text-[9px] px-1 py-0.5 rounded capitalize">
+              {detectedType}
+            </span>
           </div>
         ) : (
           <div className="w-20 h-[120px] shrink-0 rounded-lg border-2 border-dashed border-outline flex items-center justify-center">
@@ -99,7 +99,7 @@ export function PosterAddForm({
           {/* Title + Date */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-on-surface-subtle mb-1">Title *</label>
+              <label className="block text-xs text-on-surface-subtle mb-1">Title</label>
               <input
                 type="text"
                 placeholder="e.g. First Look, Hero Birthday Poster"
@@ -119,7 +119,7 @@ export function PosterAddForm({
             </div>
           </div>
 
-          {/* Upload / Change button + Set as main checkbox on same row */}
+          {/* Upload button */}
           <input
             ref={fileInputRef}
             type="file"
@@ -131,43 +131,31 @@ export function PosterAddForm({
               e.target.value = '';
             }}
           />
-          <div className="flex items-center gap-3 flex-wrap">
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline text-on-surface-muted text-sm hover:bg-input disabled:opacity-50"
-            >
-              {uploading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : uploadedUrl ? (
-                <RefreshCw className="w-3.5 h-3.5" />
-              ) : (
-                <Upload className="w-3.5 h-3.5" />
-              )}
-              {uploading ? 'Uploading…' : uploadedUrl ? 'Change Image' : 'Upload Image'}
-            </button>
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={hasNoPosters || setAsMain}
-                disabled={hasNoPosters}
-                onChange={(e) => setSetAsMain(e.target.checked)}
-                className="w-4 h-4 rounded accent-red-600"
-              />
-              <span className="text-sm text-on-surface-muted">Set as main poster</span>
-            </label>
-          </div>
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline text-on-surface-muted text-sm hover:bg-input disabled:opacity-50"
+          >
+            {uploading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : uploadedUrl ? (
+              <RefreshCw className="w-3.5 h-3.5" />
+            ) : (
+              <Upload className="w-3.5 h-3.5" />
+            )}
+            {uploading ? 'Uploading…' : uploadedUrl ? 'Change Image' : 'Upload Image'}
+          </button>
         </div>
       </div>
 
-      {/* ── Actions ── */}
+      {/* Actions */}
       <div className="flex items-center gap-2 pt-1 border-t border-outline-subtle">
         <Button
           type="button"
           variant="primary"
           size="md"
-          disabled={!uploadedUrl || !posterForm.title}
+          disabled={!uploadedUrl}
           icon={<Check className="w-4 h-4" />}
           onClick={handleConfirmAdd}
         >
@@ -183,4 +171,21 @@ export function PosterAddForm({
       </div>
     </div>
   );
+}
+
+/** @contract detects image type from file by loading it and checking aspect ratio */
+function detectImageType(file: File): Promise<'poster' | 'backdrop'> {
+  return new Promise((resolve) => {
+    const img = new globalThis.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      // Landscape or square = backdrop; portrait = poster
+      resolve(img.naturalWidth >= img.naturalHeight ? 'backdrop' : 'poster');
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      resolve('poster'); // fallback
+    };
+    img.src = URL.createObjectURL(file);
+  });
 }

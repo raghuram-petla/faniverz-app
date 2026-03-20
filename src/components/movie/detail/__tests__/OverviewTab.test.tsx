@@ -25,6 +25,8 @@ const mockMovie = {
   detail_focus_y: null,
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
   rating: 4.5,
   review_count: 120,
   runtime: 148,
@@ -56,7 +58,9 @@ const mockMovie = {
       title: 'First Look',
       description: null,
       poster_date: null,
-      is_main: true,
+      is_main_poster: true,
+      is_main_backdrop: false,
+      image_type: 'poster',
       display_order: 0,
       created_at: '',
     },
@@ -100,7 +104,7 @@ describe('OverviewTab', () => {
   it('renders MediaSummaryCard when movie has videos', () => {
     render(<OverviewTab movie={mockMovie} onExploreMedia={onExploreMedia} />);
     expect(screen.getByText('Explore All Media')).toBeTruthy();
-    expect(screen.getByText('1 Video · 1 Photo')).toBeTruthy();
+    expect(screen.getByText('1 Video · 1 Poster')).toBeTruthy();
   });
 
   it('calls onExploreMedia when MediaSummaryCard is tapped', () => {

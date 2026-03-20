@@ -145,12 +145,12 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
           return data ?? [];
         }),
       supabase
-        .from('movie_posters')
+        .from('movie_images')
         .select('*')
         .eq('movie_id', id)
         .order('display_order')
         .then(({ data, error }) => {
-          if (error) console.warn('fetchMovieById: posters fetch failed', error);
+          if (error) console.warn('fetchMovieById: images fetch failed', error);
           return data ?? [];
         }),
       supabase

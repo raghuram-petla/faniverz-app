@@ -94,7 +94,9 @@ const mockMovie = {
       title: 'First Look',
       description: null,
       poster_date: null,
-      is_main: true,
+      is_main_poster: true,
+      is_main_backdrop: false,
+      image_type: 'poster',
       display_order: 0,
       created_at: '',
     },
@@ -133,7 +135,7 @@ describe('MediaScreen', () => {
     render(<MediaScreen />);
     fireEvent.press(screen.getByText('Photos (1)'));
     expect(screen.getByLabelText('View First Look')).toBeTruthy();
-    expect(screen.getByText('Main')).toBeTruthy();
+    expect(screen.getByText('Main Poster')).toBeTruthy();
   });
 
   it('shows loading spinner when data is loading', () => {

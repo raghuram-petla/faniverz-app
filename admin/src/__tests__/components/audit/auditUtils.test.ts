@@ -181,9 +181,15 @@ describe('getEntityDisplayName', () => {
     );
   });
 
-  it('returns poster_type for movie_posters', () => {
-    expect(getEntityDisplayName('movie_posters', { new: { poster_type: 'landscape' } })).toBe(
-      'landscape',
+  it('returns title for movie_images', () => {
+    expect(getEntityDisplayName('movie_images', { new: { title: 'First Look' } })).toBe(
+      'First Look',
+    );
+  });
+
+  it('returns image_type for movie_images when no title', () => {
+    expect(getEntityDisplayName('movie_images', { new: { image_type: 'backdrop' } })).toBe(
+      'backdrop',
     );
   });
 

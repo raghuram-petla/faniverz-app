@@ -38,9 +38,9 @@ const ENTITY_CONFIGS: Record<ScanEntity, EntityScanConfig[]> = {
       tmdbField: 'tmdb_id',
     },
   ],
-  movie_posters: [
+  movie_images: [
     {
-      table: 'movie_posters',
+      table: 'movie_images',
       field: 'image_url',
       bucket: 'faniverz-movie-posters',
       variantType: 'poster',

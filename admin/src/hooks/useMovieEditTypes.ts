@@ -28,6 +28,8 @@ export interface MovieForm {
   tmdb_id: string;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;
+  poster_focus_x: number | null;
+  poster_focus_y: number | null;
 }
 
 export type PendingVideoAdd = {
@@ -46,7 +48,9 @@ export type PendingPosterAdd = {
   title: string;
   description: string | null;
   poster_date: string | null;
-  is_main: boolean;
+  is_main_poster: boolean;
+  is_main_backdrop: boolean;
+  image_type: 'poster' | 'backdrop';
   display_order: number;
 };
 
@@ -148,6 +152,7 @@ export interface MovieEditHandlerDeps {
   addPoster: MutateAsync<{ movie_id: string } & Omit<PendingPosterAdd, '_id'>>;
   removePoster: MutateAsync<{ id: string; movieId: string }>;
   setMainPoster: MutateAsync<{ id: string; movieId: string }>;
+  setMainBackdrop: MutateAsync<{ id: string; movieId: string }>;
   addMoviePlatform: MutateAsync<{
     movie_id: string;
     platform_id: string;
@@ -188,7 +193,21 @@ export interface VideoRow {
 }
 export interface PosterRow {
   id: string;
-  title: string;
+  title: string | null;
+  image_url: string;
+  image_type: 'poster' | 'backdrop';
+  is_main_poster: boolean;
+  is_main_backdrop: boolean;
+  description: string | null;
+  poster_date: string | null;
+  tmdb_file_path: string | null;
+  iso_639_1: string | null;
+  width: number | null;
+  height: number | null;
+  vote_average: number;
+  display_order: number;
+  created_at: string;
+  movie_id: string;
 }
 export interface PlatformRow {
   platform_id: string;

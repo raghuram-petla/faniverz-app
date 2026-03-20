@@ -17,6 +17,11 @@ interface BackdropFocalPickerProps {
   focusY: number | null;
   onChange: (x: number, y: number) => void;
   onClear: () => void;
+  /** @contract override target aspect ratio for the visible frame.
+   * Defaults to HERO_ASPECT (landscape hero). Use 2/3 for poster focal points. */
+  targetAspect?: number;
+  /** @contract hide the gradient preview overlay (not relevant for poster focal points) */
+  hideGradient?: boolean;
 }
 
 export function BackdropFocalPicker({
@@ -25,6 +30,8 @@ export function BackdropFocalPicker({
   focusY,
   onChange,
   onClear,
+  targetAspect,
+  hideGradient,
 }: BackdropFocalPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -33,19 +40,23 @@ export function BackdropFocalPicker({
   const cx = focusX ?? 0.5;
   const cy = focusY ?? 0.5;
 
+  // @contract use targetAspect if provided, otherwise default to HERO_ASPECT (landscape hero)
+  const effectiveAspect = targetAspect ?? HERO_ASPECT;
+
   // @contract panDir determines if user drags horizontally, vertically, or not at all
+  // @edge tolerance of 0.05 prevents jittery panning when aspect ratios nearly match
   const panDir =
     imageAspect == null
       ? null
-      : imageAspect > HERO_ASPECT
-        ? 'horizontal'
-        : imageAspect < HERO_ASPECT
-          ? 'vertical'
-          : 'none';
+      : Math.abs(imageAspect - effectiveAspect) < 0.05
+        ? 'none'
+        : imageAspect > effectiveAspect
+          ? 'horizontal'
+          : 'vertical';
 
   // Frame size as fraction of picker dimensions
-  const frameW = panDir === 'horizontal' ? HERO_ASPECT / imageAspect! : 1;
-  const frameH = panDir === 'vertical' ? imageAspect! / HERO_ASPECT : 1;
+  const frameW = panDir === 'horizontal' ? effectiveAspect / imageAspect! : 1;
+  const frameH = panDir === 'vertical' ? imageAspect! / effectiveAspect : 1;
   const overflowW = 1 - frameW;
   const overflowH = 1 - frameH;
 
@@ -179,7 +190,7 @@ export function BackdropFocalPicker({
         )}
 
         {/* Spotlight gradient preview — shows what the hero actually looks like */}
-        {panDir && panDir !== 'none' && (
+        {panDir && panDir !== 'none' && !hideGradient && (
           <div
             className="absolute pointer-events-none rounded-lg"
             style={{
@@ -206,11 +217,8 @@ export function BackdropFocalPicker({
         )}
       </div>
 
-      <div className="flex items-center gap-4 mt-1.5">
-        <span className="text-xs text-on-surface-subtle">
-          Focus: ({Math.round(cx * 100)}%, {Math.round(cy * 100)}%)
-        </span>
-        {focusX != null && (
+      {focusX != null && (
+        <div className="mt-1.5">
           <button
             type="button"
             onClick={onClear}
@@ -218,8 +226,8 @@ export function BackdropFocalPicker({
           >
             Reset to Center
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

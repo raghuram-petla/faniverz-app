@@ -1,5 +1,6 @@
 'use client';
 import type React from 'react';
+import type { Movie } from '@/lib/types';
 import type { MovieEditHandlerDeps } from '@/hooks/useMovieEditTypes';
 import { createCommonFormHandlers } from '@/hooks/createCommonFormHandlers';
 import { validateMovieForm, formatErrors } from '@/lib/movie-validation';
@@ -40,6 +41,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     addPoster,
     removePoster,
     setMainPoster,
+    setMainBackdrop,
     addMoviePlatform,
     removeMoviePlatform,
     addMovieProductionHouse,
@@ -78,7 +80,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       //       racing updateMovie (old url) vs setMainPoster (new url) on movies.poster_url
       const pendingMainPoster = pendingMainPosterId
         ? pendingPosterAdds.find((p) => p._id === pendingMainPosterId)
-        : pendingPosterAdds.find((p) => p.is_main);
+        : pendingPosterAdds.find((p) => p.is_main_poster);
       const existingMainPoster =
         pendingMainPosterId && !pendingMainPoster
           ? postersData.find((p) => p.id === pendingMainPosterId)
@@ -86,32 +88,36 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       const effectivePosterUrl =
         pendingMainPoster?.image_url ?? existingMainPoster?.image_url ?? form.poster_url;
 
-      const promises: Promise<unknown>[] = [
-        updateMovie.mutateAsync({
-          id,
-          title: form.title,
-          poster_url: effectivePosterUrl || null,
-          backdrop_url: form.backdrop_url || null,
-          release_date: form.release_date || null,
-          runtime: form.runtime ? Number(form.runtime) : null,
-          genres: form.genres,
-          certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
-          synopsis: form.synopsis || null,
-          trailer_url: form.trailer_url || null,
-          in_theaters: form.in_theaters,
-          premiere_date: form.premiere_date || null,
-          original_language: form.original_language || null,
-          is_featured: form.is_featured,
-          tmdb_id: form.tmdb_id ? Number(form.tmdb_id) : null,
-          backdrop_focus_x: form.backdrop_focus_x,
-          backdrop_focus_y: form.backdrop_focus_y,
-          // @invariant Focus coordinates preserved from original movie — not editable in form
-          spotlight_focus_x: movieData?.spotlight_focus_x ?? null,
-          spotlight_focus_y: movieData?.spotlight_focus_y ?? null,
-          detail_focus_x: movieData?.detail_focus_x ?? null,
-          detail_focus_y: movieData?.detail_focus_y ?? null,
-        }),
-      ];
+      // @contract: spread all editable + preserved focal point fields into the update payload
+      const movieUpdate: Partial<Movie> & { id: string } = {
+        id,
+        title: form.title,
+        poster_url: effectivePosterUrl || null,
+        backdrop_url: form.backdrop_url || null,
+        release_date: form.release_date || null,
+        runtime: form.runtime ? Number(form.runtime) : null,
+        genres: form.genres,
+        certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
+        synopsis: form.synopsis || null,
+        trailer_url: form.trailer_url || null,
+        in_theaters: form.in_theaters,
+        premiere_date: form.premiere_date || null,
+        original_language: form.original_language || null,
+        is_featured: form.is_featured,
+        tmdb_id: form.tmdb_id ? Number(form.tmdb_id) : null,
+        backdrop_focus_x: form.backdrop_focus_x,
+        backdrop_focus_y: form.backdrop_focus_y,
+        poster_focus_x: form.poster_focus_x,
+        poster_focus_y: form.poster_focus_y,
+        // @invariant Focus coordinates preserved from original movie — not editable in form
+        spotlight_focus_x: movieData?.spotlight_focus_x ?? null,
+        spotlight_focus_y: movieData?.spotlight_focus_y ?? null,
+        detail_focus_x: movieData?.detail_focus_x ?? null,
+        detail_focus_y: movieData?.detail_focus_y ?? null,
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Query caches stale Movie shape
+      const promises: Promise<unknown>[] = [updateMovie.mutateAsync(movieUpdate as any)];
 
       // @invariant Only server-persisted cast IDs get order updates; pending IDs are excluded
       if (localCastOrder) {
@@ -145,23 +151,23 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       for (const videoId of pendingVideoRemoveIds) {
         promises.push(removeVideo.mutateAsync({ id: videoId, movieId: id }));
       }
-      // @contract compute is_main for each pending poster using pendingMainPosterId override
+      // @contract compute is_main_poster for each pending poster using pendingMainPosterId override
       const pendingPostersToAdd = pendingPosterAdds.map((p) => {
-        const isMain = pendingMainPosterId ? p._id === pendingMainPosterId : p.is_main;
+        const isMain = pendingMainPosterId ? p._id === pendingMainPosterId : p.is_main_poster;
         const { _id, ...posterData } = p;
         void _id;
-        return { movie_id: id, ...posterData, is_main: isMain };
+        return { movie_id: id, ...posterData, is_main_poster: isMain };
       });
-      const willInsertMain = pendingPostersToAdd.some((p) => p.is_main);
+      const willInsertMain = pendingPostersToAdd.some((p) => p.is_main_poster);
 
-      // @edge if a pending poster will be main, unset is_main on existing DB posters first
-      // (must be sequential — DB unique constraint rejects two is_main=true rows)
+      // @edge if a pending poster will be main, unset is_main_poster on existing DB posters first
+      // (must be sequential — DB unique constraint rejects two is_main_poster=true rows)
       if (willInsertMain) {
         const { crudFetch } = await import('@/lib/admin-crud-client');
         await crudFetch('PATCH', {
-          table: 'movie_posters',
-          filters: { movie_id: id, is_main: true },
-          data: { is_main: false },
+          table: 'movie_images',
+          filters: { movie_id: id, is_main_poster: true },
+          data: { is_main_poster: false },
           returnOne: false,
         }).catch(() => {
           // If no main poster exists, PATCH may return empty — that's OK
@@ -180,6 +186,16 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         !pendingPosterRemoveIds.has(pendingMainPosterId)
       ) {
         promises.push(setMainPoster.mutateAsync({ id: pendingMainPosterId, movieId: id }));
+      }
+      // @contract sync is_main_backdrop when backdrop_url changed — find matching image by URL
+      const backdropImage = postersData.find((p) => p.image_url === form.backdrop_url);
+      if (backdropImage) {
+        const currentMainBackdrop = postersData.find(
+          (p) => 'is_main_backdrop' in p && (p as { is_main_backdrop: boolean }).is_main_backdrop,
+        );
+        if (!currentMainBackdrop || currentMainBackdrop.id !== backdropImage.id) {
+          promises.push(setMainBackdrop.mutateAsync({ id: backdropImage.id, movieId: id }));
+        }
       }
       for (const p of pendingPlatformAdds) {
         promises.push(

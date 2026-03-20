@@ -32,6 +32,10 @@ jest.mock('react-i18next', () => ({
         'movieDetail.video': 'Video',
         'movieDetail.photos': 'Photos',
         'movieDetail.photo': 'Photo',
+        'movieDetail.poster': 'Poster',
+        'movieDetail.posters': 'Posters',
+        'movieDetail.backdrop': 'Backdrop',
+        'movieDetail.backdrops': 'Backdrops',
         'movieDetail.exploreAllMedia': 'Explore All Media',
       };
       return map[key] ?? key;
@@ -69,7 +73,14 @@ const makePoster = (overrides: Partial<MoviePoster> = {}): MoviePoster => ({
   title: 'First Look',
   description: null,
   poster_date: null,
-  is_main: true,
+  is_main_poster: true,
+  is_main_backdrop: false,
+  image_type: 'poster',
+  tmdb_file_path: null,
+  iso_639_1: null,
+  width: null,
+  height: null,
+  vote_average: 0,
   display_order: 0,
   created_at: '',
   ...overrides,
@@ -87,14 +98,14 @@ describe('MediaSummaryCard', () => {
     expect(toJSON()).toBeTruthy();
   });
 
-  it('renders summary text with video and photo counts', () => {
+  it('renders summary text with video and poster counts', () => {
     const videos = [
       makeVideo(),
       makeVideo({ id: 'v2', youtube_id: 'def456', video_type: 'trailer' }),
     ];
     const posters = [makePoster(), makePoster({ id: 'p2' })];
     render(<MediaSummaryCard videos={videos} posters={posters} onExploreMedia={onExploreMedia} />);
-    expect(screen.getByText('2 Videos · 2 Photos')).toBeTruthy();
+    expect(screen.getByText('2 Videos · 2 Posters')).toBeTruthy();
   });
 
   it('renders "Explore All Media" CTA text', () => {
@@ -116,7 +127,7 @@ describe('MediaSummaryCard', () => {
         onExploreMedia={onExploreMedia}
       />,
     );
-    fireEvent.press(screen.getByLabelText('1 Video · 1 Photo — Explore all media'));
+    fireEvent.press(screen.getByLabelText('1 Video · 1 Poster — Explore all media'));
     expect(onExploreMedia).toHaveBeenCalledTimes(1);
   });
 
@@ -135,10 +146,10 @@ describe('MediaSummaryCard', () => {
     expect(screen.getByText('2 Videos')).toBeTruthy();
   });
 
-  it('shows only photo count when no videos', () => {
+  it('shows only poster count when no videos', () => {
     const posters = [makePoster(), makePoster({ id: 'p2' })];
     render(<MediaSummaryCard videos={[]} posters={posters} onExploreMedia={onExploreMedia} />);
-    expect(screen.getByText('2 Photos')).toBeTruthy();
+    expect(screen.getByText('2 Posters')).toBeTruthy();
   });
 
   it('uses singular "Video" for single video', () => {
@@ -148,11 +159,30 @@ describe('MediaSummaryCard', () => {
     expect(screen.getByText('1 Video')).toBeTruthy();
   });
 
-  it('uses singular "Photo" for single poster', () => {
+  it('uses singular "Poster" for single poster', () => {
     render(
       <MediaSummaryCard videos={[]} posters={[makePoster()]} onExploreMedia={onExploreMedia} />,
     );
-    expect(screen.getByText('1 Photo')).toBeTruthy();
+    expect(screen.getByText('1 Poster')).toBeTruthy();
+  });
+
+  it('shows separate poster and backdrop counts', () => {
+    const posters = [
+      makePoster({ id: 'p1', image_type: 'poster' }),
+      makePoster({ id: 'p2', image_type: 'poster' }),
+      makePoster({ id: 'b1', image_type: 'backdrop' }),
+    ];
+    render(<MediaSummaryCard videos={[]} posters={posters} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('2 Posters · 1 Backdrop')).toBeTruthy();
+  });
+
+  it('shows only backdrop count when no poster-type items', () => {
+    const posters = [
+      makePoster({ id: 'b1', image_type: 'backdrop' }),
+      makePoster({ id: 'b2', image_type: 'backdrop' }),
+    ];
+    render(<MediaSummaryCard videos={[]} posters={posters} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('2 Backdrops')).toBeTruthy();
   });
 
   it('does not render thumbnail when no videos', () => {

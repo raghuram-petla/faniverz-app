@@ -10,12 +10,37 @@ vi.mock('@shared/imageUrl', () => ({
   getImageUrl: (url: string) => url,
 }));
 
+// Mock URL.createObjectURL/revokeObjectURL for detectImageType
+globalThis.URL.createObjectURL = vi.fn(() => 'blob:mock');
+globalThis.URL.revokeObjectURL = vi.fn();
+
+// Mock globalThis.Image so detectImageType resolves (portrait dimensions = poster)
+const OriginalImage = globalThis.Image;
+beforeAll(() => {
+  globalThis.Image = class MockImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = 800;
+    naturalHeight = 1200;
+    _src = '';
+    get src() {
+      return this._src;
+    }
+    set src(v: string) {
+      this._src = v;
+      setTimeout(() => this.onload?.(), 0);
+    }
+  } as unknown as typeof Image;
+});
+afterAll(() => {
+  globalThis.Image = OriginalImage;
+});
+
 const defaultProps = {
   hasNoPosters: false,
   posterCount: 2,
   onConfirm: vi.fn(),
   onCancel: vi.fn(),
-  onPendingMainChange: vi.fn(),
 };
 
 beforeEach(() => {
@@ -46,20 +71,6 @@ describe('PosterAddForm', () => {
     expect(defaultProps.onCancel).toHaveBeenCalled();
   });
 
-  it('auto-checks "Set as main poster" when hasNoPosters', () => {
-    render(<PosterAddForm {...defaultProps} hasNoPosters />);
-    const checkbox = screen.getByRole('checkbox', { name: /Set as main poster/ });
-    expect(checkbox).toBeChecked();
-    expect(checkbox).toBeDisabled();
-  });
-
-  it('allows toggling "Set as main poster" when posters exist', () => {
-    render(<PosterAddForm {...defaultProps} hasNoPosters={false} />);
-    const checkbox = screen.getByRole('checkbox', { name: /Set as main poster/ });
-    expect(checkbox).not.toBeChecked();
-    expect(checkbox).not.toBeDisabled();
-  });
-
   it('calls onConfirm with poster data after upload and title entry', async () => {
     mockUpload.mockResolvedValueOnce('uploaded-key.jpg');
     render(<PosterAddForm {...defaultProps} />);
@@ -88,19 +99,6 @@ describe('PosterAddForm', () => {
         display_order: 2,
       }),
       expect.stringContaining('pending-poster-'),
-    );
-  });
-
-  it('notifies parent of pending main change when first poster uploaded', async () => {
-    mockUpload.mockResolvedValueOnce('first-poster.jpg');
-    render(<PosterAddForm {...defaultProps} hasNoPosters />);
-
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['img'], 'poster.jpg', { type: 'image/jpeg' });
-    fireEvent.change(fileInput, { target: { files: [file] } });
-
-    await waitFor(() =>
-      expect(defaultProps.onPendingMainChange).toHaveBeenCalledWith('first-poster.jpg'),
     );
   });
 });

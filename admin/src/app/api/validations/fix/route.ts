@@ -25,7 +25,7 @@ const ENTITY_FIELD_BUCKET: Record<string, Record<string, string>> = {
     poster_url: 'faniverz-movie-posters',
     backdrop_url: 'faniverz-movie-backdrops',
   },
-  movie_posters: { image_url: 'faniverz-movie-posters' },
+  movie_images: { image_url: 'faniverz-movie-posters' },
   actors: { photo_url: 'faniverz-actor-photos' },
   platforms: { logo_url: 'faniverz-platform-logos' },
   production_houses: { logo_url: 'faniverz-production-house-logos' },

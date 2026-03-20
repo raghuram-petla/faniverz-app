@@ -48,6 +48,7 @@ export function useMovieEditState(id: string) {
     addPoster,
     removePoster,
     setMainPoster,
+    setMainBackdrop,
     movieProductionHouses,
     addMovieProductionHouse,
     removeMovieProductionHouse,
@@ -83,6 +84,8 @@ export function useMovieEditState(id: string) {
     tmdb_id: '',
     backdrop_focus_x: null,
     backdrop_focus_y: null,
+    poster_focus_x: null,
+    poster_focus_y: null,
   });
 
   // Pending changes (deferred to Save)
@@ -122,6 +125,8 @@ export function useMovieEditState(id: string) {
         tmdb_id: movie.tmdb_id?.toString() ?? '',
         backdrop_focus_x: movie.backdrop_focus_x ?? null,
         backdrop_focus_y: movie.backdrop_focus_y ?? null,
+        poster_focus_x: movie.poster_focus_x ?? null,
+        poster_focus_y: movie.poster_focus_y ?? null,
       };
       setForm(loaded);
       setInitialForm(loaded);
@@ -176,6 +181,7 @@ export function useMovieEditState(id: string) {
     addPoster,
     removePoster,
     setMainPoster,
+    setMainBackdrop,
     addMoviePlatform,
     removeMoviePlatform,
     addMovieProductionHouse,
@@ -267,5 +273,15 @@ export function useMovieEditState(id: string) {
     saveStatus,
     handleSubmit: handlers.handleSubmit,
     handleDelete: handlers.handleDelete,
+    // @contract deferred selection — updates form state + pending ID; persists on Save
+    handleSelectMainPoster: (imageId: string) => {
+      const img = derived.visiblePosters.find((p) => p.id === imageId);
+      if (img) setForm((f) => ({ ...f, poster_url: img.image_url }));
+      pending.setPendingMainPosterId(imageId);
+    },
+    handleSelectMainBackdrop: (imageId: string) => {
+      const img = derived.visiblePosters.find((p) => p.id === imageId);
+      if (img) setForm((f) => ({ ...f, backdrop_url: img.image_url }));
+    },
   };
 }

@@ -76,7 +76,9 @@ describe('useMovieEditPendingState', () => {
           title: 'Poster',
           description: null,
           poster_date: null,
-          is_main: false,
+          is_main_poster: false,
+          is_main_backdrop: false,
+          image_type: 'poster',
           display_order: 0,
         },
       ]);

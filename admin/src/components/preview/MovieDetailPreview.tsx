@@ -16,6 +16,8 @@ interface MovieDetailPreviewProps {
   releaseDate: string | null;
   focusX: number | null;
   focusY: number | null;
+  posterFocusX?: number | null;
+  posterFocusY?: number | null;
 }
 
 /** @coupling mirrors mobile MovieDetailScreen layout — backdrop + poster + metadata + tabs */
@@ -31,6 +33,8 @@ export function MovieDetailPreview({
   releaseDate,
   focusX,
   focusY,
+  posterFocusX,
+  posterFocusY,
 }: MovieDetailPreviewProps) {
   const gradientCss = buildGradientCss(DETAIL_GRADIENT);
 
@@ -54,6 +58,11 @@ export function MovieDetailPreview({
         releaseDate={releaseDate}
         gradientCss={gradientCss}
         objectPosition={objectPosition}
+        posterObjectPosition={
+          posterFocusX != null && posterFocusY != null
+            ? `${Math.round(posterFocusX * 100)}% ${Math.round(posterFocusY * 100)}%`
+            : undefined
+        }
       />
 
       {/* Tabs bar */}

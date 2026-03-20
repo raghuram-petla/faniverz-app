@@ -32,7 +32,7 @@ export default function ValidationsPage() {
   const handleScanAll = useCallback(async () => {
     const entities: ScanEntity[] = [
       'movies',
-      'movie_posters',
+      'movie_images',
       'actors',
       'platforms',
       'production_houses',

@@ -24,6 +24,8 @@ const mockMovie = {
   detail_focus_y: null,
   backdrop_focus_x: null,
   backdrop_focus_y: null,
+  poster_focus_x: null,
+  poster_focus_y: null,
   rating: 4.5,
   review_count: 120,
   runtime: 148,

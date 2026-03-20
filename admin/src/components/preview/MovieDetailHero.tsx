@@ -15,6 +15,7 @@ interface MovieDetailHeroProps {
   releaseDate: string | null;
   gradientCss: string;
   objectPosition: string;
+  posterObjectPosition?: string;
 }
 
 /** @coupling mirrors the mobile MovieDetailScreen hero section — backdrop, poster, metadata */
@@ -30,6 +31,7 @@ export function MovieDetailHero({
   releaseDate,
   gradientCss,
   objectPosition,
+  posterObjectPosition,
 }: MovieDetailHeroProps) {
   /** @nullable releaseDate may be null for TBD movies */
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
@@ -139,6 +141,7 @@ export function MovieDetailHero({
               aspectRatio: '2/3',
               borderRadius: 12,
               objectFit: 'cover',
+              objectPosition: posterObjectPosition ?? 'center',
               flexShrink: 0,
             }}
           />
