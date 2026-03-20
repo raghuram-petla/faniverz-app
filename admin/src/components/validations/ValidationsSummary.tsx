@@ -1,12 +1,13 @@
 'use client';
 
-import { Loader2, Search, ScanLine } from 'lucide-react';
+import { Loader2, Search, ScanLine, ScanEye } from 'lucide-react';
 import type { SummaryEntry, ScanEntity } from '@/hooks/useValidationTypes';
 
 export interface ValidationsSummaryProps {
   summary: SummaryEntry[] | undefined;
   isLoading: boolean;
   onScan: (entity: ScanEntity) => void;
+  onDeepScan: (entity: ScanEntity) => void;
   onScanAll: () => void;
   isScanning: boolean;
   activeScanEntity: ScanEntity | null;
@@ -39,6 +40,7 @@ export function ValidationsSummary({
   summary,
   isLoading,
   onScan,
+  onDeepScan,
   onScanAll,
   isScanning,
   activeScanEntity,
@@ -87,19 +89,30 @@ export function ValidationsSummary({
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-on-surface">{label}</h3>
                 {scanEntity && !isDuplicate && (
-                  <button
-                    onClick={() => onScan(scanEntity)}
-                    disabled={isScanning}
-                    className="text-xs px-2 py-1 rounded bg-surface-elevated text-on-surface-muted hover:text-on-surface disabled:opacity-50 flex items-center gap-1"
-                    title={`Scan ${label}`}
-                  >
-                    {isScanning && activeScanEntity === scanEntity ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Search className="w-3 h-3" />
-                    )}
-                    Scan
-                  </button>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => onScan(scanEntity)}
+                      disabled={isScanning}
+                      className="text-xs px-2 py-1 rounded bg-surface-elevated text-on-surface-muted hover:text-on-surface disabled:opacity-50 flex items-center gap-1"
+                      title="Quick scan (DB only)"
+                    >
+                      {isScanning && activeScanEntity === scanEntity ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Search className="w-3 h-3" />
+                      )}
+                      Scan
+                    </button>
+                    <button
+                      onClick={() => onDeepScan(scanEntity)}
+                      disabled={isScanning}
+                      className="text-xs px-2 py-1 rounded bg-surface-elevated text-on-surface-muted hover:text-on-surface disabled:opacity-50 flex items-center gap-1"
+                      title="Deep scan (checks R2 variants)"
+                    >
+                      <ScanEye className="w-3 h-3" />
+                      Deep
+                    </button>
+                  </div>
                 )}
               </div>
 

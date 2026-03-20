@@ -8,6 +8,8 @@ import { useCallback } from 'react';
 
 export interface ValidationsScanPanelProps {
   results: ScanResult[];
+  /** Total unfiltered result count — used to keep filter tabs visible when a filter yields 0 */
+  totalResultCount: number;
   selectedItems: Set<string>;
   onToggle: (key: string) => void;
   onSelectAllIssues: () => void;
@@ -31,6 +33,7 @@ const FILTERS: { key: 'all' | 'external' | 'missing' | 'ok'; label: string }[] =
 // @contract: renders scan results table with filters, selection, and bulk fix
 export function ValidationsScanPanel({
   results,
+  totalResultCount,
   selectedItems,
   onToggle,
   onSelectAllIssues,
@@ -47,7 +50,8 @@ export function ValidationsScanPanel({
 
   const handleToggle = useCallback((item: ScanResult) => onToggle(itemKey(item)), [onToggle]);
 
-  if (results.length === 0 && !scanProgress?.isScanning) {
+  // @edge: show initial empty state only when no scan has been run yet
+  if (totalResultCount === 0 && !scanProgress?.isScanning) {
     return (
       <div className="bg-surface-card rounded-lg border border-outline p-8 text-center">
         <p className="text-on-surface-muted">
@@ -129,37 +133,46 @@ export function ValidationsScanPanel({
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-outline text-xs text-on-surface-muted uppercase">
-              <th className="px-3 py-2 w-8" />
-              <th className="px-3 py-2">Name</th>
-              <th className="px-3 py-2">Field</th>
-              <th className="px-3 py-2">Type</th>
-              <th className="px-3 py-2">Orig</th>
-              <th className="px-3 py-2">SM</th>
-              <th className="px-3 py-2">MD</th>
-              <th className="px-3 py-2">LG</th>
-              <th className="px-3 py-2">URL</th>
-              <th className="px-3 py-2 w-16" />
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((item) => (
-              <ValidationRow
-                key={itemKey(item)}
-                item={item}
-                isSelected={selectedItems.has(itemKey(item))}
-                onToggle={() => handleToggle(item)}
-                isReadOnly={isReadOnly}
-                onFixSingle={onFixSingle}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Table or empty filter message */}
+      {results.length === 0 ? (
+        <div className="p-8 text-center">
+          <p className="text-on-surface-muted text-sm">
+            No results match the &quot;{FILTERS.find((f) => f.key === activeFilter)?.label}&quot;
+            filter.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-outline text-xs text-on-surface-muted uppercase">
+                <th className="px-3 py-2 w-8" />
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Field</th>
+                <th className="px-3 py-2">Type</th>
+                <th className="px-3 py-2">Orig</th>
+                <th className="px-3 py-2">SM</th>
+                <th className="px-3 py-2">MD</th>
+                <th className="px-3 py-2">LG</th>
+                <th className="px-3 py-2">URL</th>
+                <th className="px-3 py-2 w-16" />
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((item) => (
+                <ValidationRow
+                  key={itemKey(item)}
+                  item={item}
+                  isSelected={selectedItems.has(itemKey(item))}
+                  onToggle={() => handleToggle(item)}
+                  isReadOnly={isReadOnly}
+                  onFixSingle={onFixSingle}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {scanProgress?.isScanning && (
         <div className="p-4 text-center">

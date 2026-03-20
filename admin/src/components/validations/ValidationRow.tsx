@@ -35,6 +35,8 @@ export function ValidationRow({
 }: ValidationRowProps) {
   const issue = hasIssue(item);
   const key = itemKey(item);
+  // @edge: basic scan returns null for all variant fields — show dash instead of dots
+  const isDeepScanned = item.originalExists !== null;
 
   return (
     <tr key={key} className={`border-b border-outline ${issue ? 'bg-red-950/10' : ''}`}>
@@ -56,10 +58,10 @@ export function ValidationRow({
           {URL_TYPE_LABELS[item.urlType]}
         </span>
       </td>
-      <td className="px-3 py-2">{renderDot(item.originalExists)}</td>
-      <td className="px-3 py-2">{renderDot(item.variants.sm)}</td>
-      <td className="px-3 py-2">{renderDot(item.variants.md)}</td>
-      <td className="px-3 py-2">{renderDot(item.variants.lg)}</td>
+      <td className="px-3 py-2">{isDeepScanned ? renderDot(item.originalExists) : renderDash()}</td>
+      <td className="px-3 py-2">{isDeepScanned ? renderDot(item.variants.sm) : renderDash()}</td>
+      <td className="px-3 py-2">{isDeepScanned ? renderDot(item.variants.md) : renderDash()}</td>
+      <td className="px-3 py-2">{isDeepScanned ? renderDot(item.variants.lg) : renderDash()}</td>
       <td
         className="px-3 py-2 text-xs text-on-surface-muted max-w-[200px] truncate"
         title={item.currentUrl}
@@ -87,4 +89,8 @@ function renderDot(value: boolean | null): React.ReactElement {
     return <span className="inline-block w-3 h-3 rounded-full bg-zinc-600" title="N/A" />;
   if (value) return <span className="inline-block w-3 h-3 rounded-full bg-green-500" title="OK" />;
   return <span className="inline-block w-3 h-3 rounded-full bg-red-500" title="Missing" />;
+}
+
+function renderDash(): React.ReactElement {
+  return <span className="text-xs text-on-surface-muted">—</span>;
 }

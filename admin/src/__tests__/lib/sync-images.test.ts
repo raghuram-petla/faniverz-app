@@ -103,7 +103,7 @@ describe('syncPosters', () => {
     expect(mockUpload).toHaveBeenCalledWith(
       'https://image.tmdb.org/t/p/w500/only.jpg',
       'faniverz-movie-posters',
-      `${TMDB_ID}_poster_0.jpg`,
+      expect.stringMatching(/^[0-9a-f-]+\.jpg$/),
     );
     // Should delete existing TMDB posters first
     expect(supabase.from).toHaveBeenCalledWith('movie_posters');
@@ -195,7 +195,7 @@ describe('syncBackdrops', () => {
     expect(mockUpload).toHaveBeenCalledWith(
       'https://image.tmdb.org/t/p/w1280/bd.jpg',
       'faniverz-movie-backdrops',
-      `${TMDB_ID}_backdrop_0.jpg`,
+      expect.stringMatching(/^[0-9a-f-]+\.jpg$/),
     );
     expect(supabase.from).toHaveBeenCalledWith('movie_backdrops');
     expect(supabase.insert).toHaveBeenCalled();

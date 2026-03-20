@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getMovieDetails, TMDB_IMAGE } from '@/lib/tmdb';
@@ -54,7 +55,6 @@ export async function POST(request: NextRequest) {
     const movieId = existing.id as string;
 
     const detail = await getMovieDetails(tmdbId, tmdb.apiKey);
-    const tmpKey = String(tmdbId);
 
     // @contract: extract Telugu translation once (used by title_te / synopsis_te cases below)
     const { titleTe, synopsisTe } = extractTeluguTranslation(detail.translations);
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
           const url = await maybeUploadImage(
             detail.poster_path,
             R2_BUCKETS.moviePosters,
-            `${tmpKey}.jpg`,
+            `${randomUUID()}.jpg`,
             TMDB_IMAGE.poster,
           );
           updatePayload.poster_url = url;
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
           const url = await maybeUploadImage(
             detail.backdrop_path,
             R2_BUCKETS.movieBackdrops,
-            `${tmpKey}.jpg`,
+            `${randomUUID()}.jpg`,
             TMDB_IMAGE.backdrop,
           );
           updatePayload.backdrop_url = url;
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
           const photoUrl = await maybeUploadImage(
             cm.profile_path,
             R2_BUCKETS.actorPhotos,
-            `${cm.id}.jpg`,
+            `${randomUUID()}.jpg`,
             TMDB_IMAGE.profile,
           );
           const { data: actor, error: ae } = await supabase
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
           const photoUrl = await maybeUploadImage(
             cm.profile_path,
             R2_BUCKETS.actorPhotos,
-            `${cm.id}.jpg`,
+            `${randomUUID()}.jpg`,
             TMDB_IMAGE.profile,
           );
           const { data: actor, error: ae } = await supabase

@@ -9,46 +9,33 @@ const mockSummary: SummaryEntry[] = [
   { entity: 'actors', field: 'photo_url', total: 100, external: 20, local: 75, nullCount: 5 },
 ];
 
+const defaultProps = {
+  summary: mockSummary,
+  isLoading: false,
+  onScan: vi.fn(),
+  onDeepScan: vi.fn(),
+  onScanAll: vi.fn(),
+  isScanning: false,
+  activeScanEntity: null,
+};
+
 describe('ValidationsSummary', () => {
   it('renders loading spinner when isLoading is true', () => {
     const { container } = render(
-      <ValidationsSummary
-        summary={undefined}
-        isLoading={true}
-        onScan={vi.fn()}
-        onScanAll={vi.fn()}
-        isScanning={false}
-        activeScanEntity={null}
-      />,
+      <ValidationsSummary {...defaultProps} summary={undefined} isLoading={true} />,
     );
     expect(container.querySelector('.animate-spin')).not.toBeNull();
   });
 
   it('renders nothing when summary is undefined and not loading', () => {
     const { container } = render(
-      <ValidationsSummary
-        summary={undefined}
-        isLoading={false}
-        onScan={vi.fn()}
-        onScanAll={vi.fn()}
-        isScanning={false}
-        activeScanEntity={null}
-      />,
+      <ValidationsSummary {...defaultProps} summary={undefined} isLoading={false} />,
     );
     expect(container.innerHTML).toBe('');
   });
 
   it('renders summary cards with correct counts', () => {
-    render(
-      <ValidationsSummary
-        summary={mockSummary}
-        isLoading={false}
-        onScan={vi.fn()}
-        onScanAll={vi.fn()}
-        isScanning={false}
-        activeScanEntity={null}
-      />,
-    );
+    render(<ValidationsSummary {...defaultProps} />);
     expect(screen.getByText('Movie Posters')).toBeInTheDocument();
     expect(screen.getByText('Actor Photos')).toBeInTheDocument();
     // "50" appears in multiple cards — use getAllByText
@@ -57,64 +44,36 @@ describe('ValidationsSummary', () => {
   });
 
   it('renders Scan All button', () => {
-    render(
-      <ValidationsSummary
-        summary={mockSummary}
-        isLoading={false}
-        onScan={vi.fn()}
-        onScanAll={vi.fn()}
-        isScanning={false}
-        activeScanEntity={null}
-      />,
-    );
+    render(<ValidationsSummary {...defaultProps} />);
     expect(screen.getByText('Scan All')).toBeInTheDocument();
   });
 
   it('calls onScanAll when Scan All clicked', () => {
     const onScanAll = vi.fn();
-    render(
-      <ValidationsSummary
-        summary={mockSummary}
-        isLoading={false}
-        onScan={vi.fn()}
-        onScanAll={onScanAll}
-        isScanning={false}
-        activeScanEntity={null}
-      />,
-    );
+    render(<ValidationsSummary {...defaultProps} onScanAll={onScanAll} />);
     fireEvent.click(screen.getByText('Scan All'));
     expect(onScanAll).toHaveBeenCalledTimes(1);
   });
 
   it('calls onScan with correct entity when Scan clicked', () => {
     const onScan = vi.fn();
-    render(
-      <ValidationsSummary
-        summary={mockSummary}
-        isLoading={false}
-        onScan={onScan}
-        onScanAll={vi.fn()}
-        isScanning={false}
-        activeScanEntity={null}
-      />,
-    );
+    render(<ValidationsSummary {...defaultProps} onScan={onScan} />);
     // Click the first Scan button (movies)
     const scanButtons = screen.getAllByText('Scan');
     fireEvent.click(scanButtons[0]);
     expect(onScan).toHaveBeenCalledWith('movies');
   });
 
+  it('calls onDeepScan with correct entity when Deep clicked', () => {
+    const onDeepScan = vi.fn();
+    render(<ValidationsSummary {...defaultProps} onDeepScan={onDeepScan} />);
+    const deepButtons = screen.getAllByText('Deep');
+    fireEvent.click(deepButtons[0]);
+    expect(onDeepScan).toHaveBeenCalledWith('movies');
+  });
+
   it('disables Scan buttons when scanning', () => {
-    render(
-      <ValidationsSummary
-        summary={mockSummary}
-        isLoading={false}
-        onScan={vi.fn()}
-        onScanAll={vi.fn()}
-        isScanning={true}
-        activeScanEntity="movies"
-      />,
-    );
+    render(<ValidationsSummary {...defaultProps} isScanning={true} activeScanEntity="movies" />);
     const scanAllBtn = screen.getByText('Scan All').closest('button');
     expect(scanAllBtn?.disabled).toBe(true);
   });
@@ -123,16 +82,7 @@ describe('ValidationsSummary', () => {
     const summary: SummaryEntry[] = [
       { entity: 'platforms', field: 'logo_url', total: 10, external: 0, local: 10, nullCount: 0 },
     ];
-    render(
-      <ValidationsSummary
-        summary={summary}
-        isLoading={false}
-        onScan={vi.fn()}
-        onScanAll={vi.fn()}
-        isScanning={false}
-        activeScanEntity={null}
-      />,
-    );
+    render(<ValidationsSummary {...defaultProps} summary={summary} />);
     expect(screen.getByText('10 Local')).toBeInTheDocument();
     expect(screen.queryByText(/External/)).toBeNull();
     expect(screen.queryByText(/Null/)).toBeNull();

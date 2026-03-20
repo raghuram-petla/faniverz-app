@@ -15,6 +15,7 @@ export default function ValidationsPage() {
     summary,
     isSummaryLoading,
     scanResults,
+    allScanResults,
     scanProgress,
     fixProgress,
     selectedItems,
@@ -27,7 +28,7 @@ export default function ValidationsPage() {
     deselectAll,
   } = useValidations();
 
-  // @sideeffect: sequential scan of all entity types
+  // @sideeffect: sequential scan of all entity types (DB-only, fast)
   const handleScanAll = useCallback(async () => {
     const entities: ScanEntity[] = [
       'movies',
@@ -42,7 +43,15 @@ export default function ValidationsPage() {
     }
   }, [startScan]);
 
-  // @sideeffect: fixes a single item by selecting it and triggering fixSelected
+  // @sideeffect: deep scan with R2 HeadObject checks for variant verification
+  const handleDeepScan = useCallback(
+    async (entity: ScanEntity) => {
+      await startScan(entity, true);
+    },
+    [startScan],
+  );
+
+  // @sideeffect: fixes a single item via the fix API
   const handleFixSingle = useCallback(
     async (item: ScanResult) => {
       if (!hasIssue(item)) return;
@@ -83,6 +92,7 @@ export default function ValidationsPage() {
         summary={summary}
         isLoading={isSummaryLoading}
         onScan={startScan}
+        onDeepScan={handleDeepScan}
         onScanAll={handleScanAll}
         isScanning={scanProgress?.isScanning ?? false}
         activeScanEntity={scanProgress?.entity ?? null}
@@ -90,6 +100,7 @@ export default function ValidationsPage() {
 
       <ValidationsScanPanel
         results={scanResults}
+        totalResultCount={allScanResults.length}
         selectedItems={selectedItems}
         onToggle={toggleItem}
         onSelectAllIssues={selectAllIssues}

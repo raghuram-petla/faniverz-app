@@ -66,6 +66,28 @@ function makeRequest(body: unknown, authHeader = 'Bearer valid-token'): NextRequ
   } as unknown as NextRequest;
 }
 
+function mockMoviesTable(rows: Record<string, unknown>[]) {
+  mockFrom.mockImplementation((table: string) => {
+    if (table === 'admin_user_roles') {
+      return {
+        select: () => ({
+          eq: () => ({
+            single: () =>
+              Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+          }),
+        }),
+      };
+    }
+    return {
+      select: () => ({
+        not: () => ({
+          order: () => Promise.resolve({ data: rows, error: null, count: rows.length }),
+        }),
+      }),
+    };
+  });
+}
+
 describe('POST /api/validations/scan', () => {
   beforeEach(() => {
     mockGetUser.mockReset();
@@ -97,88 +119,40 @@ describe('POST /api/validations/scan', () => {
     expect(res.status).toBe(400);
   });
 
-  it('scans movies and classifies URLs', async () => {
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'admin_user_roles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              single: () =>
-                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
-            }),
-          }),
-        };
-      }
-      return {
-        select: () => ({
-          not: () => ({
-            range: () => ({
-              order: () =>
-                Promise.resolve({
-                  data: [
-                    {
-                      id: 'mov-1',
-                      poster_url: '12345.jpg',
-                      backdrop_url: 'bg.jpg',
-                      title: 'Movie 1',
-                      tmdb_id: 100,
-                    },
-                  ],
-                  error: null,
-                  count: 1,
-                }),
-            }),
-          }),
-        }),
-      };
-    });
+  it('classifies local URLs without HeadObject calls (basic scan)', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-1',
+        poster_url: '12345.jpg',
+        backdrop_url: 'bg.jpg',
+        title: 'Movie 1',
+        tmdb_id: 100,
+      },
+    ]);
 
-    // All HeadObject calls succeed
-    mockSend.mockResolvedValue({});
-
-    const res = await POST(makeRequest({ entity: 'movies', cursor: 0, limit: 50 }));
+    const res = await POST(makeRequest({ entity: 'movies' }));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.results.length).toBeGreaterThan(0);
     expect(data.results[0].urlType).toBe('local');
     expect(data.results[0].entityLabel).toBe('Movie 1');
+    // Basic scan: variant fields are null (no HeadObject calls)
+    expect(data.results[0].originalExists).toBeNull();
+    expect(data.results[0].variants.sm).toBeNull();
+    // No HeadObject calls made
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
   it('detects external TMDB URLs', async () => {
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'admin_user_roles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              single: () =>
-                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
-            }),
-          }),
-        };
-      }
-      return {
-        select: () => ({
-          not: () => ({
-            range: () => ({
-              order: () =>
-                Promise.resolve({
-                  data: [
-                    {
-                      id: 'mov-2',
-                      poster_url: 'https://image.tmdb.org/t/p/w500/abc.jpg',
-                      backdrop_url: null,
-                      title: 'External Movie',
-                      tmdb_id: 200,
-                    },
-                  ],
-                  error: null,
-                  count: 1,
-                }),
-            }),
-          }),
-        }),
-      };
-    });
+    mockMoviesTable([
+      {
+        id: 'mov-2',
+        poster_url: 'https://image.tmdb.org/t/p/w500/abc.jpg',
+        backdrop_url: null,
+        title: 'External Movie',
+        tmdb_id: 200,
+      },
+    ]);
 
     const res = await POST(makeRequest({ entity: 'movies' }));
     const data = await res.json();
@@ -187,41 +161,10 @@ describe('POST /api/validations/scan', () => {
     expect(externalResult.originalExists).toBeNull();
   });
 
-  it('detects missing variants via HeadObject', async () => {
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'admin_user_roles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              single: () =>
-                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
-            }),
-          }),
-        };
-      }
-      return {
-        select: () => ({
-          not: () => ({
-            range: () => ({
-              order: () =>
-                Promise.resolve({
-                  data: [
-                    {
-                      id: 'mov-3',
-                      poster_url: 'test.jpg',
-                      backdrop_url: null,
-                      title: 'Test',
-                      tmdb_id: 300,
-                    },
-                  ],
-                  error: null,
-                  count: 1,
-                }),
-            }),
-          }),
-        }),
-      };
-    });
+  it('performs HeadObject checks only when deep=true', async () => {
+    mockMoviesTable([
+      { id: 'mov-3', poster_url: 'test.jpg', backdrop_url: null, title: 'Test', tmdb_id: 300 },
+    ]);
 
     // Original exists, sm exists, md missing, lg missing
     mockSend
@@ -230,50 +173,21 @@ describe('POST /api/validations/scan', () => {
       .mockRejectedValueOnce(new Error('NotFound')) // md
       .mockRejectedValueOnce(new Error('NotFound')); // lg
 
-    const res = await POST(makeRequest({ entity: 'movies' }));
+    const res = await POST(makeRequest({ entity: 'movies', deep: true }));
     const data = await res.json();
     const result = data.results[0];
     expect(result.originalExists).toBe(true);
     expect(result.variants.sm).toBe(true);
     expect(result.variants.md).toBe(false);
     expect(result.variants.lg).toBe(false);
+    expect(mockSend).toHaveBeenCalled();
   });
 
-  it('returns pagination info', async () => {
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'admin_user_roles') {
-        return {
-          select: () => ({
-            eq: () => ({
-              single: () =>
-                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
-            }),
-          }),
-        };
-      }
-      return {
-        select: () => ({
-          not: () => ({
-            range: () => ({
-              order: () =>
-                Promise.resolve({
-                  data: [
-                    { id: 'a', poster_url: 'a.jpg', backdrop_url: null, title: 'A', tmdb_id: 1 },
-                  ],
-                  error: null,
-                  count: 100,
-                }),
-            }),
-          }),
-        }),
-      };
-    });
+  it('returns total count', async () => {
+    mockMoviesTable([{ id: 'a', poster_url: 'a.jpg', backdrop_url: null, title: 'A', tmdb_id: 1 }]);
 
-    mockSend.mockResolvedValue({});
-
-    const res = await POST(makeRequest({ entity: 'movies', cursor: 0, limit: 1 }));
+    const res = await POST(makeRequest({ entity: 'movies' }));
     const data = await res.json();
-    expect(data.total).toBe(100);
-    expect(data.nextCursor).toBe(1);
+    expect(data.total).toBe(1);
   });
 });

@@ -6,6 +6,7 @@
  * credentials are missing, TMDB CDN URLs are stored directly in the DB.
  */
 
+import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPersonDetails, TMDB_IMAGE } from './tmdb';
 import { maybeUploadImage, R2_BUCKETS } from './r2-sync';
@@ -33,7 +34,7 @@ export async function processActorRefresh(
   const photoUrl = await maybeUploadImage(
     person.profile_path,
     R2_BUCKETS.actorPhotos,
-    `${tmdbPersonId}.jpg`,
+    `${randomUUID()}.jpg`,
     TMDB_IMAGE.profile,
   );
 

@@ -46,42 +46,28 @@ export function useValidations() {
     queryFn: fetchSummary,
   });
 
-  // @sideeffect: paginated scan — fetches batches until all rows processed
-  const startScan = useCallback(async (entity: ScanEntity) => {
+  // @sideeffect: DB-based scan — single request, classifies URLs by type
+  const startScan = useCallback(async (entity: ScanEntity, deep = false) => {
     abortRef.current = false;
     setScanResults([]);
     setSelectedItems(new Set());
     setScanProgress({ entity, scanned: 0, total: 0, isScanning: true });
 
     const headers = await getAuthHeader();
-    let cursor: number | null = 0;
-    const allResults: ScanResult[] = [];
+    const res = await fetch('/api/validations/scan', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ entity, deep }),
+    });
 
-    while (cursor !== null && !abortRef.current) {
-      const res = await fetch('/api/validations/scan', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ entity, cursor, limit: 50 }),
-      });
-
-      if (!res.ok) {
-        setScanProgress((p) => (p ? { ...p, isScanning: false } : null));
-        throw new Error('Scan failed');
-      }
-
-      const data: ScanResponse = await res.json();
-      allResults.push(...data.results);
-      setScanResults([...allResults]);
-      setScanProgress({
-        entity,
-        scanned: allResults.length,
-        total: data.total,
-        isScanning: data.nextCursor !== null,
-      });
-      cursor = data.nextCursor;
+    if (!res.ok) {
+      setScanProgress(null);
+      throw new Error('Scan failed');
     }
 
-    setScanProgress((p) => (p ? { ...p, isScanning: false } : null));
+    const data: ScanResponse = await res.json();
+    setScanResults(data.results);
+    setScanProgress({ entity, scanned: data.results.length, total: data.total, isScanning: false });
   }, []);
 
   const stopScan = useCallback(() => {

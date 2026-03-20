@@ -6,6 +6,7 @@
  * @coupling: depends on r2-sync.ts for image uploads.
  */
 
+import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getMovieImages, TMDB_IMAGE } from './tmdb';
 import type { TmdbImage } from './tmdbTypes';
@@ -47,7 +48,7 @@ export async function syncPosters(
   let count = 0;
   for (let i = 0; i < sorted.length && i < 20; i++) {
     const poster = sorted[i];
-    const key = `${tmdbId}_poster_${i}.jpg`;
+    const key = `${randomUUID()}.jpg`;
     const imageUrl = await uploadImageFromUrl(
       TMDB_IMAGE.poster(poster.file_path),
       R2_BUCKETS.moviePosters,
@@ -130,7 +131,7 @@ export async function syncBackdrops(
   let count = 0;
   for (let i = 0; i < sorted.length && i < 15; i++) {
     const backdrop = sorted[i];
-    const key = `${tmdbId}_backdrop_${i}.jpg`;
+    const key = `${randomUUID()}.jpg`;
     const imageUrl = await uploadImageFromUrl(
       TMDB_IMAGE.backdrop(backdrop.file_path),
       R2_BUCKETS.movieBackdrops,

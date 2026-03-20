@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getPersonDetails, TMDB_IMAGE } from '@/lib/tmdb';
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
       const photoUrl = await maybeUploadImage(
         person.profile_path,
         R2_BUCKETS.actorPhotos,
-        `${tmdbPersonId}.jpg`,
+        `${randomUUID()}.jpg`,
         TMDB_IMAGE.profile,
       );
 

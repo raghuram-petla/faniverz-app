@@ -46,6 +46,7 @@ const missingVariant: ScanResult = {
 
 const defaultProps = {
   results: [localOk, externalIssue, missingVariant],
+  totalResultCount: 3,
   selectedItems: new Set<string>(),
   onToggle: vi.fn(),
   onSelectAllIssues: vi.fn(),
@@ -61,7 +62,7 @@ const defaultProps = {
 
 describe('ValidationsScanPanel', () => {
   it('renders empty state when no results and no scan', () => {
-    render(<ValidationsScanPanel {...defaultProps} results={[]} />);
+    render(<ValidationsScanPanel {...defaultProps} results={[]} totalResultCount={0} />);
     expect(screen.getByText(/Select an entity/)).toBeInTheDocument();
   });
 
@@ -154,6 +155,23 @@ describe('ValidationsScanPanel', () => {
     );
     expect(screen.getByText('5 fixed')).toBeInTheDocument();
     expect(screen.getByText('2 failed')).toBeInTheDocument();
+  });
+
+  it('shows filter tabs even when current filter yields 0 results', () => {
+    render(
+      <ValidationsScanPanel
+        {...defaultProps}
+        results={[]}
+        totalResultCount={3}
+        activeFilter="missing"
+      />,
+    );
+    // Filter tabs should still be visible
+    expect(screen.getByText('All')).toBeInTheDocument();
+    expect(screen.getByText('External')).toBeInTheDocument();
+    expect(screen.getByText('Missing Variants')).toBeInTheDocument();
+    // Empty filter message shown
+    expect(screen.getByText(/No results match/)).toBeInTheDocument();
   });
 
   it('renders table headers', () => {

@@ -62,7 +62,7 @@ describe('ValidationRow', () => {
     expect(screen.getByText('External')).toBeInTheDocument();
   });
 
-  it('renders green dots for OK variants', () => {
+  it('renders green dots for OK variants (deep scan)', () => {
     const { container } = renderRow({
       originalExists: true,
       variants: { sm: true, md: true, lg: true },
@@ -71,7 +71,7 @@ describe('ValidationRow', () => {
     expect(greenDots.length).toBe(4); // original + 3 variants
   });
 
-  it('renders red dots for missing variants', () => {
+  it('renders red dots for missing variants (deep scan)', () => {
     const { container } = renderRow({
       originalExists: true,
       variants: { sm: true, md: false, lg: false },
@@ -80,14 +80,13 @@ describe('ValidationRow', () => {
     expect(redDots.length).toBe(2); // md + lg missing
   });
 
-  it('renders gray dots for null variants (external)', () => {
-    const { container } = renderRow({
-      urlType: 'external',
+  it('renders dashes for basic scan (null originalExists)', () => {
+    renderRow({
       originalExists: null,
       variants: { sm: null, md: null, lg: null },
     });
-    const grayDots = container.querySelectorAll('.bg-zinc-600');
-    expect(grayDots.length).toBe(4);
+    const dashes = screen.getAllByText('—');
+    expect(dashes.length).toBe(4); // original + 3 variants
   });
 
   it('shows checkbox only when item has issues', () => {

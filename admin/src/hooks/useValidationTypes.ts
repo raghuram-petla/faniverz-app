@@ -22,7 +22,6 @@ export interface ScanResult {
 
 export interface ScanResponse {
   results: ScanResult[];
-  nextCursor: number | null;
   total: number;
 }
 

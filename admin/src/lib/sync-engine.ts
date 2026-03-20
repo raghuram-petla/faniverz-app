@@ -12,6 +12,7 @@
  * directly in the DB, which will break if TMDB changes their image CDN paths.
  */
 
+import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getMovieDetails, TMDB_IMAGE } from './tmdb';
 import { extractTrailerUrl, extractKeyCrewMembers, extractTeluguTranslation } from './tmdbTypes';
@@ -48,22 +49,21 @@ export async function processMovieFromTmdb(
   const detail = await getMovieDetails(tmdbId, apiKey);
 
   const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
-  const tmpKey = String(tmdbId);
-
   // @sideeffect: parallel R2 uploads — if one fails the other may succeed, leaving
   // the movie with a poster but no backdrop (or vice versa). The failed URL falls
   // back to the TMDB CDN URL via maybeUploadImage, so the app still renders images.
+  // @contract: UUID keys avoid collisions between manual uploads and TMDB sync
   const [posterUrl, backdropUrl] = await Promise.all([
     maybeUploadImage(
       detail.poster_path,
       R2_BUCKETS.moviePosters,
-      `${tmpKey}.jpg`,
+      `${randomUUID()}.jpg`,
       TMDB_IMAGE.poster,
     ),
     maybeUploadImage(
       detail.backdrop_path,
       R2_BUCKETS.movieBackdrops,
-      `${tmpKey}.jpg`,
+      `${randomUUID()}.jpg`,
       TMDB_IMAGE.backdrop,
     ),
   ]);
@@ -152,7 +152,7 @@ export async function processMovieFromTmdb(
     const photoUrl = await maybeUploadImage(
       castMember.profile_path,
       R2_BUCKETS.actorPhotos,
-      `${castMember.id}.jpg`,
+      `${randomUUID()}.jpg`,
       TMDB_IMAGE.profile,
     );
 
@@ -194,7 +194,7 @@ export async function processMovieFromTmdb(
     const photoUrl = await maybeUploadImage(
       crewMember.profile_path,
       R2_BUCKETS.actorPhotos,
-      `${crewMember.id}.jpg`,
+      `${randomUUID()}.jpg`,
       TMDB_IMAGE.profile,
     );
 
