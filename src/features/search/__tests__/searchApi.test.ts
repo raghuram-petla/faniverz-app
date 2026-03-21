@@ -43,4 +43,37 @@ describe('searchAll', () => {
     expect(result.actors).toEqual([]);
     expect(result.productionHouses).toEqual([]);
   });
+
+  it('returns partial results when one query fails', async () => {
+    const movieData = [{ id: '1', title: 'Test Movie' }];
+    const mockFrom = supabase.from as jest.Mock;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'actors') {
+        // actors query rejects
+        return {
+          select: jest.fn(() => ({
+            ilike: jest.fn(() => ({
+              limit: jest.fn().mockRejectedValue(new Error('actors timeout')),
+            })),
+          })),
+        };
+      }
+      return {
+        select: jest.fn(() => ({
+          ilike: jest.fn(() => ({
+            order: jest.fn(() => ({
+              limit: jest.fn().mockResolvedValue({ data: movieData, error: null }),
+            })),
+            limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        })),
+      };
+    });
+
+    const result = await searchAll('test');
+    // Movies and productionHouses succeed; actors returns empty due to failure
+    expect(result.movies).toEqual(movieData);
+    expect(result.actors).toEqual([]);
+    expect(result.productionHouses).toEqual([]);
+  });
 });

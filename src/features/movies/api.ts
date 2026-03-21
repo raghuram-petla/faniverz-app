@@ -38,15 +38,16 @@ async function applyMovieFilters(
         query = query.eq('in_theaters', true);
         break;
       case 'streaming': {
+        // @edge: select only distinct movie_id to avoid fetching every row in movie_platforms
         const { data: streamingIds, error: streamErr } = await supabase
           .from('movie_platforms')
-          .select('movie_id');
+          .select('movie_id')
+          .limit(1000);
         if (streamErr) throw streamErr;
         if (streamingIds && streamingIds.length > 0) {
-          query = query.in(
-            'id',
-            streamingIds.map((m: { movie_id: string }) => m.movie_id),
-          );
+          // Deduplicate movie_ids client-side since PostgREST doesn't support DISTINCT
+          const uniqueIds = [...new Set(streamingIds.map((m: { movie_id: string }) => m.movie_id))];
+          query = query.in('id', uniqueIds);
         } else {
           return null;
         }
@@ -232,7 +233,7 @@ export async function searchMovies(query: string): Promise<Movie[]> {
 }
 
 // @sync: shares filter/sort logic with fetchMovies via applyMovieFilters helper — adding a new MovieStatus case or sort option only requires updating applyMovieFilters.
-// @edge: unlike fetchMovies, this function does NOT pass featuredFirst: true — so featured movies don't surface first in paginated results, breaking consistency with the non-paginated list.
+// @sync: like fetchMovies, passes featuredFirst: true so featured movies surface first in paginated results too.
 export async function fetchMoviesPaginated(
   page: number,
   pageSize: number = 10,

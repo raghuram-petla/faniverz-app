@@ -39,12 +39,9 @@ describe('useRefresh', () => {
     const fn2 = jest.fn().mockRejectedValue(new Error('fail'));
     const { result } = renderHook(() => useRefresh(fn1, fn2));
 
+    // Promise.allSettled never throws — onRefresh should complete without error
     await act(async () => {
-      try {
-        await result.current.onRefresh();
-      } catch {
-        // expected
-      }
+      await result.current.onRefresh();
     });
 
     expect(fn1).toHaveBeenCalled();

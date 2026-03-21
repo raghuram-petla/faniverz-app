@@ -153,4 +153,24 @@ describe('ImpersonateModal', () => {
     expect(options[0]).toHaveTextContent('Admin');
     expect(options[1]).toHaveTextContent('PH Admin');
   });
+
+  it('shows error message when production houses fetch fails', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    const mockFrom = supabase.from as ReturnType<typeof vi.fn>;
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      then: vi.fn((onSuccess: unknown, onError: (err: Error) => void) => {
+        onError(new Error('Network error'));
+      }),
+    });
+
+    render(<ImpersonateModal targetUser={null} onClose={onClose} />);
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'production_house_admin' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
+  });
 });

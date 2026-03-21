@@ -1,11 +1,12 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useInviteAdmin } from '@/hooks/useAdminUsers';
 import { useAdminProductionHouses } from '@/hooks/useAdminProductionHouses';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { ADMIN_ROLE_LABELS, type AdminRoleId } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { ArrowLeft, Send, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 
@@ -41,6 +42,13 @@ export default function InviteAdminPage() {
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     };
   }, []);
+
+  // @contract: isDirty = true if email is non-empty OR PH IDs selected OR role changed from default ('admin')
+  const isDirty = useMemo(
+    () => !!(email.trim() || selectedPHIds.length > 0 || roleId !== 'admin'),
+    [email, selectedPHIds, roleId],
+  );
+  useUnsavedChangesWarning(isDirty);
 
   const isPHRole = roleId === 'production_house_admin';
 

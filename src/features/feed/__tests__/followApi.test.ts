@@ -66,24 +66,23 @@ describe('fetchUserFollows', () => {
 });
 
 describe('followEntity', () => {
-  it('inserts into entity_follows', async () => {
-    const mockInsert = jest.fn().mockResolvedValue({ error: null });
-    mockFrom.mockReturnValue({ insert: mockInsert });
+  it('upserts into entity_follows', async () => {
+    const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+    mockFrom.mockReturnValue({ upsert: mockUpsert });
 
     await followEntity('u1', 'movie', 'm1');
     expect(mockFrom).toHaveBeenCalledWith('entity_follows');
-    expect(mockInsert).toHaveBeenCalledWith({
-      user_id: 'u1',
-      entity_type: 'movie',
-      entity_id: 'm1',
-    });
+    expect(mockUpsert).toHaveBeenCalledWith(
+      { user_id: 'u1', entity_type: 'movie', entity_id: 'm1' },
+      { onConflict: 'user_id,entity_type,entity_id' },
+    );
   });
 
   it('throws on error', async () => {
-    const mockInsert = jest.fn().mockResolvedValue({ error: { message: 'Duplicate' } });
-    mockFrom.mockReturnValue({ insert: mockInsert });
+    const mockUpsert = jest.fn().mockResolvedValue({ error: { message: 'DB error' } });
+    mockFrom.mockReturnValue({ upsert: mockUpsert });
 
-    await expect(followEntity('u1', 'movie', 'm1')).rejects.toEqual({ message: 'Duplicate' });
+    await expect(followEntity('u1', 'movie', 'm1')).rejects.toEqual({ message: 'DB error' });
   });
 });
 
@@ -155,7 +154,7 @@ describe('fetchEnrichedFollows', () => {
       if (table === 'actors') {
         return { select: jest.fn(() => ({ in: mockActorIn })) };
       }
-      // production_houses — not called since no PH follows
+      // production_houses and profiles — not called since no PH/user follows
       return {
         select: jest.fn(() => ({ in: jest.fn().mockResolvedValue({ data: [], error: null }) })),
       };
@@ -176,6 +175,41 @@ describe('fetchEnrichedFollows', () => {
       name: 'Actor One',
       image_url: 'photo.jpg',
       created_at: '2026-01-02',
+    });
+  });
+
+  it('enriches user follows with display_name and avatar_url', async () => {
+    const follows = [
+      { id: '1', user_id: 'u1', entity_type: 'user', entity_id: 'u2', created_at: '2026-01-01' },
+    ];
+
+    const mockOrder = jest.fn().mockResolvedValue({ data: follows, error: null });
+    const mockEq = jest.fn(() => ({ order: mockOrder }));
+    const mockSelect = jest.fn(() => ({ eq: mockEq }));
+
+    const mockProfileIn = jest.fn().mockResolvedValue({
+      data: [{ id: 'u2', display_name: 'John Doe', avatar_url: 'avatar.jpg' }],
+      error: null,
+    });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'entity_follows') return { select: mockSelect };
+      if (table === 'profiles') {
+        return { select: jest.fn(() => ({ in: mockProfileIn })) };
+      }
+      return {
+        select: jest.fn(() => ({ in: jest.fn().mockResolvedValue({ data: [], error: null }) })),
+      };
+    });
+
+    const result = await fetchEnrichedFollows('u1');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      entity_type: 'user',
+      entity_id: 'u2',
+      name: 'John Doe',
+      image_url: 'avatar.jpg',
+      created_at: '2026-01-01',
     });
   });
 

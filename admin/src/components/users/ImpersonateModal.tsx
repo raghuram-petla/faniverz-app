@@ -28,21 +28,28 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
   const [productionHouses, setProductionHouses] = useState<ProductionHouse[]>([]);
   const [loading, setLoading] = useState(false);
   const [phLoading, setPhLoading] = useState(false);
+  const [phError, setPhError] = useState<string | null>(null);
 
-  /** @sideeffect fetches production_houses only when role is PH admin and no targetUser set */
+  /** @sideeffect: fetches production_houses only when role is PH admin and no targetUser set */
   useEffect(() => {
     if (targetUser || role !== 'production_house_admin') return;
     setPhLoading(true);
+    setPhError(null);
     supabase
       .from('production_houses')
       .select('*')
       .order('name')
       .then(
-        ({ data }) => {
-          setProductionHouses(data ?? []);
+        ({ data, error }) => {
+          if (error) {
+            setPhError(error.message);
+          } else {
+            setProductionHouses(data ?? []);
+          }
           setPhLoading(false);
         },
-        () => {
+        (err) => {
+          setPhError(err instanceof Error ? err.message : 'Failed to load production houses');
           setPhLoading(false);
         },
       );
@@ -135,7 +142,9 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
                 <label className="block text-sm font-medium text-on-surface-muted mb-1">
                   Production Houses
                 </label>
-                {phLoading ? (
+                {phError ? (
+                  <p className="text-xs text-status-red p-2">{phError}</p>
+                ) : phLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-on-surface-subtle" />
                 ) : (
                   <div className="max-h-40 overflow-y-auto space-y-1 bg-input rounded-lg p-2">

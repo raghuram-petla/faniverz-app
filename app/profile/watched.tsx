@@ -84,9 +84,8 @@ export default function WatchedMoviesScreen() {
   // @edge: displays em-dash when no movies are watched to avoid showing "0h 0m"
   const watchTimeLabel = count > 0 ? formatWatchTime(watchTimeMinutes) : '—';
 
-  const activeSortLabel = SORT_OPTION_KEYS.find((o) => o.key === sortKey)
-    ? t(SORT_OPTION_KEYS.find((o) => o.key === sortKey)?.i18nKey ?? '')
-    : t('profile.sort');
+  const foundSortOption = SORT_OPTION_KEYS.find((o) => o.key === sortKey);
+  const activeSortLabel = foundSortOption ? t(foundSortOption.i18nKey) : t('profile.sort');
 
   // Build rows for the 2-col grid
   const rows: WatchlistEntry[][] = [];

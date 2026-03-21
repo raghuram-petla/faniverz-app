@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import InviteAdminPage from '@/app/(dashboard)/users/invite/page';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -47,6 +48,10 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
+  useUnsavedChangesWarning: vi.fn(),
+}));
+
 vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({
     user: { id: 'user-1', role: 'super_admin', productionHouseIds: [] },
@@ -89,5 +94,10 @@ describe('InviteAdminPage', () => {
   it('renders "Create Invitation" submit button', () => {
     renderWithProviders(<InviteAdminPage />);
     expect(screen.getByText('Create Invitation')).toBeInTheDocument();
+  });
+
+  it('calls useUnsavedChangesWarning hook', () => {
+    renderWithProviders(<InviteAdminPage />);
+    expect(useUnsavedChangesWarning).toHaveBeenCalled();
   });
 });

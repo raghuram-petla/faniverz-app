@@ -75,7 +75,7 @@ export function useFollowEntity() {
   });
 }
 
-// @coupling: fetchEnrichedFollows does 3 parallel lookups (movies, actors, production_houses) to resolve names/images. 'user' type follows are NOT looked up — they show name='Deleted' and image_url=null. If user follows are implemented in the UI, this will show broken data.
+// @coupling: fetchEnrichedFollows does 4 parallel lookups (movies, actors, production_houses, profiles) to resolve names/images for all entity types including user follows.
 // @invariant: query key ['enriched-follows', userId] is invalidated by useFollowEntity/useUnfollowEntity onSettled.
 export function useEnrichedFollows() {
   const { user } = useAuth();

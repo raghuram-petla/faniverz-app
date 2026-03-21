@@ -18,7 +18,7 @@ export async function fetchUserFollows(userId: string): Promise<EntityFollow[]> 
   return data ?? [];
 }
 
-// @edge: uses plain insert, not upsert. The UNIQUE(user_id, entity_type, entity_id) constraint means duplicate inserts throw 23505. The caller (useFollowEntity) has no special handling for this — it just triggers the generic onError rollback. If the UI allows clicking "follow" when already followed (e.g., stale followSet), the error is silently swallowed.
+// @contract: uses upsert to safely handle duplicate follow attempts (e.g. rapid taps or stale followSet)
 export async function followEntity(
   userId: string,
   entityType: FeedEntityType,
@@ -26,11 +26,13 @@ export async function followEntity(
 ): Promise<void> {
   const { error } = await supabase
     .from('entity_follows')
-    .insert({ user_id: userId, entity_type: entityType, entity_id: entityId });
+    .upsert(
+      { user_id: userId, entity_type: entityType, entity_id: entityId },
+      { onConflict: 'user_id,entity_type,entity_id' },
+    );
   if (error) throw error;
 }
 
-// @edge: 'user' entity_type follows are grouped but never queried — grouped.user is populated but no lookup is made for profiles. Those follows will have lookup.get() return undefined, resulting in name='Deleted'. To support user follows, a 4th parallel query to profiles table is needed.
 // @assumes: entity_id is always a valid UUID for the corresponding table. If entity_id contains a non-UUID value, the .in('id', [...]) query returns empty results — those follows silently show as 'Deleted' with no error.
 export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFollow[]> {
   const follows = await fetchUserFollows(userId);
@@ -46,7 +48,8 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
     grouped[f.entity_type]?.push(f.entity_id);
   }
 
-  const [movies, actors, houses] = await Promise.all([
+  // @contract: queries all 4 entity types in parallel, including user profiles
+  const [movies, actors, houses, users] = await Promise.all([
     grouped.movie.length > 0
       ? supabase.from('movies').select('id, title, poster_url').in('id', grouped.movie).then(unwrap)
       : [],
@@ -60,12 +63,20 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
           .in('id', grouped.production_house)
           .then(unwrap)
       : [],
+    grouped.user.length > 0
+      ? supabase
+          .from('profiles')
+          .select('id, display_name, avatar_url')
+          .in('id', grouped.user)
+          .then(unwrap)
+      : [],
   ]);
 
   const lookup = new Map<string, { name: string; image_url: string | null }>();
   for (const m of movies) lookup.set(m.id, { name: m.title, image_url: m.poster_url });
   for (const a of actors) lookup.set(a.id, { name: a.name, image_url: a.photo_url });
   for (const h of houses) lookup.set(h.id, { name: h.name, image_url: h.logo_url });
+  for (const u of users) lookup.set(u.id, { name: u.display_name, image_url: u.avatar_url });
 
   return follows.map((f) => {
     const info = lookup.get(f.entity_id);

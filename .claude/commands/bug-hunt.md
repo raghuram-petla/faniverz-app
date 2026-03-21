@@ -20,7 +20,9 @@ Run 1 → found 12 bugs → fix → Run 2 → found 3 bugs → fix → Run 3 →
 
 ## Phase 1 — Scan
 
-Search both mobile (`app/`, `src/`) and admin (`admin/src/`) codebases for each category below. For each finding, record: **file path**, **line number(s)**, **what's wrong**, **severity**, and **how it manifests** (crash, wrong data, silent failure, etc.). Do NOT modify any files during this phase. Use multiple parallel agents for speed.
+Search the entire codebase — mobile (`app/`, `src/`), admin (`admin/src/`), and shared (`shared/`) — for each category below. For each finding, record: **file path**, **line number(s)**, **what's wrong**, **severity**, and **how it manifests** (crash, wrong data, silent failure, etc.). Do NOT modify any files during this phase.
+
+**Agent strategy**: Launch **at least 3 parallel agents**, each assigned a distinct directory (`app/`, `src/`, `admin/src/`). Each agent reads source files in its area and checks all 14 categories. Do NOT have agents start with `git diff` — they should read source files directly via Glob, Grep, and Read tools.
 
 ### Category 1: Null/Undefined Crashes (Critical)
 
