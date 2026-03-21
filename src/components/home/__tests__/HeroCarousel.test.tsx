@@ -18,18 +18,22 @@ const mockFollowSet = new Set<string>();
 const mockAddMutate = jest.fn();
 const mockRemoveMutate = jest.fn();
 const mockWatchlistSet = new Set<string>();
+let mockFollowIsPending = false;
+let mockUnfollowIsPending = false;
+let mockAddIsPending = false;
+let mockRemoveIsPending = false;
 
 jest.mock('@/features/feed', () => ({
   useEntityFollows: () => ({ followSet: mockFollowSet }),
-  useFollowEntity: () => ({ mutate: mockFollowMutate }),
-  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate }),
+  useFollowEntity: () => ({ mutate: mockFollowMutate, isPending: mockFollowIsPending }),
+  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate, isPending: mockUnfollowIsPending }),
 }));
 
 jest.mock('@/features/watchlist/hooks', () => ({
   useWatchlistSet: () => ({ watchlistSet: mockWatchlistSet }),
   useWatchlistMutations: () => ({
-    add: { mutate: mockAddMutate },
-    remove: { mutate: mockRemoveMutate },
+    add: { mutate: mockAddMutate, isPending: mockAddIsPending },
+    remove: { mutate: mockRemoveMutate, isPending: mockRemoveIsPending },
   }),
 }));
 
@@ -162,6 +166,10 @@ describe('HeroCarousel', () => {
     jest.clearAllMocks();
     mockFollowSet.clear();
     mockWatchlistSet.clear();
+    mockFollowIsPending = false;
+    mockUnfollowIsPending = false;
+    mockAddIsPending = false;
+    mockRemoveIsPending = false;
   });
 
   it('renders all movie titles in the FlatList', () => {
@@ -430,5 +438,22 @@ describe('HeroCarousel', () => {
     );
     fireEvent.press(getByLabelText('Save Kalki'));
     expect(mockAddMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: '2' });
+  });
+
+  it('does not call follow mutation when a mutation is already in-flight (regression: duplicate taps)', () => {
+    // @regression: rapid taps on hero carousel action buttons previously called mutate() multiple times
+    mockFollowIsPending = true;
+    const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
+    fireEvent.press(getByLabelText('Follow Pushpa 2'));
+    expect(mockFollowMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not call watchlist mutation when a mutation is already in-flight', () => {
+    mockAddIsPending = true;
+    const { getByLabelText } = render(
+      <HeroCarousel movies={[mockMovies[1]]} platformMap={mockPlatformMap} />,
+    );
+    fireEvent.press(getByLabelText('Save Kalki'));
+    expect(mockAddMutate).not.toHaveBeenCalled();
   });
 });

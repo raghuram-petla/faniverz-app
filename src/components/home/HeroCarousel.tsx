@@ -120,14 +120,18 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
     [router],
   );
 
-  /** @edge Empty movies array renders nothing — parent should show skeleton instead */
-  if (movies.length === 0) return null;
-
-  // @edge handleActionToggle is defined after the early return — ESLint allows this because it's a const, not a hook
   /** @sideeffect Mutates follow/watchlist state via TanStack mutations; auth-gated */
   const handleActionToggle = useCallback(
     (movieId: string, actionType: 'follow' | 'watchlist') =>
       gate(() => {
+        // @contract: isPending guards prevent duplicate follow/watchlist API calls from rapid taps
+        if (
+          followMutation.isPending ||
+          unfollowMutation.isPending ||
+          addWatchlist.isPending ||
+          removeWatchlist.isPending
+        )
+          return;
         if (actionType === 'follow') {
           if (followSet.has(`movie:${movieId}`)) {
             unfollowMutation.mutate({ entityType: 'movie', entityId: movieId });
@@ -153,6 +157,9 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
       userId,
     ],
   );
+
+  /** @edge Empty movies array renders nothing — parent should show skeleton instead */
+  if (movies.length === 0) return null;
 
   const renderSlide = ({ item }: { item: Movie }) => {
     const platforms_ = platformMap?.[item.id] ?? [];
