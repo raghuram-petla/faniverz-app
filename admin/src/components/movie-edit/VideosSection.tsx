@@ -1,11 +1,49 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { Plus, X, Calendar } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { Plus, X, Calendar, Play } from 'lucide-react';
 import { VIDEO_TYPES } from '@shared/constants';
 import type { VideoType, MovieVideo } from '@/lib/types';
 import { extractYouTubeId } from '@/lib/youtube';
 import { FormInput, FormSelect } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
+
+// @contract shows thumbnail until clicked, then swaps to iframe with autoplay — avoids YouTube's red play button
+function YouTubeThumbnail({ youtubeId, title }: { youtubeId: string; title: string }) {
+  const [playing, setPlaying] = useState(false);
+  const handlePlay = useCallback(() => setPlaying(true), []);
+
+  if (playing) {
+    return (
+      <iframe
+        src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`}
+        className="w-full h-full"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+        title={title}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handlePlay}
+      className="relative w-full h-full group cursor-pointer bg-black"
+      aria-label={`Play ${title}`}
+    >
+      <img
+        src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
+        alt={title}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-full bg-black/60 flex items-center justify-center group-hover:bg-black/80 transition-colors">
+          <Play className="w-7 h-7 text-white fill-white ml-1" />
+        </div>
+      </div>
+    </button>
+  );
+}
 
 const EMPTY_VIDEO_FORM = {
   youtube_input: '',
@@ -136,10 +174,8 @@ export function VideosSection({
           </div>
           {extractYouTubeId(videoForm.youtube_input) && (
             <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${extractYouTubeId(videoForm.youtube_input)}`}
-                className="w-full h-full"
-                allowFullScreen
+              <YouTubeThumbnail
+                youtubeId={extractYouTubeId(videoForm.youtube_input)!}
                 title="YouTube preview"
               />
             </div>
@@ -205,13 +241,7 @@ export function VideosSection({
                   </Button>
                 </div>
                 <div className="overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${video.youtube_id}`}
-                    className="w-full h-full"
-                    loading="lazy"
-                    allowFullScreen
-                    title={video.title}
-                  />
+                  <YouTubeThumbnail youtubeId={video.youtube_id} title={video.title} />
                 </div>
               </div>
             );

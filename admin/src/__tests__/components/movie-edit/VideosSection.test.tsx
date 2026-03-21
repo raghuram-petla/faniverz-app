@@ -133,10 +133,20 @@ describe('VideosSection', () => {
     expect(screen.getByText('Add Video')).toBeDisabled();
   });
 
-  it('renders YouTube iframe for each video', () => {
+  it('renders YouTube thumbnail for each video', () => {
+    render(<VideosSection {...defaultProps} visibleVideos={[mockVideo]} />);
+    const playBtn = screen.getByLabelText('Play Official Trailer');
+    expect(playBtn).toBeInTheDocument();
+    const img = playBtn.querySelector('img');
+    expect(img?.getAttribute('src')).toContain('abc12345678');
+  });
+
+  it('loads iframe with autoplay when thumbnail is clicked', () => {
     const { container } = render(<VideosSection {...defaultProps} visibleVideos={[mockVideo]} />);
+    fireEvent.click(screen.getByLabelText('Play Official Trailer'));
     const iframe = container.querySelector('iframe');
     expect(iframe).toBeTruthy();
     expect(iframe?.getAttribute('src')).toContain('abc12345678');
+    expect(iframe?.getAttribute('src')).toContain('autoplay=1');
   });
 });
