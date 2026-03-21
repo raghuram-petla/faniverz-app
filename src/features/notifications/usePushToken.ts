@@ -71,29 +71,40 @@ export function usePushToken() {
 
     if (registeredRef.current) return;
 
+    // @sync: cancelled guard prevents stale IIFE from writing token for the wrong user if user
+    // changes while async work is in progress (e.g., rapid sign-out + sign-in as different account).
+    let cancelled = false;
+
     (async () => {
       try {
         const pushPref = await AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS);
+        if (cancelled) return;
         if (pushPref === 'false') {
           // @edge: user opted out — deactivate without requesting OS permissions.
           // Uses getExistingPushToken which only reads current permission status.
           const token = await getExistingPushToken();
+          if (cancelled) return;
           if (token && user.id) {
             await deactivatePushToken(token);
           }
-          registeredRef.current = true;
+          if (!cancelled) registeredRef.current = true;
           return;
         }
 
         const token = await registerForPushNotifications();
+        if (cancelled) return;
         if (token && user.id) {
           await upsertPushToken(user.id, token);
-          registeredRef.current = true;
+          if (!cancelled) registeredRef.current = true;
         }
       } catch (err) {
         // @edge: push is optional — log for debugging but don't block the app
         console.warn('Push token registration failed:', err);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 }

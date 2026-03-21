@@ -38,11 +38,13 @@ async function applyMovieFilters(
         query = query.eq('in_theaters', true);
         break;
       case 'streaming': {
-        // @edge: select only distinct movie_id to avoid fetching every row in movie_platforms
+        // @edge: select only movie_id column (no limit) so all entries are returned.
+        // movie_platforms grows linearly with (movies × platforms) — even at 10k movies × 8 platforms
+        // this is only 80k UUIDs (~5 MB), acceptable for a one-time filter fetch. A hard limit of 1000
+        // silently excluded movies on rows >1000, producing an incomplete streaming list.
         const { data: streamingIds, error: streamErr } = await supabase
           .from('movie_platforms')
-          .select('movie_id')
-          .limit(1000);
+          .select('movie_id');
         if (streamErr) throw streamErr;
         if (streamingIds && streamingIds.length > 0) {
           // Deduplicate movie_ids client-side since PostgREST doesn't support DISTINCT

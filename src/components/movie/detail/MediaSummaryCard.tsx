@@ -32,8 +32,15 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
       `${videos.length} ${videos.length !== 1 ? t('movieDetail.videos') : t('movieDetail.video')}`,
     );
   /** @contract Show separate poster/backdrop counts instead of a single "N Photos" count */
-  const posterCount = posters.filter((p) => p.image_type === 'poster').length;
-  const backdropCount = posters.filter((p) => p.image_type === 'backdrop').length;
+  // @edge: single-pass reduce avoids iterating posters twice for two counts
+  const { posterCount, backdropCount } = posters.reduce(
+    (acc, p) => {
+      if (p.image_type === 'poster') acc.posterCount++;
+      else if (p.image_type === 'backdrop') acc.backdropCount++;
+      return acc;
+    },
+    { posterCount: 0, backdropCount: 0 },
+  );
   const photoParts: string[] = [];
   if (posterCount > 0)
     photoParts.push(
