@@ -66,11 +66,11 @@ export function MovieDetailHero({
       {/* Gradient overlay */}
       <div style={{ position: 'absolute', inset: 0, background: gradientCss }} />
 
-      {/* Floating header */}
+      {/* Floating header — positioned at top of hero (parent already has safeArea padding) */}
       <div
         style={{
           position: 'absolute',
-          top: 59,
+          top: 8,
           left: 16,
           right: 16,
           display: 'flex',

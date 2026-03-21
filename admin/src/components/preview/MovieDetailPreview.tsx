@@ -5,6 +5,8 @@ import type { MovieStatus } from '@shared/types';
 import { MovieDetailHero, buildGradientCss } from './MovieDetailHero';
 
 interface MovieDetailPreviewProps {
+  /** @sync must match the device's safe area inset so content starts below status bar */
+  safeAreaTop?: number;
   title: string;
   backdropUrl: string;
   posterUrl: string;
@@ -22,6 +24,7 @@ interface MovieDetailPreviewProps {
 
 /** @coupling mirrors mobile MovieDetailScreen layout — backdrop + poster + metadata + tabs */
 export function MovieDetailPreview({
+  safeAreaTop = 0,
   title,
   backdropUrl,
   posterUrl,
@@ -45,7 +48,14 @@ export function MovieDetailPreview({
       : 'center';
 
   return (
-    <div style={{ width: '100%', backgroundColor: colors.black, minHeight: '100%' }}>
+    <div
+      style={{
+        width: '100%',
+        backgroundColor: colors.black,
+        minHeight: '100%',
+        paddingTop: safeAreaTop,
+      }}
+    >
       <MovieDetailHero
         title={title}
         backdropUrl={backdropUrl}

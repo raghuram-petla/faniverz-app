@@ -145,11 +145,11 @@ export function MainImageSelector({
             </button>
 
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 z-50 bg-surface-elevated border border-outline rounded-lg shadow-lg p-2 max-h-64 overflow-y-auto min-w-[200px]">
+              <div className="absolute top-full left-0 mt-1 z-50 bg-zinc-900 border border-outline rounded-lg shadow-xl p-3 max-h-80 overflow-y-auto min-w-[280px]">
                 {images.length === 0 ? (
                   <p className="text-xs text-on-surface-subtle p-2">No images in gallery</p>
                 ) : (
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-3 gap-2">
                     {images.map((img) => {
                       const imgBucket = img.image_type === 'backdrop' ? 'BACKDROPS' : 'POSTERS';
                       const isSelected = img.image_url === currentImageUrl;

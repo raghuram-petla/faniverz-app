@@ -4,6 +4,7 @@ import { colors } from '@shared/colors';
 import type { MovieStatus } from '@shared/types';
 
 interface SpotlightPreviewProps {
+  safeAreaTop?: number;
   title: string;
   backdropUrl: string;
   movieStatus: MovieStatus;

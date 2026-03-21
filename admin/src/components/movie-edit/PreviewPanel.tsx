@@ -81,6 +81,7 @@ export function PreviewPanel({
         {/* @nullable all form fields fall back to placeholder values for preview */}
         {previewMode === 'spotlight' ? (
           <SpotlightPreview
+            safeAreaTop={device.safeAreaTop}
             title={form.title || 'Movie Title'}
             backdropUrl={
               (getImageUrl(form.backdrop_url, 'original', backdropBucket) ?? form.backdrop_url) ||
@@ -102,6 +103,7 @@ export function PreviewPanel({
           />
         ) : (
           <MovieDetailPreview
+            safeAreaTop={device.safeAreaTop}
             title={form.title || 'Movie Title'}
             backdropUrl={
               (getImageUrl(form.backdrop_url, 'original', backdropBucket) ?? form.backdrop_url) ||
