@@ -145,7 +145,7 @@ export function MainImageSelector({
             </button>
 
             {dropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 z-50 bg-zinc-900 border border-outline rounded-lg shadow-xl p-3 max-h-80 overflow-y-auto min-w-[280px]">
+              <div className="absolute top-full left-0 mt-1 z-50 bg-surface border border-outline rounded-lg shadow-xl p-3 max-h-80 overflow-y-auto min-w-[280px]">
                 {images.length === 0 ? (
                   <p className="text-xs text-on-surface-subtle p-2">No images in gallery</p>
                 ) : (
