@@ -115,7 +115,7 @@ describe('useAdminAuditLog', () => {
     );
   });
 
-  it('sanitizes search term by stripping special characters', async () => {
+  it('sanitizes search term by stripping special characters but preserving dots', async () => {
     const { self, chain } = buildChain();
     mockFrom.mockReturnValue(self);
 
@@ -125,8 +125,9 @@ describe('useAdminAuditLog', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
+    // @edge: dots preserved for email search compatibility
     expect(chain.or).toHaveBeenCalledWith(
-      'admin_email.ilike.%testvaluebad%,entity_type.ilike.%testvaluebad%,entity_id.ilike.%testvaluebad%',
+      'admin_email.ilike.%testvalue.bad%,entity_type.ilike.%testvalue.bad%,entity_id.ilike.%testvalue.bad%',
     );
   });
 

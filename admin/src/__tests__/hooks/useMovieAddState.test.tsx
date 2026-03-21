@@ -130,6 +130,7 @@ describe('useMovieAddState', () => {
       result.current.setPendingCastAdds((prev) => [
         ...prev,
         {
+          _id: 'pc1',
           actor_id: 'a1',
           credit_type: 'cast' as const,
           role_name: 'Hero',

@@ -111,6 +111,7 @@ export default function MyReviewsScreen() {
           body: editBody,
           contains_spoiler: editSpoiler,
         },
+        movieId: editingReview.movie_id,
       },
       { onSuccess: () => setEditingReview(null) },
     );
@@ -123,7 +124,7 @@ export default function MyReviewsScreen() {
       {
         text: t('common.delete'),
         style: 'destructive',
-        onPress: () => remove.mutate(review.id),
+        onPress: () => remove.mutate({ id: review.id, movieId: review.movie_id }),
       },
     ]);
   };

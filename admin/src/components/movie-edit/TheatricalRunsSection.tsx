@@ -15,6 +15,9 @@ interface TheatricalRun {
 }
 
 export type PendingRun = {
+  // @contract: stable UUID for removal — prevents index-shift bugs when removing pending items
+  // @sync: replaces 'pending-run-N' index-based IDs (migrated same as cast/video)
+  _id: string;
   release_date: string;
   label: string | null;
 };
@@ -30,6 +33,8 @@ interface Props {
   onEndRun?: (id: string, endDate: string) => void;
   // @contract set of run IDs already queued for ending (to show pending state in UI)
   pendingEndRunIds?: Set<string>;
+  // @sync: Set of stable _id UUIDs for pending (unsaved) runs — replaces startsWith('pending-run-N')
+  pendingIds: Set<string>;
   showAddForm: boolean;
   onCloseAddForm: () => void;
 }
@@ -40,6 +45,7 @@ export function TheatricalRunsSection({
   onRemove,
   onEndRun,
   pendingEndRunIds,
+  pendingIds,
   showAddForm,
   onCloseAddForm,
 }: Props) {
@@ -60,7 +66,12 @@ export function TheatricalRunsSection({
 
     setRunError('');
     // @nullable label — empty string coerced to null for DB storage
-    onAdd({ release_date: runForm.release_date, label: runForm.label || null });
+    // @sync: assign stable UUID _id so pending runs survive out-of-order removal without index-shift
+    onAdd({
+      _id: crypto.randomUUID(),
+      release_date: runForm.release_date,
+      label: runForm.label || null,
+    });
     setRunForm({ release_date: '', label: '' });
     onCloseAddForm();
   }
@@ -151,7 +162,7 @@ export function TheatricalRunsSection({
                 </span>
               )}
               {!run.end_date &&
-                !run.id.startsWith('pending-run-') &&
+                !pendingIds.has(run.id) &&
                 !pendingEndRunIds?.has(run.id) &&
                 onEndRun && (
                   <Button
@@ -167,7 +178,7 @@ export function TheatricalRunsSection({
               <Button
                 variant="icon"
                 size="sm"
-                onClick={() => onRemove(run.id, run.id.startsWith('pending-run-'))}
+                onClick={() => onRemove(run.id, pendingIds.has(run.id))}
                 aria-label={`Remove run ${run.release_date}`}
               >
                 <X className="w-4 h-4" />

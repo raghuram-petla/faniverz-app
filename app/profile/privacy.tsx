@@ -24,7 +24,9 @@ export default function PrivacySettingsScreen() {
   const isWatchlistPublic = profile?.is_watchlist_public ?? true;
 
   // @sideeffect: persists privacy toggle to Supabase profiles table
+  // @contract: isPending guard prevents duplicate mutations from rapid taps
   const handleToggleProfile = () => {
+    if (updateProfile.isPending) return;
     updateProfile.mutate(
       { is_profile_public: !isProfilePublic },
       {
@@ -37,7 +39,9 @@ export default function PrivacySettingsScreen() {
     );
   };
 
+  // @contract: isPending guard prevents duplicate mutations from rapid taps
   const handleToggleWatchlist = () => {
+    if (updateProfile.isPending) return;
     updateProfile.mutate(
       { is_watchlist_public: !isWatchlistPublic },
       {

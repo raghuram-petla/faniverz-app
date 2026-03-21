@@ -2,13 +2,14 @@ import { supabase } from '@/lib/supabase';
 import { Review, CreateReviewInput, UpdateReviewInput } from '@/types';
 
 // @contract: selects profile:profiles(id, display_name, avatar_url) — matches Review type Pick<UserProfile, 'id' | 'display_name' | 'avatar_url'>.
-// @edge: no pagination — fetches ALL reviews for a movie. A popular movie with hundreds of reviews returns them all in one call. No limit applied.
+// @edge: limited to 100 most recent reviews per movie to prevent unbounded fetches on popular movies
 export async function fetchMovieReviews(movieId: string): Promise<Review[]> {
   const { data, error } = await supabase
     .from('reviews')
     .select('*, profile:profiles(id, display_name, avatar_url)')
     .eq('movie_id', movieId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(100);
 
   if (error) throw error;
   return data ?? [];
@@ -58,13 +59,17 @@ export async function deleteReview(id: string): Promise<void> {
 // First attempts to delete; if 0 rows affected, inserts instead. Both paths are single
 // statements so concurrent taps cannot produce duplicates.
 // @sideeffect: fires on_review_helpful_change_update_count trigger which does COUNT(*) recalculation.
+// @edge: delete error is checked before falling through to upsert — prevents duplicate helpful votes
+// on network error or RLS rejection (without this guard, deleted would be null and code would insert).
 export async function toggleHelpful(userId: string, reviewId: string): Promise<boolean> {
-  const { data: deleted } = await supabase
+  const { data: deleted, error: deleteError } = await supabase
     .from('review_helpful')
     .delete()
     .eq('user_id', userId)
     .eq('review_id', reviewId)
     .select('id');
+
+  if (deleteError) throw deleteError;
 
   if (deleted && deleted.length > 0) {
     return false;

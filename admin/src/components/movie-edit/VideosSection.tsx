@@ -54,6 +54,8 @@ const EMPTY_VIDEO_FORM = {
 };
 
 type PendingVideo = {
+  // @contract: stable ID for removal — prevents index-shift bugs
+  _id: string;
   youtube_id: string;
   title: string;
   video_type: VideoType;
@@ -75,6 +77,9 @@ interface Props {
   onClearTrailerUrl: () => void;
   showAddForm: boolean;
   onCloseAddForm: () => void;
+  // @sync: Set of _id values for pending (unsaved) videos — replaces startsWith('pending-video-')
+  // after _id migration, pending items carry stable UUIDs, not 'pending-video-N' strings
+  pendingIds: Set<string>;
 }
 
 export function VideosSection({
@@ -86,6 +91,7 @@ export function VideosSection({
   onClearTrailerUrl,
   showAddForm,
   onCloseAddForm,
+  pendingIds,
 }: Props) {
   const [videoForm, setVideoForm] = useState(EMPTY_VIDEO_FORM);
 
@@ -120,6 +126,7 @@ export function VideosSection({
       return;
     }
     onAdd({
+      _id: crypto.randomUUID(),
       youtube_id: youtubeId,
       title: videoForm.title,
       video_type: videoForm.video_type,
@@ -231,9 +238,7 @@ export function VideosSection({
                     variant="icon"
                     size="sm"
                     onClick={() =>
-                      isLegacy
-                        ? onClearTrailerUrl()
-                        : onRemove(video.id, video.id.startsWith('pending-video-'))
+                      isLegacy ? onClearTrailerUrl() : onRemove(video.id, pendingIds.has(video.id))
                     }
                     aria-label={`Remove ${video.title}`}
                   >

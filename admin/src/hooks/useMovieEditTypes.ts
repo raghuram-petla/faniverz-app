@@ -35,6 +35,8 @@ export interface MovieForm {
 }
 
 export type PendingVideoAdd = {
+  // @contract: stable ID for removal — prevents index-shift bugs when removing pending items
+  _id: string;
   youtube_id: string;
   title: string;
   video_type: VideoType;
@@ -150,7 +152,7 @@ export interface MovieEditHandlerDeps {
   addCast: MutateAsync<Partial<MovieCast>>;
   removeCast: MutateAsync<{ id: string; movieId: string }>;
   updateCastOrder: MutateAsync<{ movieId: string; items: { id: string; display_order: number }[] }>;
-  addVideo: MutateAsync<{ movie_id: string } & PendingVideoAdd>;
+  addVideo: MutateAsync<{ movie_id: string } & Omit<PendingVideoAdd, '_id'>>;
   removeVideo: MutateAsync<{ id: string; movieId: string }>;
   addPoster: MutateAsync<{ movie_id: string } & Omit<PendingPosterAdd, '_id'>>;
   removePoster: MutateAsync<{ id: string; movieId: string }>;

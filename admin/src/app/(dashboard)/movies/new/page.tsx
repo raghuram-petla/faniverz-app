@@ -135,6 +135,7 @@ export default function NewMoviePage() {
                 onClearTrailerUrl={() => s.updateField('trailer_url', '')}
                 showAddForm={addFormOpen === 'videos'}
                 onCloseAddForm={closeAdd}
+                pendingIds={s.pendingVideoIds}
               />
             </SectionCard>
           )}
@@ -181,6 +182,7 @@ export default function NewMoviePage() {
                   onReorder={(newOrder) => s.setLocalCastOrder(newOrder)}
                   showAddForm={addFormOpen === 'cast'}
                   onCloseAddForm={closeAdd}
+                  pendingIds={s.pendingCastIds}
                 />
               </SectionCard>
             </>
@@ -197,6 +199,7 @@ export default function NewMoviePage() {
                   visibleRuns={s.visibleRuns}
                   onAdd={(run) => s.setPendingRunAdds((prev) => [...prev, run])}
                   onRemove={s.handleRunRemove}
+                  pendingIds={s.pendingRunIds}
                   showAddForm={addFormOpen === 'runs'}
                   onCloseAddForm={closeAdd}
                 />

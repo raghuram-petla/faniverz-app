@@ -71,9 +71,11 @@ export default function DiscoverScreen() {
 
   // @sideeffect: applies deep-link params on mount only (empty deps intentional)
   // @assumes: params.filter is a valid MovieStatus or 'all'
+  // @edge: togglePlatform is a toggle (not set), so it must only fire once on mount — not on param change
   useEffect(() => {
     if (params.filter) setFilter(params.filter as 'all' | MovieStatus);
     if (params.platform) togglePlatform(params.platform);
+    // @edge: empty deps intentional — mount-only, togglePlatform must fire exactly once
   }, []);
 
   // @contract: only movieStatus and sortBy are sent to the API; genre/platform/PH filtering is client-side

@@ -45,8 +45,10 @@ export function useAdminEndUsers({
         .range(from, to);
 
       if (search) {
+        // @boundary: escape LIKE wildcards (%, _, \) to prevent unintended matches
+        const escaped = search.replace(/[\\%_]/g, (ch) => `\\${ch}`);
         query = query.or(
-          `display_name.ilike.%${search}%,username.ilike.%${search}%,email.ilike.%${search}%`,
+          `display_name.ilike.%${escaped}%,username.ilike.%${escaped}%,email.ilike.%${escaped}%`,
         );
       }
 
@@ -67,11 +69,15 @@ async function callManageUser(action: string, userId: string, extra?: Record<str
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  // @edge: throw immediately if session expired — avoids sending "Bearer undefined"
+  if (!session?.access_token) {
+    throw new Error('Session expired — please sign in again.');
+  }
   const res = await fetch('/api/manage-user', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${session?.access_token}`,
+      Authorization: `Bearer ${session.access_token}`,
     },
     body: JSON.stringify({ action, userId, ...extra }),
   });

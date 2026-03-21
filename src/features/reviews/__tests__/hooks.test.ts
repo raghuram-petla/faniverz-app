@@ -113,7 +113,7 @@ describe('useReviewMutations', () => {
     });
 
     await act(async () => {
-      result.current.update.mutate({ id: 'r1', input: input as never });
+      result.current.update.mutate({ id: 'r1', input: input as never, movieId: 'm1' });
     });
 
     await waitFor(() => expect(result.current.update.isSuccess).toBe(true));
@@ -128,7 +128,7 @@ describe('useReviewMutations', () => {
     });
 
     await act(async () => {
-      result.current.remove.mutate('r1');
+      result.current.remove.mutate({ id: 'r1', movieId: 'm1' });
     });
 
     await waitFor(() => expect(result.current.remove.isSuccess).toBe(true));

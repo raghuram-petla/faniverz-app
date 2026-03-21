@@ -33,6 +33,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
   /** @sideeffect: fetches production_houses only when role is PH admin and no targetUser set */
   useEffect(() => {
     if (targetUser || role !== 'production_house_admin') return;
+    let cancelled = false;
     setPhLoading(true);
     setPhError(null);
     supabase
@@ -41,6 +42,7 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
       .order('name')
       .then(
         ({ data, error }) => {
+          if (cancelled) return;
           if (error) {
             setPhError(error.message);
           } else {
@@ -49,10 +51,14 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
           setPhLoading(false);
         },
         (err) => {
+          if (cancelled) return;
           setPhError(err instanceof Error ? err.message : 'Failed to load production houses');
           setPhLoading(false);
         },
       );
+    return () => {
+      cancelled = true;
+    };
   }, [role, targetUser]);
 
   async function handleStart() {

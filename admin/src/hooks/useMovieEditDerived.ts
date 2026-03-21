@@ -105,13 +105,13 @@ export function useMovieEditDerived(params: {
     initialForm,
   } = params;
 
-  // @invariant Pending items get synthetic IDs like 'pending-cast-N' — index-based, not stable across re-renders if array mutates
+  // @contract Pending items use stable _id — safe across removals (no index-shift bugs)
   const visibleCast = useMemo(() => {
     const serverFiltered = castData.filter((c) => !pendingCastRemoveIds.has(c.id));
     const allItems = [
       ...serverFiltered,
-      ...pendingCastAdds.map((p, i) => ({
-        id: `pending-cast-${i}`,
+      ...pendingCastAdds.map((p) => ({
+        id: p._id,
         movie_id: id,
         actor_id: p.actor_id,
         credit_type: p.credit_type,
@@ -133,9 +133,9 @@ export function useMovieEditDerived(params: {
   const visibleVideos = useMemo(
     () => [
       ...videosData.filter((v) => !pendingVideoRemoveIds.has(v.id)),
-      ...pendingVideoAdds.map((v, i) => ({
-        ...v,
-        id: `pending-video-${i}`,
+      ...pendingVideoAdds.map(({ _id, ...rest }) => ({
+        ...rest,
+        id: _id,
         movie_id: id,
         created_at: '',
       })),
@@ -193,11 +193,13 @@ export function useMovieEditDerived(params: {
     [movieProductionHouses, pendingPHAdds, pendingPHRemoveIds, id],
   );
 
+  // @sync: uses stable _id (UUID) instead of index-based 'pending-run-N' — prevents index-shift
+  // bugs when runs are removed out-of-order from the pending list
   const visibleRuns = useMemo(
     () => [
       ...theatricalRuns.filter((r) => !pendingRunRemoveIds.has(r.id)),
-      ...pendingRunAdds.map((r, i) => ({
-        id: `pending-run-${i}`,
+      ...pendingRunAdds.map((r) => ({
+        id: r._id,
         movie_id: id,
         release_date: r.release_date,
         end_date: null,

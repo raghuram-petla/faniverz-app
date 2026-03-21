@@ -48,10 +48,12 @@ export function useReviewMutations() {
   });
 
   const update = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateReviewInput }) =>
+    mutationFn: ({ id, input }: { id: string; input: UpdateReviewInput; movieId: string }) =>
       updateReview(id, input),
-    onSuccess: () => {
+    // @sync: invalidate movie query too — DB trigger recalculates rating+review_count on update
+    onSuccess: (_data, { movieId }) => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['movie', movieId] });
     },
     onError: () => {
       Alert.alert(i18n.t('common.error'), i18n.t('common.failedToUpdateReview'));
@@ -59,9 +61,11 @@ export function useReviewMutations() {
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => deleteReview(id),
-    onSuccess: () => {
+    mutationFn: ({ id }: { id: string; movieId: string }) => deleteReview(id),
+    // @sync: invalidate movie query too — DB trigger recalculates rating+review_count on delete
+    onSuccess: (_data, { movieId }) => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
+      queryClient.invalidateQueries({ queryKey: ['movie', movieId] });
     },
     onError: () => {
       Alert.alert(i18n.t('common.error'), i18n.t('common.failedToDeleteReview'));

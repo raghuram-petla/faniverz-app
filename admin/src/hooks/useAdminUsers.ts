@@ -113,9 +113,7 @@ export function useInviteAdmin() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'invitations'] });
     },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
+    // @edge: no onError here — page-level try/catch handles mutateAsync errors to avoid double-alert
   });
 }
 

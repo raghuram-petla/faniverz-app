@@ -52,7 +52,8 @@ export function MovieCard({
   };
 
   /** @nullable release_date may be null for TBA movies — monthAbbr falls back to "TBA" */
-  const releaseDate = movie.release_date ? new Date(movie.release_date) : null;
+  // @edge: append T00:00:00 to parse as local time — avoids off-by-one day/month for UTC-N users
+  const releaseDate = movie.release_date ? new Date(`${movie.release_date}T00:00:00`) : null;
   const monthAbbr =
     releaseDate?.toLocaleDateString('en-US', { month: 'short' }).toUpperCase() ?? t('movie.tba');
   const day = releaseDate?.getDate() ?? '';

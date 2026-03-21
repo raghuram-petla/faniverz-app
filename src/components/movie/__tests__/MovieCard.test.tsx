@@ -97,11 +97,12 @@ describe('MovieCard', () => {
       ...mockMovie,
       in_theaters: false,
       premiere_date: null,
-      release_date: '2099-01-01',
+      // @edge: use '2099-01-15' so month is always "Jan" regardless of timezone
+      release_date: '2099-01-15',
       rating: 0,
     };
     const { getByText } = render(<MovieCard movie={upcomingMovie} showReleaseDate />);
-    expect(getByText(/Dec/)).toBeTruthy();
+    expect(getByText(/JAN/)).toBeTruthy();
   });
 
   it('renders OTT platform badges when platforms provided', () => {

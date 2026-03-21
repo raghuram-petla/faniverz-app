@@ -33,6 +33,8 @@ const defaultProps = {
   onClearTrailerUrl: vi.fn(),
   showAddForm: false,
   onCloseAddForm: vi.fn(),
+  // @sync: empty Set for non-pending test cases — matches new pendingIds prop requirement
+  pendingIds: new Set<string>(),
 };
 
 describe('VideosSection', () => {
@@ -66,16 +68,25 @@ describe('VideosSection', () => {
     expect(onRemove).toHaveBeenCalledWith('vid-1', false);
   });
 
-  it('calls onRemove with isPending=true for pending videos', () => {
+  it('calls onRemove with isPending=true for pending videos (UUID _id)', () => {
     const onRemove = vi.fn();
+    const pendingUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
     const pendingVideo = {
       ...mockVideo,
-      id: 'pending-video-0',
+      // @sync: after _id migration, pending items use plain UUIDs, not 'pending-video-N' strings
+      id: pendingUuid,
       title: 'Pending Teaser',
     };
-    render(<VideosSection {...defaultProps} visibleVideos={[pendingVideo]} onRemove={onRemove} />);
+    render(
+      <VideosSection
+        {...defaultProps}
+        visibleVideos={[pendingVideo]}
+        onRemove={onRemove}
+        pendingIds={new Set([pendingUuid])}
+      />,
+    );
     fireEvent.click(screen.getByLabelText('Remove Pending Teaser'));
-    expect(onRemove).toHaveBeenCalledWith('pending-video-0', true);
+    expect(onRemove).toHaveBeenCalledWith(pendingUuid, true);
   });
 
   // @contract legacy trailer from trailer_url field must also have a remove button

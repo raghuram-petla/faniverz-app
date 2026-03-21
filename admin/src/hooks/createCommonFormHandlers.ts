@@ -85,12 +85,11 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     }));
   }
 
-  // @invariant isPending=true means id has 'pending-*-N' format; index is parsed from suffix
-  // @invariant isPending=false means id is a real DB UUID — queued for removal on save
+  // @invariant isPending=true means id is a stable _id; isPending=false means a real DB UUID
   function handleVideoRemove(videoId: string, isPending: boolean) {
     if (isPending) {
-      const idx = Number(videoId.replace('pending-video-', ''));
-      setPendingVideoAdds((prev) => prev.filter((_, i) => i !== idx));
+      // @contract uses stable _id — no index-shift bugs on removal
+      setPendingVideoAdds((prev) => prev.filter((v) => v._id !== videoId));
     } else {
       setPendingVideoRemoveIds((prev) => new Set([...prev, videoId]));
     }
@@ -123,17 +122,19 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
 
   function handleCastRemove(castId: string, isPending: boolean) {
     if (isPending) {
-      const idx = Number(castId.replace('pending-cast-', ''));
-      setPendingCastAdds((prev) => prev.filter((_, i) => i !== idx));
+      // @contract uses stable _id — no index-shift bugs on removal
+      setPendingCastAdds((prev) => prev.filter((c) => c._id !== castId));
     } else {
       setPendingCastRemoveIds((prev) => new Set([...prev, castId]));
     }
   }
 
+  // @sync: uses stable _id UUID for removal — no index-shift bugs when removing out-of-order
+  // @invariant isPending=true means runId is a stable _id UUID; isPending=false means a real DB UUID
   function handleRunRemove(runId: string, isPending: boolean) {
     if (isPending) {
-      const idx = Number(runId.replace('pending-run-', ''));
-      setPendingRunAdds((prev) => prev.filter((_, i) => i !== idx));
+      // @contract uses stable _id — no index-shift bugs on removal (mirrors cast/video pattern)
+      setPendingRunAdds((prev) => prev.filter((r) => r._id !== runId));
     } else {
       setPendingRunRemoveIds((prev) => new Set([...prev, runId]));
     }

@@ -3,6 +3,7 @@ import type React from 'react';
 import type { Movie } from '@/lib/types';
 import type { MovieEditHandlerDeps } from '@/hooks/useMovieEditTypes';
 import { createCommonFormHandlers } from '@/hooks/createCommonFormHandlers';
+import { buildChildMutationPromises } from '@/hooks/useMovieEditSubmitHelpers';
 import { validateMovieForm, formatErrors } from '@/lib/movie-validation';
 
 // @coupling Consumes full MovieEditHandlerDeps — tightly coupled to useMovieEditState
@@ -15,40 +16,11 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
     router,
     queryClient,
     movieData,
-    localCastOrder,
-    pendingCastAdds,
-    pendingCastRemoveIds,
-    pendingVideoAdds,
-    pendingVideoRemoveIds,
     pendingPosterAdds,
-    pendingPosterRemoveIds,
     pendingMainPosterId,
     postersData,
-    pendingPlatformAdds,
-    pendingPlatformRemoveIds,
-    pendingPHAdds,
-    pendingPHRemoveIds,
-    pendingRunAdds,
-    pendingRunRemoveIds,
-    pendingRunEndIds,
     updateMovie,
     deleteMovie,
-    addCast,
-    removeCast,
-    updateCastOrder,
-    addVideo,
-    removeVideo,
-    addPoster,
-    removePoster,
-    setMainPoster,
-    setMainBackdrop,
-    addMoviePlatform,
-    removeMoviePlatform,
-    addMovieProductionHouse,
-    removeMovieProductionHouse,
-    addTheatricalRun,
-    updateTheatricalRun,
-    removeTheatricalRun,
     resetPendingState,
     setInitialForm,
     setIsSaving,
@@ -117,130 +89,12 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         detail_focus_y: movieData?.detail_focus_y ?? null,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Query caches stale Movie shape
-      const promises: Promise<unknown>[] = [updateMovie.mutateAsync(movieUpdate as any)];
-
-      // @invariant Only server-persisted cast IDs get order updates; pending IDs are excluded
-      if (localCastOrder) {
-        const updates: { id: string; display_order: number }[] = [];
-        for (let idx = 0; idx < localCastOrder.length; idx++) {
-          const cid = localCastOrder[idx];
-          if (!cid.startsWith('pending-')) {
-            updates.push({ id: cid, display_order: idx });
-          }
-        }
-        if (updates.length > 0) {
-          promises.push(updateCastOrder.mutateAsync({ movieId: id, items: updates }));
-        }
-      }
-      for (let i = 0; i < pendingCastAdds.length; i++) {
-        const { _actor, ...c } = pendingCastAdds[i];
-        void _actor;
-        let displayOrder = c.display_order;
-        if (localCastOrder) {
-          const pos = localCastOrder.indexOf(`pending-cast-${i}`);
-          if (pos !== -1) displayOrder = pos;
-        }
-        promises.push(addCast.mutateAsync({ movie_id: id, ...c, display_order: displayOrder }));
-      }
-      for (const castId of pendingCastRemoveIds) {
-        promises.push(removeCast.mutateAsync({ id: castId, movieId: id }));
-      }
-      for (const v of pendingVideoAdds) {
-        promises.push(addVideo.mutateAsync({ movie_id: id, ...v }));
-      }
-      for (const videoId of pendingVideoRemoveIds) {
-        promises.push(removeVideo.mutateAsync({ id: videoId, movieId: id }));
-      }
-      // @contract compute is_main_poster for each pending poster using pendingMainPosterId override
-      const pendingPostersToAdd = pendingPosterAdds.map((p) => {
-        const isMain = pendingMainPosterId ? p._id === pendingMainPosterId : p.is_main_poster;
-        const { _id, ...posterData } = p;
-        void _id;
-        return { movie_id: id, ...posterData, is_main_poster: isMain };
-      });
-      const willInsertMain = pendingPostersToAdd.some((p) => p.is_main_poster);
-
-      // @edge if a pending poster will be main, unset is_main_poster on existing DB posters first
-      // (must be sequential — DB unique constraint rejects two is_main_poster=true rows)
-      if (willInsertMain) {
-        const { crudFetch } = await import('@/lib/admin-crud-client');
-        await crudFetch('PATCH', {
-          table: 'movie_images',
-          filters: { movie_id: id, is_main_poster: true },
-          data: { is_main_poster: false },
-          returnOne: false,
-        }).catch(() => {
-          // If no main poster exists, PATCH may return empty — that's OK
-        });
-      }
-      for (const p of pendingPostersToAdd) {
-        promises.push(addPoster.mutateAsync(p));
-      }
-      for (const posterId of pendingPosterRemoveIds) {
-        promises.push(removePoster.mutateAsync({ id: posterId, movieId: id }));
-      }
-      // @edge setMainPoster only for existing DB posters — skip pending, legacy, and removed
-      if (
-        pendingMainPosterId &&
-        !pendingMainPosterId.startsWith('pending-poster') &&
-        !pendingPosterRemoveIds.has(pendingMainPosterId)
-      ) {
-        promises.push(setMainPoster.mutateAsync({ id: pendingMainPosterId, movieId: id }));
-      }
-      // @contract sync is_main_backdrop when backdrop_url changed — find matching image by URL
-      const backdropImage = postersData.find((p) => p.image_url === form.backdrop_url);
-      if (backdropImage) {
-        const currentMainBackdrop = postersData.find(
-          (p) => 'is_main_backdrop' in p && (p as { is_main_backdrop: boolean }).is_main_backdrop,
-        );
-        if (!currentMainBackdrop || currentMainBackdrop.id !== backdropImage.id) {
-          promises.push(setMainBackdrop.mutateAsync({ id: backdropImage.id, movieId: id }));
-        }
-      }
-      for (const p of pendingPlatformAdds) {
-        promises.push(
-          addMoviePlatform.mutateAsync({
-            movie_id: id,
-            platform_id: p.platform_id,
-            available_from: p.available_from,
-            streaming_url: p.streaming_url,
-          }),
-        );
-      }
-      for (const platformId of pendingPlatformRemoveIds) {
-        promises.push(removeMoviePlatform.mutateAsync({ movieId: id, platformId }));
-      }
-      for (const ph of pendingPHAdds) {
-        promises.push(
-          addMovieProductionHouse.mutateAsync({
-            movieId: id,
-            productionHouseId: ph.production_house_id,
-          }),
-        );
-      }
-      for (const phId of pendingPHRemoveIds) {
-        promises.push(
-          removeMovieProductionHouse.mutateAsync({ movieId: id, productionHouseId: phId }),
-        );
-      }
-      for (const r of pendingRunAdds) {
-        promises.push(
-          addTheatricalRun.mutateAsync({
-            movie_id: id,
-            release_date: r.release_date,
-            label: r.label,
-          }),
-        );
-      }
-      for (const runId of pendingRunRemoveIds) {
-        promises.push(removeTheatricalRun.mutateAsync({ id: runId, movieId: id }));
-      }
-      for (const [runId, endDate] of pendingRunEndIds) {
-        promises.push(
-          updateTheatricalRun.mutateAsync({ id: runId, movieId: id, end_date: endDate }),
-        );
-      }
+      const childPromises = await buildChildMutationPromises(deps);
+      const promises: Promise<unknown>[] = [
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TanStack Query caches stale Movie shape
+        updateMovie.mutateAsync(movieUpdate as any),
+        ...childPromises,
+      ];
 
       // @contract: allSettled so partial failures don't prevent other operations from completing
       const results = await Promise.allSettled(promises);

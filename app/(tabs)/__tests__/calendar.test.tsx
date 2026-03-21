@@ -248,24 +248,25 @@ describe('CalendarScreen', () => {
   });
 
   it('selects a day in the filter panel', () => {
+    // Use a day number that won't appear in date headers (mock movies use release_date '2025-03-15')
     const { getByRole, getByText } = render(<CalendarScreen />);
 
     fireEvent.press(getByRole('button', { name: 'Toggle filters' }));
-    // Press day "15"
-    fireEvent.press(getByText('15'));
+    // Press day "20" — avoids collision with date headers containing "15"
+    fireEvent.press(getByText('20'));
 
     const state = useCalendarStore.getState();
-    expect(state.selectedDay).toBe(15);
+    expect(state.selectedDay).toBe(20);
     expect(state.hasUserFiltered).toBe(true);
   });
 
   it('deselects a day when pressed again', () => {
-    useCalendarStore.setState({ selectedDay: 15, hasUserFiltered: true });
+    useCalendarStore.setState({ selectedDay: 20, hasUserFiltered: true });
 
     const { getByRole, getByText } = render(<CalendarScreen />);
     fireEvent.press(getByRole('button', { name: 'Toggle filters' }));
-    // Press day "15" again to deselect
-    fireEvent.press(getByText('15'));
+    // Press day "20" again to deselect
+    fireEvent.press(getByText('20'));
 
     const state = useCalendarStore.getState();
     expect(state.selectedDay).toBeNull();
@@ -275,7 +276,7 @@ describe('CalendarScreen', () => {
     useCalendarStore.setState({
       selectedYear: 2025,
       selectedMonth: 2,
-      selectedDay: 15,
+      selectedDay: 20,
       showFilters: false,
       hasUserFiltered: true,
     });
@@ -285,7 +286,7 @@ describe('CalendarScreen', () => {
     // Verify filter pills render
     expect(getByText('2025')).toBeTruthy();
     expect(getByText('Mar')).toBeTruthy();
-    expect(getByText('Day 15')).toBeTruthy();
+    expect(getByText('Day 20')).toBeTruthy();
     expect(getByText('Clear All')).toBeTruthy();
 
     // Press "Clear all"
@@ -343,8 +344,8 @@ describe('CalendarScreen', () => {
   });
 
   it('filters movies by selected day that matches release date', () => {
-    // release_date '2025-03-15' parsed as UTC; getDate() may vary by timezone
-    const movieDate = new Date('2025-03-15');
+    // @edge: use T00:00:00 to parse as local time, matching the fix in calendar.tsx filteredMovies
+    const movieDate = new Date('2025-03-15T00:00:00');
     const localDay = movieDate.getDate();
 
     useCalendarStore.setState({
@@ -361,7 +362,8 @@ describe('CalendarScreen', () => {
   });
 
   it('filters out movies when selected day does not match', () => {
-    const movieDate = new Date('2025-03-15');
+    // @edge: use T00:00:00 to parse as local time, matching the fix in calendar.tsx filteredMovies
+    const movieDate = new Date('2025-03-15T00:00:00');
     const nonMatchingDay = movieDate.getDate() === 28 ? 27 : 28;
 
     useCalendarStore.setState({

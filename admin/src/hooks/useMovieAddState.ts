@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type React from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateMovie } from '@/hooks/useAdminMovies';
@@ -140,11 +140,12 @@ export function useMovieAddState() {
       // @assumes movieId is a valid UUID returned from insert; used as FK for all child inserts
       const promises: Promise<unknown>[] = [];
       for (let i = 0; i < pending.pendingCastAdds.length; i++) {
-        const { _actor, ...c } = pending.pendingCastAdds[i];
+        const { _actor, _id, ...c } = pending.pendingCastAdds[i];
         void _actor;
         let displayOrder = c.display_order;
         if (pending.localCastOrder) {
-          const pos = pending.localCastOrder.indexOf(`pending-cast-${i}`);
+          // @sync: uses stable _id instead of index-based 'pending-cast-N'
+          const pos = pending.localCastOrder.indexOf(_id);
           if (pos !== -1) displayOrder = pos;
         }
         promises.push(
@@ -152,7 +153,9 @@ export function useMovieAddState() {
         );
       }
       for (const v of pending.pendingVideoAdds) {
-        promises.push(addVideo.mutateAsync({ movie_id: movieId, ...v }));
+        const { _id, ...videoData } = v;
+        void _id;
+        promises.push(addVideo.mutateAsync({ movie_id: movieId, ...videoData }));
       }
       // @contract apply pendingMainPosterId override; uses stable _id for matching
       for (const p of pending.pendingPosterAdds) {
@@ -202,6 +205,22 @@ export function useMovieAddState() {
     }
   }
 
+  // @sync: memoized Sets of pending _ids — stable references prevent unnecessary re-renders
+  // when CastSection/VideosSection/TheatricalRunsSection receive these as props
+  const pendingCastIds = useMemo(
+    () => new Set(pending.pendingCastAdds.map((c) => c._id)),
+    [pending.pendingCastAdds],
+  );
+  const pendingVideoIds = useMemo(
+    () => new Set(pending.pendingVideoAdds.map((v) => v._id)),
+    [pending.pendingVideoAdds],
+  );
+  // @sync: mirrors pendingCastIds/pendingVideoIds pattern — Set of stable _id UUIDs for pending runs
+  const pendingRunIds = useMemo(
+    () => new Set(pending.pendingRunAdds.map((r) => r._id)),
+    [pending.pendingRunAdds],
+  );
+
   return {
     form,
     setForm,
@@ -236,6 +255,9 @@ export function useMovieAddState() {
     createProductionHouse,
     pendingPlatformAdds: pending.pendingPlatformAdds,
     pendingPHAdds: pending.pendingPHAdds,
+    pendingCastIds,
+    pendingVideoIds,
+    pendingRunIds,
     isDirty: derived.isDirty,
     isSaving,
     handleSubmit,

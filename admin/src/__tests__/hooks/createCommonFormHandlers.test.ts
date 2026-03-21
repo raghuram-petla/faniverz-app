@@ -89,44 +89,43 @@ describe('toggleGenre', () => {
 });
 
 describe('handleVideoRemove', () => {
-  it('removes pending video by index', () => {
+  it('removes pending video by _id', () => {
     const handlers = createCommonFormHandlers(deps);
-    handlers.handleVideoRemove('pending-video-1', true);
+    handlers.handleVideoRemove('vid-2', true);
 
     expect(deps.setPendingVideoAdds).toHaveBeenCalledTimes(1);
-    // Call the updater and verify it filters by index
+    // Call the updater and verify it filters by _id
     const updater = (deps.setPendingVideoAdds as ReturnType<typeof vi.fn>).mock.calls[0][0];
     const items = [
       {
+        _id: 'vid-1',
         youtube_id: 'a',
         title: 'A',
         video_type: 'trailer',
         description: null,
         video_date: null,
-        duration: null,
         display_order: 0,
       },
       {
+        _id: 'vid-2',
         youtube_id: 'b',
         title: 'B',
         video_type: 'teaser',
         description: null,
         video_date: null,
-        duration: null,
         display_order: 1,
       },
       {
+        _id: 'vid-3',
         youtube_id: 'c',
         title: 'C',
         video_type: 'song',
         description: null,
         video_date: null,
-        duration: null,
         display_order: 2,
       },
     ];
     const result = updater(items);
-    // Index 1 should be removed
     expect(result).toHaveLength(2);
     expect(result[0].youtube_id).toBe('a');
     expect(result[1].youtube_id).toBe('c');
@@ -144,18 +143,17 @@ describe('handleVideoRemove', () => {
 });
 
 describe('handleCastRemove', () => {
-  it('removes pending cast by index', () => {
+  it('removes pending cast by _id', () => {
     const handlers = createCommonFormHandlers(deps);
-    handlers.handleCastRemove('pending-cast-0', true);
+    handlers.handleCastRemove('cast-1', true);
 
     expect(deps.setPendingCastAdds).toHaveBeenCalledTimes(1);
     const updater = (deps.setPendingCastAdds as ReturnType<typeof vi.fn>).mock.calls[0][0];
     const items = [
-      { actor_id: 'a1', character_name: 'Hero', display_order: 0 },
-      { actor_id: 'a2', character_name: 'Villain', display_order: 1 },
+      { _id: 'cast-1', actor_id: 'a1', character_name: 'Hero', display_order: 0 },
+      { _id: 'cast-2', actor_id: 'a2', character_name: 'Villain', display_order: 1 },
     ];
     const result = updater(items);
-    // Index 0 should be removed
     expect(result).toHaveLength(1);
     expect(result[0].actor_id).toBe('a2');
   });
@@ -205,5 +203,30 @@ describe('handleRunRemove', () => {
     const updater = (deps.setPendingRunRemoveIds as ReturnType<typeof vi.fn>).mock.calls[0][0];
     const result = updater(new Set<string>());
     expect(result.has('run-123')).toBe(true);
+  });
+
+  it('removes by stable _id for pending run — no index-shift bugs', () => {
+    // @sync: regression test — previously used index extraction from 'pending-run-N' strings
+    const setPendingRunAdds = vi.fn();
+    const localDeps = {
+      ...deps,
+      setPendingRunAdds,
+    };
+    const handlers = createCommonFormHandlers(localDeps);
+    handlers.handleRunRemove('stable-uuid-2', true);
+
+    expect(setPendingRunAdds).toHaveBeenCalledTimes(1);
+    const updater = setPendingRunAdds.mock.calls[0][0];
+    const items = [
+      { _id: 'stable-uuid-1', release_date: '2025-01-01', label: null },
+      { _id: 'stable-uuid-2', release_date: '2025-06-01', label: 'Re-release' },
+      { _id: 'stable-uuid-3', release_date: '2025-12-01', label: null },
+    ];
+    const result = updater(items);
+    // Should remove only the middle item by _id, not by index
+    expect(result).toHaveLength(2);
+    expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-2')).toBeUndefined();
+    expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-1')).toBeDefined();
+    expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-3')).toBeDefined();
   });
 });

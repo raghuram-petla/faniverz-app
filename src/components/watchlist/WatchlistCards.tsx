@@ -12,7 +12,7 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
 
 interface CardProps {
-  entry: WatchlistEntry;
+  entry: WatchlistEntry & { _platformCount?: number };
   userId: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   styles: Record<string, any>;
@@ -27,7 +27,8 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
   const movie = entry.movie;
   if (!movie) return null;
 
-  const status = deriveMovieStatus(movie, 0);
+  // @sync: use _platformCount from API response (set in watchlist/api.ts) for correct streaming classification
+  const status = deriveMovieStatus(movie, entry._platformCount ?? 0);
   const statusLabel = getMovieStatusLabel(status);
   const statusBg = getMovieStatusColor(status);
 
@@ -74,6 +75,7 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => remove.mutate({ userId, movieId: movie.id })}
+          disabled={remove.isPending}
           accessibilityRole="button"
           accessibilityLabel="Remove from watchlist"
         >
@@ -82,6 +84,7 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => markWatched.mutate({ userId, movieId: movie.id })}
+          disabled={markWatched.isPending}
           accessibilityRole="button"
           accessibilityLabel="Mark as watched"
         >
@@ -101,8 +104,9 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
   if (!movie) return null;
 
   /** @nullable release_date — shows "TBA" when null */
+  // @edge: append T00:00:00 to parse as local time, not UTC — avoids off-by-one day for IST users
   const releaseDateFormatted = movie.release_date
-    ? new Date(movie.release_date).toLocaleDateString('en-IN', {
+    ? new Date(`${movie.release_date}T00:00:00`).toLocaleDateString('en-IN', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -150,6 +154,7 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => remove.mutate({ userId, movieId: movie.id })}
+          disabled={remove.isPending}
           accessibilityRole="button"
           accessibilityLabel="Remove from watchlist"
         >
@@ -158,6 +163,7 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => markWatched.mutate({ userId, movieId: movie.id })}
+          disabled={markWatched.isPending}
           accessibilityRole="button"
           accessibilityLabel="Mark as watched"
         >
@@ -216,6 +222,7 @@ export function WatchedCard({ entry, userId, styles }: CardProps) {
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => moveBack.mutate({ userId, movieId: movie.id })}
+          disabled={moveBack.isPending}
           accessibilityRole="button"
           accessibilityLabel="Move back to watchlist"
         >
@@ -224,6 +231,7 @@ export function WatchedCard({ entry, userId, styles }: CardProps) {
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => remove.mutate({ userId, movieId: movie.id })}
+          disabled={remove.isPending}
           accessibilityRole="button"
           accessibilityLabel="Remove from watched"
         >

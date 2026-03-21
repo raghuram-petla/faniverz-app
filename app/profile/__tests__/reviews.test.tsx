@@ -163,7 +163,7 @@ describe('MyReviewsScreen', () => {
     const deleteAction = buttons.find((b) => b.text === 'common.delete');
     deleteAction?.onPress?.();
 
-    expect(mockRemoveMutate).toHaveBeenCalledWith('review-1');
+    expect(mockRemoveMutate).toHaveBeenCalledWith({ id: 'review-1', movieId: 'movie-1' });
     alertSpy.mockRestore();
   });
 
@@ -231,16 +231,11 @@ describe('MyReviewsScreen', () => {
     expect(screen.queryByText('null')).toBeNull();
   });
 
-  it('does not call remove.mutate on delete button press when remove isPending (regression: duplicate delete prevention)', () => {
-    // @regression: rapid taps on delete previously called remove.mutate() multiple times
-    // With disabled={remove.isPending}, pressing the button while pending should be a no-op
+  it('shows Alert on delete button press when remove is not pending', () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     render(<MyReviewsScreen />);
     const deleteButtons = screen.getAllByText('common.delete');
-    // Touch parent TouchableOpacity (disabled when remove.isPending=false in default mock)
-    // This test validates button renders and shows the correct structure
     expect(deleteButtons.length).toBeGreaterThanOrEqual(1);
-    // With isPending=false the button is active; confirm pressing shows the Alert
     fireEvent.press(deleteButtons[0]);
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();

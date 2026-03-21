@@ -122,10 +122,23 @@ describe('revertEntity', () => {
     expect(p.setPendingPHRemoveIds).toHaveBeenCalled();
   });
 
-  it('reverts a run add', () => {
-    const p = makeParams();
-    revertEntity('entity:run-add-0', p);
-    expect(p.setPendingRunAdds).toHaveBeenCalled();
+  it('reverts a run add by stable _id UUID — no index-shift bugs', () => {
+    // @sync: regression test — key was 'entity:run-add-{index}' before migration to _id
+    const setPendingRunAdds = vi.fn();
+    const p = makeParams({ setPendingRunAdds });
+    revertEntity('entity:run-add-stable-uuid-2', p);
+    expect(setPendingRunAdds).toHaveBeenCalledTimes(1);
+    const updater = (setPendingRunAdds as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const items = [
+      { _id: 'stable-uuid-1', release_date: '2025-01-01', label: null },
+      { _id: 'stable-uuid-2', release_date: '2025-06-01', label: 'Re-release' },
+      { _id: 'stable-uuid-3', release_date: '2025-12-01', label: null },
+    ];
+    const result = updater(items);
+    expect(result).toHaveLength(2);
+    expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-2')).toBeUndefined();
+    expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-1')).toBeDefined();
+    expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-3')).toBeDefined();
   });
 
   it('reverts a run remove', () => {

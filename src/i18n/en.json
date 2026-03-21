@@ -25,6 +25,7 @@
     "failedToUpdateReview": "Failed to update review. Please try again.",
     "failedToDeleteReview": "Failed to delete review. Please try again.",
     "failedToAddWatchlist": "Failed to add to watchlist. Please try again.",
+    "failedToRemoveWatchlist": "Failed to remove from watchlist. Please try again.",
     "failedToMarkWatched": "Failed to mark as watched. Please try again.",
     "failedToMoveWatchlist": "Failed to move back to watchlist. Please try again.",
     "failedToAddFavorite": "Failed to add favorite actor. Please try again.",

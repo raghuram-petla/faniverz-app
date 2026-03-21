@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 import type { AdminUser, AdminRoleId } from '@/lib/types';
 
@@ -203,6 +203,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // @edge: restoreSession provides a fast initial load from localStorage while
+    // onAuthStateChange is the authoritative source. Both call fetchAdminUser — the
+    // second call overwrites the first with the same data, which is harmless.
+    // finish() is called from both paths; the initialLoadDone guard ensures only one clears loading.
     restoreSession().then((restored) => {
       if (restored) finish();
     });
@@ -281,19 +285,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.signOut().catch((err) => console.error('Sign out failed:', err));
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAccessDenied,
-        blockedReason,
-        signInWithGoogle,
-        signOut,
-        refreshUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  // @sideeffect: memoized — prevents re-render cascade across all useAuth() consumers
+  const value = useMemo(() => ({ user, isLoading, isAccessDenied, blockedReason, signInWithGoogle, signOut, refreshUser }), [user, isLoading, isAccessDenied, blockedReason, signInWithGoogle, signOut, refreshUser]); // prettier-ignore
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

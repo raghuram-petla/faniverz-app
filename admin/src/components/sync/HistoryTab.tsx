@@ -171,7 +171,7 @@ export function HistoryTab() {
                                 <div className="flex flex-wrap gap-2">
                                   {(log.details ?? []).map((name, i) => (
                                     <span
-                                      key={i}
+                                      key={`${name}-${i}`}
                                       className="inline-flex items-center px-2.5 py-1 rounded-md bg-surface-elevated text-sm text-on-surface"
                                     >
                                       {name}

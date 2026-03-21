@@ -37,6 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       })
       .catch(() => {
+        // @edge: on failure, explicitly clear session to prevent stale auth state
+        setSession(null);
         setIsLoading(false);
       });
 

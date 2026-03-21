@@ -173,4 +173,29 @@ describe('ImpersonateModal', () => {
       expect(screen.getByText('Network error')).toBeInTheDocument();
     });
   });
+
+  // @edge: unmounting mid-fetch must not call setPhError/setPhLoading on unmounted component
+  it('does not update state after unmount when PH fetch completes late', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    const mockFrom = supabase.from as ReturnType<typeof vi.fn>;
+    let capturedSuccess: ((result: { data: unknown; error: null }) => void) | undefined;
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      then: vi.fn((onSuccess: (result: { data: unknown; error: null }) => void) => {
+        capturedSuccess = onSuccess;
+      }),
+    });
+
+    const { unmount } = render(<ImpersonateModal targetUser={null} onClose={onClose} />);
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'production_house_admin' } });
+
+    unmount();
+
+    // Resolve the fetch after unmount — should be a no-op due to cancelled guard
+    expect(() => {
+      capturedSuccess?.({ data: [{ id: 'ph-1', name: 'House' }], error: null });
+    }).not.toThrow();
+  });
 });

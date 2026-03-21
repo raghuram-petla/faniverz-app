@@ -26,6 +26,7 @@ const defaultProps = {
   onRemove: vi.fn(),
   showAddForm: false,
   onCloseAddForm: vi.fn(),
+  pendingIds: new Set<string>(),
 };
 
 describe('TheatricalRunsSection', () => {
@@ -87,16 +88,23 @@ describe('TheatricalRunsSection', () => {
   });
 
   it('calls onRemove with isPending=true for pending rows', () => {
+    // @sync: uses pendingIds Set instead of startsWith('pending-run-') — stable UUID-based detection
+    const pendingRunId = 'stable-uuid-pending-1';
     const pendingRun = {
       ...mockRuns[0],
-      id: 'pending-run-1',
+      id: pendingRunId,
     };
     const onRemove = vi.fn();
     render(
-      <TheatricalRunsSection {...defaultProps} visibleRuns={[pendingRun]} onRemove={onRemove} />,
+      <TheatricalRunsSection
+        {...defaultProps}
+        visibleRuns={[pendingRun]}
+        pendingIds={new Set([pendingRunId])}
+        onRemove={onRemove}
+      />,
     );
     fireEvent.click(screen.getByLabelText('Remove run 2026-01-15'));
-    expect(onRemove).toHaveBeenCalledWith('pending-run-1', true);
+    expect(onRemove).toHaveBeenCalledWith(pendingRunId, true);
   });
 
   it('calls onAdd when form is submitted', () => {
@@ -108,7 +116,11 @@ describe('TheatricalRunsSection', () => {
     fireEvent.change(dateInput, { target: { value: '2026-06-01' } });
 
     fireEvent.click(screen.getByText('Add Run'));
-    expect(onAdd).toHaveBeenCalledWith({ release_date: '2026-06-01', label: null });
+    // @sync: _id is a stable UUID assigned by crypto.randomUUID() — use objectContaining
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ release_date: '2026-06-01', label: null }),
+    );
+    expect(typeof (onAdd.mock.calls[0][0] as { _id: string })._id).toBe('string');
   });
 
   it('does not call onAdd when release_date is empty', () => {

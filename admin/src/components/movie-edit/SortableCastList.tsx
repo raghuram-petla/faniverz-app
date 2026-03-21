@@ -87,11 +87,15 @@ export function SortableList({
   items,
   onDragEnd,
   onRemove,
+  pendingIds,
 }: {
   items: MovieCast[];
   onDragEnd: (event: DragEndEvent) => void;
   // @boundary isPending flag lets parent decide DB delete vs pending-state removal
   onRemove: (id: string, isPending: boolean) => void;
+  // @sync: Set of _id values for pending (unsaved) cast items — used instead of startsWith check
+  // after _id migration, pending items have plain UUID ids, not 'pending-cast-N' strings
+  pendingIds: Set<string>;
 }) {
   // @assumes 5px distance constraint prevents accidental drags on click
   const sensors = useSensors(
@@ -110,7 +114,7 @@ export function SortableList({
             <SortableCastItem
               key={entry.id}
               entry={entry}
-              onRemove={() => onRemove(entry.id, entry.id.startsWith('pending-cast-'))}
+              onRemove={() => onRemove(entry.id, pendingIds.has(entry.id))}
             />
           ))}
         </div>

@@ -134,7 +134,18 @@ export function useWatchlistMutations() {
     onMutate: async ({ userId, movieId }) => {
       await queryClient.cancelQueries({ queryKey: ['watchlist', userId] });
       await queryClient.cancelQueries({ queryKey: ['watchlist-paginated', userId] });
+      await queryClient.cancelQueries({ queryKey: ['watchlist', 'check', userId, movieId] });
       const prev = queryClient.getQueryData<WatchlistEntry[]>(['watchlist', userId]);
+      const prevPaginated = queryClient.getQueryData<InfiniteData<WatchlistEntry[], number>>([
+        'watchlist-paginated',
+        userId,
+      ]);
+      const prevCheck = queryClient.getQueryData<WatchlistEntry | null>([
+        'watchlist',
+        'check',
+        userId,
+        movieId,
+      ]);
       queryClient.setQueryData<WatchlistEntry[]>(['watchlist', userId], (old) =>
         old?.filter((e) => e.movie_id !== movieId),
       );
@@ -148,12 +159,22 @@ export function useWatchlistMutations() {
           };
         },
       );
-      return { prev };
+      // @sideeffect: optimistic update — immediately marks movie as not watchlisted
+      queryClient.setQueryData(['watchlist', 'check', userId, movieId], null);
+      return { prev, prevPaginated, prevCheck };
     },
-    onError: (_err, { userId }, context) => {
+    // @edge: rollback all three caches on failure so movie reappears in watchlist immediately
+    onError: (_err, { userId, movieId }, context) => {
       if (context?.prev) {
         queryClient.setQueryData(['watchlist', userId], context.prev);
       }
+      if (context?.prevPaginated) {
+        queryClient.setQueryData(['watchlist-paginated', userId], context.prevPaginated);
+      }
+      if (context?.prevCheck !== undefined) {
+        queryClient.setQueryData(['watchlist', 'check', userId, movieId], context.prevCheck);
+      }
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToRemoveWatchlist'));
     },
     onSettled: (_data, _err, { userId }) => {
       invalidateAll(userId);

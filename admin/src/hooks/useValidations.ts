@@ -14,13 +14,17 @@ import type {
 } from './useValidationTypes';
 
 // @contract: returns auth header for API calls
+// @edge: throws if session is null (expired/signed-out) instead of sending "Bearer undefined"
 async function getAuthHeader(): Promise<Record<string, string>> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('Session expired — please sign in again.');
+  }
   return {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${session?.access_token}`,
+    Authorization: `Bearer ${session.access_token}`,
   };
 }
 

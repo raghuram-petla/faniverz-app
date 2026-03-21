@@ -20,8 +20,9 @@ export interface AuditFilters {
 // "actor, director") would corrupt the filter syntax, causing Supabase to return a
 // 400 error instead of filtered results. This strips them rather than escaping them,
 // so searching for "O'Brien" actually searches for "OBrien" — partial match loss.
+// @edge: only strip characters that break PostgREST full-text search syntax; preserve dots for emails
 function sanitizeSearchTerm(term: string): string {
-  return term.replace(/[,.()"'\\]/g, '').trim();
+  return term.replace(/[,()"'\\]/g, '').trim();
 }
 
 export function useAdminAuditLog(filters?: AuditFilters) {

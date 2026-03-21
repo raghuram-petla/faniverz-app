@@ -54,7 +54,8 @@ export interface ImpersonationProviderProps {
 async function buildTargetUser(targetUserId: string): Promise<AdminUser | null> {
   const [profileRes, roleRes, phRes, langRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', targetUserId).single(),
-    supabase.from('admin_user_roles').select('role_id').eq('user_id', targetUserId).single(),
+    // @edge: maybeSingle avoids PGRST116 error when target user has no admin role
+    supabase.from('admin_user_roles').select('role_id').eq('user_id', targetUserId).maybeSingle(),
     supabase.from('admin_ph_assignments').select('production_house_id').eq('user_id', targetUserId),
     supabase.from('user_languages').select('language_id').eq('user_id', targetUserId),
   ]);

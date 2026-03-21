@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
@@ -198,6 +198,22 @@ export function useMovieEditState(id: string) {
     setUploadingBackdrop,
   });
 
+  // @sync: memoized Sets of pending _ids — stable references prevent unnecessary re-renders
+  // when CastSection/VideosSection/TheatricalRunsSection receive these as props
+  const pendingCastIds = useMemo(
+    () => new Set(pending.pendingCastAdds.map((c) => c._id)),
+    [pending.pendingCastAdds],
+  );
+  const pendingVideoIds = useMemo(
+    () => new Set(pending.pendingVideoAdds.map((v) => v._id)),
+    [pending.pendingVideoAdds],
+  );
+  // @sync: mirrors pendingCastIds/pendingVideoIds pattern — Set of stable _id UUIDs for pending runs
+  const pendingRunIds = useMemo(
+    () => new Set(pending.pendingRunAdds.map((r) => r._id)),
+    [pending.pendingRunAdds],
+  );
+
   return {
     // @contract Pre-built params for useMovieEditChanges — avoids 40-line prop spread in edit page
     changesParams: {
@@ -258,6 +274,9 @@ export function useMovieEditState(id: string) {
     pendingPlatformAdds: pending.pendingPlatformAdds,
     pendingPHAdds: pending.pendingPHAdds,
     pendingRunEndIds: pending.pendingRunEndIds,
+    pendingCastIds,
+    pendingVideoIds,
+    pendingRunIds,
     isDirty: derived.isDirty,
     isSaving,
     saveStatus,

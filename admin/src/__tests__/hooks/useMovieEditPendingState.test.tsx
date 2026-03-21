@@ -28,6 +28,7 @@ describe('useMovieEditPendingState', () => {
     act(() => {
       result.current.setPendingCastAdds([
         {
+          _id: 'pc1',
           actor_id: 'a1',
           credit_type: 'cast' as const,
           role_name: 'Hero',
@@ -50,6 +51,7 @@ describe('useMovieEditPendingState', () => {
     act(() => {
       result.current.setPendingVideoAdds([
         {
+          _id: 'pv1',
           youtube_id: 'yt1',
           title: 'Trailer',
           video_type: 'trailer' as const,
@@ -121,7 +123,9 @@ describe('useMovieEditPendingState', () => {
     const { result } = renderHook(() => useMovieEditPendingState());
 
     act(() => {
-      result.current.setPendingRunAdds([{ release_date: '2025-06-01', label: 'Re-release' }]);
+      result.current.setPendingRunAdds([
+        { _id: 'run-uuid-1', release_date: '2025-06-01', label: 'Re-release' },
+      ]);
       result.current.setPendingRunRemoveIds(new Set(['r1']));
     });
 
@@ -136,6 +140,7 @@ describe('useMovieEditPendingState', () => {
     act(() => {
       result.current.setPendingCastAdds([
         {
+          _id: 'pc1',
           actor_id: 'a1',
           credit_type: 'cast' as const,
           role_name: 'Hero',
@@ -147,6 +152,7 @@ describe('useMovieEditPendingState', () => {
       result.current.setLocalCastOrder(['a1']);
       result.current.setPendingVideoAdds([
         {
+          _id: 'pv1',
           youtube_id: 'yt1',
           title: 'T',
           video_type: 'trailer' as const,
@@ -161,7 +167,9 @@ describe('useMovieEditPendingState', () => {
         { platform_id: 'pl1', available_from: null, streaming_url: null },
       ]);
       result.current.setPendingPHAdds([{ production_house_id: 'ph1' }]);
-      result.current.setPendingRunAdds([{ release_date: '2025-01-01', label: null }]);
+      result.current.setPendingRunAdds([
+        { _id: 'run-uuid-2', release_date: '2025-01-01', label: null },
+      ]);
     });
 
     // Reset

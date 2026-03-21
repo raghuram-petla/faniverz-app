@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import InviteAdminPage from '@/app/(dashboard)/users/invite/page';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
@@ -62,6 +62,20 @@ vi.mock('@/components/providers/AuthProvider', () => ({
   }),
 }));
 
+// @sync: mock usePermissions so canManageAdmin is stable and returns true for all roles
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: () => ({
+    canManageAdmin: () => true,
+    role: 'super_admin',
+    isRoot: false,
+    isSuperAdmin: true,
+    isAdmin: false,
+    isPHAdmin: false,
+    isViewer: false,
+    isReadOnly: false,
+  }),
+}));
+
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -99,5 +113,18 @@ describe('InviteAdminPage', () => {
   it('calls useUnsavedChangesWarning hook', () => {
     renderWithProviders(<InviteAdminPage />);
     expect(useUnsavedChangesWarning).toHaveBeenCalled();
+  });
+
+  it('calls useUnsavedChangesWarning with false when form is pristine', () => {
+    renderWithProviders(<InviteAdminPage />);
+    // @contract: isDirty should be false on initial render (no email, no PH, role == default)
+    expect(useUnsavedChangesWarning).toHaveBeenLastCalledWith(false);
+  });
+
+  it('calls useUnsavedChangesWarning with true when email is entered', () => {
+    renderWithProviders(<InviteAdminPage />);
+    const emailInput = screen.getByPlaceholderText('admin@example.com');
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    expect(useUnsavedChangesWarning).toHaveBeenLastCalledWith(true);
   });
 });

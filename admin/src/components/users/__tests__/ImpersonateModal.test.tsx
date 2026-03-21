@@ -81,9 +81,10 @@ describe('ImpersonateModal', () => {
       const select = screen.getByRole('combobox');
       fireEvent.change(select, { target: { value: 'production_house_admin' } });
 
-      // The onRejected handler should fire and reset phLoading
+      // The onRejected handler should fire, set phError, and reset phLoading
+      // @edge: component renders phError message (not empty-list text) when rejection fires
       await waitFor(() => {
-        expect(screen.getByText('No production houses found')).toBeInTheDocument();
+        expect(screen.getByText('Network failure')).toBeInTheDocument();
       });
     });
 

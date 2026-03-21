@@ -16,6 +16,10 @@ export function useCheckUsername(username: string) {
     if (validationError || !username) {
       setIsAvailable(null);
       setError(validationError);
+      // @edge: reset isChecking when validation fails — previous effect may have set it true
+      setIsChecking(false);
+      // @sync: invalidate any in-flight request so its response doesn't overwrite this state
+      ++requestIdRef.current;
       return;
     }
 

@@ -36,6 +36,8 @@ const EMPTY_CAST_FORM = {
 };
 
 export type PendingCastAdd = {
+  // @contract: stable ID for removal — prevents index-shift bugs when removing pending items
+  _id: string;
   actor_id: string;
   credit_type: 'cast' | 'crew';
   // @nullable role_name — optional character name for cast, role title for crew
@@ -57,6 +59,9 @@ interface Props {
   onReorder: (newOrder: string[]) => void;
   showAddForm: boolean;
   onCloseAddForm: () => void;
+  // @sync: Set of _id values for pending (unsaved) cast items — replaces startsWith('pending-cast-')
+  // after _id migration, pending items carry stable UUIDs, not 'pending-cast-N' strings
+  pendingIds: Set<string>;
 }
 
 export function CastSection({
@@ -69,6 +74,7 @@ export function CastSection({
   onReorder,
   showAddForm,
   onCloseAddForm,
+  pendingIds,
 }: Props) {
   const [castForm, setCastForm] = useState(EMPTY_CAST_FORM);
   const createActor = useCreateActor();
@@ -133,6 +139,7 @@ export function CastSection({
     }
     const actor = actors.find((a) => a.id === castForm.actor_id);
     onAdd({
+      _id: crypto.randomUUID(),
       actor_id: castForm.actor_id,
       credit_type: castForm.credit_type,
       role_name: castForm.role_name || null,
@@ -231,7 +238,12 @@ export function CastSection({
       <div className="space-y-3">
         <h3 className="text-base font-bold text-on-surface">Cast</h3>
         {castItems.length > 0 ? (
-          <SortableList items={castItems} onDragEnd={handleCastDragEnd} onRemove={onRemove} />
+          <SortableList
+            items={castItems}
+            onDragEnd={handleCastDragEnd}
+            onRemove={onRemove}
+            pendingIds={pendingIds}
+          />
         ) : (
           <p className="text-sm text-on-surface-disabled">No cast members added yet.</p>
         )}
@@ -241,7 +253,12 @@ export function CastSection({
       <div className="space-y-3">
         <h3 className="text-base font-bold text-on-surface">Crew</h3>
         {crewItems.length > 0 ? (
-          <SortableList items={crewItems} onDragEnd={handleCrewDragEnd} onRemove={onRemove} />
+          <SortableList
+            items={crewItems}
+            onDragEnd={handleCrewDragEnd}
+            onRemove={onRemove}
+            pendingIds={pendingIds}
+          />
         ) : (
           <p className="text-sm text-on-surface-disabled">No crew members added yet.</p>
         )}

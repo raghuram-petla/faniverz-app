@@ -70,11 +70,12 @@ export default function CalendarScreen() {
 
   // @contract Returns all movies when no filters active; filters are AND-combined (year AND month AND day)
   // @edge Movies without release_date are excluded when any filter is active
+  // @edge: append T00:00:00 to parse as local time — avoids off-by-one day for UTC-N timezone users
   const filteredMovies = useMemo(() => {
     if (!hasUserFiltered) return allMovies;
     return allMovies.filter((movie) => {
       if (!movie.release_date) return false;
-      const d = new Date(movie.release_date);
+      const d = new Date(`${movie.release_date}T00:00:00`);
       if (selectedYear !== null && d.getFullYear() !== selectedYear) return false;
       if (selectedMonth !== null && d.getMonth() !== selectedMonth) return false;
       if (selectedDay !== null && d.getDate() !== selectedDay) return false;
@@ -97,20 +98,25 @@ export default function CalendarScreen() {
     }
 
     for (const [dateStr, movies] of map) {
-      groups.push({ date: dateStr, movies, movieDate: new Date(dateStr) });
+      // @edge: append T00:00:00 to parse as local time, not UTC — avoids off-by-one for IST
+      groups.push({ date: dateStr, movies, movieDate: new Date(`${dateStr}T00:00:00`) });
     }
+
+    // @invariant: groups must be sorted chronologically for calendar display
+    groups.sort((a, b) => a.movieDate.getTime() - b.movieDate.getTime());
 
     return groups;
   }, [filteredMovies]);
 
   // @contract Extracts unique years from all movies (not filtered), sorted descending for year picker
+  // @edge: append T00:00:00 to parse as local time — avoids off-by-one year for UTC-N timezone users
   const years = useMemo(
     () =>
       Array.from(
         new Set(
           allMovies
             .filter((m) => m.release_date)
-            .map((m) => new Date(m.release_date ?? '').getFullYear()),
+            .map((m) => new Date(`${m.release_date}T00:00:00`).getFullYear()),
         ),
       ).sort((a, b) => b - a),
     [allMovies],

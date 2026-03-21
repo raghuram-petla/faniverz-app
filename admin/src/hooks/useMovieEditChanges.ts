@@ -74,10 +74,11 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
   const entityChanges = useMemo((): FieldChange[] => {
     const result: FieldChange[] = [];
     // Cast
-    params.pendingCastAdds.forEach((c, i) => {
+    params.pendingCastAdds.forEach((c) => {
       const name = c._actor?.name ?? 'Unknown';
       const char = c.role_name ? ` as ${c.role_name}` : '';
-      result.push(makeChange(`entity:cast-add-${i}`, 'Cast', '(empty)', `+ ${name}${char}`));
+      // @sync: uses stable _id — matches revertEntity key extraction
+      result.push(makeChange(`entity:cast-add-${c._id}`, 'Cast', '(empty)', `+ ${name}${char}`));
     });
     params.pendingCastRemoveIds.forEach((id) => {
       const cast = params.castData.find((c) => c.id === id);
@@ -89,8 +90,9 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
       result.push(makeChange('entity:cast-reorder', 'Cast Order', 'Original', 'Reordered'));
     }
     // Videos
-    params.pendingVideoAdds.forEach((v, i) => {
-      result.push(makeChange(`entity:video-add-${i}`, 'Videos', '(empty)', `+ ${v.title}`));
+    params.pendingVideoAdds.forEach((v) => {
+      // @sync: uses stable _id — matches revertEntity key extraction
+      result.push(makeChange(`entity:video-add-${v._id}`, 'Videos', '(empty)', `+ ${v.title}`));
     });
     params.pendingVideoRemoveIds.forEach((id) => {
       const vid = params.videosData.find((v) => v.id === id);
@@ -111,11 +113,12 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
       result.push(makeChange('entity:main-poster', 'Main Poster', 'Current', 'Changed'));
     }
     // Platforms
-    params.pendingPlatformAdds.forEach((p, i) => {
+    // @sync: uses platform_id as key (stable natural key) — no index-shift bugs on revert
+    params.pendingPlatformAdds.forEach((p) => {
       const from = p.available_from ? ` from ${p.available_from}` : '';
       result.push(
         makeChange(
-          `entity:platform-add-${i}`,
+          `entity:platform-add-${p.platform_id}`,
           'Platforms',
           '(empty)',
           `+ ${p._platform?.name ?? p.platform_id}${from}`,
@@ -134,10 +137,11 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
       );
     });
     // Production Houses
-    params.pendingPHAdds.forEach((ph, i) => {
+    // @sync: uses production_house_id as key (stable natural key) — no index-shift bugs on revert
+    params.pendingPHAdds.forEach((ph) => {
       result.push(
         makeChange(
-          `entity:ph-add-${i}`,
+          `entity:ph-add-${ph.production_house_id}`,
           'Prod. Houses',
           '(empty)',
           `+ ${ph._ph?.name ?? ph.production_house_id}`,
@@ -156,10 +160,11 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
       );
     });
     // Theatrical Runs
-    params.pendingRunAdds.forEach((r, i) => {
+    // @sync: key uses stable _id UUID — mirrors cast/video/poster pattern to avoid index-shift bugs on revert
+    params.pendingRunAdds.forEach((r) => {
       const label = r.label ? ` (${r.label})` : '';
       result.push(
-        makeChange(`entity:run-add-${i}`, 'Runs', '(empty)', `+ ${r.release_date}${label}`),
+        makeChange(`entity:run-add-${r._id}`, 'Runs', '(empty)', `+ ${r.release_date}${label}`),
       );
     });
     params.pendingRunRemoveIds.forEach((id) => {

@@ -54,11 +54,13 @@ async function syncApi<T>(path: string, body?: unknown): Promise<T> {
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  const data = await res.json();
+  // @edge: check status before parsing JSON — non-JSON 401 responses (e.g., HTML from edge proxy) would throw SyntaxError
   if (res.status === 401) {
     void supabase.auth.signOut();
     throw new Error('Session expired — please sign in again.');
   }
+  // @edge: non-JSON error responses (e.g., HTML 500) would throw SyntaxError — catch and fallback
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error ?? `Sync API error: ${res.status}`);
   return data as T;
 }

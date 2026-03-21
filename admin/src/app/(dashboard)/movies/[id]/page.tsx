@@ -176,6 +176,7 @@ export default function EditMoviePage() {
                 onClearTrailerUrl={() => editState.updateField('trailer_url', '')}
                 showAddForm={addFormOpen === 'videos'}
                 onCloseAddForm={closeAdd}
+                pendingIds={editState.pendingVideoIds}
               />
             </SectionCard>
           )}
@@ -222,6 +223,7 @@ export default function EditMoviePage() {
                   onReorder={(newOrder) => editState.setLocalCastOrder(newOrder)}
                   showAddForm={addFormOpen === 'cast'}
                   onCloseAddForm={closeAdd}
+                  pendingIds={editState.pendingCastIds}
                 />
               </SectionCard>
             </>
@@ -240,6 +242,7 @@ export default function EditMoviePage() {
                   onRemove={editState.handleRunRemove}
                   onEndRun={editState.handleRunEnd}
                   pendingEndRunIds={new Set(editState.pendingRunEndIds.keys())}
+                  pendingIds={editState.pendingRunIds}
                   showAddForm={addFormOpen === 'runs'}
                   onCloseAddForm={closeAdd}
                 />

@@ -58,11 +58,14 @@ export default function ValidationsPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      // @edge: throw early if session expired — avoids sending "Bearer undefined"
+      if (!session?.access_token) throw new Error('Session expired — please sign in again.');
       const headers = {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${session?.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       };
-      await fetch('/api/validations/fix', {
+      // @edge: check res.ok to surface fix failures instead of silently succeeding
+      const res = await fetch('/api/validations/fix', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -78,6 +81,10 @@ export default function ValidationsPage() {
           ],
         }),
       });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error ?? `Fix failed: ${res.status}`);
+      }
       // Re-scan to see updated state
       if (scanProgress?.entity) await startScan(scanProgress.entity);
     },

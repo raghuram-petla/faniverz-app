@@ -33,7 +33,8 @@ export default function ActivityScreen() {
   const [filter, setFilter] = useState<ActivityFilter>('all');
 
   // @boundary: useUserActivity returns paginated data filtered by activity type
-  const { data, isLoading, refetch, fetchNextPage, hasNextPage } = useUserActivity(filter);
+  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useUserActivity(filter);
   // @contract: pages are flattened into a single array for FlatList consumption
   const activities = useMemo(() => data?.pages.flatMap((p) => p) ?? [], [data]);
 
@@ -92,7 +93,7 @@ export default function ActivityScreen() {
             <ActivityItem activity={item} onPress={() => handleActivityPress(item)} />
           )}
           onEndReached={() => {
-            if (hasNextPage) fetchNextPage();
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.5}
           onScroll={handlePullScroll}

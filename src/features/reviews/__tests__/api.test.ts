@@ -1,6 +1,7 @@
 const mockSelect = jest.fn();
 const mockEq = jest.fn();
 const mockOrder = jest.fn();
+const mockLimit = jest.fn();
 const mockSingle = jest.fn();
 const mockInsert = jest.fn();
 const mockDelete = jest.fn();
@@ -36,20 +37,23 @@ describe('reviews api', () => {
     it('queries reviews with profile join for a movie', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: [], error: null });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: [], error: null });
 
       await fetchMovieReviews('movie-1');
       expect(supabase.from).toHaveBeenCalledWith('reviews');
       expect(mockSelect).toHaveBeenCalledWith('*, profile:profiles(id, display_name, avatar_url)');
       expect(mockEq).toHaveBeenCalledWith('movie_id', 'movie-1');
       expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
+      expect(mockLimit).toHaveBeenCalledWith(100);
     });
 
     it('returns data on success', async () => {
       const reviews = [{ id: 'r1', content: 'Great!' }];
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: reviews, error: null });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: reviews, error: null });
 
       const result = await fetchMovieReviews('movie-1');
       expect(result).toEqual(reviews);
@@ -58,7 +62,8 @@ describe('reviews api', () => {
     it('returns empty array when data is null', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: null });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: null, error: null });
 
       const result = await fetchMovieReviews('movie-1');
       expect(result).toEqual([]);
@@ -67,7 +72,8 @@ describe('reviews api', () => {
     it('throws on error', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: new Error('DB error') });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: null, error: new Error('DB error') });
 
       await expect(fetchMovieReviews('movie-1')).rejects.toThrow('DB error');
     });
@@ -178,7 +184,7 @@ describe('reviews api', () => {
         delete: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              select: jest.fn().mockResolvedValue({ data: [{ id: 'h1' }] }),
+              select: jest.fn().mockResolvedValue({ data: [{ id: 'h1' }], error: null }),
             }),
           }),
         }),
@@ -194,7 +200,7 @@ describe('reviews api', () => {
         delete: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
             eq: jest.fn().mockReturnValue({
-              select: jest.fn().mockResolvedValue({ data: [] }),
+              select: jest.fn().mockResolvedValue({ data: [], error: null }),
             }),
           }),
         }),
@@ -207,6 +213,30 @@ describe('reviews api', () => {
 
       const result = await toggleHelpful('u1', 'r1');
       expect(result).toBe(true);
+    });
+
+    it('throws when delete operation fails — does NOT fall through to upsert', async () => {
+      // Regression: previously the delete error was not checked, so a failed delete
+      // would fall through to upsert and create a duplicate helpful vote instead.
+      const deleteError = new Error('RLS rejected delete');
+      (supabase.from as jest.Mock).mockImplementationOnce(() => ({
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockResolvedValue({ data: null, error: deleteError }),
+            }),
+          }),
+        }),
+      }));
+
+      // upsert should never be called
+      const upsertMock = jest.fn().mockResolvedValue({ error: null });
+      (supabase.from as jest.Mock).mockImplementationOnce(() => ({
+        upsert: upsertMock,
+      }));
+
+      await expect(toggleHelpful('u1', 'r1')).rejects.toThrow('RLS rejected delete');
+      expect(upsertMock).not.toHaveBeenCalled();
     });
   });
 });

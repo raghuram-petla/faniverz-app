@@ -196,4 +196,28 @@ describe('PrivacySettingsScreen', () => {
     expect(alertSpy).toHaveBeenCalledWith('Error', 'Update failed');
     alertSpy.mockRestore();
   });
+
+  // @contract: isPending guard prevents duplicate mutations from rapid double-taps
+  it('does not call mutate a second time when isPending is true', () => {
+    mockUseUpdateProfile.mockReturnValue({ mutate: mockMutate, isPending: true });
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[0]);
+    fireEvent.press(touchables[0]);
+
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not call mutate for watchlist toggle when isPending is true', () => {
+    mockUseUpdateProfile.mockReturnValue({ mutate: mockMutate, isPending: true });
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[1]);
+
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
 });
