@@ -1,10 +1,35 @@
 # Test Coverage
 
-Systematically find source files missing tests and files with incomplete test coverage, then write the missing tests to reach 100% coverage across mobile (`app/`, `src/`) and admin (`admin/src/`).
+Find and fix test coverage gaps in a loop across mobile (`app/`, `src/`) and admin (`admin/src/`). Runs until **3 consecutive cycles find 0 gaps**.
 
-## Phase 1 — Scan for Missing Test Files
+## Loop Mode
 
-Find all source files that should have a corresponding test file but don't. Do NOT modify any files during this phase.
+Each "cycle" consists of: scan → report → write tests → verify. Keep looping until **3 consecutive cycles find zero coverage gaps**.
+
+```
+Cycle 1 → 12 missing tests → write them → Cycle 2 → 3 gaps → fix → Cycle 3 → 0 gaps → Cycle 4 → 0 gaps → Cycle 5 → 0 gaps → DONE
+```
+
+**Rules for loop mode:**
+
+- Each cycle is a full Phase 1–4 pass (scan, report, write, verify)
+- A "clean cycle" means Phase 1 found exactly 0 missing test files AND 0 incomplete tests
+- The 3-clean-cycle counter resets to 0 if any gaps are found
+- Between cycles, print: `### Cycle N complete — {X gaps found | clean} (consecutive clean: M/3)`
+- After 3 consecutive clean cycles, print: `### Test Coverage complete — 3 consecutive clean cycles achieved`
+
+**CRITICAL — No shortcuts allowed:**
+
+- **Every single cycle MUST perform a full scan.** You MUST actually find source files, check for test files, and read test content in every iteration — no skipping, no "nothing changed so it's clean", no assuming previous cycles were thorough enough.
+- **Launch Explore or general-purpose Agents** for each scan to ensure independent, thorough review. Do not rely on memory of previous cycles.
+- **Never declare a cycle "clean" without tool-backed evidence** (Agent output showing files scanned, Read/Grep/Glob tool calls).
+- A clean cycle requires actively scanning and finding nothing — not passively assuming nothing changed.
+- **Do not batch consecutive clean declarations.** Each clean cycle must be a separate, verifiable scan.
+- **Each cycle's agents start fresh** — do not rely on memory of previous cycles' findings.
+
+## Phase 1 — Scan for Coverage Gaps
+
+Find all source files missing tests AND files with incomplete test coverage. Do NOT modify any files during this phase.
 
 ### What must have tests
 
@@ -54,11 +79,11 @@ For each file, check whether a test file exists at the expected location. If not
 
 **Skip type-only files**: If the file contains only `type`, `interface`, or `enum` exports with no functions/components, mark as exempt.
 
-## Phase 2 — Scan for Incomplete Tests
+### Scan for incomplete tests
 
 For each source file that DOES have a test file, analyze coverage completeness:
 
-### What to check in components
+**Components:**
 
 - [ ] Renders without crashing (basic render test)
 - [ ] All conditional rendering branches tested (if/ternary in JSX)
@@ -67,7 +92,7 @@ For each source file that DOES have a test file, analyze coverage completeness:
 - [ ] Loading/error/empty states tested
 - [ ] Accessibility labels verified where present
 
-### What to check in hooks
+**Hooks:**
 
 - [ ] Initial return values verified
 - [ ] All state transitions triggered and verified
@@ -75,34 +100,36 @@ For each source file that DOES have a test file, analyze coverage completeness:
 - [ ] Error/edge states tested
 - [ ] Cleanup behavior verified (if applicable)
 
-### What to check in utilities/helpers
+**Utilities/helpers:**
 
 - [ ] All exported functions tested
 - [ ] Edge cases covered (empty input, null, boundary values)
 - [ ] All code branches exercised (if/else, switch, ternary)
 - [ ] Error handling paths tested
 
-### What to check in API modules
+**API modules:**
 
 - [ ] Each exported function has at least one test
 - [ ] Success responses handled
 - [ ] Error responses handled
 - [ ] Request parameters validated
 
-### Scoring
-
-For each file with existing tests, assign a coverage grade:
+**Scoring:**
 
 - **Full**: All checks applicable to the file type are covered
 - **Partial**: Some key behaviors or branches are untested
 - **Minimal**: Only basic render/smoke test exists, no interaction or branch tests
 
-## Phase 3 — Report
+### Approach
+
+Launch **at least 2 parallel agents** (one for mobile, one for admin) with explicit directory assignments so each area gets independent coverage. Each agent must use Read/Grep/Glob tools to verify findings — not assumptions.
+
+## Phase 2 — Report
 
 Present findings as markdown tables:
 
 ```
-## Test Coverage Report
+## Test Coverage Report (Cycle N)
 
 ### Missing Test Files (X found)
 | Source File | Expected Test Path | File Type |
@@ -120,11 +147,11 @@ Present findings as markdown tables:
 - No tests: D files
 ```
 
-## Phase 4 — Write Tests
+**Do NOT wait for user confirmation.** Proceed directly to Phase 3 and write ALL missing tests.
 
-**Wait for explicit user confirmation before proceeding.** Ask which files to prioritize (missing tests first, then incomplete tests).
+## Phase 3 — Write Tests
 
-### Writing order
+Write tests for all gaps found in Phase 1, in this priority order:
 
 1. Missing tests for API modules and utilities (easiest, highest value)
 2. Missing tests for hooks
@@ -190,9 +217,9 @@ describe('ComponentName', () => {
 - Keep tests independent — no shared mutable state between tests
 - Use `beforeEach` for common setup, not test-to-test dependencies
 - Mock external dependencies (API, navigation, storage), not internal logic
-- Verify the new test file passes in isolation: `npx jest <test-file-path> --forceExit`
+- Verify the new test file passes in isolation: `npx jest <test-file-path> --forceExit` (mobile) or `cd admin && npx vitest run <test-file-path>` (admin)
 
-## Phase 5 — Verify
+## Phase 4 — Verify
 
 Run quality gates for each affected codebase:
 
@@ -215,14 +242,20 @@ If any test fails:
 3. Re-run to confirm
 4. Never skip or disable a test to make it pass
 
-## Phase 6 — Final Report
+After Phase 4 completes, loop back to Phase 1 for a new full scan.
+
+## Final Report
+
+After 3 consecutive clean cycles, print:
 
 ```
-## Test Coverage Improvement — Summary
+## Test Coverage — Complete
 
-**Tests written**: X new test files, Y tests added to existing files
-**Coverage before**: A / B files (C%)
-**Coverage after**: D / E files (F%)
+### Stats
+- Total cycles: N
+- Total test files written: X
+- Total tests added to existing files: Y
+- Consecutive clean cycles: 3/3
 
 ### New Test Files Created
 - path/to/test.test.tsx — tests for ComponentName (N tests)
@@ -230,11 +263,16 @@ If any test fails:
 ### Existing Tests Improved
 - path/to/test.test.tsx — added M tests for [missing coverage areas]
 
-### Quality gates: Mobile pass/fail | Admin pass/fail
+### Quality Gates
+- Mobile: PASS/FAIL (X suites, Y tests)
+- Admin: PASS/FAIL (X suites, Y tests)
 ```
 
 ## Rules
 
+- **Never modify source code** — only create or edit test files. If a test cannot be written because of a bug in the source code, report the bug in the cycle report but do NOT fix it. The only exception is if the source code has a clear, unambiguous bug that prevents tests from being written — in that case, report the bug, fix it minimally, and note it in the report.
+- **No user confirmation needed** — scan, write, verify, loop automatically
+- **No commits** — all changes must remain uncommitted. The user will review and commit manually.
 - Never skip exempt files (styles, types, configs, barrels, migrations)
 - Always verify tests pass before reporting them as done
 - Use the correct test framework per codebase (Jest for mobile, Vitest for admin)
@@ -244,3 +282,4 @@ If any test fails:
 - Do not test private/internal functions — only exported APIs
 - Jest uses `--forceExit` (TanStack Query timer leaks)
 - Admin ESLint uses `--max-warnings 0`
+- **Code-intel annotations** — add `@contract`, `@assumes`, etc. annotations to any source code fixes per CLAUDE.md rules (test files themselves don't need annotations)
