@@ -44,7 +44,7 @@ export function PreviewPanel({
   posterBucket = 'POSTERS',
   backdropBucket = 'BACKDROPS',
 }: PreviewPanelProps) {
-  const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('spotlight');
+  const [previewMode, setPreviewMode] = useState<'spotlight' | 'detail'>('detail');
   // @assumes DEVICES[1] is a reasonable default device (iPhone-sized)
   const [device, setDevice] = useState(DEVICES[1]);
 
