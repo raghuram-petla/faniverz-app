@@ -104,18 +104,21 @@ export default function FeedScreen() {
     [allItems],
   );
 
+  // @contract: isPending guards prevent duplicate follow/unfollow API calls from rapid taps in the feed
   const handleFollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
+      if (followMutation.isPending || unfollowMutation.isPending) return;
       followMutation.mutate({ entityType, entityId });
     },
-    [followMutation],
+    [followMutation, unfollowMutation],
   );
 
   const handleUnfollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
+      if (followMutation.isPending || unfollowMutation.isPending) return;
       unfollowMutation.mutate({ entityType, entityId });
     },
-    [unfollowMutation],
+    [followMutation, unfollowMutation],
   );
 
   // @edge If entityId matches current user, routes to own profile tab instead of user detail

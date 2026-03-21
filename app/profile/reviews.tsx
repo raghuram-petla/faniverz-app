@@ -251,6 +251,8 @@ export default function MyReviewsScreen() {
                       style={styles.actionButton}
                       activeOpacity={0.7}
                       onPress={() => handleEdit(review)}
+                      // @contract: disabled while update is in-flight to prevent duplicate edits
+                      disabled={update.isPending}
                     >
                       <Ionicons name="create-outline" size={16} color={theme.textSecondary} />
                       <Text style={styles.actionText}>{t('common.edit')}</Text>
@@ -259,6 +261,8 @@ export default function MyReviewsScreen() {
                       style={[styles.actionButton, styles.deleteButton]}
                       activeOpacity={0.7}
                       onPress={() => handleDelete(review)}
+                      // @contract: disabled while remove is in-flight to prevent duplicate deletes
+                      disabled={remove.isPending}
                     >
                       <Ionicons name="trash-outline" size={16} color={colors.red500} />
                       <Text style={styles.deleteText}>{t('common.delete')}</Text>

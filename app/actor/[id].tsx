@@ -72,11 +72,11 @@ export default function ActorDetailScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
-  // @coupling: followSet uses "entityType:entityId" composite key format
+  // @coupling: followSet key format = "entityType:entityId"
   const isFollowing = followSet.has(`actor:${id}`);
-
-  // @contract: gate() redirects to login if unauthenticated; otherwise toggles follow state
+  // @contract: gate() = auth check; isPending guard = duplicate-tap prevention
   const handleFollowToggle = gate(() => {
+    if (followMutation.isPending || unfollowMutation.isPending) return;
     if (isFollowing) {
       unfollowMutation.mutate({ entityType: 'actor', entityId: id ?? '' });
     } else {

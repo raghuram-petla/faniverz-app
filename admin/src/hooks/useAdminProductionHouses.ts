@@ -26,7 +26,12 @@ const crud = createCrudHooks<ProductionHouse>({
 // @contract: PH admins receive only their scoped production houses; super admins see all
 // @assumes: productionHouseIds is populated from the user's role_assignments for PH scoping
 // @nullable: productionHouseIds — omit or pass empty to get unscoped (super admin) results
-export function useAdminProductionHouses(search = '', productionHouseIds?: string[]) {
+export function useAdminProductionHouses(
+  search = '',
+  productionHouseIds?: string[],
+  // @edge: set to false to skip the query until needed (e.g., when PH role isn't selected)
+  enabled = true,
+) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
   // @contract: sorted IDs for stable cache key — prevents redundant refetches on array reorder
   const sortedIds = useMemo(() => productionHouseIds?.slice().sort(), [productionHouseIds]);
@@ -50,7 +55,8 @@ export function useAdminProductionHouses(search = '', productionHouseIds?: strin
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
-    enabled: search.length >= 2 || search === '',
+    // @contract: both conditions must hold — caller's enabled flag AND search length check
+    enabled: enabled && (search.length >= 2 || search === ''),
   });
 }
 

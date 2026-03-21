@@ -1,5 +1,12 @@
 import { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -21,8 +28,6 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 const COLUMN_GAP = 12;
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = (SCREEN_WIDTH - 32 - COLUMN_GAP) / 2;
 
 // @boundary: the API returns FavoriteActor with actor joined via Supabase select
 // @nullable: actor may be undefined if the join fails (e.g., deleted actor row)
@@ -40,7 +45,10 @@ export default function FavoriteActorsScreen() {
   const { data: favorites, isLoading, refetch } = useFavoriteActors(user?.id ?? '');
   const { remove } = useFavoriteActorMutations();
   const { theme } = useTheme();
-  const styles = useMemo(() => createStyles(theme), [theme]);
+  // @edge: useWindowDimensions reacts to rotation/split-view — module-scope Dimensions.get would be stale
+  const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = (screenWidth - 32 - COLUMN_GAP) / 2;
+  const styles = useMemo(() => createStyles(theme, cardWidth), [theme, cardWidth]);
   const { refreshing, onRefresh } = useRefresh(refetch);
   const {
     pullDistance,
@@ -153,6 +161,8 @@ export default function FavoriteActorsScreen() {
                         style={styles.removeButton}
                         activeOpacity={0.8}
                         onPress={() => handleRemove(fav.actor_id)}
+                        // @contract: disabled while remove is in-flight to prevent duplicate removes
+                        disabled={remove.isPending}
                       >
                         <Ionicons name="close" size={14} color={palette.white} />
                       </TouchableOpacity>
@@ -170,7 +180,7 @@ export default function FavoriteActorsScreen() {
   );
 }
 
-const createStyles = (t: SemanticTheme) =>
+const createStyles = (t: SemanticTheme, cardWidth: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -217,7 +227,7 @@ const createStyles = (t: SemanticTheme) =>
       gap: COLUMN_GAP,
     },
     actorCard: {
-      width: CARD_WIDTH,
+      width: cardWidth,
     },
     actorCardEmpty: {
       // invisible spacer to keep grid alignment

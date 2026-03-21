@@ -116,8 +116,9 @@ export default function NotificationsScreen() {
 
   // @sideeffect: marks as read (if unread) then navigates to movie detail
   // @nullable: notification.movie_id may be null — only navigates when present
+  // @contract: isPending guard prevents duplicate mark-read calls from rapid taps
   const handleNotificationPress = (notification: Notification) => {
-    if (!notification.read) {
+    if (!notification.read && !markRead.isPending) {
       markRead.mutate(notification.id);
     }
     if (notification.movie_id) {

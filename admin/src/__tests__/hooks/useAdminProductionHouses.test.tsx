@@ -98,6 +98,34 @@ describe('useAdminProductionHouses', () => {
 
     expect(result.current.fetchStatus).toBe('idle');
   });
+
+  it('is disabled when enabled=false is passed (regression: avoid unnecessary query on invite page)', () => {
+    // @regression: invite page previously fetched all PHs on load even when role wasn't PH admin
+    const { result } = renderHook(() => useAdminProductionHouses('', undefined, false), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('is active when enabled=true is passed with empty search', async () => {
+    const mockHouses = [{ id: 'ph1', name: 'Arka Media Works' }];
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: mockHouses, error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses('', undefined, true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.pages.flat()).toEqual(mockHouses);
+  });
 });
 
 describe('useAdminProductionHouse', () => {

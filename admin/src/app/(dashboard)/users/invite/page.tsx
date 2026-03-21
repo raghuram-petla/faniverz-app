@@ -24,13 +24,29 @@ export default function InviteAdminPage() {
   const { user } = useAuth();
   const { canManageAdmin } = usePermissions();
   const inviteAdmin = useInviteAdmin();
-  const { data: phData } = useAdminProductionHouses('');
-  const availableRoles = INVITABLE_ROLES.filter((r) => canManageAdmin(r.value));
-  const allHouses = phData?.pages.flat() ?? [];
+
+  // @invariant: memoized so the array reference is stable across renders — canManageAdmin is a
+  // plain function (new ref each render), so without useMemo availableRoles would be a new array
+  // every render, causing the sync useEffect to fire on every render
+  const availableRoles = useMemo(
+    () => INVITABLE_ROLES.filter((r) => canManageAdmin(r.value)),
+    [canManageAdmin],
+  );
 
   const [email, setEmail] = useState('');
-  // @edge: defaults to 'admin' but if current user is admin (not super_admin), availableRoles may not include it
-  const [roleId, setRoleId] = useState<AdminRoleId>('admin');
+  // @sync: default to first available role — 'admin' may not be in availableRoles for non-super-admin users
+  const [roleId, setRoleId] = useState<AdminRoleId>(
+    (availableRoles[0]?.value as AdminRoleId) ?? 'viewer',
+  );
+
+  // @edge: only fetch production houses when PH admin role is selected to avoid unnecessary API call on load
+  // @contract: enabled=false skips the query; data is undefined until role switches to production_house_admin
+  const { data: phData } = useAdminProductionHouses(
+    '',
+    undefined,
+    roleId === 'production_house_admin',
+  );
+  const allHouses = phData?.pages.flat() ?? [];
   // @sync: selectedPHIds is cleared when role changes away from production_house_admin
   const [selectedPHIds, setSelectedPHIds] = useState<string[]>([]);
   const [inviteLink, setInviteLink] = useState('');
@@ -43,10 +59,27 @@ export default function InviteAdminPage() {
     };
   }, []);
 
-  // @contract: isDirty = true if email is non-empty OR PH IDs selected OR role changed from default ('admin')
+  // @sync: sync roleId + defaultRole to first available role when auth context finishes loading.
+  // @edge: roleId is intentionally excluded from deps — this effect only reacts to availableRoles
+  // changing; including roleId would cause a re-run every time the user changes the role selector.
+  // @invariant: defaultRole is state (not ref) so isDirty recomputes when the default is updated
+  const [defaultRole, setDefaultRole] = useState<AdminRoleId>(
+    (availableRoles[0]?.value as AdminRoleId) ?? 'viewer',
+  );
+  useEffect(() => {
+    if (availableRoles.length > 0 && !availableRoles.some((r) => r.value === roleId)) {
+      const firstRole = availableRoles[0].value as AdminRoleId;
+      setRoleId(firstRole);
+      setDefaultRole(firstRole);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableRoles]);
+
+  // @contract: isDirty = true if email is non-empty OR PH IDs selected OR role changed from default
+  // @sync: defaultRole is state so this memo correctly recomputes when the default role is updated
   const isDirty = useMemo(
-    () => !!(email.trim() || selectedPHIds.length > 0 || roleId !== 'admin'),
-    [email, selectedPHIds, roleId],
+    () => !!(email.trim() || selectedPHIds.length > 0 || roleId !== defaultRole),
+    [email, selectedPHIds, roleId, defaultRole],
   );
   useUnsavedChangesWarning(isDirty);
 
@@ -79,8 +112,12 @@ export default function InviteAdminPage() {
   }
 
   // @sideeffect: writes to system clipboard; "Copied" feedback auto-resets after 2 seconds
-  function handleCopy() {
-    navigator.clipboard.writeText(inviteLink);
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+    } catch {
+      // @edge: clipboard API may fail on non-HTTPS or without focus — ignore silently
+    }
     setCopied(true);
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000);

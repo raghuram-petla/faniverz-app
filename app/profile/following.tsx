@@ -43,9 +43,8 @@ export default function FollowingScreen() {
   // @sideeffect: unfollowMutation invalidates the follows query cache on success
   const unfollowMutation = useUnfollowEntity();
   const [filter, setFilter] = useState<Filter>('all');
-  const { refreshing, onRefresh } = useRefresh(async () => {
-    await refetch();
-  });
+  // @contract: pass refetch directly — useRefresh syncs via ref so no stale closure risk
+  const { refreshing, onRefresh } = useRefresh(refetch);
   const {
     pullDistance,
     isRefreshing,
@@ -74,9 +73,10 @@ export default function FollowingScreen() {
   );
 
   // @edge: no-op when user is not authenticated (guard against stale session)
+  // @contract: isPending guard prevents duplicate unfollow calls from rapid taps
   const handleUnfollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
-      if (!user?.id) return;
+      if (!user?.id || unfollowMutation.isPending) return;
       unfollowMutation.mutate({ entityType, entityId });
     },
     [user?.id, unfollowMutation],
