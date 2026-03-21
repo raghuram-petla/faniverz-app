@@ -55,7 +55,7 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
       photo_url: form.photo_url || null,
       birth_date: form.birth_date || null,
       person_type: form.person_type,
-      height_cm: form.height_cm ? Number(form.height_cm) : null,
+      height_cm: form.height_cm.trim() ? Number(form.height_cm) : null,
     });
     setForm(EMPTY_FORM);
   }
@@ -144,7 +144,8 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
         <div>
           <label className="block text-xs text-on-surface-subtle mb-1">Height (cm)</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             placeholder="e.g. 178"
             value={form.height_cm}
             onChange={(e) => setForm((p) => ({ ...p, height_cm: e.target.value }))}

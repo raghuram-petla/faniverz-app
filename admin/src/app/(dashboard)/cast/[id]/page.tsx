@@ -36,6 +36,7 @@ const FIELD_CONFIG: FieldConfig[] = [
   { key: 'biography', label: 'Biography', type: 'text' },
   { key: 'place_of_birth', label: 'Place of Birth', type: 'text' },
   { key: 'height_cm', label: 'Height (cm)', type: 'number' },
+  { key: 'tmdb_person_id', label: 'TMDB Person ID', type: 'number' },
 ];
 
 export default function EditActorPage() {
@@ -57,6 +58,7 @@ export default function EditActorPage() {
     biography: '',
     place_of_birth: '',
     height_cm: '',
+    tmdb_person_id: '',
   });
 
   const initialFormRef = useRef<ActorFormState | null>(null);
@@ -73,6 +75,7 @@ export default function EditActorPage() {
         biography: actor.biography ?? '',
         place_of_birth: actor.place_of_birth ?? '',
         height_cm: actor.height_cm != null ? String(actor.height_cm) : '',
+        tmdb_person_id: actor.tmdb_person_id != null ? String(actor.tmdb_person_id) : '',
       };
       setForm(loaded);
       initialFormRef.current = loaded;
@@ -112,7 +115,8 @@ export default function EditActorPage() {
         gender: Number(form.gender),
         biography: form.biography || null,
         place_of_birth: form.place_of_birth || null,
-        height_cm: form.height_cm ? Number(form.height_cm) : null,
+        height_cm: form.height_cm.trim() ? Number(form.height_cm) : null,
+        tmdb_person_id: form.tmdb_person_id.trim() ? Number(form.tmdb_person_id) : null,
       });
       initialFormRef.current = { ...form };
       setSaveStatus('success');

@@ -135,10 +135,10 @@ export default function NewSurpriseContentPage() {
             </label>
             <input
               id="views"
-              type="number"
+              type="text"
+              inputMode="numeric"
               value={views}
-              onChange={(e) => setViews(Number(e.target.value))}
-              min={0}
+              onChange={(e) => setViews(Math.max(0, Math.floor(Number(e.target.value)) || 0))}
               className="w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent"
             />
           </div>

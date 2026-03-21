@@ -93,7 +93,8 @@ export function BasicInfoSection({
         </FormField>
         <FormInput
           label="TMDB ID"
-          type="number"
+          type="text"
+          inputMode="numeric"
           value={form.tmdb_id}
           onValueChange={(v) => updateField('tmdb_id', v)}
         />
@@ -102,7 +103,8 @@ export function BasicInfoSection({
         <div>
           <FormInput
             label="Runtime (min)"
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={form.runtime}
             onValueChange={(v) => updateField('runtime', v)}
           />

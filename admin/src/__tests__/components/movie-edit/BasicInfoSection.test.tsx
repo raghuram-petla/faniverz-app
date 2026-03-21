@@ -69,7 +69,7 @@ describe('BasicInfoSection', () => {
 
   it('renders Runtime input', () => {
     renderBasicInfo({ runtime: '120' });
-    expect(getFieldByLabel('Runtime (min)')).toHaveValue(120);
+    expect(getFieldByLabel('Runtime (min)')).toHaveValue('120');
   });
 
   it('renders Certification select', () => {

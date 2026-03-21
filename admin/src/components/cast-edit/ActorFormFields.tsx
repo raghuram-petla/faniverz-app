@@ -17,6 +17,8 @@ export interface ActorFormState {
   place_of_birth: string;
   /** @boundary stored as string for input; parent converts to number | null */
   height_cm: string;
+  /** @boundary TMDB person ID; stored as string for input; parent converts to number | null */
+  tmdb_person_id: string;
 }
 
 /** @coupling parent (ActorEditPage) owns form state; this component is purely presentational */
@@ -160,12 +162,25 @@ export function ActorFormFields({
         <div>
           <label className="block text-xs text-on-surface-subtle mb-1">Height (cm)</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             value={form.height_cm}
             onChange={(e) => onFieldChange('height_cm', e.target.value)}
             className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
           />
         </div>
+      </div>
+
+      {/* TMDB Person ID */}
+      <div>
+        <label className="block text-xs text-on-surface-subtle mb-1">TMDB Person ID</label>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={form.tmdb_person_id}
+          onChange={(e) => onFieldChange('tmdb_person_id', e.target.value)}
+          className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
+        />
       </div>
 
       {/* Place of Birth */}
