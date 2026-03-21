@@ -2,6 +2,22 @@
 
 Deep-scan the entire codebase for runtime bugs, logic errors, performance problems, memory leaks, and wasteful patterns. Unlike gap-audit (which finds incomplete features), this skill finds code that **will break at runtime, behave incorrectly, leak resources, or waste CPU/network cycles**.
 
+## Loop Mode
+
+This skill runs in a **loop until clean**. After completing a full scan-report-fix cycle, immediately start a new scan from Phase 1. Keep looping until **3 consecutive runs find zero bugs**. Track the run counter:
+
+```
+Run 1 → found 12 bugs → fix → Run 2 → found 3 bugs → fix → Run 3 → found 0 → Run 4 → found 0 → Run 5 → found 0 → DONE (3 consecutive clean runs)
+```
+
+**Rules for loop mode:**
+
+- Each run is a full Phase 1–4 cycle (scan, report, fix all, final report)
+- A "clean run" means Phase 1 found exactly 0 bugs across all 14 categories
+- The 3-clean-run counter resets to 0 if any bugs are found
+- Between runs, print: `### Run N complete — {X bugs found | clean} (consecutive clean: M/3)`
+- After 3 consecutive clean runs, print: `### Bug Hunt complete — 3 consecutive clean runs achieved`
+
 ## Phase 1 — Scan
 
 Search both mobile (`app/`, `src/`) and admin (`admin/src/`) codebases for each category below. For each finding, record: **file path**, **line number(s)**, **what's wrong**, **severity**, and **how it manifests** (crash, wrong data, silent failure, etc.). Do NOT modify any files during this phase. Use multiple parallel agents for speed.
@@ -237,11 +253,11 @@ Present findings as a severity-ranked report:
 - Total: N bugs
 ```
 
-**Wait for user confirmation before proceeding to Phase 3.** Ask which severity levels to fix and whether to fix all or select specific issues.
+**Do NOT wait for user confirmation.** Proceed directly to Phase 3 and fix ALL bugs across all severity levels.
 
 ## Phase 3 — Fix
 
-For each approved bug, fix in order of severity (Critical first).
+Fix all bugs in order of severity (Critical first).
 
 ### Fix Workflow
 

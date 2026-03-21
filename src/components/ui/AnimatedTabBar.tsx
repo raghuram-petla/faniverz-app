@@ -36,7 +36,7 @@ export function AnimatedTabBar<T extends string>({
   useEffect(() => {
     const target = tabs.indexOf(activeTab) * singleTabWidth;
     tabIndicatorX.value = animationsEnabled ? withTiming(target, { duration: 200 }) : target;
-  }, [activeTab, animationsEnabled, tabs, singleTabWidth, tabIndicatorX]);
+  }, [activeTab, animationsEnabled, tabs, singleTabWidth]); // tabIndicatorX is a SharedValue (stable ref)
 
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tabIndicatorX.value }],

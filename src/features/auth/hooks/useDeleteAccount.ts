@@ -15,11 +15,9 @@ export function useDeleteAccount() {
       if (error) throw error;
       // @contract: signOut failure after successful deletion is caught and ignored —
       // the account is already gone, so a stale session will fail on next API call anyway.
-      try {
-        await supabase.auth.signOut();
-      } catch {
-        // Account deleted successfully; signOut failure is non-critical
-      }
+      // @contract: signOut failure after successful deletion is non-critical —
+      // the account is already gone. We still attempt it to clear the local session.
+      await supabase.auth.signOut().catch(() => {});
     },
   });
 }

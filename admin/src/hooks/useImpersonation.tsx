@@ -1,5 +1,13 @@
 'use client';
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { supabase } from '@/lib/supabase-browser';
 import type { AdminUser, AdminRoleId } from '@/lib/types';
@@ -77,11 +85,12 @@ async function buildTargetUser(targetUserId: string): Promise<AdminUser | null> 
 // impersonation at a time — the insert in startImpersonation doesn't check for existing
 // active sessions, it relies on this cleanup running first.
 async function endActiveSession(userId: string) {
-  await supabase
+  const { error } = await supabase
     .from('admin_impersonation_sessions')
     .update({ is_active: false, ended_at: new Date().toISOString() })
     .eq('real_user_id', userId)
     .eq('is_active', true);
+  if (error) console.warn('endActiveSession: update failed', error.message);
 }
 
 export function ImpersonationProvider({ children }: ImpersonationProviderProps) {
@@ -153,12 +162,13 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
         return;
       }
       await endActiveSession(user.id);
-      await supabase.from('admin_impersonation_sessions').insert({
+      const { error: insErr } = await supabase.from('admin_impersonation_sessions').insert({
         real_user_id: user.id,
         target_user_id: targetUserId,
         target_role: target.role,
         target_ph_ids: target.productionHouseIds,
       });
+      if (insErr) throw insErr;
       setEffectiveUser(target);
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'Failed to start impersonation');
@@ -175,12 +185,13 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
     }
     try {
       await endActiveSession(user.id);
-      await supabase.from('admin_impersonation_sessions').insert({
+      const { error: insErr } = await supabase.from('admin_impersonation_sessions').insert({
         real_user_id: user.id,
         target_user_id: null,
         target_role: role,
         target_ph_ids: phIds,
       });
+      if (insErr) throw insErr;
       setEffectiveUser({
         ...user,
         role,
@@ -204,18 +215,19 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
     }
   }, []);
 
-  return (
-    <ImpersonationContext.Provider
-      value={{
-        isImpersonating: effectiveUser !== null,
-        effectiveUser,
-        realUser,
-        startImpersonation,
-        startRoleImpersonation,
-        stopImpersonation,
-      }}
-    >
-      {children}
-    </ImpersonationContext.Provider>
+  // @sideeffect: memoized to prevent re-render cascades — consumers only re-render
+  // when impersonation state actually changes.
+  const value = useMemo<ImpersonationContextValue>(
+    () => ({
+      isImpersonating: effectiveUser !== null,
+      effectiveUser,
+      realUser,
+      startImpersonation,
+      startRoleImpersonation,
+      stopImpersonation,
+    }),
+    [effectiveUser, realUser, startImpersonation, startRoleImpersonation, stopImpersonation],
   );
+
+  return <ImpersonationContext.Provider value={value}>{children}</ImpersonationContext.Provider>;
 }

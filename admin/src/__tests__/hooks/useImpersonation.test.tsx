@@ -71,6 +71,13 @@ describe('useImpersonation', () => {
     expect(result.current.realUser).toEqual(mockAuthUser);
   });
 
+  it('memoizes context value to prevent unnecessary re-renders', () => {
+    const { result, rerender } = renderHook(() => useImpersonation(), { wrapper });
+    const first = result.current;
+    rerender();
+    expect(result.current).toBe(first);
+  });
+
   it('provides startImpersonation function', () => {
     const { result } = renderHook(() => useImpersonation(), { wrapper });
     expect(typeof result.current.startImpersonation).toBe('function');

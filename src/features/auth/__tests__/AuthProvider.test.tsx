@@ -149,6 +149,34 @@ describe('AuthProvider', () => {
     spy.mockRestore();
   });
 
+  it('memoizes context value to prevent unnecessary re-renders', async () => {
+    const values: unknown[] = [];
+    function Spy() {
+      values.push(useAuth());
+      return null;
+    }
+
+    const { rerender } = renderHook(() => {}, {
+      wrapper: ({ children }: { children: React.ReactNode }) => (
+        <AuthProvider>
+          <Spy />
+          {children}
+        </AuthProvider>
+      ),
+    });
+
+    await waitFor(() => expect(values.length).toBeGreaterThanOrEqual(1));
+    const afterLoad = values.length;
+
+    // Force a parent re-render — context value should be referentially stable
+    rerender(undefined);
+    // The Spy may re-render, but the context value object should be the same reference
+    // (last two values should be ===)
+    if (values.length > afterLoad) {
+      expect(values[values.length - 1]).toBe(values[values.length - 2]);
+    }
+  });
+
   it('useAuth returns all expected context values', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 

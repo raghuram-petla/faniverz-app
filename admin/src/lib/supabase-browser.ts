@@ -17,11 +17,17 @@ const fetchWithTimeout: typeof fetch = (input, init) => {
   const signal = init?.signal;
 
   // If caller already provided a signal, listen for its abort too
-  if (signal) {
-    signal.addEventListener('abort', () => controller.abort());
+  const onCallerAbort = signal ? () => controller.abort() : undefined;
+  if (signal && onCallerAbort) {
+    signal.addEventListener('abort', onCallerAbort);
   }
 
-  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(id));
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => {
+    clearTimeout(id);
+    if (signal && onCallerAbort) {
+      signal.removeEventListener('abort', onCallerAbort);
+    }
+  });
 };
 
 // @invariant: autoRefreshToken MUST be false — enabling it re-introduces the Web Lock

@@ -176,7 +176,7 @@ export async function processMovieFromTmdb(
 
     if (actorErr) continue;
 
-    await supabase.from('movie_cast').insert({
+    const { error: castInsertErr } = await supabase.from('movie_cast').insert({
       movie_id: movieId,
       actor_id: actor.id,
       role_name: castMember.character || null,
@@ -184,7 +184,7 @@ export async function processMovieFromTmdb(
       credit_type: 'cast',
       role_order: null,
     });
-    castCount++;
+    if (!castInsertErr) castCount++;
   }
 
   // @coupling: keyCrew filtering is defined in tmdb.ts CREW_JOB_MAP — only Director,
@@ -222,7 +222,7 @@ export async function processMovieFromTmdb(
 
     if (actorErr) continue;
 
-    await supabase.from('movie_cast').insert({
+    const { error: crewInsertErr } = await supabase.from('movie_cast').insert({
       movie_id: movieId,
       actor_id: actor.id,
       role_name: crewMember.roleName,
@@ -230,7 +230,7 @@ export async function processMovieFromTmdb(
       credit_type: 'crew',
       role_order: crewMember.roleOrder,
     });
-    crewCount++;
+    if (!crewInsertErr) crewCount++;
   }
 
   return {

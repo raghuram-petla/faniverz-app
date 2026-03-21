@@ -41,16 +41,20 @@ export default function SettingsScreen() {
   // @assumes: There is no backend table for these settings. Push delivery is controlled
   // server-side; these toggles control the client's local filtering behavior.
   useEffect(() => {
+    let mounted = true;
     AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS)
       .then((v) => {
-        if (v !== null) setPushEnabled(v === 'true');
+        if (mounted && v !== null) setPushEnabled(v === 'true');
       })
       .catch(() => {});
     AsyncStorage.getItem(STORAGE_KEYS.EMAIL_NOTIFICATIONS)
       .then((v) => {
-        if (v !== null) setEmailEnabled(v === 'true');
+        if (mounted && v !== null) setEmailEnabled(v === 'true');
       })
       .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const togglePush = () => {

@@ -56,8 +56,9 @@ export function useYouTubePlayer(): UseYouTubePlayerResult {
           duration: (msg.duration as number) ?? s.duration,
         }));
       }
-    } catch {
-      // ignore malformed messages
+    } catch (err) {
+      // @edge: log malformed WebView messages for debugging; don't crash the handler
+      if (__DEV__) console.warn('useYouTubePlayer: malformed message', err);
     }
   }, []);
 

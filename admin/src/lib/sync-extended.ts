@@ -27,18 +27,19 @@ export async function syncVideos(
   if (!youtubeVideos.length) return 0;
 
   // Clear existing TMDB-synced videos (those with tmdb_video_key set)
-  await supabase
+  const { error: delErr } = await supabase
     .from('movie_videos')
     .delete()
     .eq('movie_id', movieId)
     .not('tmdb_video_key', 'is', null);
+  if (delErr) console.warn('syncVideos: delete failed', delErr.message);
 
   let count = 0;
   for (let i = 0; i < youtubeVideos.length; i++) {
     const video = youtubeVideos[i];
     const videoType = mapTmdbVideoType(video.type);
 
-    await supabase.from('movie_videos').insert({
+    const { error: insertErr } = await supabase.from('movie_videos').insert({
       movie_id: movieId,
       youtube_id: video.key,
       title: video.name || video.type,
@@ -47,7 +48,7 @@ export async function syncVideos(
       display_order: i,
       tmdb_video_key: video.key,
     });
-    count++;
+    if (!insertErr) count++;
   }
 
   return count;
@@ -90,11 +91,11 @@ export async function syncWatchProviders(
       .maybeSingle();
     if (existing) continue;
 
-    await supabase.from('movie_platforms').insert({
+    const { error: insertErr } = await supabase.from('movie_platforms').insert({
       movie_id: movieId,
       platform_id: platformId,
     });
-    count++;
+    if (!insertErr) count++;
   }
 
   return count;
@@ -114,7 +115,11 @@ export async function syncKeywords(
   const keywords = detail.keywords?.keywords ?? [];
   if (!keywords.length) return 0;
 
-  await supabase.from('movie_keywords').delete().eq('movie_id', movieId);
+  const { error: kwDelErr } = await supabase
+    .from('movie_keywords')
+    .delete()
+    .eq('movie_id', movieId);
+  if (kwDelErr) console.warn('syncKeywords: delete failed', kwDelErr.message);
 
   const rows = keywords.map((kw) => ({
     movie_id: movieId,
@@ -122,6 +127,7 @@ export async function syncKeywords(
     keyword_name: kw.name,
   }));
 
-  await supabase.from('movie_keywords').insert(rows);
+  const { error: insertErr } = await supabase.from('movie_keywords').insert(rows);
+  if (insertErr) return 0;
   return keywords.length;
 }

@@ -49,13 +49,15 @@ export async function removeFromWatchlist(userId: string, movieId: string): Prom
 // @edge: watched_at is set to client's local time via new Date().toISOString(). If the device clock is significantly off, watched_at will be inaccurate. The DB column is timestamptz so it stores correctly, but the value itself is whatever the client sends.
 // @assumes: a watchlist entry for this user+movie already exists. If it doesn't, the update matches 0 rows — no error, no feedback. The caller (useWatchlistMutations.markWatched) has no special handling for this case.
 export async function markAsWatched(userId: string, movieId: string): Promise<void> {
-  const { error } = await supabase
+  // @contract: { count: 'exact' } required for Supabase to return row count — without it, count is always null
+  const { error, count } = await supabase
     .from('watchlists')
-    .update({ status: 'watched', watched_at: new Date().toISOString() })
+    .update({ status: 'watched', watched_at: new Date().toISOString() }, { count: 'exact' })
     .eq('user_id', userId)
     .eq('movie_id', movieId);
 
   if (error) throw error;
+  if (count === 0) throw new Error('No watchlist entry found for this movie');
 }
 
 export async function moveBackToWatchlist(userId: string, movieId: string): Promise<void> {

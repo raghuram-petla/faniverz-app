@@ -147,7 +147,11 @@ export function useRevokeAdmin() {
   return useMutation({
     mutationFn: async (userId: string) => {
       // Delete PH assignments first (FK constraint)
-      await supabase.from('admin_ph_assignments').delete().eq('user_id', userId);
+      const { error: phDelErr } = await supabase
+        .from('admin_ph_assignments')
+        .delete()
+        .eq('user_id', userId);
+      if (phDelErr) throw new Error(`PH assignment delete failed: ${phDelErr.message}`);
       // Delete role assignment
       const { error } = await supabase.from('admin_user_roles').delete().eq('user_id', userId);
       if (error) throw error;

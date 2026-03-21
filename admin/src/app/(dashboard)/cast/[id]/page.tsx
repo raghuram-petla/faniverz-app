@@ -129,8 +129,9 @@ export default function EditActorPage() {
   }, []);
 
   const handleRevertField = useCallback((key: string) => {
-    if (!initialFormRef.current) return;
-    setForm((prev) => ({ ...prev, [key]: initialFormRef.current![key as keyof ActorFormState] }));
+    const initial = initialFormRef.current;
+    if (!initial) return;
+    setForm((prev) => ({ ...prev, [key]: initial[key as keyof ActorFormState] }));
   }, []);
 
   async function handleDelete() {

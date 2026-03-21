@@ -126,15 +126,17 @@ describe('watchlist api', () => {
   });
 
   describe('markAsWatched', () => {
-    it('updates status to watched', async () => {
+    it('updates status to watched with count option', async () => {
       const mockEq2 = jest.fn();
       mockUpdate.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ eq: mockEq2 });
-      mockEq2.mockResolvedValue({ error: null });
+      mockEq2.mockResolvedValue({ error: null, count: 1 });
 
       await markAsWatched('u1', 'm1');
       expect(supabase.from).toHaveBeenCalledWith('watchlists');
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ status: 'watched' }));
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ status: 'watched' }), {
+        count: 'exact',
+      });
       expect(mockEq).toHaveBeenCalledWith('user_id', 'u1');
       expect(mockEq2).toHaveBeenCalledWith('movie_id', 'm1');
     });
@@ -146,6 +148,15 @@ describe('watchlist api', () => {
       mockEq2.mockResolvedValue({ error: new Error('Update failed') });
 
       await expect(markAsWatched('u1', 'm1')).rejects.toThrow('Update failed');
+    });
+
+    it('throws when no watchlist entry matches (count === 0)', async () => {
+      const mockEq2 = jest.fn();
+      mockUpdate.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockResolvedValue({ error: null, count: 0 });
+
+      await expect(markAsWatched('u1', 'm1')).rejects.toThrow('No watchlist entry found');
     });
   });
 

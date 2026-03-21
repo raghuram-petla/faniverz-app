@@ -113,7 +113,10 @@ export function useRemoveFromTheaters() {
           .from('movie_theatrical_runs')
           .update({ end_date: params.endDate })
           .eq('movie_id', params.movieId)
-          .is('end_date', null),
+          .is('end_date', null)
+          .then(({ error }) => {
+            if (error) throw error;
+          }),
       ]);
       return params.movieId;
     },

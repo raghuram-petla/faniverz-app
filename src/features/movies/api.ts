@@ -123,7 +123,7 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
   if (error) throw error;
   if (!movie) return null;
 
-  // @contract: uses Promise.allSettled so partial failures degrade gracefully instead of crashing
+  // @contract: uses Promise.all with per-query .then() error handling — partial failures degrade to empty arrays
   const [castResult, platformResult, postersResult, videosResult, productionHousesResult] =
     await Promise.all([
       supabase

@@ -71,11 +71,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const isSuperAdmin = role === 'root' || role === 'super_admin';
   const isAdmin = role === 'admin';
 
-  // @contract Fetch all languages from DB — cached with staleTime: Infinity (reference data)
+  // @contract Fetch all languages from DB — cached with 1-hour staleTime (reference data)
   const { data: languages = [] } = useQuery<Language[]>({
     queryKey: ['languages'],
     queryFn: fetchLanguages,
-    staleTime: Infinity,
+    staleTime: 60 * 60 * 1000,
     enabled: !!user,
   });
 
@@ -130,19 +130,28 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [selectedLanguageId, languages],
   );
 
-  return (
-    <LanguageContext.Provider
-      value={{
-        languages,
-        selectedLanguageId,
-        setSelectedLanguageId,
-        selectedLanguageCode,
-        userLanguageIds,
-        showSwitcher,
-        availableLanguages,
-      }}
-    >
-      {children}
-    </LanguageContext.Provider>
+  // @sideeffect: memoized to prevent re-render cascades — consumers only re-render
+  // when language state actually changes, not when dashboard layout re-renders.
+  const value = useMemo<LanguageContextValue>(
+    () => ({
+      languages,
+      selectedLanguageId,
+      setSelectedLanguageId,
+      selectedLanguageCode,
+      userLanguageIds,
+      showSwitcher,
+      availableLanguages,
+    }),
+    [
+      languages,
+      selectedLanguageId,
+      setSelectedLanguageId,
+      selectedLanguageCode,
+      userLanguageIds,
+      showSwitcher,
+      availableLanguages,
+    ],
   );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

@@ -12,15 +12,8 @@ import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/syn
 import { syncAllImages } from '@/lib/sync-images';
 import { syncVideos, syncWatchProviders, syncKeywords } from '@/lib/sync-extended';
 
-/**
- * POST /api/sync/fill-fields
- * Apply admin-selected fields to an existing movie from TMDB.
- * Only updates the fields explicitly requested — all others are untouched.
- * For 'cast': only syncs when the movie currently has zero cast/crew entries.
- *
- * @contract: returns { movieId, updatedFields } — updatedFields lists what
- * actually changed (e.g. 'cast' omitted when movie already had entries).
- */
+/** POST /api/sync/fill-fields — apply admin-selected TMDB fields to an existing movie.
+ * @contract: returns { movieId, updatedFields } — only lists what actually changed. */
 // @sideeffect: updates movies row + optionally inserts actors + movie_cast rows
 // @assumes: tmdb_id has UNIQUE constraint; movie must already exist in DB
 export async function POST(request: NextRequest) {
@@ -157,12 +150,13 @@ export async function POST(request: NextRequest) {
         .eq('is_main_poster', true)
         .maybeSingle();
       if (existingMain) {
-        await supabase
+        const { error: imgUpErr } = await supabase
           .from('movie_images')
           .update({ image_url: newPosterUrl })
           .eq('id', existingMain.id);
+        if (imgUpErr) console.warn('fill-fields: image update failed', imgUpErr.message);
       } else {
-        await supabase.from('movie_images').insert({
+        const { error: imgInsertErr } = await supabase.from('movie_images').insert({
           movie_id: movieId,
           image_url: newPosterUrl,
           image_type: 'poster',
@@ -170,6 +164,8 @@ export async function POST(request: NextRequest) {
           is_main_poster: true,
           display_order: 0,
         });
+        if (imgInsertErr)
+          console.warn(`fill-fields: image insert failed for ${movieId}:`, imgInsertErr.message);
       }
     }
 
@@ -211,7 +207,11 @@ export async function POST(request: NextRequest) {
 
       // @sideeffect: when forceResyncCast, deletes all existing cast before reinserting
       if (forceResyncCast && (count ?? 0) > 0) {
-        await supabase.from('movie_cast').delete().eq('movie_id', movieId);
+        const { error: castDelErr } = await supabase
+          .from('movie_cast')
+          .delete()
+          .eq('movie_id', movieId);
+        if (castDelErr) console.warn('fill-fields: cast delete failed', castDelErr.message);
       }
 
       if ((count ?? 0) === 0 || forceResyncCast) {
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
             .select('id')
             .single();
           if (ae) continue;
-          await supabase.from('movie_cast').insert({
+          const { error: castInsertErr } = await supabase.from('movie_cast').insert({
             movie_id: movieId,
             actor_id: actor.id,
             role_name: cm.character || null,
@@ -246,6 +246,8 @@ export async function POST(request: NextRequest) {
             credit_type: 'cast',
             role_order: null,
           });
+          if (castInsertErr)
+            console.warn(`fill-fields: cast insert failed for ${cm.name}:`, castInsertErr.message);
         }
 
         const keyCrew = extractKeyCrewMembers(detail.credits.crew);
@@ -271,7 +273,7 @@ export async function POST(request: NextRequest) {
             .select('id')
             .single();
           if (ae) continue;
-          await supabase.from('movie_cast').insert({
+          const { error: crewInsertErr } = await supabase.from('movie_cast').insert({
             movie_id: movieId,
             actor_id: actor.id,
             role_name: cm.roleName,
@@ -279,6 +281,8 @@ export async function POST(request: NextRequest) {
             credit_type: 'crew',
             role_order: cm.roleOrder,
           });
+          if (crewInsertErr)
+            console.warn(`fill-fields: crew insert failed for ${cm.name}:`, crewInsertErr.message);
         }
 
         updatedFields.push('cast');

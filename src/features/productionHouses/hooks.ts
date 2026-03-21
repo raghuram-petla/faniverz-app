@@ -61,7 +61,7 @@ export function useProductionHouseDetail(id: string) {
     movies: moviesQuery.data ?? [],
     isLoading: houseQuery.isLoading || moviesQuery.isLoading,
     refetch: async () => {
-      await Promise.all([houseQuery.refetch(), moviesQuery.refetch()]);
+      await Promise.allSettled([houseQuery.refetch(), moviesQuery.refetch()]);
     },
   };
 }

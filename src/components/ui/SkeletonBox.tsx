@@ -34,7 +34,7 @@ export function SkeletonBox({ width, height, borderRadius = 8, style, testID }: 
       -1,
       false,
     );
-  }, [translateX, screenWidth]);
+  }, [screenWidth]); // translateX is a SharedValue (stable ref)
 
   const shimmerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

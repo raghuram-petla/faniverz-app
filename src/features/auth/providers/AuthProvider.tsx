@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { queryClient } from '@/lib/queryClient';
@@ -61,21 +61,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        session,
-        // @assumes: session.user is always populated when session is non-null (Supabase SDK contract).
-        // If Supabase ever returns a session with null user, downstream hooks (useProfile, useUpdateProfile) will silently skip queries via enabled: !!user?.id.
-        user: session?.user ?? null,
-        isLoading,
-        isGuest,
-        setIsGuest,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // @sideeffect: memoized to prevent re-render cascades — all useAuth() consumers only
+  // re-render when auth state actually changes, not when an ancestor re-renders.
+  const value = useMemo<AuthContextType>(
+    () => ({
+      session,
+      // @assumes: session.user is always populated when session is non-null (Supabase SDK contract).
+      // If Supabase ever returns a session with null user, downstream hooks (useProfile, useUpdateProfile) will silently skip queries via enabled: !!user?.id.
+      user: session?.user ?? null,
+      isLoading,
+      isGuest,
+      setIsGuest,
+    }),
+    [session, isLoading, isGuest, setIsGuest],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

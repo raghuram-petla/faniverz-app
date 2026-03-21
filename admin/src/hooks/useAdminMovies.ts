@@ -153,7 +153,7 @@ export function useAdminMovies(
       const { data, error } = await supabase
         .from('movie_cast')
         .select('movie_id, actors!inner(name)')
-        .ilike('actors.name' as string, `%${advancedFilters!.actorSearch}%`);
+        .ilike('actors.name' as string, `%${advancedFilters?.actorSearch ?? ''}%`);
       if (error) throw error;
       return [...new Set((data ?? []).map((r: { movie_id: string }) => r.movie_id))];
     },
@@ -168,7 +168,7 @@ export function useAdminMovies(
       const { data, error } = await supabase
         .from('movie_platforms')
         .select('movie_id')
-        .eq('platform_id', advancedFilters!.platformId);
+        .eq('platform_id', advancedFilters?.platformId ?? '');
       if (error) throw error;
       return [...new Set((data ?? []).map((r: { movie_id: string }) => r.movie_id))];
     },

@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const STORAGE_KEY = 'sidebar-collapsed';
 
@@ -34,5 +34,5 @@ export function useSidebarProvider(): SidebarState {
     });
   }, []);
 
-  return { collapsed, toggle };
+  return useMemo(() => ({ collapsed, toggle }), [collapsed, toggle]);
 }

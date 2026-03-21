@@ -41,6 +41,13 @@ describe('useSidebarProvider', () => {
     expect(localStorage.getItem('sidebar-collapsed')).toBe('false');
   });
 
+  it('returns a stable reference when state has not changed', () => {
+    const { result, rerender } = renderHook(() => useSidebarProvider());
+    const first = result.current;
+    rerender();
+    expect(result.current).toBe(first);
+  });
+
   it('reads initial state from localStorage', () => {
     localStorage.setItem('sidebar-collapsed', 'true');
     const { result } = renderHook(() => useSidebarProvider());

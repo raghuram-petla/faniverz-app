@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -53,7 +53,7 @@ export default function SpotlightScreen() {
   const { data: allMovies = [], isLoading, refetch: refetchMovies } = useMovies();
   const { data: platforms = [], refetch: refetchPlatforms } = usePlatforms();
 
-  const movieIds = allMovies.map((m) => m.id);
+  const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);
   const { data: platformMap = {} } = useMoviePlatformMap(movieIds);
   const { refreshing, onRefresh } = useRefresh(refetchMovies, refetchPlatforms);
   const {

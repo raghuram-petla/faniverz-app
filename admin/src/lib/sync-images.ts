@@ -51,12 +51,13 @@ export async function syncPosters(
   }
 
   // @sideeffect: clear TMDB-synced poster images (keep manually added ones without tmdb_file_path)
-  await supabase
+  const { error: delErr } = await supabase
     .from('movie_images')
     .delete()
     .eq('movie_id', movieId)
     .eq('image_type', 'poster')
     .not('tmdb_file_path', 'is', null);
+  if (delErr) console.warn('syncPosters: delete failed', delErr.message);
 
   let count = 0;
   for (let i = 0; i < sorted.length && i < 20; i++) {
@@ -89,23 +90,35 @@ export async function syncPosters(
       };
 
       if (existingMain) {
-        await supabase.from('movie_images').update(posterData).eq('id', existingMain.id);
+        const { error: upErr } = await supabase
+          .from('movie_images')
+          .update(posterData)
+          .eq('id', existingMain.id);
+        if (upErr) {
+          console.warn('syncPosters: update main failed', upErr.message);
+          continue;
+        }
       } else {
-        await supabase.from('movie_images').insert({
+        const { error: insErr } = await supabase.from('movie_images').insert({
           movie_id: movieId,
           ...posterData,
           title: 'Main Poster',
           is_main_poster: true,
           display_order: 0,
         });
+        if (insErr) {
+          console.warn('syncPosters: insert main failed', insErr.message);
+          continue;
+        }
       }
       // Keep movies.poster_url + poster_image_type in sync
-      await supabase
+      const { error: movUpErr } = await supabase
         .from('movies')
         .update({ poster_url: imageUrl, poster_image_type: 'poster' })
         .eq('id', movieId);
+      if (movUpErr) console.warn('syncPosters: movies.poster_url update failed', movUpErr.message);
     } else {
-      await supabase.from('movie_images').insert({
+      const { error: insErr } = await supabase.from('movie_images').insert({
         movie_id: movieId,
         image_url: imageUrl,
         image_type: 'poster',
@@ -118,6 +131,10 @@ export async function syncPosters(
         height: poster.height,
         vote_average: poster.vote_average,
       });
+      if (insErr) {
+        console.warn('syncPosters: insert failed', insErr.message);
+        continue;
+      }
     }
     count++;
   }
@@ -150,12 +167,13 @@ export async function syncBackdrops(
   }
 
   // Clear existing TMDB-synced backdrop images
-  await supabase
+  const { error: bdDelErr } = await supabase
     .from('movie_images')
     .delete()
     .eq('movie_id', movieId)
     .eq('image_type', 'backdrop')
     .not('tmdb_file_path', 'is', null);
+  if (bdDelErr) console.warn('syncBackdrops: delete failed', bdDelErr.message);
 
   let count = 0;
   for (let i = 0; i < sorted.length && i < 15; i++) {
@@ -170,18 +188,21 @@ export async function syncBackdrops(
     const isMainBackdrop = i === 0;
     if (isMainBackdrop) {
       // Unset existing main backdrop before setting new one
-      await supabase
+      const { error: unsetErr } = await supabase
         .from('movie_images')
         .update({ is_main_backdrop: false })
         .eq('movie_id', movieId)
         .eq('is_main_backdrop', true);
-      await supabase
+      if (unsetErr) console.warn('syncBackdrops: unset main failed', unsetErr.message);
+      const { error: movUpErr } = await supabase
         .from('movies')
         .update({ backdrop_url: imageUrl, backdrop_image_type: 'backdrop' })
         .eq('id', movieId);
+      if (movUpErr)
+        console.warn('syncBackdrops: movies.backdrop_url update failed', movUpErr.message);
     }
 
-    await supabase.from('movie_images').insert({
+    const { error: insErr } = await supabase.from('movie_images').insert({
       movie_id: movieId,
       image_url: imageUrl,
       image_type: 'backdrop',
@@ -193,6 +214,10 @@ export async function syncBackdrops(
       vote_average: backdrop.vote_average,
       display_order: i + 1000,
     });
+    if (insErr) {
+      console.warn('syncBackdrops: insert failed', insErr.message);
+      continue;
+    }
     count++;
   }
 

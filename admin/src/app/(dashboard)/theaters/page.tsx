@@ -29,7 +29,12 @@ interface PendingChange {
 }
 
 function daysUntil(dateStr: string): string {
-  const diff = Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+  // @edge: parse as UTC to avoid timezone-induced off-by-one near day boundaries
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const releaseUtc = Date.UTC(y, m - 1, d);
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.ceil((releaseUtc - todayUtc) / 86400000);
   return diff <= 0 ? 'Today' : diff === 1 ? 'Tomorrow' : `In ${diff} days`;
 }
 

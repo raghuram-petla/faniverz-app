@@ -48,6 +48,7 @@ export function buildYouTubePlayerHtml(youtubeId: string): string {
         onStateChange: function(e) {
           var stateMap = { '-1': 'unstarted', 0: 'ended', 1: 'playing', 2: 'paused', 3: 'buffering', 5: 'cued' };
           postToRN({ type: 'stateChange', playerState: stateMap[e.data] || 'unknown' });
+          if (e.data === 0) { clearInterval(timeInterval); }
         },
       },
     });

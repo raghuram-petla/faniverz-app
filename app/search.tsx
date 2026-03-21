@@ -57,7 +57,7 @@ export default function SearchScreen() {
     () => [...allMovies].sort((a, b) => b.rating - a.rating).slice(0, 5),
     [allMovies],
   );
-  const resultIds = movies.map((m) => m.id);
+  const resultIds = useMemo(() => movies.map((m) => m.id), [movies]);
   const { data: platformMap = {} } = useMoviePlatformMap(resultIds);
   const { refreshing, onRefresh } = useRefresh(async () => {
     await refetchResults();
@@ -71,20 +71,23 @@ export default function SearchScreen() {
   } = usePullToRefresh(onRefresh, refreshing);
 
   useEffect(() => {
-    loadRecentSearches();
+    let mounted = true;
+    // @sideeffect: reads from AsyncStorage on mount; silently ignores corrupt JSON
+    AsyncStorage.getItem(RECENT_SEARCHES_KEY)
+      .then((stored) => {
+        if (mounted && stored) {
+          try {
+            setRecentSearches(JSON.parse(stored));
+          } catch {
+            /* ignore corrupt JSON */
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, []);
-
-  // @sideeffect: reads from AsyncStorage on mount; silently ignores corrupt JSON
-  const loadRecentSearches = async () => {
-    const stored = await AsyncStorage.getItem(RECENT_SEARCHES_KEY);
-    if (stored) {
-      try {
-        setRecentSearches(JSON.parse(stored));
-      } catch {
-        /* ignore */
-      }
-    }
-  };
 
   // @sideeffect: persists to AsyncStorage; deduplicates and caps at MAX_RECENT
   const saveSearch = async (term: string) => {

@@ -48,7 +48,7 @@ export function useActorDetail(id: string) {
   });
 
   const refetch = async () => {
-    await Promise.all([actorQuery.refetch(), filmographyQuery.refetch()]);
+    await Promise.allSettled([actorQuery.refetch(), filmographyQuery.refetch()]);
   };
 
   return {

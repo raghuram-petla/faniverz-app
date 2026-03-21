@@ -64,7 +64,7 @@ export default function DiscoverScreen() {
   useEffect(() => {
     const deg = showSortDropdown ? 180 : 0;
     chevronRotate.value = animationsEnabled ? withTiming(deg, { duration: 200 }) : deg;
-  }, [showSortDropdown, chevronRotate, animationsEnabled]);
+  }, [showSortDropdown, animationsEnabled]); // chevronRotate is a SharedValue (stable ref)
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${chevronRotate.value}deg` }],
   }));
