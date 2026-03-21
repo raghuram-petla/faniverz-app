@@ -185,7 +185,7 @@ if [ "$FORCE_DB_RESET" = true ]; then
   info "Database reset (forced via --reset-db)"
 elif [ "$TABLE_COUNT" -le 1 ]; then
   supabase db reset
-  info "Database migrations applied (fresh database — use admin TMDB sync to populate data)"
+  info "Database migrations + seed applied (use admin TMDB sync to populate movies/actors)"
 else
   info "Database already has tables (skipping reset — use --reset-db to force)"
 fi

@@ -58,9 +58,10 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# Seeding disabled — use admin panel TMDB sync to populate sample data.
-enabled = false
-sql_paths = []
+# Seeds reference data (platforms, surprise content, feed items, admin trigger).
+# Movies & actors come from admin TMDB sync, not seed.
+enabled = true
+sql_paths = ["./seed.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.
