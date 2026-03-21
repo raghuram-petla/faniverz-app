@@ -18,6 +18,12 @@ const base: Actor = {
   place_of_birth: null,
   height_cm: null,
   created_by: null,
+  imdb_id: null,
+  known_for_department: null,
+  also_known_as: null,
+  death_date: null,
+  instagram_id: null,
+  twitter_id: null,
   created_at: '',
 };
 

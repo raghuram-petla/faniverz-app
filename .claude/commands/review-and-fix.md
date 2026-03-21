@@ -25,6 +25,13 @@ Run 1 → found 8 issues → fix → Run 2 → found 2 issues → fix → Run 3 
 - Between runs, print: `### Run N complete — {X issues found | clean} (consecutive clean: M/3)`
 - After 3 consecutive clean runs, print: `### Review and Fix complete — 3 consecutive clean runs achieved`
 
+**CRITICAL — No shortcuts allowed:**
+
+- **Every single run MUST perform a full scan.** You MUST actually read the diffs and source files in every iteration — no skipping, no "the code hasn't changed so it's clean", no assuming previous runs were thorough enough.
+- **Launch an Explore or general-purpose Agent** for each clean-run scan to ensure independent, thorough review. Do not rely on memory of previous runs.
+- **Never declare a run "clean" without reading the actual code.** If you cannot prove you read the diffs in that run, it doesn't count.
+- A clean run requires actively scanning and finding nothing — not passively assuming nothing changed.
+
 ## Phase 1 — Scan
 
 Read the diffs and modified files. For each finding, record: **file path**, **line number(s)**, **what's wrong**, **severity**, and **how to fix**. Do NOT modify any files during this phase.
@@ -59,10 +66,11 @@ Read the diffs and modified files. For each finding, record: **file path**, **li
 
 ### Approach
 
-1. Read the diff output to understand what changed
-2. Read each modified file fully to understand context
+1. **Run `git diff -- <file>` for every modified source file** — you must actually read each diff, not summarize from memory
+2. **Read each modified file fully** to understand context — use the Read tool or an Agent, not assumptions
 3. Focus review on changed lines but flag issues in surrounding code only if the change **introduced or exposed** them
 4. Cross-reference changes across files (e.g., if a hook signature changed, check all callsites in the diff)
+5. **For clean runs (consecutive clean counting):** Launch an Agent with `subagent_type=Explore` or `subagent_type=general-purpose` to independently verify the code is clean. The agent must read the actual diffs and report findings. You cannot self-certify a clean run without tool-verified evidence.
 
 ## Phase 2 — Report
 

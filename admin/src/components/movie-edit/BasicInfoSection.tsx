@@ -117,6 +117,13 @@ export function BasicInfoSection({
           onValueChange={(v) => updateField('certification', v)}
         />
       </div>
+      {/* Tagline */}
+      <FormInput
+        label="Tagline"
+        type="text"
+        value={form.tagline}
+        onValueChange={(v) => updateField('tagline', v)}
+      />
       {/* Synopsis */}
       <FormTextarea
         label="Synopsis"

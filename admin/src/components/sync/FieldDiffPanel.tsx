@@ -13,7 +13,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 import type { FillableField } from '@/lib/syncUtils';
-import { extractYouTubeId, getStatus, fmt } from './fieldDiffHelpers';
+import { getStatus, buildFieldDefs } from './fieldDiffHelpers';
 import { FieldDiffRow } from './FieldDiffRow';
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -38,99 +38,7 @@ export function FieldDiffPanel({
   isSaving,
   onApply,
 }: FieldDiffPanelProps) {
-  const DATA_FIELDS: Array<{
-    key: FillableField;
-    label: string;
-    dbDisplay: string;
-    tmdbDisplay: string;
-  }> = [
-    { key: 'title', label: 'Title', dbDisplay: fmt(movie.title), tmdbDisplay: fmt(tmdb.title) },
-    {
-      key: 'synopsis',
-      label: 'Synopsis',
-      dbDisplay: movie.synopsis ?? '',
-      tmdbDisplay: tmdb.overview ?? '',
-    },
-    {
-      key: 'poster_url',
-      label: 'Poster',
-      dbDisplay: movie.poster_url ? '✓ set' : '',
-      tmdbDisplay: tmdb.posterUrl ? '✓ available' : '',
-    },
-    {
-      key: 'backdrop_url',
-      label: 'Backdrop',
-      dbDisplay: movie.backdrop_url ? '✓ set' : '',
-      tmdbDisplay: tmdb.backdropUrl ? '✓ available' : '',
-    },
-    {
-      key: 'trailer_url',
-      label: 'Trailer',
-      dbDisplay: extractYouTubeId(movie.trailer_url) ?? (movie.trailer_url ? '✓ set' : ''),
-      tmdbDisplay: extractYouTubeId(tmdb.trailerUrl) ?? (tmdb.trailerUrl ? '✓ available' : ''),
-    },
-    {
-      key: 'director',
-      label: 'Director',
-      dbDisplay: fmt(movie.director),
-      tmdbDisplay: fmt(tmdb.director),
-    },
-    {
-      key: 'runtime',
-      label: 'Runtime',
-      dbDisplay: movie.runtime ? `${movie.runtime} min` : '',
-      // @edge TMDB runtime=0 means unknown — display as empty
-      tmdbDisplay: tmdb.runtime ? `${tmdb.runtime} min` : '',
-    },
-    {
-      key: 'genres',
-      label: 'Genres',
-      dbDisplay: fmt(movie.genres),
-      tmdbDisplay: tmdb.genres.join(', '),
-    },
-    {
-      key: 'images',
-      label: 'All Images',
-      dbDisplay: `${movie.poster_count ?? 1} poster${(movie.poster_count ?? 1) !== 1 ? 's' : ''}, ${movie.backdrop_count ?? (movie.backdrop_url ? 1 : 0)} backdrop${(movie.backdrop_count ?? 0) !== 1 ? 's' : ''}`,
-      tmdbDisplay: `${tmdb.posterCount} poster${tmdb.posterCount !== 1 ? 's' : ''}, ${tmdb.backdropCount} backdrop${tmdb.backdropCount !== 1 ? 's' : ''}`,
-    },
-    {
-      key: 'videos',
-      label: 'Videos',
-      dbDisplay: `${movie.video_count ?? 0} video${(movie.video_count ?? 0) !== 1 ? 's' : ''}`,
-      tmdbDisplay: `${tmdb.videoCount} video${tmdb.videoCount !== 1 ? 's' : ''}`,
-    },
-    {
-      key: 'watch_providers',
-      label: 'OTT Platforms',
-      dbDisplay: movie.platform_names?.join(', ') || 'none',
-      tmdbDisplay: tmdb.providerNames.length > 0 ? tmdb.providerNames.join(', ') : 'none',
-    },
-    {
-      key: 'keywords',
-      label: 'Keywords',
-      dbDisplay: `${movie.keyword_count ?? 0}`,
-      tmdbDisplay: `${tmdb.keywordCount}`,
-    },
-    {
-      key: 'imdb_id',
-      label: 'IMDb ID',
-      dbDisplay: fmt(movie.imdb_id),
-      tmdbDisplay: fmt(tmdb.imdbId),
-    },
-    {
-      key: 'title_te',
-      label: 'Telugu Title',
-      dbDisplay: fmt(movie.title_te),
-      tmdbDisplay: fmt(tmdb.titleTe),
-    },
-    {
-      key: 'synopsis_te',
-      label: 'Telugu Synopsis',
-      dbDisplay: movie.synopsis_te ?? '',
-      tmdbDisplay: tmdb.synopsisTe ?? '',
-    },
-  ];
+  const DATA_FIELDS = buildFieldDefs(movie, tmdb);
 
   const allRows = DATA_FIELDS.map((f) => ({ ...f, status: getStatus(movie, tmdb, f.key) }));
   const [showAll, setShowAll] = useState(false);

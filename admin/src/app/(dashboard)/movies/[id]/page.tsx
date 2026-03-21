@@ -13,6 +13,7 @@ import {
   Users,
   Calendar,
   Plus,
+  Database,
 } from 'lucide-react';
 import { useMovieEditState } from '@/hooks/useMovieEditState';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -21,6 +22,7 @@ import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { Button } from '@/components/common/Button';
 import {
   BasicInfoSection,
+  TmdbMetadataSection,
   VideosSection,
   PostersSection,
   PlatformsSection,
@@ -119,15 +121,31 @@ export default function EditMoviePage() {
         {/* Left column — Active tab content */}
         <div className="flex-1 min-w-0 space-y-6">
           {activeSection === 'basic-info' && (
-            <SectionCard title="Basic Info" icon={FileText}>
-              <BasicInfoSection
-                form={editState.form}
-                setForm={editState.setForm}
-                updateField={editState.updateField}
-                toggleGenre={editState.toggleGenre}
-                onSubmit={editState.handleSubmit}
-              />
-            </SectionCard>
+            <>
+              <SectionCard title="Basic Info" icon={FileText}>
+                <BasicInfoSection
+                  form={editState.form}
+                  setForm={editState.setForm}
+                  updateField={editState.updateField}
+                  toggleGenre={editState.toggleGenre}
+                  onSubmit={editState.handleSubmit}
+                />
+              </SectionCard>
+              {editState.movie?.tmdb_id && (
+                <SectionCard title="TMDB Metadata" icon={Database}>
+                  <TmdbMetadataSection
+                    tmdbStatus={editState.movie.tmdb_status ?? null}
+                    tmdbVoteAverage={editState.movie.tmdb_vote_average ?? null}
+                    tmdbVoteCount={editState.movie.tmdb_vote_count ?? null}
+                    budget={editState.movie.budget ?? null}
+                    revenue={editState.movie.revenue ?? null}
+                    collectionName={editState.movie.collection_name ?? null}
+                    spokenLanguages={editState.movie.spoken_languages ?? null}
+                    tmdbLastSyncedAt={editState.movie.tmdb_last_synced_at ?? null}
+                  />
+                </SectionCard>
+              )}
+            </>
           )}
 
           {activeSection === 'posters' && (

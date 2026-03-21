@@ -7,6 +7,7 @@ const mockPH: ProductionHouse = {
   name: 'Mythri Movie Makers',
   logo_url: 'https://example.com/mythri.png',
   description: null,
+  tmdb_company_id: null,
   created_at: '2026-01-01',
 };
 
@@ -15,6 +16,7 @@ const mockPHNoLogo: ProductionHouse = {
   name: 'Haarika & Hassine',
   logo_url: null,
   description: null,
+  tmdb_company_id: null,
   created_at: '2026-01-01',
 };
 

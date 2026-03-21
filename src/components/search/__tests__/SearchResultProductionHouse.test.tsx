@@ -11,6 +11,7 @@ const mockHouse = {
   name: 'Mythri Movie Makers',
   logo_url: 'logo.jpg',
   description: null,
+  tmdb_company_id: null,
   created_at: '',
 };
 

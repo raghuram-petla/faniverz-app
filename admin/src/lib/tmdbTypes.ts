@@ -46,6 +46,26 @@ export interface TmdbGenre {
   name: string;
 }
 
+export interface TmdbProductionCompany {
+  id: number;
+  name: string;
+  logo_path: string | null;
+  origin_country: string;
+}
+
+export interface TmdbSpokenLanguage {
+  iso_639_1: string;
+  english_name: string;
+  name: string;
+}
+
+export interface TmdbCollection {
+  id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+}
+
 export interface TmdbMovieDetail {
   id: number;
   title: string;
@@ -56,6 +76,16 @@ export interface TmdbMovieDetail {
   genres: TmdbGenre[];
   poster_path: string | null;
   backdrop_path: string | null;
+  tagline: string;
+  status: string;
+  vote_average: number;
+  vote_count: number;
+  budget: number;
+  revenue: number;
+  popularity: number;
+  production_companies: TmdbProductionCompany[];
+  spoken_languages: TmdbSpokenLanguage[];
+  belongs_to_collection: TmdbCollection | null;
   credits: {
     cast: TmdbCastMember[];
     crew: TmdbCrewMember[];
@@ -73,6 +103,11 @@ export interface TmdbPerson {
   biography: string | null;
   place_of_birth: string | null;
   gender: number;
+  imdb_id: string | null;
+  also_known_as: string[];
+  deathday: string | null;
+  known_for_department: string | null;
+  external_ids?: { imdb_id: string | null; instagram_id: string | null; twitter_id: string | null };
 }
 
 export interface TmdbSearchPerson {
@@ -124,10 +159,22 @@ export interface TmdbExternalIds {
   imdb_id: string | null;
 }
 
+export interface TmdbRegionReleaseDate {
+  certification: string;
+  type: number; // 1=Premiere, 2=Theatrical (limited), 3=Theatrical, 4=Digital, 5=Physical, 6=TV
+  release_date: string;
+}
+
+export interface TmdbReleaseDatesResult {
+  iso_3166_1: string;
+  release_dates: TmdbRegionReleaseDate[];
+}
+
 export interface TmdbMovieDetailExtended extends TmdbMovieDetail {
   external_ids?: TmdbExternalIds;
   translations?: { translations: TmdbTranslation[] };
   keywords?: { keywords: TmdbKeyword[] };
+  release_dates?: { results: TmdbReleaseDatesResult[] };
 }
 
 // ── Enriched crew member (after mapping through CREW_JOB_MAP) ───────────────
@@ -187,10 +234,7 @@ export function extractTrailerUrl(videos: TmdbVideo[]): string | null {
   return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
 }
 
-/**
- * Extract Telugu title and synopsis from TMDB translations.
- * @nullable: returns nulls if no Telugu translation exists.
- */
+/** @nullable: returns nulls if no Telugu translation exists. */
 export function extractTeluguTranslation(translations?: { translations: TmdbTranslation[] }): {
   titleTe: string | null;
   synopsisTe: string | null;
@@ -204,10 +248,7 @@ export function extractTeluguTranslation(translations?: { translations: TmdbTran
   };
 }
 
-/**
- * Map TMDB video type strings to our video_type enum.
- * @edge: TMDB uses capitalized English strings; our DB uses lowercase enum values.
- */
+/** Map TMDB video type strings to our video_type enum. */
 export function mapTmdbVideoType(tmdbType: string): string {
   const map: Record<string, string> = {
     Trailer: 'trailer',
@@ -218,6 +259,31 @@ export function mapTmdbVideoType(tmdbType: string): string {
     Bloopers: 'other',
   };
   return map[tmdbType] ?? 'other';
+}
+
+/** Extract India CBFC certification from TMDB release_dates.
+ * @edge: maps "U/A" → "UA" to match our DB constraint. */
+export function extractIndiaCertification(
+  releaseDates?: TmdbMovieDetailExtended['release_dates'],
+): 'U' | 'UA' | 'A' | null {
+  if (!releaseDates?.results) return null;
+  const india = releaseDates.results.find((r) => r.iso_3166_1 === 'IN');
+  if (!india) return null;
+
+  // Prefer theatrical release (type 3), then any release with a certification
+  const theatrical = india.release_dates.find((rd) => rd.type === 3 && rd.certification);
+  const cert =
+    theatrical?.certification || india.release_dates.find((rd) => rd.certification)?.certification;
+  if (!cert) return null;
+
+  // @edge: TMDB uses "U/A" for UA certification; normalize
+  const CERT_MAP: Record<string, 'U' | 'UA' | 'A'> = {
+    U: 'U',
+    'U/A': 'UA',
+    UA: 'UA',
+    A: 'A',
+  };
+  return CERT_MAP[cert.trim()] ?? null;
 }
 
 // @coupling: TMDB provider_id → our platforms table id. Update if platforms table changes.

@@ -64,3 +64,11 @@ After both steps complete, print:
 - **Override commit behavior** — Bug Hunt's Phase 3 step 6 (commit) and Phase 4 Commits table are skipped. All fixes stay uncommitted.
 - **A cycle is only clean if BOTH skills find 0 issues**
 - **3 consecutive clean cycles required** — not 3 clean runs of each individually
+
+## CRITICAL — No Shortcuts Allowed
+
+- **Every single cycle MUST perform a full scan.** You MUST actually read the diffs and source files in every iteration — no skipping, no "the code hasn't changed so it's clean", no assuming previous cycles were thorough enough.
+- **Launch an Agent** (Explore or general-purpose) for each scan phase to ensure independent, thorough review. Do not rely on memory of previous cycles.
+- **Never declare a cycle "clean" without reading the actual code.** If you cannot prove you read the diffs in that cycle, it doesn't count.
+- A clean cycle requires actively scanning and finding nothing — not passively assuming nothing changed.
+- **Do not batch consecutive clean declarations.** Each clean cycle must be a separate, verifiable scan with tool-backed evidence (Agent output, git diff reads, file reads).

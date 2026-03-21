@@ -103,6 +103,13 @@ const mockActor = {
   biography: 'Akkineni Nagarjuna is an Indian actor, producer, and entrepreneur.',
   place_of_birth: 'Chennai, Tamil Nadu, India',
   height_cm: 181,
+  imdb_id: null,
+  instagram_id: null,
+  twitter_id: null,
+  death_date: null,
+  also_known_as: null,
+  known_for_department: null,
+  created_by: null,
   created_at: '2024-01-01',
 };
 
@@ -404,5 +411,100 @@ describe('ActorDetailScreen', () => {
     });
     render(<ActorDetailScreen />);
     expect(screen.queryByTestId('avatar-tap')).toBeNull();
+  });
+
+  it('shows death date when present', () => {
+    const deceased = { ...mockActor, death_date: '2023-11-15' };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: deceased,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.getByText('Died')).toBeTruthy();
+    const expectedDate = new Date('2023-11-15').toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    expect(screen.getByText(expectedDate)).toBeTruthy();
+  });
+
+  it('does not show death date when null', () => {
+    render(<ActorDetailScreen />);
+    expect(screen.queryByText('Died')).toBeNull();
+  });
+
+  it('shows also_known_as chips when present', () => {
+    const withAka = { ...mockActor, also_known_as: ['Nag', 'King Nagarjuna'] };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withAka,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.getByText('Nag')).toBeTruthy();
+    expect(screen.getByText('King Nagarjuna')).toBeTruthy();
+  });
+
+  it('does not show also_known_as when null or empty', () => {
+    render(<ActorDetailScreen />);
+    // No chip should render for AKA
+    expect(screen.queryByText('Nag')).toBeNull();
+  });
+
+  it('shows IMDb social link when imdb_id is present', () => {
+    const withImdb = { ...mockActor, imdb_id: 'nm0012345' };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withImdb,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.getByTestId('social-imdb')).toBeTruthy();
+  });
+
+  it('shows Instagram social link when instagram_id is present', () => {
+    const withIg = { ...mockActor, instagram_id: 'naikiniki' };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withIg,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.getByTestId('social-instagram')).toBeTruthy();
+  });
+
+  it('shows Twitter social link when twitter_id is present', () => {
+    const withTwitter = { ...mockActor, twitter_id: 'iaboredthisname' };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withTwitter,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.getByTestId('social-twitter')).toBeTruthy();
+  });
+
+  it('does not show social links when all IDs are null', () => {
+    render(<ActorDetailScreen />);
+    expect(screen.queryByTestId('social-imdb')).toBeNull();
+    expect(screen.queryByTestId('social-instagram')).toBeNull();
+    expect(screen.queryByTestId('social-twitter')).toBeNull();
+  });
+
+  it('opens correct IMDb URL on press', () => {
+    const { Linking } = require('react-native');
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const withImdb = { ...mockActor, imdb_id: 'nm0012345' };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withImdb,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    fireEvent.press(screen.getByTestId('social-imdb'));
+    expect(Linking.openURL).toHaveBeenCalledWith('https://www.imdb.com/name/nm0012345');
+    jest.restoreAllMocks();
   });
 });

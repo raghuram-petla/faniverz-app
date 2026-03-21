@@ -127,21 +127,25 @@ export async function discoverTeluguMoviesByMonth(
   return movies;
 }
 
-// @contract: returns credits, videos, external_ids, translations, and keywords in a
-// single request via append_to_response (counts as 1 API call).
+// @contract: returns credits, videos, external_ids, translations, keywords, and
+// release_dates in a single request via append_to_response (counts as 1 API call).
 export async function getMovieDetails(
   tmdbId: number,
   apiKey: string,
 ): Promise<TmdbMovieDetailExtended> {
   return tmdbGet<TmdbMovieDetailExtended>(`/movie/${tmdbId}`, {
     api_key: apiKey,
-    append_to_response: 'credits,videos,external_ids,translations,keywords',
+    append_to_response: 'credits,videos,external_ids,translations,keywords,release_dates',
   });
 }
 
-/** Fetch person details (biography, birth date, photo). */
+/** Fetch person details (biography, birth date, photo, external IDs).
+ * @contract: appends external_ids in single request for social links (IMDb, Instagram, Twitter). */
 export async function getPersonDetails(tmdbPersonId: number, apiKey: string): Promise<TmdbPerson> {
-  return tmdbGet<TmdbPerson>(`/person/${tmdbPersonId}`, { api_key: apiKey });
+  return tmdbGet<TmdbPerson>(`/person/${tmdbPersonId}`, {
+    api_key: apiKey,
+    append_to_response: 'external_ids',
+  });
 }
 
 /**

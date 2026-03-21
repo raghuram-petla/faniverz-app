@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Pressable,
   Modal,
+  Linking,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -126,7 +127,11 @@ export default function ActorDetailScreen() {
       ? (filmography.find((c) => c.credit_type === 'crew')?.role_name ??
         t('actorDetail.technician'))
       : t('actorDetail.actor');
-  const hasBioInfo = actor.birth_date || actor.place_of_birth || actor.height_cm;
+  const hasBioInfo =
+    actor.birth_date || actor.place_of_birth || actor.height_cm || actor.death_date;
+  /** @nullable social link IDs come from TMDB external_ids endpoint; null when not available */
+  const hasSocialLinks = actor.imdb_id || actor.instagram_id || actor.twitter_id;
+  const alsoKnownAs = (actor.also_known_as ?? []).filter(Boolean);
 
   return (
     <>
@@ -143,16 +148,63 @@ export default function ActorDetailScreen() {
           />
         }
         heroContent={
-          <View style={styles.badgeRow}>
-            <View style={styles.typeBadge}>
-              <Text style={styles.typeBadgeText}>{personTypeLabel}</Text>
+          <>
+            <View style={styles.badgeRow}>
+              <View style={styles.typeBadge}>
+                <Text style={styles.typeBadgeText}>{personTypeLabel}</Text>
+              </View>
+              {genderLabel && (
+                <View style={styles.genderBadge}>
+                  <Text style={styles.genderBadgeText}>{genderLabel}</Text>
+                </View>
+              )}
             </View>
-            {genderLabel && (
-              <View style={styles.genderBadge}>
-                <Text style={styles.genderBadgeText}>{genderLabel}</Text>
+            {alsoKnownAs.length > 0 && (
+              <View style={styles.alsoKnownAsRow}>
+                {alsoKnownAs.map((name, idx) => (
+                  <View key={`${name}-${idx}`} style={styles.alsoKnownAsChip}>
+                    <Text style={styles.alsoKnownAsText}>{name}</Text>
+                  </View>
+                ))}
               </View>
             )}
-          </View>
+            {hasSocialLinks && (
+              <View style={styles.socialLinksRow}>
+                {actor.imdb_id && (
+                  <TouchableOpacity
+                    style={styles.socialButton}
+                    onPress={() => Linking.openURL(`https://www.imdb.com/name/${actor.imdb_id}`)}
+                    accessibilityLabel="IMDb profile"
+                    testID="social-imdb"
+                  >
+                    <Text style={styles.socialButtonText}>IMDb</Text>
+                  </TouchableOpacity>
+                )}
+                {actor.instagram_id && (
+                  <TouchableOpacity
+                    style={styles.socialButton}
+                    onPress={() =>
+                      Linking.openURL(`https://www.instagram.com/${actor.instagram_id}`)
+                    }
+                    accessibilityLabel="Instagram profile"
+                    testID="social-instagram"
+                  >
+                    <Ionicons name="logo-instagram" size={18} color={theme.textPrimary} />
+                  </TouchableOpacity>
+                )}
+                {actor.twitter_id && (
+                  <TouchableOpacity
+                    style={styles.socialButton}
+                    onPress={() => Linking.openURL(`https://twitter.com/${actor.twitter_id}`)}
+                    accessibilityLabel="Twitter profile"
+                    testID="social-twitter"
+                  >
+                    <Ionicons name="logo-twitter" size={18} color={theme.textPrimary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </>
         }
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
@@ -173,6 +225,13 @@ export default function ActorDetailScreen() {
                   <Ionicons name="calendar-outline" size={16} color={theme.textTertiary} />
                   <Text style={styles.bioLabel}>{t('actorDetail.born')}</Text>
                   <Text style={styles.bioValue}>{formatDate(actor.birth_date)}</Text>
+                </View>
+              )}
+              {actor.death_date && (
+                <View style={styles.bioRow}>
+                  <Ionicons name="heart-dislike-outline" size={16} color={theme.textTertiary} />
+                  <Text style={styles.bioLabel}>{t('actorDetail.died')}</Text>
+                  <Text style={styles.bioValue}>{formatDate(actor.death_date)}</Text>
                 </View>
               )}
               {actor.place_of_birth && (

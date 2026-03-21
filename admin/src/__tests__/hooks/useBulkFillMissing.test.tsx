@@ -43,6 +43,14 @@ const makeMovie = (id: string, overrides: Partial<ExistingMovieData> = {}): Exis
   imdb_id: null,
   title_te: null,
   synopsis_te: null,
+  tagline: null,
+  tmdb_status: null,
+  tmdb_vote_average: null,
+  tmdb_vote_count: null,
+  budget: null,
+  revenue: null,
+  certification: null,
+  spoken_languages: null,
   ...overrides,
 });
 
@@ -68,6 +76,15 @@ const makeTmdb = (tmdbId: number, overrides: Partial<LookupMovieData> = {}): Loo
   imdbId: null,
   titleTe: null,
   synopsisTe: null,
+  tagline: null,
+  tmdbStatus: null,
+  tmdbVoteAverage: null,
+  tmdbVoteCount: null,
+  budget: null,
+  revenue: null,
+  certification: null,
+  spokenLanguages: [],
+  productionCompanyCount: 0,
   ...overrides,
 });
 
@@ -102,6 +119,7 @@ describe('useBulkFillMissing', () => {
       director: 'Director',
       runtime: 120,
       genres: ['Action'],
+      certification: 'UA',
     });
     const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
     const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });

@@ -6,11 +6,18 @@ import {
   extractTrailerUrl,
   extractKeyCrewMembers,
   extractTeluguTranslation,
+  extractIndiaCertification,
 } from '@/lib/tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
 import { syncAllImages } from '@/lib/sync-images';
-import { syncVideos, syncWatchProviders, syncKeywords } from '@/lib/sync-extended';
+import {
+  syncVideos,
+  syncWatchProviders,
+  syncKeywords,
+  syncProductionCompanies,
+} from '@/lib/sync-extended';
+import { upsertActorPreserveType } from '@/lib/sync-actor';
 
 /** POST /api/sync/fill-fields — apply admin-selected TMDB fields to an existing movie.
  * @contract: returns { movieId, updatedFields } — only lists what actually changed. */
@@ -71,7 +78,6 @@ export async function POST(request: NextRequest) {
           updatedFields.push('synopsis');
           break;
         case 'poster_url': {
-          // @sideeffect: uploads to R2 with variants; falls back to TMDB URL
           const url = await maybeUploadImage(
             detail.poster_path,
             R2_BUCKETS.moviePosters,
@@ -103,7 +109,6 @@ export async function POST(request: NextRequest) {
           updatedFields.push('director');
           break;
         case 'runtime':
-          // @edge: TMDB returns 0 for unknown runtime — treat as null (0 fails app validation)
           updatePayload.runtime = detail.runtime || null;
           updatedFields.push('runtime');
           break;
@@ -127,7 +132,39 @@ export async function POST(request: NextRequest) {
             updatedFields.push('synopsis_te');
           }
           break;
-        // 'cast', 'images', 'videos', 'watch_providers', 'keywords' handled after update
+        // @contract: new TMDB metadata fields
+        case 'tagline':
+          updatePayload.tagline = detail.tagline || null;
+          if (detail.tagline) updatedFields.push('tagline');
+          break;
+        case 'tmdb_status':
+          updatePayload.tmdb_status = detail.status || null;
+          if (detail.status) updatedFields.push('tmdb_status');
+          break;
+        case 'tmdb_ratings':
+          updatePayload.tmdb_vote_average = detail.vote_average ?? null;
+          updatePayload.tmdb_vote_count = detail.vote_count ?? null;
+          updatedFields.push('tmdb_ratings');
+          break;
+        case 'budget_revenue':
+          // @edge: TMDB returns 0 for unknown budget/revenue — treat as null
+          updatePayload.budget = detail.budget || null;
+          updatePayload.revenue = detail.revenue || null;
+          updatedFields.push('budget_revenue');
+          break;
+        case 'certification_auto': {
+          const cert = extractIndiaCertification(detail.release_dates);
+          if (cert) {
+            updatePayload.certification = cert;
+            updatedFields.push('certification_auto');
+          }
+          break;
+        }
+        case 'spoken_languages':
+          updatePayload.spoken_languages = detail.spoken_languages?.map((l) => l.iso_639_1) ?? null;
+          if (detail.spoken_languages?.length) updatedFields.push('spoken_languages');
+          break;
+        // 'cast', 'images', 'videos', 'watch_providers', 'keywords', 'production_companies' handled after
       }
     }
 
@@ -138,38 +175,12 @@ export async function POST(request: NextRequest) {
       .eq('id', movieId);
     if (updateErr) throw new Error(`Movie update failed: ${updateErr.message}`);
 
-    // @sideeffect: when poster_url was updated, mirror it into movie_images so the
-    // admin image gallery stays in sync. Partial unique index on (movie_id) WHERE is_main_poster=true
-    // prevents Supabase JS upsert onConflict — use select-then-update/insert instead.
+    // @sideeffect: when poster_url was updated, mirror into movie_images
     if (updatedFields.includes('poster_url') && updatePayload.poster_url) {
-      const newPosterUrl = updatePayload.poster_url as string;
-      const { data: existingMain } = await supabase
-        .from('movie_images')
-        .select('id')
-        .eq('movie_id', movieId)
-        .eq('is_main_poster', true)
-        .maybeSingle();
-      if (existingMain) {
-        const { error: imgUpErr } = await supabase
-          .from('movie_images')
-          .update({ image_url: newPosterUrl })
-          .eq('id', existingMain.id);
-        if (imgUpErr) console.warn('fill-fields: image update failed', imgUpErr.message);
-      } else {
-        const { error: imgInsertErr } = await supabase.from('movie_images').insert({
-          movie_id: movieId,
-          image_url: newPosterUrl,
-          image_type: 'poster',
-          title: 'Main Poster',
-          is_main_poster: true,
-          display_order: 0,
-        });
-        if (imgInsertErr)
-          console.warn(`fill-fields: image insert failed for ${movieId}:`, imgInsertErr.message);
-      }
+      await mirrorMainPoster(movieId, updatePayload.poster_url as string, supabase);
     }
 
-    // ── Extended sync: images, videos, watch providers, keywords ────────────────
+    // ── Extended sync: images, videos, watch providers, keywords, production companies
     if (fields.includes('images')) {
       const { posterCount, backdropCount } = await syncAllImages(
         movieId,
@@ -179,123 +190,145 @@ export async function POST(request: NextRequest) {
       );
       if (posterCount > 0 || backdropCount > 0) updatedFields.push('images');
     }
-
     if (fields.includes('videos')) {
-      const videoCount = await syncVideos(movieId, detail.videos.results, supabase);
-      if (videoCount > 0) updatedFields.push('videos');
+      const c = await syncVideos(movieId, detail.videos.results, supabase);
+      if (c > 0) updatedFields.push('videos');
     }
-
     if (fields.includes('watch_providers')) {
-      const providerCount = await syncWatchProviders(movieId, tmdbId, tmdb.apiKey, supabase);
-      if (providerCount > 0) updatedFields.push('watch_providers');
+      const c = await syncWatchProviders(movieId, tmdbId, tmdb.apiKey, supabase);
+      if (c > 0) updatedFields.push('watch_providers');
     }
-
     if (fields.includes('keywords')) {
-      const keywordCount = await syncKeywords(movieId, detail, supabase);
-      if (keywordCount > 0) updatedFields.push('keywords');
+      const c = await syncKeywords(movieId, detail, supabase);
+      if (c > 0) updatedFields.push('keywords');
+    }
+    if (fields.includes('production_companies')) {
+      const c = await syncProductionCompanies(movieId, detail.production_companies ?? [], supabase);
+      if (c > 0) updatedFields.push('production_companies');
     }
 
-    // ── Cast / crew: sync when 'cast' is in fields OR forceResyncCast=true ──────
-    // @edge: if movie already has cast, skip unless forceResyncCast=true.
-    // forceResyncCast=true: delete-then-reinsert, same as a full refresh.
-    // @contract: UI sends forceResyncCast=true but never puts 'cast' in fields[]; both paths lead here.
+    // ── Cast / crew sync ──────────────────────────────────────────────────────
     if (fields.includes('cast') || forceResyncCast) {
-      const { count } = await supabase
-        .from('movie_cast')
-        .select('*', { count: 'exact', head: true })
-        .eq('movie_id', movieId);
-
-      // @sideeffect: when forceResyncCast, deletes all existing cast before reinserting
-      if (forceResyncCast && (count ?? 0) > 0) {
-        const { error: castDelErr } = await supabase
-          .from('movie_cast')
-          .delete()
-          .eq('movie_id', movieId);
-        if (castDelErr) console.warn('fill-fields: cast delete failed', castDelErr.message);
-      }
-
-      if ((count ?? 0) === 0 || forceResyncCast) {
-        const topCast = detail.credits.cast.slice(0, 15);
-        for (const cm of topCast) {
-          const photoUrl = await maybeUploadImage(
-            cm.profile_path,
-            R2_BUCKETS.actorPhotos,
-            `${randomUUID()}.jpg`,
-            TMDB_IMAGE.profile,
-          );
-          const { data: actor, error: ae } = await supabase
-            .from('actors')
-            .upsert(
-              {
-                tmdb_person_id: cm.id,
-                name: cm.name,
-                photo_url: photoUrl,
-                person_type: 'actor',
-                gender: cm.gender ?? null,
-              },
-              { onConflict: 'tmdb_person_id', ignoreDuplicates: false },
-            )
-            .select('id')
-            .single();
-          if (ae) continue;
-          const { error: castInsertErr } = await supabase.from('movie_cast').insert({
-            movie_id: movieId,
-            actor_id: actor.id,
-            role_name: cm.character || null,
-            display_order: cm.order,
-            credit_type: 'cast',
-            role_order: null,
-          });
-          if (castInsertErr)
-            console.warn(`fill-fields: cast insert failed for ${cm.name}:`, castInsertErr.message);
-        }
-
-        const keyCrew = extractKeyCrewMembers(detail.credits.crew);
-        for (const cm of keyCrew) {
-          const photoUrl = await maybeUploadImage(
-            cm.profile_path,
-            R2_BUCKETS.actorPhotos,
-            `${randomUUID()}.jpg`,
-            TMDB_IMAGE.profile,
-          );
-          const { data: actor, error: ae } = await supabase
-            .from('actors')
-            .upsert(
-              {
-                tmdb_person_id: cm.id,
-                name: cm.name,
-                photo_url: photoUrl,
-                person_type: 'technician',
-                gender: cm.gender ?? null,
-              },
-              { onConflict: 'tmdb_person_id', ignoreDuplicates: false },
-            )
-            .select('id')
-            .single();
-          if (ae) continue;
-          const { error: crewInsertErr } = await supabase.from('movie_cast').insert({
-            movie_id: movieId,
-            actor_id: actor.id,
-            role_name: cm.roleName,
-            display_order: 0,
-            credit_type: 'crew',
-            role_order: cm.roleOrder,
-          });
-          if (crewInsertErr)
-            console.warn(`fill-fields: crew insert failed for ${cm.name}:`, crewInsertErr.message);
-        }
-
-        updatedFields.push('cast');
-      }
+      await syncCastCrew(movieId, detail, forceResyncCast ?? false, supabase, updatedFields);
     }
 
     return NextResponse.json({ movieId, updatedFields });
   } catch (err) {
-    // @edge: forward TMDB 429 rate-limit errors so useBulkFillMissing can detect
-    // and stop the sequential fill loop. The TMDB error message contains "→ 429".
     if (err instanceof Error && err.message.includes('→ 429')) {
       return NextResponse.json({ error: err.message }, { status: 429 });
     }
     return errorResponse('Fill fields', err);
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// @sideeffect: mirrors poster_url into movie_images so admin gallery stays in sync
+async function mirrorMainPoster(
+  movieId: string,
+  posterUrl: string,
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+) {
+  const { data: existingMain } = await supabase
+    .from('movie_images')
+    .select('id')
+    .eq('movie_id', movieId)
+    .eq('is_main_poster', true)
+    .maybeSingle();
+  if (existingMain) {
+    const { error } = await supabase
+      .from('movie_images')
+      .update({ image_url: posterUrl })
+      .eq('id', existingMain.id);
+    if (error) console.warn('mirrorMainPoster: update failed', error.message);
+  } else {
+    const { error } = await supabase.from('movie_images').insert({
+      movie_id: movieId,
+      image_url: posterUrl,
+      image_type: 'poster',
+      title: 'Main Poster',
+      is_main_poster: true,
+      display_order: 0,
+    });
+    if (error) console.warn('mirrorMainPoster: insert failed', error.message);
+  }
+}
+
+// @contract: syncs ALL cast (no limit) with person_type preservation
+async function syncCastCrew(
+  movieId: string,
+  detail: Awaited<ReturnType<typeof getMovieDetails>>,
+  forceResync: boolean,
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  updatedFields: string[],
+) {
+  const { count } = await supabase
+    .from('movie_cast')
+    .select('*', { count: 'exact', head: true })
+    .eq('movie_id', movieId);
+
+  // @sideeffect: delete existing cast before re-insert when force-resyncing
+  if (forceResync && (count ?? 0) > 0) {
+    const { error: delErr } = await supabase.from('movie_cast').delete().eq('movie_id', movieId);
+    if (delErr) console.warn('syncCastCrew: cast delete failed', delErr.message);
+  }
+
+  if ((count ?? 0) === 0 || forceResync) {
+    for (const cm of detail.credits.cast) {
+      const photoUrl = await maybeUploadImage(
+        cm.profile_path,
+        R2_BUCKETS.actorPhotos,
+        `${randomUUID()}.jpg`,
+        TMDB_IMAGE.profile,
+      );
+      const actorId = await upsertActorPreserveType(supabase, {
+        tmdb_person_id: cm.id,
+        name: cm.name,
+        photo_url: photoUrl,
+        default_person_type: 'actor',
+        gender: cm.gender ?? null,
+      });
+      if (!actorId) continue;
+      const { error: castErr } = await supabase.from('movie_cast').insert({
+        movie_id: movieId,
+        actor_id: actorId,
+        role_name: cm.character || null,
+        display_order: cm.order,
+        credit_type: 'cast',
+        role_order: null,
+      });
+      if (castErr)
+        console.warn(`syncCastCrew: cast insert failed for ${cm.name}:`, castErr.message);
+    }
+
+    const keyCrew = extractKeyCrewMembers(detail.credits.crew);
+    for (const cm of keyCrew) {
+      const photoUrl = await maybeUploadImage(
+        cm.profile_path,
+        R2_BUCKETS.actorPhotos,
+        `${randomUUID()}.jpg`,
+        TMDB_IMAGE.profile,
+      );
+      const actorId = await upsertActorPreserveType(supabase, {
+        tmdb_person_id: cm.id,
+        name: cm.name,
+        photo_url: photoUrl,
+        default_person_type: 'technician',
+        gender: cm.gender ?? null,
+      });
+      if (!actorId) continue;
+      const { error: crewErr } = await supabase.from('movie_cast').insert({
+        movie_id: movieId,
+        actor_id: actorId,
+        role_name: cm.roleName,
+        display_order: 0,
+        credit_type: 'crew',
+        role_order: cm.roleOrder,
+      });
+      if (crewErr)
+        console.warn(`syncCastCrew: crew insert failed for ${cm.name}:`, crewErr.message);
+    }
+
+    updatedFields.push('cast');
   }
 }

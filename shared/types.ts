@@ -46,6 +46,20 @@ export interface Movie {
   rating: number;
   review_count: number;
   is_featured: boolean;
+  imdb_id: string | null;
+  title_te: string | null;
+  synopsis_te: string | null;
+  tagline: string | null;
+  tmdb_status: string | null;
+  tmdb_vote_average: number | null;
+  tmdb_vote_count: number | null;
+  budget: number | null;
+  revenue: number | null;
+  tmdb_popularity: number | null;
+  spoken_languages: string[] | null;
+  collection_id: number | null;
+  collection_name: string | null;
+  language_id: string | null;
   tmdb_last_synced_at: string | null;
   created_at: string;
   updated_at: string;
@@ -71,6 +85,12 @@ export interface Actor {
   biography: string | null;
   place_of_birth: string | null;
   height_cm: number | null;
+  imdb_id: string | null;
+  known_for_department: string | null;
+  also_known_as: string[] | null;
+  death_date: string | null;
+  instagram_id: string | null;
+  twitter_id: string | null;
   created_by: string | null;
   created_at: string;
 }
@@ -164,6 +184,7 @@ export interface ProductionHouse {
   name: string;
   logo_url: string | null;
   description: string | null;
+  tmdb_company_id: number | null;
   created_at: string;
 }
 

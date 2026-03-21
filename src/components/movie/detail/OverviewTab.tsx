@@ -9,6 +9,7 @@ import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
 import { MediaSummaryCard } from './MediaSummaryCard';
+import { formatCompactCurrency } from '@/utils/formatCurrency';
 
 /** @contract Renders synopsis, genres, info grid, production houses, and media summary/trailer */
 export interface OverviewTabProps {
@@ -16,6 +17,10 @@ export interface OverviewTabProps {
   movie: MovieWithDetails;
   onExploreMedia: () => void;
 }
+
+/** @nullable tmdb_vote_average shown only when app rating is 0 and review_count is 0 */
+const shouldShowTmdbRating = (movie: MovieWithDetails): boolean =>
+  movie.rating === 0 && movie.review_count === 0 && (movie.tmdb_vote_average ?? 0) > 0;
 
 export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
   const { t } = useTranslation();
@@ -27,11 +32,28 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
 
   return (
     <View style={styles.overviewTab}>
+      {movie.tagline ? (
+        <Text style={styles.tagline} numberOfLines={2}>
+          {movie.tagline}
+        </Text>
+      ) : null}
       {movie.synopsis && (
         <Text style={styles.synopsis} numberOfLines={6}>
           {movie.synopsis}
         </Text>
       )}
+      {shouldShowTmdbRating(movie) && (
+        <View style={styles.tmdbRatingRow}>
+          <Ionicons name="star" size={14} color={colors.yellow400} />
+          <Text style={styles.tmdbRatingText}>TMDB {movie.tmdb_vote_average?.toFixed(1)}/10</Text>
+        </View>
+      )}
+      {movie.collection_name ? (
+        <View style={styles.collectionBadge}>
+          <Ionicons name="layers-outline" size={14} color={theme.textSecondary} />
+          <Text style={styles.collectionBadgeText}>{movie.collection_name}</Text>
+        </View>
+      ) : null}
       {(movie.genres ?? []).length > 0 && (
         <View style={styles.genreRow}>
           {(movie.genres ?? []).map((g) => (
@@ -59,6 +81,26 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
           </View>
         )}
       </View>
+      {/** @nullable budget/revenue shown only when > 0 */}
+      {(movie.budget != null && movie.budget > 0) ||
+      (movie.revenue != null && movie.revenue > 0) ? (
+        <View style={styles.infoGrid}>
+          {movie.budget != null && movie.budget > 0 && (
+            <View style={styles.infoCard}>
+              <Ionicons name="wallet-outline" size={20} color={theme.textSecondary} />
+              <Text style={styles.infoLabel}>{t('movie.budget')}</Text>
+              <Text style={styles.infoValue}>{formatCompactCurrency(movie.budget)}</Text>
+            </View>
+          )}
+          {movie.revenue != null && movie.revenue > 0 && (
+            <View style={styles.infoCard}>
+              <Ionicons name="cash-outline" size={20} color={theme.textSecondary} />
+              <Text style={styles.infoLabel}>{t('movie.revenue')}</Text>
+              <Text style={styles.infoValue}>{formatCompactCurrency(movie.revenue)}</Text>
+            </View>
+          )}
+        </View>
+      ) : null}
 
       {/** @sideeffect Production house chips navigate to /production-house/:id on press */}
       {movie.productionHouses.length > 0 && (

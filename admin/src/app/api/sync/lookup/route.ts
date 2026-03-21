@@ -85,6 +85,16 @@ export async function POST(request: NextRequest) {
           imdbId: detail.external_ids?.imdb_id ?? null,
           titleTe: teTrans?.data.title || null,
           synopsisTe: teTrans?.data.overview || null,
+          // @contract: new TMDB metadata for diff panel
+          tagline: detail.tagline || null,
+          tmdbStatus: detail.status || null,
+          tmdbVoteAverage: detail.vote_average ?? null,
+          tmdbVoteCount: detail.vote_count ?? null,
+          budget: detail.budget || null,
+          revenue: detail.revenue || null,
+          certification: null, // extracted on import, not preview
+          spokenLanguages: detail.spoken_languages?.map((l) => l.iso_639_1) ?? [],
+          productionCompanyCount: detail.production_companies?.length ?? 0,
         },
       });
     } else {

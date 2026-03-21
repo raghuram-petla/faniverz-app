@@ -25,6 +25,13 @@ export const FILLABLE_DATA_FIELDS = [
   'imdb_id',
   'title_te',
   'synopsis_te',
+  'tagline',
+  'tmdb_status',
+  'tmdb_ratings',
+  'budget_revenue',
+  'certification_auto',
+  'production_companies',
+  'spoken_languages',
 ] as const;
 
 export type FillableDataField = (typeof FILLABLE_DATA_FIELDS)[number];
@@ -49,6 +56,15 @@ export function getMissingFields(m: ExistingMovieData): FillableDataField[] {
   if (!m.imdb_id) missing.push('imdb_id');
   if (!m.title_te) missing.push('title_te');
   if (!m.synopsis_te) missing.push('synopsis_te');
+  if (!m.tagline) missing.push('tagline');
+  if (!m.tmdb_status) missing.push('tmdb_status');
+  if (m.tmdb_vote_average == null) missing.push('tmdb_ratings');
+  if (m.budget == null && m.revenue == null) missing.push('budget_revenue');
+  if (!m.certification) missing.push('certification_auto');
+  // @edge: production_companies is an aggregate (junction table count) not available from the
+  // discover route's select query — omit from auto-fill to avoid always-missing false positives.
+  // Admins can manually select it from the diff panel where the lookup route provides the count.
+  if (!m.spoken_languages?.length) missing.push('spoken_languages');
   return missing;
 }
 

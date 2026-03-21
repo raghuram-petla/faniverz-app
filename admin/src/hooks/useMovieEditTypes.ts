@@ -26,6 +26,8 @@ export interface MovieForm {
   is_featured: boolean;
   /** @nullable TMDB ID — links manually-created movies to TMDB for dedup and sync */
   tmdb_id: string;
+  /** @nullable tagline — editable summary line from TMDB, admin can tweak */
+  tagline: string;
   backdrop_focus_x: number | null;
   backdrop_focus_y: number | null;
   poster_focus_x: number | null;
@@ -136,6 +138,7 @@ export interface MovieEditHandlerDeps {
     original_language: string | null;
     is_featured: boolean;
     tmdb_id: number | null;
+    tagline: string | null;
     backdrop_focus_x: number | null;
     backdrop_focus_y: number | null;
     spotlight_focus_x: number | null;

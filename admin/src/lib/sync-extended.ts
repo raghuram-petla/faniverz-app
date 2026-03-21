@@ -10,7 +10,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getWatchProviders } from './tmdb';
 import { mapTmdbVideoType, TMDB_PROVIDER_MAP } from './tmdbTypes';
-import type { TmdbMovieDetailExtended, TmdbVideo } from './tmdbTypes';
+import type { TmdbMovieDetailExtended, TmdbProductionCompany, TmdbVideo } from './tmdbTypes';
 
 // ── Video sync ──────────────────────────────────────────────────────────────
 
@@ -130,4 +130,66 @@ export async function syncKeywords(
   const { error: insertErr } = await supabase.from('movie_keywords').insert(rows);
   if (insertErr) return 0;
   return keywords.length;
+}
+
+// ── Production company sync ─────────────────────────────────────────────────
+
+/**
+ * Sync TMDB production companies → our production_houses table + junction.
+ * @sideeffect: creates new production_houses if no match by tmdb_company_id.
+ * Skips existing links to preserve admin curation.
+ */
+export async function syncProductionCompanies(
+  movieId: string,
+  companies: TmdbProductionCompany[],
+  supabase: SupabaseClient,
+): Promise<number> {
+  if (!companies.length) return 0;
+
+  let count = 0;
+  for (const company of companies) {
+    // Check if production house already exists by tmdb_company_id
+    let phId: string | null = null;
+    const { data: existing } = await supabase
+      .from('production_houses')
+      .select('id')
+      .eq('tmdb_company_id', company.id)
+      .maybeSingle();
+
+    if (existing) {
+      phId = existing.id as string;
+    } else {
+      // Create new production house
+      const { data: newPh, error: phErr } = await supabase
+        .from('production_houses')
+        .insert({
+          name: company.name,
+          tmdb_company_id: company.id,
+        })
+        .select('id')
+        .single();
+      if (phErr) {
+        console.warn(`syncProductionCompanies: insert failed for ${company.name}`, phErr.message);
+        continue;
+      }
+      phId = newPh.id as string;
+    }
+
+    // Skip if already linked
+    const { data: existingLink } = await supabase
+      .from('movie_production_houses')
+      .select('movie_id')
+      .eq('movie_id', movieId)
+      .eq('production_house_id', phId)
+      .maybeSingle();
+    if (existingLink) continue;
+
+    const { error: linkErr } = await supabase.from('movie_production_houses').insert({
+      movie_id: movieId,
+      production_house_id: phId,
+    });
+    if (!linkErr) count++;
+  }
+
+  return count;
 }

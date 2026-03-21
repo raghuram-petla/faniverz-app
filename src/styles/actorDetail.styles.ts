@@ -70,6 +70,43 @@ export const createStyles = (t: SemanticTheme) =>
       color: t.textSecondary,
     },
 
+    alsoKnownAsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 6,
+      marginBottom: 12,
+    },
+    alsoKnownAsChip: {
+      backgroundColor: t.input,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    alsoKnownAsText: {
+      fontSize: 11,
+      color: t.textTertiary,
+    },
+    socialLinksRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 12,
+      marginBottom: 8,
+    },
+    socialButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.input,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    socialButtonText: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: t.textPrimary,
+    },
+
     bioCard: {
       backgroundColor: t.surfaceElevated,
       borderRadius: 12,

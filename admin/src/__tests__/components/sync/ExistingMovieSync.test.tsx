@@ -59,6 +59,14 @@ const makeExisting = (overrides: Partial<ExistingMovieData> = {}): ExistingMovie
   imdb_id: null,
   title_te: null,
   synopsis_te: null,
+  tagline: null,
+  tmdb_status: null,
+  tmdb_vote_average: null,
+  tmdb_vote_count: null,
+  budget: null,
+  revenue: null,
+  certification: null,
+  spoken_languages: null,
   ...overrides,
 });
 
@@ -175,6 +183,15 @@ describe('ExistingMovieSync', () => {
         imdbId: null,
         titleTe: null,
         synopsisTe: null,
+        tagline: null,
+        tmdbStatus: null,
+        tmdbVoteAverage: null,
+        tmdbVoteCount: null,
+        budget: null,
+        revenue: null,
+        certification: null,
+        spokenLanguages: [],
+        productionCompanyCount: 0,
       },
     };
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);
@@ -209,6 +226,15 @@ describe('ExistingMovieSync', () => {
         imdbId: null,
         titleTe: null,
         synopsisTe: null,
+        tagline: null,
+        tmdbStatus: null,
+        tmdbVoteAverage: null,
+        tmdbVoteCount: null,
+        budget: null,
+        revenue: null,
+        certification: null,
+        spokenLanguages: [],
+        productionCompanyCount: 0,
       },
     };
     wrap(<ExistingMovieSync movies={[makeExisting()]} />);

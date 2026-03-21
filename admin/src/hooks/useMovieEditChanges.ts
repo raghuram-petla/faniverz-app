@@ -26,6 +26,7 @@ const BASIC_FIELD_CONFIG: FieldConfig[] = [
   { key: 'original_language', label: 'Language', type: 'text' },
   { key: 'is_featured', label: 'Featured', type: 'boolean' },
   { key: 'tmdb_id', label: 'TMDB ID', type: 'number' },
+  { key: 'tagline', label: 'Tagline', type: 'text' },
   { key: 'backdrop_focus_x', label: 'Backdrop Focal X', type: 'number' },
   { key: 'backdrop_focus_y', label: 'Backdrop Focal Y', type: 'number' },
   { key: 'poster_focus_x', label: 'Poster Focal X', type: 'number' },

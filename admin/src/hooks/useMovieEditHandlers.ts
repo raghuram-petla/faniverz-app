@@ -105,6 +105,7 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         original_language: form.original_language || null,
         is_featured: form.is_featured,
         tmdb_id: form.tmdb_id ? Number(form.tmdb_id) : null,
+        tagline: form.tagline || null,
         backdrop_focus_x: form.backdrop_focus_x,
         backdrop_focus_y: form.backdrop_focus_y,
         poster_focus_x: form.poster_focus_x,

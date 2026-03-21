@@ -100,6 +100,8 @@
     "crew": "సిబ్బంది",
     "noCastInfo": "నటీనటుల సమాచారం అందుబాటులో లేదు.",
     "production": "నిర్మాణ సంస్థ",
+    "budget": "బడ్జెట్",
+    "revenue": "ఆదాయం",
     "asRole": "{{role}} గా",
     "outOf5": "/5",
     "reviewCountLabel": "({{count}} సమీక్షలు)",
@@ -127,6 +129,7 @@
   },
   "actorDetail": {
     "born": "జన్మదినం",
+    "died": "మరణించిన తేదీ",
     "from": "నుండి",
     "height": "ఎత్తు",
     "about": "గురించి",

@@ -20,6 +20,14 @@ const makeMovie = (overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
   imdb_id: null,
   title_te: null,
   synopsis_te: null,
+  tagline: null,
+  tmdb_status: null,
+  tmdb_vote_average: null,
+  tmdb_vote_count: null,
+  budget: null,
+  revenue: null,
+  certification: null,
+  spoken_languages: null,
   ...overrides,
 });
 
@@ -44,6 +52,15 @@ const makeTmdb = (overrides = {}) => ({
   imdbId: null,
   titleTe: null,
   synopsisTe: null,
+  tagline: null,
+  tmdbStatus: null,
+  tmdbVoteAverage: null,
+  tmdbVoteCount: null,
+  budget: null,
+  revenue: null,
+  certification: null,
+  spokenLanguages: [],
+  productionCompanyCount: 0,
   ...overrides,
 });
 
@@ -180,6 +197,7 @@ describe('FieldDiffPanel', () => {
       director: 'S. S. Rajamouli',
       runtime: 159,
       genres: ['Action', 'Drama'],
+      certification: 'UA',
     });
     const tmdb = makeTmdb({
       title: 'Baahubali: The Beginning',

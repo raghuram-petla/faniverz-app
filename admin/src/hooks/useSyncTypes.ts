@@ -18,11 +18,20 @@ export interface ExistingMovieData {
   imdb_id: string | null;
   title_te: string | null;
   synopsis_te: string | null;
+  tagline: string | null;
+  tmdb_status: string | null;
+  tmdb_vote_average: number | null;
+  tmdb_vote_count: number | null;
+  budget: number | null;
+  revenue: number | null;
+  certification: string | null;
+  spoken_languages: string[] | null;
   poster_count?: number;
   backdrop_count?: number;
   video_count?: number;
   platform_names?: string[];
   keyword_count?: number;
+  production_house_count?: number;
 }
 
 /** @contract Potential duplicate — a local movie with matching title but no tmdb_id */
@@ -67,6 +76,16 @@ export interface LookupMovieData {
   imdbId: string | null;
   titleTe: string | null;
   synopsisTe: string | null;
+  // @contract: new TMDB metadata for diff panel
+  tagline: string | null;
+  tmdbStatus: string | null;
+  tmdbVoteAverage: number | null;
+  tmdbVoteCount: number | null;
+  budget: number | null;
+  revenue: number | null;
+  certification: string | null;
+  spokenLanguages: string[];
+  productionCompanyCount: number;
 }
 
 export interface LookupPersonData {

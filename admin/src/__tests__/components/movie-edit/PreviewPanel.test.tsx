@@ -49,6 +49,7 @@ const defaultForm: MovieForm = {
   original_language: '',
   is_featured: false,
   tmdb_id: '',
+  tagline: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
   poster_focus_x: null,

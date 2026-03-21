@@ -19,13 +19,21 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
     imdb_id: null,
     title_te: null,
     synopsis_te: null,
+    tagline: null,
+    tmdb_status: null,
+    tmdb_vote_average: null,
+    tmdb_vote_count: null,
+    budget: null,
+    revenue: null,
+    certification: null,
+    spoken_languages: null,
     ...overrides,
   };
 }
 
 describe('FILLABLE_DATA_FIELDS', () => {
-  it('contains exactly 15 field keys', () => {
-    expect(FILLABLE_DATA_FIELDS).toHaveLength(15);
+  it('contains exactly 22 field keys', () => {
+    expect(FILLABLE_DATA_FIELDS).toHaveLength(22);
   });
 
   it('includes all expected data fields', () => {
@@ -45,6 +53,13 @@ describe('FILLABLE_DATA_FIELDS', () => {
       'imdb_id',
       'title_te',
       'synopsis_te',
+      'tagline',
+      'tmdb_status',
+      'tmdb_ratings',
+      'budget_revenue',
+      'certification_auto',
+      'production_companies',
+      'spoken_languages',
     ];
     expect(FILLABLE_DATA_FIELDS).toEqual(expected);
   });
@@ -69,7 +84,14 @@ describe('getMissingFields', () => {
     expect(missing).toContain('imdb_id');
     expect(missing).toContain('title_te');
     expect(missing).toContain('synopsis_te');
-    expect(missing).toHaveLength(10);
+    expect(missing).toContain('tagline');
+    expect(missing).toContain('tmdb_status');
+    expect(missing).toContain('tmdb_ratings');
+    expect(missing).toContain('budget_revenue');
+    expect(missing).toContain('certification_auto');
+    expect(missing).not.toContain('production_companies'); // aggregate, not auto-filled
+    expect(missing).toContain('spoken_languages');
+    expect(missing).toHaveLength(16);
   });
 
   it('returns empty array when all fields are filled', () => {
@@ -85,6 +107,13 @@ describe('getMissingFields', () => {
       imdb_id: 'tt1234567',
       title_te: 'బాహుబలి',
       synopsis_te: 'ఒక మహాకావ్యం',
+      tagline: 'The Beginning',
+      tmdb_status: 'Released',
+      tmdb_vote_average: 8.0,
+      budget: 1800000,
+      revenue: 6500000,
+      certification: 'UA',
+      spoken_languages: ['te', 'hi'],
     });
     expect(getMissingFields(full)).toHaveLength(0);
   });
@@ -157,8 +186,8 @@ describe('getMissingFields', () => {
 
 describe('countMissing', () => {
   it('counts all null fillable fields', () => {
-    // makeMovie() has title set, everything else null = 10
-    expect(countMissing(makeMovie())).toBe(10);
+    // makeMovie() has title set, everything else null = 16
+    expect(countMissing(makeMovie())).toBe(16);
   });
 
   it('returns 0 for a fully filled movie', () => {
@@ -173,13 +202,20 @@ describe('countMissing', () => {
       imdb_id: 'tt123',
       title_te: 'బాహుబలి',
       synopsis_te: 'కథ',
+      tagline: 'The Beginning',
+      tmdb_status: 'Released',
+      tmdb_vote_average: 8.0,
+      budget: 1800000,
+      revenue: 6500000,
+      certification: 'UA',
+      spoken_languages: ['te'],
     });
     expect(countMissing(full)).toBe(0);
   });
 
-  it('returns 11 when all fields including title are null', () => {
+  it('returns 17 when all fields including title are null', () => {
     const empty = makeMovie({ title: null });
-    expect(countMissing(empty)).toBe(11);
+    expect(countMissing(empty)).toBe(17);
   });
 
   it('equals getMissingFields length', () => {

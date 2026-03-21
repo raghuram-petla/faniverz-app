@@ -111,6 +111,8 @@
     "crew": "Crew",
     "noCastInfo": "No cast information available.",
     "production": "Production",
+    "budget": "Budget",
+    "revenue": "Revenue",
     "asRole": "as {{role}}",
     "outOf5": "/5",
     "reviewCountLabel": "({{count}} reviews)",
@@ -138,6 +140,7 @@
   },
   "actorDetail": {
     "born": "Born",
+    "died": "Died",
     "from": "From",
     "height": "Height",
     "about": "About",

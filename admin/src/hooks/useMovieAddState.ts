@@ -36,6 +36,7 @@ const INITIAL_FORM: MovieForm = {
   original_language: 'te',
   is_featured: false,
   tmdb_id: '',
+  tagline: '',
   backdrop_focus_x: null,
   backdrop_focus_y: null,
   poster_focus_x: null,

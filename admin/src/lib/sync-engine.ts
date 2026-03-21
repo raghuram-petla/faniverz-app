@@ -15,10 +15,21 @@
 import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getMovieDetails, TMDB_IMAGE } from './tmdb';
-import { extractTrailerUrl, extractKeyCrewMembers, extractTeluguTranslation } from './tmdbTypes';
+import {
+  extractTrailerUrl,
+  extractKeyCrewMembers,
+  extractTeluguTranslation,
+  extractIndiaCertification,
+} from './tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from './r2-sync';
 import { syncAllImages } from './sync-images';
-import { syncVideos, syncWatchProviders, syncKeywords } from './sync-extended';
+import {
+  syncVideos,
+  syncWatchProviders,
+  syncKeywords,
+  syncProductionCompanies,
+} from './sync-extended';
+import { upsertActorPreserveType } from './sync-actor';
 
 // ── Result types ──────────────────────────────────────────────────────────────
 
@@ -35,10 +46,10 @@ export interface ImportMovieResult {
 
 /**
  * Import or refresh a single movie from TMDB.
- * - Fetches movie details + credits + videos from TMDB
+ * - Fetches movie details + credits + videos + release_dates from TMDB
  * - Uploads poster + backdrop to R2 with variants
- * - Upserts movie (onConflict: tmdb_id)
- * - Deletes existing cast, re-inserts top 15 cast + key crew
+ * - Upserts movie (onConflict: tmdb_id) with all TMDB-sourced fields
+ * - Deletes existing cast, re-inserts ALL cast + key crew
  * - Uploads actor photos to R2
  */
 export async function processMovieFromTmdb(
@@ -80,13 +91,15 @@ export async function processMovieFromTmdb(
 
   const isNew = !existing;
 
-  // @contract: extract Telugu translation and IMDb ID from extended response
+  // @contract: extract Telugu translation, IMDb ID, and India certification
   const { titleTe, synopsisTe } = extractTeluguTranslation(detail.translations);
   const imdbId = detail.external_ids?.imdb_id ?? null;
+  const indiaCert = extractIndiaCertification(detail.release_dates);
 
   // @invariant: upsert only writes TMDB-sourced fields — admin-curated fields
-  // (certification, is_featured, release_type, ott_platform_id, ott_release_date)
-  // are intentionally omitted so a re-sync never overwrites manual admin edits.
+  // (is_featured, ott_platform_id, ott_release_date) are intentionally omitted
+  // so a re-sync never overwrites manual admin edits.
+  // @contract: certification is only auto-filled on NEW movies to avoid overwriting admin edits.
   const { data: movie, error: movieErr } = await supabase
     .from('movies')
     .upsert(
@@ -102,12 +115,27 @@ export async function processMovieFromTmdb(
         trailer_url: trailerUrl,
         director,
         ...(isNew && { in_theaters: false }),
+        ...(isNew && indiaCert && { certification: indiaCert }),
         original_language: detail.original_language ?? 'te',
         tmdb_last_synced_at: new Date().toISOString(),
         // @contract: extended fields from expanded append_to_response
         ...(imdbId && { imdb_id: imdbId }),
         ...(titleTe && { title_te: titleTe }),
         ...(synopsisTe && { synopsis_te: synopsisTe }),
+        // @contract: new TMDB metadata fields
+        tagline: detail.tagline || null,
+        tmdb_status: detail.status || null,
+        tmdb_vote_average: detail.vote_average ?? null,
+        tmdb_vote_count: detail.vote_count ?? null,
+        // @edge: TMDB returns 0 for unknown budget/revenue — treat as null like runtime
+        budget: detail.budget || null,
+        revenue: detail.revenue || null,
+        tmdb_popularity: detail.popularity ?? null,
+        spoken_languages: detail.spoken_languages?.map((l) => l.iso_639_1) ?? null,
+        ...(detail.belongs_to_collection && {
+          collection_id: detail.belongs_to_collection.id,
+          collection_name: detail.belongs_to_collection.name,
+        }),
       },
       { onConflict: 'tmdb_id', ignoreDuplicates: false },
     )
@@ -118,7 +146,7 @@ export async function processMovieFromTmdb(
   const movieId = movie.id as string;
 
   // @sideeffect: extended sync — images first (updates movies.poster_url/backdrop_url),
-  // then videos, watch providers, keywords in parallel.
+  // then videos, watch providers, keywords, production companies in parallel.
   // Errors are logged but don't fail the overall import.
   try {
     await syncAllImages(movieId, tmdbId, apiKey, supabase, {
@@ -129,6 +157,7 @@ export async function processMovieFromTmdb(
       syncVideos(movieId, detail.videos.results, supabase),
       syncWatchProviders(movieId, tmdbId, apiKey, supabase),
       syncKeywords(movieId, detail, supabase),
+      syncProductionCompanies(movieId, detail.production_companies ?? [], supabase),
     ]);
   } catch (extErr) {
     console.warn(`Extended sync partial failure for ${detail.title}:`, extErr);
@@ -136,22 +165,19 @@ export async function processMovieFromTmdb(
 
   // @sideeffect: delete-then-reinsert is NOT atomic — if the process crashes between
   // delete and the cast insert loop, the movie has zero cast until the next re-sync.
-  // A transaction would prevent this but Supabase JS client doesn't support multi-statement txns.
   const { error: castDeleteErr } = await supabase
     .from('movie_cast')
     .delete()
     .eq('movie_id', movieId);
   if (castDeleteErr) throw new Error(`Cast delete failed: ${castDeleteErr.message}`);
 
-  // @edge: cast members are processed sequentially (not parallel) to avoid
-  // overwhelming R2 with concurrent image uploads. If an actor upsert fails
-  // (actorErr), that cast member is silently skipped — castCount will be less
-  // than topCast.length but no error is thrown to the caller.
-  // @assumes: TMDB cast array is pre-sorted by billing order (castMember.order).
-  const topCast = detail.credits.cast.slice(0, 15);
+  // @contract: sync ALL cast (no limit) — TMDB cast is pre-sorted by billing order.
+  // @edge: actors are upserted with person_type preserved for existing actors to avoid
+  // the overwrite bug where a director-who-acts gets their type clobbered.
+  const allCast = detail.credits.cast;
   let castCount = 0;
 
-  for (const castMember of topCast) {
+  for (const castMember of allCast) {
     const photoUrl = await maybeUploadImage(
       castMember.profile_path,
       R2_BUCKETS.actorPhotos,
@@ -159,26 +185,18 @@ export async function processMovieFromTmdb(
       TMDB_IMAGE.profile,
     );
 
-    const { data: actor, error: actorErr } = await supabase
-      .from('actors')
-      .upsert(
-        {
-          tmdb_person_id: castMember.id,
-          name: castMember.name,
-          photo_url: photoUrl,
-          person_type: 'actor',
-          gender: castMember.gender ?? null,
-        },
-        { onConflict: 'tmdb_person_id', ignoreDuplicates: false },
-      )
-      .select('id')
-      .single();
-
-    if (actorErr) continue;
+    const actorId = await upsertActorPreserveType(supabase, {
+      tmdb_person_id: castMember.id,
+      name: castMember.name,
+      photo_url: photoUrl,
+      default_person_type: 'actor',
+      gender: castMember.gender ?? null,
+    });
+    if (!actorId) continue;
 
     const { error: castInsertErr } = await supabase.from('movie_cast').insert({
       movie_id: movieId,
-      actor_id: actor.id,
+      actor_id: actorId,
       role_name: castMember.character || null,
       display_order: castMember.order,
       credit_type: 'cast',
@@ -187,9 +205,7 @@ export async function processMovieFromTmdb(
     if (!castInsertErr) castCount++;
   }
 
-  // @coupling: keyCrew filtering is defined in tmdb.ts CREW_JOB_MAP — only Director,
-  // Producer, Executive Producer, Music Composer, DOP, and Editor are synced.
-  // Adding new crew roles requires updating CREW_JOB_MAP, not this file.
+  // @coupling: keyCrew filtering is defined in tmdbTypes.ts CREW_JOB_MAP
   const keyCrew = extractKeyCrewMembers(detail.credits.crew);
   let crewCount = 0;
 
@@ -201,30 +217,18 @@ export async function processMovieFromTmdb(
       TMDB_IMAGE.profile,
     );
 
-    const { data: actor, error: actorErr } = await supabase
-      .from('actors')
-      .upsert(
-        {
-          tmdb_person_id: crewMember.id,
-          name: crewMember.name,
-          photo_url: photoUrl,
-          // @invariant: crew are stored as 'technician' in the actors table, cast as 'actor'.
-          // The mobile app filters on person_type for "Cast" vs "Crew" sections.
-          // If a person appears as both actor and crew in different movies, the LAST
-          // sync wins because upsert on tmdb_person_id overwrites person_type.
-          person_type: 'technician',
-          gender: crewMember.gender ?? null,
-        },
-        { onConflict: 'tmdb_person_id', ignoreDuplicates: false },
-      )
-      .select('id')
-      .single();
-
-    if (actorErr) continue;
+    const actorId = await upsertActorPreserveType(supabase, {
+      tmdb_person_id: crewMember.id,
+      name: crewMember.name,
+      photo_url: photoUrl,
+      default_person_type: 'technician',
+      gender: crewMember.gender ?? null,
+    });
+    if (!actorId) continue;
 
     const { error: crewInsertErr } = await supabase.from('movie_cast').insert({
       movie_id: movieId,
-      actor_id: actor.id,
+      actor_id: actorId,
       role_name: crewMember.roleName,
       display_order: 0,
       credit_type: 'crew',

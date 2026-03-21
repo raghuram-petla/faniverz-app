@@ -125,7 +125,21 @@ export const createStyles = (t: SemanticTheme) =>
     tabContent: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 120 },
 
     overviewTab: { gap: 20 },
+    tagline: { fontSize: 14, fontStyle: 'italic', color: t.textSecondary, lineHeight: 20 },
     synopsis: { fontSize: 15, color: t.textPrimary, lineHeight: 24 },
+    tmdbRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    tmdbRatingText: { fontSize: 13, color: t.textSecondary, fontWeight: '500' },
+    collectionBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: t.input,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      alignSelf: 'flex-start',
+    },
+    collectionBadgeText: { fontSize: 13, fontWeight: '600', color: t.textPrimary },
     genreRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     genrePill: {
       backgroundColor: t.input,

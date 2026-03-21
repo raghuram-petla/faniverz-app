@@ -57,7 +57,25 @@ vi.mock('@/lib/supabase-admin', () => ({
         };
       }
       if (table === 'actors') {
-        return { upsert: () => mockActorUpsert() };
+        return {
+          // upsertActorPreserveType: .select('id').eq('tmdb_person_id', ...).maybeSingle()
+          select: () => ({
+            eq: () => ({
+              maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            }),
+          }),
+          // upsertActorPreserveType insert path: .insert({...}).select('id').single()
+          insert: () => ({
+            select: () => ({
+              single: () => Promise.resolve({ data: { id: 'actor-uuid' }, error: null }),
+            }),
+          }),
+          // upsertActorPreserveType update path: .update({...}).eq('id', ...)
+          update: () => ({
+            eq: () => Promise.resolve({ error: null }),
+          }),
+          upsert: () => mockActorUpsert(),
+        };
       }
       if (table === 'movie_images') {
         return {

@@ -157,4 +157,77 @@ describe('OverviewTab', () => {
     fireEvent.press(screen.getByLabelText('Go to Mythri'));
     expect(mockPush).toHaveBeenCalledWith('/production-house/ph1');
   });
+
+  it('renders tagline when present', () => {
+    const movieWithTagline = { ...mockMovie, tagline: 'The rule of the jungle' };
+    render(<OverviewTab movie={movieWithTagline} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('The rule of the jungle')).toBeTruthy();
+  });
+
+  it('does not render tagline when null', () => {
+    const movieNoTagline = { ...mockMovie, tagline: null };
+    render(<OverviewTab movie={movieNoTagline} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('The rule of the jungle')).toBeNull();
+  });
+
+  it('shows TMDB rating as fallback when app rating is 0', () => {
+    const movieTmdb = {
+      ...mockMovie,
+      rating: 0,
+      review_count: 0,
+      tmdb_vote_average: 7.2,
+    };
+    render(<OverviewTab movie={movieTmdb} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('TMDB 7.2/10')).toBeTruthy();
+  });
+
+  it('does not show TMDB rating when app has its own ratings', () => {
+    const movieWithRating = { ...mockMovie, tmdb_vote_average: 7.5 };
+    render(<OverviewTab movie={movieWithRating} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText(/TMDB/)).toBeNull();
+  });
+
+  it('does not show TMDB rating when tmdb_vote_average is null', () => {
+    const movieNoTmdb = {
+      ...mockMovie,
+      rating: 0,
+      review_count: 0,
+      tmdb_vote_average: null,
+    };
+    render(<OverviewTab movie={movieNoTmdb} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText(/TMDB/)).toBeNull();
+  });
+
+  it('renders collection badge when collection_name is present', () => {
+    const movieCollection = { ...mockMovie, collection_name: 'Pushpa Collection' };
+    render(<OverviewTab movie={movieCollection} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('Pushpa Collection')).toBeTruthy();
+  });
+
+  it('does not render collection badge when collection_name is null', () => {
+    const movieNoCollection = { ...mockMovie, collection_name: null };
+    render(<OverviewTab movie={movieNoCollection} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('Pushpa Collection')).toBeNull();
+  });
+
+  it('renders budget when available', () => {
+    const movieBudget = { ...mockMovie, budget: 25000000, revenue: null };
+    render(<OverviewTab movie={movieBudget} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('$25M')).toBeTruthy();
+    expect(screen.getByText('Budget')).toBeTruthy();
+  });
+
+  it('renders revenue when available', () => {
+    const movieRevenue = { ...mockMovie, budget: null, revenue: 150000000 };
+    render(<OverviewTab movie={movieRevenue} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('$150M')).toBeTruthy();
+    expect(screen.getByText('Revenue')).toBeTruthy();
+  });
+
+  it('does not render budget/revenue when values are 0 or null', () => {
+    const movieNoBudget = { ...mockMovie, budget: 0, revenue: null };
+    render(<OverviewTab movie={movieNoBudget} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('Budget')).toBeNull();
+    expect(screen.queryByText('Revenue')).toBeNull();
+  });
 });

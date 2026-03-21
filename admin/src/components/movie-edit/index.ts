@@ -8,6 +8,8 @@ export { CastSection } from './CastSection';
 export { TheatricalRunsSection } from './TheatricalRunsSection';
 export { BasicInfoSection } from './BasicInfoSection';
 export type { BasicInfoSectionProps } from './BasicInfoSection';
+export { TmdbMetadataSection } from './TmdbMetadataSection';
+export type { TmdbMetadataProps } from './TmdbMetadataSection';
 export { PreviewPanel } from './PreviewPanel';
 export { SectionHeading, PosterGalleryCard } from './PosterGalleryCard';
 export { SectionCard } from './SectionCard';
