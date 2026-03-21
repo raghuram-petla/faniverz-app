@@ -193,10 +193,24 @@ export interface AdminInvitation {
   inviter?: UserProfile;
 }
 
+/** Content language record from the languages table */
+export interface Language {
+  id: string;
+  code: string;
+  name: string;
+}
+
 /** Extended user profile with role info — used by AuthProvider */
 export interface AdminUser extends UserProfile {
   role: AdminRoleId;
   productionHouseIds: string[];
+  /** @contract Empty for root/super_admin (implicit all-language access).
+   * Contains assigned language UUIDs for admin role. Empty for PH admin/viewer.
+   * Used by LanguageAssignments component for managing assignments. */
+  languageIds: string[];
+  /** @contract Language codes (e.g. 'te', 'ta') resolved from languageIds.
+   * Used for RBAC checks and language switcher filtering against original_language. */
+  languageCodes: string[];
 }
 
 export const ADMIN_ROLE_LABELS: Record<AdminRoleId, string> = {

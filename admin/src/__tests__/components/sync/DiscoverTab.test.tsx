@@ -205,7 +205,15 @@ describe('DiscoverTab', () => {
   it('shows SearchResultsPanel when search has data', () => {
     mockSearchState.data = {
       movies: {
-        results: [{ id: 1, title: 'Movie A', poster_path: null, release_date: '2024-01-01' }],
+        results: [
+          {
+            id: 1,
+            title: 'Movie A',
+            poster_path: null,
+            release_date: '2024-01-01',
+            original_language: 'te',
+          },
+        ],
         existingTmdbIds: [],
       },
       actors: { results: [], existingTmdbPersonIds: [] },
@@ -221,7 +229,15 @@ describe('DiscoverTab', () => {
 
   it('shows DiscoverByYear when discover has data', () => {
     mockDiscoverState.data = {
-      results: [{ id: 10, title: 'Discovered', poster_path: null, release_date: '2024-05-01' }],
+      results: [
+        {
+          id: 10,
+          title: 'Discovered',
+          poster_path: null,
+          release_date: '2024-05-01',
+          original_language: 'te',
+        },
+      ],
       existingMovies: [],
     };
     renderWithProvider(<DiscoverTab />);

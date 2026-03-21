@@ -136,7 +136,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        setUser({ ...profiles[0], role, productionHouseIds: phIds });
+        /** @edge Language assignments fetched with codes in one query via PostgREST embed */
+        let langIds: string[] = [];
+        let langCodes: string[] = [];
+        if (role === 'admin') {
+          const langRes = await fetch(
+            `${supabaseUrl}/rest/v1/user_languages?user_id=eq.${userId}&select=language_id,languages(code)`,
+            { headers },
+          );
+          if (langRes.ok) {
+            const langData = await langRes.json();
+            langIds = langData.map((r: { language_id: string }) => r.language_id);
+            langCodes = langData.map((r: { languages: { code: string } }) => r.languages.code);
+          }
+        }
+
+        setUser({
+          ...profiles[0],
+          role,
+          productionHouseIds: phIds,
+          languageIds: langIds,
+          languageCodes: langCodes,
+        });
         setIsAccessDenied(false);
       } catch {
         setUser(null);

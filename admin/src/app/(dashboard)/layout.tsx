@@ -8,6 +8,7 @@ import { ImpersonationBar } from '@/components/layout/ImpersonationBar';
 import { AccessDenied } from '@/components/common/AccessDenied';
 import { ReadOnlyBanner } from '@/components/common/ReadOnlyBanner';
 import { ImpersonationProvider } from '@/hooks/useImpersonation';
+import { LanguageProvider } from '@/hooks/useLanguageContext';
 import { useRouter, usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -108,19 +109,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <QueryClientProvider client={queryClient}>
       <ImpersonationProvider>
-        <SidebarContext.Provider value={sidebarState}>
-          <div className="flex min-h-screen bg-surface">
-            <Sidebar />
-            <div className="flex-1 flex flex-col">
-              <Header />
-              <ImpersonationBar />
-              <ReadOnlyBanner />
-              <main className="flex-1 p-6">
-                <DashboardContent>{children}</DashboardContent>
-              </main>
+        <LanguageProvider>
+          <SidebarContext.Provider value={sidebarState}>
+            <div className="flex min-h-screen bg-surface">
+              <Sidebar />
+              <div className="flex-1 flex flex-col">
+                <Header />
+                <ImpersonationBar />
+                <ReadOnlyBanner />
+                <main className="flex-1 p-6">
+                  <DashboardContent>{children}</DashboardContent>
+                </main>
+              </div>
             </div>
-          </div>
-        </SidebarContext.Provider>
+          </SidebarContext.Provider>
+        </LanguageProvider>
       </ImpersonationProvider>
     </QueryClientProvider>
   );

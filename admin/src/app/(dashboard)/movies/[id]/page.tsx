@@ -45,7 +45,7 @@ function getBucketForUrl(
 
 // @coupling: entire edit state managed by useMovieEditState; 5 tabs with conditional rendering
 export default function EditMoviePage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<MovieSectionId>('basic-info');
@@ -54,50 +54,10 @@ export default function EditMoviePage() {
   const [pendingPreviewPosterUrl, setPendingPreviewPosterUrl] = useState<string | null>(null);
 
   const editState = useMovieEditState(id);
-  const { changes, changeCount, onRevertField, onDiscard } = useMovieEditChanges({
-    form: editState.form,
-    initialForm: editState.initialForm,
-    setForm: editState.setForm,
-    setInitialForm: editState.setInitialForm,
-    pendingCastAdds: editState.pendingCastAdds,
-    pendingCastRemoveIds: editState.pendingCastRemoveIds,
-    localCastOrder: editState.localCastOrder,
-    castData: editState.castData,
-    setPendingCastAdds: editState.setPendingCastAdds,
-    setPendingCastRemoveIds: editState.setPendingCastRemoveIds,
-    setLocalCastOrder: editState.setLocalCastOrder,
-    pendingVideoAdds: editState.pendingVideoAdds,
-    pendingVideoRemoveIds: editState.pendingVideoRemoveIds,
-    videosData: editState.videosData,
-    setPendingVideoAdds: editState.setPendingVideoAdds,
-    setPendingVideoRemoveIds: editState.setPendingVideoRemoveIds,
-    pendingPosterAdds: editState.pendingPosterAdds,
-    pendingPosterRemoveIds: editState.pendingPosterRemoveIds,
-    pendingMainPosterId: editState.pendingMainPosterId,
-    savedMainPosterId: editState.savedMainPosterId,
-    postersData: editState.postersData,
-    setPendingPosterAdds: editState.setPendingPosterAdds,
-    setPendingPosterRemoveIds: editState.setPendingPosterRemoveIds,
-    setPendingMainPosterId: editState.setPendingMainPosterId,
-    pendingPlatformAdds: editState.pendingPlatformAdds,
-    pendingPlatformRemoveIds: editState.pendingPlatformRemoveIds,
-    moviePlatforms: editState.moviePlatforms,
-    setPendingPlatformAdds: editState.setPendingPlatformAdds,
-    setPendingPlatformRemoveIds: editState.setPendingPlatformRemoveIds,
-    pendingPHAdds: editState.pendingPHAdds,
-    pendingPHRemoveIds: editState.pendingPHRemoveIds,
-    movieProductionHouses: editState.movieProductionHouses,
-    setPendingPHAdds: editState.setPendingPHAdds,
-    setPendingPHRemoveIds: editState.setPendingPHRemoveIds,
-    pendingRunAdds: editState.pendingRunAdds,
-    pendingRunRemoveIds: editState.pendingRunRemoveIds,
-    pendingRunEndIds: editState.pendingRunEndIds,
-    theatricalRuns: editState.theatricalRuns,
-    setPendingRunAdds: editState.setPendingRunAdds,
-    setPendingRunRemoveIds: editState.setPendingRunRemoveIds,
-    setPendingRunEndIds: editState.setPendingRunEndIds,
-    resetPendingState: editState.resetPendingState,
-  });
+  // @contract changesParams bundles all pending state for the dock — avoids 40-line prop spread
+  const { changes, changeCount, onRevertField, onDiscard } = useMovieEditChanges(
+    editState.changesParams,
+  );
 
   const dockSaveStatus = editState.isSaving ? ('saving' as const) : editState.saveStatus;
   // @contract renders a "+ Add" button for SectionCard action slot; controls which form is open
@@ -141,7 +101,8 @@ export default function EditMoviePage() {
             )}
           </h1>
         </div>
-        {!isReadOnly && (
+        {/* @invariant Top-level delete: only root/super_admin */}
+        {canDeleteTopLevel() && (
           <button
             onClick={editState.handleDelete}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-status-red hover:bg-red-600/30 text-sm"

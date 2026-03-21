@@ -41,6 +41,8 @@ const makeMovie = (id: string, title: string) => ({
   backdrop_focus_y: null,
   poster_focus_x: null,
   poster_focus_y: null,
+  poster_image_type: 'poster' as const,
+  backdrop_image_type: 'backdrop' as const,
   spotlight_focus_x: null,
   spotlight_focus_y: null,
   detail_focus_x: null,

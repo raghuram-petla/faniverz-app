@@ -14,7 +14,7 @@ import { getImageUrl } from '@shared/imageUrl';
 export default function CastPage() {
   const { user } = useAuth();
   // @coupling isPHAdmin restricts edit visibility; canDelete gates deletion by ownership
-  const { isPHAdmin, canDelete, isReadOnly } = usePermissions();
+  const { isPHAdmin, canDeleteTopLevel, isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminActors(debouncedSearch);
@@ -118,8 +118,8 @@ export default function CastPage() {
                   <Pencil className="w-4 h-4" />
                 </Link>
               )}
-              {/* @boundary Delete permission checks both role and ownership via canDelete */}
-              {canDelete('actor', actor.created_by) && (
+              {/* @invariant Top-level delete: only root/super_admin */}
+              {canDeleteTopLevel() && (
                 <button
                   onClick={() => {
                     if (confirm('Delete this actor?'))

@@ -22,7 +22,7 @@ const EMPTY_FORM = {
 
 export default function ProductionHousesPage() {
   // @boundary: PH admins are scoped to their assigned houses via productionHouseIds filter
-  const { isPHAdmin, productionHouseIds, canCreate, canDelete } = usePermissions();
+  const { isPHAdmin, productionHouseIds, canCreate, canDeleteTopLevel } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   // @coupling: passes productionHouseIds to restrict query results for PH admins; null for super_admin/admin
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
@@ -225,7 +225,7 @@ export default function ProductionHousesPage() {
                   >
                     <Pencil className="w-4 h-4" />
                   </Link>
-                  {canDelete('production_house') && (
+                  {canDeleteTopLevel() && (
                     <button
                       onClick={() => {
                         if (confirm('Delete this production house?')) deleteHouse.mutate(house.id);

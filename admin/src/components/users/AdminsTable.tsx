@@ -4,6 +4,7 @@ import type { AdminUserWithDetails, AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import { getImageUrl } from '@shared/imageUrl';
 import { Loader2, Eye, Ban, ShieldCheck, Trash2 } from 'lucide-react';
+import { LanguageAssignments } from './LanguageAssignments';
 
 /**
  * @contract renders admin users table with role hierarchy-aware actions
@@ -62,7 +63,7 @@ export function AdminsTable({
       <table className="w-full">
         <thead>
           <tr className="border-b border-outline">
-            {['User', 'Role', 'Status', 'PHs', 'Since'].map((h) => (
+            {['User', 'Role', 'Status', 'PHs', 'Languages', 'Since'].map((h) => (
               <th key={h} className="text-left text-sm font-medium text-on-surface-muted px-6 py-4">
                 {h}
               </th>
@@ -159,6 +160,14 @@ export function AdminsTable({
                         .join(', ')
                     : '—'}
                 </td>
+                <td className="px-6 py-4">
+                  {/* @contract Language assignments only shown for admin role users */}
+                  {isSuperAdmin && u.role_id === 'admin' ? (
+                    <LanguageAssignments userId={u.id} roleId={u.role_id} />
+                  ) : (
+                    <span className="text-sm text-on-surface-muted">—</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-sm text-on-surface-muted">
                   {formatDateTime(u.role_assigned_at)}
                 </td>
@@ -214,7 +223,7 @@ export function AdminsTable({
           })}
           {(!users || users.length === 0) && (
             <tr>
-              <td colSpan={6} className="text-center py-10 text-on-surface-subtle">
+              <td colSpan={7} className="text-center py-10 text-on-surface-subtle">
                 No admin users found
               </td>
             </tr>

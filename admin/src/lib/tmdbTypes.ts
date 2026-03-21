@@ -12,6 +12,7 @@ export interface TmdbDiscoverMovie {
   title: string;
   release_date: string; // "YYYY-MM-DD"
   poster_path: string | null;
+  original_language: string; // ISO 639-1 code (e.g. "te", "hi", "en")
 }
 
 export interface TmdbCastMember {
@@ -51,6 +52,7 @@ export interface TmdbMovieDetail {
   overview: string;
   release_date: string;
   runtime: number | null;
+  original_language: string;
   genres: TmdbGenre[];
   poster_path: string | null;
   backdrop_path: string | null;

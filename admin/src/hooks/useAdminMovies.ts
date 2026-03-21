@@ -127,6 +127,8 @@ export function useAdminMovies(
   statusFilter = '',
   productionHouseIds?: string[],
   advancedFilters?: AdvancedFilters,
+  /** @contract When non-null, filters movies by original_language for language-scoped access */
+  selectedLanguageCode?: string | null,
 ) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
   const needsPlatformIds = statusFilter === 'streaming' || statusFilter === 'released';
@@ -178,7 +180,15 @@ export function useAdminMovies(
     (!hasActorSearch || actorIdsReady) && (!hasPlatformFilter || platformFilterReady);
 
   return useInfiniteQuery({
-    queryKey: ['admin', 'movies', search, statusFilter, productionHouseIds, advancedFilters],
+    queryKey: [
+      'admin',
+      'movies',
+      search,
+      statusFilter,
+      productionHouseIds,
+      advancedFilters,
+      selectedLanguageCode,
+    ],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -206,6 +216,11 @@ export function useAdminMovies(
         .range(from, to);
 
       if (search) query = query.ilike('title', `%${search}%`);
+
+      // @boundary Language scoping — filter movies by selected language code
+      if (selectedLanguageCode) {
+        query = query.eq('original_language', selectedLanguageCode);
+      }
 
       // Apply status filter — returns includeIds separately instead of .in()
       const statusResult = applyStatusFilter(query, statusFilter, today, pmIds);

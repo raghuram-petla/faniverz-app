@@ -105,3 +105,13 @@ export function getImageUrl(
   if (size === 'original') return full;
   return full.replace(/\.(\w+)$/, `_${size}.$1`) || full;
 }
+
+/** @contract resolves poster bucket from the movie's poster_image_type field */
+export function posterBucket(imageType?: string | null): ImageBucket {
+  return imageType === 'backdrop' ? 'BACKDROPS' : 'POSTERS';
+}
+
+/** @contract resolves backdrop bucket from the movie's backdrop_image_type field */
+export function backdropBucket(imageType?: string | null): ImageBucket {
+  return imageType === 'poster' ? 'POSTERS' : 'BACKDROPS';
+}

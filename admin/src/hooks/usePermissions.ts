@@ -108,6 +108,7 @@ export function usePermissions() {
   const user = useEffectiveUser();
   const role = user?.role ?? null;
   const phIds = user?.productionHouseIds ?? [];
+  const languageCodes = user?.languageCodes ?? [];
 
   // @invariant Role hierarchy: root > super_admin > admin > production_house_admin > viewer
   // @coupling useEffectiveUser resolves impersonation — all checks use impersonated role
@@ -150,8 +151,51 @@ export function usePermissions() {
     return false;
   }
 
+  /**
+   * @contract Can delete top-level entities (movies, actors, production houses, etc.)
+   * Only root and super_admin can hard-delete top-level entities.
+   */
+  function canDeleteTopLevel(): boolean {
+    return isSuperAdmin;
+  }
+
+  /**
+   * @contract Can delete child entities (posters, videos, cast, platforms, etc.)
+   * root/super_admin/admin can delete child entities.
+   * Admin's language scope is enforced by the backend.
+   * PH admin cannot delete child entities.
+   */
+  function canDeleteChild(): boolean {
+    if (!role) return false;
+    if (isViewer || isPHAdmin) return false;
+    return true;
+  }
+
+  /**
+   * @contract Legacy canDelete — delegates to canDeleteTopLevel for backward compatibility.
+   * Prefer canDeleteTopLevel / canDeleteChild for new code.
+   */
   function canDelete(entity: AdminEntity, ownerId?: string | null): boolean {
     return canUpdate(entity, ownerId);
+  }
+
+  /**
+   * @contract Check if user can access content in a given language.
+   * Accepts an ISO 639-1 code (e.g. 'te') matching movie.original_language.
+   * Root/super_admin: always true (all languages).
+   * Admin: true only if code is in their assigned language codes.
+   * PH admin/viewer: returns false — PH admins are scoped by production house
+   * (via RLS), not by language. Do NOT use this to gate PH admin movie visibility.
+   */
+  function canAccessLanguage(languageCode: string | null): boolean {
+    if (!role) return false;
+    if (isSuperAdmin) return true;
+    if (isAdmin) {
+      if (!languageCode) return true; // null language = unrestricted
+      if (languageCodes.length === 0) return true; // no assignments = unrestricted
+      return languageCodes.includes(languageCode);
+    }
+    return false;
   }
 
   /**
@@ -188,10 +232,14 @@ export function usePermissions() {
     isViewer,
     isReadOnly,
     productionHouseIds: phIds,
+    languageCodes,
     canViewPage,
     canCreate,
     canUpdate,
     canDelete,
+    canDeleteTopLevel,
+    canDeleteChild,
+    canAccessLanguage,
     canManageAdmin,
     // @sync Must match server-side audit RLS policy scoping rules
     /** Audit log scope: root/super admin/viewer sees all, others see own */

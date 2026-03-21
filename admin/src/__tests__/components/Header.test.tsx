@@ -22,6 +22,7 @@ vi.mock('@/hooks/useImpersonation', () => ({
     startRoleImpersonation: vi.fn(),
     stopImpersonation: vi.fn(),
   }),
+  useEffectiveUser: () => null,
 }));
 
 vi.mock('@/lib/supabase-browser', () => ({
@@ -36,6 +37,17 @@ vi.mock('@/lib/supabase-browser', () => ({
 
 vi.mock('next-themes', () => ({
   useTheme: () => ({ theme: 'system', setTheme: vi.fn() }),
+}));
+
+vi.mock('@/hooks/useLanguageContext', () => ({
+  useLanguageContext: () => ({
+    languages: [],
+    selectedLanguageId: null,
+    setSelectedLanguageId: vi.fn(),
+    userLanguageIds: [],
+    showSwitcher: false,
+    availableLanguages: [],
+  }),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -66,6 +78,8 @@ const superAdmin: AdminUser = {
   created_at: '2024-01-01',
   role: 'super_admin',
   productionHouseIds: [],
+  languageIds: [],
+  languageCodes: [],
 };
 
 function openMenu() {

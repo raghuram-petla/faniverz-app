@@ -4,12 +4,14 @@ import { Film, Loader2, Download, CheckCircle, XCircle, AlertTriangle, Link2 } f
 import type { ImportProgress } from './syncHelpers';
 import type { ExistingMovieData, DuplicateSuspect } from '@/hooks/useSync';
 import { ExistingMovieSync } from './ExistingMovieSync';
+import { LANGUAGE_OPTIONS } from '@/lib/movie-constants';
 
 interface DiscoverMovie {
   id: number;
   title: string;
   poster_path: string | null;
   release_date: string;
+  original_language?: string;
 }
 
 /** @contract displays TMDB discover results with import status overlay per movie */
@@ -66,7 +68,7 @@ export function DiscoverResults({
   return (
     <>
       {/* ── Summary bar ── */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex items-center flex-wrap gap-3">
         <p className="text-sm text-on-surface-muted">
           Found <span className="text-on-surface font-medium">{results.length}</span>
           {' · '}
@@ -89,28 +91,36 @@ export function DiscoverResults({
           )}
         </p>
         {newMovies.length > 0 && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={selected.size > 0 ? onDeselectAll : onSelectAllNew}
-              className="border border-outline hover:border-on-surface-subtle text-on-surface px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            >
-              {selected.size > 0 ? 'Deselect all' : `Select all new (${newMovies.length})`}
-            </button>
-            <button
-              onClick={selected.size > 0 ? onImport : onImportAllNew}
-              disabled={isImporting}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {isImporting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              {selected.size > 0
-                ? `Import ${selected.size} selected`
-                : `Import all new (${newMovies.length})`}
-            </button>
-          </div>
+          <button
+            onClick={selected.size > 0 ? onDeselectAll : onSelectAllNew}
+            className="border border-outline hover:border-on-surface-subtle text-on-surface px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+          >
+            {selected.size > 0 ? 'Deselect all' : `Select all new (${newMovies.length})`}
+          </button>
+        )}
+        {selected.size > 0 && (
+          <button
+            onClick={onImport}
+            disabled={isImporting}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            {isImporting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            Import {selected.size} selected
+          </button>
+        )}
+        {newMovies.length > 0 && selected.size === 0 && (
+          <button
+            onClick={onImportAllNew}
+            disabled={isImporting}
+            className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Import all new ({newMovies.length})
+          </button>
         )}
       </div>
 
@@ -153,6 +163,13 @@ export function DiscoverResults({
                     <p className="text-xs font-medium text-on-surface truncate">{movie.title}</p>
                     <p className="text-[10px] text-on-surface-subtle mt-0.5">
                       {movie.release_date || 'No date'}
+                      {movie.original_language && (
+                        <span className="ml-1.5 text-on-surface-muted">
+                          ·{' '}
+                          {LANGUAGE_OPTIONS.find((o) => o.value === movie.original_language)
+                            ?.label ?? movie.original_language}
+                        </span>
+                      )}
                     </p>
                   </div>
                   {suspect && (

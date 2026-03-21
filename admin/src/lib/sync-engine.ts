@@ -102,7 +102,7 @@ export async function processMovieFromTmdb(
         trailer_url: trailerUrl,
         director,
         ...(isNew && { in_theaters: false }),
-        original_language: 'te',
+        original_language: detail.original_language ?? 'te',
         tmdb_last_synced_at: new Date().toISOString(),
         // @contract: extended fields from expanded append_to_response
         ...(imdbId && { imdb_id: imdbId }),
@@ -121,7 +121,10 @@ export async function processMovieFromTmdb(
   // then videos, watch providers, keywords in parallel.
   // Errors are logged but don't fail the overall import.
   try {
-    await syncAllImages(movieId, tmdbId, apiKey, supabase);
+    await syncAllImages(movieId, tmdbId, apiKey, supabase, {
+      posterPath: detail.poster_path,
+      backdropPath: detail.backdrop_path,
+    });
     await Promise.all([
       syncVideos(movieId, detail.videos.results, supabase),
       syncWatchProviders(movieId, tmdbId, apiKey, supabase),

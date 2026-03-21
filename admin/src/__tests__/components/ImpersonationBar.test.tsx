@@ -26,6 +26,8 @@ function makeUser(overrides: Partial<AdminUser> = {}): AdminUser {
     created_at: '2024-01-01T00:00:00Z',
     role: 'admin',
     productionHouseIds: [],
+    languageIds: [],
+    languageCodes: [],
     ...overrides,
   };
 }

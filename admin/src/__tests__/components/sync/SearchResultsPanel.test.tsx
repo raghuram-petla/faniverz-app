@@ -70,7 +70,13 @@ function renderWithProvider(ui: React.ReactElement) {
 }
 
 const makeMovieData = (
-  results: Array<{ id: number; title: string; poster_path: string | null; release_date: string }>,
+  results: Array<{
+    id: number;
+    title: string;
+    poster_path: string | null;
+    release_date: string;
+    original_language: string;
+  }>,
   existingTmdbIds: number[] = [],
 ) => ({ results, existingTmdbIds });
 
@@ -95,8 +101,20 @@ describe('SearchResultsPanel', () => {
   it('shows "Movies (N)" heading when movie results exist', () => {
     const data = {
       movies: makeMovieData([
-        { id: 1, title: 'Movie A', poster_path: null, release_date: '2024-01-01' },
-        { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
+        {
+          id: 1,
+          title: 'Movie A',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+        {
+          id: 2,
+          title: 'Movie B',
+          poster_path: null,
+          release_date: '2024-02-01',
+          original_language: 'te',
+        },
       ]),
       actors: makeActorData([]),
     };
@@ -133,6 +151,7 @@ describe('SearchResultsPanel', () => {
             title: 'Existing Movie',
             poster_path: '/poster.jpg',
             release_date: '2024-01-01',
+            original_language: 'te',
           },
         ],
         [100],
@@ -149,7 +168,13 @@ describe('SearchResultsPanel', () => {
   it('shows "Selected" badge when a new movie card is clicked', () => {
     const data = {
       movies: makeMovieData([
-        { id: 200, title: 'New Movie', poster_path: null, release_date: '2024-05-01' },
+        {
+          id: 200,
+          title: 'New Movie',
+          poster_path: null,
+          release_date: '2024-05-01',
+          original_language: 'te',
+        },
       ]),
       actors: makeActorData([]),
     };
@@ -161,7 +186,13 @@ describe('SearchResultsPanel', () => {
   it('shows "Import N selected" button when movies are selected', () => {
     const data = {
       movies: makeMovieData([
-        { id: 300, title: 'Select Me', poster_path: null, release_date: '2024-06-01' },
+        {
+          id: 300,
+          title: 'Select Me',
+          poster_path: null,
+          release_date: '2024-06-01',
+          original_language: 'te',
+        },
       ]),
       actors: makeActorData([]),
     };
@@ -225,7 +256,13 @@ describe('SearchResultsPanel', () => {
   it('shows both movies and actors when both exist', () => {
     const data = {
       movies: makeMovieData([
-        { id: 1, title: 'Movie X', poster_path: null, release_date: '2024-01-01' },
+        {
+          id: 1,
+          title: 'Movie X',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
       ]),
       actors: makeActorData([
         { id: 10, name: 'Actor Y', profile_path: null, known_for_department: 'Acting' },
@@ -239,8 +276,20 @@ describe('SearchResultsPanel', () => {
   it('shows "Select all new" button when there are new movies', () => {
     const data = {
       movies: makeMovieData([
-        { id: 400, title: 'New A', poster_path: null, release_date: '2024-01-01' },
-        { id: 401, title: 'New B', poster_path: null, release_date: '2024-02-01' },
+        {
+          id: 400,
+          title: 'New A',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+        {
+          id: 401,
+          title: 'New B',
+          poster_path: null,
+          release_date: '2024-02-01',
+          original_language: 'te',
+        },
       ]),
       actors: makeActorData([]),
     };
@@ -252,7 +301,13 @@ describe('SearchResultsPanel', () => {
     const data = {
       movies: {
         ...makeMovieData([
-          { id: 500, title: 'Suspect', poster_path: null, release_date: '2024-01-01' },
+          {
+            id: 500,
+            title: 'Suspect',
+            poster_path: null,
+            release_date: '2024-01-01',
+            original_language: 'te',
+          },
         ]),
         duplicateSuspects: { 500: { id: 'uuid-local', title: 'Suspect' } },
       },
@@ -268,7 +323,13 @@ describe('SearchResultsPanel', () => {
     const data = {
       movies: {
         ...makeMovieData([
-          { id: 600, title: 'Link Me', poster_path: null, release_date: '2024-01-01' },
+          {
+            id: 600,
+            title: 'Link Me',
+            poster_path: null,
+            release_date: '2024-01-01',
+            original_language: 'te',
+          },
         ]),
         duplicateSuspects: { 600: { id: 'uuid-local', title: 'Link Me' } },
       },
@@ -287,8 +348,20 @@ describe('SearchResultsPanel', () => {
     const data = {
       movies: {
         ...makeMovieData([
-          { id: 700, title: 'Real New', poster_path: null, release_date: '2024-01-01' },
-          { id: 701, title: 'Suspect', poster_path: null, release_date: '2024-02-01' },
+          {
+            id: 700,
+            title: 'Real New',
+            poster_path: null,
+            release_date: '2024-01-01',
+            original_language: 'te',
+          },
+          {
+            id: 701,
+            title: 'Suspect',
+            poster_path: null,
+            release_date: '2024-02-01',
+            original_language: 'te',
+          },
         ]),
         duplicateSuspects: { 701: { id: 'uuid-local', title: 'Suspect' } },
       },

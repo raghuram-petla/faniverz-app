@@ -18,16 +18,35 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
+// @boundary Flexible mock that handles all table queries used by verifyAdminWithLanguages + admin-crud
+const chainable = (data: unknown) => {
+  const obj = {
+    select: () => obj,
+    eq: () => obj,
+    in: () => obj,
+    single: () => Promise.resolve({ data, error: null }),
+    then: (fn: (v: { data: unknown; error: null }) => void) =>
+      Promise.resolve({ data, error: null }).then(fn),
+  };
+  // Make chainable also directly thenable (for non-.single() queries)
+  return new Proxy(obj, {
+    get(target, prop) {
+      if (prop === 'then')
+        return (fn: (v: unknown) => void) => Promise.resolve({ data, error: null }).then(fn);
+      return (target as Record<string, unknown>)[prop as string];
+    },
+  });
+};
+
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: () =>
-            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
-        }),
-      }),
-    }),
+    from: (table: string) => {
+      if (table === 'admin_user_roles') return chainable({ role_id: 'admin', status: 'active' });
+      if (table === 'user_languages') return chainable([{ language_id: 'lang-te' }]);
+      if (table === 'languages') return chainable([{ code: 'te' }]);
+      // Default: movies, movie_images, etc.
+      return chainable({ movie_id: 'm1', original_language: 'te' });
+    },
     rpc: (...args: unknown[]) => {
       mockRpc(...args);
       return Promise.resolve({ data: { id: 'test-id', title: 'Test' }, error: null });
@@ -140,26 +159,20 @@ describe('DELETE /api/admin-crud', () => {
     expect(res.status).toBe(400);
   });
 
-  it('calls admin_crud RPC with delete operation by id', async () => {
+  it('rejects top-level entity delete by admin role', async () => {
     const res = await DELETE(makeRequest('DELETE', { table: 'movies', id: 'del-1' }));
-    expect(res.status).toBe(200);
-    expect(mockRpc).toHaveBeenCalledWith('admin_crud', {
-      p_admin_id: 'admin-1',
-      p_table: 'movies',
-      p_operation: 'delete',
-      p_data: null,
-      p_id: 'del-1',
-      p_filters: null,
-    });
+    // @invariant admin role cannot hard-delete top-level entities — only root/super_admin can
+    expect(res.status).toBe(403);
   });
 
-  it('accepts filters for composite-key deletes', async () => {
+  it('allows admin to delete child entities with matching language', async () => {
     const res = await DELETE(
       makeRequest('DELETE', {
         table: 'movie_production_houses',
         filters: { movie_id: 'm1', production_house_id: 'ph1' },
       }),
     );
+    // @contract admin can delete movie child entities within their language scope
     expect(res.status).toBe(200);
     expect(mockRpc).toHaveBeenCalledWith('admin_crud', {
       p_admin_id: 'admin-1',

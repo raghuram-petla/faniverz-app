@@ -50,6 +50,8 @@ function makeUser(overrides: Partial<AdminUser> & Pick<AdminUser, 'role'>): Admi
     avatar_url: null,
     created_at: '2024-01-01T00:00:00Z',
     productionHouseIds: [],
+    languageIds: [],
+    languageCodes: [],
     ...overrides,
   };
 }
@@ -525,6 +527,134 @@ describe('usePermissions', () => {
       const { result } = renderHook(() => usePermissions());
 
       expect(result.current.productionHouseIds).toEqual(['ph-1', 'ph-2']);
+    });
+  });
+
+  // canDeleteTopLevel — only root/super_admin
+  describe('canDeleteTopLevel', () => {
+    it('returns true for root', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteTopLevel()).toBe(true);
+    });
+
+    it('returns true for super_admin', () => {
+      setUser(makeUser({ role: 'super_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteTopLevel()).toBe(true);
+    });
+
+    it('returns false for admin', () => {
+      setUser(makeUser({ role: 'admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteTopLevel()).toBe(false);
+    });
+
+    it('returns false for production_house_admin', () => {
+      setUser(makeUser({ role: 'production_house_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteTopLevel()).toBe(false);
+    });
+
+    it('returns false for viewer', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteTopLevel()).toBe(false);
+    });
+  });
+
+  // canDeleteChild — root/super_admin/admin only
+  describe('canDeleteChild', () => {
+    it('returns true for root', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteChild()).toBe(true);
+    });
+
+    it('returns true for super_admin', () => {
+      setUser(makeUser({ role: 'super_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteChild()).toBe(true);
+    });
+
+    it('returns true for admin', () => {
+      setUser(makeUser({ role: 'admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteChild()).toBe(true);
+    });
+
+    it('returns false for production_house_admin', () => {
+      setUser(makeUser({ role: 'production_house_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteChild()).toBe(false);
+    });
+
+    it('returns false for viewer', () => {
+      setUser(makeUser({ role: 'viewer' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDeleteChild()).toBe(false);
+    });
+  });
+
+  // canAccessLanguage — language-scoped access control (uses language codes)
+  describe('canAccessLanguage', () => {
+    it('returns true for root regardless of language', () => {
+      setUser(makeUser({ role: 'root' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage('te')).toBe(true);
+      expect(result.current.canAccessLanguage(null)).toBe(true);
+    });
+
+    it('returns true for super_admin regardless of language', () => {
+      setUser(makeUser({ role: 'super_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage('te')).toBe(true);
+    });
+
+    it('returns true for admin with matching language code', () => {
+      setUser(makeUser({ role: 'admin', languageCodes: ['te', 'ta'] }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage('te')).toBe(true);
+      expect(result.current.canAccessLanguage('ta')).toBe(true);
+    });
+
+    it('returns false for admin without matching language code', () => {
+      setUser(makeUser({ role: 'admin', languageCodes: ['te'] }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage('hi')).toBe(false);
+    });
+
+    it('returns true for admin when languageCode is null', () => {
+      setUser(makeUser({ role: 'admin', languageCodes: ['te'] }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage(null)).toBe(true);
+    });
+
+    it('returns true for admin with no language assignments (unrestricted)', () => {
+      setUser(makeUser({ role: 'admin', languageCodes: [] }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage('hi')).toBe(true);
+    });
+
+    it('returns false for production_house_admin', () => {
+      setUser(makeUser({ role: 'production_house_admin' }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage('te')).toBe(false);
+    });
+
+    it('returns false when no user', () => {
+      setUser(null);
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canAccessLanguage('te')).toBe(false);
+    });
+  });
+
+  // languageCodes passed through
+  describe('languageCodes', () => {
+    it('returns the language codes from the user', () => {
+      setUser(makeUser({ role: 'admin', languageCodes: ['te', 'ta'] }));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.languageCodes).toEqual(['te', 'ta']);
     });
   });
 });

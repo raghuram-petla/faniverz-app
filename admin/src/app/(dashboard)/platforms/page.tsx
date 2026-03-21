@@ -24,7 +24,7 @@ interface PlatformFormData {
 const emptyForm: PlatformFormData = { name: '', logo_url: '' };
 
 export default function PlatformsPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { data: platforms, isLoading } = useAdminPlatforms();
   const createPlatform = useCreatePlatform();
   const updatePlatform = useUpdatePlatform();
@@ -150,14 +150,16 @@ export default function PlatformsPage() {
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(platform.id)}
-                      disabled={deletePlatform.isPending}
-                      className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
-                      title="Delete platform"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {canDeleteTopLevel() && (
+                      <button
+                        onClick={() => handleDelete(platform.id)}
+                        disabled={deletePlatform.isPending}
+                        className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
+                        title="Delete platform"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

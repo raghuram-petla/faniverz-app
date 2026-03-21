@@ -71,17 +71,17 @@ describe('PreviewPanel', () => {
     expect(screen.getByRole('button', { name: 'Detail' })).toBeInTheDocument();
   });
 
-  it('shows SpotlightPreview by default', () => {
+  it('shows MovieDetailPreview by default', () => {
     render(<PreviewPanel form={defaultForm} />);
-    expect(screen.getByTestId('spotlight-preview')).toBeInTheDocument();
-    expect(screen.queryByTestId('detail-preview')).not.toBeInTheDocument();
-  });
-
-  it('switches to MovieDetailPreview when Detail clicked', () => {
-    render(<PreviewPanel form={defaultForm} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Detail' }));
     expect(screen.getByTestId('detail-preview')).toBeInTheDocument();
     expect(screen.queryByTestId('spotlight-preview')).not.toBeInTheDocument();
+  });
+
+  it('switches to SpotlightPreview when Spotlight clicked', () => {
+    render(<PreviewPanel form={defaultForm} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Spotlight' }));
+    expect(screen.getByTestId('spotlight-preview')).toBeInTheDocument();
+    expect(screen.queryByTestId('detail-preview')).not.toBeInTheDocument();
   });
 
   it('renders device frame', () => {

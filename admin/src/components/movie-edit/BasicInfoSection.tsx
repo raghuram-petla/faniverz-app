@@ -5,7 +5,6 @@ import { FormInput, FormSelect, FormTextarea, FormField } from '@/components/com
 import { Button } from '@/components/common/Button';
 import { validateMovieForm, type ValidationError } from '@/lib/movie-validation';
 import { GENRES, LANGUAGE_OPTIONS, CERTIFICATION_OPTIONS } from '@/lib/movie-constants';
-
 // @contract movie basic info — title, dates, genres, synopsis, certification, language, toggles
 export interface BasicInfoSectionProps {
   form: MovieForm;

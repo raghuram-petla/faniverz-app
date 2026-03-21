@@ -44,17 +44,30 @@ export interface ImpersonationProviderProps {
 // @coupling: reads from profiles table (shared with mobile app) — profile fields
 // like display_name, avatar_url come from whatever the app user has set.
 async function buildTargetUser(targetUserId: string): Promise<AdminUser | null> {
-  const [profileRes, roleRes, phRes] = await Promise.all([
+  const [profileRes, roleRes, phRes, langRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', targetUserId).single(),
     supabase.from('admin_user_roles').select('role_id').eq('user_id', targetUserId).single(),
     supabase.from('admin_ph_assignments').select('production_house_id').eq('user_id', targetUserId),
+    supabase.from('user_languages').select('language_id').eq('user_id', targetUserId),
   ]);
 
   if (!profileRes.data || !roleRes.data) return null;
+  const role = roleRes.data.role_id as AdminRoleId;
+  const langIds = role === 'admin' ? (langRes.data ?? []).map((r) => r.language_id) : [];
+
+  // @boundary Resolve language UUIDs to codes via a second query (only for admin role)
+  let langCodes: string[] = [];
+  if (langIds.length > 0) {
+    const { data: codeRows } = await supabase.from('languages').select('code').in('id', langIds);
+    langCodes = (codeRows ?? []).map((r) => r.code);
+  }
+
   return {
     ...profileRes.data,
-    role: roleRes.data.role_id as AdminRoleId,
+    role,
     productionHouseIds: (phRes.data ?? []).map((r) => r.production_house_id),
+    languageIds: langIds,
+    languageCodes: langCodes,
   };
 }
 
@@ -111,10 +124,14 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
         const built = await buildTargetUser(data.target_user_id);
         if (!cancelled && built) setEffectiveUser(built);
       } else {
+        // @edge Role impersonation uses empty languageIds (all access) since
+        // it's a generic role test, not a specific user's permissions
         setEffectiveUser({
           ...realUser,
           role: data.target_role as AdminRoleId,
           productionHouseIds: data.target_ph_ids ?? [],
+          languageIds: [],
+          languageCodes: [],
         });
       }
     })();
@@ -164,7 +181,13 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
         target_role: role,
         target_ph_ids: phIds,
       });
-      setEffectiveUser({ ...user, role, productionHouseIds: phIds });
+      setEffectiveUser({
+        ...user,
+        role,
+        productionHouseIds: phIds,
+        languageIds: [],
+        languageCodes: [],
+      });
     } catch (err) {
       window.alert(err instanceof Error ? err.message : 'Failed to start role impersonation');
     }

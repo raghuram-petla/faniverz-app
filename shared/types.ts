@@ -37,6 +37,8 @@ export interface Movie {
   backdrop_focus_y: number | null;
   poster_focus_x: number | null;
   poster_focus_y: number | null;
+  poster_image_type: 'poster' | 'backdrop';
+  backdrop_image_type: 'poster' | 'backdrop';
   spotlight_focus_x: number | null;
   spotlight_focus_y: number | null;
   detail_focus_x: number | null;

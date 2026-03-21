@@ -40,11 +40,11 @@ export function useSetMainPoster() {
         data: { is_main_poster: true },
       });
 
-      // @coupling: keeps movies.poster_url in sync with the main poster's image_url
+      // @coupling: keeps movies.poster_url + poster_image_type in sync
       await crudFetch('PATCH', {
         table: 'movies',
         id: movieId,
-        data: { poster_url: data.image_url },
+        data: { poster_url: data.image_url, poster_image_type: data.image_type },
       });
 
       return { ...data, movieId } as MoviePoster & { movieId: string };
@@ -52,7 +52,6 @@ export function useSetMainPoster() {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['admin', 'images', data.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'movie', data.movieId] });
-      // @sideeffect: poster_url is displayed in movie list views
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
     },
     onError: (error: Error) => {
@@ -87,7 +86,7 @@ export function useSetMainBackdrop() {
       await crudFetch('PATCH', {
         table: 'movies',
         id: movieId,
-        data: { backdrop_url: data.image_url },
+        data: { backdrop_url: data.image_url, backdrop_image_type: data.image_type },
       });
 
       return { ...data, movieId } as MoviePoster & { movieId: string };

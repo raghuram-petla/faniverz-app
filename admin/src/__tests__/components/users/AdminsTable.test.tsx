@@ -3,6 +3,12 @@ import { AdminsTable } from '@/components/users/AdminsTable';
 import type { AdminsTableProps } from '@/components/users/AdminsTable';
 import type { AdminUserWithDetails } from '@/lib/types';
 
+vi.mock('@/components/users/LanguageAssignments', () => ({
+  LanguageAssignments: ({ userId }: { userId: string }) => (
+    <div data-testid={`lang-assignments-${userId}`}>Languages</div>
+  ),
+}));
+
 vi.mock('lucide-react', () => ({
   Loader2: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="loader-icon" {...props} />,
   Eye: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="eye-icon" {...props} />,

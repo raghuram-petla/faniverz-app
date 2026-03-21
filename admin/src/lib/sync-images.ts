@@ -34,10 +34,21 @@ export async function syncPosters(
   tmdbId: number,
   images: { posters: TmdbImage[] },
   supabase: SupabaseClient,
+  /** @contract TMDB's main poster path — this image becomes is_main_poster regardless of language sort */
+  tmdbMainPosterPath?: string | null,
 ): Promise<number> {
   if (!images.posters.length) return 0;
 
+  // @contract TMDB's chosen main poster takes priority; remaining sorted by language then vote
   const sorted = sortByLanguagePriority(images.posters);
+  // Move TMDB's main poster to index 0 if found
+  if (tmdbMainPosterPath) {
+    const mainIdx = sorted.findIndex((p) => p.file_path === tmdbMainPosterPath);
+    if (mainIdx > 0) {
+      const [main] = sorted.splice(mainIdx, 1);
+      sorted.unshift(main);
+    }
+  }
 
   // @sideeffect: clear TMDB-synced poster images (keep manually added ones without tmdb_file_path)
   await supabase
@@ -88,8 +99,11 @@ export async function syncPosters(
           display_order: 0,
         });
       }
-      // Keep movies.poster_url in sync
-      await supabase.from('movies').update({ poster_url: imageUrl }).eq('id', movieId);
+      // Keep movies.poster_url + poster_image_type in sync
+      await supabase
+        .from('movies')
+        .update({ poster_url: imageUrl, poster_image_type: 'poster' })
+        .eq('id', movieId);
     } else {
       await supabase.from('movie_images').insert({
         movie_id: movieId,
@@ -120,10 +134,20 @@ export async function syncBackdrops(
   tmdbId: number,
   images: { backdrops: TmdbImage[] },
   supabase: SupabaseClient,
+  /** @contract TMDB's main backdrop path — this image becomes is_main_backdrop */
+  tmdbMainBackdropPath?: string | null,
 ): Promise<number> {
   if (!images.backdrops.length) return 0;
 
   const sorted = [...images.backdrops].sort((a, b) => b.vote_average - a.vote_average);
+  // Move TMDB's main backdrop to index 0 if found
+  if (tmdbMainBackdropPath) {
+    const mainIdx = sorted.findIndex((b) => b.file_path === tmdbMainBackdropPath);
+    if (mainIdx > 0) {
+      const [main] = sorted.splice(mainIdx, 1);
+      sorted.unshift(main);
+    }
+  }
 
   // Clear existing TMDB-synced backdrop images
   await supabase
@@ -151,7 +175,10 @@ export async function syncBackdrops(
         .update({ is_main_backdrop: false })
         .eq('movie_id', movieId)
         .eq('is_main_backdrop', true);
-      await supabase.from('movies').update({ backdrop_url: imageUrl }).eq('id', movieId);
+      await supabase
+        .from('movies')
+        .update({ backdrop_url: imageUrl, backdrop_image_type: 'backdrop' })
+        .eq('id', movieId);
     }
 
     await supabase.from('movie_images').insert({
@@ -182,11 +209,13 @@ export async function syncAllImages(
   tmdbId: number,
   apiKey: string,
   supabase: SupabaseClient,
+  /** @contract TMDB's main poster/backdrop paths from movie detail — used to pick the correct main */
+  tmdbMainPaths?: { posterPath?: string | null; backdropPath?: string | null },
 ): Promise<{ posterCount: number; backdropCount: number }> {
   const images = await getMovieImages(tmdbId, apiKey);
   const [posterCount, backdropCount] = await Promise.all([
-    syncPosters(movieId, tmdbId, images, supabase),
-    syncBackdrops(movieId, tmdbId, images, supabase),
+    syncPosters(movieId, tmdbId, images, supabase, tmdbMainPaths?.posterPath),
+    syncBackdrops(movieId, tmdbId, images, supabase, tmdbMainPaths?.backdropPath),
   ]);
   return { posterCount, backdropCount };
 }

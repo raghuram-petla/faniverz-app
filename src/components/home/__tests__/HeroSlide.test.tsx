@@ -40,6 +40,8 @@ const baseMock: Movie = {
   backdrop_focus_y: null,
   poster_focus_x: null,
   poster_focus_y: null,
+  poster_image_type: 'poster',
+  backdrop_image_type: 'backdrop',
   spotlight_focus_x: null,
   spotlight_focus_y: null,
   detail_focus_x: null,
@@ -200,6 +202,8 @@ describe('HeroSlide', () => {
       backdrop_focus_y: 0.2,
       poster_focus_x: null,
       poster_focus_y: null,
+      poster_image_type: 'poster',
+      backdrop_image_type: 'backdrop',
       spotlight_focus_x: 0.8,
       spotlight_focus_y: 0.9,
     };
@@ -220,6 +224,8 @@ describe('HeroSlide', () => {
       backdrop_focus_y: 0.7,
       poster_focus_x: null,
       poster_focus_y: null,
+      poster_image_type: 'poster',
+      backdrop_image_type: 'backdrop',
     };
     const { UNSAFE_getAllByType } = render(<HeroSlide {...defaultProps} movie={movie} />);
     const { Image } = require('expo-image');

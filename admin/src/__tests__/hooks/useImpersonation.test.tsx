@@ -12,6 +12,8 @@ const { mockFrom, mockAuthUser } = vi.hoisted(() => {
     created_at: '2024-01-01',
     role: 'super_admin',
     productionHouseIds: [],
+    languageIds: [],
+    languageCodes: [],
   };
   return { mockFrom: vi.fn(), mockAuthUser };
 });

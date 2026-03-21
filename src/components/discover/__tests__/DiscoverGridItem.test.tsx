@@ -81,6 +81,8 @@ const baseMovie: Movie = {
   backdrop_focus_y: null,
   poster_focus_x: null,
   poster_focus_y: null,
+  poster_image_type: 'poster',
+  backdrop_image_type: 'backdrop',
   spotlight_focus_x: null,
   spotlight_focus_y: null,
   detail_focus_x: null,

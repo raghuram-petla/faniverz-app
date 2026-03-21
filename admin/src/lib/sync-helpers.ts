@@ -131,6 +131,49 @@ export async function verifyAdminCanMutate(
 }
 
 /**
+ * Verify admin with role AND fetch language assignments for language-scoped access control.
+ * Returns user, role, and languageCodes.
+ *
+ * @contract languageCodes is empty for root/super_admin (empty = all languages).
+ * For admin role, languageCodes contains ISO 639-1 codes (e.g. 'te', 'ta', 'hi')
+ * resolved by joining user_languages → languages.
+ * For production_house_admin/viewer, languageCodes is empty (not applicable).
+ * @boundary Uses service role client to read user_languages + languages tables.
+ */
+export async function verifyAdminWithLanguages(
+  authHeader: string | null,
+): Promise<{ user: User; role: string; languageCodes: string[] } | null | 'viewer_readonly'> {
+  const result = await verifyAdminWithRole(authHeader);
+  if (!result) return null;
+  if (result.role === 'viewer') return 'viewer_readonly';
+
+  // @edge root/super_admin have implicit all-language access — no DB lookup needed
+  if (result.role === 'root' || result.role === 'super_admin') {
+    return { ...result, languageCodes: [] };
+  }
+
+  // For admin role, fetch assigned language IDs then resolve to codes
+  if (result.role === 'admin') {
+    const supabase = getSupabaseAdmin();
+    const { data: assignments } = await supabase
+      .from('user_languages')
+      .select('language_id')
+      .eq('user_id', result.user.id);
+
+    const langIds = assignments?.map((a: { language_id: string }) => a.language_id) ?? [];
+    if (langIds.length === 0) return { ...result, languageCodes: [] };
+
+    const { data: langs } = await supabase.from('languages').select('code').in('id', langIds);
+
+    const languageCodes = langs?.map((l: { code: string }) => l.code) ?? [];
+    return { ...result, languageCodes };
+  }
+
+  // production_house_admin — language scoping not applicable
+  return { ...result, languageCodes: [] };
+}
+
+/**
  * Build a standard 500 error response from a caught error.
  */
 export function errorResponse(label: string, err: unknown, status = 500): NextResponse {

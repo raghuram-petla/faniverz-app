@@ -66,7 +66,13 @@ const makeExisting = (tmdb_id: number, title: string) => ({
 });
 
 const makeData = (
-  results: Array<{ id: number; title: string; poster_path: string | null; release_date: string }>,
+  results: Array<{
+    id: number;
+    title: string;
+    poster_path: string | null;
+    release_date: string;
+    original_language: string;
+  }>,
   existingMovies: ReturnType<typeof makeExisting>[] = [],
 ) => ({ results, existingMovies });
 
@@ -83,9 +89,27 @@ describe('DiscoverByYear', () => {
   it('renders results summary when data has results', () => {
     const data = makeData(
       [
-        { id: 1, title: 'Movie A', poster_path: null, release_date: '2024-01-01' },
-        { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
-        { id: 3, title: 'Movie C', poster_path: '/poster.jpg', release_date: '2024-03-01' },
+        {
+          id: 1,
+          title: 'Movie A',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+        {
+          id: 2,
+          title: 'Movie B',
+          poster_path: null,
+          release_date: '2024-02-01',
+          original_language: 'te',
+        },
+        {
+          id: 3,
+          title: 'Movie C',
+          poster_path: '/poster.jpg',
+          release_date: '2024-03-01',
+          original_language: 'te',
+        },
       ],
       [makeExisting(1, 'Movie A')],
     );
@@ -97,7 +121,13 @@ describe('DiscoverByYear', () => {
 
   it('shows "Import all new" button for new movies', () => {
     const data = makeData([
-      { id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' },
+      {
+        id: 1,
+        title: 'New Movie',
+        poster_path: null,
+        release_date: '2024-01-01',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     expect(screen.getByText('Import all new (1)')).toBeInTheDocument();
@@ -106,7 +136,13 @@ describe('DiscoverByYear', () => {
   it('triggers batch import when "Import all new" is clicked', async () => {
     mockImportMutateAsync.mockResolvedValue({ syncLogId: 'log-1', results: [], errors: [] });
     const data = makeData([
-      { id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' },
+      {
+        id: 1,
+        title: 'New Movie',
+        poster_path: null,
+        release_date: '2024-01-01',
+        original_language: 'te',
+      },
     ]);
     const { act } = await import('@testing-library/react');
     renderWithProvider(<DiscoverByYear data={data} />);
@@ -118,7 +154,13 @@ describe('DiscoverByYear', () => {
 
   it('renders movie cards for new results', () => {
     const data = makeData([
-      { id: 100, title: 'Pushpa 2', poster_path: null, release_date: '2024-12-05' },
+      {
+        id: 100,
+        title: 'Pushpa 2',
+        poster_path: null,
+        release_date: '2024-12-05',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     expect(screen.getByText('Pushpa 2')).toBeInTheDocument();
@@ -127,7 +169,15 @@ describe('DiscoverByYear', () => {
 
   it('shows ExistingMovieSync section for existing movies', () => {
     const data = makeData(
-      [{ id: 100, title: 'Already Here', poster_path: null, release_date: '2024-01-01' }],
+      [
+        {
+          id: 100,
+          title: 'Already Here',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ],
       [makeExisting(100, 'Already Here')],
     );
     renderWithProvider(<DiscoverByYear data={data} />);
@@ -136,7 +186,13 @@ describe('DiscoverByYear', () => {
 
   it('shows "Select all new" button when there are new movies', () => {
     const data = makeData([
-      { id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' },
+      {
+        id: 1,
+        title: 'New Movie',
+        poster_path: null,
+        release_date: '2024-01-01',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     expect(screen.getByText('Select all new (1)')).toBeInTheDocument();
@@ -144,7 +200,13 @@ describe('DiscoverByYear', () => {
 
   it('selects a new movie when clicked and shows "Selected" badge', () => {
     const data = makeData([
-      { id: 200, title: 'Selectable', poster_path: null, release_date: '2024-06-01' },
+      {
+        id: 200,
+        title: 'Selectable',
+        poster_path: null,
+        release_date: '2024-06-01',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     fireEvent.click(screen.getByText('Selectable'));
@@ -153,7 +215,13 @@ describe('DiscoverByYear', () => {
 
   it('shows import button after selecting movies', () => {
     const data = makeData([
-      { id: 300, title: 'To Import', poster_path: null, release_date: '2024-07-01' },
+      {
+        id: 300,
+        title: 'To Import',
+        poster_path: null,
+        release_date: '2024-07-01',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     fireEvent.click(screen.getByText('To Import'));
@@ -162,7 +230,13 @@ describe('DiscoverByYear', () => {
 
   it('deselects a movie when clicked again', () => {
     const data = makeData([
-      { id: 400, title: 'Toggle Me', poster_path: null, release_date: '2024-08-01' },
+      {
+        id: 400,
+        title: 'Toggle Me',
+        poster_path: null,
+        release_date: '2024-08-01',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     fireEvent.click(screen.getByText('Toggle Me'));
@@ -174,9 +248,27 @@ describe('DiscoverByYear', () => {
   it('select all new excludes existing movies', () => {
     const data = makeData(
       [
-        { id: 500, title: 'New One', poster_path: null, release_date: '2024-01-01' },
-        { id: 501, title: 'New Two', poster_path: null, release_date: '2024-02-01' },
-        { id: 502, title: 'Existing', poster_path: null, release_date: '2024-03-01' },
+        {
+          id: 500,
+          title: 'New One',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+        {
+          id: 501,
+          title: 'New Two',
+          poster_path: null,
+          release_date: '2024-02-01',
+          original_language: 'te',
+        },
+        {
+          id: 502,
+          title: 'Existing',
+          poster_path: null,
+          release_date: '2024-03-01',
+          original_language: 'te',
+        },
       ],
       [makeExisting(502, 'Existing')],
     );
@@ -187,7 +279,13 @@ describe('DiscoverByYear', () => {
 
   it('renders poster image when poster_path is provided', () => {
     const data = makeData([
-      { id: 600, title: 'Poster Movie', poster_path: '/abc.jpg', release_date: '2024-01-01' },
+      {
+        id: 600,
+        title: 'Poster Movie',
+        poster_path: '/abc.jpg',
+        release_date: '2024-01-01',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     const img = screen.getByAltText('Poster Movie') as HTMLImageElement;
@@ -196,7 +294,13 @@ describe('DiscoverByYear', () => {
 
   it('shows "No date" when release_date is empty', () => {
     const data = makeData([
-      { id: 700, title: 'No Date Movie', poster_path: null, release_date: '' },
+      {
+        id: 700,
+        title: 'No Date Movie',
+        poster_path: null,
+        release_date: '',
+        original_language: 'te',
+      },
     ]);
     renderWithProvider(<DiscoverByYear data={data} />);
     expect(screen.getByText('No date')).toBeInTheDocument();
@@ -213,8 +317,20 @@ describe('DiscoverByYear', () => {
   it('excludes duplicate suspects from new movies count', () => {
     const data = {
       ...makeData([
-        { id: 1, title: 'New Movie', poster_path: null, release_date: '2024-01-01' },
-        { id: 2, title: 'Suspect Movie', poster_path: null, release_date: '2024-02-01' },
+        {
+          id: 1,
+          title: 'New Movie',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+        {
+          id: 2,
+          title: 'Suspect Movie',
+          poster_path: null,
+          release_date: '2024-02-01',
+          original_language: 'te',
+        },
       ]),
       duplicateSuspects: { 2: { id: 'uuid-local', title: 'Suspect Movie' } },
     };
@@ -226,7 +342,15 @@ describe('DiscoverByYear', () => {
 
   it('shows "Link to TMDB" button for duplicate suspect cards', () => {
     const data = {
-      ...makeData([{ id: 5, title: 'Duplicate', poster_path: null, release_date: '2024-01-01' }]),
+      ...makeData([
+        {
+          id: 5,
+          title: 'Duplicate',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ]),
       duplicateSuspects: { 5: { id: 'uuid-local', title: 'Duplicate' } },
     };
     renderWithProvider(<DiscoverByYear data={data} />);
@@ -236,7 +360,15 @@ describe('DiscoverByYear', () => {
   it('links suspect to TMDB and moves it to existing section', async () => {
     mockLinkMutateAsync.mockResolvedValue({ id: 'uuid-local' });
     const data = {
-      ...makeData([{ id: 5, title: 'Duplicate', poster_path: null, release_date: '2024-01-01' }]),
+      ...makeData([
+        {
+          id: 5,
+          title: 'Duplicate',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ]),
       duplicateSuspects: { 5: { id: 'uuid-local', title: 'Duplicate' } },
     };
     const { act } = await import('@testing-library/react');

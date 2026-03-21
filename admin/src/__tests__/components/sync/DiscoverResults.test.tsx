@@ -17,6 +17,7 @@ const makeMovie = (id: number, title: string, poster_path: string | null = null)
   title,
   poster_path,
   release_date: '2024-01-01',
+  original_language: 'te',
 });
 
 const makeExisting = (tmdb_id: number, title: string) => ({
@@ -168,7 +169,13 @@ describe('DiscoverResults', () => {
   });
 
   it('shows "No date" for empty release dates', () => {
-    const movie = { id: 1, title: 'No Date', poster_path: null, release_date: '' };
+    const movie = {
+      id: 1,
+      title: 'No Date',
+      poster_path: null,
+      release_date: '',
+      original_language: 'te',
+    };
     wrap(<DiscoverResults {...defaultProps} results={[movie]} newMovies={[movie]} />);
     expect(screen.getByText('No date')).toBeInTheDocument();
   });

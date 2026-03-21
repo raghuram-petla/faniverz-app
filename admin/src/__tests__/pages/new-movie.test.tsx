@@ -2,6 +2,17 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NewMoviePage from '@/app/(dashboard)/movies/new/page';
 
+vi.mock('@/hooks/useLanguageContext', () => ({
+  useLanguageContext: () => ({
+    languages: [],
+    selectedLanguageId: null,
+    setSelectedLanguageId: vi.fn(),
+    userLanguageIds: [],
+    showSwitcher: false,
+    availableLanguages: [],
+  }),
+}));
+
 vi.mock('@/hooks/useMovieAddState', () => ({
   useMovieAddState: () => ({
     form: {
