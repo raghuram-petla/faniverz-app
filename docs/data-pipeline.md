@@ -17,11 +17,10 @@ No single source has everything. The best approach is a **multi-source pipeline*
 
 ## Three-Track Strategy
 
-| Track              | What                                                  | When                                     |
-| ------------------ | ----------------------------------------------------- | ---------------------------------------- |
-| **seed.sql**       | `supabase db reset` — 120 curated movies, 8 platforms | Dev / CI only                            |
-| **Sync pipeline**  | Edge functions + enrichment scripts auto-import data  | Production initial load + weekly updates |
-| **Admin curation** | Manual CRUD for certifications, featured, OTT         | Ongoing                                  |
+| Track              | What                                                      | When                                  |
+| ------------------ | --------------------------------------------------------- | ------------------------------------- |
+| **TMDB sync**      | Admin panel sync imports movies, actors, images from TMDB | Dev initial load + production updates |
+| **Admin curation** | Manual CRUD for certifications, featured, OTT             | Ongoing                               |
 
 ---
 

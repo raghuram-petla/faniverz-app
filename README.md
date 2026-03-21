@@ -157,7 +157,7 @@ faniverz-app/
 ├── supabase/               # Database
 │   ├── config.toml         #   Local Supabase config
 │   ├── migrations/         #   41 PostgreSQL migration files
-│   └── seed.sql            #   Initial seed data
+│   └── (no seed — use admin TMDB sync)
 ├── scripts/                # Setup and data pipeline scripts
 │   ├── setup-local.sh           # Automated local dev setup (Supabase + MinIO)
 │   ├── seed-telugu-movies.ts    # TMDB movie import
