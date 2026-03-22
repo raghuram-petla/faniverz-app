@@ -261,9 +261,13 @@ export function ImportProgressList({ items }: ImportProgressListProps) {
           >
             {p.title}
           </span>
+          {p.status === 'importing' && p.iteration && p.iteration > 1 && (
+            <span className="text-xs text-status-blue">iteration {p.iteration}</span>
+          )}
           {p.result && (
             <span className="text-xs text-on-surface-subtle">
-              ({p.result.castCount} cast, {p.result.crewCount} crew)
+              ({p.result.castCount} cast, {p.result.crewCount} crew, {p.result.posterCount} posters,{' '}
+              {p.result.backdropCount} backdrops)
             </span>
           )}
           {p.error && <span className="text-xs text-status-red">{p.error}</span>}

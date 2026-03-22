@@ -86,75 +86,93 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
 
   const selectAllNew = () => setSelected(new Set(newMovies.map((m) => m.id)));
 
-  /** @sideeffect batch import — 5 movies per batch */
+  /** @sideeffect import 1 movie at a time with automatic 504 retry for resumable imports */
   const runBatchImport = async (movies: Array<{ id: number; title: string }>) => {
     setImportProgress(
       movies.map((m) => ({ tmdbId: m.id, title: m.title, status: 'pending' as const })),
     );
-    const ids = movies.map((m) => m.id);
-    for (let i = 0; i < ids.length; i += 5) {
-      const batch = ids.slice(i, i + 5);
-      setImportProgress((prev) =>
-        prev.map((p) => (batch.includes(p.tmdbId) ? { ...p, status: 'importing' } : p)),
-      );
-      try {
-        const response = await importMovies.mutateAsync(batch);
-        const successResults = response.results;
-        if (successResults.length > 0) {
-          setImportedIds((prev) => new Set([...prev, ...successResults.map((r) => r.tmdbId)]));
-          const tmdbResults = data.results ?? [];
-          const newExisting: ExistingMovieData[] = successResults.map((r) => {
-            const tmdb = tmdbResults.find((m) => m.id === r.tmdbId);
-            return {
-              id: r.movieId,
-              tmdb_id: r.tmdbId,
-              title: r.title,
-              synopsis: null,
-              poster_url: tmdb?.poster_path
-                ? `https://image.tmdb.org/t/p/w500${tmdb.poster_path}`
-                : null,
-              backdrop_url: null,
-              trailer_url: null,
-              director: null,
-              runtime: null,
-              genres: null,
-              imdb_id: null,
-              title_te: null,
-              synopsis_te: null,
-              tagline: null,
-              tmdb_status: null,
-              tmdb_vote_average: null,
-              tmdb_vote_count: null,
-              budget: null,
-              revenue: null,
-              certification: null,
-              spoken_languages: null,
-            };
-          });
-          setImportedMovieData((prev) => [...prev, ...newExisting]);
-        }
-        setImportProgress((prev) =>
-          prev.map((p) => {
-            if (!batch.includes(p.tmdbId)) return p;
-            const result = response.results.find((r) => r.tmdbId === p.tmdbId);
-            const error = response.errors.find((e) => e.tmdbId === p.tmdbId);
-            if (error) return { ...p, status: 'failed', error: error.message };
-            if (result) return { ...p, status: 'done', result };
-            return { ...p, status: 'done' };
-          }),
-        );
-      } catch (err) {
+    // @contract: batch size 1 — each movie gets its own API call for resumable import
+    for (const movie of movies) {
+      const batch = [movie.id];
+      // @contract: retry on 504 — backend saves progress, each retry resumes from checkpoint
+      const MAX_RETRIES = 15;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        // @contract: iteration is 1-based and shown in UI to indicate resume progress
         setImportProgress((prev) =>
           prev.map((p) =>
-            batch.includes(p.tmdbId)
-              ? {
-                  ...p,
-                  status: 'failed',
-                  error: err instanceof Error ? err.message : 'Import failed',
-                }
-              : p,
+            p.tmdbId === movie.id ? { ...p, status: 'importing', iteration: attempt + 1 } : p,
           ),
         );
+        try {
+          const response = await importMovies.mutateAsync(batch);
+          const successResults = response.results;
+          if (successResults.length > 0) {
+            setImportedIds((prev) => new Set([...prev, ...successResults.map((r) => r.tmdbId)]));
+            const tmdbResults = data.results ?? [];
+            const newExisting: ExistingMovieData[] = successResults.map((r) => {
+              const tmdb = tmdbResults.find((m) => m.id === r.tmdbId);
+              return {
+                id: r.movieId,
+                tmdb_id: r.tmdbId,
+                title: r.title,
+                synopsis: null,
+                poster_url: tmdb?.poster_path
+                  ? `https://image.tmdb.org/t/p/w500${tmdb.poster_path}`
+                  : null,
+                backdrop_url: null,
+                trailer_url: null,
+                director: null,
+                runtime: null,
+                genres: null,
+                imdb_id: null,
+                title_te: null,
+                synopsis_te: null,
+                tagline: null,
+                tmdb_status: null,
+                tmdb_vote_average: null,
+                tmdb_vote_count: null,
+                budget: null,
+                revenue: null,
+                certification: null,
+                spoken_languages: null,
+              };
+            });
+            setImportedMovieData((prev) => [...prev, ...newExisting]);
+          }
+          setImportProgress((prev) =>
+            prev.map((p) => {
+              if (p.tmdbId !== movie.id) return p;
+              const result = response.results.find((r) => r.tmdbId === p.tmdbId);
+              const error = response.errors.find((e) => e.tmdbId === p.tmdbId);
+              if (error) return { ...p, status: 'failed', error: error.message };
+              if (result) return { ...p, status: 'done', result };
+              return { ...p, status: 'done' };
+            }),
+          );
+          break;
+        } catch (err) {
+          // @edge: 504/502 = gateway timeout — backend was killed but saved progress, retry
+          const status = (err as Error & { status?: number }).status;
+          const isTimeout = status === 504 || status === 502;
+          if (isTimeout && attempt < MAX_RETRIES) {
+            // @contract: brief delay before retry to avoid hammering a struggling server
+            await new Promise((r) => setTimeout(r, 1000));
+            continue;
+          }
+          // Non-timeout error or retries exhausted — mark as failed
+          setImportProgress((prev) =>
+            prev.map((p) =>
+              p.tmdbId === movie.id
+                ? {
+                    ...p,
+                    status: 'failed',
+                    error: err instanceof Error ? err.message : 'Import failed',
+                  }
+                : p,
+            ),
+          );
+          break;
+        }
       }
     }
     setSelected(new Set());

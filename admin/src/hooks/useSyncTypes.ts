@@ -109,6 +109,8 @@ export interface ImportMovieResult {
   isNew: boolean;
   castCount: number;
   crewCount: number;
+  posterCount: number;
+  backdropCount: number;
 }
 
 export interface ImportMoviesResponse {

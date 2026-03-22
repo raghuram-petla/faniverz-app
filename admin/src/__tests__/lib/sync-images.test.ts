@@ -27,16 +27,25 @@ const mockUpload = vi.mocked(uploadImageFromUrl);
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createMockSupabase(): any {
+  const chainState = {
+    selectData: null as unknown[] | null,
+  };
   const mock = {
+    _chainState: chainState,
     from: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockResolvedValue({ error: null }),
     update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     not: vi.fn().mockReturnThis(),
+    in: vi.fn().mockResolvedValue({ error: null }),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   };
+  // Default: existing paths query returns empty set (no existing images)
+  mock.not.mockImplementation(() => {
+    return { data: chainState.selectData ?? [], error: null };
+  });
   return mock;
 }
 
@@ -105,9 +114,8 @@ describe('syncPosters', () => {
       'faniverz-movie-posters',
       expect.stringMatching(/^[0-9a-f-]+\.jpg$/),
     );
-    // Should delete existing TMDB posters first
     expect(supabase.from).toHaveBeenCalledWith('movie_images');
-    expect(supabase.delete).toHaveBeenCalled();
+    expect(supabase.insert).toHaveBeenCalled();
   });
 
   it('updates movies.poster_url for the main poster', async () => {
@@ -120,16 +128,6 @@ describe('syncPosters', () => {
     expect(supabase.update).toHaveBeenCalledWith(
       expect.objectContaining({ poster_url: expect.any(String) }),
     );
-  });
-
-  it('updates existing main poster instead of inserting when one exists', async () => {
-    supabase.maybeSingle.mockResolvedValueOnce({ data: { id: 'existing-id' }, error: null });
-    const posters = [makePoster({ file_path: '/main.jpg', iso_639_1: 'te' })];
-
-    await syncPosters(MOVIE_ID, TMDB_ID, { posters }, supabase as never);
-
-    // Should call update (not insert) for the main poster data
-    expect(supabase.update).toHaveBeenCalled();
   });
 
   it('inserts non-main posters with is_main false', async () => {
@@ -154,6 +152,79 @@ describe('syncPosters', () => {
 
     expect(result).toBe(25);
     expect(mockUpload).toHaveBeenCalledTimes(25);
+  });
+
+  it('skips already-synced posters (additive behavior)', async () => {
+    // Simulate 2 posters where 1 already exists in DB
+    const posters = [
+      makePoster({ file_path: '/existing.jpg', iso_639_1: 'te', vote_average: 9.0 }),
+      makePoster({ file_path: '/new.jpg', iso_639_1: 'en', vote_average: 5.0 }),
+    ];
+
+    // Return existing path from getExistingPaths query
+    supabase.not.mockImplementation(() => ({
+      data: [{ tmdb_file_path: '/existing.jpg' }],
+      error: null,
+    }));
+
+    const result = await syncPosters(MOVIE_ID, TMDB_ID, { posters }, supabase as never);
+
+    // Only the new poster should be uploaded
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+    expect(mockUpload.mock.calls[0][0]).toBe('https://image.tmdb.org/t/p/w500/new.jpg');
+    // Count includes both existing + new
+    expect(result).toBe(2);
+  });
+
+  it('skips all uploads when all posters already exist', async () => {
+    const posters = [
+      makePoster({ file_path: '/a.jpg', iso_639_1: 'te' }),
+      makePoster({ file_path: '/b.jpg', iso_639_1: 'en' }),
+    ];
+
+    supabase.not.mockImplementation(() => ({
+      data: [{ tmdb_file_path: '/a.jpg' }, { tmdb_file_path: '/b.jpg' }],
+      error: null,
+    }));
+
+    const result = await syncPosters(MOVIE_ID, TMDB_ID, { posters }, supabase as never);
+
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(result).toBe(2);
+  });
+
+  it('cleans up stale images after syncing', async () => {
+    const posters = [makePoster({ file_path: '/current.jpg', iso_639_1: 'te' })];
+
+    // First .not call = getExistingPaths (no existing)
+    // Second .not call = cleanupStaleImages query
+    supabase.not
+      .mockImplementationOnce(() => ({ data: [], error: null }))
+      .mockImplementationOnce(() => ({
+        data: [
+          { id: 'stale-id', tmdb_file_path: '/old-removed.jpg' },
+          { id: 'current-id', tmdb_file_path: '/current.jpg' },
+        ],
+        error: null,
+      }));
+
+    await syncPosters(MOVIE_ID, TMDB_ID, { posters }, supabase as never);
+
+    // Should delete stale entries (old-removed.jpg is not in current list)
+    expect(supabase.delete).toHaveBeenCalled();
+    expect(supabase.in).toHaveBeenCalledWith('id', ['stale-id']);
+  });
+
+  it('promotes tmdbMainPosterPath to first position', async () => {
+    const posters = [
+      makePoster({ file_path: '/a.jpg', iso_639_1: 'te', vote_average: 9.0 }),
+      makePoster({ file_path: '/main.jpg', iso_639_1: 'en', vote_average: 1.0 }),
+    ];
+
+    await syncPosters(MOVIE_ID, TMDB_ID, { posters }, supabase as never, '/main.jpg');
+
+    // The main poster path should be uploaded first (promoted)
+    expect(mockUpload.mock.calls[0][0]).toBe('https://image.tmdb.org/t/p/w500/main.jpg');
   });
 });
 
@@ -212,12 +283,12 @@ describe('syncBackdrops', () => {
     );
   });
 
-  it('deletes existing TMDB-synced backdrops before inserting', async () => {
+  it('queries existing paths and cleans up stale entries', async () => {
     const backdrops = [makeBackdrop()];
 
     await syncBackdrops(MOVIE_ID, TMDB_ID, { backdrops }, supabase as never);
 
-    expect(supabase.delete).toHaveBeenCalled();
+    // Should query for existing tmdb_file_path (additive behavior)
     expect(supabase.not).toHaveBeenCalledWith('tmdb_file_path', 'is', null);
   });
 
@@ -230,6 +301,53 @@ describe('syncBackdrops', () => {
 
     expect(result).toBe(20);
     expect(mockUpload).toHaveBeenCalledTimes(20);
+  });
+
+  it('skips already-synced backdrops (additive behavior)', async () => {
+    const backdrops = [
+      makeBackdrop({ file_path: '/existing.jpg', vote_average: 9.0 }),
+      makeBackdrop({ file_path: '/new.jpg', vote_average: 5.0 }),
+    ];
+
+    supabase.not.mockImplementation(() => ({
+      data: [{ tmdb_file_path: '/existing.jpg' }],
+      error: null,
+    }));
+
+    const result = await syncBackdrops(MOVIE_ID, TMDB_ID, { backdrops }, supabase as never);
+
+    expect(mockUpload).toHaveBeenCalledTimes(1);
+    expect(mockUpload.mock.calls[0][0]).toBe('https://image.tmdb.org/t/p/w1280/new.jpg');
+    expect(result).toBe(2);
+  });
+
+  it('cleans up stale backdrops not in current TMDB list', async () => {
+    const backdrops = [makeBackdrop({ file_path: '/keep.jpg' })];
+
+    supabase.not
+      .mockImplementationOnce(() => ({ data: [], error: null }))
+      .mockImplementationOnce(() => ({
+        data: [
+          { id: 'old-id', tmdb_file_path: '/removed.jpg' },
+          { id: 'keep-id', tmdb_file_path: '/keep.jpg' },
+        ],
+        error: null,
+      }));
+
+    await syncBackdrops(MOVIE_ID, TMDB_ID, { backdrops }, supabase as never);
+
+    expect(supabase.in).toHaveBeenCalledWith('id', ['old-id']);
+  });
+
+  it('promotes tmdbMainBackdropPath to first position', async () => {
+    const backdrops = [
+      makeBackdrop({ file_path: '/a.jpg', vote_average: 9.0 }),
+      makeBackdrop({ file_path: '/main.jpg', vote_average: 1.0 }),
+    ];
+
+    await syncBackdrops(MOVIE_ID, TMDB_ID, { backdrops }, supabase as never, '/main.jpg');
+
+    expect(mockUpload.mock.calls[0][0]).toBe('https://image.tmdb.org/t/p/w1280/main.jpg');
   });
 });
 
@@ -262,5 +380,20 @@ describe('syncAllImages', () => {
 
     expect(result).toEqual({ posterCount: 0, backdropCount: 0 });
     expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it('passes tmdbMainPaths to syncPosters and syncBackdrops', async () => {
+    mockGetMovieImages.mockResolvedValue({
+      posters: [makePoster({ file_path: '/p.jpg', iso_639_1: 'te' })],
+      backdrops: [makeBackdrop({ file_path: '/b.jpg' })],
+      logos: [],
+    });
+
+    await syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never, {
+      posterPath: '/main-poster.jpg',
+      backdropPath: '/main-backdrop.jpg',
+    });
+
+    expect(mockGetMovieImages).toHaveBeenCalledWith(TMDB_ID, 'api-key');
   });
 });

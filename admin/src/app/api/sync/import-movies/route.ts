@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'tmdbIds array is required.' }, { status: 400 });
     }
 
-    // Limit batch size to prevent timeout
-    // @edge: serverless function timeout — sequential TMDB fetches + DB writes can exceed limit at >5
+    // @edge: batch size limit — frontend sends 1 movie at a time for resumable imports,
+    // but keep safety cap at 5 for backward compatibility
     if (tmdbIds.length > 5) {
       return NextResponse.json(
         { error: 'Maximum 5 movies per batch. Send multiple requests for larger imports.' },
@@ -49,9 +49,12 @@ export async function POST(request: NextRequest) {
     let updated = 0;
 
     // @assumes: sequential processing is intentional — TMDB rate limit is 40 requests/10s; parallel fetches risk 429s
+    // @contract: resumable=true makes each movie import additive — 504 retries skip already-done items
     for (const tmdbId of tmdbIds) {
       try {
-        const result = await processMovieFromTmdb(tmdbId, tmdb.apiKey, supabase);
+        const result = await processMovieFromTmdb(tmdbId, tmdb.apiKey, supabase, {
+          resumable: true,
+        });
         results.push(result);
         if (result.isNew) added++;
         else updated++;

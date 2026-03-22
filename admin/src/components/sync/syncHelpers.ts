@@ -6,6 +6,8 @@ export interface ImportProgress {
   status: 'pending' | 'importing' | 'done' | 'failed';
   result?: ImportMovieResult;
   error?: string;
+  /** @contract: current iteration number (1-based) — shown during import to indicate resume progress */
+  iteration?: number;
 }
 
 export function formatDuration(startedAt: string, completedAt: string | null): string {

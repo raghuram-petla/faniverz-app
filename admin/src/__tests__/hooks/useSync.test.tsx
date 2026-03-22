@@ -139,7 +139,16 @@ describe('useImportMovies', () => {
     const response = {
       syncLogId: 'log-1',
       results: [
-        { movieId: 'm1', title: 'Movie', tmdbId: 100, isNew: true, castCount: 5, crewCount: 2 },
+        {
+          movieId: 'm1',
+          title: 'Movie',
+          tmdbId: 100,
+          isNew: true,
+          castCount: 5,
+          crewCount: 2,
+          posterCount: 10,
+          backdropCount: 3,
+        },
       ],
       errors: [],
     };
@@ -158,6 +167,40 @@ describe('useImportMovies', () => {
       headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdbIds: [100, 200] }),
     });
+  });
+
+  it('does not have onError handler (handled by DiscoverByYear retry loop)', async () => {
+    // Mock window.alert to verify it's NOT called on import error
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockFetchError(504, 'Gateway timeout');
+
+    const { result } = renderHook(() => useImportMovies(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate([100]);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    // useImportMovies should NOT show an alert (no onError handler)
+    expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('attaches HTTP status code to error object', async () => {
+    mockFetchError(504, 'Gateway timeout');
+
+    const { result } = renderHook(() => useImportMovies(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate([100]);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    // syncApi attaches .status to the Error object
+    const error = result.current.error as Error & { status?: number };
+    expect(error.status).toBe(504);
   });
 });
 

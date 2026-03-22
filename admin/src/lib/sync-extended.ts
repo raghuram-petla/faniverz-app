@@ -5,6 +5,8 @@
  *
  * @boundary: makes 1 additional TMDB API call per movie (watch providers).
  * @coupling: depends on tmdb.ts for API calls, sync-images.ts for image sync.
+ * @contract: additive sync — only inserts missing items (by tmdb_video_key / keyword_id),
+ * making imports resumable across 504 timeouts.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -16,7 +18,8 @@ import type { TmdbMovieDetailExtended, TmdbProductionCompany, TmdbVideo } from '
 
 /**
  * Sync all YouTube videos from TMDB into movie_videos table.
- * @sideeffect: clears TMDB-synced videos (preserving manually added) and re-inserts.
+ * Additive: only inserts videos not already present (by tmdb_video_key).
+ * @sideeffect: inserts missing videos; cleans up stale entries when complete.
  */
 export async function syncVideos(
   movieId: string,
@@ -26,18 +29,20 @@ export async function syncVideos(
   const youtubeVideos = videos.filter((v) => v.site === 'YouTube');
   if (!youtubeVideos.length) return 0;
 
-  // Clear existing TMDB-synced videos (those with tmdb_video_key set)
-  const { error: delErr } = await supabase
+  // @contract: additive — query existing, only insert missing
+  const { data: existingRows } = await supabase
     .from('movie_videos')
-    .delete()
+    .select('tmdb_video_key')
     .eq('movie_id', movieId)
     .not('tmdb_video_key', 'is', null);
-  if (delErr) console.warn('syncVideos: delete failed', delErr.message);
+  const existingKeys = new Set((existingRows ?? []).map((r) => r.tmdb_video_key as string));
+  const missing = youtubeVideos.filter((v) => !existingKeys.has(v.key));
 
-  let count = 0;
-  for (let i = 0; i < youtubeVideos.length; i++) {
-    const video = youtubeVideos[i];
+  let count = youtubeVideos.length - missing.length;
+  for (let i = 0; i < missing.length; i++) {
+    const video = missing[i];
     const videoType = mapTmdbVideoType(video.type);
+    const originalIdx = youtubeVideos.findIndex((v) => v.key === video.key);
 
     const { error: insertErr } = await supabase.from('movie_videos').insert({
       movie_id: movieId,
@@ -45,10 +50,24 @@ export async function syncVideos(
       title: video.name || video.type,
       video_type: videoType,
       video_date: video.published_at ? video.published_at.split('T')[0] : null,
-      display_order: i,
+      display_order: originalIdx,
       tmdb_video_key: video.key,
     });
     if (!insertErr) count++;
+  }
+
+  // @sideeffect: cleanup stale TMDB-synced videos not in current TMDB list
+  const validKeys = new Set(youtubeVideos.map((v) => v.key));
+  const { data: allExisting } = await supabase
+    .from('movie_videos')
+    .select('id, tmdb_video_key')
+    .eq('movie_id', movieId)
+    .not('tmdb_video_key', 'is', null);
+  const staleIds = (allExisting ?? [])
+    .filter((r) => !validKeys.has(r.tmdb_video_key as string))
+    .map((r) => r.id as string);
+  if (staleIds.length > 0) {
+    await supabase.from('movie_videos').delete().in('id', staleIds);
   }
 
   return count;
@@ -140,7 +159,8 @@ export async function syncWatchProviders(
 
 /**
  * Sync keywords from TMDB into movie_keywords table.
- * @sideeffect: deletes existing keywords and re-inserts from TMDB.
+ * Additive: only inserts missing keywords (by keyword_id).
+ * @sideeffect: inserts missing keywords; cleans up stale entries when complete.
  */
 export async function syncKeywords(
   movieId: string,
@@ -150,20 +170,37 @@ export async function syncKeywords(
   const keywords = detail.keywords?.keywords ?? [];
   if (!keywords.length) return 0;
 
-  const { error: kwDelErr } = await supabase
+  // @contract: additive — query existing, only insert missing
+  const { data: existingRows } = await supabase
     .from('movie_keywords')
-    .delete()
+    .select('keyword_id')
     .eq('movie_id', movieId);
-  if (kwDelErr) console.warn('syncKeywords: delete failed', kwDelErr.message);
+  const existingIds = new Set((existingRows ?? []).map((r) => r.keyword_id as number));
+  const missing = keywords.filter((kw) => !existingIds.has(kw.id));
 
-  const rows = keywords.map((kw) => ({
-    movie_id: movieId,
-    keyword_id: kw.id,
-    keyword_name: kw.name,
-  }));
+  if (missing.length > 0) {
+    const rows = missing.map((kw) => ({
+      movie_id: movieId,
+      keyword_id: kw.id,
+      keyword_name: kw.name,
+    }));
+    const { error: insertErr } = await supabase.from('movie_keywords').insert(rows);
+    if (insertErr) return keywords.length - missing.length;
+  }
 
-  const { error: insertErr } = await supabase.from('movie_keywords').insert(rows);
-  if (insertErr) return 0;
+  // @sideeffect: cleanup stale keywords not in current TMDB list
+  const validIds = new Set(keywords.map((kw) => kw.id));
+  const staleRows = (existingRows ?? []).filter((r) => !validIds.has(r.keyword_id as number));
+  if (staleRows.length > 0) {
+    for (const row of staleRows) {
+      await supabase
+        .from('movie_keywords')
+        .delete()
+        .eq('movie_id', movieId)
+        .eq('keyword_id', row.keyword_id);
+    }
+  }
+
   return keywords.length;
 }
 

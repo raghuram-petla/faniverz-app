@@ -5,6 +5,9 @@
  *
  * @boundary: makes 1 TMDB API call (getMovieImages) for both posters + backdrops.
  * @coupling: depends on r2-sync.ts for image uploads.
+ * @contract: additive sync — only uploads missing images (by tmdb_file_path),
+ * making imports resumable across 504 timeouts. Stale cleanup runs only when
+ * all images are processed (function completes without timeout).
  */
 
 import { randomUUID } from 'crypto';
@@ -23,11 +26,49 @@ function sortByLanguagePriority(images: TmdbImage[]): TmdbImage[] {
   });
 }
 
+/** @contract: query existing tmdb_file_paths for a given movie+image_type */
+async function getExistingPaths(
+  supabase: SupabaseClient,
+  movieId: string,
+  imageType: string,
+): Promise<Set<string>> {
+  // @edge: if query fails, return empty set — caller treats all items as missing (safe, just redundant uploads)
+  const { data, error } = await supabase
+    .from('movie_images')
+    .select('tmdb_file_path')
+    .eq('movie_id', movieId)
+    .eq('image_type', imageType)
+    .not('tmdb_file_path', 'is', null);
+  if (error) console.warn('getExistingPaths: query failed', error.message);
+  return new Set((data ?? []).map((r) => r.tmdb_file_path as string));
+}
+
+/** @sideeffect: delete stale TMDB-synced images not in the current TMDB list */
+async function cleanupStaleImages(
+  supabase: SupabaseClient,
+  movieId: string,
+  imageType: string,
+  validPaths: Set<string>,
+) {
+  const { data: allExisting } = await supabase
+    .from('movie_images')
+    .select('id, tmdb_file_path')
+    .eq('movie_id', movieId)
+    .eq('image_type', imageType)
+    .not('tmdb_file_path', 'is', null);
+  const staleIds = (allExisting ?? [])
+    .filter((r) => !validPaths.has(r.tmdb_file_path as string))
+    .map((r) => r.id as string);
+  if (staleIds.length > 0) {
+    await supabase.from('movie_images').delete().in('id', staleIds);
+  }
+}
+
 /**
  * Sync all posters from TMDB images endpoint into movie_images table.
- * Marks the highest-priority poster as is_main_poster (Telugu > Hindi > English > null).
+ * Additive: only uploads missing images, skips already-synced ones.
  *
- * @sideeffect: uploads each poster to R2; clears TMDB-synced posters and re-inserts.
+ * @sideeffect: uploads missing posters to R2 in parallel batches of 5.
  */
 export async function syncPosters(
   movieId: string,
@@ -41,7 +82,6 @@ export async function syncPosters(
 
   // @contract TMDB's chosen main poster takes priority; remaining sorted by language then vote
   const sorted = sortByLanguagePriority(images.posters);
-  // Move TMDB's main poster to index 0 if found
   if (tmdbMainPosterPath) {
     const mainIdx = sorted.findIndex((p) => p.file_path === tmdbMainPosterPath);
     if (mainIdx > 0) {
@@ -50,101 +90,76 @@ export async function syncPosters(
     }
   }
 
-  // @sideeffect: clear TMDB-synced poster images (keep manually added ones without tmdb_file_path)
-  const { error: delErr } = await supabase
-    .from('movie_images')
-    .delete()
-    .eq('movie_id', movieId)
-    .eq('image_type', 'poster')
-    .not('tmdb_file_path', 'is', null);
-  if (delErr) console.warn('syncPosters: delete failed', delErr.message);
+  // @contract: additive — query existing, only process missing
+  const existingPaths = await getExistingPaths(supabase, movieId, 'poster');
+  const missing = sorted.filter((p) => !existingPaths.has(p.file_path));
+  const indexMap = new Map(sorted.map((p, i) => [p.file_path, i]));
+  let count = sorted.length - missing.length; // already-done count
 
-  let count = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    const poster = sorted[i];
-    const key = `${randomUUID()}.jpg`;
-    const imageUrl = await uploadImageFromUrl(
-      TMDB_IMAGE.poster(poster.file_path),
-      R2_BUCKETS.moviePosters,
-      key,
-    );
+  // @sideeffect: upload missing posters in parallel batches of 5
+  for (let i = 0; i < missing.length; i += 5) {
+    const batch = missing.slice(i, i + 5);
+    const results = await Promise.all(
+      batch.map(async (poster) => {
+        const key = `${randomUUID()}.jpg`;
+        const imageUrl = await uploadImageFromUrl(
+          TMDB_IMAGE.poster(poster.file_path),
+          R2_BUCKETS.moviePosters,
+          key,
+        );
+        const sortIdx = indexMap.get(poster.file_path) ?? 0;
+        const isMain = sortIdx === 0;
 
-    const isMain = i === 0;
-    if (isMain) {
-      // Update or insert main poster
-      const { data: existingMain } = await supabase
-        .from('movie_images')
-        .select('id')
-        .eq('movie_id', movieId)
-        .eq('is_main_poster', true)
-        .maybeSingle();
-
-      const posterData = {
-        image_url: imageUrl,
-        image_type: 'poster' as const,
-        tmdb_file_path: poster.file_path,
-        iso_639_1: poster.iso_639_1,
-        width: poster.width,
-        height: poster.height,
-        vote_average: poster.vote_average,
-      };
-
-      if (existingMain) {
-        const { error: upErr } = await supabase
-          .from('movie_images')
-          .update(posterData)
-          .eq('id', existingMain.id);
-        if (upErr) {
-          console.warn('syncPosters: update main failed', upErr.message);
-          continue;
+        if (isMain) {
+          // @sideeffect: unset existing main poster before setting new one
+          await supabase
+            .from('movie_images')
+            .update({ is_main_poster: false })
+            .eq('movie_id', movieId)
+            .eq('is_main_poster', true);
         }
-      } else {
-        const { error: insErr } = await supabase.from('movie_images').insert({
+
+        const { error } = await supabase.from('movie_images').insert({
           movie_id: movieId,
-          ...posterData,
-          title: 'Main Poster',
-          is_main_poster: true,
-          display_order: 0,
+          image_url: imageUrl,
+          image_type: 'poster',
+          title: isMain ? 'Main Poster' : `Poster (${poster.iso_639_1 ?? 'no lang'})`,
+          is_main_poster: isMain,
+          display_order: sortIdx,
+          tmdb_file_path: poster.file_path,
+          iso_639_1: poster.iso_639_1,
+          width: poster.width,
+          height: poster.height,
+          vote_average: poster.vote_average,
         });
-        if (insErr) {
-          console.warn('syncPosters: insert main failed', insErr.message);
-          continue;
+
+        if (!error && isMain) {
+          await supabase
+            .from('movies')
+            .update({ poster_url: imageUrl, poster_image_type: 'poster' })
+            .eq('id', movieId);
         }
-      }
-      // Keep movies.poster_url + poster_image_type in sync
-      const { error: movUpErr } = await supabase
-        .from('movies')
-        .update({ poster_url: imageUrl, poster_image_type: 'poster' })
-        .eq('id', movieId);
-      if (movUpErr) console.warn('syncPosters: movies.poster_url update failed', movUpErr.message);
-    } else {
-      const { error: insErr } = await supabase.from('movie_images').insert({
-        movie_id: movieId,
-        image_url: imageUrl,
-        image_type: 'poster',
-        title: `Poster (${poster.iso_639_1 ?? 'no lang'})`,
-        is_main_poster: false,
-        display_order: i,
-        tmdb_file_path: poster.file_path,
-        iso_639_1: poster.iso_639_1,
-        width: poster.width,
-        height: poster.height,
-        vote_average: poster.vote_average,
-      });
-      if (insErr) {
-        console.warn('syncPosters: insert failed', insErr.message);
-        continue;
-      }
+        return { error };
+      }),
+    );
+    // @contract: count successes after batch completes to avoid race on shared counter
+    for (const r of results) {
+      if (r.error) console.warn('syncPosters: insert failed', r.error.message);
+      else count++;
     }
-    count++;
   }
+
+  // @sideeffect: cleanup stale images only when all are processed (function completed)
+  await cleanupStaleImages(supabase, movieId, 'poster', new Set(sorted.map((p) => p.file_path)));
 
   return count;
 }
 
 /**
  * Sync all backdrops from TMDB images endpoint into movie_images table.
- * @sideeffect: uploads each backdrop to R2; replaces existing TMDB-synced backdrops.
+ * Additive: only uploads missing backdrops, skips already-synced ones.
+ *
+ * @sideeffect: uploads missing backdrops to R2 in parallel batches of 5.
  */
 export async function syncBackdrops(
   movieId: string,
@@ -157,7 +172,6 @@ export async function syncBackdrops(
   if (!images.backdrops.length) return 0;
 
   const sorted = [...images.backdrops].sort((a, b) => b.vote_average - a.vote_average);
-  // Move TMDB's main backdrop to index 0 if found
   if (tmdbMainBackdropPath) {
     const mainIdx = sorted.findIndex((b) => b.file_path === tmdbMainBackdropPath);
     if (mainIdx > 0) {
@@ -166,60 +180,63 @@ export async function syncBackdrops(
     }
   }
 
-  // Clear existing TMDB-synced backdrop images
-  const { error: bdDelErr } = await supabase
-    .from('movie_images')
-    .delete()
-    .eq('movie_id', movieId)
-    .eq('image_type', 'backdrop')
-    .not('tmdb_file_path', 'is', null);
-  if (bdDelErr) console.warn('syncBackdrops: delete failed', bdDelErr.message);
+  // @contract: additive — query existing, only process missing
+  const existingPaths = await getExistingPaths(supabase, movieId, 'backdrop');
+  const missing = sorted.filter((b) => !existingPaths.has(b.file_path));
+  const indexMap = new Map(sorted.map((b, i) => [b.file_path, i]));
+  let count = sorted.length - missing.length;
 
-  let count = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    const backdrop = sorted[i];
-    const key = `${randomUUID()}.jpg`;
-    const imageUrl = await uploadImageFromUrl(
-      TMDB_IMAGE.backdrop(backdrop.file_path),
-      R2_BUCKETS.movieBackdrops,
-      key,
+  // @sideeffect: upload missing backdrops in parallel batches of 5
+  for (let i = 0; i < missing.length; i += 5) {
+    const batch = missing.slice(i, i + 5);
+    const results = await Promise.all(
+      batch.map(async (backdrop) => {
+        const key = `${randomUUID()}.jpg`;
+        const imageUrl = await uploadImageFromUrl(
+          TMDB_IMAGE.backdrop(backdrop.file_path),
+          R2_BUCKETS.movieBackdrops,
+          key,
+        );
+        const sortIdx = indexMap.get(backdrop.file_path) ?? 0;
+        const isMain = sortIdx === 0;
+
+        if (isMain) {
+          await supabase
+            .from('movie_images')
+            .update({ is_main_backdrop: false })
+            .eq('movie_id', movieId)
+            .eq('is_main_backdrop', true);
+        }
+
+        const { error } = await supabase.from('movie_images').insert({
+          movie_id: movieId,
+          image_url: imageUrl,
+          image_type: 'backdrop',
+          is_main_backdrop: isMain,
+          tmdb_file_path: backdrop.file_path,
+          width: backdrop.width,
+          height: backdrop.height,
+          iso_639_1: backdrop.iso_639_1,
+          vote_average: backdrop.vote_average,
+          display_order: sortIdx + 1000,
+        });
+        // @contract: update movies.backdrop_url only after successful insert
+        if (!error && isMain) {
+          await supabase
+            .from('movies')
+            .update({ backdrop_url: imageUrl, backdrop_image_type: 'backdrop' })
+            .eq('id', movieId);
+        }
+        return { error };
+      }),
     );
-
-    const isMainBackdrop = i === 0;
-    if (isMainBackdrop) {
-      // Unset existing main backdrop before setting new one
-      const { error: unsetErr } = await supabase
-        .from('movie_images')
-        .update({ is_main_backdrop: false })
-        .eq('movie_id', movieId)
-        .eq('is_main_backdrop', true);
-      if (unsetErr) console.warn('syncBackdrops: unset main failed', unsetErr.message);
-      const { error: movUpErr } = await supabase
-        .from('movies')
-        .update({ backdrop_url: imageUrl, backdrop_image_type: 'backdrop' })
-        .eq('id', movieId);
-      if (movUpErr)
-        console.warn('syncBackdrops: movies.backdrop_url update failed', movUpErr.message);
+    for (const r of results) {
+      if (r.error) console.warn('syncBackdrops: insert failed', r.error.message);
+      else count++;
     }
-
-    const { error: insErr } = await supabase.from('movie_images').insert({
-      movie_id: movieId,
-      image_url: imageUrl,
-      image_type: 'backdrop',
-      is_main_backdrop: isMainBackdrop,
-      tmdb_file_path: backdrop.file_path,
-      width: backdrop.width,
-      height: backdrop.height,
-      iso_639_1: backdrop.iso_639_1,
-      vote_average: backdrop.vote_average,
-      display_order: i + 1000,
-    });
-    if (insErr) {
-      console.warn('syncBackdrops: insert failed', insErr.message);
-      continue;
-    }
-    count++;
   }
+
+  await cleanupStaleImages(supabase, movieId, 'backdrop', new Set(sorted.map((b) => b.file_path)));
 
   return count;
 }

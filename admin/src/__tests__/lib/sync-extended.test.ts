@@ -43,10 +43,13 @@ const createMockSupabase = () => {
     eq: vi.fn().mockReturnThis(),
     or: vi.fn().mockReturnThis(),
     not: vi.fn().mockReturnThis(),
+    in: vi.fn().mockResolvedValue({ error: null }),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   };
+  // Default: existing keys/ids query returns empty (no existing items)
+  chain.not.mockImplementation(() => ({ data: [], error: null }));
   Object.values(chain).forEach((fn) => {
-    if (typeof fn.mockReturnThis === 'function') {
+    if (typeof fn.mockReturnThis === 'function' && fn !== chain.not) {
       fn.mockReturnThis();
     }
   });
@@ -138,6 +141,81 @@ describe('syncVideos', () => {
 
     expect(supabase.insert).toHaveBeenCalledWith(expect.objectContaining({ title: 'Clip' }));
   });
+
+  it('skips already-synced videos (additive behavior)', async () => {
+    const videos: TmdbVideo[] = [
+      { key: 'existing-key', site: 'YouTube', type: 'Trailer', name: 'Old', published_at: '' },
+      { key: 'new-key', site: 'YouTube', type: 'Teaser', name: 'New', published_at: '' },
+    ];
+
+    // First .not call returns existing video keys
+    supabase.not.mockImplementationOnce(() => ({
+      data: [{ tmdb_video_key: 'existing-key' }],
+      error: null,
+    }));
+    // Second .not call returns all existing for cleanup
+    supabase.not.mockImplementationOnce(() => ({
+      data: [
+        { id: 'v1', tmdb_video_key: 'existing-key' },
+        { id: 'v2', tmdb_video_key: 'new-key' },
+      ],
+      error: null,
+    }));
+
+    const result = await syncVideos(MOVIE_ID, videos, supabase as unknown as SupabaseClient);
+
+    // Only the new video should be inserted
+    expect(supabase.insert).toHaveBeenCalledTimes(1);
+    expect(supabase.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ tmdb_video_key: 'new-key' }),
+    );
+    // Count includes existing + new
+    expect(result).toBe(2);
+  });
+
+  it('cleans up stale videos not in current TMDB list', async () => {
+    const videos: TmdbVideo[] = [
+      { key: 'current', site: 'YouTube', type: 'Trailer', name: 'Current', published_at: '' },
+    ];
+
+    // getExisting returns empty (no existing)
+    supabase.not.mockImplementationOnce(() => ({
+      data: [],
+      error: null,
+    }));
+    // cleanup query returns stale + current
+    supabase.not.mockImplementationOnce(() => ({
+      data: [
+        { id: 'stale-id', tmdb_video_key: 'removed-video' },
+        { id: 'current-id', tmdb_video_key: 'current' },
+      ],
+      error: null,
+    }));
+
+    await syncVideos(MOVIE_ID, videos, supabase as unknown as SupabaseClient);
+
+    expect(supabase.in).toHaveBeenCalledWith('id', ['stale-id']);
+  });
+
+  it('skips all inserts when all videos already exist', async () => {
+    const videos: TmdbVideo[] = [
+      { key: 'yt1', site: 'YouTube', type: 'Trailer', name: 'A', published_at: '' },
+    ];
+
+    supabase.not.mockImplementationOnce(() => ({
+      data: [{ tmdb_video_key: 'yt1' }],
+      error: null,
+    }));
+    supabase.not.mockImplementationOnce(() => ({
+      data: [{ id: 'v1', tmdb_video_key: 'yt1' }],
+      error: null,
+    }));
+
+    const result = await syncVideos(MOVIE_ID, videos, supabase as unknown as SupabaseClient);
+
+    expect(supabase.insert).not.toHaveBeenCalled();
+    expect(result).toBe(1);
+  });
 });
 
 describe('syncWatchProviders', () => {
@@ -174,14 +252,10 @@ describe('syncWatchProviders', () => {
     vi.mocked(getWatchProviders).mockResolvedValue([
       { provider_id: 999, provider_name: 'New Service', logo_path: '' },
     ]);
-    // platform not found → insert triggers → but mock chain won't fully
-    // support .insert().select().single(), so we verify it attempts creation
     supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null }); // platform not found
-    // Mock the chained .insert().select('id').single() for platform creation
     const singleMock = vi.fn().mockResolvedValue({ data: { id: 'new-service' }, error: null });
     const selectAfterInsert = vi.fn().mockReturnValue({ single: singleMock });
     supabase.insert.mockReturnValueOnce({ select: selectAfterInsert } as never);
-    // Not already linked
     supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const result = await syncWatchProviders(
@@ -235,7 +309,12 @@ describe('syncKeywords', () => {
     supabase = createMockSupabase();
   });
 
-  it('inserts keywords and returns count', async () => {
+  it('inserts missing keywords and returns total count', async () => {
+    // eq returns the existing query result (no existing keywords)
+    supabase.eq.mockImplementation(function (this: unknown) {
+      return { data: [], error: null };
+    });
+
     const detail = {
       keywords: {
         keywords: [
@@ -248,7 +327,6 @@ describe('syncKeywords', () => {
     const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
 
     expect(result).toBe(2);
-    expect(supabase.delete).toHaveBeenCalled();
     expect(supabase.insert).toHaveBeenCalledWith([
       { movie_id: MOVIE_ID, keyword_id: 1, keyword_name: 'action' },
       { movie_id: MOVIE_ID, keyword_id: 2, keyword_name: 'drama' },
@@ -266,6 +344,80 @@ describe('syncKeywords', () => {
     const detail = {} as unknown as TmdbMovieDetailExtended;
     const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
     expect(result).toBe(0);
+  });
+
+  it('skips already-existing keywords (additive behavior)', async () => {
+    // eq returns existing keyword_ids
+    supabase.eq.mockImplementation(function () {
+      return { data: [{ keyword_id: 1 }], error: null };
+    });
+
+    const detail = {
+      keywords: {
+        keywords: [
+          { id: 1, name: 'action' },
+          { id: 2, name: 'drama' },
+        ],
+      },
+    } as unknown as TmdbMovieDetailExtended;
+
+    const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
+
+    // Only missing keyword (id:2) should be inserted
+    expect(supabase.insert).toHaveBeenCalledWith([
+      { movie_id: MOVIE_ID, keyword_id: 2, keyword_name: 'drama' },
+    ]);
+    expect(result).toBe(2);
+  });
+
+  it('cleans up stale keywords not in current TMDB list', async () => {
+    // eq returns existing keywords including a stale one — but must also be
+    // chainable for .delete().eq().eq() in the cleanup code
+    const existingData = { data: [{ keyword_id: 1 }, { keyword_id: 999 }], error: null };
+    supabase.eq.mockImplementation(function () {
+      // Return a chainable + thenable result
+      // Note: `then` must resolve with a plain object (not the thenable itself)
+      // to avoid infinite promise resolution loop
+      const plain = { ...existingData };
+      return {
+        ...plain,
+        eq: vi.fn().mockResolvedValue({ error: null }),
+        then: (onFulfill: (v: unknown) => unknown, onReject?: (e: unknown) => unknown) =>
+          Promise.resolve(plain).then(onFulfill, onReject),
+      };
+    });
+
+    const detail = {
+      keywords: {
+        keywords: [{ id: 1, name: 'action' }],
+      },
+    } as unknown as TmdbMovieDetailExtended;
+
+    const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
+
+    // Stale keyword 999 should be deleted
+    expect(supabase.delete).toHaveBeenCalled();
+    expect(result).toBe(1);
+  });
+
+  it('does not insert when all keywords already exist', async () => {
+    supabase.eq.mockImplementation(function () {
+      return { data: [{ keyword_id: 1 }, { keyword_id: 2 }], error: null };
+    });
+
+    const detail = {
+      keywords: {
+        keywords: [
+          { id: 1, name: 'action' },
+          { id: 2, name: 'drama' },
+        ],
+      },
+    } as unknown as TmdbMovieDetailExtended;
+
+    const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
+
+    expect(supabase.insert).not.toHaveBeenCalled();
+    expect(result).toBe(2);
   });
 });
 

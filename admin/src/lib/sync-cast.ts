@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getMovieDetails, TMDB_IMAGE } from '@/lib/tmdb';
 import { extractKeyCrewMembers } from '@/lib/tmdbTypes';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { upsertActorPreserveType } from '@/lib/sync-actor';
 
@@ -113,4 +114,146 @@ export async function syncCastCrew(
 
     updatedFields.push('cast');
   }
+}
+
+// ── Additive (resumable) cast/crew sync ────────────────────────────────────
+
+/** @contract: query existing cast keys for a given movie+credit_type. For cast, key
+ * is tmdb_person_id. For crew, key is `${tmdb_person_id}-${role_order}` because one
+ * person can hold multiple crew roles (e.g., Director + Writer). */
+async function getExistingCastKeys(
+  supabase: SupabaseClient,
+  movieId: string,
+  creditType: 'cast' | 'crew',
+): Promise<Set<string>> {
+  // @edge: if query fails, return empty set — caller treats all items as missing (safe, just redundant uploads)
+  const { data, error } = await supabase
+    .from('movie_cast')
+    .select('role_order, actors!inner(tmdb_person_id)')
+    .eq('movie_id', movieId)
+    .eq('credit_type', creditType);
+  if (error) console.warn('getExistingCastKeys: query failed', error.message);
+  // @edge: Supabase returns actors as object (not array) due to !inner join
+  return new Set(
+    (data ?? []).map((r) => {
+      const personId = (r.actors as unknown as { tmdb_person_id: number }).tmdb_person_id;
+      // @contract: crew uses composite key to support multi-role (Director + Writer)
+      return creditType === 'crew' ? `${personId}-${r.role_order}` : String(personId);
+    }),
+  );
+}
+
+/**
+ * Additive cast/crew sync — only processes missing members, skips already-synced.
+ * R2 uploads parallelized in batches of 5 for speed.
+ * Cleans up stale entries only when ALL members are processed (function completes).
+ *
+ * @sideeffect: uploads actor photos to R2, upserts actors, inserts movie_cast rows.
+ * @contract: used by resumable import to survive 504 timeouts — each retry makes progress.
+ */
+export async function syncCastCrewAdditive(
+  movieId: string,
+  detail: Awaited<ReturnType<typeof getMovieDetails>>,
+  supabase: SupabaseClient,
+): Promise<{ castCount: number; crewCount: number }> {
+  // ── Cast ──
+  const existingCastKeys = await getExistingCastKeys(supabase, movieId, 'cast');
+  const allCast = detail.credits.cast;
+  const missingCast = allCast.filter((cm) => !existingCastKeys.has(String(cm.id)));
+  let castCount = allCast.length - missingCast.length;
+
+  // @sideeffect: process missing cast in parallel batches of 5
+  for (let i = 0; i < missingCast.length; i += 5) {
+    const batch = missingCast.slice(i, i + 5);
+    const batchResults = await Promise.all(
+      batch.map(async (cm) => {
+        const photoUrl = await maybeUploadImage(
+          cm.profile_path,
+          R2_BUCKETS.actorPhotos,
+          `${randomUUID()}.jpg`,
+          TMDB_IMAGE.profile,
+        );
+        const actorId = await upsertActorPreserveType(supabase, {
+          tmdb_person_id: cm.id,
+          name: cm.name,
+          photo_url: photoUrl,
+          default_person_type: 'actor',
+          gender: cm.gender ?? null,
+        });
+        if (!actorId) return { ok: false };
+        const { error } = await supabase.from('movie_cast').insert({
+          movie_id: movieId,
+          actor_id: actorId,
+          role_name: cm.character || null,
+          display_order: cm.order,
+          credit_type: 'cast',
+          role_order: null,
+        });
+        if (error)
+          console.warn(`syncCastCrewAdditive: cast insert failed for ${cm.name}`, error.message);
+        return { ok: !error };
+      }),
+    );
+    // @contract: count successes after batch completes to avoid race on shared counter
+    castCount += batchResults.filter((r) => r?.ok).length;
+  }
+
+  // ── Crew ──
+  // @contract: crew uses composite key `${person_id}-${roleOrder}` to support multi-role
+  const existingCrewKeys = await getExistingCastKeys(supabase, movieId, 'crew');
+  const keyCrew = extractKeyCrewMembers(detail.credits.crew);
+  const missingCrew = keyCrew.filter((cm) => !existingCrewKeys.has(`${cm.id}-${cm.roleOrder}`));
+  let crewCount = keyCrew.length - missingCrew.length;
+
+  for (let i = 0; i < missingCrew.length; i += 5) {
+    const batch = missingCrew.slice(i, i + 5);
+    const crewResults = await Promise.all(
+      batch.map(async (cm) => {
+        const photoUrl = await maybeUploadImage(
+          cm.profile_path,
+          R2_BUCKETS.actorPhotos,
+          `${randomUUID()}.jpg`,
+          TMDB_IMAGE.profile,
+        );
+        const actorId = await upsertActorPreserveType(supabase, {
+          tmdb_person_id: cm.id,
+          name: cm.name,
+          photo_url: photoUrl,
+          default_person_type: 'technician',
+          gender: cm.gender ?? null,
+        });
+        if (!actorId) return { ok: false };
+        const { error } = await supabase.from('movie_cast').insert({
+          movie_id: movieId,
+          actor_id: actorId,
+          role_name: cm.roleName,
+          display_order: 0,
+          credit_type: 'crew',
+          role_order: cm.roleOrder,
+        });
+        if (error)
+          console.warn(`syncCastCrewAdditive: crew insert failed for ${cm.name}`, error.message);
+        return { ok: !error };
+      }),
+    );
+    crewCount += crewResults.filter((r) => r?.ok).length;
+  }
+
+  // @sideeffect: cleanup stale cast/crew entries not in current TMDB data
+  const allTmdbPersonIds = new Set([...allCast.map((c) => c.id), ...keyCrew.map((c) => c.id)]);
+  const { data: existingAll } = await supabase
+    .from('movie_cast')
+    .select('id, actor_id, actors!inner(tmdb_person_id)')
+    .eq('movie_id', movieId);
+  const staleIds = (existingAll ?? [])
+    .filter(
+      (r) =>
+        !allTmdbPersonIds.has((r.actors as unknown as { tmdb_person_id: number }).tmdb_person_id),
+    )
+    .map((r) => r.id as string);
+  if (staleIds.length > 0) {
+    await supabase.from('movie_cast').delete().in('id', staleIds);
+  }
+
+  return { castCount, crewCount };
 }

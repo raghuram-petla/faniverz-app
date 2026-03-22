@@ -157,7 +157,117 @@ describe('DiscoverByYear', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Import all new (1)'));
     });
+    // Batch size is 1 — each movie gets its own API call
     expect(mockImportMutateAsync).toHaveBeenCalledWith([1]);
+  });
+
+  it('imports movies one at a time (batch size 1)', async () => {
+    mockImportMutateAsync.mockResolvedValue({
+      syncLogId: 'log-1',
+      results: [
+        {
+          movieId: 'm1',
+          title: 'A',
+          tmdbId: 1,
+          isNew: true,
+          castCount: 0,
+          crewCount: 0,
+          posterCount: 0,
+          backdropCount: 0,
+        },
+      ],
+      errors: [],
+    });
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+      { id: 2, title: 'B', poster_path: null, release_date: '2024-02-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (2)'));
+    });
+    // Each movie should be imported separately (batch size 1)
+    expect(mockImportMutateAsync).toHaveBeenCalledWith([1]);
+    expect(mockImportMutateAsync).toHaveBeenCalledWith([2]);
+  });
+
+  it('retries on 504 error during import', async () => {
+    vi.useFakeTimers();
+    const error504 = new Error('Gateway timeout') as Error & { status?: number };
+    error504.status = 504;
+    // First call fails with 504, second succeeds
+    mockImportMutateAsync.mockRejectedValueOnce(error504).mockResolvedValueOnce({
+      syncLogId: 'log-1',
+      results: [
+        {
+          movieId: 'm1',
+          title: 'A',
+          tmdbId: 1,
+          isNew: true,
+          castCount: 0,
+          crewCount: 0,
+          posterCount: 0,
+          backdropCount: 0,
+        },
+      ],
+      errors: [],
+    });
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (1)'));
+    });
+    // Advance past the 1s retry delay
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+    });
+    // Should have retried — called twice (first 504 + retry)
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('retries on 502 error during import', async () => {
+    vi.useFakeTimers();
+    const error502 = new Error('Bad gateway') as Error & { status?: number };
+    error502.status = 502;
+    mockImportMutateAsync.mockRejectedValueOnce(error502).mockResolvedValueOnce({
+      syncLogId: 'log-1',
+      results: [],
+      errors: [],
+    });
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (1)'));
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+    });
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('does not retry on non-timeout errors', async () => {
+    const error400 = new Error('Bad request') as Error & { status?: number };
+    error400.status = 400;
+    mockImportMutateAsync.mockRejectedValueOnce(error400);
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (1)'));
+    });
+    // Should NOT retry — only called once
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
   });
 
   it('renders movie cards for new results', () => {

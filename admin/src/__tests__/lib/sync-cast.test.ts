@@ -1,5 +1,5 @@
 /**
- * Tests for sync-cast.ts — cast/crew sync and poster mirroring.
+ * Tests for sync-cast.ts — cast/crew sync, poster mirroring, and additive sync.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -39,11 +39,17 @@ vi.mock('crypto', async (importOriginal) => {
   };
 });
 
-import { mirrorMainPoster, syncCastCrew } from '../../lib/sync-cast';
+import { mirrorMainPoster, syncCastCrew, syncCastCrewAdditive } from '../../lib/sync-cast';
 import { extractKeyCrewMembers } from '../../lib/tmdbTypes';
 import { upsertActorPreserveType } from '../../lib/sync-actor';
 
-function createMockSupabase() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MockSupabase = Record<string, any>;
+
+/**
+ * Basic mock for mirrorMainPoster / syncCastCrew — simple chainable mock.
+ */
+function createBasicMockSupabase() {
   const mock = {
     from: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
@@ -51,19 +57,85 @@ function createMockSupabase() {
     update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    in: vi.fn().mockResolvedValue({ error: null }),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   };
+  return mock;
+}
+
+/**
+ * Advanced mock for syncCastCrewAdditive — supports chained `.eq().eq()`,
+ * single `.eq()`, and `.delete().in()` patterns.
+ *
+ * Read results are consumed from a queue when `select()` is called (starting
+ * a read chain). Write chains (insert/delete) use fixed mock returns.
+ */
+function createAdditiveMockSupabase() {
+  const readResults: Array<{ data: unknown; error: unknown }> = [];
+  const defaultResult = { data: [], error: null };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mock: MockSupabase = {};
+
+  /** Build a chainable + thenable object that resolves to `result`. */
+  function chainObj(result: { data: unknown; error: unknown }): MockSupabase {
+    return {
+      select: (...args: unknown[]) => {
+        mock.select(...args);
+        // Consume next read result from queue
+        const readResult = readResults.shift() ?? defaultResult;
+        return chainObj(readResult);
+      },
+      eq: (...args: unknown[]) => {
+        mock.eq(...args);
+        return chainObj(result);
+      },
+      in: (...args: unknown[]) => {
+        mock.in(...args);
+        return chainObj(result);
+      },
+      delete: (...args: unknown[]) => {
+        mock.delete(...args);
+        return chainObj(result);
+      },
+      insert: mock.insert,
+      update: (...args: unknown[]) => {
+        mock.update(...args);
+        return chainObj(result);
+      },
+      maybeSingle: mock.maybeSingle,
+      data: result.data,
+      error: result.error,
+      then: (onFulfill: (v: unknown) => unknown, onReject?: (e: unknown) => unknown) =>
+        Promise.resolve(result).then(onFulfill, onReject),
+    };
+  }
+
+  mock.from = vi.fn(() => chainObj(defaultResult));
+  mock.select = vi.fn();
+  mock.insert = vi.fn().mockResolvedValue({ error: null });
+  mock.update = vi.fn();
+  mock.delete = vi.fn();
+  mock.eq = vi.fn();
+  mock.in = vi.fn().mockResolvedValue({ error: null });
+  mock.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+
+  /** Push a read result that will be consumed by the next `select()` call. */
+  mock._pushResult = (result: { data: unknown; error: unknown }) => {
+    readResults.push(result);
+  };
+
   return mock;
 }
 
 const MOVIE_ID = 'movie-uuid-123';
 
 describe('mirrorMainPoster', () => {
-  let supabase: ReturnType<typeof createMockSupabase>;
+  let supabase: ReturnType<typeof createBasicMockSupabase>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    supabase = createMockSupabase();
+    supabase = createBasicMockSupabase();
   });
 
   it('inserts new main poster when none exists', async () => {
@@ -99,15 +171,14 @@ describe('mirrorMainPoster', () => {
 });
 
 describe('syncCastCrew', () => {
-  let supabase: ReturnType<typeof createMockSupabase>;
+  let supabase: ReturnType<typeof createBasicMockSupabase>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    supabase = createMockSupabase();
+    supabase = createBasicMockSupabase();
   });
 
   it('syncs cast when count is 0', async () => {
-    // count query
     supabase.select.mockReturnValueOnce({
       ...supabase,
       eq: vi.fn().mockResolvedValue({ count: 0 }),
@@ -152,7 +223,6 @@ describe('syncCastCrew', () => {
   });
 
   it('deletes existing cast before re-insert on force resync', async () => {
-    // count query returns existing cast
     supabase.select.mockReturnValueOnce({
       ...supabase,
       eq: vi.fn().mockResolvedValue({ count: 5 }),
@@ -239,8 +309,273 @@ describe('syncCastCrew', () => {
 
     await syncCastCrew(MOVIE_ID, detail as never, false, supabase as never, updatedFields);
 
-    // insert should not be called for movie_cast since actorId was null
-    // but updatedFields should still have 'cast' pushed
     expect(updatedFields).toContain('cast');
+  });
+});
+
+describe('syncCastCrewAdditive', () => {
+  let supabase: MockSupabase;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createAdditiveMockSupabase();
+  });
+
+  it('syncs all cast when none exist', async () => {
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup query -> empty
+    supabase._pushResult({ data: [], error: null });
+
+    const detail = {
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Actor A',
+            character: 'Hero',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+          {
+            id: 2,
+            name: 'Actor B',
+            character: 'Villain',
+            order: 1,
+            profile_path: '/b.jpg',
+            gender: 1,
+          },
+        ],
+        crew: [],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    expect(upsertActorPreserveType).toHaveBeenCalledTimes(2);
+    expect(result.castCount).toBe(2);
+    expect(result.crewCount).toBe(0);
+  });
+
+  it('skips already-synced cast members', async () => {
+    // getExistingCastIds(cast) -> person 1 exists
+    supabase._pushResult({
+      data: [{ actor_id: 'a1', actors: { tmdb_person_id: 1 } }],
+      error: null,
+    });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup query
+    supabase._pushResult({
+      data: [{ id: 'mc-1', actor_id: 'a1', actors: { tmdb_person_id: 1 } }],
+      error: null,
+    });
+
+    const detail = {
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Existing',
+            character: 'Hero',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+          { id: 2, name: 'New', character: 'Villain', order: 1, profile_path: '/b.jpg', gender: 1 },
+        ],
+        crew: [],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    // Only Actor B (id:2) should be processed
+    expect(upsertActorPreserveType).toHaveBeenCalledTimes(1);
+    expect(upsertActorPreserveType).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ tmdb_person_id: 2, name: 'New' }),
+    );
+    expect(result.castCount).toBe(2);
+  });
+
+  it('syncs crew members additively', async () => {
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 10,
+        name: 'Director',
+        profile_path: '/d.jpg',
+        roleName: 'Director',
+        roleOrder: 0,
+        gender: 2,
+      },
+      {
+        id: 20,
+        name: 'Writer',
+        profile_path: '/w.jpg',
+        roleName: 'Screenplay',
+        roleOrder: 1,
+        gender: 1,
+      },
+    ] as never);
+
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    const detail = {
+      credits: {
+        cast: [],
+        crew: [
+          { id: 10, name: 'Director', job: 'Director' },
+          { id: 20, name: 'Writer', job: 'Screenplay' },
+        ],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    expect(result.crewCount).toBe(2);
+    expect(upsertActorPreserveType).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ default_person_type: 'technician' }),
+    );
+  });
+
+  it('skips cast member when upsertActorPreserveType returns null', async () => {
+    vi.mocked(upsertActorPreserveType).mockResolvedValueOnce(null);
+
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    const detail = {
+      credits: {
+        cast: [
+          { id: 1, name: 'Ghost', character: 'None', order: 0, profile_path: null, gender: null },
+        ],
+        crew: [],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    expect(result.castCount).toBe(0);
+  });
+
+  it('cleans up stale cast entries after processing', async () => {
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup query: includes a stale entry (person 999 not in TMDB data)
+    supabase._pushResult({
+      data: [
+        { id: 'mc-1', actor_id: 'a1', actors: { tmdb_person_id: 1 } },
+        { id: 'mc-stale', actor_id: 'a-stale', actors: { tmdb_person_id: 999 } },
+      ],
+      error: null,
+    });
+
+    const detail = {
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Actor A',
+            character: 'Hero',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+        ],
+        crew: [],
+      },
+    };
+
+    await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    expect(supabase.delete).toHaveBeenCalled();
+    expect(supabase.in).toHaveBeenCalledWith('id', ['mc-stale']);
+  });
+
+  it('processes missing cast in batches of 5', async () => {
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    const castMembers = Array.from({ length: 7 }, (_, i) => ({
+      id: i + 1,
+      name: `Actor ${i + 1}`,
+      character: `Role ${i + 1}`,
+      order: i,
+      profile_path: `/p${i}.jpg`,
+      gender: 2,
+    }));
+
+    const detail = {
+      credits: {
+        cast: castMembers,
+        crew: [],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    // All 7 should be processed (in 2 batches: 5 + 2)
+    expect(upsertActorPreserveType).toHaveBeenCalledTimes(7);
+    expect(result.castCount).toBe(7);
+  });
+
+  it('returns correct counts when both cast and crew already exist', async () => {
+    // getExistingCastIds(cast) -> person 1 exists
+    supabase._pushResult({
+      data: [{ actor_id: 'a1', actors: { tmdb_person_id: 1 } }],
+      error: null,
+    });
+    // getExistingCastKeys(crew) -> person 10 with roleOrder 0 exists (composite key: "10-0")
+    supabase._pushResult({
+      data: [{ actor_id: 'a10', role_order: 0, actors: { tmdb_person_id: 10 } }],
+      error: null,
+    });
+    // cleanup
+    supabase._pushResult({
+      data: [
+        { id: 'mc-1', actor_id: 'a1', actors: { tmdb_person_id: 1 } },
+        { id: 'mc-10', actor_id: 'a10', actors: { tmdb_person_id: 10 } },
+      ],
+      error: null,
+    });
+
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      { id: 10, name: 'Dir', profile_path: null, roleName: 'Director', roleOrder: 0, gender: 2 },
+    ] as never);
+
+    const detail = {
+      credits: {
+        cast: [
+          { id: 1, name: 'Actor', character: 'Hero', order: 0, profile_path: null, gender: 2 },
+        ],
+        crew: [{ id: 10, name: 'Dir', job: 'Director' }],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    expect(upsertActorPreserveType).not.toHaveBeenCalled();
+    expect(result.castCount).toBe(1);
+    expect(result.crewCount).toBe(1);
   });
 });

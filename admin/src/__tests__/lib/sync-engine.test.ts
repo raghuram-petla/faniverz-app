@@ -48,6 +48,10 @@ vi.mock('../../lib/sync-actor', () => ({
   upsertActorPreserveType: vi.fn().mockResolvedValue('actor-uuid'),
 }));
 
+vi.mock('../../lib/sync-cast', () => ({
+  syncCastCrewAdditive: vi.fn().mockResolvedValue({ castCount: 3, crewCount: 1 }),
+}));
+
 vi.mock('../../lib/sync-log', () => ({
   createSyncLog: vi.fn(),
   completeSyncLog: vi.fn(),
@@ -68,6 +72,7 @@ import { upsertActorPreserveType } from '../../lib/sync-actor';
 import { syncAllImages } from '../../lib/sync-images';
 import { syncVideos, syncKeywords, syncProductionCompanies } from '../../lib/sync-extended';
 import { syncWatchProvidersMultiCountry } from '../../lib/sync-watch-providers';
+import { syncCastCrewAdditive } from '../../lib/sync-cast';
 
 function createMockSupabase() {
   const mock = {
@@ -167,7 +172,7 @@ describe('processMovieFromTmdb', () => {
     ).rejects.toThrow('Movie upsert failed: upsert failed');
   });
 
-  it('throws when cast delete fails', async () => {
+  it('throws when cast delete fails (fullReplaceSync)', async () => {
     // upsert succeeds, delete fails
     supabase.single.mockResolvedValueOnce({
       data: { id: 'movie-id' },
@@ -182,7 +187,7 @@ describe('processMovieFromTmdb', () => {
     ).rejects.toThrow('Cast delete failed: delete error');
   });
 
-  it('syncs cast and returns cast count', async () => {
+  it('syncs cast and returns cast count (fullReplaceSync)', async () => {
     const detail = makeTmdbDetail({
       credits: {
         cast: [
@@ -448,5 +453,154 @@ describe('processMovieFromTmdb — additional branch coverage', () => {
       unknown
     >;
     expect(upsertCall).not.toHaveProperty('imdb_id');
+  });
+});
+
+describe('processMovieFromTmdb — resumable option', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+    vi.mocked(getMovieDetails).mockResolvedValue(makeTmdbDetail() as never);
+  });
+
+  it('uses syncCastCrewAdditive when resumable=true', async () => {
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+      { resumable: true },
+    );
+
+    expect(syncCastCrewAdditive).toHaveBeenCalledWith(
+      'movie-uuid-123',
+      expect.anything(),
+      expect.anything(),
+    );
+    // Should use the counts from syncCastCrewAdditive mock (3 cast, 1 crew)
+    expect(result.castCount).toBe(3);
+    expect(result.crewCount).toBe(1);
+  });
+
+  it('does not delete-then-reinsert cast when resumable=true', async () => {
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient, {
+      resumable: true,
+    });
+
+    // fullReplaceSync does delete().eq() — resumable should NOT
+    // The delete call on the supabase mock should not be for movie_cast
+    expect(supabase.delete).not.toHaveBeenCalled();
+  });
+
+  it('still runs extended sync and images when resumable=true', async () => {
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient, {
+      resumable: true,
+    });
+
+    expect(syncAllImages).toHaveBeenCalled();
+    expect(syncVideos).toHaveBeenCalled();
+    expect(syncWatchProvidersMultiCountry).toHaveBeenCalled();
+    expect(syncKeywords).toHaveBeenCalled();
+    expect(syncProductionCompanies).toHaveBeenCalled();
+  });
+
+  it('uses fullReplaceSync when resumable=false (default)', async () => {
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    // fullReplaceSync does NOT call syncCastCrewAdditive
+    expect(syncCastCrewAdditive).not.toHaveBeenCalled();
+    // fullReplaceSync deletes cast first
+    expect(supabase.delete).toHaveBeenCalled();
+  });
+
+  it('uses fullReplaceSync when resumable option is not provided', async () => {
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient, undefined);
+
+    expect(syncCastCrewAdditive).not.toHaveBeenCalled();
+  });
+
+  it('handles extended sync failure gracefully in resumable mode', async () => {
+    vi.mocked(syncVideos).mockRejectedValueOnce(new Error('video sync failed'));
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+      { resumable: true },
+    );
+    consoleWarn.mockRestore();
+
+    // Should still return result despite extended sync failure
+    expect(result.movieId).toBe('movie-uuid-123');
+    expect(result.castCount).toBe(3);
+  });
+
+  it('handles image sync failure gracefully in resumable mode', async () => {
+    vi.mocked(syncAllImages).mockRejectedValueOnce(new Error('image sync failed'));
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+      { resumable: true },
+    );
+    consoleWarn.mockRestore();
+
+    expect(result.movieId).toBe('movie-uuid-123');
+    expect(result.castCount).toBe(3);
+  });
+
+  it('runs phases in correct order: Cast -> Extended -> Images (resumable)', async () => {
+    const callOrder: string[] = [];
+    vi.mocked(syncCastCrewAdditive).mockImplementation(async () => {
+      callOrder.push('cast');
+      return { castCount: 1, crewCount: 0 };
+    });
+    vi.mocked(syncVideos).mockImplementation(async () => {
+      callOrder.push('extended');
+      return 0;
+    });
+    vi.mocked(syncAllImages).mockImplementation(async () => {
+      callOrder.push('images');
+      return { posterCount: 0, backdropCount: 0 };
+    });
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient, {
+      resumable: true,
+    });
+
+    // Cast must come before extended and images
+    expect(callOrder.indexOf('cast')).toBeLessThan(callOrder.indexOf('extended'));
+    expect(callOrder.indexOf('extended')).toBeLessThan(callOrder.indexOf('images'));
+  });
+
+  it('returns correct isNew=true for new movies in resumable mode', async () => {
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+      { resumable: true },
+    );
+
+    expect(result.isNew).toBe(true);
+  });
+
+  it('returns correct isNew=false for existing movies in resumable mode', async () => {
+    supabase.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'existing-id' },
+      error: null,
+    });
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+      { resumable: true },
+    );
+
+    expect(result.isNew).toBe(false);
   });
 });

@@ -57,9 +57,14 @@ async function syncApi<T>(path: string, body?: unknown): Promise<T> {
     void supabase.auth.signOut();
     throw new Error('Session expired — please sign in again.');
   }
-  // @edge: non-JSON error responses (e.g., HTML 500) would throw SyntaxError — catch and fallback
+  // @edge: non-JSON error responses (e.g., HTML 500/504 from edge proxy) — catch and fallback
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error ?? `Sync API error: ${res.status}`);
+  if (!res.ok) {
+    const error = new Error(data.error ?? `Sync API error: ${res.status}`);
+    // @contract: attach HTTP status for retry logic (504 = gateway timeout, retryable)
+    (error as Error & { status: number }).status = res.status;
+    throw error;
+  }
   return data as T;
 }
 
@@ -87,15 +92,13 @@ export function useTmdbLookup() {
   });
 }
 
-/** Import movies from TMDB by their IDs. Max 5 per batch. */
-// @sideeffect Creates movies + cast + crew in DB; invalidates both sync and movies caches
-// @edge Max 5 per batch enforced server-side — larger arrays will be rejected
+/** Import movies from TMDB by their IDs. Max 5 per batch (server-side enforced). */
+// @sideeffect Creates movies + cast + crew in DB; invalidates sync + movies caches
 export function useImportMovies() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (tmdbIds: number[]) => syncApi<ImportMoviesResponse>('import-movies', { tmdbIds }),
-    // @sideeffect Import creates movies + actors + cast/crew — invalidate all affected caches
-    // @coupling 'movie' (singular) is the single-movie cache used by edit pages
+    // @sideeffect invalidate all affected caches after import
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
@@ -105,9 +108,7 @@ export function useImportMovies() {
       qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
       qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
-    onError: (err) => {
-      window.alert(err instanceof Error ? err.message : 'Operation failed');
-    },
+    // @contract: no onError — handled in DiscoverByYear retry loop (avoids alert flash on 504)
   });
 }
 

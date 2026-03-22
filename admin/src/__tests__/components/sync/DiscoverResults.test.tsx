@@ -303,11 +303,13 @@ describe('ImportProgressList', () => {
               isNew: true,
               castCount: 5,
               crewCount: 3,
+              posterCount: 10,
+              backdropCount: 4,
             },
           },
         ]}
       />,
     );
-    expect(screen.getByText('(5 cast, 3 crew)')).toBeInTheDocument();
+    expect(screen.getByText('(5 cast, 3 crew, 10 posters, 4 backdrops)')).toBeInTheDocument();
   });
 });
