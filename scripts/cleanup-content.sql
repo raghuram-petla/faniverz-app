@@ -50,6 +50,7 @@ DELETE FROM surprise_content;
 
 -- ── 4. Admin bookkeeping ─────────────────────────────────────────────────────
 
+DELETE FROM admin_impersonation_sessions;
 DELETE FROM sync_logs;
 DELETE FROM audit_log;
 
