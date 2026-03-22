@@ -23,12 +23,8 @@ import {
 } from './tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from './r2-sync';
 import { syncAllImages } from './sync-images';
-import {
-  syncVideos,
-  syncWatchProviders,
-  syncKeywords,
-  syncProductionCompanies,
-} from './sync-extended';
+import { syncVideos, syncKeywords, syncProductionCompanies } from './sync-extended';
+import { syncWatchProvidersMultiCountry } from './sync-watch-providers';
 import { upsertActorPreserveType } from './sync-actor';
 
 // ── Result types ──────────────────────────────────────────────────────────────
@@ -155,7 +151,7 @@ export async function processMovieFromTmdb(
     });
     await Promise.all([
       syncVideos(movieId, detail.videos.results, supabase),
-      syncWatchProviders(movieId, tmdbId, apiKey, supabase),
+      syncWatchProvidersMultiCountry(movieId, tmdbId, apiKey, supabase),
       syncKeywords(movieId, detail, supabase),
       syncProductionCompanies(movieId, detail.production_companies ?? [], supabase),
     ]);

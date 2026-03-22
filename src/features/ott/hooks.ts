@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchPlatforms, fetchOttReleases, fetchMoviePlatformMap } from './api';
+import {
+  fetchPlatforms,
+  fetchOttReleases,
+  fetchMoviePlatformMap,
+  fetchMovieAvailability,
+} from './api';
 
 export function usePlatforms() {
   return useQuery({
@@ -14,6 +19,16 @@ export function useOttReleases(movieId: string) {
   return useQuery({
     queryKey: ['ott', movieId],
     queryFn: () => fetchOttReleases(movieId),
+    enabled: !!movieId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** @contract Fetches availability grouped by type for the user's auto-detected country */
+export function useMovieAvailability(movieId: string) {
+  return useQuery({
+    queryKey: ['movie-availability', movieId],
+    queryFn: () => fetchMovieAvailability(movieId),
     enabled: !!movieId,
     staleTime: 5 * 60 * 1000,
   });

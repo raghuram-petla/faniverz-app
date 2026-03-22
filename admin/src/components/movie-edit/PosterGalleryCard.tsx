@@ -94,12 +94,16 @@ const STATUS_COLOR: Record<string, string> = {
 export function PosterVariantStatus({
   imageUrl,
   imageType,
+  bucket: bucketOverride,
+  variantType: variantTypeOverride,
 }: {
   imageUrl: string;
   imageType?: 'poster' | 'backdrop';
+  bucket?: import('@shared/imageUrl').ImageBucket;
+  variantType?: import('@shared/variant-config').VariantType;
 }) {
-  const variantType = imageType === 'backdrop' ? 'backdrop' : 'poster';
-  const bucket = imageType === 'backdrop' ? 'BACKDROPS' : 'POSTERS';
+  const variantType = variantTypeOverride ?? (imageType === 'backdrop' ? 'backdrop' : 'poster');
+  const bucket = bucketOverride ?? (imageType === 'backdrop' ? 'BACKDROPS' : 'POSTERS');
   const { variants, isChecking } = useImageVariants(imageUrl, variantType, bucket);
 
   if (isChecking && variants.length === 0) {

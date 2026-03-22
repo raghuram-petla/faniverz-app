@@ -1,6 +1,6 @@
 # Faniverz
 
-A Telugu movie calendar and OTT discovery app. Track theatrical releases, streaming availability across 8 OTT platforms, manage your watchlist, write reviews, and discover surprise content — all in one place.
+A global movie discovery and OTT streaming app. Track theatrical releases, streaming availability across platforms worldwide, manage your watchlist, write reviews, and discover surprise content — all in one place.
 
 Built with React Native (Expo) for mobile and Next.js for the admin panel, backed by Supabase (PostgreSQL).
 

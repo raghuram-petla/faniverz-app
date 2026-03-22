@@ -1,6 +1,6 @@
 -- cleanup-content.sql
--- Deletes all movies, actors, production houses, and related data.
--- Preserves: users (profiles), admin roles/invitations, languages, platforms, push tokens.
+-- Deletes all content data (movies, actors, platforms, production houses, etc.).
+-- Preserves: users (profiles), admin roles/invitations, languages, countries, push tokens.
 --
 -- Usage:
 --   Local:  docker exec supabase_db_faniverz-app psql -U postgres -d postgres -f /dev/stdin < scripts/cleanup-content.sql
@@ -33,6 +33,7 @@ DELETE FROM movie_cast;
 DELETE FROM movie_images;
 DELETE FROM movie_keywords;
 DELETE FROM movie_platforms;
+DELETE FROM movie_platform_availability;
 DELETE FROM movie_production_houses;
 DELETE FROM movie_theatrical_runs;
 DELETE FROM movie_videos;
@@ -44,7 +45,7 @@ DELETE FROM movies;
 DELETE FROM actors;
 DELETE FROM admin_ph_assignments;  -- references production_houses + profiles
 DELETE FROM production_houses;
--- platforms preserved — reference data auto-populated by TMDB sync
+DELETE FROM platforms;
 DELETE FROM surprise_content;
 
 -- ── 4. Admin bookkeeping ─────────────────────────────────────────────────────

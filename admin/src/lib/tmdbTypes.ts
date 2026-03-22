@@ -1,9 +1,4 @@
-/**
- * TMDB API response types and helper mappings.
- * Pure type definitions + small pure functions — no API calls.
- *
- * @contract: all types match TMDB v3 API response shapes.
- */
+/** TMDB API response types and helper mappings. Pure types + small pure functions. */
 
 // ── Core movie/person types ─────────────────────────────────────────────────
 
@@ -139,6 +134,21 @@ export interface TmdbWatchProvider {
   provider_id: number;
   provider_name: string;
   logo_path: string;
+  display_priority?: number;
+}
+
+/** @contract Full TMDB watch providers response — keyed by ISO 3166-1 country code */
+export interface TmdbCountryProviders {
+  link?: string;
+  flatrate?: TmdbWatchProvider[];
+  rent?: TmdbWatchProvider[];
+  buy?: TmdbWatchProvider[];
+  ads?: TmdbWatchProvider[];
+  free?: TmdbWatchProvider[];
+}
+
+export interface TmdbWatchProvidersResponse {
+  results: Record<string, TmdbCountryProviders>;
 }
 
 // ── Keywords types ──────────────────────────────────────────────────────────

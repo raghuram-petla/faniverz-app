@@ -1,181 +1,130 @@
 'use client';
-import { useState } from 'react';
-import { Film, Plus, X, ExternalLink } from 'lucide-react';
-import type { OTTPlatform, MoviePlatform } from '@/lib/types';
-import { getImageUrl } from '@shared/imageUrl';
-import { colors } from '@shared/colors';
-import { INPUT_CLASSES } from '@/components/common/FormField';
-import { Button } from '@/components/common/Button';
+import { useState, useMemo } from 'react';
+import { Plus } from 'lucide-react';
+import type { AvailabilityType } from '@shared/types';
+import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
+import {
+  useMovieAvailability,
+  useCountries,
+  useAddMovieAvailability,
+  useRemoveMovieAvailability,
+} from '@/hooks/useAdminMovieAvailability';
+import { usePermissions } from '@/hooks/usePermissions';
+import { CountryAvailabilityPanel } from './CountryAvailabilityPanel';
+import { CountryDropdown } from '@/components/common/CountryDropdown';
+import { SearchableCountryPicker } from '@/components/common/SearchableCountryPicker';
 
-type PendingPlatform = {
-  platform_id: string;
-  // @nullable null means "available now" (no specific date)
-  available_from: string | null;
-  // @nullable streaming_url — direct link to the movie on this OTT platform
-  streaming_url: string | null;
-  // @coupling _platform carries display data; stripped before DB save
-  _platform?: OTTPlatform;
-};
-
-interface Props {
-  visiblePlatforms: (Pick<MoviePlatform, 'movie_id' | 'platform_id' | 'available_from'> & {
-    streaming_url?: string | null;
-    platform?: OTTPlatform;
-  })[];
-  allPlatforms: OTTPlatform[];
-  onAdd: (platform: PendingPlatform) => void;
-  onRemove: (platformId: string, isPending: boolean) => void;
-  pendingPlatformAdds: PendingPlatform[];
-  showAddForm: boolean;
-  onCloseAddForm: () => void;
+export interface PlatformsSectionProps {
+  movieId: string;
 }
 
-export function PlatformsSection({
-  visiblePlatforms,
-  allPlatforms,
-  onAdd,
-  onRemove,
-  pendingPlatformAdds,
-  showAddForm,
-  onCloseAddForm,
-}: Props) {
-  const [selectedPlatformId, setSelectedPlatformId] = useState('');
-  const [availableFrom, setAvailableFrom] = useState('');
-  const [streamingUrl, setStreamingUrl] = useState('');
+export function PlatformsSection({ movieId }: PlatformsSectionProps) {
+  const { isReadOnly } = usePermissions();
+  const { data: availability = [] } = useMovieAvailability(movieId);
+  const { data: allPlatforms = [] } = useAdminPlatforms();
+  const { data: countries = [] } = useCountries();
+  const addAvailability = useAddMovieAvailability();
+  const removeAvailability = useRemoveMovieAvailability();
+
+  const populatedCountries = useMemo(() => {
+    const codes = [...new Set(availability.map((r) => r.country_code))];
+    return codes.sort((a, b) => {
+      const orderA = countries.find((c) => c.code === a)?.display_order ?? 999;
+      const orderB = countries.find((c) => c.code === b)?.display_order ?? 999;
+      return orderA - orderB;
+    });
+  }, [availability, countries]);
+
+  const [activeCountry, setActiveCountry] = useState('IN');
+  const [showAddCountry, setShowAddCountry] = useState(false);
+  // @contract: manually added empty countries (not yet in availability data)
+  const [addedCountries, setAddedCountries] = useState<string[]>([]);
+
+  const allVisibleCountries = useMemo(() => {
+    const set = new Set([...populatedCountries, ...addedCountries]);
+    return [...set].sort((a, b) => {
+      const orderA = countries.find((c) => c.code === a)?.display_order ?? 999;
+      const orderB = countries.find((c) => c.code === b)?.display_order ?? 999;
+      return orderA - orderB;
+    });
+  }, [populatedCountries, addedCountries, countries]);
+
+  const effectiveCountry = allVisibleCountries.includes(activeCountry)
+    ? activeCountry
+    : (allVisibleCountries[0] ?? 'IN');
+
+  const activeRows = useMemo(
+    () => availability.filter((r) => r.country_code === effectiveCountry),
+    [availability, effectiveCountry],
+  );
+
+  const countryName = (code: string) => countries.find((c) => c.code === code)?.name ?? code;
+  const countByCountry = (code: string) =>
+    availability.filter((r) => r.country_code === code).length;
+
+  const handleAddCountry = (code: string) => {
+    if (code) {
+      setAddedCountries((prev) => [...new Set([...prev, code])]);
+      setActiveCountry(code);
+      setShowAddCountry(false);
+    }
+  };
+
+  const availableCountries = countries.filter((c) => !allVisibleCountries.includes(c.code));
 
   return (
     <div className="space-y-4">
-      {showAddForm && (
-        <div className="bg-surface-elevated rounded-xl p-4 space-y-3">
-          <div className="flex gap-3">
-            <select
-              value={selectedPlatformId}
-              onChange={(e) => setSelectedPlatformId(e.target.value)}
-              className={`flex-[3] min-w-0 ${INPUT_CLASSES.compact}`}
-            >
-              <option value="">Select platform…</option>
-              {/* @invariant already-added platforms are excluded from the dropdown */}
-              {allPlatforms
-                .filter((p) => !visiblePlatforms.some((mp) => mp.platform_id === p.id))
-                .map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-            </select>
-            <input
-              type="date"
-              value={availableFrom}
-              onChange={(e) => setAvailableFrom(e.target.value)}
-              placeholder="Available from"
-              className={`flex-[2] min-w-0 ${INPUT_CLASSES.compact}`}
-            />
-          </div>
-          <input
-            type="url"
-            value={streamingUrl}
-            onChange={(e) => setStreamingUrl(e.target.value)}
-            placeholder="Streaming URL (e.g. https://aha.video/movie/...)"
-            className={`w-full ${INPUT_CLASSES.compact}`}
+      <div className="flex items-center gap-3">
+        {allVisibleCountries.length > 0 && (
+          <CountryDropdown
+            countries={allVisibleCountries.map((code) => ({
+              code,
+              name: countryName(code),
+              display_order: countries.find((c) => c.code === code)?.display_order ?? 999,
+            }))}
+            value={effectiveCountry}
+            onChange={setActiveCountry}
+            formatLabel={(c) => {
+              const count = countByCountry(c.code);
+              return count > 0 ? `${c.name} (${count})` : c.name;
+            }}
           />
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            disabled={!selectedPlatformId}
-            icon={<Plus className="w-4 h-4" />}
-            onClick={() => {
-              const platform = allPlatforms.find((p) => p.id === selectedPlatformId);
-              onAdd({
-                platform_id: selectedPlatformId,
-                available_from: availableFrom || null,
-                streaming_url: streamingUrl || null,
-                _platform: platform,
-              });
-              setSelectedPlatformId('');
-              setAvailableFrom('');
-              setStreamingUrl('');
-              onCloseAddForm();
-            }}
-          >
-            Add
-          </Button>
+        )}
+
+        {!isReadOnly && !showAddCountry && (
           <button
-            type="button"
-            onClick={() => {
-              onCloseAddForm();
-              setSelectedPlatformId('');
-              setAvailableFrom('');
-              setStreamingUrl('');
-            }}
-            className="text-on-surface-muted px-4 py-2 rounded-lg text-sm hover:bg-input"
+            onClick={() => setShowAddCountry(true)}
+            className="flex items-center gap-1.5 text-sm text-on-surface-muted hover:text-on-surface bg-input hover:bg-input-active px-3 py-2.5 rounded-lg border border-outline"
           >
-            Cancel
+            <Plus className="w-4 h-4" /> Add Country
           </button>
-        </div>
+        )}
+
+        {showAddCountry && (
+          <SearchableCountryPicker
+            countries={availableCountries}
+            onSelect={(code) => handleAddCountry(code)}
+            onCancel={() => setShowAddCountry(false)}
+          />
+        )}
+      </div>
+
+      {allVisibleCountries.length === 0 && !showAddCountry && (
+        <p className="text-sm text-on-surface-subtle">
+          No OTT availability data. Sync this movie from TMDB to populate.
+        </p>
       )}
 
-      {/* Platform list — below add form */}
-      {visiblePlatforms.length > 0 && (
-        <div className="space-y-2">
-          {visiblePlatforms.map((mp) => (
-            <div
-              key={mp.platform_id}
-              className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3"
-            >
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
-                style={{ backgroundColor: mp.platform?.color || colors.zinc900 }}
-              >
-                {mp.platform?.logo_url ? (
-                  <img
-                    src={
-                      getImageUrl(mp.platform.logo_url, 'sm', 'PLATFORMS') ?? mp.platform.logo_url
-                    }
-                    alt=""
-                    className="w-6 h-6 object-contain"
-                  />
-                ) : (
-                  <Film className="w-5 h-5 text-on-surface-muted" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-on-surface font-medium">
-                  {mp.platform?.name ?? mp.platform_id}
-                </span>
-                {mp.available_from && (
-                  <span className="text-on-surface-subtle text-sm ml-2">
-                    from {mp.available_from}
-                  </span>
-                )}
-                {mp.streaming_url && (
-                  <a
-                    href={mp.streaming_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-status-blue hover:underline mt-0.5 truncate"
-                  >
-                    <ExternalLink className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{mp.streaming_url}</span>
-                  </a>
-                )}
-              </div>
-              <Button
-                variant="icon"
-                size="sm"
-                onClick={() => {
-                  const isPending = pendingPlatformAdds.some(
-                    (p) => p.platform_id === mp.platform_id,
-                  );
-                  onRemove(mp.platform_id, isPending);
-                }}
-                aria-label={`Remove ${mp.platform?.name}`}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
+      {effectiveCountry && allVisibleCountries.length > 0 && (
+        <CountryAvailabilityPanel
+          countryCode={effectiveCountry}
+          rows={activeRows}
+          movieId={movieId}
+          allPlatforms={allPlatforms}
+          isReadOnly={isReadOnly}
+          onAdd={(data) => addAvailability.mutate({ movie_id: movieId, ...data })}
+          onRemove={(id, movie_id) => removeAvailability.mutate({ id, movie_id })}
+        />
       )}
     </div>
   );

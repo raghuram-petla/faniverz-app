@@ -10,9 +10,9 @@ import { useImageUpload } from '@/hooks/useImageUpload';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
-import { ArrowLeft, Loader2, Trash2, Upload, X } from 'lucide-react';
-import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
-import { getImageUrl } from '@shared/imageUrl';
+import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
+import { ArrowLeft, Loader2, Trash2, Link2, Globe } from 'lucide-react';
+import { PosterVariantStatus } from '@/components/movie-edit/PosterGalleryCard';
 import Link from 'next/link';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { FieldConfig } from '@/hooks/useFormChanges';
@@ -31,7 +31,6 @@ export default function EditProductionHousePage() {
   const updateHouse = useUpdateProductionHouse();
   const deleteHouse = useDeleteProductionHouse();
   const { upload, uploading } = useImageUpload('/api/upload/production-house-logo');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({ name: '', logo_url: '', description: '' });
   const initialFormRef = useRef<typeof form | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
@@ -142,72 +141,44 @@ export default function EditProductionHousePage() {
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
             className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           />
+          {/* TMDB metadata — inline below name */}
+          {(house?.tmdb_company_id || house?.origin_country) && (
+            <div className="flex items-center gap-4 text-sm text-on-surface-subtle mt-2">
+              {house.tmdb_company_id && (
+                <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
+                  <Link2 className="w-3.5 h-3.5" />
+                  TMDB #{house.tmdb_company_id}
+                </span>
+              )}
+              {house.origin_country && (
+                <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
+                  <Globe className="w-3.5 h-3.5" />
+                  {house.origin_country}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        <div>
-          <label className="block text-sm text-on-surface-muted mb-1">Logo</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleLogoUpload(file);
-              e.target.value = '';
-            }}
-          />
-          {form.logo_url ? (
-            <div className="flex items-center gap-4">
-              <img
-                src={getImageUrl(form.logo_url, 'original', 'PRODUCTION_HOUSES') ?? form.logo_url}
-                alt="Logo preview"
-                className="w-20 h-20 rounded-lg object-cover border border-outline"
-              />
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 text-sm text-on-surface-muted hover:text-on-surface px-3 py-1.5 bg-input rounded-lg disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Upload className="w-3.5 h-3.5" />
-                  )}
-                  Change
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, logo_url: '' }))}
-                  className="flex items-center gap-2 text-sm text-status-red hover:text-status-red-hover px-3 py-1.5 bg-surface-elevated rounded-lg"
-                >
-                  <X className="w-3.5 h-3.5" /> Remove
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 bg-input rounded-xl px-4 py-3 text-sm text-on-surface-muted hover:bg-input-hover hover:text-on-surface transition-colors disabled:opacity-50"
-            >
-              {uploading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4" />
-              )}
-              {uploading ? 'Uploading...' : 'Upload Logo'}
-            </button>
-          )}
-          <ImageVariantsPanel
-            originalUrl={form.logo_url}
-            variantType="photo"
+        <ImageUploadField
+          label="Logo"
+          url={form.logo_url}
+          bucket="PRODUCTION_HOUSES"
+          uploading={uploading}
+          uploadEndpoint="/api/upload/production-house-logo"
+          previewAlt="Production house logo"
+          previewClassName="w-20 h-20"
+          showUrlCaption={false}
+          onUpload={(file) => handleLogoUpload(file)}
+          onRemove={() => setForm((prev) => ({ ...prev, logo_url: '' }))}
+        />
+        {form.logo_url && (
+          <PosterVariantStatus
+            imageUrl={form.logo_url}
             bucket="PRODUCTION_HOUSES"
+            variantType="photo"
           />
-        </div>
+        )}
 
         <div>
           <label className="block text-sm text-on-surface-muted mb-1">Description</label>

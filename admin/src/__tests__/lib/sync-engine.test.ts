@@ -36,9 +36,12 @@ vi.mock('../../lib/sync-images', () => ({
 
 vi.mock('../../lib/sync-extended', () => ({
   syncVideos: vi.fn().mockResolvedValue(0),
-  syncWatchProviders: vi.fn().mockResolvedValue(0),
   syncKeywords: vi.fn().mockResolvedValue(0),
   syncProductionCompanies: vi.fn().mockResolvedValue(0),
+}));
+
+vi.mock('../../lib/sync-watch-providers', () => ({
+  syncWatchProvidersMultiCountry: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock('../../lib/sync-actor', () => ({
@@ -63,12 +66,8 @@ import { processMovieFromTmdb } from '../../lib/sync-engine';
 import { getMovieDetails } from '../../lib/tmdb';
 import { upsertActorPreserveType } from '../../lib/sync-actor';
 import { syncAllImages } from '../../lib/sync-images';
-import {
-  syncVideos,
-  syncWatchProviders,
-  syncKeywords,
-  syncProductionCompanies,
-} from '../../lib/sync-extended';
+import { syncVideos, syncKeywords, syncProductionCompanies } from '../../lib/sync-extended';
+import { syncWatchProvidersMultiCountry } from '../../lib/sync-watch-providers';
 
 function createMockSupabase() {
   const mock = {
@@ -245,7 +244,7 @@ describe('processMovieFromTmdb', () => {
 
     expect(syncAllImages).toHaveBeenCalled();
     expect(syncVideos).toHaveBeenCalled();
-    expect(syncWatchProviders).toHaveBeenCalled();
+    expect(syncWatchProvidersMultiCountry).toHaveBeenCalled();
     expect(syncKeywords).toHaveBeenCalled();
     expect(syncProductionCompanies).toHaveBeenCalled();
   });

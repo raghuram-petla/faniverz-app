@@ -73,22 +73,14 @@ export async function syncWatchProviders(
 
   let count = 0;
   for (const provider of providers) {
-    // @contract: find platform by tmdb_provider_id OR tmdb_alias_ids, then create if not found
+    // @contract: find platform by tmdb_provider_id, then create if not found
     let platformId: string | null = null;
 
-    // @edge: maybeSingle errors if .or() matches multiple rows — log and skip
-    const { data: existing, error: lookupErr } = await supabase
+    const { data: existing } = await supabase
       .from('platforms')
       .select('id')
-      .or(`tmdb_provider_id.eq.${provider.provider_id},tmdb_alias_ids.cs.{${provider.provider_id}}`)
+      .eq('tmdb_provider_id', provider.provider_id)
       .maybeSingle();
-    if (lookupErr) {
-      console.warn(
-        `syncWatchProviders: lookup failed for provider ${provider.provider_id}`,
-        lookupErr.message,
-      );
-      continue;
-    }
 
     if (existing) {
       platformId = existing.id as string;
@@ -202,12 +194,14 @@ export async function syncProductionCompanies(
     if (existing) {
       phId = existing.id as string;
     } else {
-      // Create new production house
+      // Create new production house with all TMDB fields
       const { data: newPh, error: phErr } = await supabase
         .from('production_houses')
         .insert({
           name: company.name,
           tmdb_company_id: company.id,
+          logo_url: company.logo_path ? `https://image.tmdb.org/t/p/w92${company.logo_path}` : null,
+          origin_country: company.origin_country || null,
         })
         .select('id')
         .single();

@@ -23,6 +23,7 @@ const MOVIE_CHILD_TABLES = new Set([
   'movie_videos',
   'movie_cast',
   'movie_platforms',
+  'movie_platform_availability',
   'movie_production_houses',
   'movie_theatrical_runs',
 ]);

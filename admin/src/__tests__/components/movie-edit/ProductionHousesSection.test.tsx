@@ -8,6 +8,7 @@ const mockPH: ProductionHouse = {
   logo_url: 'https://example.com/mythri.png',
   description: null,
   tmdb_company_id: null,
+  origin_country: null,
   created_at: '2026-01-01',
 };
 
@@ -17,6 +18,7 @@ const mockPHNoLogo: ProductionHouse = {
   logo_url: null,
   description: null,
   tmdb_company_id: null,
+  origin_country: null,
   created_at: '2026-01-01',
 };
 

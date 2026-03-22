@@ -20,6 +20,7 @@ import type {
   TmdbSearchPerson,
   TmdbImagesResponse,
   TmdbWatchProvider,
+  TmdbWatchProvidersResponse,
 } from './tmdbTypes';
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -161,18 +162,37 @@ export async function getMovieImages(tmdbId: number, apiKey: string): Promise<Tm
   });
 }
 
+/** Fetch all TMDB watch provider regions with English names. */
+export async function getWatchRegions(apiKey: string): Promise<Record<string, string>> {
+  const data = await tmdbGet<{ results: { iso_3166_1: string; english_name: string }[] }>(
+    '/watch/providers/regions',
+    { api_key: apiKey },
+  );
+  const map: Record<string, string> = {};
+  for (const r of data.results) map[r.iso_3166_1] = r.english_name;
+  return map;
+}
+
 /**
- * Fetch streaming/watch providers for a movie in India.
+ * Fetch streaming/watch providers for a movie — India flatrate only.
  * @nullable: returns empty array if no IN data or no flatrate providers.
  */
 export async function getWatchProviders(
   tmdbId: number,
   apiKey: string,
 ): Promise<TmdbWatchProvider[]> {
-  const data = await tmdbGet<{
-    results: Record<string, { flatrate?: TmdbWatchProvider[] }>;
-  }>(`/movie/${tmdbId}/watch/providers`, { api_key: apiKey });
+  const data = await getAllWatchProviders(tmdbId, apiKey);
   return data.results?.IN?.flatrate ?? [];
+}
+
+/** Fetch ALL watch providers for a movie across all countries and availability types. */
+export async function getAllWatchProviders(
+  tmdbId: number,
+  apiKey: string,
+): Promise<TmdbWatchProvidersResponse> {
+  return tmdbGet<TmdbWatchProvidersResponse>(`/movie/${tmdbId}/watch/providers`, {
+    api_key: apiKey,
+  });
 }
 
 // ── Search API ────────────────────────────────────────────────────────────────

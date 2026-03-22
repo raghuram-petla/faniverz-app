@@ -1,7 +1,7 @@
 'use client';
 import { useRef } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
-import { ImageVariantsPanel } from '@/components/common/ImageVariantsPanel';
+import { PosterVariantStatus } from '@/components/movie-edit/PosterGalleryCard';
 import { getImageUrl } from '@shared/imageUrl';
 
 /** @contract all fields are strings for controlled inputs; parent converts on save */
@@ -113,10 +113,8 @@ export function ActorFormFields({
           </button>
         )}
         {form.photo_url && (
-          <p className="mt-2 text-xs text-on-surface-disabled truncate">{form.photo_url}</p>
+          <PosterVariantStatus imageUrl={form.photo_url} bucket="ACTORS" variantType="photo" />
         )}
-        {/** @coupling ImageVariantsPanel shows generated size variants (sm/md/lg) for the photo */}
-        <ImageVariantsPanel originalUrl={form.photo_url} variantType="photo" bucket="ACTORS" />
       </div>
 
       {/* Person Type + DOB */}

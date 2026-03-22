@@ -247,16 +247,8 @@ export default function EditMoviePage() {
                   onCloseAddForm={closeAdd}
                 />
               </SectionCard>
-              <SectionCard title="OTT Platforms" icon={Tv} action={addButton('platforms', 'Add')}>
-                <PlatformsSection
-                  visiblePlatforms={editState.visiblePlatforms}
-                  allPlatforms={editState.allPlatforms}
-                  onAdd={(p) => editState.setPendingPlatformAdds((prev) => [...prev, p])}
-                  onRemove={editState.handlePlatformRemove}
-                  pendingPlatformAdds={editState.pendingPlatformAdds}
-                  showAddForm={addFormOpen === 'platforms'}
-                  onCloseAddForm={closeAdd}
-                />
+              <SectionCard title="OTT Platforms" icon={Tv}>
+                <PlatformsSection movieId={id} />
               </SectionCard>
             </>
           )}

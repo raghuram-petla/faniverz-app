@@ -1,70 +1,72 @@
 import { supabase } from '@/lib/supabase';
-import { OTTPlatform, MoviePlatform } from '@/types';
-
-/** @contract Build set of TMDB provider IDs that are aliases of other platforms */
-function buildAliasSet(platforms: OTTPlatform[]): Set<number> {
-  const aliasIds = new Set<number>();
-  for (const p of platforms) {
-    for (const aid of p.tmdb_alias_ids ?? []) aliasIds.add(aid);
-  }
-  return aliasIds;
-}
-
-/** @contract Filter out platforms whose tmdb_provider_id is an alias of another */
-function excludeAliases<T extends { platform?: OTTPlatform | null }>(items: T[]): T[] {
-  const aliasIds = buildAliasSet(items.map((i) => i.platform).filter((p): p is OTTPlatform => !!p));
-  return items.filter(
-    (i) => !i.platform?.tmdb_provider_id || !aliasIds.has(i.platform.tmdb_provider_id),
-  );
-}
+import { OTTPlatform, MoviePlatform, MoviePlatformAvailability, AvailabilityType } from '@/types';
+import { getDeviceCountry } from '@/utils/getDeviceCountry';
 
 export async function fetchPlatforms(): Promise<OTTPlatform[]> {
   const { data, error } = await supabase
     .from('platforms')
     .select('*')
     .order('display_order', { ascending: true });
-
   if (error) throw error;
   return data ?? [];
 }
 
+/** @contract Fetch availability for a movie in the user's country, grouped by type */
+export async function fetchMovieAvailability(
+  movieId: string,
+): Promise<Record<AvailabilityType, MoviePlatformAvailability[]>> {
+  const country = getDeviceCountry();
+  const { data, error } = await supabase
+    .from('movie_platform_availability')
+    .select('*, platform:platforms(*)')
+    .eq('movie_id', movieId)
+    .eq('country_code', country)
+    .order('tmdb_display_priority', { ascending: true, nullsFirst: false });
+  if (error) throw error;
+
+  const result: Record<AvailabilityType, MoviePlatformAvailability[]> = {
+    flatrate: [],
+    rent: [],
+    buy: [],
+    ads: [],
+    free: [],
+  };
+  for (const r of (data ?? []) as MoviePlatformAvailability[]) {
+    result[r.availability_type].push(r);
+  }
+  return result;
+}
+
+/** @contract Legacy fetch for backward compat — returns flat MoviePlatform[] */
 export async function fetchOttReleases(movieId: string): Promise<MoviePlatform[]> {
   const { data, error } = await supabase
     .from('movie_platforms')
     .select('*, platform:platforms(*)')
     .eq('movie_id', movieId);
-
   if (error) throw error;
-  return excludeAliases(data ?? []);
+  return data ?? [];
 }
 
-// @contract: deduplicates platforms per movie by platform id to prevent duplicate logos.
-// @boundary: double cast bypasses type safety — if platforms schema changes, TypeScript won't catch it.
+/** @contract Fetch platforms per movie for card badges — uses new table with country filter */
 export async function fetchMoviePlatformMap(
   movieIds: string[],
 ): Promise<Record<string, OTTPlatform[]>> {
   if (movieIds.length === 0) return {};
 
+  const country = getDeviceCountry();
   const { data, error } = await supabase
-    .from('movie_platforms')
+    .from('movie_platform_availability')
     .select('movie_id, platform:platforms(*)')
-    .in('movie_id', movieIds);
-
+    .in('movie_id', movieIds)
+    .eq('country_code', country)
+    .eq('availability_type', 'flatrate');
   if (error) throw error;
-
-  // @contract: build global alias set across ALL platforms in the result, then filter per movie
-  const allPlatforms = (data ?? [])
-    .map((i) => i.platform as unknown as OTTPlatform | null)
-    .filter((p): p is OTTPlatform => !!p);
-  const aliasIds = buildAliasSet(allPlatforms);
 
   const map: Record<string, OTTPlatform[]> = {};
   const seen: Record<string, Set<string>> = {};
   for (const item of data ?? []) {
     if (!item.platform) continue;
     const platform = item.platform as unknown as OTTPlatform;
-    // Skip alias platforms
-    if (platform.tmdb_provider_id && aliasIds.has(platform.tmdb_provider_id)) continue;
     if (!map[item.movie_id]) {
       map[item.movie_id] = [];
       seen[item.movie_id] = new Set();

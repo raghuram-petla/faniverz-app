@@ -19,7 +19,6 @@ import {
   BasicInfoSection,
   VideosSection,
   PostersSection,
-  PlatformsSection,
   ProductionHousesSection,
   CastSection,
   TheatricalRunsSection,
@@ -204,16 +203,10 @@ export default function NewMoviePage() {
                   onCloseAddForm={closeAdd}
                 />
               </SectionCard>
-              <SectionCard title="OTT Platforms" icon={Tv} action={addButton('platforms', 'Add')}>
-                <PlatformsSection
-                  visiblePlatforms={s.visiblePlatforms}
-                  allPlatforms={s.allPlatforms}
-                  onAdd={(p) => s.setPendingPlatformAdds((prev) => [...prev, p])}
-                  onRemove={s.handlePlatformRemove}
-                  pendingPlatformAdds={s.pendingPlatformAdds}
-                  showAddForm={addFormOpen === 'platforms'}
-                  onCloseAddForm={closeAdd}
-                />
+              <SectionCard title="OTT Platforms" icon={Tv}>
+                <p className="text-sm text-on-surface-subtle">
+                  Save the movie first, then manage OTT availability from the edit page.
+                </p>
               </SectionCard>
             </>
           )}

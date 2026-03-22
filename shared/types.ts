@@ -125,7 +125,7 @@ export interface OTTPlatform {
   color: string;
   display_order: number;
   tmdb_provider_id?: number | null;
-  tmdb_alias_ids?: number[];
+  regions?: string[];
 }
 
 export interface MoviePlatform {
@@ -135,6 +135,28 @@ export interface MoviePlatform {
   streaming_url: string | null;
   movie?: Movie;
   platform?: OTTPlatform;
+}
+
+export type AvailabilityType = 'flatrate' | 'rent' | 'buy' | 'ads' | 'free';
+
+export interface Country {
+  code: string;
+  name: string;
+  display_order: number;
+}
+
+export interface MoviePlatformAvailability {
+  id: string;
+  movie_id: string;
+  platform_id: string;
+  country_code: string;
+  availability_type: AvailabilityType;
+  available_from: string | null;
+  streaming_url: string | null;
+  tmdb_display_priority: number | null;
+  created_at: string;
+  platform?: OTTPlatform;
+  country?: Country;
 }
 
 export interface WatchlistEntry {
@@ -187,6 +209,7 @@ export interface ProductionHouse {
   logo_url: string | null;
   description: string | null;
   tmdb_company_id: number | null;
+  origin_country?: string | null;
   created_at: string;
 }
 

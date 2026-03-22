@@ -13,6 +13,7 @@ const crud = createCrudHooks<OTTPlatform>({
 });
 
 export const useAdminPlatforms = crud.useSimpleList;
+export const useAdminPlatform = crud.useSingle;
 export const useCreatePlatform = crud.useCreate;
 export const useUpdatePlatform = crud.useUpdate;
 export const useDeletePlatform = crud.useDelete;

@@ -1,5 +1,5 @@
 -- =============================================================================
--- Faniverz Telugu Movie Calendar — Seed Data
+-- Faniverz — Seed Data
 -- =============================================================================
 -- Reference data only: surprise content, general feed items,
 -- and admin auto-assign trigger.
@@ -107,7 +107,7 @@ VALUES
    '2024-01-01'::timestamptz, 25, 0, true),
 
   ('update', 'update', 'Faniverz Community Guidelines',
-   'Be respectful, share your honest opinions, and help build the best Telugu movie community. Report any inappropriate content.',
+   'Be respectful, share your honest opinions, and help build the best movie community. Report any inappropriate content.',
    '2024-01-02'::timestamptz, 15, 0, false),
 
   ('update', 'update', 'Telugu Cinema Box Office: 2024 Wrap-Up',

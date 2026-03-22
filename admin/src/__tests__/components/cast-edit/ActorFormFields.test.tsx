@@ -12,10 +12,8 @@ vi.mock('@shared/imageUrl', () => ({
   getImageUrl: (url: string) => (url ? `https://cdn.test/${url}` : null),
 }));
 
-vi.mock('@/components/common/ImageVariantsPanel', () => ({
-  ImageVariantsPanel: ({ originalUrl }: { originalUrl: string }) => (
-    <div data-testid="image-variants">{originalUrl}</div>
-  ),
+vi.mock('@/components/movie-edit/PosterGalleryCard', () => ({
+  PosterVariantStatus: () => <div data-testid="variant-status" />,
 }));
 
 const baseForm: ActorFormState = {
@@ -92,17 +90,10 @@ describe('ActorFormFields', () => {
     expect(defaultProps.onFieldChange).toHaveBeenCalledWith('photo_url', '');
   });
 
-  it('shows photo URL caption when photo is set', () => {
+  it('renders variant status when photo is set', () => {
     const form = { ...baseForm, photo_url: 'photo.jpg' };
     render(<ActorFormFields {...defaultProps} form={form} />);
-    // URL caption + ImageVariantsPanel both show the url text
-    expect(screen.getAllByText('photo.jpg').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('renders ImageVariantsPanel with photo_url', () => {
-    const form = { ...baseForm, photo_url: 'photo.jpg' };
-    render(<ActorFormFields {...defaultProps} form={form} />);
-    expect(screen.getByTestId('image-variants')).toHaveTextContent('photo.jpg');
+    expect(screen.getByTestId('variant-status')).toBeInTheDocument();
   });
 
   it('renders person_type select with correct options', () => {

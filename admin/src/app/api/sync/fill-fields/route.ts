@@ -10,12 +10,8 @@ import {
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
 import { syncAllImages } from '@/lib/sync-images';
-import {
-  syncVideos,
-  syncWatchProviders,
-  syncKeywords,
-  syncProductionCompanies,
-} from '@/lib/sync-extended';
+import { syncVideos, syncKeywords, syncProductionCompanies } from '@/lib/sync-extended';
+import { syncWatchProvidersMultiCountry } from '@/lib/sync-watch-providers';
 import { mirrorMainPoster, syncCastCrew } from '@/lib/sync-cast';
 
 /** POST /api/sync/fill-fields — apply admin-selected TMDB fields to an existing movie.
@@ -194,7 +190,7 @@ export async function POST(request: NextRequest) {
       if (c > 0) updatedFields.push('videos');
     }
     if (fields.includes('watch_providers')) {
-      const c = await syncWatchProviders(movieId, tmdbId, tmdb.apiKey, supabase);
+      const c = await syncWatchProvidersMultiCountry(movieId, tmdbId, tmdb.apiKey, supabase);
       if (c > 0) updatedFields.push('watch_providers');
     }
     if (fields.includes('keywords')) {
