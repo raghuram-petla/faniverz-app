@@ -85,7 +85,7 @@ export default function MovieDetailScreen() {
   const handleShare = async () => {
     const year = extractReleaseYear(movie.release_date);
     const text = `${movie.title}${year ? ` (${year})` : ''} — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;
-    await Share.share({ message: text });
+    await Share.share({ message: text }).catch(() => {});
   };
 
   // @edge: rating === 0 guard prevents submitting empty reviews

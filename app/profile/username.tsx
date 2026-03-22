@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,11 @@ export default function UsernameScreen() {
   const { data: profile } = useProfile();
   // @nullable: profile?.username may be null for new users who haven't set one yet
   const [username, setUsername] = useState(profile?.username ?? '');
+  // @sync: profile loads async — sync username state when profile arrives (only if user hasn't typed)
+  const [hasEdited, setHasEdited] = useState(false);
+  useEffect(() => {
+    if (profile?.username && !hasEdited) setUsername(profile.username);
+  }, [profile?.username, hasEdited]);
   // @boundary: useCheckUsername debounces and queries the DB for availability
   const { isAvailable, isChecking, error: checkError } = useCheckUsername(username);
   const setUsernameMutation = useSetUsername();
@@ -80,7 +85,10 @@ export default function UsernameScreen() {
               placeholderTextColor={theme.textTertiary}
               value={username}
               // @invariant: usernames are lowercase alphanumeric + underscores only
-              onChangeText={(text) => setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              onChangeText={(text) => {
+                setHasEdited(true);
+                setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+              }}
               autoCapitalize="none"
               autoCorrect={false}
               maxLength={20}

@@ -217,14 +217,14 @@ export function useBlockAdmin() {
 }
 
 /** Unblock an admin (restore active status) */
-// @sideeffect Clears block status but does NOT clear blocked_by/blocked_reason columns
+// @sideeffect Clears block status AND resets blocked_by/blocked_reason/blocked_at columns
 export function useUnblockAdmin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase
         .from('admin_user_roles')
-        .update({ status: 'active' })
+        .update({ status: 'active', blocked_by: null, blocked_reason: null, blocked_at: null })
         .eq('user_id', userId);
       if (error) throw error;
     },

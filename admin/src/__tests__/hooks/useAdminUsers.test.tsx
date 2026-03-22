@@ -324,7 +324,12 @@ describe('useUnblockAdmin', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(mockFrom).toHaveBeenCalledWith('admin_user_roles');
-    expect(mockUpdate).toHaveBeenCalledWith({ status: 'active' });
+    expect(mockUpdate).toHaveBeenCalledWith({
+      status: 'active',
+      blocked_by: null,
+      blocked_reason: null,
+      blocked_at: null,
+    });
     expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
   });
 });

@@ -66,7 +66,7 @@ export default function ActivityScreen() {
   );
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <ScreenHeader title={t('profile.activity')} />
 
       <View style={styles.filterRow}>

@@ -79,10 +79,11 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
               </View>
             )}
             <View style={styles.heroMetaRow}>
-              <Text style={styles.heroMeta}>{releaseYear}</Text>
+              {/** @nullable releaseYear is null for TBA movies — skip rendering to avoid dangling separator */}
+              {releaseYear != null && <Text style={styles.heroMeta}>{releaseYear}</Text>}
               {movie.runtime ? (
                 <>
-                  <Text style={styles.heroMetaDot}>|</Text>
+                  {releaseYear != null && <Text style={styles.heroMetaDot}>|</Text>}
                   <Text style={styles.heroMeta}>{movie.runtime}m</Text>
                 </>
               ) : null}

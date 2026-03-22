@@ -220,6 +220,7 @@ export default function SearchScreen() {
         <FlashList
           data={filteredMovies}
           keyExtractor={(item) => item.id}
+          estimatedItemSize={120}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
           keyboardDismissMode="on-drag"

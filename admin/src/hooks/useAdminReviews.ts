@@ -4,6 +4,11 @@ import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
 import type { Review } from '@/lib/types';
 
+// @boundary: PostgREST .or() filter uses commas as delimiters — strip special chars to avoid syntax errors
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(/[,()"'\\]/g, '').trim();
+}
+
 // @boundary: joins reviews with movies and profiles via PostgREST foreign-key selects
 // @edge: search matches title/body server-side via .or(), but movie.title and profile.display_name
 //        are filtered client-side because PostgREST cannot OR across foreign table columns
@@ -23,7 +28,10 @@ export function useAdminReviews(search = '', ratingFilter = 0) {
       }
 
       if (search) {
-        query = query.or(`title.ilike.%${search}%,body.ilike.%${search}%`);
+        const term = sanitizeSearchTerm(search);
+        if (term) {
+          query = query.or(`title.ilike.%${term}%,body.ilike.%${term}%`);
+        }
       }
 
       const { data, error } = await query;

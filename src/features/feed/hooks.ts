@@ -84,6 +84,7 @@ export function useVoteFeedItem() {
       return voteFeedItem(feedItemId, user.id, voteType);
     },
     onMutate: async ({ feedItemId, voteType, previousVote }) => {
+      // @sync: capture ALL rollback snapshots BEFORE any setQueriesData calls to avoid partial snapshots
       const previousFeedData: {
         queryKey: readonly unknown[];
         data: { pages: NewsFeedItem[][] };
@@ -95,6 +96,8 @@ export function useVoteFeedItem() {
           .forEach(([queryKey, data]) => {
             if (data) previousFeedData.push({ queryKey, data });
           });
+      }
+      for (const key of FEED_QUERY_KEYS) {
         queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
           if (!old) return old;
           return {
@@ -148,6 +151,7 @@ export function useRemoveFeedVote() {
       return removeFeedVote(feedItemId, user.id);
     },
     onMutate: async ({ feedItemId, previousVote }) => {
+      // @sync: capture ALL rollback snapshots BEFORE any setQueriesData calls to avoid partial snapshots
       const previousFeedData: {
         queryKey: readonly unknown[];
         data: { pages: NewsFeedItem[][] };
@@ -159,6 +163,8 @@ export function useRemoveFeedVote() {
           .forEach(([queryKey, data]) => {
             if (data) previousFeedData.push({ queryKey, data });
           });
+      }
+      for (const key of FEED_QUERY_KEYS) {
         queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
           if (!old) return old;
           return {
@@ -204,7 +210,9 @@ export function useRemoveFeedVote() {
 export function useUserVotes(feedItemIds: string[]) {
   const { user } = useAuth();
   const userId = user?.id;
-  const sortedIds = useMemo(() => [...feedItemIds].sort(), [feedItemIds]);
+  // @sync: JSON key stabilizes the array reference so useMemo only recomputes when IDs actually change
+  const idsKey = [...feedItemIds].sort().join(',');
+  const sortedIds = useMemo(() => (idsKey ? idsKey.split(',') : []), [idsKey]);
 
   return useQuery({
     queryKey: ['feed-votes', userId, sortedIds],

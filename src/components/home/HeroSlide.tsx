@@ -99,19 +99,22 @@ export function HeroSlide({
         </Text>
 
         {/* Meta info */}
+        {/** @nullable releaseYear is null for TBA movies — skip to avoid dangling separator */}
         <View style={styles.metaRow}>
-          <Text style={styles.metaText}>{releaseYear}</Text>
-          <Text style={styles.metaDot}>•</Text>
+          {releaseYear != null && <Text style={styles.metaText}>{releaseYear}</Text>}
           {movie.runtime ? (
             <>
+              {releaseYear != null && <Text style={styles.metaDot}>•</Text>}
               <Text style={styles.metaText}>{movie.runtime}m</Text>
-              <Text style={styles.metaDot}>•</Text>
             </>
           ) : null}
           {movie.certification && (
-            <View style={styles.certBadge}>
-              <Text style={styles.certText}>{movie.certification}</Text>
-            </View>
+            <>
+              {(releaseYear != null || movie.runtime) && <Text style={styles.metaDot}>•</Text>}
+              <View style={styles.certBadge}>
+                <Text style={styles.certText}>{movie.certification}</Text>
+              </View>
+            </>
           )}
         </View>
 

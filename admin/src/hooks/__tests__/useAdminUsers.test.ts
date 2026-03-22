@@ -449,7 +449,12 @@ describe('useUnblockAdmin', () => {
       await result.current.mutateAsync('user-1');
     });
 
-    expect(updateFn).toHaveBeenCalledWith({ status: 'active' });
+    expect(updateFn).toHaveBeenCalledWith({
+      status: 'active',
+      blocked_by: null,
+      blocked_reason: null,
+      blocked_at: null,
+    });
     expect(eqFn).toHaveBeenCalledWith('user_id', 'user-1');
   });
 

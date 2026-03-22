@@ -99,7 +99,7 @@ export default function FeedScreen() {
     (itemId: string) => {
       const item = allItems.find((i) => i.id === itemId);
       if (!item) return;
-      Share.share({ message: `${item.title} — Check it out on Faniverz!` });
+      Share.share({ message: `${item.title} — Check it out on Faniverz!` }).catch(() => {});
     },
     [allItems],
   );
@@ -186,6 +186,7 @@ export default function FeedScreen() {
           <FlashList
             data={allItems}
             keyExtractor={(item) => item.id}
+            estimatedItemSize={350}
             drawDistance={500}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}

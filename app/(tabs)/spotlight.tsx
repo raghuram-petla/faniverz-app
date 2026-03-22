@@ -67,31 +67,44 @@ export default function SpotlightScreen() {
   useScrollToTop(scrollRef);
 
   // @coupling deriveMovieStatus — shared logic from @shared/movieStatus determines in_theaters/streaming/upcoming
-  const moviesWithStatus = allMovies.map((m) => ({
-    movie: m,
-    status: deriveMovieStatus(m, (platformMap[m.id] ?? []).length),
-  }));
-  // @contract Featured movies = in_theaters + streaming, sorted by is_featured flag, capped at 7
-  const featuredMovies = moviesWithStatus
-    .filter((ms) => ms.status === 'in_theaters' || ms.status === 'streaming')
-    .sort((a, b) => (b.movie.is_featured ? 1 : 0) - (a.movie.is_featured ? 1 : 0))
-    .map((ms) => ms.movie)
-    .slice(0, FEATURED_MOVIE_LIMIT);
-  const theatricalMovies = moviesWithStatus
-    .filter((ms) => ms.status === 'in_theaters')
-    .map((ms) => ms.movie);
-  const streamingMovies = moviesWithStatus
-    .filter((ms) => ms.status === 'streaming')
-    .map((ms) => ms.movie);
-  const upcomingMovies = moviesWithStatus
-    .filter((ms) => ms.status === 'upcoming')
-    .map((ms) => ms.movie);
-  // @contract Upcoming split: no platforms = theatrical release; has platforms = OTT release
-  const upcomingTheatrical = upcomingMovies.filter(
-    (m) => !platformMap[m.id] || platformMap[m.id].length === 0,
+  const moviesWithStatus = useMemo(
+    () =>
+      allMovies.map((m) => ({
+        movie: m,
+        status: deriveMovieStatus(m, (platformMap[m.id] ?? []).length),
+      })),
+    [allMovies, platformMap],
   );
-  const upcomingOTT = upcomingMovies.filter(
-    (m) => platformMap[m.id] && platformMap[m.id].length > 0,
+  // @contract Featured movies = in_theaters + streaming, sorted by is_featured flag, capped at 7
+  const featuredMovies = useMemo(
+    () =>
+      moviesWithStatus
+        .filter((ms) => ms.status === 'in_theaters' || ms.status === 'streaming')
+        .sort((a, b) => (b.movie.is_featured ? 1 : 0) - (a.movie.is_featured ? 1 : 0))
+        .map((ms) => ms.movie)
+        .slice(0, FEATURED_MOVIE_LIMIT),
+    [moviesWithStatus],
+  );
+  const theatricalMovies = useMemo(
+    () => moviesWithStatus.filter((ms) => ms.status === 'in_theaters').map((ms) => ms.movie),
+    [moviesWithStatus],
+  );
+  const streamingMovies = useMemo(
+    () => moviesWithStatus.filter((ms) => ms.status === 'streaming').map((ms) => ms.movie),
+    [moviesWithStatus],
+  );
+  const upcomingMovies = useMemo(
+    () => moviesWithStatus.filter((ms) => ms.status === 'upcoming').map((ms) => ms.movie),
+    [moviesWithStatus],
+  );
+  // @contract Upcoming split: no platforms = theatrical release; has platforms = OTT release
+  const upcomingTheatrical = useMemo(
+    () => upcomingMovies.filter((m) => !platformMap[m.id] || platformMap[m.id].length === 0),
+    [upcomingMovies, platformMap],
+  );
+  const upcomingOTT = useMemo(
+    () => upcomingMovies.filter((m) => platformMap[m.id] && platformMap[m.id].length > 0),
+    [upcomingMovies, platformMap],
   );
 
   const renderMovieCard = (movie: Movie, showDate = false, showTypeBadge = true) => (

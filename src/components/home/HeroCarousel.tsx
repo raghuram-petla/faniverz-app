@@ -86,6 +86,11 @@ export function HeroCarousel({ movies, platformMap }: HeroCarouselProps) {
     if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     autoPlayRef.current = setInterval(() => {
       setActiveIndex((prev) => {
+        // @edge: guard against stale index if movies array shrinks between ticks
+        if (prev >= movies.length) {
+          flatListRef.current?.scrollToIndex({ index: 0, animated: false });
+          return 0;
+        }
         // Always scroll forward; clone at end handles wrap-around
         const next = prev + 1;
         if (next >= movies.length + 1) {
