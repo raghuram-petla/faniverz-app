@@ -13,10 +13,12 @@ export interface MovieProductionHouse {
 
 // @coupling: createMovieChildHooks — only useList used; add/remove are custom below
 // @boundary: select joins production_houses via PostgREST foreign-key embed
+// @edge: movie_production_houses has no display_order column — order by FK instead
 const { useList: useMovieProductionHouses } = createMovieChildHooks<MovieProductionHouse>({
   table: 'movie_production_houses',
   keySuffix: 'movie-production-houses',
   select: '*, production_house:production_houses(*)',
+  orderBy: 'production_house_id',
 });
 
 export { useMovieProductionHouses };
