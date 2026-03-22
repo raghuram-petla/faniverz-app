@@ -8,6 +8,7 @@ import type { ImportProgress } from './syncHelpers';
 import { ImportProgressList } from './DiscoverResults';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguageContext } from '@/hooks/useLanguageContext';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { LANGUAGE_OPTIONS } from '@/lib/movie-constants';
 
 export interface MovieSearchResultsProps {
@@ -57,6 +58,11 @@ export function MovieSearchResults({
       canImportMovie(m.original_language),
   );
   const isImporting = importProgress.some((p) => p.status === 'importing');
+  // @sideeffect warn user before navigating away during active import
+  useUnsavedChangesWarning(
+    isImporting,
+    'Movies are still being imported. If you leave now, the remaining movies will not be imported. Are you sure you want to leave?',
+  );
 
   const handleLinkDuplicate = async (tmdbId: number, suspect: DuplicateSuspect) => {
     setLinkingTmdbId(tmdbId);

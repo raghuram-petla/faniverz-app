@@ -60,7 +60,7 @@ export async function syncPosters(
   if (delErr) console.warn('syncPosters: delete failed', delErr.message);
 
   let count = 0;
-  for (let i = 0; i < sorted.length && i < 20; i++) {
+  for (let i = 0; i < sorted.length; i++) {
     const poster = sorted[i];
     const key = `${randomUUID()}.jpg`;
     const imageUrl = await uploadImageFromUrl(
@@ -176,7 +176,7 @@ export async function syncBackdrops(
   if (bdDelErr) console.warn('syncBackdrops: delete failed', bdDelErr.message);
 
   let count = 0;
-  for (let i = 0; i < sorted.length && i < 15; i++) {
+  for (let i = 0; i < sorted.length; i++) {
     const backdrop = sorted[i];
     const key = `${randomUUID()}.jpg`;
     const imageUrl = await uploadImageFromUrl(

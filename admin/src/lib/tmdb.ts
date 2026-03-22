@@ -60,8 +60,9 @@ function sleep(ms: number) {
  * Fetch all Telugu-language films for a given year from TMDB Discover.
  * Paginates automatically.
  */
-export async function discoverTeluguMovies(
+export async function discoverMoviesByLanguage(
   year: number,
+  language: string,
   apiKey: string,
 ): Promise<TmdbDiscoverMovie[]> {
   const movies: TmdbDiscoverMovie[] = [];
@@ -74,7 +75,7 @@ export async function discoverTeluguMovies(
       total_pages: number;
     }>('/discover/movie', {
       api_key: apiKey,
-      with_original_language: 'te',
+      with_original_language: language,
       primary_release_year: String(year),
       sort_by: 'release_date.asc',
       page: String(page),
@@ -90,10 +91,11 @@ export async function discoverTeluguMovies(
   return movies;
 }
 
-/** Discover Telugu movies filtered by year and month. */
-export async function discoverTeluguMoviesByMonth(
+/** Discover movies by language filtered by year and month. */
+export async function discoverMoviesByLanguageAndMonth(
   year: number,
   month: number,
+  language: string,
   apiKey: string,
 ): Promise<TmdbDiscoverMovie[]> {
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -110,7 +112,7 @@ export async function discoverTeluguMoviesByMonth(
       total_pages: number;
     }>('/discover/movie', {
       api_key: apiKey,
-      with_original_language: 'te',
+      with_original_language: language,
       'primary_release_date.gte': startDate,
       'primary_release_date.lte': endDate,
       sort_by: 'release_date.asc',
@@ -175,21 +177,50 @@ export async function getWatchProviders(
 
 // ── Search API ────────────────────────────────────────────────────────────────
 
-/** @boundary Search TMDB for Telugu movies by title. Returns first page (20 results). */
-export async function searchMovies(query: string, apiKey: string): Promise<TmdbDiscoverMovie[]> {
-  const data = await tmdbGet<{ results: TmdbDiscoverMovie[] }>('/search/movie', {
-    api_key: apiKey,
-    query,
-    with_original_language: 'te',
-  });
-  return data.results;
+/** @boundary Search TMDB movies by title and language. Fetches up to 3 pages (~60 results). */
+export async function searchMovies(
+  query: string,
+  apiKey: string,
+  language?: string,
+): Promise<TmdbDiscoverMovie[]> {
+  const movies: TmdbDiscoverMovie[] = [];
+  const maxPages = 3;
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const params: Record<string, string> = { api_key: apiKey, query, page: String(page) };
+    if (language) params.with_original_language = language;
+    const data = await tmdbGet<{ results: TmdbDiscoverMovie[]; total_pages: number }>(
+      '/search/movie',
+      params,
+    );
+    movies.push(...data.results);
+    totalPages = data.total_pages;
+    page++;
+    if (page <= Math.min(totalPages, maxPages)) await sleep(200);
+  } while (page <= Math.min(totalPages, maxPages));
+
+  return movies;
 }
 
-/** @boundary Search TMDB for persons by name. Returns first page (20 results). */
+/** @boundary Search TMDB for persons by name. Fetches up to 3 pages (~60 results). */
 export async function searchPersons(query: string, apiKey: string): Promise<TmdbSearchPerson[]> {
-  const data = await tmdbGet<{ results: TmdbSearchPerson[] }>('/search/person', {
-    api_key: apiKey,
-    query,
-  });
-  return data.results;
+  const persons: TmdbSearchPerson[] = [];
+  const maxPages = 3;
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const data = await tmdbGet<{ results: TmdbSearchPerson[]; total_pages: number }>(
+      '/search/person',
+      { api_key: apiKey, query, page: String(page) },
+    );
+    persons.push(...data.results);
+    totalPages = data.total_pages;
+    page++;
+    if (page <= Math.min(totalPages, maxPages)) await sleep(200);
+  } while (page <= Math.min(totalPages, maxPages));
+
+  return persons;
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
-  discoverTeluguMovies,
-  discoverTeluguMoviesByMonth,
+  discoverMoviesByLanguage,
+  discoverMoviesByLanguageAndMonth,
   getMovieDetails,
   getPersonDetails,
   getMovieImages,
@@ -55,14 +55,14 @@ describe('TMDB_IMAGE', () => {
   });
 });
 
-// ── discoverTeluguMovies ─────────────────────────────────────────────────────
+// ── discoverMoviesByLanguage ─────────────────────────────────────────────────────
 
-describe('discoverTeluguMovies', () => {
+describe('discoverMoviesByLanguage', () => {
   it('fetches single page of results', async () => {
     const movies = [{ id: 1, title: 'Movie 1' }];
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: movies, total_pages: 1 }));
 
-    const result = await discoverTeluguMovies(2025, 'test-key');
+    const result = await discoverMoviesByLanguage(2025, 'te', 'test-key');
 
     expect(result).toEqual(movies);
     expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -79,7 +79,7 @@ describe('discoverTeluguMovies', () => {
       .mockResolvedValueOnce(mockJsonResponse({ results: [{ id: 1 }], total_pages: 2 }))
       .mockResolvedValueOnce(mockJsonResponse({ results: [{ id: 2 }], total_pages: 2 }));
 
-    const result = await discoverTeluguMovies(2025, 'key');
+    const result = await discoverMoviesByLanguage(2025, 'te', 'key');
 
     expect(result).toHaveLength(2);
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -88,17 +88,19 @@ describe('discoverTeluguMovies', () => {
   it('throws on non-ok response', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse(null, false, 401));
 
-    await expect(discoverTeluguMovies(2025, 'bad-key')).rejects.toThrow('TMDB /discover/movie');
+    await expect(discoverMoviesByLanguage(2025, 'te', 'bad-key')).rejects.toThrow(
+      'TMDB /discover/movie',
+    );
   });
 });
 
-// ── discoverTeluguMoviesByMonth ──────────────────────────────────────────────
+// ── discoverMoviesByLanguageAndMonth ──────────────────────────────────────────────
 
-describe('discoverTeluguMoviesByMonth', () => {
+describe('discoverMoviesByLanguageAndMonth', () => {
   it('constructs correct date range params', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: [], total_pages: 1 }));
 
-    await discoverTeluguMoviesByMonth(2025, 2, 'key');
+    await discoverMoviesByLanguageAndMonth(2025, 2, 'te', 'key');
 
     const url = mockFetch.mock.calls[0][0];
     expect(url).toContain('primary_release_date.gte=2025-02-01');
@@ -108,7 +110,7 @@ describe('discoverTeluguMoviesByMonth', () => {
   it('handles months with 31 days', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: [], total_pages: 1 }));
 
-    await discoverTeluguMoviesByMonth(2025, 1, 'key');
+    await discoverMoviesByLanguageAndMonth(2025, 1, 'te', 'key');
 
     const url = mockFetch.mock.calls[0][0];
     expect(url).toContain('primary_release_date.lte=2025-01-31');
@@ -117,7 +119,7 @@ describe('discoverTeluguMoviesByMonth', () => {
   it('handles leap year February', async () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: [], total_pages: 1 }));
 
-    await discoverTeluguMoviesByMonth(2024, 2, 'key');
+    await discoverMoviesByLanguageAndMonth(2024, 2, 'te', 'key');
 
     const url = mockFetch.mock.calls[0][0];
     expect(url).toContain('primary_release_date.lte=2024-02-29');
@@ -128,7 +130,7 @@ describe('discoverTeluguMoviesByMonth', () => {
       .mockResolvedValueOnce(mockJsonResponse({ results: [{ id: 1 }], total_pages: 2 }))
       .mockResolvedValueOnce(mockJsonResponse({ results: [{ id: 2 }], total_pages: 2 }));
 
-    const result = await discoverTeluguMoviesByMonth(2025, 6, 'key');
+    const result = await discoverMoviesByLanguageAndMonth(2025, 6, 'te', 'key');
     expect(result).toHaveLength(2);
   });
 });
@@ -225,11 +227,11 @@ describe('getWatchProviders', () => {
 // ── searchMovies ─────────────────────────────────────────────────────────────
 
 describe('searchMovies', () => {
-  it('searches with query and Telugu language filter', async () => {
+  it('searches with query and language filter', async () => {
     const movies = [{ id: 1, title: 'Pushpa' }];
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: movies, total_pages: 1 }));
 
-    const result = await searchMovies('Pushpa', 'key');
+    const result = await searchMovies('Pushpa', 'key', 'te');
 
     expect(result).toEqual(movies);
     const url = mockFetch.mock.calls[0][0];

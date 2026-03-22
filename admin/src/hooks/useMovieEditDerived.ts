@@ -167,8 +167,9 @@ export function useMovieEditDerived(params: {
   }, [postersData, pendingPosterAdds, pendingPosterRemoveIds, pendingMainPosterId, id]);
 
   // @invariant Platforms are keyed by platform_id (not a surrogate id) — removal set uses platform_id
-  const visiblePlatforms = useMemo(
-    () => [
+  // @contract: alias platforms (whose tmdb_provider_id is in another platform's tmdb_alias_ids) are hidden
+  const visiblePlatforms = useMemo(() => {
+    const all = [
       ...moviePlatforms.filter((mp) => !pendingPlatformRemoveIds.has(mp.platform_id)),
       ...pendingPlatformAdds.map((p) => ({
         movie_id: id,
@@ -177,9 +178,17 @@ export function useMovieEditDerived(params: {
         streaming_url: p.streaming_url,
         platform: p._platform,
       })),
-    ],
-    [moviePlatforms, pendingPlatformAdds, pendingPlatformRemoveIds, id],
-  );
+    ];
+    // Build set of all alias IDs across platforms in this movie
+    const aliasProviderIds = new Set<number>();
+    for (const mp of all) {
+      for (const aid of mp.platform?.tmdb_alias_ids ?? []) aliasProviderIds.add(aid);
+    }
+    // Filter out platforms whose tmdb_provider_id is an alias of another
+    return all.filter(
+      (mp) => !mp.platform?.tmdb_provider_id || !aliasProviderIds.has(mp.platform.tmdb_provider_id),
+    );
+  }, [moviePlatforms, pendingPlatformAdds, pendingPlatformRemoveIds, id]);
 
   const visibleProductionHouses = useMemo(
     () => [

@@ -119,7 +119,7 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
       result.push(
         makeChange(
           `entity:platform-add-${p.platform_id}`,
-          'Platforms',
+          'OTT Platforms',
           '(empty)',
           `+ ${p._platform?.name ?? p.platform_id}${from}`,
         ),
@@ -130,7 +130,7 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
       result.push(
         makeChange(
           `entity:platform-remove-${id}`,
-          'Platforms',
+          'OTT Platforms',
           mp?.platform?.name ?? id,
           '(removed)',
         ),

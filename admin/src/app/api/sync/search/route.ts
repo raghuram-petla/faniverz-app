@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
-    const { query } = body as { query: string };
+    const { query, language } = body as { query: string; language?: string };
 
     if (!query || query.length < 2) {
       return NextResponse.json({ error: 'Query must be at least 2 characters.' }, { status: 400 });
@@ -30,8 +30,9 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     // @sideeffect parallel TMDB API calls for movies + persons
+    // @nullable language — when provided, filters movies by original_language
     const [movieResults, personResults] = await Promise.all([
-      searchMovies(query, tmdb.apiKey),
+      searchMovies(query, tmdb.apiKey, language || undefined),
       searchPersons(query, tmdb.apiKey),
     ]);
 

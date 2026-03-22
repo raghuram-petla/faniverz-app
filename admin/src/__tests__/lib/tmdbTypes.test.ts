@@ -5,7 +5,6 @@ import {
   extractTeluguTranslation,
   mapTmdbVideoType,
   CREW_JOB_MAP,
-  TMDB_PROVIDER_MAP,
   TmdbCrewMember,
   TmdbVideo,
 } from '@/lib/tmdbTypes';
@@ -253,26 +252,5 @@ describe('CREW_JOB_MAP', () => {
 
   it('Director has roleOrder 1 (highest priority)', () => {
     expect(CREW_JOB_MAP['Director'].roleOrder).toBe(1);
-  });
-});
-
-// ── TMDB_PROVIDER_MAP ──────────────────────────────────────────────────────
-
-describe('TMDB_PROVIDER_MAP', () => {
-  it('maps known provider IDs to platform slugs', () => {
-    expect(TMDB_PROVIDER_MAP[532]).toBe('aha');
-    expect(TMDB_PROVIDER_MAP[122]).toBe('hotstar');
-    expect(TMDB_PROVIDER_MAP[119]).toBe('prime');
-    expect(TMDB_PROVIDER_MAP[8]).toBe('netflix');
-    expect(TMDB_PROVIDER_MAP[237]).toBe('zee5');
-    expect(TMDB_PROVIDER_MAP[309]).toBe('sunnxt');
-  });
-
-  it('returns undefined for unmapped provider IDs', () => {
-    expect(TMDB_PROVIDER_MAP[9999]).toBeUndefined();
-  });
-
-  it('has 6 provider entries', () => {
-    expect(Object.keys(TMDB_PROVIDER_MAP)).toHaveLength(6);
   });
 });

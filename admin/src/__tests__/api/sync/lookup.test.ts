@@ -57,6 +57,7 @@ vi.mock('@/lib/tmdbTypes', () => ({
     const t = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
     return t ? `https://www.youtube.com/watch?v=${t.key}` : null;
   },
+  extractIndiaCertification: () => null,
 }));
 
 vi.mock('next/server', () => ({

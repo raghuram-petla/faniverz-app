@@ -145,15 +145,15 @@ describe('syncPosters', () => {
     );
   });
 
-  it('limits to 20 posters max', async () => {
+  it('syncs all posters without limit', async () => {
     const posters = Array.from({ length: 25 }, (_, i) =>
       makePoster({ file_path: `/p${i}.jpg`, vote_average: 25 - i }),
     );
 
     const result = await syncPosters(MOVIE_ID, TMDB_ID, { posters }, supabase as never);
 
-    expect(result).toBe(20);
-    expect(mockUpload).toHaveBeenCalledTimes(20);
+    expect(result).toBe(25);
+    expect(mockUpload).toHaveBeenCalledTimes(25);
   });
 });
 
@@ -221,15 +221,15 @@ describe('syncBackdrops', () => {
     expect(supabase.not).toHaveBeenCalledWith('tmdb_file_path', 'is', null);
   });
 
-  it('limits to 15 backdrops max', async () => {
+  it('syncs all backdrops without limit', async () => {
     const backdrops = Array.from({ length: 20 }, (_, i) =>
       makeBackdrop({ file_path: `/b${i}.jpg`, vote_average: 20 - i }),
     );
 
     const result = await syncBackdrops(MOVIE_ID, TMDB_ID, { backdrops }, supabase as never);
 
-    expect(result).toBe(15);
-    expect(mockUpload).toHaveBeenCalledTimes(15);
+    expect(result).toBe(20);
+    expect(mockUpload).toHaveBeenCalledTimes(20);
   });
 });
 

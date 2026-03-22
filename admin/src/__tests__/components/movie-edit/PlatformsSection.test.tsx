@@ -9,6 +9,8 @@ const mockPlatform: OTTPlatform = {
   logo_url: 'https://cdn.example.com/netflix.png',
   color: '#e50914',
   display_order: 1,
+  tmdb_provider_id: 8,
+  tmdb_alias_ids: [],
 };
 
 const mockPlatformNoLogo: OTTPlatform = {
@@ -18,6 +20,8 @@ const mockPlatformNoLogo: OTTPlatform = {
   logo_url: null,
   color: '#333333',
   display_order: 0,
+  tmdb_provider_id: null,
+  tmdb_alias_ids: [],
 };
 
 const allPlatforms: OTTPlatform[] = [
@@ -30,6 +34,8 @@ const allPlatforms: OTTPlatform[] = [
     logo_url: 'https://cdn.example.com/prime.png',
     color: '#146eb9',
     display_order: 2,
+    tmdb_provider_id: 119,
+    tmdb_alias_ids: [],
   },
 ];
 

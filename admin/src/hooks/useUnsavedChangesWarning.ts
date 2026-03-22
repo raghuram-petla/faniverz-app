@@ -10,9 +10,13 @@ import { useEffect, useRef } from 'react';
  * @sideeffect: pushes a guard entry to browser history only when isDirty becomes true,
  * and pops it when isDirty becomes false, so there is no stale guard entry.
  */
-export function useUnsavedChangesWarning(isDirty: boolean) {
+const DEFAULT_MESSAGE = 'You have unsaved changes. Are you sure you want to leave?';
+
+export function useUnsavedChangesWarning(isDirty: boolean, message?: string) {
   const isDirtyRef = useRef(isDirty);
   isDirtyRef.current = isDirty;
+  const messageRef = useRef(message ?? DEFAULT_MESSAGE);
+  messageRef.current = message ?? DEFAULT_MESSAGE;
   // @invariant: tracks whether a guard history entry is currently pushed
   const hasGuardRef = useRef(false);
   // @invariant: when true, the next popstate event is from our own cleanup — ignore it
@@ -39,7 +43,7 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
       const href = anchor.getAttribute('href');
       if (!href || href.startsWith('http') || href.startsWith('mailto:')) return;
 
-      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+      const confirmed = window.confirm(messageRef.current);
       if (!confirmed) {
         e.preventDefault();
         e.stopPropagation();
@@ -55,9 +59,7 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
 
       if (isDirtyRef.current && hasGuardRef.current) {
         hasGuardRef.current = false;
-        const confirmed = window.confirm(
-          'You have unsaved changes. Are you sure you want to leave?',
-        );
+        const confirmed = window.confirm(messageRef.current);
         if (!confirmed) {
           // Re-push the guard to stay on the page
           history.pushState(null, '', location.href);

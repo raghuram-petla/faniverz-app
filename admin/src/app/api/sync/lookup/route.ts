@@ -7,7 +7,7 @@ import {
   getWatchProviders,
   TMDB_IMAGE,
 } from '@/lib/tmdb';
-import { extractTrailerUrl } from '@/lib/tmdbTypes';
+import { extractTrailerUrl, extractIndiaCertification } from '@/lib/tmdbTypes';
 import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
 
 /**
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           tmdbVoteCount: detail.vote_count ?? null,
           budget: detail.budget || null,
           revenue: detail.revenue || null,
-          certification: null, // extracted on import, not preview
+          certification: extractIndiaCertification(detail.release_dates),
           spokenLanguages: detail.spoken_languages?.map((l) => l.iso_639_1) ?? [],
           productionCompanyCount: detail.production_companies?.length ?? 0,
         },

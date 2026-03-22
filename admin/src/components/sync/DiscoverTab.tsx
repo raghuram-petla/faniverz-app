@@ -16,11 +16,13 @@ import { SearchResultsPanel } from './SearchResultsPanel';
 import { DiscoverByYear } from './DiscoverByYear';
 import { MoviePreview } from './MoviePreview';
 import { PersonPreview } from './PersonPreview';
+import { useLanguageContext } from '@/hooks/useLanguageContext';
 
 type ResultMode = 'search' | 'discover' | 'lookup';
 
 /** @contract Unified TMDB sync — search bar + discover by year, one results area */
 export function DiscoverTab() {
+  const { selectedLanguageCode } = useLanguageContext();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState(CURRENT_YEAR);
   const [month, setMonth] = useState(0);
@@ -45,7 +47,7 @@ export function DiscoverTab() {
       setResultMode('lookup');
       setResultLabel(`TMDB ID: ${query.trim()}`);
     } else {
-      search.mutate(query.trim());
+      search.mutate({ query: query.trim(), language: selectedLanguageCode || undefined });
       setResultMode('search');
       setResultLabel(query.trim());
     }
@@ -54,7 +56,11 @@ export function DiscoverTab() {
   const handleDiscover = () => {
     const monthName = month ? MONTHS[month - 1] : '';
     setResultLabel(monthName ? `${monthName} ${year}` : `${year}`);
-    discover.mutate({ year, month: month || undefined });
+    discover.mutate({
+      year,
+      month: month || undefined,
+      language: selectedLanguageCode || undefined,
+    });
     setResultMode('discover');
   };
 

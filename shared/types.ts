@@ -124,6 +124,8 @@ export interface OTTPlatform {
   logo_url: string | null;
   color: string;
   display_order: number;
+  tmdb_provider_id?: number | null;
+  tmdb_alias_ids?: number[];
 }
 
 export interface MoviePlatform {

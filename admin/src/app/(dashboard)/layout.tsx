@@ -25,7 +25,6 @@ const ROUTE_PAGE_MAP: Record<string, AdminPage> = {
   '/theaters': 'theaters',
   '/cast': 'cast',
   '/production-houses': 'production-houses',
-  '/ott': 'ott',
   '/platforms': 'platforms',
   '/surprise': 'surprise',
   '/feed': 'feed',

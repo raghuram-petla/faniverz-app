@@ -16,7 +16,6 @@ vi.mock('../../lib/tmdbTypes', async () => {
   return {
     ...actual,
     mapTmdbVideoType: vi.fn(),
-    TMDB_PROVIDER_MAP: { 100: 'aha', 200: 'netflix' } as Record<number, string>,
   };
 });
 
@@ -36,6 +35,7 @@ const createMockSupabase = () => {
     update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
     not: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   };
@@ -142,12 +142,12 @@ describe('syncWatchProviders', () => {
     supabase = createMockSupabase();
   });
 
-  it('maps known providers and inserts links', async () => {
+  it('uses existing platform by tmdb_provider_id and inserts link', async () => {
     vi.mocked(getWatchProviders).mockResolvedValue([
-      { provider_id: 100, provider_name: 'Aha', logo_path: '/aha.png' },
+      { provider_id: 532, provider_name: 'Aha', logo_path: '/aha.png' },
     ]);
     supabase.maybeSingle
-      .mockResolvedValueOnce({ data: { id: 'aha' }, error: null }) // platform exists
+      .mockResolvedValueOnce({ data: { id: 'aha' }, error: null }) // platform found
       .mockResolvedValueOnce({ data: null, error: null }); // not already linked
 
     const result = await syncWatchProviders(
@@ -164,10 +164,19 @@ describe('syncWatchProviders', () => {
     });
   });
 
-  it('skips unknown providers not in TMDB_PROVIDER_MAP', async () => {
+  it('auto-creates platform when not found by tmdb_provider_id', async () => {
     vi.mocked(getWatchProviders).mockResolvedValue([
-      { provider_id: 999, provider_name: 'Unknown', logo_path: '' },
+      { provider_id: 999, provider_name: 'New Service', logo_path: '' },
     ]);
+    // platform not found → insert triggers → but mock chain won't fully
+    // support .insert().select().single(), so we verify it attempts creation
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null }); // platform not found
+    // Mock the chained .insert().select('id').single() for platform creation
+    const singleMock = vi.fn().mockResolvedValue({ data: { id: 'new-service' }, error: null });
+    const selectAfterInsert = vi.fn().mockReturnValue({ single: singleMock });
+    supabase.insert.mockReturnValueOnce({ select: selectAfterInsert } as never);
+    // Not already linked
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const result = await syncWatchProviders(
       MOVIE_ID,
@@ -176,16 +185,16 @@ describe('syncWatchProviders', () => {
       supabase as unknown as SupabaseClient,
     );
 
-    expect(result).toBe(0);
-    expect(supabase.insert).not.toHaveBeenCalled();
+    expect(result).toBe(1);
+    expect(singleMock).toHaveBeenCalled();
   });
 
   it('skips already linked providers', async () => {
     vi.mocked(getWatchProviders).mockResolvedValue([
-      { provider_id: 100, provider_name: 'Aha', logo_path: '' },
+      { provider_id: 532, provider_name: 'Aha', logo_path: '' },
     ]);
     supabase.maybeSingle
-      .mockResolvedValueOnce({ data: { id: 'aha' }, error: null }) // platform exists
+      .mockResolvedValueOnce({ data: { id: 'aha' }, error: null }) // platform found
       .mockResolvedValueOnce({ data: { movie_id: MOVIE_ID }, error: null }); // already linked
 
     const result = await syncWatchProviders(

@@ -15,7 +15,6 @@ const ALL_PAGES: AdminPage[] = [
   'movies',
   'cast',
   'production-houses',
-  'ott',
   'platforms',
   'surprise',
   'feed',
@@ -192,7 +191,6 @@ describe('usePermissions', () => {
         'movies',
         'cast',
         'production-houses',
-        'ott',
         'theaters',
         'audit',
       ];

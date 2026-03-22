@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { discoverTeluguMovies, discoverTeluguMoviesByMonth } from '@/lib/tmdb';
+import { discoverMoviesByLanguage, discoverMoviesByLanguageAndMonth } from '@/lib/tmdb';
 import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/discover
- * Discover Telugu movies on TMDB by year (and optional month).
+ * Discover movies on TMDB by language, year (and optional month).
  * Returns results + which tmdb_ids already exist in our DB.
  * Read-only — no DB writes.
  */
@@ -24,7 +24,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     // @nullable: month is optional — omitting it discovers all movies for the entire year
-    const { year, month } = body as { year: number; month?: number };
+    // @nullable: language defaults to 'te' (Telugu) if not provided
+    const { year, month, language } = body as { year: number; month?: number; language?: string };
+    const lang = language || 'te';
 
     if (!year || year < 1900 || year > 2100) {
       return NextResponse.json({ error: 'Invalid year.' }, { status: 400 });
@@ -32,8 +34,8 @@ export async function POST(request: NextRequest) {
 
     // Discover from TMDB
     const results = month
-      ? await discoverTeluguMoviesByMonth(year, month, tmdb.apiKey)
-      : await discoverTeluguMovies(year, tmdb.apiKey);
+      ? await discoverMoviesByLanguageAndMonth(year, month, lang, tmdb.apiKey)
+      : await discoverMoviesByLanguage(year, lang, tmdb.apiKey);
 
     // Batch-check which tmdb_ids already exist in our DB, fetching all
     // fillable fields so the frontend can show a field-level diff without
@@ -52,12 +54,65 @@ export async function POST(request: NextRequest) {
     // can use poster_url directly without needing env vars (Turbopack doesn't substitute
     // process.env in client bundles for non-NEXT_PUBLIC_ vars)
     const postersBase = process.env.R2_PUBLIC_BASE_URL_POSTERS?.replace(/\/$/, '');
-    const existingMovies = (existingRows ?? []).map((row) => ({
+    const rows = existingRows ?? [];
+    const existingIds = rows.map((r) => r.id);
+
+    // @sideeffect: fetch aggregate counts for gap detection — parallel queries for efficiency
+    const [posterRows, backdropRows, videoRows, keywordRows, phRows, platformRows] =
+      existingIds.length > 0
+        ? await Promise.all([
+            supabase
+              .from('movie_images')
+              .select('movie_id')
+              .in('movie_id', existingIds)
+              .eq('image_type', 'poster'),
+            supabase
+              .from('movie_images')
+              .select('movie_id')
+              .in('movie_id', existingIds)
+              .eq('image_type', 'backdrop'),
+            supabase.from('movie_videos').select('movie_id').in('movie_id', existingIds),
+            supabase.from('movie_keywords').select('movie_id').in('movie_id', existingIds),
+            supabase.from('movie_production_houses').select('movie_id').in('movie_id', existingIds),
+            supabase
+              .from('movie_platforms')
+              .select('movie_id, platform_id')
+              .in('movie_id', existingIds),
+          ])
+        : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
+
+    // @contract: count rows per movie_id for each aggregate type
+    function countByMovie(data: { movie_id: string }[] | null): Map<string, number> {
+      const map = new Map<string, number>();
+      for (const r of data ?? []) map.set(r.movie_id, (map.get(r.movie_id) ?? 0) + 1);
+      return map;
+    }
+    const posterCounts = countByMovie(posterRows.data);
+    const backdropCounts = countByMovie(backdropRows.data);
+    const videoCounts = countByMovie(videoRows.data);
+    const keywordCounts = countByMovie(keywordRows.data);
+    const phCounts = countByMovie(phRows.data);
+
+    // @contract: collect platform IDs per movie for display names
+    const platformsByMovie = new Map<string, string[]>();
+    for (const r of platformRows.data ?? []) {
+      const list = platformsByMovie.get(r.movie_id) ?? [];
+      list.push(r.platform_id);
+      platformsByMovie.set(r.movie_id, list);
+    }
+
+    const existingMovies = rows.map((row) => ({
       ...row,
       poster_url:
         row.poster_url && !row.poster_url.startsWith('http') && postersBase
           ? `${postersBase}/${row.poster_url}`
           : row.poster_url,
+      poster_count: posterCounts.get(row.id) ?? 0,
+      backdrop_count: backdropCounts.get(row.id) ?? 0,
+      video_count: videoCounts.get(row.id) ?? 0,
+      keyword_count: keywordCounts.get(row.id) ?? 0,
+      production_house_count: phCounts.get(row.id) ?? 0,
+      platform_names: platformsByMovie.get(row.id) ?? [],
     }));
 
     // @sideeffect check for title-based duplicates — movies in DB with matching titles but no tmdb_id

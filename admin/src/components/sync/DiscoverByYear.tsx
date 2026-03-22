@@ -5,6 +5,7 @@ import { useImportMovies, useLinkTmdbId } from '@/hooks/useSync';
 import type { DiscoverResult, DuplicateSuspect, ExistingMovieData } from '@/hooks/useSync';
 import type { ImportProgress } from './syncHelpers';
 import { DiscoverResults, ImportProgressList } from './DiscoverResults';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 
 export interface DiscoverByYearProps {
   /** @boundary Discover mutation result — passed from DiscoverTab */
@@ -160,6 +161,11 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
   };
 
   const isImporting = importProgress.some((p) => p.status === 'importing');
+  // @sideeffect warn user before navigating away during active import
+  useUnsavedChangesWarning(
+    isImporting,
+    'Movies are still being imported. If you leave now, the remaining movies will not be imported. Are you sure you want to leave?',
+  );
 
   const handleImportAllNew = () => {
     if (newMovies.length === 0 || isImporting) return;

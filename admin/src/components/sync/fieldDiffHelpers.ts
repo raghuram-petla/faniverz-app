@@ -1,9 +1,4 @@
-/**
- * Pure helper functions for FieldDiffPanel — field status comparison and formatting.
- *
- * @contract: all functions are pure — no side effects, no API calls.
- * @coupling: depends on ExistingMovieData and LookupMovieData from useSync.
- */
+/** Pure helpers for FieldDiffPanel — field status comparison and formatting. */
 
 import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 import type { FillableField } from '@/lib/syncUtils';
@@ -68,14 +63,21 @@ export function getStatus(
     case 'genres':
       return genreStatus(movie.genres, tmdb.genres);
     case 'images':
-      // @edge show as actionable if TMDB has more posters/backdrops than we have
-      return tmdb.posterCount > 1 || tmdb.backdropCount > 0 ? 'missing' : 'same';
+      // @contract compare DB counts against TMDB counts — only show gap if TMDB has more
+      if (tmdb.posterCount === 0 && tmdb.backdropCount === 0) return 'same';
+      return (movie.poster_count ?? 0) >= tmdb.posterCount &&
+        (movie.backdrop_count ?? 0) >= tmdb.backdropCount
+        ? 'same'
+        : 'missing';
     case 'videos':
-      return tmdb.videoCount > 0 ? 'missing' : 'same';
+      if (tmdb.videoCount === 0) return 'same';
+      return (movie.video_count ?? 0) >= tmdb.videoCount ? 'same' : 'missing';
     case 'watch_providers':
-      return tmdb.providerNames.length > 0 ? 'missing' : 'same';
+      if (tmdb.providerNames.length === 0) return 'same';
+      return (movie.platform_names?.length ?? 0) >= tmdb.providerNames.length ? 'same' : 'missing';
     case 'keywords':
-      return tmdb.keywordCount > 0 ? 'missing' : 'same';
+      if (tmdb.keywordCount === 0) return 'same';
+      return (movie.keyword_count ?? 0) >= tmdb.keywordCount ? 'same' : 'missing';
     case 'imdb_id':
       if (!movie.imdb_id && !tmdb.imdbId) return 'same';
       if (!movie.imdb_id) return 'missing';
@@ -106,8 +108,10 @@ export function getStatus(
       if (movie.budget == null && movie.revenue == null) return 'missing';
       return movie.budget === tmdb.budget && movie.revenue === tmdb.revenue ? 'same' : 'changed';
     case 'certification_auto':
-      // @edge: always show as actionable if DB has no certification — server will extract from TMDB
-      return !movie.certification ? 'missing' : 'same';
+      // @contract: only show gap if TMDB actually has India cert data and DB doesn't
+      if (!tmdb.certification) return 'same';
+      if (!movie.certification) return 'missing';
+      return movie.certification === tmdb.certification ? 'same' : 'changed';
     case 'production_companies':
       if (!tmdb.productionCompanyCount) return 'same';
       return (movie.production_house_count ?? 0) >= tmdb.productionCompanyCount
@@ -262,7 +266,7 @@ export function buildFieldDefs(movie: ExistingMovieData, tmdb: LookupMovieData):
       key: 'certification_auto',
       label: 'Certification (Auto)',
       dbDisplay: fmt(movie.certification),
-      tmdbDisplay: 'From TMDB India release dates',
+      tmdbDisplay: tmdb.certification ?? '',
     },
     {
       key: 'production_companies',

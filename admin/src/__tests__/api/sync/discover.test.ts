@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 
 const mockGetUser = vi.fn();
-const mockDiscoverTeluguMovies = vi.fn();
-const mockDiscoverTeluguMoviesByMonth = vi.fn();
+const mockDiscoverMoviesByLanguage = vi.fn();
+const mockDiscoverMoviesByLanguageByMonth = vi.fn();
 const mockSelectIn = vi.fn();
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -25,7 +25,21 @@ vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
     from: () => ({
       select: () => ({
-        in: mockSelectIn,
+        in: (...args: unknown[]) => {
+          // @contract: the first .in() call is for movies lookup (returns mockSelectIn result)
+          // subsequent .in() calls are for aggregate counts (return empty data)
+          const result = mockSelectIn(...args);
+          // Make result chainable for .eq() in aggregate count queries
+          if (result && typeof result.then === 'function') {
+            return Object.assign(result, {
+              eq: () => Promise.resolve({ data: [] }),
+            });
+          }
+          return {
+            ...result,
+            eq: () => Promise.resolve({ data: [] }),
+          };
+        },
         is: () => ({ in: mockIsNull }),
         eq: () => ({
           single: () =>
@@ -37,8 +51,9 @@ vi.mock('@/lib/supabase-admin', () => ({
 }));
 
 vi.mock('@/lib/tmdb', () => ({
-  discoverTeluguMovies: (...args: unknown[]) => mockDiscoverTeluguMovies(...args),
-  discoverTeluguMoviesByMonth: (...args: unknown[]) => mockDiscoverTeluguMoviesByMonth(...args),
+  discoverMoviesByLanguage: (...args: unknown[]) => mockDiscoverMoviesByLanguage(...args),
+  discoverMoviesByLanguageAndMonth: (...args: unknown[]) =>
+    mockDiscoverMoviesByLanguageByMonth(...args),
 }));
 
 vi.mock('next/server', () => ({
@@ -68,8 +83,8 @@ describe('POST /api/sync/discover', () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     mockGetUser.mockReset();
-    mockDiscoverTeluguMovies.mockReset();
-    mockDiscoverTeluguMoviesByMonth.mockReset();
+    mockDiscoverMoviesByLanguage.mockReset();
+    mockDiscoverMoviesByLanguageByMonth.mockReset();
     mockSelectIn.mockReset();
 
     mockGetUser.mockResolvedValue({
@@ -109,7 +124,7 @@ describe('POST /api/sync/discover', () => {
   it('discovers movies by year and returns full DB snapshots for existing movies', async () => {
     // @contract: route selects id, tmdb_id, title, synopsis, poster_url, backdrop_url,
     // trailer_url, director, runtime, genres — mock must return full ExistingMovieData shape
-    mockDiscoverTeluguMovies.mockResolvedValue([{ id: 100 }, { id: 200 }]);
+    mockDiscoverMoviesByLanguage.mockResolvedValue([{ id: 100 }, { id: 200 }]);
     mockSelectIn.mockResolvedValue({
       data: [
         {
@@ -140,11 +155,16 @@ describe('POST /api/sync/discover', () => {
   });
 
   it('discovers movies by year and month when month is provided', async () => {
-    mockDiscoverTeluguMoviesByMonth.mockResolvedValue([{ id: 300 }]);
+    mockDiscoverMoviesByLanguageByMonth.mockResolvedValue([{ id: 300 }]);
     mockSelectIn.mockResolvedValue({ data: [] });
 
     const res = await POST(makeRequest({ year: 2025, month: 3 }));
     expect(res.status).toBe(200);
-    expect(mockDiscoverTeluguMoviesByMonth).toHaveBeenCalledWith(2025, 3, 'test-tmdb-key');
+    expect(mockDiscoverMoviesByLanguageByMonth).toHaveBeenCalledWith(
+      2025,
+      3,
+      'te',
+      'test-tmdb-key',
+    );
   });
 });

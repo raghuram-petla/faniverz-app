@@ -23,6 +23,10 @@ const mockLookupState = vi.hoisted(() => ({
   data: undefined as unknown,
 }));
 
+vi.mock('@/hooks/useLanguageContext', () => ({
+  useLanguageContext: () => ({ selectedLanguageCode: '' }),
+}));
+
 vi.mock('@/hooks/useSync', () => ({
   useTmdbSearch: () => ({
     mutate: mockSearchMutate,
@@ -155,7 +159,7 @@ describe('DiscoverTab', () => {
     const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: 'Pushpa' } });
     fireEvent.click(screen.getByText('Search'));
-    expect(mockSearchMutate).toHaveBeenCalledWith('Pushpa');
+    expect(mockSearchMutate).toHaveBeenCalledWith({ query: 'Pushpa', language: undefined });
   });
 
   it('calls useTmdbLookup when numeric ID is submitted', () => {
@@ -300,6 +304,6 @@ describe('DiscoverTab', () => {
     const input = screen.getByPlaceholderText('Search movies, actors, or TMDB ID...');
     fireEvent.change(input, { target: { value: 'Pushpa' } });
     fireEvent.keyDown(input, { key: 'Enter' });
-    expect(mockSearchMutate).toHaveBeenCalledWith('Pushpa');
+    expect(mockSearchMutate).toHaveBeenCalledWith({ query: 'Pushpa', language: undefined });
   });
 });

@@ -285,14 +285,3 @@ export function extractIndiaCertification(
   };
   return CERT_MAP[cert.trim()] ?? null;
 }
-
-// @coupling: TMDB provider_id → our platforms table id. Update if platforms table changes.
-// @edge: etvwin is not on TMDB; SonyLIV ID may vary by region.
-export const TMDB_PROVIDER_MAP: Record<number, string> = {
-  532: 'aha',
-  122: 'hotstar',
-  119: 'prime',
-  8: 'netflix',
-  237: 'zee5',
-  309: 'sunnxt',
-};

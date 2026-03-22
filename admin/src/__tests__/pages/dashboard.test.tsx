@@ -84,7 +84,6 @@ describe('DashboardPage', () => {
     expect(screen.getByText('In Theaters')).toBeInTheDocument();
     expect(screen.getByText('Add Actor')).toBeInTheDocument();
     expect(screen.getByText('Add Feed Post')).toBeInTheDocument();
-    expect(screen.getByText('Add OTT Release')).toBeInTheDocument();
     expect(screen.getByText('Trigger Sync')).toBeInTheDocument();
   });
 });

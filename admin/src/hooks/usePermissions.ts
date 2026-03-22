@@ -8,7 +8,6 @@ export type AdminPage =
   | 'movies'
   | 'cast'
   | 'production-houses'
-  | 'ott'
   | 'platforms'
   | 'surprise'
   | 'feed'
@@ -40,7 +39,6 @@ const ALL_PAGES: Set<AdminPage> = new Set([
   'movies',
   'cast',
   'production-houses',
-  'ott',
   'platforms',
   'surprise',
   'feed',
@@ -77,7 +75,6 @@ const PAGE_ACCESS: Record<AdminRoleId, Set<AdminPage>> = {
     'movies',
     'cast',
     'production-houses',
-    'ott',
     'theaters',
     'audit',
   ]),

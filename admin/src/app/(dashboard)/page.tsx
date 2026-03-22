@@ -6,7 +6,6 @@ import {
   Plus,
   UserPlus,
   Newspaper,
-  Tv,
   RefreshCw,
   Users,
   Star,
@@ -54,14 +53,6 @@ export default function DashboardPage() {
       color: 'text-status-amber',
       bgColor: 'bg-amber-600/20',
       show: !isPHAdmin, // @invariant PH admins cannot create feed posts
-    },
-    {
-      label: 'Add OTT Release',
-      href: '/ott/new',
-      icon: Tv,
-      color: 'text-status-purple',
-      bgColor: 'bg-purple-600/20',
-      show: canViewPage('ott') && !isPHAdmin, // @invariant Requires OTT page permission AND non-PH role
     },
     {
       label: 'Trigger Sync',

@@ -31,9 +31,7 @@ import type {
   TmdbSearchAllResult,
 } from '@/hooks/useSyncTypes';
 
-// @boundary Proxy to /api/sync/* Next.js routes — server handles TMDB API key securely
-// @contract GET when body is undefined; POST with JSON body otherwise
-// @edge 401 → sign out so AuthProvider redirects to /login
+// @boundary Proxy to /api/sync/* routes — server handles TMDB API key securely
 async function syncApi<T>(path: string, body?: unknown): Promise<T> {
   const {
     data: { session },
@@ -67,10 +65,10 @@ async function syncApi<T>(path: string, body?: unknown): Promise<T> {
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
 
-/** Discover Telugu movies from TMDB by year/month. */
+/** Discover movies from TMDB by language, year, and optional month. */
 export function useDiscoverMovies() {
   return useMutation({
-    mutationFn: (params: { year: number; month?: number }) =>
+    mutationFn: (params: { year: number; month?: number; language?: string }) =>
       syncApi<DiscoverResult>('discover', params),
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
@@ -253,7 +251,8 @@ export function useLinkTmdbId() {
 /** Search TMDB for both movies and actors by name. */
 export function useTmdbSearch() {
   return useMutation({
-    mutationFn: (query: string) => syncApi<TmdbSearchAllResult>('search', { query }),
+    mutationFn: (params: { query: string; language?: string }) =>
+      syncApi<TmdbSearchAllResult>('search', params),
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Search failed');
     },

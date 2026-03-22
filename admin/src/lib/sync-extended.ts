@@ -9,7 +9,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getWatchProviders } from './tmdb';
-import { mapTmdbVideoType, TMDB_PROVIDER_MAP } from './tmdbTypes';
+import { mapTmdbVideoType } from './tmdbTypes';
 import type { TmdbMovieDetailExtended, TmdbProductionCompany, TmdbVideo } from './tmdbTypes';
 
 // ── Video sync ──────────────────────────────────────────────────────────────
@@ -58,7 +58,9 @@ export async function syncVideos(
 
 /**
  * Sync watch providers from TMDB into movie_platforms table.
- * @sideeffect: inserts provider links (skips existing to preserve admin-curated streaming_url).
+ * @sideeffect: auto-creates platforms if they don't exist (matched by tmdb_provider_id).
+ * @sideeffect: skips existing movie-platform links to preserve admin-curated streaming_url.
+ * @contract: platform ID is generated from provider name (lowercase, no spaces) for consistency.
  */
 export async function syncWatchProviders(
   movieId: string,
@@ -71,25 +73,66 @@ export async function syncWatchProviders(
 
   let count = 0;
   for (const provider of providers) {
-    const platformId = TMDB_PROVIDER_MAP[provider.provider_id];
-    if (!platformId) continue;
+    // @contract: find platform by tmdb_provider_id OR tmdb_alias_ids, then create if not found
+    let platformId: string | null = null;
 
-    // Check if platform exists in our platforms table
-    const { data: platform } = await supabase
+    // @edge: maybeSingle errors if .or() matches multiple rows — log and skip
+    const { data: existing, error: lookupErr } = await supabase
       .from('platforms')
       .select('id')
-      .eq('id', platformId)
+      .or(`tmdb_provider_id.eq.${provider.provider_id},tmdb_alias_ids.cs.{${provider.provider_id}}`)
       .maybeSingle();
-    if (!platform) continue;
+    if (lookupErr) {
+      console.warn(
+        `syncWatchProviders: lookup failed for provider ${provider.provider_id}`,
+        lookupErr.message,
+      );
+      continue;
+    }
+
+    if (existing) {
+      platformId = existing.id as string;
+    } else {
+      // @sideeffect: auto-create platform from TMDB provider data
+      // @edge: append tmdb provider_id to slug to avoid collisions (e.g. "Prime Video" vs "Prime Video with Ads")
+      const slug = provider.provider_name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      const newId = `${slug}-${provider.provider_id}`;
+      const { data: newPlatform, error: platErr } = await supabase
+        .from('platforms')
+        .insert({
+          id: newId,
+          name: provider.provider_name,
+          logo: provider.provider_name.charAt(0),
+          logo_url: provider.logo_path
+            ? `https://image.tmdb.org/t/p/w92${provider.logo_path}`
+            : null,
+          color: '#6B7280',
+          tmdb_provider_id: provider.provider_id,
+          display_order: 99,
+        })
+        .select('id')
+        .single();
+      if (platErr) {
+        console.warn(
+          `syncWatchProviders: create platform failed for ${provider.provider_name}`,
+          platErr.message,
+        );
+        continue;
+      }
+      platformId = newPlatform.id as string;
+    }
 
     // Skip if already linked (don't overwrite admin-curated streaming_url)
-    const { data: existing } = await supabase
+    const { data: existingLink } = await supabase
       .from('movie_platforms')
       .select('movie_id')
       .eq('movie_id', movieId)
       .eq('platform_id', platformId)
       .maybeSingle();
-    if (existing) continue;
+    if (existingLink) continue;
 
     const { error: insertErr } = await supabase.from('movie_platforms').insert({
       movie_id: movieId,

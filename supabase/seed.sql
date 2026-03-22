@@ -1,29 +1,18 @@
 -- =============================================================================
 -- Faniverz Telugu Movie Calendar — Seed Data
 -- =============================================================================
--- Reference data only: OTT platforms, surprise content, general feed items,
+-- Reference data only: surprise content, general feed items,
 -- and admin auto-assign trigger.
--- Movies and actors are populated via admin panel TMDB sync.
+-- Movies, actors, and OTT platforms are populated via admin panel TMDB sync.
 -- Idempotent: all inserts use ON CONFLICT DO NOTHING.
 -- Run with: supabase db reset   (applies migrations then seed)
 -- =============================================================================
 
--- -----------------------------------------------------------------------------
--- 1. OTT Platforms (8)
--- -----------------------------------------------------------------------------
-INSERT INTO platforms (id, name, logo, color, display_order) VALUES
-  ('aha',     'Aha',              'aha', '#FF6B00', 1),
-  ('netflix', 'Netflix',          'N',   '#E50914', 2),
-  ('prime',   'Amazon Prime',     'P',   '#00A8E1', 3),
-  ('hotstar', 'Disney+ Hotstar',  'H',   '#0F1014', 4),
-  ('zee5',    'ZEE5',             'Z5',  '#8E3ED6', 5),
-  ('sunnxt',  'Sun NXT',          'SN',  '#FF6600', 6),
-  ('sonyliv', 'SonyLIV',          'SL',  '#0078FF', 7),
-  ('etvwin',  'ETV Win',          'EW',  '#FF0000', 8)
-ON CONFLICT (id) DO NOTHING;
+-- OTT platforms are auto-created by TMDB sync (syncWatchProviders).
+-- No manual seeding needed — platforms are created on first movie import.
 
 -- -----------------------------------------------------------------------------
--- 2. Surprise Content (20 curated YouTube videos)
+-- 1. Surprise Content (20 curated YouTube videos)
 -- -----------------------------------------------------------------------------
 INSERT INTO surprise_content (title, description, youtube_id, category, duration, views) VALUES
   ('Pushpa 2 - Pushpa Pushpa Song',
@@ -109,7 +98,7 @@ INSERT INTO surprise_content (title, description, youtube_id, category, duration
 ON CONFLICT DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- 3. General Feed Items
+-- 2. General Feed Items
 -- -----------------------------------------------------------------------------
 INSERT INTO news_feed (feed_type, content_type, title, description, published_at, upvote_count, downvote_count, is_pinned)
 VALUES
@@ -127,7 +116,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- 4. Admin auto-assign trigger
+-- 3. Admin auto-assign trigger
 -- -----------------------------------------------------------------------------
 -- Auto-assign super_admin to rams.sep5@gmail.com on first Google sign-in.
 -- When the user signs in via Google, Supabase creates auth.users → triggers
@@ -156,7 +145,7 @@ CREATE TRIGGER on_profile_assign_admin
 
 -- =============================================================================
 -- Seed complete.
--- 8 OTT platforms | 20 surprise content | 3 general feed items
+-- 20 surprise content | 3 general feed items
 -- super_admin auto-assigned to rams.sep5@gmail.com on first sign-in
 -- Movies & actors: use admin panel TMDB sync
 -- =============================================================================
