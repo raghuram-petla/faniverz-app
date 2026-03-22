@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Search, Zap, Clock } from 'lucide-react';
 import { DiscoverTab } from '@/components/sync/DiscoverTab';
 import { BulkTab } from '@/components/sync/BulkTab';
@@ -16,6 +16,21 @@ type Tab = (typeof TABS)[number]['id'];
 
 export default function SyncPage() {
   const [activeTab, setActiveTab] = useState<Tab>('Discover');
+  const [isImporting, setIsImporting] = useState(false);
+
+  // @contract: block tab switches during active import to prevent state loss
+  const handleTabSwitch = useCallback(
+    (tab: Tab) => {
+      if (isImporting) {
+        const confirmed = window.confirm(
+          'Movies are still being imported. Switching tabs will cancel the import. Continue?',
+        );
+        if (!confirmed) return;
+      }
+      setActiveTab(tab);
+    },
+    [isImporting],
+  );
 
   return (
     <div className="space-y-6">
@@ -26,7 +41,7 @@ export default function SyncPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabSwitch(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
                 isActive ? 'bg-red-600 text-white' : 'text-on-surface-muted hover:text-on-surface'
               }`}
@@ -38,8 +53,7 @@ export default function SyncPage() {
         })}
       </div>
 
-      {/* @coupling Each tab component manages its own data fetching and state */}
-      {activeTab === 'Discover' && <DiscoverTab />}
+      {activeTab === 'Discover' && <DiscoverTab onImportingChange={setIsImporting} />}
       {activeTab === 'Bulk' && <BulkTab />}
       {activeTab === 'History' && <HistoryTab />}
     </div>

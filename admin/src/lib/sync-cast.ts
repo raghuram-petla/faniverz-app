@@ -189,9 +189,10 @@ export async function syncCastCrewAdditive(
           credit_type: 'cast',
           role_order: null,
         });
-        if (error)
+        const isDupe = error?.message?.includes('unique constraint');
+        if (error && !isDupe)
           console.warn(`syncCastCrewAdditive: cast insert failed for ${cm.name}`, error.message);
-        return { ok: !error };
+        return { ok: !error || isDupe };
       }),
     );
     // @contract: count successes after batch completes to avoid race on shared counter
@@ -223,6 +224,8 @@ export async function syncCastCrewAdditive(
           gender: cm.gender ?? null,
         });
         if (!actorId) return { ok: false };
+        // @edge: same person can have multiple TMDB roles (Director + Writer) but
+        // UNIQUE(movie_id, actor_id, credit_type) allows only one — silently skip duplicates
         const { error } = await supabase.from('movie_cast').insert({
           movie_id: movieId,
           actor_id: actorId,
@@ -231,9 +234,10 @@ export async function syncCastCrewAdditive(
           credit_type: 'crew',
           role_order: cm.roleOrder,
         });
-        if (error)
+        const isDupe = error?.message?.includes('unique constraint');
+        if (error && !isDupe)
           console.warn(`syncCastCrewAdditive: crew insert failed for ${cm.name}`, error.message);
-        return { ok: !error };
+        return { ok: !error || isDupe };
       }),
     );
     crewCount += crewResults.filter((r) => r?.ok).length;

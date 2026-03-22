@@ -20,8 +20,13 @@ import { useLanguageContext } from '@/hooks/useLanguageContext';
 
 type ResultMode = 'search' | 'discover' | 'lookup';
 
+export interface DiscoverTabProps {
+  /** @contract: notifies parent when import starts/stops so tab switching can be blocked */
+  onImportingChange?: (importing: boolean) => void;
+}
+
 /** @contract Unified TMDB sync — search bar + discover by year, one results area */
-export function DiscoverTab() {
+export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
   const { selectedLanguageCode } = useLanguageContext();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState(CURRENT_YEAR);
@@ -187,7 +192,9 @@ export function DiscoverTab() {
 
       {resultMode === 'search' && searchData && <SearchResultsPanel data={searchData} />}
 
-      {resultMode === 'discover' && discoverData && <DiscoverByYear data={discoverData} />}
+      {resultMode === 'discover' && discoverData && (
+        <DiscoverByYear data={discoverData} onImportingChange={onImportingChange} />
+      )}
 
       {resultMode === 'lookup' && lookupResult?.type === 'movie' && (
         <>

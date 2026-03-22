@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useImportMovies, useLinkTmdbId } from '@/hooks/useSync';
 import type { DiscoverResult, DuplicateSuspect, ExistingMovieData } from '@/hooks/useSync';
 import type { ImportProgress } from './syncHelpers';
@@ -10,10 +10,12 @@ import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 export interface DiscoverByYearProps {
   /** @boundary Discover mutation result — passed from DiscoverTab */
   data: DiscoverResult;
+  /** @contract: notifies parent when import starts/stops so tab switching can be blocked */
+  onImportingChange?: (importing: boolean) => void;
 }
 
 /** @contract Renders discover-by-year results with batch import. Form lives in DiscoverTab. */
-export function DiscoverByYear({ data }: DiscoverByYearProps) {
+export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps) {
   const importMovies = useImportMovies();
   const linkTmdbId = useLinkTmdbId();
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -191,6 +193,10 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
   };
 
   const isImporting = importProgress.some((p) => p.status === 'importing');
+  // @sideeffect: notify parent so tab switching can be blocked during import
+  useEffect(() => {
+    onImportingChange?.(isImporting);
+  }, [isImporting, onImportingChange]);
   // @sideeffect warn user before navigating away during active import
   useUnsavedChangesWarning(
     isImporting,
