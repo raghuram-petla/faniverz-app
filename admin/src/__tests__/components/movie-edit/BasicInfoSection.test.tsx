@@ -134,4 +134,96 @@ describe('BasicInfoSection', () => {
     renderBasicInfo({ is_featured: true });
     expect(screen.getByText(/Yes — Featured on home screen/)).toBeInTheDocument();
   });
+
+  it('calls setForm when in_theaters checkbox is toggled', () => {
+    const props = renderBasicInfo();
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]); // in_theaters checkbox
+    expect(props.setForm).toHaveBeenCalled();
+  });
+
+  it('calls setForm when is_featured checkbox is toggled', () => {
+    const props = renderBasicInfo();
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[1]); // is_featured checkbox
+    expect(props.setForm).toHaveBeenCalled();
+  });
+
+  it('renders "Yes — In Theaters" text when in_theaters is true', () => {
+    renderBasicInfo({ in_theaters: true });
+    expect(screen.getByText(/Yes — In Theaters/)).toBeInTheDocument();
+  });
+
+  it('renders "No" text when in_theaters is false', () => {
+    renderBasicInfo({ in_theaters: false });
+    // Both in_theaters and is_featured show "No" when false
+    const noTexts = screen.getAllByText('No');
+    expect(noTexts.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders Premiere Date input', () => {
+    renderBasicInfo({ premiere_date: '2025-07-01' });
+    expect(getFieldByLabel('Premiere Date (optional)')).toHaveValue('2025-07-01');
+  });
+
+  it('calls updateField when release date changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Release Date'), { target: { value: '2025-12-25' } });
+    expect(props.updateField).toHaveBeenCalledWith('release_date', '2025-12-25');
+  });
+
+  it('calls updateField when premiere date changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Premiere Date (optional)'), {
+      target: { value: '2025-06-20' },
+    });
+    expect(props.updateField).toHaveBeenCalledWith('premiere_date', '2025-06-20');
+  });
+
+  it('calls updateField when runtime changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Runtime (min)'), { target: { value: '150' } });
+    expect(props.updateField).toHaveBeenCalledWith('runtime', '150');
+  });
+
+  it('calls updateField when certification changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Certification'), { target: { value: 'A' } });
+    expect(props.updateField).toHaveBeenCalledWith('certification', 'A');
+  });
+
+  it('calls updateField when synopsis changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Synopsis'), { target: { value: 'New synopsis' } });
+    expect(props.updateField).toHaveBeenCalledWith('synopsis', 'New synopsis');
+  });
+
+  it('renders Tagline input', () => {
+    renderBasicInfo({ tagline: 'My tagline' });
+    expect(getFieldByLabel('Tagline')).toHaveValue('My tagline');
+  });
+
+  it('calls updateField when tagline changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('Tagline'), { target: { value: 'New tag' } });
+    expect(props.updateField).toHaveBeenCalledWith('tagline', 'New tag');
+  });
+
+  it('renders TMDB ID input', () => {
+    renderBasicInfo({ tmdb_id: '12345' });
+    expect(getFieldByLabel('TMDB ID')).toHaveValue('12345');
+  });
+
+  it('calls updateField when TMDB ID changes', () => {
+    const props = renderBasicInfo();
+    fireEvent.change(getFieldByLabel('TMDB ID'), { target: { value: '99999' } });
+    expect(props.updateField).toHaveBeenCalledWith('tmdb_id', '99999');
+  });
+
+  it('calls onSubmit when form is submitted', () => {
+    const props = renderBasicInfo();
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+    expect(props.onSubmit).toHaveBeenCalled();
+  });
 });

@@ -488,5 +488,159 @@ describe('useSync', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toHaveLength(1);
     });
+
+    it('throws on DB error', async () => {
+      const fromReturn = {
+        select: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+      };
+      mockFrom.mockReturnValue(fromReturn);
+
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useActorSearch('ja'), { wrapper: Wrapper });
+      await waitFor(() => expect(result.current.isError).toBe(true));
+    });
+  });
+
+  describe('syncApi — GET requests (no body)', () => {
+    it('sends GET without Content-Type when body is undefined', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [] }),
+      });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useStaleItems('movies'), { wrapper: Wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const fetchCall = mockFetch.mock.calls.find(
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('stale-items'),
+      );
+      expect(fetchCall).toBeDefined();
+      expect(fetchCall![1].method).toBe('GET');
+      expect(fetchCall![1].headers['Content-Type']).toBeUndefined();
+      expect(fetchCall![1].body).toBeUndefined();
+    });
+  });
+
+  describe('onError with non-Error objects', () => {
+    it('useDiscoverMovies shows fallback when error is not Error instance', async () => {
+      mockFetch.mockRejectedValue('string-error');
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useDiscoverMovies(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ year: 2024 }).catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Operation failed');
+    });
+
+    it('useTmdbLookup shows fallback when error is not Error instance', async () => {
+      mockFetch.mockRejectedValue('string-error');
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useTmdbLookup(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ tmdbId: 1, type: 'movie' }).catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Operation failed');
+    });
+
+    it('useRefreshMovie shows fallback when error is not Error instance', async () => {
+      mockFetch.mockRejectedValue('string-error');
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useRefreshMovie(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync('id').catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Operation failed');
+    });
+
+    it('useImportActor shows fallback when error is not Error instance', async () => {
+      mockFetch.mockRejectedValue('string-error');
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useImportActor(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync(1).catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Import failed');
+    });
+
+    it('useRefreshActor shows fallback when error is not Error instance', async () => {
+      mockFetch.mockRejectedValue('string-error');
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useRefreshActor(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync('id').catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Operation failed');
+    });
+
+    it('useTmdbSearch shows fallback when error is not Error instance', async () => {
+      mockFetch.mockRejectedValue('string-error');
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useTmdbSearch(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ query: 'test' }).catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Search failed');
+    });
+
+    it('useLinkTmdbId shows fallback when error is not Error instance', async () => {
+      mockFetch.mockRejectedValue('string-error');
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useLinkTmdbId(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ movieId: 'm', tmdbId: 1 }).catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Failed to link TMDB ID');
+    });
+  });
+
+  describe('useLinkTmdbId — fallback error message', () => {
+    it('uses fallback when body.error is null', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useLinkTmdbId(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ movieId: 'm', tmdbId: 1 }).catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Failed to link TMDB ID');
+    });
+
+    it('invalidates caches on success', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 'm1' }),
+      });
+      const { qc, Wrapper } = makeWrapper();
+      const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+      const { result } = renderHook(() => useLinkTmdbId(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ movieId: 'm1', tmdbId: 123 });
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'movies'] });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'movie'] });
+    });
+
+    it('uses fallback when json parse fails on link error', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => {
+          throw new Error('parse fail');
+        },
+      });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useLinkTmdbId(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ movieId: 'm', tmdbId: 1 }).catch(() => {});
+      });
+      expect(window.alert).toHaveBeenCalledWith('Failed to link TMDB ID');
+    });
   });
 });

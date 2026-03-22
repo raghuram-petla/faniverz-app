@@ -101,4 +101,134 @@ describe('PosterAddForm', () => {
       expect.stringContaining('pending-poster-'),
     );
   });
+
+  it('shows alert when upload fails', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockUpload.mockRejectedValueOnce(new Error('Upload failed'));
+    render(<PosterAddForm {...defaultProps} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['img'], 'poster.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Upload failed'));
+    alertSpy.mockRestore();
+  });
+
+  it('shows generic alert when upload fails with non-Error', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockUpload.mockRejectedValueOnce('something bad');
+    render(<PosterAddForm {...defaultProps} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['img'], 'poster.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Upload failed'));
+    alertSpy.mockRestore();
+  });
+
+  it('updates poster_date when date input changes', () => {
+    render(<PosterAddForm {...defaultProps} />);
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2025-06-15' } });
+    expect(dateInput.value).toBe('2025-06-15');
+  });
+
+  it('triggers file input click when upload button is clicked', () => {
+    render(<PosterAddForm {...defaultProps} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
+    fireEvent.click(screen.getByText('Upload Image'));
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it('detects backdrop type for landscape images', async () => {
+    // Override the MockImage to simulate landscape dimensions
+    const OrigImage = globalThis.Image;
+    globalThis.Image = class LandscapeImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 1920;
+      naturalHeight = 1080;
+      _src = '';
+      get src() {
+        return this._src;
+      }
+      set src(v: string) {
+        this._src = v;
+        setTimeout(() => this.onload?.(), 0);
+      }
+    } as unknown as typeof Image;
+
+    mockUpload.mockResolvedValueOnce('backdrop-key.jpg');
+    render(<PosterAddForm {...defaultProps} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['img'], 'backdrop.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => expect(mockUpload).toHaveBeenCalledWith(file));
+
+    const addBtn = screen.getByText('Add to Gallery').closest('button')!;
+    await waitFor(() => expect(addBtn).not.toBeDisabled());
+
+    fireEvent.click(addBtn);
+    expect(defaultProps.onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        image_type: 'backdrop',
+        title: 'Backdrop',
+      }),
+      expect.stringContaining('pending-poster-'),
+    );
+
+    globalThis.Image = OrigImage;
+  });
+
+  it('handles image onerror by falling back to poster type', async () => {
+    const OrigImage = globalThis.Image;
+    globalThis.Image = class ErrorImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      naturalWidth = 0;
+      naturalHeight = 0;
+      _src = '';
+      get src() {
+        return this._src;
+      }
+      set src(v: string) {
+        this._src = v;
+        setTimeout(() => this.onerror?.(), 0);
+      }
+    } as unknown as typeof Image;
+
+    mockUpload.mockResolvedValueOnce('fallback-key.jpg');
+    render(<PosterAddForm {...defaultProps} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['img'], 'bad.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => expect(mockUpload).toHaveBeenCalledWith(file));
+
+    const addBtn = screen.getByText('Add to Gallery').closest('button')!;
+    await waitFor(() => expect(addBtn).not.toBeDisabled());
+
+    fireEvent.click(addBtn);
+    expect(defaultProps.onConfirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        image_type: 'poster',
+      }),
+      expect.stringContaining('pending-poster-'),
+    );
+
+    globalThis.Image = OrigImage;
+  });
+
+  it('does not call handleUpload when no file is selected', () => {
+    render(<PosterAddForm {...defaultProps} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [] } });
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
 });

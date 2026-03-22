@@ -115,6 +115,49 @@ vi.mock('@/lib/r2-sync', () => ({
   R2_BUCKETS: { moviePosters: 'posters', movieBackdrops: 'backdrops', actorPhotos: 'actors' },
 }));
 
+vi.mock('@/lib/tmdbTypes', () => ({
+  extractTrailerUrl: () => 'https://youtu.be/abc',
+  extractTeluguTranslation: (translations: unknown) => {
+    if (translations && Array.isArray(translations)) {
+      const te = translations.find((t: { iso_639_1: string }) => t.iso_639_1 === 'te');
+      return {
+        titleTe: te?.data?.title ?? null,
+        synopsisTe: te?.data?.overview ?? null,
+      };
+    }
+    return { titleTe: null, synopsisTe: null };
+  },
+  extractIndiaCertification: (releaseDates: unknown) => {
+    if (!releaseDates) return null;
+    const rd = releaseDates as {
+      results: Array<{ iso_3166_1: string; release_dates: Array<{ certification: string }> }>;
+    };
+    const india = rd.results?.find((r) => r.iso_3166_1 === 'IN');
+    return india?.release_dates?.[0]?.certification ?? null;
+  },
+  extractKeyCrewMembers: () => [],
+}));
+
+const mockSyncAllImages = vi.hoisted(() => vi.fn());
+const mockSyncVideos = vi.hoisted(() => vi.fn());
+const mockSyncKeywords = vi.hoisted(() => vi.fn());
+const mockSyncProductionCompanies = vi.hoisted(() => vi.fn());
+const mockSyncWatchProviders = vi.hoisted(() => vi.fn());
+
+vi.mock('@/lib/sync-images', () => ({
+  syncAllImages: mockSyncAllImages,
+}));
+
+vi.mock('@/lib/sync-extended', () => ({
+  syncVideos: mockSyncVideos,
+  syncKeywords: mockSyncKeywords,
+  syncProductionCompanies: mockSyncProductionCompanies,
+}));
+
+vi.mock('@/lib/sync-watch-providers', () => ({
+  syncWatchProvidersMultiCountry: mockSyncWatchProviders,
+}));
+
 vi.mock('next/server', () => ({
   NextResponse: {
     json: (body: unknown, init?: { status?: number }) => ({
@@ -183,6 +226,16 @@ describe('POST /api/sync/fill-fields', () => {
     mockMoviePostersInsert.mockResolvedValue({ error: null });
     mockMoviePostersUpdate.mockReset();
     mockMoviePostersUpdate.mockResolvedValue({ error: null });
+    mockSyncAllImages.mockReset();
+    mockSyncAllImages.mockResolvedValue({ posterCount: 0, backdropCount: 0 });
+    mockSyncVideos.mockReset();
+    mockSyncVideos.mockResolvedValue(0);
+    mockSyncKeywords.mockReset();
+    mockSyncKeywords.mockResolvedValue(0);
+    mockSyncProductionCompanies.mockReset();
+    mockSyncProductionCompanies.mockResolvedValue(0);
+    mockSyncWatchProviders.mockReset();
+    mockSyncWatchProviders.mockResolvedValue(0);
     vi.stubEnv('TMDB_API_KEY', 'test-key');
   });
 
@@ -559,6 +612,158 @@ describe('POST /api/sync/fill-fields', () => {
     expect(res.status).toBe(200);
     expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
       expect.objectContaining({ tmdb_last_synced_at: expect.any(String) }),
+    );
+  });
+
+  it('updates title_te when Telugu translation is available', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      translations: [
+        { iso_639_1: 'te', data: { title: 'Telugu Title', overview: 'Telugu Synopsis' } },
+      ],
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['title_te'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('title_te');
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ title_te: 'Telugu Title' }),
+    );
+  });
+
+  it('updates synopsis_te when Telugu translation is available', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      translations: [{ iso_639_1: 'te', data: { title: 'Title', overview: 'Telugu Synopsis' } }],
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['synopsis_te'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('synopsis_te');
+  });
+
+  it('does not push title_te when no Telugu translation', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      translations: [],
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['title_te'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).not.toContain('title_te');
+  });
+
+  it('updates certification_auto when India release dates have cert', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      release_dates: {
+        results: [
+          {
+            iso_3166_1: 'IN',
+            release_dates: [{ certification: 'UA' }],
+          },
+        ],
+      },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['certification_auto'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('certification_auto');
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ certification: 'UA' }),
+    );
+  });
+
+  it('does not push certification_auto when no India release dates', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      release_dates: { results: [] },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['certification_auto'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).not.toContain('certification_auto');
+  });
+
+  it('syncs images when field includes "images"', async () => {
+    mockSyncAllImages.mockResolvedValue({ posterCount: 3, backdropCount: 2 });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['images'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('images');
+    expect(mockSyncAllImages).toHaveBeenCalled();
+  });
+
+  it('does not push images to updatedFields when counts are 0', async () => {
+    mockSyncAllImages.mockResolvedValue({ posterCount: 0, backdropCount: 0 });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['images'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).not.toContain('images');
+  });
+
+  it('syncs videos when field includes "videos"', async () => {
+    mockSyncVideos.mockResolvedValue(5);
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['videos'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('videos');
+  });
+
+  it('syncs watch_providers when field includes "watch_providers"', async () => {
+    mockSyncWatchProviders.mockResolvedValue(2);
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['watch_providers'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('watch_providers');
+  });
+
+  it('syncs keywords when field includes "keywords"', async () => {
+    mockSyncKeywords.mockResolvedValue(4);
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['keywords'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('keywords');
+  });
+
+  it('syncs production_companies when field includes "production_companies"', async () => {
+    mockSyncProductionCompanies.mockResolvedValue(2);
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      production_companies: [{ id: 1, name: 'Studio A' }],
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['production_companies'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('production_companies');
+  });
+
+  it('updates backdrop_url field', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['backdrop_url'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('backdrop_url');
+  });
+
+  it('updates genres field', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['genres'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('genres');
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ genres: ['Action'] }),
+    );
+  });
+
+  it('updates synopsis to null when overview is empty', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      overview: '',
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['synopsis'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ synopsis: null }),
     );
   });
 });

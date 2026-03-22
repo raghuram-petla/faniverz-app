@@ -735,6 +735,209 @@ describe('movies api', () => {
     });
   });
 
+  describe('fetchMovieById — sub-query error branches in Promise.all', () => {
+    function mockFromForByIdWithErrors(options: {
+      castError?: boolean;
+      platformError?: boolean;
+      imageError?: boolean;
+      videoError?: boolean;
+      phError?: boolean;
+    }) {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movies') return { select: mockSelect };
+        if (table === 'movie_cast') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({
+                data: options.castError ? null : [],
+                error: options.castError ? new Error('cast fail') : null,
+              }),
+            }),
+          };
+        }
+        if (table === 'movie_images') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({
+                  data: options.imageError ? null : [],
+                  error: options.imageError ? new Error('img fail') : null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'movie_videos') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockReturnValue({
+                order: jest.fn().mockResolvedValue({
+                  data: options.videoError ? null : [],
+                  error: options.videoError ? new Error('vid fail') : null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'movie_production_houses') {
+          return {
+            select: jest.fn().mockReturnValue({
+              eq: jest.fn().mockResolvedValue({
+                data: options.phError ? null : [],
+                error: options.phError ? new Error('ph fail') : null,
+              }),
+            }),
+          };
+        }
+        // movie_platforms
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockResolvedValue({
+              data: options.platformError ? null : [],
+              error: options.platformError ? new Error('plat fail') : null,
+            }),
+          }),
+        };
+      });
+      return warnSpy;
+    }
+
+    beforeEach(() => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ single: mockSingle });
+      mockSingle.mockResolvedValue({ data: { id: '123', title: 'Test' }, error: null });
+    });
+
+    it('degrades gracefully when cast fetch fails (returns empty cast/crew)', async () => {
+      const warnSpy = mockFromForByIdWithErrors({ castError: true });
+      const result = await fetchMovieById('123');
+      expect(result!.cast).toEqual([]);
+      expect(result!.crew).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith('fetchMovieById: cast fetch failed', expect.any(Error));
+      warnSpy.mockRestore();
+    });
+
+    it('degrades gracefully when platform fetch fails', async () => {
+      const warnSpy = mockFromForByIdWithErrors({ platformError: true });
+      const result = await fetchMovieById('123');
+      expect(result!.platforms).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'fetchMovieById: platforms fetch failed',
+        expect.any(Error),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('degrades gracefully when images fetch fails', async () => {
+      const warnSpy = mockFromForByIdWithErrors({ imageError: true });
+      const result = await fetchMovieById('123');
+      expect(result!.posters).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'fetchMovieById: images fetch failed',
+        expect.any(Error),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('degrades gracefully when videos fetch fails', async () => {
+      const warnSpy = mockFromForByIdWithErrors({ videoError: true });
+      const result = await fetchMovieById('123');
+      expect(result!.videos).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'fetchMovieById: videos fetch failed',
+        expect.any(Error),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('degrades gracefully when production houses fetch fails', async () => {
+      const warnSpy = mockFromForByIdWithErrors({ phError: true });
+      const result = await fetchMovieById('123');
+      expect(result!.productionHouses).toEqual([]);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'fetchMovieById: production houses fetch failed',
+        expect.any(Error),
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('applyMovieFilters — platformId error path', () => {
+    it('throws when platformId sub-query errors', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') return { select: mockPlatformSelect };
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockResolvedValue({ data: null, error: new Error('Platform query error') });
+
+      await expect(fetchMovies({ platformId: 'bad-id' })).rejects.toThrow('Platform query error');
+    });
+  });
+
+  describe('fetchMoviesByMonth — null data fallback', () => {
+    it('returns empty array when data is null', async () => {
+      mockSelect.mockReturnValue({ gte: mockGte });
+      mockGte.mockReturnValue({ lte: mockLte });
+      mockLte.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchMoviesByMonth(2025, 1);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('searchMovies — null data fallback', () => {
+    it('returns empty array when data is null', async () => {
+      mockSelect.mockReturnValue({ or: mockOr });
+      mockOr.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ limit: mockLimit });
+      mockLimit.mockResolvedValue({ data: null, error: null });
+
+      const result = await searchMovies('test');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('fetchMoviesByPlatform — null data fallback for movies query', () => {
+    it('returns empty array when movies data is null', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      const mockPlatformLimit = jest.fn();
+      const mockMoviesIn = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') return { select: mockPlatformSelect };
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
+      mockPlatformLimit.mockResolvedValue({ data: [{ movie_id: 'm1' }], error: null });
+      mockSelect.mockReturnValue({ in: mockMoviesIn });
+      mockMoviesIn.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchMoviesByPlatform('netflix');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('fetchMovies — no featuredFirst option (internal applyMovieFilters)', () => {
+    it('applies popular sort without featuredFirst when calling fetchMoviesPaginated with no filters', async () => {
+      // fetchMoviesPaginated passes featuredFirst: true, so test via direct fetchMovies which also passes it
+      // This test covers the default switch case without explicit sortBy
+      mockRange.mockReturnValue(makeRangeResult([]));
+      mockOrder.mockReturnValue({ order: mockOrder, range: mockRange });
+      mockSelect.mockReturnValue({ order: mockOrder });
+
+      await fetchMoviesPaginated(0, 10);
+      // Default sort is 'popular' → order by review_count
+      expect(mockOrder).toHaveBeenCalledWith('review_count', { ascending: false });
+    });
+  });
+
   describe('getLocalDateString', () => {
     it('formats a date as YYYY-MM-DD in local timezone', () => {
       const date = new Date(2025, 2, 15); // March 15, 2025 (month is 0-indexed)

@@ -227,4 +227,79 @@ describe('VoteButtons', () => {
     // prevVote changes but no animation fires since userVote=null
     expect(getByLabelText('Upvote, 5 upvotes')).toBeTruthy();
   });
+
+  it('bounceScale is called for upvote when animations enabled and vote changes to up', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+    const withTiming = require('react-native-reanimated').withTiming;
+
+    const { rerender } = renderVoteButtons({ userVote: null });
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote="up"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    // bounceScale calls withSequence(withTiming(0.7), withTiming(1.15), withTiming(1.0))
+    expect(withSequence).toHaveBeenCalled();
+    expect(withTiming).toHaveBeenCalled();
+  });
+
+  it('bounceScale is called for downvote when animations enabled and vote changes to down', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+
+    const { rerender } = renderVoteButtons({ userVote: null });
+    withSequence.mockClear();
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote="down"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(withSequence).toHaveBeenCalled();
+  });
+
+  it('does not call bounceScale when vote changes to null', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+
+    const { rerender } = renderVoteButtons({ userVote: 'up' });
+    withSequence.mockClear();
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote={null}
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    // bounceScale should NOT be called when vote is null
+    expect(withSequence).not.toHaveBeenCalled();
+  });
+
+  it('does not animate on initial render when userVote is already set', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+    withSequence.mockClear();
+
+    renderVoteButtons({ userVote: 'down' });
+    // On initial render, prevVote.current = userVote, so no animation
+    expect(withSequence).not.toHaveBeenCalled();
+  });
+
+  it('useAnimatedStyle callbacks return transform with scale for up and down icons', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    renderVoteButtons({ userVote: null });
+    // Two useAnimatedStyle calls: upIconStyle and downIconStyle
+    expect(useAnimatedStyle).toHaveBeenCalledTimes(2);
+    useAnimatedStyle.mockImplementation(() => ({}));
+  });
 });

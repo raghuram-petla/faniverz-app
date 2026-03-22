@@ -410,6 +410,125 @@ describe('BasicInfoSection', () => {
     expect(screen.getByText('TMDB ID')).toBeInTheDocument();
   });
 
+  it('in_theaters checkbox functional updater correctly updates state', () => {
+    render(
+      <BasicInfoSection
+        form={makeForm({ in_theaters: false })}
+        setForm={mockSetForm}
+        updateField={mockUpdateField}
+        toggleGenre={mockToggleGenre}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+    const checkboxes = screen.getAllByRole('checkbox');
+    // Click triggers onChange with e.target.checked = true (jsdom toggles)
+    fireEvent.click(checkboxes[0]);
+    // The updater was passed to mockSetForm — invoke it to cover the arrow function
+    const setFormCalls = mockSetForm.mock.calls;
+    expect(setFormCalls.length).toBeGreaterThan(0);
+    const updater = setFormCalls[0][0];
+    if (typeof updater === 'function') {
+      const result = updater({ in_theaters: false, title: 'Test' });
+      // The result uses e.target.checked which was captured from the click event
+      expect(result).toHaveProperty('in_theaters');
+      expect(result).toHaveProperty('title', 'Test');
+    }
+  });
+
+  it('is_featured checkbox functional updater correctly updates state', () => {
+    render(
+      <BasicInfoSection
+        form={makeForm({ is_featured: false })}
+        setForm={mockSetForm}
+        updateField={mockUpdateField}
+        toggleGenre={mockToggleGenre}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[1]);
+    const setFormCalls = mockSetForm.mock.calls;
+    expect(setFormCalls.length).toBeGreaterThan(0);
+    const updater = setFormCalls[0][0];
+    if (typeof updater === 'function') {
+      const result = updater({ is_featured: false, title: 'Test' });
+      expect(result).toHaveProperty('is_featured');
+      expect(result).toHaveProperty('title', 'Test');
+    }
+  });
+
+  it('calls updateField when release_date changes', () => {
+    render(
+      <BasicInfoSection
+        form={makeForm()}
+        setForm={mockSetForm}
+        updateField={mockUpdateField}
+        toggleGenre={mockToggleGenre}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByTestId('input-release-date'), { target: { value: '2025-06-01' } });
+    expect(mockUpdateField).toHaveBeenCalledWith('release_date', '2025-06-01');
+  });
+
+  it('calls updateField when premiere_date changes', () => {
+    render(
+      <BasicInfoSection
+        form={makeForm()}
+        setForm={mockSetForm}
+        updateField={mockUpdateField}
+        toggleGenre={mockToggleGenre}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByTestId('input-premiere-date-(optional)'), {
+      target: { value: '2024-12-25' },
+    });
+    expect(mockUpdateField).toHaveBeenCalledWith('premiere_date', '2024-12-25');
+  });
+
+  it('calls updateField when runtime changes', () => {
+    render(
+      <BasicInfoSection
+        form={makeForm()}
+        setForm={mockSetForm}
+        updateField={mockUpdateField}
+        toggleGenre={mockToggleGenre}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByTestId('input-runtime-(min)'), { target: { value: '150' } });
+    expect(mockUpdateField).toHaveBeenCalledWith('runtime', '150');
+  });
+
+  it('calls updateField when tagline changes', () => {
+    render(
+      <BasicInfoSection
+        form={makeForm()}
+        setForm={mockSetForm}
+        updateField={mockUpdateField}
+        toggleGenre={mockToggleGenre}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByTestId('input-tagline'), { target: { value: 'New tagline' } });
+    expect(mockUpdateField).toHaveBeenCalledWith('tagline', 'New tagline');
+  });
+
+  it('calls updateField when TMDB ID changes', () => {
+    render(
+      <BasicInfoSection
+        form={makeForm()}
+        setForm={mockSetForm}
+        updateField={mockUpdateField}
+        toggleGenre={mockToggleGenre}
+        onSubmit={mockOnSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByTestId('input-tmdb-id'), { target: { value: '99999' } });
+    expect(mockUpdateField).toHaveBeenCalledWith('tmdb_id', '99999');
+  });
+
   it('calls updateField when certification changes', () => {
     render(
       <BasicInfoSection

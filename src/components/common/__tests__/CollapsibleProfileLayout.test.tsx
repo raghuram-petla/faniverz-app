@@ -278,4 +278,106 @@ describe('CollapsibleProfileLayout', () => {
     }
     expect(screen.getAllByText('Layout Test').length).toBeGreaterThanOrEqual(1);
   });
+
+  it('handleScroll sets scrollOffset and forwards onScroll to parent', () => {
+    const onScroll = jest.fn();
+    const { UNSAFE_root } = render(
+      <CollapsibleProfileLayout {...defaultProps} onScroll={onScroll} />,
+    );
+    const Animated = require('react-native-reanimated').default;
+    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
+    const svWithScroll = scrollViews.find(
+      (sv: { props: Record<string, unknown> }) => typeof sv.props.onScroll === 'function',
+    );
+    expect(svWithScroll).toBeTruthy();
+    const event = { nativeEvent: { contentOffset: { y: 75, x: 0 } } };
+    svWithScroll.props.onScroll(event);
+    expect(onScroll).toHaveBeenCalledWith(event);
+  });
+
+  it('handleScroll works when onScroll is undefined (no crash)', () => {
+    const { UNSAFE_root } = render(<CollapsibleProfileLayout {...defaultProps} />);
+    const Animated = require('react-native-reanimated').default;
+    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
+    const svWithScroll = scrollViews.find(
+      (sv: { props: Record<string, unknown> }) => typeof sv.props.onScroll === 'function',
+    );
+    const event = { nativeEvent: { contentOffset: { y: 50, x: 0 } } };
+    expect(() => svWithScroll.props.onScroll(event)).not.toThrow();
+  });
+
+  it('onScrollBeginDrag is forwarded via Animated.ScrollView', () => {
+    const onScrollBeginDrag = jest.fn();
+    const { UNSAFE_root } = render(
+      <CollapsibleProfileLayout {...defaultProps} onScrollBeginDrag={onScrollBeginDrag} />,
+    );
+    const Animated = require('react-native-reanimated').default;
+    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
+    const sv = scrollViews.find(
+      (s: { props: Record<string, unknown> }) => typeof s.props.onScrollBeginDrag === 'function',
+    );
+    sv.props.onScrollBeginDrag();
+    expect(onScrollBeginDrag).toHaveBeenCalled();
+  });
+
+  it('onScrollEndDrag is forwarded via Animated.ScrollView', () => {
+    const onScrollEndDrag = jest.fn();
+    const { UNSAFE_root } = render(
+      <CollapsibleProfileLayout {...defaultProps} onScrollEndDrag={onScrollEndDrag} />,
+    );
+    const Animated = require('react-native-reanimated').default;
+    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
+    const sv = scrollViews.find(
+      (s: { props: Record<string, unknown> }) => typeof s.props.onScrollEndDrag === 'function',
+    );
+    const event = { nativeEvent: { contentOffset: { y: 0, x: 0 } } };
+    sv.props.onScrollEndDrag(event);
+    expect(onScrollEndDrag).toHaveBeenCalledWith(event);
+  });
+
+  it('renders placeholder view when rightContent is not provided', () => {
+    const { UNSAFE_root } = render(<CollapsibleProfileLayout {...defaultProps} />);
+    // When rightContent is not provided, a placeholder view is rendered
+    expect(UNSAFE_root).toBeTruthy();
+  });
+
+  it('useAnimatedStyle callbacks return correct animated styles for avatar and name', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    const interpolate = require('react-native-reanimated').interpolate;
+    interpolate.mockImplementation((value: number) => value);
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(<CollapsibleProfileLayout {...defaultProps} />);
+    // Two useAnimatedStyle calls: animatedAvatarStyle and animatedNameStyle
+    expect(useAnimatedStyle).toHaveBeenCalledTimes(2);
+    useAnimatedStyle.mockImplementation(() => ({}));
+    interpolate.mockImplementation(() => undefined);
+  });
+
+  it('renders with all optional props provided simultaneously', () => {
+    const onScroll = jest.fn();
+    const onScrollBeginDrag = jest.fn();
+    const onScrollEndDrag = jest.fn();
+    render(
+      <CollapsibleProfileLayout
+        {...defaultProps}
+        onImagePress={jest.fn()}
+        rightContent={<Text>Right</Text>}
+        heroContent={<Text>Hero</Text>}
+        scrollHeader={<Text>Header</Text>}
+        onScroll={onScroll}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onScrollEndDrag={onScrollEndDrag}
+      >
+        <Text>Child</Text>
+      </CollapsibleProfileLayout>,
+    );
+    expect(screen.getByText('Right')).toBeTruthy();
+    expect(screen.getByText('Hero')).toBeTruthy();
+    expect(screen.getByText('Header')).toBeTruthy();
+    expect(screen.getByText('Child')).toBeTruthy();
+    expect(screen.getByTestId('hero-image-tap')).toBeTruthy();
+  });
 });

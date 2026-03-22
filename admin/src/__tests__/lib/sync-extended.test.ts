@@ -400,6 +400,46 @@ describe('syncKeywords', () => {
     expect(result).toBe(1);
   });
 
+  it('returns existing count when keyword insert fails', async () => {
+    supabase.eq.mockImplementation(function () {
+      return { data: [{ keyword_id: 1 }], error: null };
+    });
+    // Insert fails
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
+
+    const detail = {
+      keywords: {
+        keywords: [
+          { id: 1, name: 'action' },
+          { id: 2, name: 'drama' },
+        ],
+      },
+    } as unknown as TmdbMovieDetailExtended;
+
+    const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
+
+    // Only 1 existing keyword, insert of new one failed
+    expect(result).toBe(1);
+  });
+
+  it('handles null existingRows via nullish coalesce', async () => {
+    supabase.eq.mockImplementation(function () {
+      return { data: null, error: null };
+    });
+
+    const detail = {
+      keywords: {
+        keywords: [{ id: 1, name: 'action' }],
+      },
+    } as unknown as TmdbMovieDetailExtended;
+
+    const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
+
+    // null existingRows defaults to [], all keywords are "missing"
+    expect(supabase.insert).toHaveBeenCalled();
+    expect(result).toBe(1);
+  });
+
   it('does not insert when all keywords already exist', async () => {
     supabase.eq.mockImplementation(function () {
       return { data: [{ keyword_id: 1 }, { keyword_id: 2 }], error: null };
@@ -532,6 +572,25 @@ describe('syncProductionCompanies', () => {
       supabase as unknown as SupabaseClient,
     );
     expect(result).toBe(1);
+  });
+
+  it('does not count when movie_production_houses link insert fails', async () => {
+    const companies: TmdbProductionCompany[] = [
+      { id: 100, name: 'Existing Studio', logo_path: null, origin_country: 'IN' },
+    ];
+    supabase.maybeSingle
+      .mockResolvedValueOnce({ data: { id: 'ph-1' }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null }); // not linked yet
+    // Link insert fails
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'link insert failed' } });
+
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      companies,
+      supabase as unknown as SupabaseClient,
+    );
+    // linkErr is truthy, so count should not increment
+    expect(result).toBe(0);
   });
 
   it('sets empty string origin_country to null', async () => {

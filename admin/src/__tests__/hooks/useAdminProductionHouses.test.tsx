@@ -247,6 +247,128 @@ describe('useUpdateProductionHouse', () => {
   });
 });
 
+describe('useAdminProductionHouses - PH scope', () => {
+  it('applies .in() filter when productionHouseIds are provided', async () => {
+    const mockIn = vi
+      .fn()
+      .mockResolvedValue({ data: [{ id: 'ph1', name: 'Scoped PH' }], error: null });
+    const mockRange = vi.fn().mockReturnValue({ in: mockIn });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses('', ['ph1', 'ph2']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockIn).toHaveBeenCalledWith('id', ['ph1', 'ph2']);
+  });
+
+  it('does not apply .in() filter when productionHouseIds is empty array', async () => {
+    const mockRange = vi.fn().mockResolvedValue({ data: [], error: null });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses('', []), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // With empty array, hasPHScope is false so no .in() call — range resolves directly
+    expect(result.current.data?.pages.flat()).toEqual([]);
+  });
+
+  it('throws on query error', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('combines search and PH scope and originCountry', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockIlike = vi.fn().mockReturnValue({ eq: mockEq });
+    const mockIn = vi.fn().mockReturnValue({ ilike: mockIlike });
+    const mockRange = vi.fn().mockReturnValue({ in: mockIn });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses('arka', ['ph1'], true, 'IN'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockIn).toHaveBeenCalledWith('id', ['ph1']);
+    expect(mockIlike).toHaveBeenCalledWith('name', '%arka%');
+    expect(mockEq).toHaveBeenCalledWith('origin_country', 'IN');
+  });
+});
+
+describe('useAdminProductionHouses - pagination', () => {
+  it('returns next page param when page is full (50 items)', async () => {
+    const fullPage = Array.from({ length: 50 }, (_, i) => ({ id: `ph-${i}`, name: `PH ${i}` }));
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: fullPage, error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(true);
+  });
+
+  it('returns no next page param when page has fewer than 50 items', async () => {
+    const partialPage = [{ id: 'ph-1', name: 'PH 1' }];
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: partialPage, error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(false);
+  });
+});
+
 describe('useDeleteProductionHouse', () => {
   it('sends DELETE to /api/admin-crud with id', async () => {
     const fetchSpy = mockCrudApi({ success: true });

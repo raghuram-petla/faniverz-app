@@ -306,6 +306,228 @@ describe('useBlockAdmin', () => {
   });
 });
 
+describe('useAdminUserList - error handling', () => {
+  it('throws when role query errors', async () => {
+    const mockOrder = vi
+      .fn()
+      .mockResolvedValue({ data: null, error: new Error('Role query failed') });
+    const mockSelectRoles = vi.fn().mockReturnValue({ order: mockOrder });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') return { select: mockSelectRoles };
+      return {};
+    });
+
+    const { result } = renderHook(() => useAdminUserList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('throws when PH query errors', async () => {
+    const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockSelectRoles = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockSelectPh = vi
+      .fn()
+      .mockResolvedValue({ data: null, error: new Error('PH query failed') });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') return { select: mockSelectRoles };
+      if (table === 'admin_ph_assignments') return { select: mockSelectPh };
+      return {};
+    });
+
+    const { result } = renderHook(() => useAdminUserList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('defaults ph_assignments to empty array for users without PH assignments', async () => {
+    const mockRoleData = [
+      {
+        id: 'role-1',
+        user_id: 'user-1',
+        role_id: 'admin',
+        assigned_by: null,
+        created_at: '2026-01-01',
+        status: null,
+        blocked_by: null,
+        blocked_at: null,
+        blocked_reason: null,
+        profile: { id: 'user-1', display_name: 'Admin', email: 'a@b.com', avatar_url: null },
+      },
+    ];
+
+    const mockOrder = vi.fn().mockResolvedValue({ data: mockRoleData, error: null });
+    const mockSelectRoles = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockSelectPh = vi.fn().mockResolvedValue({ data: [], error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') return { select: mockSelectRoles };
+      if (table === 'admin_ph_assignments') return { select: mockSelectPh };
+      return {};
+    });
+
+    const { result } = renderHook(() => useAdminUserList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data![0].ph_assignments).toEqual([]);
+    // null status defaults to 'active'
+    expect(result.current.data![0].status).toBe('active');
+  });
+});
+
+describe('useRevokeInvitation - error handling', () => {
+  it('alerts on error', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: new Error('Revoke failed') });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useRevokeInvitation(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate('inv-1');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRevokeAdmin - error handling', () => {
+  it('throws when PH assignment delete fails', async () => {
+    const mockPhEq = vi.fn().mockResolvedValue({ error: { message: 'FK violation' } });
+    const mockPhDelete = vi.fn().mockReturnValue({ eq: mockPhEq });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_ph_assignments') return { delete: mockPhDelete };
+      return {};
+    });
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useRevokeAdmin(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate('user-1');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useUpdateAdminRole - error handling', () => {
+  it('alerts on error', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: new Error('Update failed') });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useUpdateAdminRole(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ userId: 'user-1', roleId: 'admin' as const });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useBlockAdmin - error handling', () => {
+  it('alerts on error', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: new Error('Block failed') });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useBlockAdmin(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        userId: 'user-1',
+        blockedBy: 'admin-1',
+        reason: 'test',
+      });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useUnblockAdmin - error handling', () => {
+  it('alerts on error', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ error: new Error('Unblock failed') });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+    mockFrom.mockReturnValue({ update: mockUpdate });
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useUnblockAdmin(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate('user-1');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useInviteAdmin - with production_house_ids', () => {
+  it('passes production_house_ids when provided', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({ data: { id: 'inv-new' }, error: null });
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+    mockFrom.mockReturnValue({ insert: mockInsert });
+
+    const { result } = renderHook(() => useInviteAdmin(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        email: 'test@test.com',
+        role_id: 'production_house_admin' as const,
+        invited_by: 'admin-1',
+        production_house_ids: ['ph-1', 'ph-2'],
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockInsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        production_house_ids: ['ph-1', 'ph-2'],
+      }),
+    );
+  });
+});
+
 describe('useUnblockAdmin', () => {
   it('calls update with status=active (DB trigger clears block fields)', async () => {
     const mockEq = vi.fn().mockResolvedValue({ error: null });

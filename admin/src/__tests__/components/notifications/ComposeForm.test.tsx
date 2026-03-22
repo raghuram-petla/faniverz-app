@@ -1,12 +1,13 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { ComposeForm } from '@/components/notifications/ComposeForm';
 
+const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: () => ({
       select: () => ({
         eq: () => ({
-          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          maybeSingle: mockMaybeSingle,
         }),
       }),
     }),
@@ -21,8 +22,13 @@ vi.mock('@shared/constants', () => ({
   BROADCAST_USER_ID: '00000000-0000-0000-0000-000000000000',
 }));
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const capturedProps: Record<string, any> = {};
 vi.mock('@/components/notifications/MovieSearchField', () => ({
-  MovieSearchField: () => <div data-testid="movie-search" />,
+  MovieSearchField: (props: any) => {
+    capturedProps.MovieSearchField = props;
+    return <div data-testid="movie-search" />;
+  },
 }));
 
 vi.mock('next/link', () => ({
@@ -233,6 +239,214 @@ describe('ComposeForm', () => {
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         scheduled_for: new Date('2026-04-01T10:00').toISOString(),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('sets movieId to null in payload when no movie selected', () => {
+    render(<ComposeForm {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'trending' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Test' } });
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Body' } });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        movie_id: null,
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('uses current time for scheduled_for when immediate mode', () => {
+    render(<ComposeForm {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'reminder' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Now' } });
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'Send now' } });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scheduled_for: expect.any(String),
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('hides email input when switching back to broadcast mode', () => {
+    render(<ComposeForm {...defaultProps} />);
+    fireEvent.click(screen.getByText('Specific user'));
+    expect(screen.getByPlaceholderText('User email address')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Broadcast (all users)'));
+    expect(screen.queryByPlaceholderText('User email address')).not.toBeInTheDocument();
+  });
+
+  it('enables send button in broadcast mode even without email', () => {
+    render(<ComposeForm {...defaultProps} />);
+    // In broadcast mode (default), button should not be disabled for user mode reasons
+    const sendBtn = screen.getByText('Send Notification').closest('button');
+    expect(sendBtn).not.toBeDisabled();
+  });
+
+  it('renders notification type options correctly', () => {
+    render(<ComposeForm {...defaultProps} />);
+    const typeSelect = screen.getByLabelText('Type');
+    expect(typeSelect.querySelector('option[value="release"]')).toBeInTheDocument();
+    expect(typeSelect.querySelector('option[value="watchlist"]')).toBeInTheDocument();
+    expect(typeSelect.querySelector('option[value="trending"]')).toBeInTheDocument();
+    expect(typeSelect.querySelector('option[value="reminder"]')).toBeInTheDocument();
+  });
+
+  it('passes onSuccess callback to mutate', () => {
+    const onSuccess = vi.fn();
+    render(<ComposeForm {...defaultProps} onSuccess={onSuccess} />);
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'release' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'T' } });
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'M' } });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ onSuccess }),
+    );
+  });
+
+  describe('doLookup - email user lookup', () => {
+    it('resolves user when found by email', async () => {
+      mockMaybeSingle.mockResolvedValue({
+        data: { id: 'user-123', email: 'found@test.com' },
+        error: null,
+      });
+
+      render(<ComposeForm {...defaultProps} />);
+      fireEvent.click(screen.getByText('Specific user'));
+      fireEvent.change(screen.getByPlaceholderText('User email address'), {
+        target: { value: 'found@test.com' },
+      });
+
+      // Wait for 400ms debounce + async resolution
+      await waitFor(
+        () => {
+          expect(screen.getByText('User found')).toBeInTheDocument();
+        },
+        { timeout: 2000 },
+      );
+    });
+
+    it('shows error when no user found', async () => {
+      mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+      render(<ComposeForm {...defaultProps} />);
+      fireEvent.click(screen.getByText('Specific user'));
+      fireEvent.change(screen.getByPlaceholderText('User email address'), {
+        target: { value: 'missing@test.com' },
+      });
+
+      await waitFor(
+        () => {
+          expect(screen.getByText('No user found with this email')).toBeInTheDocument();
+        },
+        { timeout: 2000 },
+      );
+    });
+
+    it('shows error when lookup fails', async () => {
+      mockMaybeSingle.mockResolvedValue({ data: null, error: new Error('DB error') });
+
+      render(<ComposeForm {...defaultProps} />);
+      fireEvent.click(screen.getByText('Specific user'));
+      fireEvent.change(screen.getByPlaceholderText('User email address'), {
+        target: { value: 'error@test.com' },
+      });
+
+      await waitFor(
+        () => {
+          expect(screen.getByText('Lookup failed')).toBeInTheDocument();
+        },
+        { timeout: 2000 },
+      );
+    });
+
+    it('does not fire lookup when email lacks @ sign', async () => {
+      mockMaybeSingle.mockClear();
+
+      render(<ComposeForm {...defaultProps} />);
+      fireEvent.click(screen.getByText('Specific user'));
+      fireEvent.change(screen.getByPlaceholderText('User email address'), {
+        target: { value: 'noemail' },
+      });
+
+      // Wait a bit to ensure no async call
+      await new Promise((r) => setTimeout(r, 600));
+      expect(mockMaybeSingle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('MovieSearchField callbacks', () => {
+    it('onSearchChange updates search and clears movieId when empty', () => {
+      render(<ComposeForm {...defaultProps} />);
+      act(() => capturedProps.MovieSearchField.onSearchChange('test search'));
+      expect(capturedProps.MovieSearchField.movieSearch).toBe('test search');
+
+      act(() => capturedProps.MovieSearchField.onSearchChange(''));
+      expect(capturedProps.MovieSearchField.movieId).toBe('');
+    });
+
+    it('onMovieSelect sets movieId and search text', () => {
+      render(<ComposeForm {...defaultProps} />);
+      act(() => capturedProps.MovieSearchField.onMovieSelect('movie-1', 'Great Movie'));
+      expect(capturedProps.MovieSearchField.movieId).toBe('movie-1');
+      expect(capturedProps.MovieSearchField.movieSearch).toBe('Great Movie');
+    });
+
+    it('onClear resets movieId and search', () => {
+      render(<ComposeForm {...defaultProps} />);
+      act(() => capturedProps.MovieSearchField.onMovieSelect('movie-1', 'Great Movie'));
+      act(() => capturedProps.MovieSearchField.onClear());
+      expect(capturedProps.MovieSearchField.movieId).toBe('');
+      expect(capturedProps.MovieSearchField.movieSearch).toBe('');
+    });
+  });
+
+  it('submits with resolvedUserId when user mode and user found', async () => {
+    mockMaybeSingle.mockResolvedValue({
+      data: { id: 'user-abc', email: 'u@test.com' },
+      error: null,
+    });
+
+    render(<ComposeForm {...defaultProps} />);
+    fireEvent.click(screen.getByText('Specific user'));
+    fireEvent.change(screen.getByPlaceholderText('User email address'), {
+      target: { value: 'u@test.com' },
+    });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('User found')).toBeInTheDocument();
+      },
+      { timeout: 2000 },
+    );
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'release' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'T' } });
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'M' } });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'user-abc',
       }),
       expect.any(Object),
     );

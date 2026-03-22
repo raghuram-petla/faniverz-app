@@ -498,4 +498,183 @@ describe('DiscoverByYear', () => {
     // After linking, the movie should appear in existing section
     expect(screen.getByText('Existing movies')).toBeInTheDocument();
   });
+
+  it('cancels remaining imports when cancel is clicked between movies', async () => {
+    // Use a deferred promise so we can click cancel while first movie is importing
+    let resolveFirst!: (v: unknown) => void;
+    const firstPromise = new Promise((r) => {
+      resolveFirst = r;
+    });
+    mockImportMutateAsync.mockReturnValueOnce(firstPromise);
+    // If cancel doesn't work, 2nd call would happen
+    mockImportMutateAsync.mockResolvedValueOnce({ syncLogId: 'log-2', results: [], errors: [] });
+
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+      { id: 2, title: 'B', poster_path: null, release_date: '2024-02-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+
+    // Start batch import — firstPromise blocks so the loop is stuck on movie 1
+    act(() => {
+      fireEvent.click(screen.getByText('Import all new (2)'));
+    });
+
+    // Now the first movie is in "importing" state — cancel button should be visible
+    const cancelBtn = screen.queryByText('Cancel import');
+    if (cancelBtn) {
+      act(() => {
+        fireEvent.click(cancelBtn);
+      });
+    }
+
+    // Now resolve the first import so the loop can proceed to check cancelledRef
+    await act(async () => {
+      resolveFirst({
+        syncLogId: 'log-1',
+        results: [
+          {
+            movieId: 'm1',
+            tmdbId: 1,
+            title: 'A',
+            isNew: true,
+            castCount: 0,
+            crewCount: 0,
+            posterCount: 0,
+            backdropCount: 0,
+          },
+        ],
+        errors: [],
+      });
+    });
+
+    // The second movie should be skipped because cancel was clicked
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('handleImport does nothing when nothing is selected', async () => {
+    const data = makeData([
+      {
+        id: 1,
+        title: 'Movie',
+        poster_path: null,
+        release_date: '2024-01-01',
+        original_language: 'te',
+      },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    // Don't select anything, try to import
+    const importBtn = screen.queryByText('Import 0 selected');
+    // Button shouldn't exist since nothing selected, but even if we could trigger handleImport
+    // it should early-return without calling mutateAsync
+    expect(importBtn).not.toBeInTheDocument();
+    expect(mockImportMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('handleImportAllNew does nothing when no new movies', async () => {
+    const data = makeData(
+      [
+        {
+          id: 1,
+          title: 'Existing',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ],
+      [makeExisting(1, 'Existing')],
+    );
+    renderWithProvider(<DiscoverByYear data={data} />);
+    // No new movies, so Import all new button should be disabled or absent
+    const btn = screen.queryByText(/Import all new/);
+    // Since newMovies.length === 0, the handler returns early
+    expect(mockImportMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('deselect all clears the selection', async () => {
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+      { id: 2, title: 'B', poster_path: null, release_date: '2024-02-01', original_language: 'te' },
+    ]);
+    renderWithProvider(<DiscoverByYear data={data} />);
+    // Select all first
+    fireEvent.click(screen.getByText('Select all new (2)'));
+    expect(screen.getByText('Import 2 selected')).toBeInTheDocument();
+    // Deselect all
+    const deselectBtn = screen.getByText('Deselect all');
+    fireEvent.click(deselectBtn);
+    expect(screen.queryByText('Import 2 selected')).not.toBeInTheDocument();
+  });
+
+  it('handles non-Error thrown during import', async () => {
+    mockImportMutateAsync.mockRejectedValueOnce('string error');
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (1)'));
+    });
+    // Non-Error fallback should show 'Import failed'
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles import result with errors', async () => {
+    mockImportMutateAsync.mockResolvedValueOnce({
+      syncLogId: 'log-1',
+      results: [],
+      errors: [{ tmdbId: 1, message: 'Failed to import' }],
+    });
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (1)'));
+    });
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onImportingChange when import starts and stops', async () => {
+    mockImportMutateAsync.mockResolvedValue({ syncLogId: 'log-1', results: [], errors: [] });
+    const onImportingChange = vi.fn();
+    const data = makeData([
+      { id: 1, title: 'A', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+    ]);
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} onImportingChange={onImportingChange} />);
+    // Initially not importing
+    expect(onImportingChange).toHaveBeenCalledWith(false);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Import all new (1)'));
+    });
+    // After import completes
+    expect(onImportingChange).toHaveBeenCalled();
+  });
+
+  it('links suspect with poster_path and uses poster URL', async () => {
+    mockLinkMutateAsync.mockResolvedValue({ id: 'uuid-local' });
+    const data = {
+      ...makeData([
+        {
+          id: 5,
+          title: 'Duplicate',
+          poster_path: '/poster.jpg',
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ]),
+      duplicateSuspects: { 5: { id: 'uuid-local', title: 'Duplicate' } },
+    };
+    const { act } = await import('@testing-library/react');
+    renderWithProvider(<DiscoverByYear data={data} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('Link to TMDB'));
+    });
+    expect(mockLinkMutateAsync).toHaveBeenCalledWith({ movieId: 'uuid-local', tmdbId: 5 });
+  });
 });

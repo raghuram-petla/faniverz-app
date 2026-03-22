@@ -218,4 +218,58 @@ describe('ReviewModal', () => {
     // toggleTrackActive style is applied — just verify render succeeds
     expect(screen.getByText('movie.containsSpoiler')).toBeTruthy();
   });
+
+  it('spring animation effect runs on visible=true with animations enabled', () => {
+    const withSpring = require('react-native-reanimated').withSpring;
+    withSpring.mockClear();
+    render(<ReviewModal {...baseProps} visible={true} />);
+    expect(withSpring).toHaveBeenCalled();
+  });
+
+  it('spring animation sets scale to 1 directly when animations disabled', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+    const withSpring = require('react-native-reanimated').withSpring;
+    withSpring.mockClear();
+    render(<ReviewModal {...baseProps} visible={true} />);
+    // withSpring should NOT be called when animations disabled
+    expect(withSpring).not.toHaveBeenCalled();
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
+  });
+
+  it('useAnimatedStyle is called for spring scale', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockClear();
+    render(<ReviewModal {...baseProps} visible={true} />);
+    expect(useAnimatedStyle).toHaveBeenCalled();
+  });
+
+  it('does not trigger spring when visible is false', () => {
+    const withSpring = require('react-native-reanimated').withSpring;
+    withSpring.mockClear();
+    render(<ReviewModal {...baseProps} visible={false} />);
+    expect(withSpring).not.toHaveBeenCalled();
+  });
+
+  it('renders movie poster image via expo-image', () => {
+    const { UNSAFE_queryAllByType } = render(<ReviewModal {...baseProps} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_queryAllByType(Image);
+    expect(images.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('useAnimatedStyle callback returns transform with scale', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(<ReviewModal {...baseProps} visible={true} />);
+    expect(useAnimatedStyle).toHaveBeenCalled();
+    useAnimatedStyle.mockImplementation(() => ({}));
+  });
+
+  it('renders with null posterUrl (falls back to placeholder)', () => {
+    render(<ReviewModal {...baseProps} posterUrl={null} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
 });

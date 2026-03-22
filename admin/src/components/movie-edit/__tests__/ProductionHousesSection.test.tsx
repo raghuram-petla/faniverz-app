@@ -327,5 +327,77 @@ describe('ProductionHousesSection', () => {
       fireEvent.keyDown(input, { key: 'Enter' });
       expect(onAdd).toHaveBeenCalled();
     });
+
+    it('ArrowUp moves highlight up and wraps to bottom', () => {
+      render(<ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="Ar" />);
+      const input = screen.getByPlaceholderText('Type to search…');
+      fireEvent.focus(input);
+      // From -1, ArrowUp should wrap to last item (totalItems - 1)
+      fireEvent.keyDown(input, { key: 'ArrowUp' });
+      // With 2 items, should wrap to index 1
+      const items = document.querySelectorAll('[data-dropdown-item]');
+      expect(items[1]?.className).toContain('bg-input');
+    });
+
+    it('ArrowDown wraps from last to first', () => {
+      render(<ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="Ar" />);
+      const input = screen.getByPlaceholderText('Type to search…');
+      fireEvent.focus(input);
+      fireEvent.keyDown(input, { key: 'ArrowDown' }); // 0
+      fireEvent.keyDown(input, { key: 'ArrowDown' }); // 1
+      fireEvent.keyDown(input, { key: 'ArrowDown' }); // wraps to 0
+      const items = document.querySelectorAll('[data-dropdown-item]');
+      expect(items[0]?.className).toContain('bg-input');
+    });
+
+    it('Enter on quick-add button calls onQuickAdd', () => {
+      const onQuickAdd = vi.fn();
+      render(
+        <ProductionHousesSection
+          {...defaultProps}
+          showAddForm={true}
+          searchQuery="New Studio"
+          productionHouses={[]}
+          onQuickAdd={onQuickAdd}
+        />,
+      );
+      const input = screen.getByPlaceholderText('Type to search…');
+      fireEvent.focus(input);
+      // filtered.length === 0, so quick-add is index 0
+      fireEvent.keyDown(input, { key: 'ArrowDown' }); // highlight index 0 = quick-add
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(onQuickAdd).toHaveBeenCalledWith('New Studio');
+    });
+
+    it('does nothing on keyDown when dropdown is not visible', () => {
+      const onAdd = vi.fn();
+      render(
+        <ProductionHousesSection
+          {...defaultProps}
+          showAddForm={true}
+          searchQuery="A"
+          onAdd={onAdd}
+        />,
+      );
+      const input = screen.getByPlaceholderText('Type to search…');
+      // searchQuery < 2, so dropdown is not shown
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
+    it('closes dropdown when clicking outside', () => {
+      render(
+        <div>
+          <div data-testid="outside">Outside</div>
+          <ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="Ar" />
+        </div>,
+      );
+      const input = screen.getByPlaceholderText('Type to search…');
+      fireEvent.focus(input);
+      expect(screen.getByText('Arka Media Works')).toBeInTheDocument();
+      fireEvent.mouseDown(screen.getByTestId('outside'));
+      expect(screen.queryByText('Arka Media Works')).not.toBeInTheDocument();
+    });
   });
 });

@@ -89,6 +89,26 @@ vi.mock('@/components/movie-edit/PosterAddForm', () => ({
       >
         Confirm Add
       </button>
+      <button
+        onClick={() =>
+          onConfirm(
+            {
+              is_main_poster: true,
+              image_url: 'https://cdn/main.jpg',
+              image_type: 'poster',
+              title: null,
+              description: null,
+              poster_date: null,
+              is_main_backdrop: false,
+              display_order: 0,
+            },
+            'main-pending-uuid',
+          )
+        }
+        data-testid="confirm-add-main-btn"
+      >
+        Confirm Add Main
+      </button>
       <button onClick={onCancel} data-testid="cancel-add-btn">
         Cancel
       </button>
@@ -100,6 +120,8 @@ vi.mock('@/components/movie-edit/MainImageSelector', () => ({
   MainImageSelector: ({
     label,
     currentImageUrl,
+    onFocusChange,
+    onFocusClear,
   }: {
     label: string;
     currentImageUrl: string;
@@ -118,6 +140,22 @@ vi.mock('@/components/movie-edit/MainImageSelector', () => ({
     <div data-testid={`main-image-${label.toLowerCase().replace(' ', '-')}`}>
       <span>{label}</span>
       <span>{currentImageUrl || 'no-image'}</span>
+      {onFocusChange && (
+        <button
+          data-testid={`focus-change-${label.toLowerCase().replace(' ', '-')}`}
+          onClick={() => onFocusChange(0.5, 0.3)}
+        >
+          Set Focus
+        </button>
+      )}
+      {onFocusClear && (
+        <button
+          data-testid={`focus-clear-${label.toLowerCase().replace(' ', '-')}`}
+          onClick={() => onFocusClear()}
+        >
+          Clear Focus
+        </button>
+      )}
     </div>
   ),
 }));
@@ -306,41 +344,12 @@ describe('PostersSection', () => {
   });
 
   it('confirming add with is_main_poster=true calls onSelectMainPoster with pendingId', () => {
-    // Override the PosterAddForm mock to use is_main_poster: true
-    vi.doMock('@/components/movie-edit/PosterAddForm', () => ({
-      PosterAddForm: ({
-        onConfirm,
-      }: {
-        onConfirm: (p: unknown, id: string) => void;
-        onCancel: () => void;
-        onPendingMainChange: (url: string | null) => void;
-        hasNoPosters: boolean;
-        posterCount: number;
-      }) => (
-        <div data-testid="poster-add-form">
-          <button
-            onClick={() =>
-              onConfirm(
-                {
-                  is_main_poster: true,
-                  image_url: 'https://cdn/new.jpg',
-                  image_type: 'poster',
-                  title: null,
-                  description: null,
-                  poster_date: null,
-                  is_main_backdrop: false,
-                  display_order: 0,
-                },
-                'new-pending-id',
-              )
-            }
-            data-testid="confirm-add-main"
-          >
-            Confirm Main Add
-          </button>
-        </div>
-      ),
-    }));
+    render(<PostersSection {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('add-btn'));
+    fireEvent.click(screen.getByTestId('confirm-add-main-btn'));
+    expect(mockOnAdd).toHaveBeenCalled();
+    expect(mockOnSelectMainPoster).toHaveBeenCalledWith('main-pending-uuid');
+    expect(screen.queryByTestId('poster-add-form')).not.toBeInTheDocument();
   });
 
   it('renders poster count text via visible gallery', () => {
@@ -394,5 +403,46 @@ describe('PostersSection', () => {
     expect(() =>
       render(<PostersSection {...defaultProps} updateField={mockUpdateField} />),
     ).not.toThrow();
+  });
+
+  it('calls setForm with poster focus coordinates when poster focus changes', () => {
+    render(<PostersSection {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('focus-change-main-poster'));
+    expect(mockSetForm).toHaveBeenCalled();
+    // Verify the setForm updater produces correct result
+    const updater = mockSetForm.mock.calls[0][0];
+    const result = updater(makeForm());
+    expect(result.poster_focus_x).toBe(0.5);
+    expect(result.poster_focus_y).toBe(0.3);
+  });
+
+  it('calls setForm to clear poster focus', () => {
+    render(<PostersSection {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('focus-clear-main-poster'));
+    expect(mockSetForm).toHaveBeenCalled();
+    const updater = mockSetForm.mock.calls[0][0];
+    const result = updater(makeForm({ poster_focus_x: 0.5, poster_focus_y: 0.3 }));
+    expect(result.poster_focus_x).toBeNull();
+    expect(result.poster_focus_y).toBeNull();
+  });
+
+  it('calls setForm with backdrop focus coordinates when backdrop focus changes', () => {
+    render(<PostersSection {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('focus-change-main-backdrop'));
+    expect(mockSetForm).toHaveBeenCalled();
+    const updater = mockSetForm.mock.calls[0][0];
+    const result = updater(makeForm());
+    expect(result.backdrop_focus_x).toBe(0.5);
+    expect(result.backdrop_focus_y).toBe(0.3);
+  });
+
+  it('calls setForm to clear backdrop focus', () => {
+    render(<PostersSection {...defaultProps} />);
+    fireEvent.click(screen.getByTestId('focus-clear-main-backdrop'));
+    expect(mockSetForm).toHaveBeenCalled();
+    const updater = mockSetForm.mock.calls[0][0];
+    const result = updater(makeForm({ backdrop_focus_x: 0.5, backdrop_focus_y: 0.3 }));
+    expect(result.backdrop_focus_x).toBeNull();
+    expect(result.backdrop_focus_y).toBeNull();
   });
 });

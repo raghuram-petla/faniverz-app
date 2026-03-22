@@ -350,4 +350,124 @@ describe('useBulkCancelPending', () => {
     expect(mockUpdate).toHaveBeenCalledWith({ status: 'cancelled' });
     expect(mockEq).toHaveBeenCalledWith('status', 'pending');
   });
+
+  it('shows alert on error', async () => {
+    mockMutationQuery(new Error('Cancel fail'));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useBulkCancelPending(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate();
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useBulkRetryFailed - error handling', () => {
+  it('shows alert on error', async () => {
+    mockMutationQuery(new Error('Retry fail'));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useBulkRetryFailed(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate();
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRetryNotification - error handling', () => {
+  it('shows alert on error', async () => {
+    mockMutationQuery(new Error('Retry fail'));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useRetryNotification(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate('n1');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useAdminNotifications - type-only filter', () => {
+  it('applies only type filter when status is not provided', async () => {
+    const { mockEq } = mockSingleFilterQuery([]);
+
+    const { result } = renderHook(() => useAdminNotifications({ type: 'movie_release' }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockEq).toHaveBeenCalledWith('type', 'movie_release');
+  });
+});
+
+describe('useCreateNotification - scheduled within 60s', () => {
+  it('triggers push for notification scheduled within 60 seconds', async () => {
+    const nearDate = new Date(Date.now() + 30_000).toISOString();
+    const insertedData = { id: 'n-near', title: 'Near' };
+    const mockSingle = vi.fn().mockResolvedValue({ data: insertedData, error: null });
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+
+    mockFrom.mockReturnValue({ insert: mockInsert });
+    mockInvoke.mockResolvedValue({ error: null });
+
+    const { result } = renderHook(() => useCreateNotification(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        title: 'Near',
+        scheduled_for: nearDate,
+      } as never);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // scheduled_for is within 60s, so push should fire
+    expect(mockInvoke).toHaveBeenCalledWith('send-push', {
+      body: { notification_id: 'n-near' },
+    });
+  });
+
+  it('does not trigger push when data is null (edge case)', async () => {
+    const mockSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+
+    mockFrom.mockReturnValue({ insert: mockInsert });
+
+    const { result } = renderHook(() => useCreateNotification(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ title: 'Test' });
+    });
+
+    // data is null, so the mutation should throw (since the code does `if (error) throw error`)
+    // Actually the insert returns { data: null, error: null }, which means no error thrown
+    // But isImmediate && data evaluates to false since data is null
+    await waitFor(() => expect(result.current.isSuccess || result.current.isError).toBe(true));
+    expect(mockInvoke).not.toHaveBeenCalled();
+  });
 });

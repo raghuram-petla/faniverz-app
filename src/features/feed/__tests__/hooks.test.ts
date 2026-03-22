@@ -506,6 +506,347 @@ describe('useVoteFeedItem — previousVote branches', () => {
   });
 });
 
+describe('useVoteFeedItem — onError without previousFeedData in context', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('onError handles empty previousFeedData array without crash', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+
+    mockVoteFeedItem.mockRejectedValue(new Error('Network error'));
+
+    // Use a clean client with no cached data — onMutate returns { previousFeedData: [] }
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRemoveFeedVote — onError without previousFeedData in context', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('onError handles empty previousFeedData array without crash', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+
+    mockRemoveFeedVote.mockRejectedValue(new Error('Network error'));
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useVoteFeedItem — multiple items in cache, non-matching skipped', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+  });
+
+  it('skips non-matching items during optimistic update (item.id !== feedItemId branch)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Two items in cache; only item-1 should be updated
+    client.setQueryData(['news-feed', undefined], {
+      pages: [
+        [
+          { ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 },
+          { ...mockItem, id: 'item-other', upvote_count: 10, downvote_count: 3 },
+        ],
+      ],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Verify the non-matching item was returned unchanged
+    const cached = client.getQueryData<{ pages: (typeof mockItem)[][] }>(['news-feed', undefined]);
+    const otherItem = cached?.pages[0]?.find((i) => i.id === 'item-other');
+    expect(otherItem?.upvote_count).toBe(10); // unchanged
+  });
+});
+
+describe('useVoteFeedItem — cache with data that gets returned in getQueriesData forEach', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+  });
+
+  it('captures snapshot of personalized-feed during onMutate (covers data branch in forEach)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Populate BOTH feed caches so the forEach loop captures data from both
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+    client.setQueryData(['personalized-feed', 'all', 'user-123'], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'down', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useVoteFeedItem — onError rollback with cached data', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('rolls back to previous data when mutation fails with cached data', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+
+    mockVoteFeedItem.mockRejectedValue(new Error('Network error'));
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Pre-populate cache so previousFeedData is non-empty
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+
+    // Verify cache was restored
+    const cached = client.getQueryData<{ pages: (typeof mockItem)[][] }>(['news-feed', undefined]);
+    expect(cached?.pages[0]?.[0]?.upvote_count).toBe(5);
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRemoveFeedVote — onError rollback with cached data', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('rolls back to previous data when mutation fails with cached data', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+
+    mockRemoveFeedVote.mockRejectedValue(new Error('Network error'));
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+
+    const cached = client.getQueryData<{ pages: (typeof mockItem)[][] }>(['news-feed', undefined]);
+    expect(cached?.pages[0]?.[0]?.upvote_count).toBe(5);
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRemoveFeedVote — non-matching items in optimistic update', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRemoveFeedVote.mockResolvedValue(undefined);
+  });
+
+  it('skips non-matching items during optimistic update', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [
+        [
+          { ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 },
+          { ...mockItem, id: 'item-other', upvote_count: 10, downvote_count: 3 },
+        ],
+      ],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const cached = client.getQueryData<{ pages: (typeof mockItem)[][] }>(['news-feed', undefined]);
+    const otherItem = cached?.pages[0]?.find((i) => i.id === 'item-other');
+    expect(otherItem?.upvote_count).toBe(10);
+  });
+});
+
+describe('useVoteFeedItem — setQueriesData with undefined old data', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+  });
+
+  it('handles getQueriesData entry with undefined data (if data guard) and setQueriesData with !old', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Create a query observer for 'news-feed' with a stale filter so getQueriesData returns
+    // an entry with data=undefined. We use fetchQuery with a queryFn that returns undefined-like data
+    // to force a cache entry that has no data.
+    client.setQueryDefaults(['news-feed'], { queryFn: () => Promise.resolve(undefined) });
+    // Force an observer to exist by setting empty defaults — then use getQueryCache to add entry
+    const cache = client.getQueryCache();
+    cache.build(client, { queryKey: ['news-feed', 'no-data'] });
+
+    // Also set valid data
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useRemoveFeedVote — setQueriesData with undefined old data', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRemoveFeedVote.mockResolvedValue(undefined);
+  });
+
+  it('handles getQueriesData entry with undefined data and setQueriesData with !old', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const cache = client.getQueryCache();
+    cache.build(client, { queryKey: ['news-feed', 'no-data'] });
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useUserVotes — disabled when userId is absent', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockFetchUserVotes.mockResolvedValue({});
+  });
+
+  it('does not fetch when user is null (userId undefined)', async () => {
+    const { useAuth } = require('@/features/auth/providers/AuthProvider');
+    useAuth.mockReturnValueOnce({ user: null });
+    const { result } = renderHook(() => useUserVotes(['item-1']), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
+    expect(mockFetchUserVotes).not.toHaveBeenCalled();
+  });
+});
+
 describe('useRemoveFeedVote — previousVote=null branch', () => {
   beforeEach(() => {
     jest.clearAllMocks();

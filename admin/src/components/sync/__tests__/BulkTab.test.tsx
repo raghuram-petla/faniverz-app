@@ -315,4 +315,95 @@ describe('BulkTab', () => {
     fireEvent.click(screen.getByTestId('toggle-bio-list-btn'));
     expect(screen.getByTestId('toggle-bio-list-btn').textContent).toBe('Hide');
   });
+
+  it('handleBulkRefreshMovies: falls back to "Unknown" when item.title is undefined', async () => {
+    mockRefreshMovieMutateAsync.mockResolvedValue({});
+
+    mockUseStaleItems
+      .mockReturnValueOnce({
+        data: { items: [{ id: 'm1' }] }, // no title property
+        isLoading: false,
+      })
+      .mockReturnValueOnce({ data: { items: [] }, isLoading: false });
+
+    render(<BulkTab />);
+    fireEvent.click(screen.getByTestId('refresh-all-btn'));
+
+    await waitFor(() => {
+      expect(mockRefreshMovieMutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByTestId('progress-completed').textContent).toBe('1');
+  });
+
+  it('handleBulkRefreshActors: falls back to "Unknown" when item.name is undefined', async () => {
+    mockRefreshActorMutateAsync.mockResolvedValue({});
+
+    mockUseStaleItems
+      .mockReturnValueOnce({ data: { items: [] }, isLoading: false })
+      .mockReturnValueOnce({
+        data: { items: [{ id: 'a1' }] }, // no name property
+        isLoading: false,
+      });
+
+    render(<BulkTab />);
+    fireEvent.click(screen.getByTestId('fetch-all-btn'));
+
+    await waitFor(() => {
+      expect(mockRefreshActorMutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByTestId('progress-completed').textContent).toBe('1');
+  });
+
+  it('handleBulkRefreshMovies: non-Error throw uses "Failed" fallback message', async () => {
+    mockRefreshMovieMutateAsync.mockRejectedValue('string error');
+
+    mockUseStaleItems
+      .mockReturnValueOnce({
+        data: { items: [{ id: 'm1', title: 'Movie 1' }] },
+        isLoading: false,
+      })
+      .mockReturnValueOnce({ data: { items: [] }, isLoading: false });
+
+    render(<BulkTab />);
+    fireEvent.click(screen.getByTestId('refresh-all-btn'));
+
+    await waitFor(() => {
+      expect(mockRefreshMovieMutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByTestId('progress-completed').textContent).toBe('1');
+  });
+
+  it('handleBulkRefreshMovies: handles undefined data.items via ?? []', async () => {
+    mockUseStaleItems
+      .mockReturnValueOnce({
+        data: undefined, // staleMovies.data is undefined
+        isLoading: false,
+      })
+      .mockReturnValueOnce({ data: { items: [] }, isLoading: false });
+
+    render(<BulkTab />);
+    fireEvent.click(screen.getByTestId('refresh-all-btn'));
+
+    // Should exit early since items is empty via ?? []
+    expect(window.confirm).not.toHaveBeenCalled();
+    expect(mockRefreshMovieMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('handleBulkRefreshActors: handles undefined data.items via ?? []', async () => {
+    mockUseStaleItems
+      .mockReturnValueOnce({ data: { items: [] }, isLoading: false })
+      .mockReturnValueOnce({
+        data: undefined, // missingBios.data is undefined
+        isLoading: false,
+      });
+
+    render(<BulkTab />);
+    fireEvent.click(screen.getByTestId('fetch-all-btn'));
+
+    expect(window.confirm).not.toHaveBeenCalled();
+    expect(mockRefreshActorMutateAsync).not.toHaveBeenCalled();
+  });
 });

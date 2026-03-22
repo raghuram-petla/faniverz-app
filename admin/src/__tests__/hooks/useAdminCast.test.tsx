@@ -262,6 +262,26 @@ describe('useMovieCast', () => {
     expect(result.current.data![1].credit_type).toBe('crew');
   });
 
+  it('handles both crew members having null role_order', async () => {
+    const mockData = [
+      { id: 'w1', credit_type: 'crew', display_order: 0, role_order: null },
+      { id: 'w2', credit_type: 'crew', display_order: 0, role_order: null },
+    ];
+
+    const mockEq = vi.fn().mockResolvedValue({ data: mockData, error: null });
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({ eq: mockEq }),
+    });
+
+    const { result } = renderHook(() => useMovieCast('m1'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // Both should be present, order doesn't matter since both are null (99)
+    expect(result.current.data).toHaveLength(2);
+  });
+
   it('defaults null role_order to 99 for crew sorting', async () => {
     const mockData = [
       { id: 'w1', credit_type: 'crew', display_order: 0, role_order: null },
@@ -384,6 +404,81 @@ describe('useRemoveCast', () => {
   });
 });
 
+describe('useRemoveCast - error handling', () => {
+  it('shows alert on error', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useRemoveCast(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'mc1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useMovieCast - error handling', () => {
+  it('throws on supabase error', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: null, error: new Error('Query failed') });
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({ eq: mockEq }),
+    });
+
+    const { result } = renderHook(() => useMovieCast('m1'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useAddCast - empty error message fallback', () => {
+  it('shows "Operation failed" when error.message is empty', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error(''));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useAddCast(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ movie_id: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('Operation failed');
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRemoveCast - empty error message fallback', () => {
+  it('shows "Operation failed" when error.message is empty', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error(''));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useRemoveCast(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'mc1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('Operation failed');
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+});
+
 describe('useUpdateCastOrder', () => {
   it('updates display_order for multiple cast items in parallel', async () => {
     const fetchSpy = mockCrudApi({ success: true });
@@ -447,6 +542,27 @@ describe('useUpdateCastOrder', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(alertSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+
+  it('shows "Operation failed" when error.message is empty', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error(''));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useUpdateCastOrder(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        movieId: 'm1',
+        items: [{ id: 'c1', display_order: 0 }],
+      });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('Operation failed');
     fetchSpy.mockRestore();
     alertSpy.mockRestore();
   });

@@ -371,6 +371,134 @@ describe('MoviesPage', () => {
       expect(row?.classList.contains('opacity-40')).toBe(true);
     });
 
+    it('renders movie poster image when poster_url is set', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: {
+          pages: [
+            [
+              makeMockMovie('m1', {
+                poster_url: 'https://example.com/poster.jpg',
+                poster_image_type: 'poster',
+                original_language: 'te',
+              }),
+            ],
+          ],
+        },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      const { container } = renderWithProviders(<MoviesPage />);
+      const img = container.querySelector('img');
+      expect(img).toBeInTheDocument();
+    });
+
+    it('renders movie with backdrop image type', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: {
+          pages: [
+            [
+              makeMockMovie('m1', {
+                poster_url: 'https://example.com/backdrop.jpg',
+                poster_image_type: 'backdrop',
+                original_language: 'te',
+              }),
+            ],
+          ],
+        },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      const { container } = renderWithProviders(<MoviesPage />);
+      const img = container.querySelector('img');
+      expect(img).toBeInTheDocument();
+    });
+
+    it('renders other-language movie with poster (grayscale, no link)', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: {
+          pages: [
+            [
+              makeMockMovie('m1', {
+                poster_url: 'https://example.com/poster.jpg',
+                poster_image_type: 'poster',
+                original_language: 'hi',
+              }),
+            ],
+          ],
+        },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      const { container } = renderWithProviders(<MoviesPage />);
+      const img = container.querySelector('img');
+      expect(img).toBeInTheDocument();
+      // Should be grayscale for other language
+      expect(img!.classList.contains('grayscale')).toBe(true);
+    });
+
+    it('renders other-language movie without poster (Film icon, no link)', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: {
+          pages: [
+            [
+              makeMockMovie('m1', {
+                poster_url: null,
+                original_language: 'hi',
+              }),
+            ],
+          ],
+        },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      const { container } = renderWithProviders(<MoviesPage />);
+      // No img, and title should not be a link
+      expect(container.querySelector('img')).not.toBeInTheDocument();
+      const titleEl = screen.getByText('Movie m1');
+      expect(titleEl.tagName).not.toBe('A');
+    });
+
+    it('renders other-language movie with backdrop type poster', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: {
+          pages: [
+            [
+              makeMockMovie('m1', {
+                poster_url: 'https://example.com/back.jpg',
+                poster_image_type: 'backdrop',
+                original_language: 'hi',
+              }),
+            ],
+          ],
+        },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      const { container } = renderWithProviders(<MoviesPage />);
+      const img = container.querySelector('img');
+      expect(img!.classList.contains('grayscale')).toBe(true);
+    });
+
     it('renders Film icon placeholder when no poster_url', () => {
       mockUseAdminMovies.mockReturnValue({
         data: {
@@ -409,6 +537,36 @@ describe('MoviesPage', () => {
       await waitFor(() => {
         expect(mockDeleteMutate).toHaveBeenCalled();
       });
+    });
+
+    it('calls alert with error message via onError callback', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockCanDelete = true;
+
+      // Make mockDeleteMutate call the onError callback
+      mockDeleteMutate.mockImplementation(
+        (_id: string, opts: { onError: (err: Error) => void }) => {
+          opts.onError(new Error('Delete failed'));
+        },
+      );
+
+      mockUseAdminMovies.mockReturnValue({
+        data: { pages: [[makeMockMovie('m1')]] },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      renderWithProviders(<MoviesPage />);
+      fireEvent.click(screen.getByRole('button'));
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith('Error: Delete failed');
+      });
+      alertSpy.mockRestore();
     });
 
     it('does not call deleteMovie.mutate when confirm returns false', () => {

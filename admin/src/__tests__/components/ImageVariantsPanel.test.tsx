@@ -220,4 +220,48 @@ describe('ImageVariantsPanel', () => {
       expect(img).toHaveAttribute('src', 'https://r2.dev/abc_sm.jpg');
     });
   });
+
+  it('shows loading spinner for variants with checking status when expanded', () => {
+    mockUseImageVariants.mockReturnValue({
+      variants: [{ ...mockVariants[0], status: 'checking' as const }],
+      isChecking: true,
+      readyCount: 0,
+      totalCount: 1,
+      recheck: mockRecheck,
+    });
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
+    // Expand
+    fireEvent.click(screen.getByText(/Checking variants\.\.\./));
+    // The StatusDot for checking status renders Loader2 icon
+    const loaders = screen.getAllByTestId('loader-icon');
+    expect(loaders.length).toBeGreaterThan(0);
+  });
+
+  it('shows yellow dot for unknown variant status when expanded', () => {
+    mockUseImageVariants.mockReturnValue({
+      variants: [{ ...mockVariants[0], status: 'error' as never }],
+      isChecking: false,
+      readyCount: 0,
+      totalCount: 1,
+      recheck: mockRecheck,
+    });
+    render(
+      <ImageVariantsPanel
+        originalUrl="https://r2.dev/abc.jpg"
+        variantType="poster"
+        bucket="POSTERS"
+      />,
+    );
+    // Expand
+    fireEvent.click(screen.getByText(/0\/1 variants ready/));
+    // The unknown status renders yellow dot
+    const yellowDots = document.querySelectorAll('.bg-yellow-500');
+    expect(yellowDots.length).toBeGreaterThan(0);
+  });
 });

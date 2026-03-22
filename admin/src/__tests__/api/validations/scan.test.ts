@@ -190,4 +190,212 @@ describe('POST /api/validations/scan', () => {
     const data = await res.json();
     expect(data.total).toBe(1);
   });
+
+  it('returns 500 on DB error', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          not: () => ({
+            order: () =>
+              Promise.resolve({ data: null, error: { message: 'Connection failed' }, count: 0 }),
+          }),
+        }),
+      };
+    });
+
+    const res = await POST(makeRequest({ entity: 'movies' }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Connection failed');
+  });
+
+  it('classifies full R2 URLs correctly', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-4',
+        poster_url: 'https://r2.example.com/bucket/image.jpg',
+        backdrop_url: null,
+        title: 'R2 Movie',
+        tmdb_id: 400,
+      },
+    ]);
+
+    const res = await POST(makeRequest({ entity: 'movies' }));
+    const data = await res.json();
+    expect(data.results[0].urlType).toBe('full_r2');
+  });
+
+  it('handles entity with null tmdbField (platforms)', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          not: () => ({
+            order: () =>
+              Promise.resolve({
+                data: [{ id: 'p1', logo_url: 'logo.png', name: 'Netflix' }],
+                error: null,
+                count: 1,
+              }),
+          }),
+        }),
+      };
+    });
+
+    const res = await POST(makeRequest({ entity: 'platforms' }));
+    const data = await res.json();
+    expect(data.results[0].tmdbId).toBeNull();
+    expect(data.results[0].entityLabel).toBe('Netflix');
+  });
+
+  it('handles deep scan with full_r2 URL (extracts key)', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-5',
+        poster_url: 'https://r2.example.com/bucket/image.jpg',
+        backdrop_url: null,
+        title: 'Deep R2',
+        tmdb_id: 500,
+      },
+    ]);
+
+    mockSend
+      .mockResolvedValueOnce({}) // original
+      .mockResolvedValueOnce({}) // sm
+      .mockResolvedValueOnce({}) // md
+      .mockResolvedValueOnce({}); // lg
+
+    const res = await POST(makeRequest({ entity: 'movies', deep: true }));
+    const data = await res.json();
+    expect(data.results[0].originalExists).toBe(true);
+  });
+
+  it('skips external URLs during deep scan', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-6',
+        poster_url: 'https://image.tmdb.org/t/p/w500/test.jpg',
+        backdrop_url: null,
+        title: 'TMDB Movie',
+        tmdb_id: 600,
+      },
+    ]);
+
+    const res = await POST(makeRequest({ entity: 'movies', deep: true }));
+    const data = await res.json();
+    // External URLs should not trigger HeadObject calls
+    expect(data.results[0].originalExists).toBeNull();
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it('handles null url fields by skipping them', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-7',
+        poster_url: 'test.jpg',
+        backdrop_url: null,
+        title: 'Partial',
+        tmdb_id: 700,
+      },
+    ]);
+
+    const res = await POST(makeRequest({ entity: 'movies' }));
+    const data = await res.json();
+    // poster_url has a value but backdrop_url is null — only poster scanned
+    expect(data.results.length).toBe(1);
+    expect(data.results[0].field).toBe('poster_url');
+  });
+
+  it('uses entity label or fallback to id when label field is null', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-8',
+        poster_url: 'test.jpg',
+        backdrop_url: null,
+        title: null,
+        tmdb_id: null,
+      },
+    ]);
+
+    const res = await POST(makeRequest({ entity: 'movies' }));
+    const data = await res.json();
+    // When title is null, entityLabel falls back to id
+    expect(data.results[0].entityLabel).toBe('mov-8');
+  });
+
+  it('handles deep scan with URL without extension', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-9',
+        poster_url: 'no-extension-file',
+        backdrop_url: null,
+        title: 'No ext',
+        tmdb_id: null,
+      },
+    ]);
+
+    mockSend
+      .mockResolvedValueOnce({}) // original
+      .mockResolvedValueOnce({}) // sm
+      .mockResolvedValueOnce({}) // md
+      .mockResolvedValueOnce({}); // lg
+
+    const res = await POST(makeRequest({ entity: 'movies', deep: true }));
+    const data = await res.json();
+    expect(data.results[0].originalExists).toBe(true);
+  });
+
+  it('scans actors entity correctly', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          not: () => ({
+            order: () =>
+              Promise.resolve({
+                data: [
+                  { id: 'a1', photo_url: 'actor.jpg', name: 'Test Actor', tmdb_person_id: 123 },
+                ],
+                error: null,
+                count: 1,
+              }),
+          }),
+        }),
+      };
+    });
+
+    const res = await POST(makeRequest({ entity: 'actors' }));
+    const data = await res.json();
+    expect(data.results[0].entity).toBe('actors');
+    expect(data.results[0].field).toBe('photo_url');
+    expect(data.results[0].tmdbId).toBe(123);
+  });
 });

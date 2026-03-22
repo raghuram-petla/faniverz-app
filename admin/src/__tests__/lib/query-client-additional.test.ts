@@ -3,7 +3,7 @@
  * Covers: default options verification, server-side branch (window=undefined),
  * and singleton behavior.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import { makeQueryClient, getQueryClient } from '@/lib/query-client';
 
@@ -76,18 +76,13 @@ describe('getQueryClient — server-side branch', () => {
 
   it('returns a fresh QueryClient each call when window is undefined', () => {
     // Temporarily remove window to simulate SSR
-    Object.defineProperty(global, 'window', {
-      value: undefined,
-      writable: true,
-      configurable: true,
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (global as any).window;
 
-    // We need to call getQueryClient with window undefined — but since the module
-    // is already imported, we test via a re-invocation of makeQueryClient directly.
-    // The SSR branch calls makeQueryClient() directly and returns without caching.
-    // Verify the branch produces distinct instances:
-    const a = makeQueryClient();
-    const b = makeQueryClient();
+    const a = getQueryClient();
+    const b = getQueryClient();
+    // SSR branch returns a new instance each time
     expect(a).not.toBe(b);
+    expect(a).toBeInstanceOf(QueryClient);
   });
 });

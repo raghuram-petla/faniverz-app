@@ -171,6 +171,50 @@ describe('ActorFormFields', () => {
     });
   });
 
+  describe('date of birth field', () => {
+    it('renders date input with current value', () => {
+      renderFields({ birth_date: '1985-08-20' });
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      expect(dateInput.value).toBe('1985-08-20');
+    });
+
+    it('calls onFieldChange when birth_date changes', () => {
+      const onFieldChange = vi.fn();
+      renderFields({}, onFieldChange);
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      fireEvent.change(dateInput, { target: { value: '1990-01-15' } });
+      expect(onFieldChange).toHaveBeenCalledWith('birth_date', '1990-01-15');
+    });
+  });
+
+  describe('tmdb_person_id field', () => {
+    it('renders TMDB Person ID input', () => {
+      renderFields({ tmdb_person_id: '12345' });
+      const tmdbLabel = screen.getByText('TMDB Person ID');
+      const input = tmdbLabel.closest('div')!.querySelector('input')!;
+      expect(input.value).toBe('12345');
+    });
+
+    it('calls onFieldChange when tmdb_person_id changes', () => {
+      const onFieldChange = vi.fn();
+      renderFields({}, onFieldChange);
+      const tmdbLabel = screen.getByText('TMDB Person ID');
+      const input = tmdbLabel.closest('div')!.querySelector('input')!;
+      fireEvent.change(input, { target: { value: '67890' } });
+      expect(onFieldChange).toHaveBeenCalledWith('tmdb_person_id', '67890');
+    });
+  });
+
+  describe('photo upload — Change button', () => {
+    it('triggers file input click on Change button click', () => {
+      renderFields({ photo_url: 'https://cdn.example.com/actor.jpg' });
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const clickSpy = vi.spyOn(fileInput, 'click');
+      fireEvent.click(screen.getByText('Change'));
+      expect(clickSpy).toHaveBeenCalled();
+    });
+  });
+
   describe('text fields', () => {
     it('calls onFieldChange for height_cm', () => {
       const onFieldChange = vi.fn();

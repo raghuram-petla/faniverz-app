@@ -114,4 +114,57 @@ describe('CountryDropdown', () => {
     fireEvent.keyDown(searchInput, { key: 'Enter' });
     expect(onChange).toHaveBeenCalledWith('US');
   });
+
+  it('navigates up with ArrowUp key', () => {
+    render(<CountryDropdown countries={mockCountries} value="IN" onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button'));
+    const searchInput = screen.getByPlaceholderText('Search country...');
+    // Go down twice, then up once
+    fireEvent.keyDown(searchInput, { key: 'ArrowDown' });
+    fireEvent.keyDown(searchInput, { key: 'ArrowDown' });
+    fireEvent.keyDown(searchInput, { key: 'ArrowUp' });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+    // Should select the second item (US) since we went down 2 and up 1
+    expect(onChange).toHaveBeenCalledWith('US');
+  });
+
+  it('closes dropdown on outside click', () => {
+    render(
+      <div>
+        <span data-testid="outside">Outside</span>
+        <CountryDropdown countries={mockCountries} value="IN" onChange={onChange} />
+      </div>,
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByPlaceholderText('Search country...')).toBeInTheDocument();
+    // Click outside the dropdown
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(screen.queryByPlaceholderText('Search country...')).not.toBeInTheDocument();
+  });
+
+  it('highlights option on mouse enter', () => {
+    render(<CountryDropdown countries={mockCountries} value="IN" onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button'));
+    // Find the US option button
+    const allButtons = screen.getAllByRole('button');
+    const usOption = allButtons.find((b) => b.textContent?.includes('United States'));
+    expect(usOption).toBeTruthy();
+    fireEvent.mouseEnter(usOption!);
+    // After hover, pressing Enter should select the hovered item
+    const searchInput = screen.getByPlaceholderText('Search country...');
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith('US');
+  });
+
+  it('uses renderIcon when provided', () => {
+    render(
+      <CountryDropdown
+        countries={mockCountries}
+        value="IN"
+        onChange={onChange}
+        renderIcon={(c) => <span data-testid={`icon-${c.code}`}>*</span>}
+      />,
+    );
+    expect(screen.getByTestId('icon-IN')).toBeInTheDocument();
+  });
 });

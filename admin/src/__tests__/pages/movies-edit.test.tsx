@@ -2,7 +2,7 @@
  * Tests for EditMoviePage — movie edit page with tabbed sections.
  */
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EditMoviePage from '@/app/(dashboard)/movies/[id]/page';
 
@@ -142,7 +142,10 @@ vi.mock('@/hooks/useMovieEditChanges', () => ({
 }));
 
 vi.mock('@/components/common/FormChangesDock', () => ({
-  FormChangesDock: () => <div data-testid="changes-dock" />,
+  FormChangesDock: (props: any) => {
+    capturedProps.FormChangesDock = props;
+    return <div data-testid="changes-dock" />;
+  },
 }));
 
 vi.mock('@/components/common/Button', () => ({
@@ -151,15 +154,42 @@ vi.mock('@/components/common/Button', () => ({
   ),
 }));
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const capturedProps: Record<string, any> = {};
+
 vi.mock('@/components/movie-edit', () => ({
-  BasicInfoSection: () => <div data-testid="basic-info-section" />,
-  TmdbMetadataSection: () => <div data-testid="tmdb-metadata-section" />,
-  VideosSection: () => <div data-testid="videos-section" />,
-  PostersSection: () => <div data-testid="posters-section" />,
-  PlatformsSection: () => <div data-testid="platforms-section" />,
-  ProductionHousesSection: () => <div data-testid="production-houses-section" />,
-  CastSection: () => <div data-testid="cast-section" />,
-  TheatricalRunsSection: () => <div data-testid="theatrical-runs-section" />,
+  BasicInfoSection: (props: any) => {
+    capturedProps.BasicInfoSection = props;
+    return <div data-testid="basic-info-section" />;
+  },
+  TmdbMetadataSection: (props: any) => {
+    capturedProps.TmdbMetadataSection = props;
+    return <div data-testid="tmdb-metadata-section" />;
+  },
+  VideosSection: (props: any) => {
+    capturedProps.VideosSection = props;
+    return <div data-testid="videos-section" />;
+  },
+  PostersSection: (props: any) => {
+    capturedProps.PostersSection = props;
+    return <div data-testid="posters-section" />;
+  },
+  PlatformsSection: (props: any) => {
+    capturedProps.PlatformsSection = props;
+    return <div data-testid="platforms-section" />;
+  },
+  ProductionHousesSection: (props: any) => {
+    capturedProps.ProductionHousesSection = props;
+    return <div data-testid="production-houses-section" />;
+  },
+  CastSection: (props: any) => {
+    capturedProps.CastSection = props;
+    return <div data-testid="cast-section" />;
+  },
+  TheatricalRunsSection: (props: any) => {
+    capturedProps.TheatricalRunsSection = props;
+    return <div data-testid="theatrical-runs-section" />;
+  },
   SectionNav: ({
     activeSection,
     onSectionChange,
@@ -190,7 +220,10 @@ vi.mock('@/components/movie-edit', () => ({
       {children}
     </div>
   ),
-  PreviewPanel: () => <div data-testid="preview-panel" />,
+  PreviewPanel: (props: any) => {
+    capturedProps.PreviewPanel = props;
+    return <div data-testid="preview-panel" />;
+  },
 }));
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -354,5 +387,312 @@ describe('EditMoviePage', () => {
     renderWithProviders(<EditMoviePage />);
     expect(screen.queryByTestId('tmdb-metadata-section')).not.toBeInTheDocument();
     mockEditState.movie = originalMovie;
+  });
+
+  it('shows opacity overlay when read-only', () => {
+    mockIsReadOnly = true;
+    const { container } = renderWithProviders(<EditMoviePage />);
+    // The content area should have opacity-70 class
+    const overlayDiv = container.querySelector('.opacity-70');
+    expect(overlayDiv).toBeInTheDocument();
+  });
+
+  it('does not show Add buttons when read-only', () => {
+    mockIsReadOnly = true;
+    renderWithProviders(<EditMoviePage />);
+    fireEvent.click(screen.getByText('Videos'));
+    expect(screen.queryByText('Add')).not.toBeInTheDocument();
+  });
+
+  it('renders movie title subtitle in header', () => {
+    renderWithProviders(<EditMoviePage />);
+    expect(screen.getByText(/— Test Movie/)).toBeInTheDocument();
+  });
+
+  it('switches back to basic-info from another section', () => {
+    renderWithProviders(<EditMoviePage />);
+    fireEvent.click(screen.getByText('Videos'));
+    expect(screen.getByTestId('videos-section')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Basic Info'));
+    expect(screen.getByTestId('basic-info-section')).toBeInTheDocument();
+  });
+
+  it('shows Add buttons for Production Houses in cast-crew section', () => {
+    renderWithProviders(<EditMoviePage />);
+    fireEvent.click(screen.getByText('Cast & Crew'));
+    const addBtns = screen.getAllByText('Add');
+    expect(addBtns.length).toBe(2); // PH + Cast
+  });
+
+  it('hides PH Add button after clicking it (form opens)', () => {
+    renderWithProviders(<EditMoviePage />);
+    fireEvent.click(screen.getByText('Cast & Crew'));
+    const addBtns = screen.getAllByText('Add');
+    // Click the first "Add" (Production Houses)
+    fireEvent.click(addBtns[0]);
+    // Now only one "Add" should remain (Cast)
+    const remainingAdds = screen.getAllByText('Add');
+    expect(remainingAdds.length).toBe(1);
+  });
+
+  it('hides cast Add button after clicking it', () => {
+    renderWithProviders(<EditMoviePage />);
+    fireEvent.click(screen.getByText('Cast & Crew'));
+    const addBtns = screen.getAllByText('Add');
+    // Click the second "Add" (Cast)
+    fireEvent.click(addBtns[1]);
+    // Now only one "Add" should remain (PH)
+    const remainingAdds = screen.getAllByText('Add');
+    expect(remainingAdds.length).toBe(1);
+  });
+
+  it('shows OTT Platforms section in releases tab', () => {
+    renderWithProviders(<EditMoviePage />);
+    fireEvent.click(screen.getByText('Releases'));
+    expect(screen.getByTestId('platforms-section')).toBeInTheDocument();
+  });
+
+  describe('callback invocations via captured props', () => {
+    it('PostersSection onAdd calls setPendingPosterAdds', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Posters'));
+      const poster = { id: 'p1', url: 'http://example.com/poster.jpg' };
+      capturedProps.PostersSection.onAdd(poster);
+      expect(mockEditState.setPendingPosterAdds).toHaveBeenCalled();
+    });
+
+    it('PostersSection onRemove calls handlePosterRemove', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Posters'));
+      capturedProps.PostersSection.onRemove('poster-1');
+      expect(mockEditState.handlePosterRemove).toHaveBeenCalledWith('poster-1');
+    });
+
+    it('PostersSection onPendingMainChange updates PreviewPanel poster_url', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Posters'));
+      act(() => capturedProps.PostersSection.onPendingMainChange('http://new-poster.jpg'));
+      expect(capturedProps.PreviewPanel.form.poster_url).toBe('http://new-poster.jpg');
+    });
+
+    it('VideosSection onAdd calls setPendingVideoAdds', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      const video = { id: 'v1', url: 'http://video.mp4' };
+      capturedProps.VideosSection.onAdd(video);
+      expect(mockEditState.setPendingVideoAdds).toHaveBeenCalled();
+    });
+
+    it('VideosSection onRemove calls handleVideoRemove', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      capturedProps.VideosSection.onRemove('vid-1');
+      expect(mockEditState.handleVideoRemove).toHaveBeenCalledWith('vid-1');
+    });
+
+    it('VideosSection onClearTrailerUrl calls updateField', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      capturedProps.VideosSection.onClearTrailerUrl();
+      expect(mockEditState.updateField).toHaveBeenCalledWith('trailer_url', '');
+    });
+
+    it('VideosSection onCloseAddForm resets addFormOpen', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      fireEvent.click(screen.getByText('Add'));
+      expect(screen.queryByText('Add')).not.toBeInTheDocument();
+      act(() => capturedProps.VideosSection.onCloseAddForm());
+      expect(screen.getByText('Add')).toBeInTheDocument();
+    });
+
+    it('ProductionHousesSection onAdd calls setPendingPHAdds', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      const ph = { production_house_id: 'ph-1' };
+      capturedProps.ProductionHousesSection.onAdd(ph);
+      expect(mockEditState.setPendingPHAdds).toHaveBeenCalled();
+    });
+
+    it('ProductionHousesSection onRemove calls handlePHRemove', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      capturedProps.ProductionHousesSection.onRemove('ph-1');
+      expect(mockEditState.handlePHRemove).toHaveBeenCalledWith('ph-1');
+    });
+
+    it('ProductionHousesSection onQuickAdd creates and adds PH', async () => {
+      const mockCreated = { id: 'ph-new', name: 'New PH' };
+      mockEditState.createProductionHouse.mutateAsync.mockResolvedValue(mockCreated);
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      await capturedProps.ProductionHousesSection.onQuickAdd('New PH');
+      expect(mockEditState.createProductionHouse.mutateAsync).toHaveBeenCalledWith({
+        name: 'New PH',
+        logo_url: null,
+      });
+      expect(mockEditState.setPendingPHAdds).toHaveBeenCalled();
+      expect(mockEditState.setPHSearchQuery).toHaveBeenCalledWith('');
+    });
+
+    it('ProductionHousesSection onCloseAddForm resets addFormOpen', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      const addBtns = screen.getAllByText('Add');
+      fireEvent.click(addBtns[0]); // Open PH form
+      act(() => capturedProps.ProductionHousesSection.onCloseAddForm());
+      // PH Add button should reappear
+      expect(screen.getAllByText('Add').length).toBe(2);
+    });
+
+    it('CastSection onAdd calls setPendingCastAdds', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      const cast = { actor_id: 'a1', role_name: 'Hero' };
+      capturedProps.CastSection.onAdd(cast);
+      expect(mockEditState.setPendingCastAdds).toHaveBeenCalled();
+    });
+
+    it('CastSection onRemove calls handleCastRemove', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      capturedProps.CastSection.onRemove('cast-1');
+      expect(mockEditState.handleCastRemove).toHaveBeenCalledWith('cast-1');
+    });
+
+    it('CastSection onReorder calls setLocalCastOrder', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      const newOrder = [{ id: '1' }, { id: '2' }];
+      capturedProps.CastSection.onReorder(newOrder);
+      expect(mockEditState.setLocalCastOrder).toHaveBeenCalledWith(newOrder);
+    });
+
+    it('TheatricalRunsSection onAdd calls setPendingRunAdds', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Releases'));
+      const run = { id: 'r1', region: 'US' };
+      capturedProps.TheatricalRunsSection.onAdd(run);
+      expect(mockEditState.setPendingRunAdds).toHaveBeenCalled();
+    });
+
+    it('TheatricalRunsSection onRemove calls handleRunRemove', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Releases'));
+      capturedProps.TheatricalRunsSection.onRemove('run-1');
+      expect(mockEditState.handleRunRemove).toHaveBeenCalledWith('run-1');
+    });
+
+    it('CastSection onCloseAddForm resets addFormOpen', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      const addBtns = screen.getAllByText('Add');
+      fireEvent.click(addBtns[1]); // Open Cast form
+      act(() => capturedProps.CastSection.onCloseAddForm());
+      expect(screen.getAllByText('Add').length).toBe(2);
+    });
+
+    it('TheatricalRunsSection onCloseAddForm resets addFormOpen', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Releases'));
+      fireEvent.click(screen.getByText('Add'));
+      act(() => capturedProps.TheatricalRunsSection.onCloseAddForm());
+      expect(screen.getByText('Add')).toBeInTheDocument();
+    });
+  });
+
+  describe('getBucketForUrl', () => {
+    it('resolves BACKDROPS bucket for backdrop image_type', () => {
+      mockEditState.visiblePosters = [{ image_url: 'backdrop.jpg', image_type: 'backdrop' }] as any;
+      renderWithProviders(<EditMoviePage />);
+      expect(capturedProps.PreviewPanel.backdropBucket).toBe('BACKDROPS');
+      mockEditState.visiblePosters = [];
+    });
+
+    it('resolves POSTERS bucket for poster image_type', () => {
+      mockEditState.visiblePosters = [{ image_url: 'poster.jpg', image_type: 'poster' }] as any;
+      renderWithProviders(<EditMoviePage />);
+      expect(capturedProps.PreviewPanel.posterBucket).toBe('POSTERS');
+      mockEditState.visiblePosters = [];
+    });
+
+    it('uses fallback bucket when image not found in list', () => {
+      mockEditState.visiblePosters = [] as any;
+      renderWithProviders(<EditMoviePage />);
+      expect(capturedProps.PreviewPanel.posterBucket).toBe('POSTERS');
+      expect(capturedProps.PreviewPanel.backdropBucket).toBe('BACKDROPS');
+    });
+  });
+
+  describe('functional updaters from inline callbacks', () => {
+    it('PostersSection onAdd functional updater appends poster', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Posters'));
+      const poster = { id: 'p1', url: 'http://example.com/poster.jpg' };
+      capturedProps.PostersSection.onAdd(poster);
+      const updater = mockEditState.setPendingPosterAdds.mock.calls[0][0];
+      const result = updater([{ id: 'existing' }]);
+      expect(result).toEqual([{ id: 'existing' }, poster]);
+    });
+
+    it('VideosSection onAdd functional updater appends video', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      const video = { id: 'v1', url: 'http://video.mp4' };
+      capturedProps.VideosSection.onAdd(video);
+      const updater = mockEditState.setPendingVideoAdds.mock.calls[0][0];
+      const result = updater([]);
+      expect(result).toEqual([video]);
+    });
+
+    it('ProductionHousesSection onAdd functional updater appends PH', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      const ph = { production_house_id: 'ph-1' };
+      capturedProps.ProductionHousesSection.onAdd(ph);
+      const updater = mockEditState.setPendingPHAdds.mock.calls[0][0];
+      const result = updater([]);
+      expect(result).toEqual([ph]);
+    });
+
+    it('CastSection onAdd functional updater appends cast', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      const cast = { actor_id: 'a1', role_name: 'Hero' };
+      capturedProps.CastSection.onAdd(cast);
+      const updater = mockEditState.setPendingCastAdds.mock.calls[0][0];
+      const result = updater([]);
+      expect(result).toEqual([cast]);
+    });
+
+    it('TheatricalRunsSection onAdd functional updater appends run', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Releases'));
+      const run = { id: 'r1', region: 'US' };
+      capturedProps.TheatricalRunsSection.onAdd(run);
+      const updater = mockEditState.setPendingRunAdds.mock.calls[0][0];
+      const result = updater([]);
+      expect(result).toEqual([run]);
+    });
+
+    it('onQuickAdd functional updater for PH adds created house', async () => {
+      const mockCreated = { id: 'ph-new', name: 'New PH' };
+      mockEditState.createProductionHouse.mutateAsync.mockResolvedValue(mockCreated);
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      await capturedProps.ProductionHousesSection.onQuickAdd('New PH');
+      const updater =
+        mockEditState.setPendingPHAdds.mock.calls[
+          mockEditState.setPendingPHAdds.mock.calls.length - 1
+        ][0];
+      const result = updater([]);
+      expect(result).toEqual([{ production_house_id: 'ph-new', _ph: mockCreated }]);
+    });
+  });
+
+  it('FormChangesDock onSave calls handleSubmit', () => {
+    renderWithProviders(<EditMoviePage />);
+    capturedProps.FormChangesDock.onSave();
+    expect(mockEditState.handleSubmit).toHaveBeenCalled();
   });
 });

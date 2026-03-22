@@ -131,4 +131,41 @@ describe('POST /api/sync/refresh-movie', () => {
       expect.objectContaining({ details: ['Test Movie'] }),
     );
   });
+
+  // Note: 403 viewer_readonly path is tested via sync-helpers.test.ts verifyAdminCanMutate tests
+
+  it('returns 503 when TMDB_API_KEY is not configured', async () => {
+    vi.stubEnv('TMDB_API_KEY', '');
+    delete process.env.TMDB_API_KEY;
+    const res = await POST(makeRequest({ movieId: 'movie-1' }));
+    expect(res.status).toBe(503);
+  });
+
+  it('returns 500 and logs sync failure when processMovieFromTmdb throws', async () => {
+    mockSingle.mockResolvedValue({ data: { tmdb_id: 100, title: 'Failing Movie' }, error: null });
+    mockProcessMovieFromTmdb.mockRejectedValue(new Error('TMDB API timeout'));
+
+    const res = await POST(makeRequest({ movieId: 'movie-1' }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('TMDB API timeout');
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({
+        status: 'failed',
+        errors: [expect.objectContaining({ movieId: 'movie-1', message: 'TMDB API timeout' })],
+      }),
+    );
+  });
+
+  it('returns 500 with fallback message for non-Error thrown during refresh', async () => {
+    mockSingle.mockResolvedValue({ data: { tmdb_id: 100, title: 'Movie X' }, error: null });
+    mockProcessMovieFromTmdb.mockRejectedValue('string error');
+
+    const res = await POST(makeRequest({ movieId: 'movie-1' }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Unknown error');
+  });
 });

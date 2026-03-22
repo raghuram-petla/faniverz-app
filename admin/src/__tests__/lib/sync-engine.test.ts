@@ -603,4 +603,255 @@ describe('processMovieFromTmdb — resumable option', () => {
 
     expect(result.isNew).toBe(false);
   });
+
+  it('handles image sync returning actual counts in resumable mode', async () => {
+    vi.mocked(syncAllImages).mockResolvedValueOnce({ posterCount: 5, backdropCount: 3 });
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+      { resumable: true },
+    );
+
+    expect(result.posterCount).toBe(5);
+    expect(result.backdropCount).toBe(3);
+  });
+});
+
+describe('processMovieFromTmdb — fullReplaceSync additional branches', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+    vi.mocked(getMovieDetails).mockResolvedValue(makeTmdbDetail() as never);
+  });
+
+  it('counts only successful cast inserts (not errors)', async () => {
+    const detail = makeTmdbDetail({
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Actor 1',
+            character: 'Role 1',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+          {
+            id: 2,
+            name: 'Actor 2',
+            character: 'Role 2',
+            order: 1,
+            profile_path: '/b.jpg',
+            gender: 1,
+          },
+        ],
+        crew: [],
+      },
+    });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    // First cast insert succeeds, second fails
+    supabase.insert
+      .mockResolvedValueOnce({ error: null })
+      .mockResolvedValueOnce({ error: { message: 'insert failed' } });
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    // Only 1 of 2 cast inserts succeeded
+    expect(result.castCount).toBe(1);
+  });
+
+  it('counts only successful crew inserts (not errors)', async () => {
+    const { extractKeyCrewMembers } = await import('../../lib/tmdbTypes');
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 10,
+        name: 'Director',
+        job: 'Director',
+        department: 'Directing',
+        roleName: 'Director',
+        roleOrder: 0,
+        profile_path: '/d.jpg',
+        gender: 2,
+      },
+      {
+        id: 20,
+        name: 'Writer',
+        job: 'Writer',
+        department: 'Writing',
+        roleName: 'Writer',
+        roleOrder: 1,
+        profile_path: '/w.jpg',
+        gender: 1,
+      },
+    ]);
+
+    // Cast delete succeeds, first crew insert succeeds, second fails
+    supabase.insert
+      .mockResolvedValueOnce({ error: null })
+      .mockResolvedValueOnce({ error: { message: 'crew insert failed' } });
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result.crewCount).toBe(1);
+  });
+
+  it('handles extended sync failure in fullReplaceSync (catch branch)', async () => {
+    // syncAllImages succeeds but syncVideos throws
+    vi.mocked(syncVideos).mockRejectedValueOnce(new Error('video fail'));
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result.movieId).toBe('movie-uuid-123');
+    consoleWarn.mockRestore();
+  });
+
+  it('includes certification for new movies with India cert', async () => {
+    const { extractIndiaCertification } = await import('../../lib/tmdbTypes');
+    vi.mocked(extractIndiaCertification).mockReturnValueOnce('UA');
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    const upsertCall = (supabase.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
+    expect(upsertCall.certification).toBe('UA');
+  });
+
+  it('includes Telugu translation when available', async () => {
+    const { extractTeluguTranslation } = await import('../../lib/tmdbTypes');
+    vi.mocked(extractTeluguTranslation).mockReturnValueOnce({
+      titleTe: 'Telugu Title',
+      synopsisTe: 'Telugu Synopsis',
+    });
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ title_te: 'Telugu Title', synopsis_te: 'Telugu Synopsis' }),
+      expect.anything(),
+    );
+  });
+
+  it('does not include certification for existing movies', async () => {
+    const { extractIndiaCertification } = await import('../../lib/tmdbTypes');
+    vi.mocked(extractIndiaCertification).mockReturnValueOnce('UA');
+    supabase.maybeSingle.mockResolvedValueOnce({ data: { id: 'existing' }, error: null });
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    const upsertCall = (supabase.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
+    expect(upsertCall).not.toHaveProperty('certification');
+  });
+
+  it('handles production_companies being undefined', async () => {
+    const detail = makeTmdbDetail({ production_companies: undefined });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(syncProductionCompanies).toHaveBeenCalledWith('movie-uuid-123', [], expect.anything());
+    expect(result.movieId).toBe('movie-uuid-123');
+  });
+
+  it('handles null spoken_languages and popularity', async () => {
+    const detail = makeTmdbDetail({
+      spoken_languages: null,
+      popularity: null,
+      belongs_to_collection: { id: 42, name: 'Cool Collection' },
+    });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spoken_languages: null,
+        tmdb_popularity: null,
+        collection_id: 42,
+        collection_name: 'Cool Collection',
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('handles undefined spoken_languages via optional chaining', async () => {
+    const detail = makeTmdbDetail({
+      spoken_languages: undefined,
+      vote_average: undefined,
+      vote_count: undefined,
+    });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spoken_languages: null,
+        tmdb_vote_average: null,
+        tmdb_vote_count: null,
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('handles extended sync failure gracefully', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.mocked(syncVideos).mockRejectedValueOnce(new Error('video sync failed'));
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Extended sync partial failure'),
+      expect.anything(),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('handles zero budget/revenue/tagline/status (falsy values)', async () => {
+    const detail = makeTmdbDetail({
+      budget: 0,
+      revenue: 0,
+      tagline: '',
+      status: '',
+    });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        budget: null,
+        revenue: null,
+        tagline: null,
+        tmdb_status: null,
+      }),
+      expect.anything(),
+    );
+  });
 });

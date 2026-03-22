@@ -385,6 +385,161 @@ describe('useAdminMovies', () => {
   });
 });
 
+describe('useAdminMovies - pagination', () => {
+  it('returns next page param when page is full (50 items)', async () => {
+    const fullPage = Array.from({ length: 50 }, (_, i) => ({ id: `m-${i}`, title: `Movie ${i}` }));
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: fullPage, error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(true);
+  });
+
+  it('returns no next page param when page has fewer than 50 items', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: [{ id: '1' }], error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(false);
+  });
+});
+
+describe('useAdminMovies - search enabled logic', () => {
+  it('is disabled when search is 1 character', () => {
+    const { result } = renderHook(() => useAdminMovies('a'), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('is enabled when search is empty string', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies(''), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('is enabled when search is 2+ characters', async () => {
+    const mockIlike = vi.fn().mockResolvedValue({ data: [], error: null });
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockReturnValue({ ilike: mockIlike }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies('ab'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useAdminMovies - language filter', () => {
+  it('applies language filter via eq when selectedLanguageCode is provided', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', '', undefined, undefined, 'te'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockEq).toHaveBeenCalledWith('original_language', 'te');
+  });
+});
+
+describe('useAdminMovies - PH scoping', () => {
+  it('returns empty when PH junction returns no movie IDs', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_production_houses') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            range: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', '', ['ph-1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.pages.flat()).toEqual([]);
+  });
+
+  it('throws when PH junction query errors', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_production_houses') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: null, error: new Error('Junction error') }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            range: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', '', ['ph-1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
 describe('useCreateMovie', () => {
   it('calls /api/admin-crud with POST method and movie data', async () => {
     const fetchSpy = mockCrudApi({ id: 'new-1', title: 'New Movie' });
@@ -411,6 +566,224 @@ describe('useCreateMovie', () => {
     );
 
     fetchSpy.mockRestore();
+  });
+});
+
+// ── useAllMovies ─────────────────────────────────────────────────────────────
+
+import { useAllMovies, useAdminMovie, useUpdateMovie } from '@/hooks/useAdminMovies';
+
+describe('useAllMovies', () => {
+  it('fetches all movies without PH scoping', async () => {
+    const movies = [{ id: '1', title: 'Movie A' }];
+    const mockLimit = vi.fn().mockResolvedValue({ data: movies, error: null });
+    const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
+    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    const { result } = renderHook(() => useAllMovies(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFrom).toHaveBeenCalledWith('movies');
+    expect(mockLimit).toHaveBeenCalledWith(5000);
+    expect(result.current.data).toEqual(movies);
+  });
+
+  it('fetches PH-scoped movies via junction table', async () => {
+    const phJunctions = [{ movie_id: 'm1' }, { movie_id: 'm2' }];
+    const phMovies = [{ id: 'm1', title: 'PH Movie' }];
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_production_houses') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: phJunctions, error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: phMovies, error: null }),
+          }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAllMovies(['ph-1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFrom).toHaveBeenCalledWith('movie_production_houses');
+    expect(result.current.data).toEqual(phMovies);
+  });
+
+  it('returns empty array when PH has no movies', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_production_houses') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAllMovies(['ph-1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
+  });
+
+  it('throws when movies query errors', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAllMovies(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('throws when PH junction query errors', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_production_houses') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: null, error: new Error('junction error') }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAllMovies(['ph-1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── useAdminMovie / useUpdateMovie ───────────────────────────────────────────
+
+describe('useAdminMovie', () => {
+  it('is defined (exported from createCrudHooks)', () => {
+    expect(useAdminMovie).toBeDefined();
+  });
+});
+
+describe('useUpdateMovie', () => {
+  it('calls /api/admin-crud with PATCH method', async () => {
+    const fetchSpy = mockCrudApi({ id: '1', title: 'Updated' });
+
+    const { result } = renderHook(() => useUpdateMovie(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: '1', title: 'Updated' } as never);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+      }),
+    );
+
+    fetchSpy.mockRestore();
+  });
+});
+
+// ── useAdminMovies — additional branch coverage ──────────────────────────────
+
+describe('useAdminMovies — platform filter', () => {
+  it('resolves platform filter IDs via movie_platforms query', async () => {
+    const platformFilterIds = [{ movie_id: 'm1' }];
+    const movies = [{ id: 'm1', title: 'Filtered Movie' }];
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_platforms') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: platformFilterIds, error: null }),
+          }),
+        };
+      }
+      const mockIn = vi.fn().mockResolvedValue({ data: movies, error: null });
+      const mockRange = vi.fn().mockReturnValue({ in: mockIn });
+      return {
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({ range: mockRange }),
+        }),
+      };
+    });
+
+    const filters = {
+      genres: [],
+      releaseYear: '',
+      releaseMonth: '',
+      certification: '',
+      language: '',
+      platformId: 'plat-1',
+      isFeatured: false,
+      minRating: '',
+      actorSearch: '',
+      directorSearch: '',
+    };
+
+    const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFrom).toHaveBeenCalledWith('movie_platforms');
+  });
+});
+
+describe('useAdminMovies — query error', () => {
+  it('propagates error from movies query', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: null, error: new Error('DB down') }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });
 

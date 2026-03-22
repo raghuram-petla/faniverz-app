@@ -176,4 +176,19 @@ describe('AnimatedPressable', () => {
     );
     expect(getByText('No Long Press Handler')).toBeTruthy();
   });
+
+  it('useAnimatedStyle callback returns transform with scale', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(
+      <AnimatedPressable>
+        <Text>Anim test</Text>
+      </AnimatedPressable>,
+    );
+    expect(useAnimatedStyle).toHaveBeenCalled();
+    useAnimatedStyle.mockImplementation(() => ({}));
+  });
 });

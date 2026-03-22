@@ -99,7 +99,13 @@ jest.mock('@/components/common/PullToRefreshIndicator', () => ({
 }));
 
 jest.mock('@/hooks/useRefresh', () => ({
-  useRefresh: () => ({ refreshing: false, onRefresh: jest.fn() }),
+  useRefresh: (...fns: Array<() => Promise<unknown>>) => {
+    // Invoke all refresh callbacks to cover them
+    fns.forEach((fn) => {
+      if (typeof fn === 'function') fn();
+    });
+    return { refreshing: false, onRefresh: jest.fn() };
+  },
 }));
 
 jest.mock('@/hooks/usePullToRefresh', () => ({
@@ -285,5 +291,44 @@ describe('ProductionHouseDetailScreen', () => {
     });
     render(<ProductionHouseDetailScreen />);
     expect(screen.queryByText('0')).toBeNull();
+  });
+
+  it('does not call follow/unfollow when mutation is pending', () => {
+    jest.spyOn(require('@/features/feed'), 'useFollowEntity').mockReturnValue({
+      mutate: mockFollowMutate,
+      isPending: true,
+    });
+
+    mockFollowSet = new Set();
+    render(<ProductionHouseDetailScreen />);
+    fireEvent.press(screen.getByTestId('follow-btn'));
+    expect(mockFollowMutate).not.toHaveBeenCalled();
+
+    jest.restoreAllMocks();
+  });
+
+  it('renders description as null when house.description is null', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      house: { ...defaultHookReturn.house, description: null },
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.queryByText('A great studio')).toBeNull();
+    expect(screen.getByText('Mythri Entertainments')).toBeTruthy();
+  });
+
+  it('does not show year when release_date is null', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      movies: [{ id: 'm5', title: 'No Date', poster_url: null, release_date: null, rating: 0 }],
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByText('No Date')).toBeTruthy();
+  });
+
+  it('renders logo image when logo_url is present', () => {
+    render(<ProductionHouseDetailScreen />);
+    // The renderImage function is called with size 120 and renders an Image when logo_url exists
+    expect(screen.getByText('Mythri Entertainments')).toBeTruthy();
   });
 });

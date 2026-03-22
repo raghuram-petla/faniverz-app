@@ -201,6 +201,35 @@ describe('POST /api/image-check', () => {
     expect(data.results).toEqual([{ url: 'https://cdn.faniverz.com/fail.jpg', status: 'error' }]);
   });
 
+  it('returns false for invalid URLs (isAllowedUrl catch branch)', async () => {
+    // URL that's completely invalid should trigger the catch in isAllowedUrl
+    const res = await POST(makeRequest({ urls: ['not-a-valid-url'] }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain('allowed CDN domains');
+  });
+
+  it('returns 500 when verifyAdmin throws an exception', async () => {
+    // Make the admin verification throw an error
+    mockGetUser.mockRejectedValueOnce(new Error('Auth service down'));
+    const res = await POST(makeRequest({ urls: ['https://cdn.faniverz.com/a.jpg'] }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Auth verification failed');
+  });
+
+  it('returns 400 when request.json() fails', async () => {
+    // Create a request whose json() throws
+    const badRequest = {
+      json: () => Promise.reject(new Error('invalid json')),
+      headers: { get: () => 'Bearer valid-token' },
+    };
+    const res = await POST(badRequest as unknown as NextRequest);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('Invalid request body');
+  });
+
   it('handles multiple URLs in parallel', async () => {
     mockFetch
       .mockResolvedValueOnce({ ok: true })

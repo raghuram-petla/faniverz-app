@@ -131,6 +131,60 @@ describe('useAdminAuditLog', () => {
     );
   });
 
+  it('applies adminUserId filter via eq', async () => {
+    const { self, chain } = buildChain();
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminAuditLog({ adminUserId: 'user-123' }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(chain.eq).toHaveBeenCalledWith('admin_user_id', 'user-123');
+  });
+
+  it('skips search filter when sanitized term is empty', async () => {
+    const { self, chain } = buildChain();
+    // Pre-create the or spy so we can assert it wasn't called
+    chain.or = vi.fn().mockReturnValue(self);
+    mockFrom.mockReturnValue(self);
+
+    // All characters are stripped by sanitizeSearchTerm
+    const { result } = renderHook(() => useAdminAuditLog({ search: ',()"\'\\' }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // or() should NOT have been called since sanitized term is empty
+    expect(chain.or).not.toHaveBeenCalled();
+  });
+
+  it('applies all filters simultaneously', async () => {
+    const { self, chain } = buildChain();
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(
+      () =>
+        useAdminAuditLog({
+          action: 'create',
+          entityType: 'actor',
+          dateFrom: '2026-01-01',
+          dateTo: '2026-12-31',
+          search: 'test',
+          adminUserId: 'admin-1',
+        }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(chain.eq).toHaveBeenCalledWith('admin_user_id', 'admin-1');
+    expect(chain.eq).toHaveBeenCalledWith('action', 'create');
+    expect(chain.eq).toHaveBeenCalledWith('entity_type', 'actor');
+    expect(chain.gte).toHaveBeenCalledWith('created_at', '2026-01-01T00:00:00');
+    expect(chain.lte).toHaveBeenCalledWith('created_at', '2026-12-31T23:59:59');
+    expect(chain.or).toHaveBeenCalled();
+  });
+
   it('returns no next page when results are fewer than PAGE_SIZE', async () => {
     const entries = Array.from({ length: 10 }, (_, i) => ({ id: String(i) }));
     const { self } = buildChain(entries);

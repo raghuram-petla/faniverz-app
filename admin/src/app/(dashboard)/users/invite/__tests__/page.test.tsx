@@ -217,6 +217,26 @@ describe('InviteAdminPage', () => {
     expect(screen.getByText('Assign Production Houses')).toBeInTheDocument();
   });
 
+  it('does not submit when user.id is missing', async () => {
+    // Already covered by the guard `if (!email.trim() || !user?.id) return;`
+    // but let's ensure no crash with empty email
+    render(<InviteAdminPage />);
+    fireEvent.submit(screen.getByRole('button', { name: /Create Invitation/i }).closest('form')!);
+    expect(mockMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('shows non-Error alert message on submit failure', async () => {
+    mockMutateAsync.mockRejectedValue('string error');
+    render(<InviteAdminPage />);
+    fireEvent.change(screen.getByPlaceholderText('admin@example.com'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.submit(screen.getByRole('button', { name: /Create Invitation/i }).closest('form')!);
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith('Failed to create invitation');
+    });
+  });
+
   describe('invitation success view', () => {
     async function renderSuccessView() {
       mockMutateAsync.mockResolvedValue({ token: 'test-token' });

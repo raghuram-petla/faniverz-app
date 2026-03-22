@@ -81,17 +81,20 @@ vi.mock('@/components/common/CountryDropdown', () => ({
     value,
     onChange,
     countries,
+    formatLabel,
+    renderIcon,
   }: {
     countries: { code: string; name: string }[];
     value: string;
     onChange: (v: string) => void;
-    formatLabel: (c: unknown) => string;
-    renderIcon: (c: unknown) => React.ReactNode;
+    formatLabel?: (c: { code: string; name: string; houseCount?: number }) => string;
+    renderIcon?: (c: { code: string; name: string }) => React.ReactNode;
   }) => (
     <select data-testid="country-dropdown" value={value} onChange={(e) => onChange(e.target.value)}>
       {countries.map((c) => (
         <option key={c.code} value={c.code}>
-          {c.name}
+          {formatLabel ? formatLabel(c as never) : c.name}
+          {renderIcon ? renderIcon(c) : null}
         </option>
       ))}
     </select>
@@ -338,6 +341,47 @@ describe('ProductionHousesPage', () => {
       b.classList.toString().includes('hover:text-status-red'),
     );
     expect(deleteBtn).toBeUndefined();
+  });
+
+  it('shows logo image when house has logo_url', () => {
+    mockUseAdminProductionHouses.mockReturnValue({
+      data: makePageData([makeHouse('ph-1', 'Studio', null)]),
+      isLoading: false,
+      isFetching: false,
+      hasNextPage: false,
+      fetchNextPage: vi.fn(),
+      isFetchingNextPage: false,
+    });
+    // Override to include logo_url
+    const houseWithLogo = { ...makeHouse('ph-1', 'Studio'), logo_url: 'https://cdn/logo.png' };
+    mockUseAdminProductionHouses.mockReturnValue({
+      data: { pages: [[houseWithLogo]] },
+      isLoading: false,
+      isFetching: false,
+      hasNextPage: false,
+      fetchNextPage: vi.fn(),
+      isFetchingNextPage: false,
+    });
+    render(<ProductionHousesPage />);
+    const imgs = document.querySelectorAll('img');
+    expect(imgs.length).toBeGreaterThan(0);
+  });
+
+  it('invokes formatLabel and renderIcon on CountryDropdown', () => {
+    // Need allHouses with some origin_country to generate dropdown options
+    const houses = [makeHouse('ph-1', 'Studio A', 'IN'), makeHouse('ph-2', 'Studio B', null)];
+    mockUseAdminProductionHouses.mockReturnValue({
+      data: makePageData(houses),
+      isLoading: false,
+      isFetching: false,
+      hasNextPage: false,
+      fetchNextPage: vi.fn(),
+      isFetchingNextPage: false,
+    });
+    render(<ProductionHousesPage />);
+    // The formatLabel and renderIcon callbacks are invoked by our updated CountryDropdown mock
+    // Just verify no crash and dropdown renders
+    expect(screen.getByTestId('country-dropdown')).toBeInTheDocument();
   });
 
   it('renders Load More button when hasNextPage is true', () => {

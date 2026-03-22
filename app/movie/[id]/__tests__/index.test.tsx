@@ -579,6 +579,22 @@ describe('MovieDetailScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/movie/movie-1/media');
   });
 
+  it('renders correctly when useMovieReviews returns undefined data (reviews defaults to [])', () => {
+    (useMovieReviews as jest.Mock).mockReturnValue({ data: undefined, refetch: jest.fn() });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    // Should render reviews tab without crashing even though data is undefined
+    expect(screen.getAllByText('(10 reviews)').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('handles movie with zero platforms (platforms.length ?? 0 branch)', () => {
+    const noPlatformsMovie = { ...mockMovie, platforms: [] };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: noPlatformsMovie });
+    render(<MovieDetailScreen />);
+    // Should render without crashing, no Watch On section items
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
   it('shows production houses in overview tab', () => {
     const movieWithPH = {
       ...mockMovie,

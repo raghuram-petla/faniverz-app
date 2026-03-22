@@ -270,6 +270,55 @@ describe('ProfilePage', () => {
     alertSpy.mockRestore();
   });
 
+  it('shows generic alert when upload fails with non-Error', async () => {
+    mockUpload.mockRejectedValueOnce('string error');
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders(<ProfilePage />);
+    fireEvent.click(screen.getByTestId('upload-btn'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith('Upload failed');
+    });
+
+    alertSpy.mockRestore();
+  });
+
+  it('shows generic alert when remove fails with non-Error', async () => {
+    mockMutateAsync.mockRejectedValueOnce('string error');
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders(<ProfilePage />);
+    fireEvent.click(screen.getByTestId('remove-btn'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith('Failed to remove avatar');
+    });
+
+    alertSpy.mockRestore();
+  });
+
+  it('rolls back avatar to empty string when user has no avatar_url', async () => {
+    mockUser = { ...mockUser!, avatar_url: null };
+    mockMutateAsync.mockRejectedValueOnce(new Error('fail'));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders(<ProfilePage />);
+    fireEvent.click(screen.getByTestId('remove-btn'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalled();
+    });
+
+    alertSpy.mockRestore();
+    mockUser = {
+      id: 'user-1',
+      email: 'admin@example.com',
+      avatar_url: 'https://cdn.test/old-avatar.jpg',
+      role: 'super_admin',
+    };
+  });
+
   it('shows alert when remove fails and rolls back avatar', async () => {
     mockMutateAsync.mockRejectedValueOnce(new Error('Remove failed'));
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
@@ -337,6 +386,43 @@ describe('ProfilePage', () => {
     });
 
     alertSpy.mockRestore();
+  });
+
+  it('shows generic alert when reset fails with non-Error', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockRejectedValueOnce('string error');
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders(<ProfilePage />);
+    fireEvent.click(screen.getByTestId('reset-btn'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith('Failed to reset avatar');
+    });
+
+    alertSpy.mockRestore();
+  });
+
+  it('rolls back to empty string on reset failure when user has no avatar_url', async () => {
+    mockUser = { ...mockUser!, avatar_url: null };
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockRejectedValueOnce(new Error('fail'));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders(<ProfilePage />);
+    fireEvent.click(screen.getByTestId('reset-btn'));
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalled();
+    });
+
+    alertSpy.mockRestore();
+    mockUser = {
+      id: 'user-1',
+      email: 'admin@example.com',
+      avatar_url: 'https://cdn.test/old-avatar.jpg',
+      role: 'super_admin',
+    };
   });
 
   it('shows alert when session is missing on reset', async () => {

@@ -277,6 +277,25 @@ describe('useRevokeInvitation', () => {
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith('DB error'));
   });
+
+  it('shows "Operation failed" when error message is empty', async () => {
+    const eqFn = vi.fn().mockResolvedValue({ error: { message: '' } });
+    const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
+    mockFrom.mockReturnValueOnce({ update: updateFn });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useRevokeInvitation(), { wrapper: Wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('inv-1');
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Operation failed'));
+  });
 });
 
 describe('useRevokeAdmin', () => {
@@ -307,6 +326,54 @@ describe('useRevokeAdmin', () => {
 
     expect(phEqFn).toHaveBeenCalledWith('user_id', 'user-1');
     expect(roleEqFn).toHaveBeenCalledWith('user_id', 'user-1');
+  });
+
+  it('throws when role delete fails after successful PH delete', async () => {
+    const phEqFn = vi.fn().mockResolvedValue({ error: null });
+    const phDeleteFn = vi.fn().mockReturnValue({ eq: phEqFn });
+    const roleEqFn = vi.fn().mockResolvedValue({ error: { message: 'Role delete error' } });
+    const roleDeleteFn = vi.fn().mockReturnValue({ eq: roleEqFn });
+
+    mockFrom
+      .mockReturnValueOnce({ delete: phDeleteFn })
+      .mockReturnValueOnce({ delete: roleDeleteFn });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useRevokeAdmin(), { wrapper: Wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('user-1');
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalled());
+  });
+
+  it('shows "Operation failed" when revoke error message is empty', async () => {
+    const phEqFn = vi.fn().mockResolvedValue({ error: null });
+    const phDeleteFn = vi.fn().mockReturnValue({ eq: phEqFn });
+    const roleEqFn = vi.fn().mockResolvedValue({ error: { message: '' } });
+    const roleDeleteFn = vi.fn().mockReturnValue({ eq: roleEqFn });
+
+    mockFrom
+      .mockReturnValueOnce({ delete: phDeleteFn })
+      .mockReturnValueOnce({ delete: roleDeleteFn });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useRevokeAdmin(), { wrapper: Wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('user-1');
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Operation failed'));
   });
 
   it('throws descriptive error when PH delete fails', async () => {
@@ -374,6 +441,25 @@ describe('useUpdateAdminRole', () => {
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Update failed'));
   });
+
+  it('shows "Operation failed" when error message is empty', async () => {
+    const eqFn = vi.fn().mockResolvedValue({ error: { message: '' } });
+    const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
+    mockFrom.mockReturnValueOnce({ update: updateFn });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useUpdateAdminRole(), { wrapper: Wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ userId: 'user-1', roleId: 'admin' });
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Operation failed'));
+  });
 });
 
 describe('useBlockAdmin', () => {
@@ -427,6 +513,29 @@ describe('useBlockAdmin', () => {
     });
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Block failed'));
+  });
+
+  it('shows "Operation failed" when block error message is empty', async () => {
+    const eqFn = vi.fn().mockResolvedValue({ error: { message: '' } });
+    const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
+    mockFrom.mockReturnValueOnce({ update: updateFn });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useBlockAdmin(), { wrapper: Wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({
+          userId: 'user-1',
+          blockedBy: 'admin-1',
+          reason: 'Test',
+        });
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Operation failed'));
   });
 });
 

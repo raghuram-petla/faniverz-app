@@ -289,6 +289,40 @@ describe('syncCastCrew', () => {
     );
   });
 
+  it('warns when crew insert fails in syncCastCrew', async () => {
+    supabase.select.mockReturnValueOnce({
+      ...supabase,
+      eq: vi.fn().mockResolvedValue({ count: 0 }),
+    });
+
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 100,
+        name: 'Failing Crew',
+        profile_path: null,
+        roleName: 'Director',
+        roleOrder: 0,
+        gender: null,
+      },
+    ] as never);
+
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'crew insert failed' } });
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const detail = {
+      credits: { cast: [], crew: [{ id: 100, name: 'Failing Crew', job: 'Director' }] },
+    };
+    const updatedFields: string[] = [];
+
+    await syncCastCrew(MOVIE_ID, detail as never, false, supabase as never, updatedFields);
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('crew insert failed'),
+      'crew insert failed',
+    );
+    consoleWarn.mockRestore();
+  });
+
   it('skips cast member when upsertActorPreserveType returns null', async () => {
     supabase.select.mockReturnValueOnce({
       ...supabase,
@@ -537,6 +571,243 @@ describe('syncCastCrewAdditive', () => {
     // All 7 should be processed (in 2 batches: 5 + 2)
     expect(upsertActorPreserveType).toHaveBeenCalledTimes(7);
     expect(result.castCount).toBe(7);
+  });
+
+  it('handles insert error that is NOT a duplicate constraint', async () => {
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    // Insert fails with a non-unique-constraint error
+    supabase.insert.mockResolvedValue({ error: { message: 'foreign key violation' } });
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const detail = {
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Actor A',
+            character: 'Hero',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+        ],
+        crew: [],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    // Non-dupe error: ok=false, so castCount stays at 0
+    expect(result.castCount).toBe(0);
+    consoleWarn.mockRestore();
+  });
+
+  it('handles insert error that IS a duplicate constraint (isDupe branch)', async () => {
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    // Insert fails with unique constraint error
+    supabase.insert.mockResolvedValue({ error: { message: 'unique constraint violation' } });
+
+    const detail = {
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Actor A',
+            character: 'Hero',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+        ],
+        crew: [],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    // Dupe error: ok=true (isDupe), so castCount includes it
+    expect(result.castCount).toBe(1);
+  });
+
+  it('handles crew insert error with unique constraint (isDupe branch)', async () => {
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 10,
+        name: 'Director',
+        profile_path: '/d.jpg',
+        roleName: 'Director',
+        roleOrder: 0,
+        gender: 2,
+      },
+    ] as never);
+
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    // Insert fails with unique constraint error
+    supabase.insert.mockResolvedValue({ error: { message: 'unique constraint violation' } });
+
+    const detail = {
+      credits: {
+        cast: [],
+        crew: [{ id: 10, name: 'Director', job: 'Director' }],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    // Dupe error on crew: ok=true (isDupe), so crewCount includes it
+    expect(result.crewCount).toBe(1);
+  });
+
+  it('handles crew insert error that is NOT a duplicate constraint', async () => {
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 10,
+        name: 'Director',
+        profile_path: '/d.jpg',
+        roleName: 'Director',
+        roleOrder: 0,
+        gender: 2,
+      },
+    ] as never);
+
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    supabase.insert.mockResolvedValue({ error: { message: 'foreign key violation' } });
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const detail = {
+      credits: {
+        cast: [],
+        crew: [{ id: 10, name: 'Director', job: 'Director' }],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    expect(result.crewCount).toBe(0);
+    consoleWarn.mockRestore();
+  });
+
+  it('skips crew member when upsertActorPreserveType returns null', async () => {
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 10,
+        name: 'Director',
+        profile_path: '/d.jpg',
+        roleName: 'Director',
+        roleOrder: 0,
+        gender: 2,
+      },
+    ] as never);
+    vi.mocked(upsertActorPreserveType).mockResolvedValueOnce(null);
+
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    const detail = {
+      credits: {
+        cast: [],
+        crew: [{ id: 10, name: 'Director', job: 'Director' }],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    expect(result.crewCount).toBe(0);
+  });
+
+  it('handles getExistingCastKeys query error gracefully (returns empty set)', async () => {
+    // getExistingCastIds(cast) -> error, returns empty set so all cast treated as missing
+    supabase._pushResult({ data: null, error: { message: 'query failed' } });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup
+    supabase._pushResult({ data: [], error: null });
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const detail = {
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Actor A',
+            character: 'Hero',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+        ],
+        crew: [],
+      },
+    };
+
+    const result = await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    // Should still process all cast since error makes all treated as missing
+    expect(result.castCount).toBe(1);
+    consoleWarn.mockRestore();
+  });
+
+  it('does not delete stale entries when none are stale', async () => {
+    // getExistingCastIds(cast) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // getExistingCastIds(crew) -> empty
+    supabase._pushResult({ data: [], error: null });
+    // cleanup: all entries are in TMDB data, none stale
+    supabase._pushResult({
+      data: [{ id: 'mc-1', actor_id: 'a1', actors: { tmdb_person_id: 1 } }],
+      error: null,
+    });
+
+    const detail = {
+      credits: {
+        cast: [
+          {
+            id: 1,
+            name: 'Actor A',
+            character: 'Hero',
+            order: 0,
+            profile_path: '/a.jpg',
+            gender: 2,
+          },
+        ],
+        crew: [],
+      },
+    };
+
+    await syncCastCrewAdditive(MOVIE_ID, detail as never, supabase as never);
+
+    // delete should NOT have been called with .in() since staleIds is empty
+    // The delete is only called when staleIds.length > 0
+    expect(supabase.in).not.toHaveBeenCalledWith('id', expect.any(Array));
   });
 
   it('returns correct counts when both cast and crew already exist', async () => {

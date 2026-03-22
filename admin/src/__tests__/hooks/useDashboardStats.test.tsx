@@ -195,4 +195,139 @@ describe('useDashboardStats', () => {
       expect(result.current.error).toEqual({ message: 'fail' });
     });
   });
+
+  describe('edge cases', () => {
+    it('treats empty productionHouseIds array as global admin (no PH scope)', async () => {
+      setupGlobalAdminMock();
+      const { result } = renderHook(() => useDashboardStats([]), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Empty array should behave like global admin — hasPHScope is false
+      expect(result.current.data).toEqual({
+        totalMovies: 42,
+        totalActors: 15,
+        totalUsers: 100,
+        totalReviews: 30,
+        totalFeedItems: 55,
+        totalComments: 18,
+      });
+    });
+
+    it('treats undefined productionHouseIds as global admin', async () => {
+      setupGlobalAdminMock();
+      const { result } = renderHook(() => useDashboardStats(undefined), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.data!.totalMovies).toBe(42);
+    });
+
+    it('handles null count from global queries by defaulting to 0', async () => {
+      // All counts return null
+      fromSpy.mockImplementation(() => chainable({ count: null, data: null, error: null }));
+
+      const { result } = renderHook(() => useDashboardStats(), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      expect(result.current.data).toEqual({
+        totalMovies: 0,
+        totalActors: 0,
+        totalUsers: 0,
+        totalReviews: 0,
+        totalFeedItems: 0,
+        totalComments: 0,
+      });
+    });
+
+    it('handles PH scoped query with no feed items (empty feedItemIds)', async () => {
+      // PH has movies but no feed items
+      let newsFeedCallCount = 0;
+      const tableResults: Record<
+        string,
+        { count: number | null; data: unknown[] | null; error: unknown }
+      > = {
+        movie_production_houses: { count: null, data: [{ movie_id: 'm1' }], error: null },
+        movie_cast: { count: null, data: [{ actor_id: 'a1' }], error: null },
+        reviews: { count: 2, data: null, error: null },
+        feed_comments: { count: 0, data: null, error: null },
+      };
+
+      fromSpy.mockImplementation((table: string) => {
+        if (table === 'news_feed') {
+          newsFeedCallCount++;
+          if (newsFeedCallCount === 1) {
+            // No feed items
+            return chainable({ count: null, data: [], error: null });
+          }
+          return chainable({ count: 0, data: null, error: null });
+        }
+        const result = tableResults[table] ?? { count: 0, data: null, error: null };
+        return chainable(result);
+      });
+
+      const { result } = renderHook(() => useDashboardStats(['ph-1']), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // feedItemIds is empty, so comments should come from Promise.resolve({count:0})
+      expect(result.current.data!.totalComments).toBe(0);
+    });
+
+    it('handles PH scoped query with null junction data', async () => {
+      // junction query returns null data
+      fromSpy.mockImplementation(() => chainable({ count: null, data: null, error: null }));
+
+      const { result } = renderHook(() => useDashboardStats(['ph-1']), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // null data -> empty movieIds -> returns all zeros
+      expect(result.current.data).toEqual({
+        totalMovies: 0,
+        totalActors: 0,
+        totalUsers: 0,
+        totalReviews: 0,
+        totalFeedItems: 0,
+        totalComments: 0,
+      });
+    });
+
+    it('deduplicates movie_ids from junction data', async () => {
+      // Same movie_id appears twice in junction
+      let newsFeedCallCount = 0;
+      fromSpy.mockImplementation((table: string) => {
+        if (table === 'movie_production_houses') {
+          return chainable({
+            count: null,
+            data: [{ movie_id: 'm1' }, { movie_id: 'm1' }],
+            error: null,
+          });
+        }
+        if (table === 'news_feed') {
+          newsFeedCallCount++;
+          if (newsFeedCallCount === 1) return chainable({ count: null, data: [], error: null });
+          return chainable({ count: 0, data: null, error: null });
+        }
+        if (table === 'movie_cast') {
+          return chainable({ count: null, data: [], error: null });
+        }
+        return chainable({ count: 0, data: null, error: null });
+      });
+
+      const { result } = renderHook(() => useDashboardStats(['ph-1']), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Deduplicated: only 1 unique movie
+      expect(result.current.data!.totalMovies).toBe(1);
+    });
+  });
 });

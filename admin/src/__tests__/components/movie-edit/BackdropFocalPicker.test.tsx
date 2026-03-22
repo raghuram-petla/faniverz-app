@@ -175,6 +175,70 @@ describe('BackdropFocalPicker', () => {
     });
   });
 
+  describe('pointer move and up events', () => {
+    it('calls onChange on pointer move while dragging', () => {
+      const onChange = vi.fn();
+      const { container } = render(<BackdropFocalPicker {...defaultProps} onChange={onChange} />);
+      simulateImageLoad(container, 1920, 1080);
+      const picker = container.querySelector('[style*="aspect-ratio"]') as HTMLElement;
+      picker.getBoundingClientRect = vi.fn(() => ({
+        left: 0,
+        top: 0,
+        width: 600,
+        height: 337.5,
+        right: 600,
+        bottom: 337.5,
+        x: 0,
+        y: 0,
+        toJSON: vi.fn(),
+      }));
+      picker.setPointerCapture = vi.fn();
+      // Start drag
+      fireEvent.pointerDown(picker, { clientX: 300, clientY: 168 });
+      expect(onChange).toHaveBeenCalledTimes(1);
+      // Move while dragging
+      fireEvent.pointerMove(picker, { clientX: 400, clientY: 168 });
+      expect(onChange).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not call onChange on pointer move when not dragging', () => {
+      const onChange = vi.fn();
+      const { container } = render(<BackdropFocalPicker {...defaultProps} onChange={onChange} />);
+      simulateImageLoad(container, 1920, 1080);
+      const picker = container.querySelector('[style*="aspect-ratio"]') as HTMLElement;
+      // Move without prior pointerDown
+      fireEvent.pointerMove(picker, { clientX: 300, clientY: 168 });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('stops dragging on pointer up', () => {
+      const onChange = vi.fn();
+      const { container } = render(<BackdropFocalPicker {...defaultProps} onChange={onChange} />);
+      simulateImageLoad(container, 1920, 1080);
+      const picker = container.querySelector('[style*="aspect-ratio"]') as HTMLElement;
+      picker.getBoundingClientRect = vi.fn(() => ({
+        left: 0,
+        top: 0,
+        width: 600,
+        height: 337.5,
+        right: 600,
+        bottom: 337.5,
+        x: 0,
+        y: 0,
+        toJSON: vi.fn(),
+      }));
+      picker.setPointerCapture = vi.fn();
+      // Start drag
+      fireEvent.pointerDown(picker, { clientX: 300, clientY: 168 });
+      // End drag
+      fireEvent.pointerUp(picker);
+      // Move after pointer up — should NOT trigger onChange
+      fireEvent.pointerMove(picker, { clientX: 400, clientY: 168 });
+      // Only 1 call from pointerDown, not from pointerMove after up
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('matching aspect ratio (no panning)', () => {
     it('shows "image fits perfectly" hint', () => {
       const { container } = render(<BackdropFocalPicker {...defaultProps} />);

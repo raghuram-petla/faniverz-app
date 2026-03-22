@@ -263,4 +263,94 @@ describe('NewFeedItemPage', () => {
     const contentTypeSelect = screen.getAllByRole('combobox')[1];
     expect(contentTypeSelect).toHaveValue('trailer');
   });
+
+  it('updates content type when content type select is changed', () => {
+    renderWithProviders(<NewFeedItemPage />);
+    const feedTypeSelect = screen.getAllByRole('combobox')[0];
+    fireEvent.change(feedTypeSelect, { target: { value: 'video' } });
+    const contentTypeSelect = screen.getAllByRole('combobox')[1];
+    fireEvent.change(contentTypeSelect, { target: { value: 'song' } });
+    expect(contentTypeSelect).toHaveValue('song');
+  });
+
+  it('updates description text when typed', () => {
+    renderWithProviders(<NewFeedItemPage />);
+    const textarea = screen.getByPlaceholderText('Optional description');
+    fireEvent.change(textarea, { target: { value: 'My description' } });
+    expect(textarea).toHaveValue('My description');
+  });
+
+  it('toggles isPinned when checkbox is clicked', () => {
+    renderWithProviders(<NewFeedItemPage />);
+    const pinCheckbox = screen.getByText('Pin to top').closest('label')!.querySelector('input')!;
+    fireEvent.click(pinCheckbox);
+    expect(pinCheckbox.checked).toBe(true);
+    fireEvent.click(pinCheckbox);
+    expect(pinCheckbox.checked).toBe(false);
+  });
+
+  it('toggles isFeatured when checkbox is clicked', () => {
+    renderWithProviders(<NewFeedItemPage />);
+    const featuredCheckbox = screen.getByText('Featured').closest('label')!.querySelector('input')!;
+    fireEvent.click(featuredCheckbox);
+    expect(featuredCheckbox.checked).toBe(true);
+  });
+
+  it('sends isPinned and isFeatured values in form submission', async () => {
+    mockMutateAsync.mockResolvedValue({});
+    renderWithProviders(<NewFeedItemPage />);
+
+    // Fill title
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), {
+      target: { value: 'Pinned Item' },
+    });
+
+    // Check isPinned
+    const pinCheckbox = screen.getByText('Pin to top').closest('label')!.querySelector('input')!;
+    fireEvent.click(pinCheckbox);
+
+    // Check isFeatured
+    const featuredCheckbox = screen.getByText('Featured').closest('label')!.querySelector('input')!;
+    fireEvent.click(featuredCheckbox);
+
+    // Submit
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          is_pinned: true,
+          is_featured: true,
+        }),
+      );
+    });
+  });
+
+  it('sends thumbnailUrl when set on non-video type', async () => {
+    mockMutateAsync.mockResolvedValue({});
+    renderWithProviders(<NewFeedItemPage />);
+
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), {
+      target: { value: 'Poster Post' },
+    });
+
+    // Switch to poster type
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'poster' } });
+
+    fireEvent.change(screen.getByPlaceholderText('Image URL'), {
+      target: { value: 'https://example.com/thumb.jpg' },
+    });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          thumbnail_url: 'https://example.com/thumb.jpg',
+        }),
+      );
+    });
+  });
 });

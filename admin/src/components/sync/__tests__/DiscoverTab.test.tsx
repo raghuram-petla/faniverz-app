@@ -423,6 +423,160 @@ describe('DiscoverTab', () => {
     });
   });
 
+  describe('import actions', () => {
+    it('calls importMovies.mutateAsync when movie import button clicked', async () => {
+      const importMutateAsync = vi.fn().mockResolvedValue(undefined);
+      const lookupData = {
+        type: 'movie',
+        existsInDb: false,
+        existingId: null,
+        data: { tmdbId: 999, title: 'Import Test' },
+      };
+      setup({
+        lookupOverrides: { data: lookupData },
+        importMoviesOverrides: {
+          mutateAsync: importMutateAsync,
+          isPending: false,
+          isSuccess: false,
+        },
+      });
+      render(<DiscoverTab />);
+      fireEvent.change(screen.getByPlaceholderText(/Search movies/i), {
+        target: { value: '999' },
+      });
+      fireEvent.click(screen.getByText('Lookup'));
+      // Click the Import button in MoviePreview mock
+      fireEvent.click(screen.getByText('Import'));
+      expect(importMutateAsync).toHaveBeenCalledWith([999]);
+    });
+
+    it('handleLookupImport does nothing when lookup result is not a movie', async () => {
+      const importMutateAsync = vi.fn().mockResolvedValue(undefined);
+      const lookupData = {
+        type: 'person',
+        existsInDb: false,
+        existingId: null,
+        data: { tmdbPersonId: 500, name: 'Actor' },
+      };
+      setup({
+        lookupOverrides: { data: lookupData },
+        importMoviesOverrides: { mutateAsync: importMutateAsync },
+      });
+      render(<DiscoverTab />);
+      fireEvent.change(screen.getByPlaceholderText(/Search movies/i), {
+        target: { value: '500' },
+      });
+      fireEvent.click(screen.getByText('Lookup'));
+      // PersonPreview is shown, not MoviePreview — import button is for person
+    });
+
+    it('calls importActor.mutateAsync when person import button clicked', async () => {
+      const importActorAsync = vi.fn().mockResolvedValue(undefined);
+      const lookupData = {
+        type: 'person',
+        existsInDb: false,
+        existingId: null,
+        data: { tmdbPersonId: 700, name: 'New Actor' },
+      };
+      setup({
+        lookupOverrides: { data: lookupData },
+        importActorOverrides: { mutateAsync: importActorAsync, isPending: false },
+      });
+      render(<DiscoverTab />);
+      fireEvent.change(screen.getByPlaceholderText(/Search movies/i), {
+        target: { value: '700' },
+      });
+      fireEvent.click(screen.getByText('Lookup'));
+      fireEvent.click(screen.getByText('Import Person'));
+      expect(importActorAsync).toHaveBeenCalledWith(700);
+    });
+
+    it('calls refreshActor.mutateAsync when refresh button clicked on existing person', async () => {
+      const refreshAsync = vi.fn().mockResolvedValue(undefined);
+      const lookupData = {
+        type: 'person',
+        existsInDb: true,
+        existingId: 'actor-existing',
+        data: { tmdbPersonId: 800, name: 'Existing Actor' },
+      };
+      setup({
+        lookupOverrides: { data: lookupData },
+        refreshActorOverrides: { mutateAsync: refreshAsync, isPending: false },
+      });
+      render(<DiscoverTab />);
+      fireEvent.change(screen.getByPlaceholderText(/Search movies/i), {
+        target: { value: '800' },
+      });
+      fireEvent.click(screen.getByText('Lookup'));
+      fireEvent.click(screen.getByText('Refresh'));
+      expect(refreshAsync).toHaveBeenCalledWith('actor-existing');
+    });
+
+    it('does not call refresh when person has no existingId', async () => {
+      const refreshAsync = vi.fn().mockResolvedValue(undefined);
+      const lookupData = {
+        type: 'person',
+        existsInDb: false,
+        existingId: null,
+        data: { tmdbPersonId: 900, name: 'Unknown' },
+      };
+      setup({
+        lookupOverrides: { data: lookupData },
+        refreshActorOverrides: { mutateAsync: refreshAsync, isPending: false },
+      });
+      render(<DiscoverTab />);
+      fireEvent.change(screen.getByPlaceholderText(/Search movies/i), {
+        target: { value: '900' },
+      });
+      fireEvent.click(screen.getByText('Lookup'));
+      fireEvent.click(screen.getByText('Refresh'));
+      expect(refreshAsync).not.toHaveBeenCalled();
+    });
+
+    it('shows refreshed fields as "none" when no fields updated', () => {
+      const lookupData = {
+        type: 'person',
+        existsInDb: true,
+        existingId: 'actor-1',
+        data: { tmdbPersonId: 500, name: 'Prabhas' },
+      };
+      setup({
+        lookupOverrides: { data: lookupData },
+        refreshActorOverrides: {
+          isSuccess: true,
+          data: { result: { fields: [] } },
+        },
+      });
+      render(<DiscoverTab />);
+      fireEvent.change(screen.getByPlaceholderText(/Search movies/i), { target: { value: '500' } });
+      fireEvent.click(screen.getByText('Lookup'));
+      expect(screen.getByText(/Actor refreshed/i)).toBeInTheDocument();
+      expect(screen.getByText(/none/)).toBeInTheDocument();
+    });
+  });
+
+  describe('keyboard shortcuts', () => {
+    it('does not search on Enter when query length < 2', () => {
+      const searchHook = makeIdleHook();
+      mockSearch.mockReturnValue(searchHook);
+      render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'B' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(searchHook.mutate).not.toHaveBeenCalled();
+    });
+
+    it('does not trigger search on non-Enter key press', () => {
+      const searchHook = makeIdleHook();
+      mockSearch.mockReturnValue(searchHook);
+      render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'Baahubali' } });
+      fireEvent.keyDown(input, { key: 'a' });
+      expect(searchHook.mutate).not.toHaveBeenCalled();
+    });
+  });
+
   describe('error display', () => {
     it('shows error message when search fails', () => {
       setup({

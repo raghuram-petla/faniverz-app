@@ -494,6 +494,137 @@ describe('buildChildMutationPromises', () => {
     });
   });
 
+  it('skips updateCastOrder when localCastOrder has only pending IDs', async () => {
+    const deps = createMockDeps({
+      localCastOrder: ['pending-c1'],
+      pendingCastAdds: [
+        {
+          _id: 'pending-c1',
+          _actor: null as never,
+          actor_id: 'a1',
+          credit_type: 'cast' as const,
+          role_name: '',
+          character_name: null,
+          role_order: null,
+          display_order: 0,
+        },
+      ],
+    });
+
+    await buildChildMutationPromises(deps);
+    // All IDs are pending, so updates array is empty — updateCastOrder should NOT be called
+    expect(deps.updateCastOrder.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('uses original display_order when cast _id not found in localCastOrder', async () => {
+    const deps = createMockDeps({
+      localCastOrder: ['other-id'],
+      pendingCastAdds: [
+        {
+          _id: 'pending-not-in-order',
+          _actor: null as never,
+          actor_id: 'a1',
+          credit_type: 'cast' as const,
+          role_name: '',
+          character_name: null,
+          role_order: null,
+          display_order: 42,
+        },
+      ],
+    });
+
+    const promises = await buildChildMutationPromises(deps);
+    await Promise.all(promises);
+    // indexOf returns -1, so displayOrder stays as original (42)
+    expect(deps.addCast.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ display_order: 42 }),
+    );
+  });
+
+  it('uses original is_main_poster when pendingMainPosterId is null', async () => {
+    const deps = createMockDeps({
+      pendingMainPosterId: null,
+      pendingPosterAdds: [
+        {
+          _id: 'pp1',
+          image_url: 'https://img.jpg',
+          title: 'P1',
+          description: null,
+          poster_date: null,
+          is_main_poster: true,
+          is_main_backdrop: false,
+          image_type: 'poster' as const,
+          display_order: 0,
+        },
+      ],
+    });
+
+    const promises = await buildChildMutationPromises(deps);
+    await Promise.all(promises);
+    // With null pendingMainPosterId, falls back to p.is_main_poster which is true
+    expect(deps.addPoster.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ is_main_poster: true }),
+    );
+  });
+
+  it('skips setMainBackdrop when currentMainBackdrop matches backdropImage', async () => {
+    const deps = createMockDeps({
+      form: {
+        title: 'Test',
+        poster_url: '',
+        backdrop_url: 'https://backdrop.jpg',
+        release_date: '',
+        runtime: '',
+        genres: [],
+        certification: '',
+        synopsis: '',
+        trailer_url: '',
+        in_theaters: false,
+        premiere_date: '',
+        original_language: '',
+        is_featured: false,
+        tmdb_id: '',
+        tagline: '',
+        backdrop_focus_x: null,
+        backdrop_focus_y: null,
+        poster_focus_x: null,
+        poster_focus_y: null,
+      } as never,
+      postersData: [{ id: 'bd1', image_url: 'https://backdrop.jpg', is_main_backdrop: true }],
+    });
+
+    const promises = await buildChildMutationPromises(deps);
+    await Promise.all(promises);
+    // currentMainBackdrop.id === backdropImage.id, so no setMainBackdrop call
+    expect(deps.setMainBackdrop.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('uses addCast without localCastOrder (no reorder)', async () => {
+    const deps = createMockDeps({
+      localCastOrder: null,
+      pendingCastAdds: [
+        {
+          _id: 'pending-c1',
+          _actor: null as never,
+          actor_id: 'a1',
+          credit_type: 'cast' as const,
+          role_name: '',
+          character_name: null,
+          role_order: null,
+          display_order: 5,
+        },
+      ],
+    });
+
+    const promises = await buildChildMutationPromises(deps);
+    await Promise.all(promises);
+    // No localCastOrder, so display_order stays as original
+    expect(deps.addCast.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ display_order: 5 }),
+    );
+    expect(deps.updateCastOrder.mutateAsync).not.toHaveBeenCalled();
+  });
+
   it('combines multiple entity types into a single promise array', async () => {
     const deps = createMockDeps({
       pendingCastRemoveIds: new Set(['c1']),

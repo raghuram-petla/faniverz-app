@@ -396,4 +396,138 @@ describe('AdminsTable', () => {
       expect(values).toContain('production_house_admin');
     });
   });
+
+  describe('role change', () => {
+    it('calls onRoleChange when role is changed and confirmed', () => {
+      const onRoleChange = vi.fn();
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin' })],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+        onRoleChange,
+      });
+      const select = screen.getByRole('combobox');
+      fireEvent.change(select, { target: { value: 'super_admin' } });
+      expect(onRoleChange).toHaveBeenCalledWith('other-user', 'super_admin');
+    });
+
+    it('does not call onRoleChange when confirm is cancelled', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      const onRoleChange = vi.fn();
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin' })],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+        onRoleChange,
+      });
+      const select = screen.getByRole('combobox');
+      fireEvent.change(select, { target: { value: 'super_admin' } });
+      expect(onRoleChange).not.toHaveBeenCalled();
+    });
+
+    it('disables role dropdown when isRolePending', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin' })],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+        isRolePending: true,
+      });
+      const select = screen.getByRole('combobox');
+      expect(select).toBeDisabled();
+    });
+
+    it('disables role dropdown when user is blocked', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin', status: 'blocked' })],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+      });
+      const select = screen.getByRole('combobox');
+      expect(select).toBeDisabled();
+    });
+  });
+
+  describe('impersonate callback', () => {
+    it('calls onImpersonate when impersonate button is clicked', () => {
+      const onImpersonate = vi.fn();
+      const user = makeUser({ id: 'other-user', status: 'active', role_id: 'admin' });
+      renderTable({
+        users: [user],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+        onImpersonate,
+      });
+      fireEvent.click(screen.getByTitle('Impersonate'));
+      expect(onImpersonate).toHaveBeenCalledWith(user);
+    });
+  });
+
+  describe('production house assignments', () => {
+    it('shows PH names when ph_assignments has entries', () => {
+      renderTable({
+        users: [
+          makeUser({
+            id: 'other-user',
+            ph_assignments: [
+              { production_house_id: 'ph-1', production_house: { name: 'Mythri' } } as never,
+            ],
+          }),
+        ],
+      });
+      expect(screen.getByText('Mythri')).toBeInTheDocument();
+    });
+
+    it('shows dash when no PH assignments', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', ph_assignments: [] })],
+      });
+      // The "—" dash in the PHs column
+      const cells = screen.getAllByText('—');
+      expect(cells.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('language assignments', () => {
+    it('shows language assignments for admin role users when isSuperAdmin', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin' })],
+        isSuperAdmin: true,
+      });
+      expect(screen.getByTestId('lang-assignments-other-user')).toBeInTheDocument();
+    });
+
+    it('shows dash for non-admin role users', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'super_admin' })],
+        isSuperAdmin: true,
+      });
+      expect(screen.queryByTestId('lang-assignments-other-user')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('revoke pending', () => {
+    it('disables Revoke button when isRevokePending', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin' })],
+        isSuperAdmin: true,
+        realUserId: 'current-user',
+        isRevokePending: true,
+      });
+      const revokeBtn = screen.getByTitle('Revoke access');
+      expect(revokeBtn).toBeDisabled();
+    });
+  });
+
+  describe('table headers', () => {
+    it('renders all column headers', () => {
+      renderTable();
+      expect(screen.getByText('User')).toBeInTheDocument();
+      expect(screen.getByText('Role')).toBeInTheDocument();
+      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.getByText('PHs')).toBeInTheDocument();
+      expect(screen.getByText('Languages')).toBeInTheDocument();
+      expect(screen.getByText('Since')).toBeInTheDocument();
+      expect(screen.getByText('Actions')).toBeInTheDocument();
+    });
+  });
 });

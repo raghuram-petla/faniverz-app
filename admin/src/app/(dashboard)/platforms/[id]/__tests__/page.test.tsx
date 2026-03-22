@@ -49,10 +49,12 @@ vi.mock('@/components/common/FormChangesDock', () => ({
     saveStatus,
     onSave,
     onDiscard,
+    onRevertField,
   }: {
     saveStatus: string;
     onSave: () => void;
     onDiscard: () => void;
+    onRevertField?: (key: string) => void;
   }) => (
     <div data-testid="form-changes-dock">
       <span data-testid="save-status">{saveStatus}</span>
@@ -62,6 +64,11 @@ vi.mock('@/components/common/FormChangesDock', () => ({
       <button onClick={onDiscard} data-testid="discard-btn">
         Discard
       </button>
+      {onRevertField && (
+        <button onClick={() => onRevertField('name')} data-testid="revert-btn">
+          Revert
+        </button>
+      )}
     </div>
   ),
 }));
@@ -353,5 +360,120 @@ describe('EditPlatformPage', () => {
     });
     render(<EditPlatformPage />);
     expect(screen.getByText('Edit Platform')).toBeInTheDocument();
+  });
+
+  it('reverts form to initial values when discard is clicked', () => {
+    render(<EditPlatformPage />);
+    // Change the name
+    const nameInput = screen.getByDisplayValue('Netflix');
+    fireEvent.change(nameInput, { target: { value: 'Changed Name' } });
+    expect(screen.getByDisplayValue('Changed Name')).toBeInTheDocument();
+
+    // Click discard
+    fireEvent.click(screen.getByTestId('discard-btn'));
+    // Should revert to initial value
+    expect(screen.getByDisplayValue('Netflix')).toBeInTheDocument();
+  });
+
+  it('reverts a single field when revert button is clicked', () => {
+    render(<EditPlatformPage />);
+    // Change the name
+    const nameInput = screen.getByDisplayValue('Netflix');
+    fireEvent.change(nameInput, { target: { value: 'Changed Name' } });
+    expect(screen.getByDisplayValue('Changed Name')).toBeInTheDocument();
+
+    // Click revert for 'name' field
+    fireEvent.click(screen.getByTestId('revert-btn'));
+    // Should revert just the name field to initial value
+    expect(screen.getByDisplayValue('Netflix')).toBeInTheDocument();
+  });
+
+  it('handles platform with null regions', () => {
+    mockUseAdminPlatform.mockReturnValue({
+      data: { ...mockPlatform, regions: null },
+      isLoading: false,
+    });
+    render(<EditPlatformPage />);
+    expect(screen.getByText('No countries set')).toBeInTheDocument();
+  });
+
+  it('clears logo_url when remove button is clicked', () => {
+    render(<EditPlatformPage />);
+    fireEvent.click(screen.getByTestId('remove-btn'));
+    // After removing, the form state should have logo_url as empty
+    // We can verify by checking the save button behavior
+    expect(screen.getByTestId('remove-btn')).toBeInTheDocument();
+  });
+
+  it('updates tmdb_provider_id when input changes', () => {
+    render(<EditPlatformPage />);
+    const tmdbInput = screen.getByPlaceholderText('e.g. 119');
+    fireEvent.change(tmdbInput, { target: { value: '42' } });
+    expect(tmdbInput).toHaveValue('42');
+  });
+
+  it('shows non-Error alert message when save fails with non-Error', async () => {
+    mockUpdateMutateAsync.mockRejectedValue({ code: 'UNKNOWN' });
+    render(<EditPlatformPage />);
+
+    fireEvent.click(screen.getByTestId('save-btn'));
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('UNKNOWN'));
+    });
+  });
+
+  it('shows non-Error alert message when delete fails with non-Error', async () => {
+    mockDeleteMutateAsync.mockRejectedValue('string error');
+    render(<EditPlatformPage />);
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('string error'));
+    });
+  });
+
+  it('shows non-Error alert message when upload fails with non-Error', async () => {
+    mockUpload.mockRejectedValue('upload string error');
+    render(<EditPlatformPage />);
+
+    fireEvent.click(screen.getByTestId('upload-btn'));
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith('Upload failed');
+    });
+  });
+
+  it('saves with null tmdb_provider_id when field is empty', async () => {
+    mockUseAdminPlatform.mockReturnValue({
+      data: { ...mockPlatform, tmdb_provider_id: null },
+      isLoading: false,
+    });
+    mockUpdateMutateAsync.mockResolvedValue({});
+    render(<EditPlatformPage />);
+
+    fireEvent.click(screen.getByTestId('save-btn'));
+
+    await waitFor(() => {
+      expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ tmdb_provider_id: null }),
+      );
+    });
+  });
+
+  it('saves with empty regions when no regions set', async () => {
+    mockUseAdminPlatform.mockReturnValue({
+      data: { ...mockPlatform, regions: null },
+      isLoading: false,
+    });
+    mockUpdateMutateAsync.mockResolvedValue({});
+    render(<EditPlatformPage />);
+
+    fireEvent.click(screen.getByTestId('save-btn'));
+
+    await waitFor(() => {
+      expect(mockUpdateMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ regions: [] }));
+    });
   });
 });

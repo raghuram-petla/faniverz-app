@@ -451,4 +451,159 @@ describe('AuthProvider — refreshUser', () => {
 
     expect(screen.getByTestId('user').textContent).toBe('null');
   });
+
+  it('updates existing user with refreshed profile data', async () => {
+    const tokenKey = 'sb-abcdefgh-auth-token';
+    mockLocalStorage[tokenKey] = JSON.stringify({
+      user: { id: 'user-1', email: 'a@b.com' },
+      access_token: 'tok',
+    });
+
+    // Mock all fetch calls needed: restoreSession + onAuthStateChange
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (typeof url === 'string' && url.includes('/api/accept-invitation')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (typeof url === 'string' && url.includes('profiles')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 'user-1', display_name: 'Alice' }],
+        });
+      }
+      if (typeof url === 'string' && url.includes('admin_user_roles')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ role_id: 'super_admin', status: 'active' }],
+        });
+      }
+      return Promise.resolve({ ok: false, json: async () => ({}) });
+    });
+
+    renderProvider();
+
+    // Fire onAuthStateChange to sign in
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_IN', {
+        user: { id: 'user-1', email: 'a@b.com' },
+        access_token: 'tok',
+      });
+    });
+    // Advance timer to let restoreSession settle
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(screen.getByTestId('user').textContent).toBe('user-1');
+
+    // Now refresh - mock the profile fetch for refreshUser
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ id: 'user-1', display_name: 'Alice Updated' }],
+    });
+
+    await act(async () => {
+      screen.getByTestId('refresh').click();
+    });
+
+    // User should still be set (prev was non-null, so setUser updates)
+    expect(screen.getByTestId('user').textContent).toBe('user-1');
+  });
+
+  it('handles localStorage parse error gracefully', async () => {
+    const tokenKey = 'sb-abcdefgh-auth-token';
+    mockLocalStorage[tokenKey] = 'invalid-json';
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_OUT', null);
+    });
+
+    // Should not crash on invalid JSON
+    await act(async () => {
+      screen.getByTestId('refresh').click();
+    });
+
+    expect(screen.getByTestId('user').textContent).toBe('null');
+  });
+
+  it('does nothing when stored token has no user id', async () => {
+    const tokenKey = 'sb-abcdefgh-auth-token';
+    mockLocalStorage[tokenKey] = JSON.stringify({
+      user: { id: null },
+      access_token: 'tok',
+    });
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_OUT', null);
+    });
+
+    await act(async () => {
+      screen.getByTestId('refresh').click();
+    });
+
+    expect(screen.getByTestId('user').textContent).toBe('null');
+  });
+});
+
+describe('AuthProvider — timeout fallback', () => {
+  it('sets isLoading=false after 3s timeout when no auth state fires', async () => {
+    renderProvider();
+    expect(screen.getByTestId('loading').textContent).toBe('true');
+
+    await act(async () => {
+      vi.advanceTimersByTime(3100);
+    });
+
+    expect(screen.getByTestId('loading').textContent).toBe('false');
+  });
+});
+
+describe('AuthProvider — restoreSession with localStorage token', () => {
+  it('restores session and sets loading=false from valid localStorage token', async () => {
+    const tokenKey = 'sb-abcdefgh-auth-token';
+    mockLocalStorage[tokenKey] = JSON.stringify({
+      user: { id: 'stored-user', email: 'stored@test.com' },
+      access_token: 'stored-tok',
+    });
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [] }) // invite
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'stored-user', display_name: 'Stored' }],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ role_id: 'super_admin', status: 'active' }],
+      });
+
+    renderProvider();
+
+    // Allow restoreSession promise to resolve
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+
+    expect(screen.getByTestId('loading').textContent).toBe('false');
+    expect(screen.getByTestId('user').textContent).toBe('stored-user');
+  });
+
+  it('returns false from restoreSession when localStorage token has no access_token', async () => {
+    const tokenKey = 'sb-abcdefgh-auth-token';
+    mockLocalStorage[tokenKey] = JSON.stringify({
+      user: { id: 'stored-user' },
+      access_token: null,
+    });
+
+    renderProvider();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+
+    // restoreSession returned false, loading stays true until timeout or onAuthStateChange
+    expect(screen.getByTestId('user').textContent).toBe('null');
+  });
 });

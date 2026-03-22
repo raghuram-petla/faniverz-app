@@ -121,4 +121,64 @@ describe('useTriggerSync', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it('alerts on error with Error message', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockInvoke.mockResolvedValue({ error: new Error('Some error') });
+
+    const { self } = buildChain([]);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useTriggerSync(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate('bad-function');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('Some error');
+    alertSpy.mockRestore();
+  });
+
+  it('alerts "Sync failed" on non-Error error', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockInvoke.mockResolvedValue({ error: 'string error' });
+
+    const { self } = buildChain([]);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useTriggerSync(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate('bad-function');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('Sync failed');
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useAdminSyncLogs - error handling', () => {
+  it('throws when supabase returns an error', async () => {
+    const chain: Record<string, unknown> = {};
+    const self = new Proxy(chain, {
+      get(target, prop) {
+        if (prop === 'then') {
+          return (resolve: (v: unknown) => void) =>
+            resolve({ data: null, error: new Error('DB error') });
+        }
+        if (prop === 'catch') return () => self;
+        if (!target[prop as string]) {
+          target[prop as string] = vi.fn().mockReturnValue(self);
+        }
+        return target[prop as string];
+      },
+    });
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminSyncLogs(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
 });

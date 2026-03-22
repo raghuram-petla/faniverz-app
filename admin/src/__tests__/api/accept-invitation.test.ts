@@ -314,6 +314,132 @@ describe('POST /api/accept-invitation', () => {
     ]);
   });
 
+  it('returns 500 when updating invitation fails for existing user', async () => {
+    const mockInvSingle = vi.fn().mockResolvedValue({ data: INVITATION, error: null });
+    const mockInvLimit = vi.fn().mockReturnValue({ single: mockInvSingle });
+    const mockInvOrder = vi.fn().mockReturnValue({ limit: mockInvLimit });
+    const mockInvGte = vi.fn().mockReturnValue({ order: mockInvOrder });
+    const mockInvEqStatus = vi.fn().mockReturnValue({ gte: mockInvGte });
+    const mockInvEqEmail = vi.fn().mockReturnValue({ eq: mockInvEqStatus });
+    const mockInvSelect = vi.fn().mockReturnValue({ eq: mockInvEqEmail });
+
+    const mockRoleSingle = vi.fn().mockResolvedValue({ data: { id: 'role-1' }, error: null });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
+    const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
+
+    // Update fails
+    const mockUpdateEq = vi.fn().mockResolvedValue({ error: { message: 'update failed' } });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_invitations') {
+        if (!mockFrom._invSelectUsed) {
+          mockFrom._invSelectUsed = true;
+          return { select: mockInvSelect };
+        }
+        return { update: mockUpdate };
+      }
+      if (table === 'admin_user_roles') {
+        return { select: mockRoleSelect };
+      }
+      return {};
+    });
+    mockFrom._invSelectUsed = false;
+
+    const res = await POST(makeRequest({ email: 'user@test.com', userId: 'user-1' }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json).toEqual({ error: 'Failed to update invitation' });
+  });
+
+  it('returns 500 when PH assignment fails', async () => {
+    const invWithPh = { ...INVITATION, production_house_ids: ['ph-1'] };
+    const mockInvSingle = vi.fn().mockResolvedValue({ data: invWithPh, error: null });
+    const mockInvLimit = vi.fn().mockReturnValue({ single: mockInvSingle });
+    const mockInvOrder = vi.fn().mockReturnValue({ limit: mockInvLimit });
+    const mockInvGte = vi.fn().mockReturnValue({ order: mockInvOrder });
+    const mockInvEqStatus = vi.fn().mockReturnValue({ gte: mockInvGte });
+    const mockInvEqEmail = vi.fn().mockReturnValue({ eq: mockInvEqStatus });
+    const mockInvSelect = vi.fn().mockReturnValue({ eq: mockInvEqEmail });
+
+    const mockRoleSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
+    const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
+    const mockRoleInsert = vi.fn().mockResolvedValue({ error: null });
+    const mockPhInsert = vi.fn().mockResolvedValue({ error: { message: 'PH error' } });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_invitations') return { select: mockInvSelect };
+      if (table === 'admin_user_roles') {
+        if (!mockFrom._roleInsertUsed) {
+          mockFrom._roleInsertUsed = true;
+          return { select: mockRoleSelect };
+        }
+        return { insert: mockRoleInsert };
+      }
+      if (table === 'admin_ph_assignments') return { insert: mockPhInsert };
+      return {};
+    });
+    mockFrom._roleInsertUsed = false;
+
+    const res = await POST(makeRequest({ email: 'user@test.com', userId: 'user-1' }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json).toEqual({ error: 'Failed to assign production houses' });
+  });
+
+  it('returns 500 when marking invitation accepted fails', async () => {
+    const mockInvSingle = vi.fn().mockResolvedValue({ data: INVITATION, error: null });
+    const mockInvLimit = vi.fn().mockReturnValue({ single: mockInvSingle });
+    const mockInvOrder = vi.fn().mockReturnValue({ limit: mockInvLimit });
+    const mockInvGte = vi.fn().mockReturnValue({ order: mockInvOrder });
+    const mockInvEqStatus = vi.fn().mockReturnValue({ gte: mockInvGte });
+    const mockInvEqEmail = vi.fn().mockReturnValue({ eq: mockInvEqStatus });
+    const mockInvSelect = vi.fn().mockReturnValue({ eq: mockInvEqEmail });
+
+    const mockRoleSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
+    const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
+    const mockRoleInsert = vi.fn().mockResolvedValue({ error: null });
+
+    const mockUpdateEq = vi.fn().mockResolvedValue({ error: { message: 'accept failed' } });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
+
+    let invCallCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_invitations') {
+        invCallCount++;
+        if (invCallCount === 1) return { select: mockInvSelect };
+        return { update: mockUpdate };
+      }
+      if (table === 'admin_user_roles') {
+        if (!mockFrom._roleInsertUsed) {
+          mockFrom._roleInsertUsed = true;
+          return { select: mockRoleSelect };
+        }
+        return { insert: mockRoleInsert };
+      }
+      return {};
+    });
+    mockFrom._roleInsertUsed = false;
+
+    const res = await POST(makeRequest({ email: 'user@test.com', userId: 'user-1' }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json).toEqual({ error: 'Failed to mark invitation accepted' });
+  });
+
+  it('returns 500 on unexpected exception (catch block)', async () => {
+    mockFrom.mockImplementation(() => {
+      throw new Error('Unexpected error');
+    });
+
+    const res = await POST(makeRequest({ email: 'user@test.com', userId: 'user-1' }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json).toEqual({ error: 'Internal server error' });
+  });
+
   it('returns 500 when role insertion fails', async () => {
     // Mock for admin_invitations lookup
     const mockInvSingle = vi.fn().mockResolvedValue({ data: INVITATION, error: null });

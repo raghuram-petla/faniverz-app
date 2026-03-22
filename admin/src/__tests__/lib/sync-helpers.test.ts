@@ -20,7 +20,20 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
-import { ensureTmdbApiKey, verifyBearer, errorResponse } from '@/lib/sync-helpers';
+const mockFrom = vi.fn();
+vi.mock('@/lib/supabase-admin', () => ({
+  getSupabaseAdmin: () => ({ from: mockFrom }),
+}));
+
+import {
+  ensureTmdbApiKey,
+  verifyBearer,
+  verifyAdmin,
+  verifyAdminWithRole,
+  verifyAdminCanMutate,
+  verifyAdminWithLanguages,
+  errorResponse,
+} from '@/lib/sync-helpers';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -82,6 +95,263 @@ describe('verifyBearer', () => {
 
     const result = await verifyBearer('Bearer bad-token');
     expect(result).toBeNull();
+  });
+});
+
+describe('verifyAdmin', () => {
+  it('returns null when bearer verification fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'invalid' } });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await verifyAdmin('Bearer bad');
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it('returns null when admin role is blocked', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'blocked' }, error: null }),
+        }),
+      }),
+    });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await verifyAdmin('Bearer valid');
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it('returns null when admin_user_roles query has error', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: null, error: { message: 'not found' } }),
+        }),
+      }),
+    });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await verifyAdmin('Bearer valid');
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it('returns user when admin role is valid', async () => {
+    const fakeUser = { id: 'u1', email: 'admin@test.com' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdmin('Bearer valid');
+    expect(result).toEqual(fakeUser);
+  });
+});
+
+describe('verifyAdminWithRole', () => {
+  it('returns null when bearer fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'bad' } });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await verifyAdminWithRole('Bearer bad');
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it('returns user and role on success', async () => {
+    const fakeUser = { id: 'u2', email: 'sa@test.com' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'super_admin', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdminWithRole('Bearer valid');
+    expect(result).toEqual({ user: fakeUser, role: 'super_admin' });
+  });
+});
+
+describe('verifyAdminCanMutate', () => {
+  it('returns null when auth fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'bad' } });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await verifyAdminCanMutate('Bearer bad');
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it('returns viewer_readonly for viewer role', async () => {
+    const fakeUser = { id: 'u3' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'viewer', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdminCanMutate('Bearer valid');
+    expect(result).toBe('viewer_readonly');
+  });
+
+  it('returns user and role for admin role', async () => {
+    const fakeUser = { id: 'u4' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdminCanMutate('Bearer valid');
+    expect(result).toEqual({ user: fakeUser, role: 'admin' });
+  });
+});
+
+describe('verifyAdminWithLanguages', () => {
+  it('returns null when auth fails', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'bad' } });
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await verifyAdminWithLanguages('Bearer bad');
+    expect(result).toBeNull();
+    consoleSpy.mockRestore();
+  });
+
+  it('returns viewer_readonly for viewer role', async () => {
+    const fakeUser = { id: 'u5' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'viewer', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdminWithLanguages('Bearer valid');
+    expect(result).toBe('viewer_readonly');
+  });
+
+  it('returns empty languageCodes for root role', async () => {
+    const fakeUser = { id: 'u6' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'root', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdminWithLanguages('Bearer valid');
+    expect(result).toEqual({ user: fakeUser, role: 'root', languageCodes: [] });
+  });
+
+  it('returns empty languageCodes for super_admin role', async () => {
+    const fakeUser = { id: 'u7' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'super_admin', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdminWithLanguages('Bearer valid');
+    expect(result).toEqual({ user: fakeUser, role: 'super_admin', languageCodes: [] });
+  });
+
+  it('fetches language codes for admin role', async () => {
+    const fakeUser = { id: 'u8' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+
+    let callCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'user_languages') {
+        return {
+          select: () => ({
+            eq: () => Promise.resolve({ data: [{ language_id: 'lang-1' }], error: null }),
+          }),
+        };
+      }
+      if (table === 'languages') {
+        return {
+          select: () => ({
+            in: () => Promise.resolve({ data: [{ code: 'te' }], error: null }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const result = await verifyAdminWithLanguages('Bearer valid');
+    expect(result).toEqual({ user: fakeUser, role: 'admin', languageCodes: ['te'] });
+  });
+
+  it('returns empty languageCodes for admin role with no language assignments', async () => {
+    const fakeUser = { id: 'u9' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'user_languages') {
+        return {
+          select: () => ({
+            eq: () => Promise.resolve({ data: [], error: null }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    const result = await verifyAdminWithLanguages('Bearer valid');
+    expect(result).toEqual({ user: fakeUser, role: 'admin', languageCodes: [] });
+  });
+
+  it('returns empty languageCodes for ph_admin role', async () => {
+    const fakeUser = { id: 'u10' };
+    mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          single: () =>
+            Promise.resolve({ data: { role_id: 'ph_admin', status: 'active' }, error: null }),
+        }),
+      }),
+    });
+    const result = await verifyAdminWithLanguages('Bearer valid');
+    expect(result).toEqual({ user: fakeUser, role: 'ph_admin', languageCodes: [] });
   });
 });
 

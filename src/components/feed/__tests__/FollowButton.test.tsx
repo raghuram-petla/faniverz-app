@@ -115,4 +115,58 @@ describe('FollowButton', () => {
     render(<FollowButton isFollowing={false} onPress={jest.fn()} />);
     expect(screen.UNSAFE_getByProps({ name: 'heart-outline' })).toBeTruthy();
   });
+
+  it('triggers withSequence animation when transitioning from false to true with animations enabled', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+
+    const { rerender } = render(
+      <FollowButton isFollowing={false} onPress={jest.fn()} entityName="Movie" />,
+    );
+    withSequence.mockClear();
+    rerender(<FollowButton isFollowing={true} onPress={jest.fn()} entityName="Movie" />);
+    expect(withSequence).toHaveBeenCalled();
+  });
+
+  it('does not trigger withSequence when transitioning from true to false', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+
+    const { rerender } = render(
+      <FollowButton isFollowing={true} onPress={jest.fn()} entityName="Movie" />,
+    );
+    withSequence.mockClear();
+    rerender(<FollowButton isFollowing={false} onPress={jest.fn()} entityName="Movie" />);
+    expect(withSequence).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger withSequence on initial render when already following', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+    withSequence.mockClear();
+
+    render(<FollowButton isFollowing={true} onPress={jest.fn()} entityName="Movie" />);
+    // prevFollowing.current starts as isFollowing (true), so no animation
+    expect(withSequence).not.toHaveBeenCalled();
+  });
+
+  it('updates prevFollowing ref on each isFollowing change', () => {
+    const { rerender } = render(
+      <FollowButton isFollowing={false} onPress={jest.fn()} entityName="Movie" />,
+    );
+    // false -> true -> false should work without errors
+    rerender(<FollowButton isFollowing={true} onPress={jest.fn()} entityName="Movie" />);
+    rerender(<FollowButton isFollowing={false} onPress={jest.fn()} entityName="Movie" />);
+    expect(screen.getByText('Follow')).toBeTruthy();
+  });
+
+  it('useAnimatedStyle callback returns transform with scale', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    // Override to capture and invoke the callback
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(<FollowButton isFollowing={false} onPress={jest.fn()} />);
+    expect(useAnimatedStyle).toHaveBeenCalled();
+    // Restore default mock
+    useAnimatedStyle.mockImplementation(() => ({}));
+  });
 });

@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-import { useAdminComments, useDeleteComment } from '@/hooks/useAdminComments';
+import { useAdminComments, useDeleteComment, useUpdateComment } from '@/hooks/useAdminComments';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -329,5 +329,113 @@ describe('useDeleteComment', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'comments'] });
 
     fetchSpy.mockRestore();
+  });
+});
+
+describe('useUpdateComment', () => {
+  it('updates a comment via /api/admin-crud', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
+
+    const { result } = renderHook(() => useUpdateComment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'com-1', body: 'Updated body' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'feed_comments',
+          id: 'com-1',
+          data: { body: 'Updated body' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
+  });
+
+  it('returns the updated comment id on success', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
+
+    const { result } = renderHook(() => useUpdateComment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'com-2', body: 'New body' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toBe('com-2');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('reports error when update fails', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+
+    const { result } = renderHook(() => useUpdateComment(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'com-1', body: 'fail' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(result.current.error).toBeTruthy();
+
+    fetchSpy.mockRestore();
+  });
+});
+
+describe('useAdminComments — sanitizeSearchTerm', () => {
+  it('strips special characters from search term', async () => {
+    const { self, chain } = buildChain(mockComments);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminComments('test(with"special)'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // The sanitized term should have special chars removed
+    expect(chain.ilike).toHaveBeenCalledWith('body', '%testwithspecial%');
+  });
+
+  it('filters body match client-side when search is provided', async () => {
+    const comments = [
+      {
+        ...mockComments[0],
+        body: 'Great post!',
+        profile: { id: 'usr-1', display_name: 'Nobody', email: 'a@b.com' },
+      },
+      {
+        ...mockComments[1],
+        body: 'Something else',
+        profile: { id: 'usr-2', display_name: 'Nobody', email: 'c@d.com' },
+      },
+    ];
+    const { self } = buildChain(comments);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminComments('Great'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].body).toBe('Great post!');
   });
 });

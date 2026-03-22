@@ -146,4 +146,167 @@ describe('TheatricalRunsSection', () => {
     const newDateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
     expect(newDateInput.value).toBe('');
   });
+
+  it('shows validation error when adding a duplicate release date', () => {
+    const existingRun = {
+      id: 'run-1',
+      movie_id: 'm1',
+      release_date: '2026-01-15',
+      end_date: null,
+      label: null,
+      created_at: '2026-01-15T00:00:00Z',
+    };
+    const onAdd = vi.fn();
+    render(
+      <TheatricalRunsSection
+        {...defaultProps}
+        visibleRuns={[existingRun]}
+        showAddForm={true}
+        onAdd={onAdd}
+      />,
+    );
+
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-01-15' } });
+    fireEvent.click(screen.getByText('Add Run'));
+
+    // Should NOT have called onAdd due to validation error
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('shows "Ending (unsaved)" badge for runs pending end', () => {
+    const activeRun = {
+      id: 'run-3',
+      movie_id: 'm1',
+      release_date: '2026-05-01',
+      end_date: null,
+      label: null,
+      created_at: '2026-05-01T00:00:00Z',
+    };
+    render(
+      <TheatricalRunsSection
+        {...defaultProps}
+        visibleRuns={[activeRun]}
+        pendingEndRunIds={new Set(['run-3'])}
+      />,
+    );
+    expect(screen.getByText('Ending (unsaved)')).toBeInTheDocument();
+    expect(screen.queryByText('Now')).not.toBeInTheDocument();
+  });
+
+  it('calls onEndRun with run id and today date when End button clicked', () => {
+    const onEndRun = vi.fn();
+    const activeRun = {
+      id: 'run-4',
+      movie_id: 'm1',
+      release_date: '2026-02-01',
+      end_date: null,
+      label: null,
+      created_at: '2026-02-01T00:00:00Z',
+    };
+    render(
+      <TheatricalRunsSection {...defaultProps} visibleRuns={[activeRun]} onEndRun={onEndRun} />,
+    );
+    fireEvent.click(screen.getByLabelText('End run 2026-02-01'));
+    expect(onEndRun).toHaveBeenCalledWith('run-4', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+  });
+
+  it('does not show End button for pending runs', () => {
+    const onEndRun = vi.fn();
+    const pendingRun = {
+      id: 'pending-run-uuid',
+      movie_id: 'm1',
+      release_date: '2026-06-01',
+      end_date: null,
+      label: null,
+      created_at: '2026-06-01T00:00:00Z',
+    };
+    render(
+      <TheatricalRunsSection
+        {...defaultProps}
+        visibleRuns={[pendingRun]}
+        pendingIds={new Set(['pending-run-uuid'])}
+        onEndRun={onEndRun}
+      />,
+    );
+    expect(screen.queryByLabelText('End run 2026-06-01')).not.toBeInTheDocument();
+  });
+
+  it('does not show End button for runs already pending end', () => {
+    const onEndRun = vi.fn();
+    const activeRun = {
+      id: 'run-5',
+      movie_id: 'm1',
+      release_date: '2026-07-01',
+      end_date: null,
+      label: null,
+      created_at: '2026-07-01T00:00:00Z',
+    };
+    render(
+      <TheatricalRunsSection
+        {...defaultProps}
+        visibleRuns={[activeRun]}
+        pendingEndRunIds={new Set(['run-5'])}
+        onEndRun={onEndRun}
+      />,
+    );
+    expect(screen.queryByLabelText('End run 2026-07-01')).not.toBeInTheDocument();
+  });
+
+  it('does not show End button when onEndRun is not provided', () => {
+    const activeRun = {
+      id: 'run-6',
+      movie_id: 'm1',
+      release_date: '2026-08-01',
+      end_date: null,
+      label: null,
+      created_at: '2026-08-01T00:00:00Z',
+    };
+    render(<TheatricalRunsSection {...defaultProps} visibleRuns={[activeRun]} />);
+    expect(screen.queryByLabelText('End run 2026-08-01')).not.toBeInTheDocument();
+  });
+
+  it('passes label through to onAdd when label field is filled', () => {
+    const onAdd = vi.fn();
+    render(<TheatricalRunsSection {...defaultProps} showAddForm={true} onAdd={onAdd} />);
+
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-09-01' } });
+
+    const labelInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+    fireEvent.change(labelInput, { target: { value: 'Re-release' } });
+
+    fireEvent.click(screen.getByText('Add Run'));
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ release_date: '2026-09-01', label: 'Re-release' }),
+    );
+  });
+
+  it('Cancel button resets form fields and error state', () => {
+    render(<TheatricalRunsSection {...defaultProps} showAddForm={true} />);
+
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '2026-10-01' } });
+
+    fireEvent.click(screen.getByText('Cancel'));
+
+    // showAddForm is controlled by parent; verify onCloseAddForm was called
+    expect(defaultProps.onCloseAddForm).toHaveBeenCalled();
+  });
+
+  it('does not show End button for runs with end_date', () => {
+    const onEndRun = vi.fn();
+    const endedRun = {
+      id: 'run-7',
+      movie_id: 'm1',
+      release_date: '2026-01-01',
+      end_date: '2026-02-01',
+      label: null,
+      created_at: '2026-01-01T00:00:00Z',
+    };
+    render(
+      <TheatricalRunsSection {...defaultProps} visibleRuns={[endedRun]} onEndRun={onEndRun} />,
+    );
+    expect(screen.queryByLabelText('End run 2026-01-01')).not.toBeInTheDocument();
+  });
 });

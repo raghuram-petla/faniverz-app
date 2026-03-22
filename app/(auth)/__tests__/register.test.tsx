@@ -71,7 +71,28 @@ jest.mock('@/components/auth/SocialSignInButtons', () => ({
 }));
 
 jest.mock('@/components/auth/PhoneOtpModal', () => ({
-  PhoneOtpModal: () => null,
+  PhoneOtpModal: ({
+    visible,
+    onClose,
+    onSuccess,
+  }: {
+    visible: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+  }) => {
+    const { View, TouchableOpacity, Text } = require('react-native');
+    if (!visible) return null;
+    return (
+      <View testID="phone-otp-modal">
+        <TouchableOpacity testID="phone-modal-close" onPress={onClose}>
+          <Text>Close</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="phone-modal-success" onPress={onSuccess}>
+          <Text>Verify</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  },
 }));
 
 jest.mock('@/styles/auth.styles', () => ({
@@ -423,5 +444,97 @@ describe('RegisterScreen', () => {
     const { UNSAFE_getByProps } = render(<RegisterScreen />);
     // Default state is visible=false
     expect(UNSAFE_getByProps({ visible: false })).toBeTruthy();
+  });
+
+  it('username field submits to email field via returnKeyType next', () => {
+    render(<RegisterScreen />);
+    const usernameInput = screen.getByPlaceholderText('auth.username');
+    expect(usernameInput.props.returnKeyType).toBe('next');
+  });
+
+  it('email field submits to password field via returnKeyType next', () => {
+    render(<RegisterScreen />);
+    const emailInput = screen.getByPlaceholderText('auth.email');
+    expect(emailInput.props.returnKeyType).toBe('next');
+  });
+
+  it('confirm password field has returnKeyType go and triggers handleSignUp on submit', async () => {
+    const mockSignUp = jest.fn().mockResolvedValue(undefined);
+    mockUseEmailAuth.mockReturnValue({ signUp: mockSignUp, isLoading: false, error: null });
+
+    render(<RegisterScreen />);
+    const confirmInput = screen.getByPlaceholderText('auth.confirmPassword');
+    expect(confirmInput.props.returnKeyType).toBe('go');
+
+    // Fill fields and submit via confirm password
+    fireEvent.changeText(screen.getByPlaceholderText('auth.username'), 'user1');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'user@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'pass123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.confirmPassword'), 'pass123');
+
+    await act(async () => {
+      fireEvent(confirmInput, 'onSubmitEditing');
+    });
+
+    expect(mockSignUp).toHaveBeenCalledWith('user@test.com', 'pass123', 'user1');
+  });
+
+  it('renders OR divider text', () => {
+    render(<RegisterScreen />);
+    expect(screen.getByText('auth.or')).toBeTruthy();
+  });
+
+  it('renders back button with accessibility label', () => {
+    render(<RegisterScreen />);
+    expect(screen.getByLabelText('Go back')).toBeTruthy();
+  });
+
+  it('disables create button when loading', () => {
+    mockUseEmailAuth.mockReturnValue({ signUp: jest.fn(), isLoading: true, error: null });
+    render(<RegisterScreen />);
+    // The button should be disabled
+    const { TouchableOpacity } = require('react-native');
+    const buttons = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    const createBtn = buttons.find(
+      (b: { props: Record<string, unknown> }) => b.props.disabled === true,
+    );
+    expect(createBtn).toBeTruthy();
+  });
+
+  it('onSubmitEditing on username field focuses email field', () => {
+    render(<RegisterScreen />);
+    const usernameInput = screen.getByPlaceholderText('auth.username');
+    // Trigger onSubmitEditing — should not crash (focuses email ref)
+    fireEvent(usernameInput, 'onSubmitEditing');
+    expect(usernameInput).toBeTruthy();
+  });
+
+  it('onSubmitEditing on email field focuses password field', () => {
+    render(<RegisterScreen />);
+    const emailInput = screen.getByPlaceholderText('auth.email');
+    // Trigger onSubmitEditing — should not crash (focuses password ref)
+    fireEvent(emailInput, 'onSubmitEditing');
+    expect(emailInput).toBeTruthy();
+  });
+
+  it('PhoneOtpModal onClose hides the modal', () => {
+    render(<RegisterScreen />);
+    // First, open the phone modal
+    fireEvent.press(screen.getByLabelText('Phone Sign In'));
+    // Modal should now be visible
+    expect(screen.getByTestId('phone-otp-modal')).toBeTruthy();
+    // Close the modal
+    fireEvent.press(screen.getByTestId('phone-modal-close'));
+    // Modal should be hidden
+    expect(screen.queryByTestId('phone-otp-modal')).toBeNull();
+  });
+
+  it('PhoneOtpModal onSuccess navigates to tabs', () => {
+    render(<RegisterScreen />);
+    // Open phone modal
+    fireEvent.press(screen.getByLabelText('Phone Sign In'));
+    // Trigger success
+    fireEvent.press(screen.getByTestId('phone-modal-success'));
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
   });
 });

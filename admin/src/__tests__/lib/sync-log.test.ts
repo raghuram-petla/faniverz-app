@@ -186,4 +186,40 @@ describe('completeSyncLog', () => {
 
     expect(mocks.mockEq).toHaveBeenCalledWith('id', 'log-xyz');
   });
+
+  it('throws on supabase update error', async () => {
+    mocks.mockEq.mockResolvedValue({
+      error: { message: 'Update failed' },
+    });
+
+    await expect(completeSyncLog(supabase, 'log-1', { status: 'success' })).rejects.toThrow(
+      'Failed to complete sync log: Update failed',
+    );
+  });
+
+  it('includes non-empty details array in update', async () => {
+    mocks.mockEq.mockResolvedValue({ error: null });
+
+    await completeSyncLog(supabase, 'log-1', {
+      status: 'success',
+      details: ['Movie A', 'Movie B'],
+    });
+
+    expect(mocks.mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: ['Movie A', 'Movie B'],
+      }),
+    );
+  });
+
+  it('defaults details to empty array when details is empty array', async () => {
+    mocks.mockEq.mockResolvedValue({ error: null });
+
+    await completeSyncLog(supabase, 'log-1', {
+      status: 'success',
+      details: [],
+    });
+
+    expect(mocks.mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ details: [] }));
+  });
 });

@@ -198,3 +198,69 @@ describe('useRemoveMoviePlatform', () => {
     alertSpy.mockRestore();
   });
 });
+
+// ── Edge case: useMoviePlatforms with null data ──
+
+describe('useMoviePlatforms - null data', () => {
+  it('returns data from supabase query', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({ eq: mockEq }),
+    });
+
+    const { result } = renderHook(() => useMoviePlatforms('m1'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual([]);
+  });
+});
+
+// ── Edge case: error.message fallback to 'Operation failed' ──
+
+describe('useAddMoviePlatform - empty error message fallback', () => {
+  it('shows "Operation failed" when error.message is empty string', async () => {
+    // Create an error with empty message to trigger the || fallback
+    const emptyError = new Error('');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(emptyError);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useAddMoviePlatform(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({
+        movie_id: 'm1',
+        platform_id: 'p1',
+      });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('Operation failed');
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRemoveMoviePlatform - empty error message fallback', () => {
+  it('shows "Operation failed" when error.message is empty string', async () => {
+    const emptyError = new Error('');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(emptyError);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useRemoveMoviePlatform(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ movieId: 'm1', platformId: 'p1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('Operation failed');
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+});

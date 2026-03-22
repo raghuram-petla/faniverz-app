@@ -203,4 +203,18 @@ describe('MediaScreen', () => {
     // Official Trailer should still be visible (Trailer type), Title Song should be hidden
     expect(screen.getByText('Official Trailer')).toBeTruthy();
   });
+
+  it('useAnimatedStyle callback for title fade returns opacity', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    const interpolate = require('react-native-reanimated').interpolate;
+    interpolate.mockImplementation((value: number) => value);
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(<MediaScreen />);
+    expect(useAnimatedStyle).toHaveBeenCalled();
+    useAnimatedStyle.mockImplementation(() => ({}));
+    interpolate.mockImplementation(() => undefined);
+  });
 });

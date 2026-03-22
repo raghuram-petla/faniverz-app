@@ -133,4 +133,53 @@ describe('MovieQuickAction', () => {
     rerender(<MovieQuickAction {...baseProps} actionType="watchlist" isActive={true} />);
     expect(getByLabelText('Pushpa 2 saved, tap to remove')).toBeTruthy();
   });
+
+  it('bounce animation fires withSequence on activation transition', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+    withSequence.mockClear();
+
+    const { rerender } = render(<MovieQuickAction {...baseProps} isActive={false} />);
+    rerender(<MovieQuickAction {...baseProps} isActive={true} />);
+    // bounce should fire withSequence
+    expect(withSequence).toHaveBeenCalled();
+  });
+
+  it('does not fire bounce on deactivation transition', () => {
+    const withSequence = require('react-native-reanimated').withSequence;
+
+    const { rerender } = render(<MovieQuickAction {...baseProps} isActive={true} />);
+    withSequence.mockClear();
+    rerender(<MovieQuickAction {...baseProps} isActive={false} />);
+    expect(withSequence).not.toHaveBeenCalled();
+  });
+
+  it('does not fire bounce when animations are disabled', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+    const withSequence = require('react-native-reanimated').withSequence;
+    withSequence.mockClear();
+
+    const { rerender } = render(<MovieQuickAction {...baseProps} isActive={false} />);
+    rerender(<MovieQuickAction {...baseProps} isActive={true} />);
+    expect(withSequence).not.toHaveBeenCalled();
+
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
+  });
+
+  it('handlePress callback wraps onPress correctly', () => {
+    const onPress = jest.fn();
+    render(<MovieQuickAction {...baseProps} onPress={onPress} />);
+    fireEvent.press(screen.getByLabelText('Follow Pushpa 2'));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('useAnimatedStyle callback returns transform with scale', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(<MovieQuickAction {...baseProps} />);
+    expect(useAnimatedStyle).toHaveBeenCalled();
+    useAnimatedStyle.mockImplementation(() => ({}));
+  });
 });

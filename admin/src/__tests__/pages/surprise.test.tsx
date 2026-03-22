@@ -2,7 +2,7 @@
  * Tests for SurpriseContentPage — surprise content management.
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SurpriseContentPage from '@/app/(dashboard)/surprise/page';
 
@@ -59,12 +59,14 @@ const mockSurpriseItems = [
 let mockIsLoading = false;
 let mockData: typeof mockSurpriseItems | null = mockSurpriseItems;
 
+const mockDeleteMutate = vi.fn();
+
 vi.mock('@/hooks/useAdminSurprise', () => ({
   useAdminSurprise: () => ({
     data: mockIsLoading ? undefined : mockData,
     isLoading: mockIsLoading,
   }),
-  useDeleteSurprise: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteSurprise: () => ({ mutate: mockDeleteMutate, isPending: false }),
 }));
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -76,6 +78,7 @@ function renderWithProviders(ui: React.ReactElement) {
 
 describe('SurpriseContentPage', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockIsReadOnly = false;
     mockIsLoading = false;
     mockData = mockSurpriseItems;
@@ -172,5 +175,46 @@ describe('SurpriseContentPage', () => {
     renderWithProviders(<SurpriseContentPage />);
 
     expect(screen.queryByTitle('Delete')).not.toBeInTheDocument();
+  });
+
+  it('calls deleteItem.mutate when delete is confirmed', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderWithProviders(<SurpriseContentPage />);
+
+    const deleteButtons = screen.getAllByTitle('Delete');
+    fireEvent.click(deleteButtons[0]);
+
+    expect(window.confirm).toHaveBeenCalledWith('Delete this surprise content?');
+    expect(mockDeleteMutate).toHaveBeenCalledWith('surprise-1', expect.any(Object));
+    vi.restoreAllMocks();
+  });
+
+  it('does not call deleteItem.mutate when confirm is cancelled', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderWithProviders(<SurpriseContentPage />);
+
+    const deleteButtons = screen.getAllByTitle('Delete');
+    fireEvent.click(deleteButtons[0]);
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockDeleteMutate).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it('invokes onError callback with error message when delete fails', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    renderWithProviders(<SurpriseContentPage />);
+
+    const deleteButtons = screen.getAllByTitle('Delete');
+    fireEvent.click(deleteButtons[0]);
+
+    // Extract the onError callback from the mutate call and invoke it
+    const mutateCall = mockDeleteMutate.mock.calls[0];
+    const options = mutateCall[1];
+    options.onError(new Error('Network failure'));
+
+    expect(window.alert).toHaveBeenCalledWith('Error: Network failure');
+    vi.restoreAllMocks();
   });
 });

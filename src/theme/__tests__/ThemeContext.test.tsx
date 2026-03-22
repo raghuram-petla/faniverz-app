@@ -114,4 +114,49 @@ describe('useTheme', () => {
     // Restore animations for subsequent tests
     useAnimationStore.setState({ animationsEnabled: true });
   });
+
+  it('loads stored light mode from AsyncStorage', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('light');
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('light'));
+    expect(result.current.isDark).toBe(false);
+  });
+
+  it('loads stored system mode from AsyncStorage', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('system');
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('system'));
+  });
+
+  it('handles AsyncStorage.getItem rejection gracefully', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockRejectedValue(new Error('storage error'));
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    // Should still render with default system mode
+    await waitFor(() => expect(result.current.mode).toBe('system'));
+  });
+
+  it('Appearance.setColorScheme is called when mode changes', async () => {
+    const { Appearance } = require('react-native');
+    const spy = jest.spyOn(Appearance, 'setColorScheme').mockImplementation();
+
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('system'));
+
+    act(() => result.current.setMode('dark'));
+    expect(spy).toHaveBeenCalledWith('dark');
+
+    act(() => result.current.setMode('light'));
+    expect(spy).toHaveBeenCalledWith('light');
+
+    act(() => result.current.setMode('system'));
+    expect(spy).toHaveBeenCalledWith(null);
+
+    spy.mockRestore();
+  });
+
+  it('returns colors object from context', async () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.colors).toBeDefined());
+    expect(typeof result.current.colors).toBe('object');
+  });
 });

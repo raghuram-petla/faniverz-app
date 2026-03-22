@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 
@@ -94,6 +94,43 @@ vi.stubGlobal(
   }),
 );
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const capturedDiscoverProps: Record<string, any> = {};
+vi.mock('@/components/sync/DiscoverTab', () => ({
+  DiscoverTab: (props: any) => {
+    capturedDiscoverProps.current = props;
+    return (
+      <div data-testid="discover-tab">
+        <input placeholder="Search movies, actors, or TMDB ID..." />
+        <button>Discover</button>
+        <span>All months</span>
+      </div>
+    );
+  },
+}));
+
+vi.mock('@/components/sync/BulkTab', () => ({
+  BulkTab: () => (
+    <div data-testid="bulk-tab">
+      <span>Stale Movies</span>
+      <span>Missing Actor Bios</span>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/sync/HistoryTab', () => ({
+  HistoryTab: () => (
+    <div data-testid="history-tab">
+      <select role="combobox">
+        <option>All</option>
+      </select>
+      <select role="combobox">
+        <option>All</option>
+      </select>
+    </div>
+  ),
+}));
+
 import SyncPage from '@/app/(dashboard)/sync/page';
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -141,5 +178,44 @@ describe('SyncPage', () => {
     // History tab has filter selects and a table
     const selects = screen.getAllByRole('combobox');
     expect(selects.length).toBeGreaterThanOrEqual(2); // status + function filters
+  });
+
+  it('can switch back from Bulk to Discover', () => {
+    renderWithProviders(<SyncPage />);
+    fireEvent.click(screen.getByText('Bulk'));
+    expect(screen.getByText('Stale Movies')).toBeInTheDocument();
+    // Click first "Discover" button (tab)
+    const discoverButtons = screen.getAllByText('Discover');
+    fireEvent.click(discoverButtons[0]);
+    expect(screen.getByPlaceholderText('Search movies, actors, or TMDB ID...')).toBeInTheDocument();
+  });
+
+  it('shows confirm dialog when switching tabs during import', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    renderWithProviders(<SyncPage />);
+
+    // Set isImporting to true via DiscoverTab callback
+    act(() => capturedDiscoverProps.current.onImportingChange(true));
+
+    // Try to switch to Bulk - should be blocked
+    fireEvent.click(screen.getByText('Bulk'));
+    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('still being imported'));
+    // Still on Discover tab
+    expect(screen.getByTestId('discover-tab')).toBeInTheDocument();
+    expect(screen.queryByTestId('bulk-tab')).not.toBeInTheDocument();
+
+    vi.restoreAllMocks();
+  });
+
+  it('allows tab switch when confirm returns true during import', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderWithProviders(<SyncPage />);
+
+    act(() => capturedDiscoverProps.current.onImportingChange(true));
+
+    fireEvent.click(screen.getByText('Bulk'));
+    expect(screen.getByTestId('bulk-tab')).toBeInTheDocument();
+
+    vi.restoreAllMocks();
   });
 });

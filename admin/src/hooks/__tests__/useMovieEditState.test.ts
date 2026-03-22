@@ -325,6 +325,84 @@ describe('useMovieEditState', () => {
     expect(result.current.changesParams.setForm).toBeDefined();
   });
 
+  it('pendingCastIds maps _id from pendingCastAdds via useMemo', () => {
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useMovieEditState('movie-1'), { wrapper: Wrapper });
+
+    // Initially empty
+    expect(result.current.pendingCastIds.size).toBe(0);
+
+    // Now add pending cast items via setPendingCastAdds
+    act(() => {
+      result.current.setPendingCastAdds([
+        { _id: 'cast-1', actor_id: 'a1', role_name: 'Hero', character_name: '', is_lead: false },
+        { _id: 'cast-2', actor_id: 'a2', role_name: 'Villain', character_name: '', is_lead: false },
+      ] as never);
+    });
+
+    expect(result.current.pendingCastIds.size).toBe(2);
+    expect(result.current.pendingCastIds.has('cast-1')).toBe(true);
+    expect(result.current.pendingCastIds.has('cast-2')).toBe(true);
+  });
+
+  it('pendingVideoIds maps _id from pendingVideoAdds via useMemo', () => {
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useMovieEditState('movie-1'), { wrapper: Wrapper });
+
+    act(() => {
+      result.current.setPendingVideoAdds([
+        {
+          _id: 'vid-1',
+          title: 'Trailer',
+          url: 'https://youtube.com/1',
+          platform: 'youtube',
+          video_type: 'trailer',
+        },
+      ] as never);
+    });
+
+    expect(result.current.pendingVideoIds.size).toBe(1);
+    expect(result.current.pendingVideoIds.has('vid-1')).toBe(true);
+  });
+
+  it('pendingRunIds maps _id from pendingRunAdds via useMemo', () => {
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useMovieEditState('movie-1'), { wrapper: Wrapper });
+
+    act(() => {
+      result.current.setPendingRunAdds([
+        { _id: 'run-1', country_code: 'US', start_date: '2024-01-01', end_date: null },
+      ] as never);
+    });
+
+    expect(result.current.pendingRunIds.size).toBe(1);
+    expect(result.current.pendingRunIds.has('run-1')).toBe(true);
+  });
+
+  it('resets saveStatus from success to idle after 3 seconds', () => {
+    vi.useFakeTimers();
+    // Capture the setSaveStatus that is passed to createMovieEditHandlers
+    let capturedSetSaveStatus: ((s: 'idle' | 'success') => void) | null = null;
+    mockCreateMovieEditHandlers.mockImplementation((deps: Record<string, unknown>) => {
+      capturedSetSaveStatus = deps.setSaveStatus as (s: 'idle' | 'success') => void;
+      return makeHandlers();
+    });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useMovieEditState('movie-1'), { wrapper: Wrapper });
+    expect(capturedSetSaveStatus).not.toBeNull();
+    // Set saveStatus to success via the captured setter
+    act(() => {
+      capturedSetSaveStatus!('success');
+    });
+    expect(result.current.saveStatus).toBe('success');
+    // Advance timers by 3 seconds
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.saveStatus).toBe('idle');
+    vi.useRealTimers();
+  });
+
   it('movie data with null optionals defaults to empty strings in form', () => {
     const movie = {
       id: 'movie-1',

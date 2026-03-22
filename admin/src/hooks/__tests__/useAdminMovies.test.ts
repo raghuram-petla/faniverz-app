@@ -277,6 +277,134 @@ describe('useAdminMovies', () => {
     expect(result.current.hasNextPage).toBe(true);
   });
 
+  it('applies excludeIds filter when statusResult has excludeIds', async () => {
+    const chain = buildResolvingChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(applyStatusFilter).mockReturnValue({
+      query: chain,
+      empty: false,
+      includeIds: null,
+      excludeIds: ['exc-1', 'exc-2'],
+    });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminMovies('', 'released'), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(chain.not).toHaveBeenCalledWith('id', 'in', '(exc-1,exc-2)');
+  });
+
+  it('applies mergedIds filter when intersectIdSets returns non-null', async () => {
+    const chain = buildResolvingChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(applyStatusFilter).mockReturnValue({
+      query: chain,
+      empty: false,
+      includeIds: ['m1', 'm2'],
+      excludeIds: [],
+    });
+    vi.mocked(intersectIdSets).mockReturnValue(['m1', 'm2']);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminMovies('', 'streaming'), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(chain.in).toHaveBeenCalledWith('id', ['m1', 'm2']);
+  });
+
+  it('returns empty when mergedIds is empty array', async () => {
+    const chain = buildResolvingChain({ data: [], error: null });
+    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(applyStatusFilter).mockReturnValue({
+      query: chain,
+      empty: false,
+      includeIds: [],
+      excludeIds: [],
+    });
+    vi.mocked(intersectIdSets).mockReturnValue([]);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminMovies('', 'streaming'), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(result.current.data?.pages[0]).toEqual([]);
+  });
+
+  it('resolves actor movie IDs when actorSearch is provided', async () => {
+    const actorIds = [{ movie_id: 'am1' }, { movie_id: 'am2' }];
+    const actorChain = {
+      select: vi.fn().mockReturnThis(),
+      ilike: vi.fn().mockResolvedValue({ data: actorIds, error: null }),
+    };
+    const mainChain = buildResolvingChain({ data: [], error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_cast') return actorChain;
+      return mainChain;
+    });
+
+    vi.mocked(applyStatusFilter).mockReturnValue({
+      query: mainChain,
+      empty: false,
+      includeIds: null,
+      excludeIds: [],
+    });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(
+      () => useAdminMovies('', '', undefined, { actorSearch: 'Hero' }),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess || result.current.isError).toBe(true);
+    });
+
+    expect(mockFrom).toHaveBeenCalledWith('movie_cast');
+  });
+
+  it('resolves platform filter IDs when platformId is provided', async () => {
+    const platIds = [{ movie_id: 'pm1' }];
+    const platChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: platIds, error: null }),
+    };
+    const mainChain = buildResolvingChain({ data: [], error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_platforms') return platChain;
+      return mainChain;
+    });
+
+    vi.mocked(applyStatusFilter).mockReturnValue({
+      query: mainChain,
+      empty: false,
+      includeIds: null,
+      excludeIds: [],
+    });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(
+      () => useAdminMovies('', '', undefined, { platformId: 'plat-1' }),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess || result.current.isError).toBe(true);
+    });
+
+    expect(mockFrom).toHaveBeenCalledWith('movie_platforms');
+  });
+
   it('has no next page when page is less than 50 items', async () => {
     const chain = buildResolvingChain({ data: [{ id: '1' }], error: null });
     mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);

@@ -88,6 +88,7 @@ vi.mock('@/components/movie-edit/ActorSearchDropdown', () => ({
     searchQuery,
     onSearchChange,
     onSelect,
+    onQuickAdd,
   }: {
     searchQuery: string;
     onSearchChange: (q: string) => void;
@@ -108,6 +109,9 @@ vi.mock('@/components/movie-edit/ActorSearchDropdown', () => ({
         data-testid="select-actor"
       >
         Select Actor
+      </button>
+      <button onClick={() => onQuickAdd('Quick Actor')} data-testid="quick-add-btn">
+        Quick Add
       </button>
     </div>
   ),
@@ -394,7 +398,43 @@ describe('CastSection', () => {
     mockCreateMutateAsync.mockResolvedValue({ id: 'new-actor-id', name: 'New Actor' });
     const setCastSearchQuery = vi.fn();
 
+    // Override the ActorSearchDropdown mock to expose onQuickAdd
+    const { unmount } = render(
+      <CastSection {...defaultProps} showAddForm setCastSearchQuery={setCastSearchQuery} />,
+    );
+    unmount();
+  });
+
+  it('handleQuickAdd creates actor and sets form state', async () => {
+    mockCreateMutateAsync.mockResolvedValue({ id: 'new-actor-id', name: 'Quick Actor' });
+    const setCastSearchQuery = vi.fn();
+
     render(<CastSection {...defaultProps} showAddForm setCastSearchQuery={setCastSearchQuery} />);
+
+    fireEvent.click(screen.getByTestId('quick-add-btn'));
+    await vi.waitFor(() => {
+      expect(mockCreateMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Quick Actor', person_type: 'actor' }),
+      );
+    });
+    expect(setCastSearchQuery).toHaveBeenCalledWith('Quick Actor');
+  });
+
+  it('handleQuickAdd uses technician person_type for crew', async () => {
+    mockCreateMutateAsync.mockResolvedValue({ id: 'new-crew-id', name: 'Quick Actor' });
+    const setCastSearchQuery = vi.fn();
+
+    render(<CastSection {...defaultProps} showAddForm setCastSearchQuery={setCastSearchQuery} />);
+
+    // Switch to crew type
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'crew' } });
+
+    fireEvent.click(screen.getByTestId('quick-add-btn'));
+    await vi.waitFor(() => {
+      expect(mockCreateMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ person_type: 'technician' }),
+      );
+    });
   });
 
   it('calls onReorder when cast drag happens', () => {
@@ -412,6 +452,34 @@ describe('CastSection', () => {
     fireEvent.click(dragButtons[0]);
 
     expect(onReorder).toHaveBeenCalled();
+  });
+
+  it('includes role_order when submitting crew member with role_order set', () => {
+    const onAdd = vi.fn();
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} />);
+
+    // Switch to crew type
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'crew' } });
+
+    // Set role order
+    fireEvent.change(screen.getByLabelText('Role Order'), { target: { value: '1' } });
+
+    // Set role name
+    fireEvent.change(screen.getByLabelText('Role Title'), { target: { value: 'Director' } });
+
+    // Select an actor
+    fireEvent.click(screen.getByTestId('select-actor'));
+
+    // Submit
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        credit_type: 'crew',
+        role_name: 'Director',
+        role_order: 1,
+      }),
+    );
   });
 
   it('calls onReorder when crew drag happens', () => {

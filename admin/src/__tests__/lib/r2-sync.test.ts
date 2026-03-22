@@ -156,12 +156,127 @@ describe('uploadImageFromUrl', () => {
 
     expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ ContentType: 'image/jpeg' }));
   });
+
+  it('uses BACKDROP_VARIANTS for movieBackdrops bucket', async () => {
+    const mockR2 = { send: mockSend };
+    mockGetR2Client.mockReturnValue(mockR2);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+        headers: { get: () => 'image/jpeg' },
+      }),
+    );
+
+    await uploadImageFromUrl(
+      'https://cdn.example.com/backdrop.jpg',
+      R2_BUCKETS.movieBackdrops,
+      'backdrop.jpg',
+    );
+
+    // Should have uploaded original + variants from BACKDROP_VARIANTS
+    expect(mockSend).toHaveBeenCalled();
+  });
+
+  it('uses PHOTO_VARIANTS for unknown bucket (default case)', async () => {
+    const mockR2 = { send: mockSend };
+    mockGetR2Client.mockReturnValue(mockR2);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+        headers: { get: () => 'image/jpeg' },
+      }),
+    );
+
+    await uploadImageFromUrl(
+      'https://cdn.example.com/other.jpg',
+      'some-unknown-bucket',
+      'other.jpg',
+    );
+
+    expect(mockSend).toHaveBeenCalled();
+  });
 });
 
 describe('maybeUploadImage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetR2Client.mockReturnValue(null); // R2 not configured
+  });
+
+  it('uses PHOTO_VARIANTS for actorPhotos bucket', async () => {
+    mockGetR2Client.mockReturnValue({ send: mockSend });
+    const mockHeaders = new Headers();
+    mockHeaders.set('content-type', 'image/jpeg');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: mockHeaders,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+      }),
+    );
+
+    const result = await uploadImageFromUrl(
+      'https://image.tmdb.org/t/p/w185/photo.jpg',
+      R2_BUCKETS.actorPhotos,
+      'actor-123.jpg',
+    );
+
+    expect(result).toBe('actor-123.jpg');
+    expect(mockSend).toHaveBeenCalled();
+  });
+
+  it('uses BACKDROP_VARIANTS for movieBackdrops bucket', async () => {
+    mockGetR2Client.mockReturnValue({ send: mockSend });
+    const mockHeaders = new Headers();
+    mockHeaders.set('content-type', 'image/jpeg');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: mockHeaders,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+      }),
+    );
+
+    const result = await uploadImageFromUrl(
+      'https://image.tmdb.org/t/p/w1280/backdrop.jpg',
+      R2_BUCKETS.movieBackdrops,
+      'backdrop-123.jpg',
+    );
+
+    expect(result).toBe('backdrop-123.jpg');
+    expect(mockSend).toHaveBeenCalled();
+  });
+
+  it('uses PHOTO_VARIANTS as default for unknown bucket', async () => {
+    mockGetR2Client.mockReturnValue({ send: mockSend });
+    const mockHeaders = new Headers();
+    mockHeaders.set('content-type', 'image/jpeg');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: mockHeaders,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+      }),
+    );
+
+    const result = await uploadImageFromUrl(
+      'https://image.tmdb.org/t/p/w500/img.jpg',
+      'unknown-bucket',
+      'test.jpg',
+    );
+
+    expect(result).toBe('test.jpg');
+    expect(mockSend).toHaveBeenCalled();
   });
 
   it('returns null for null tmdbPath', async () => {

@@ -86,6 +86,8 @@ describe('POST /api/sync/discover', () => {
     mockDiscoverMoviesByLanguage.mockReset();
     mockDiscoverMoviesByLanguageByMonth.mockReset();
     mockSelectIn.mockReset();
+    mockIsNull.mockReset();
+    mockIsNull.mockResolvedValue({ data: [] });
 
     mockGetUser.mockResolvedValue({
       data: { user: { id: 'user-1', email: 'admin@test.com' } },
@@ -152,6 +154,36 @@ describe('POST /api/sync/discover', () => {
     // Verify full shape is present in the response
     expect(data.existingMovies[0]).toHaveProperty('id', 'uuid-100');
     expect(data.existingMovies[0]).toHaveProperty('title', 'Pushpa');
+  });
+
+  it('detects duplicate suspects for movies with matching titles but no tmdb_id', async () => {
+    mockDiscoverMoviesByLanguage.mockResolvedValue([
+      { id: 100, title: 'Pushpa' },
+      { id: 200, title: 'RRR' },
+    ]);
+    mockSelectIn.mockResolvedValue({
+      data: [{ id: 'uuid-100', tmdb_id: 100, title: 'Pushpa' }],
+    });
+    // Return a suspect movie that has the same title but no tmdb_id
+    mockIsNull.mockResolvedValue({
+      data: [{ id: 'suspect-1', title: 'RRR', tmdb_id: null }],
+    });
+
+    const res = await POST(makeRequest({ year: 2025 }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.duplicateSuspects).toBeDefined();
+    expect(data.duplicateSuspects[200]).toEqual({ id: 'suspect-1', title: 'RRR' });
+  });
+
+  it('returns error when TMDB discover throws', async () => {
+    mockDiscoverMoviesByLanguage.mockRejectedValue(new Error('TMDB rate limit'));
+    mockIsNull.mockResolvedValue({ data: [] });
+
+    const res = await POST(makeRequest({ year: 2025 }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBeDefined();
   });
 
   it('discovers movies by year and month when month is provided', async () => {

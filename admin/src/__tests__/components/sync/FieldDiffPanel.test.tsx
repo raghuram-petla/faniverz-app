@@ -255,4 +255,84 @@ describe('FieldDiffPanel', () => {
     const synopsisLabel = screen.getByText('Synopsis');
     expect(synopsisLabel.className).toContain('line-through');
   });
+
+  it('toggles a field checkbox selection on and off', () => {
+    const onApply = vi.fn().mockResolvedValue(undefined);
+    render(
+      <FieldDiffPanel
+        movie={makeMovie()}
+        tmdb={makeTmdb()}
+        appliedFields={[]}
+        isSaving={false}
+        onApply={onApply}
+      />,
+    );
+    // Find checkboxes — missing fields are pre-checked
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    // The non-resync checkboxes (all except last which is "Re-sync cast & crew")
+    const fieldCheckboxes = checkboxes.filter((c) => !c.id.startsWith('cast-resync'));
+    // Find a pre-checked one and uncheck it
+    const checkedBox = fieldCheckboxes.find((c) => c.checked);
+    if (checkedBox) {
+      fireEvent.click(checkedBox);
+      expect(checkedBox.checked).toBe(false);
+      // Toggle back on
+      fireEvent.click(checkedBox);
+      expect(checkedBox.checked).toBe(true);
+    }
+  });
+
+  it('shows unchanged fields when "Show N unchanged fields" is clicked', () => {
+    // Create a movie where title matches TMDB, so it's "same"
+    const movie = makeMovie({ title: 'Baahubali: The Beginning' });
+    const tmdb = makeTmdb({ title: 'Baahubali: The Beginning' });
+    render(
+      <FieldDiffPanel
+        movie={movie}
+        tmdb={tmdb}
+        appliedFields={[]}
+        isSaving={false}
+        onApply={vi.fn()}
+      />,
+    );
+    // There should be a "Show N unchanged fields" button
+    const showBtn = screen.getByText(/Show.*unchanged field/);
+    expect(showBtn).toBeInTheDocument();
+    fireEvent.click(showBtn);
+    // Now it should say "Hide N unchanged fields"
+    expect(screen.getByText(/Hide.*unchanged field/)).toBeInTheDocument();
+  });
+
+  it('does not call onApply when no fields selected and forceResyncCast is false', () => {
+    const onApply = vi.fn().mockResolvedValue(undefined);
+    // All fields are same — no pre-checked checkboxes
+    const full = makeMovie({
+      title: 'Baahubali: The Beginning',
+      synopsis: 'An epic tale',
+      poster_url: '/r2/poster.jpg',
+      backdrop_url: '/r2/backdrop.jpg',
+      trailer_url: 'https://youtu.be/yt',
+      director: 'S. S. Rajamouli',
+      runtime: 159,
+      genres: ['Action', 'Drama'],
+    });
+    const tmdb = makeTmdb({
+      title: 'Baahubali: The Beginning',
+      overview: 'An epic tale',
+      runtime: 159,
+      genres: ['Action', 'Drama'],
+      director: 'S. S. Rajamouli',
+    });
+    render(
+      <FieldDiffPanel
+        movie={full}
+        tmdb={tmdb}
+        appliedFields={[]}
+        isSaving={false}
+        onApply={onApply}
+      />,
+    );
+    // Apply button should not be visible since nothing is selectable
+    expect(screen.queryByRole('button', { name: /Apply/i })).not.toBeInTheDocument();
+  });
 });

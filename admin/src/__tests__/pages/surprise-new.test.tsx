@@ -54,13 +54,16 @@ vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
 }));
 
 const mockMutate = vi.fn();
-vi.mock('@/hooks/useAdminSurprise', () => ({
-  useCreateSurprise: () => ({
-    mutate: mockMutate,
+const mockCreateSurpriseReturn = vi.hoisted(() => ({
+  current: {
+    mutate: vi.fn(),
     isPending: false,
     isError: false,
-    error: null,
-  }),
+    error: null as unknown,
+  },
+}));
+vi.mock('@/hooks/useAdminSurprise', () => ({
+  useCreateSurprise: () => mockCreateSurpriseReturn.current,
 }));
 
 function renderWithProviders(ui: React.ReactElement) {
@@ -73,6 +76,13 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('NewSurpriseContentPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockMutate.mockReset();
+    mockCreateSurpriseReturn.current = {
+      mutate: mockMutate,
+      isPending: false,
+      isError: false,
+      error: null,
+    };
   });
 
   it('renders "Add Surprise Content" heading', () => {
@@ -219,5 +229,113 @@ describe('NewSurpriseContentPage', () => {
     expect(screen.getByText('Song')).toBeInTheDocument();
     expect(screen.getByText('Short film')).toBeInTheDocument();
     expect(screen.getByText('Bts')).toBeInTheDocument();
+  });
+
+  it('shows error message when createItem has an Error instance', () => {
+    mockCreateSurpriseReturn.current = {
+      mutate: vi.fn(),
+      isPending: false,
+      isError: true,
+      error: new Error('Duplicate entry'),
+    };
+    renderWithProviders(<NewSurpriseContentPage />);
+    expect(screen.getByText('Duplicate entry')).toBeInTheDocument();
+  });
+
+  it('shows generic error message when error is not an Error instance', () => {
+    mockCreateSurpriseReturn.current = {
+      mutate: vi.fn(),
+      isPending: false,
+      isError: true,
+      error: 'some string error',
+    };
+    renderWithProviders(<NewSurpriseContentPage />);
+    expect(screen.getByText('Failed to create content')).toBeInTheDocument();
+  });
+
+  it('disables submit button and shows spinner when isPending is true', () => {
+    mockCreateSurpriseReturn.current = {
+      mutate: vi.fn(),
+      isPending: true,
+      isError: false,
+      error: null,
+    };
+    renderWithProviders(<NewSurpriseContentPage />);
+    const btn = screen.getByText('Create Content').closest('button');
+    expect(btn).toBeDisabled();
+  });
+
+  it('handles views input with non-numeric value (defaults to 0)', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    const viewsInput = screen.getByDisplayValue('0');
+    fireEvent.change(viewsInput, { target: { value: 'abc' } });
+    expect(screen.getByDisplayValue('0')).toBeInTheDocument();
+  });
+
+  it('handles views input with negative value (clamps to 0)', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    const viewsInput = screen.getByDisplayValue('0');
+    fireEvent.change(viewsInput, { target: { value: '-5' } });
+    expect(screen.getByDisplayValue('0')).toBeInTheDocument();
+  });
+
+  it('handles views input with decimal value (floors to integer)', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    const viewsInput = screen.getByDisplayValue('0');
+    fireEvent.change(viewsInput, { target: { value: '3.7' } });
+    expect(screen.getByDisplayValue('3')).toBeInTheDocument();
+  });
+
+  it('isDirty becomes true when description is entered', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    fireEvent.change(screen.getByPlaceholderText('Optional description'), {
+      target: { value: 'Some desc' },
+    });
+    const calls = vi.mocked(useUnsavedChangesWarning).mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall[0]).toBe(true);
+  });
+
+  it('isDirty becomes true when youtubeId is entered', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    fireEvent.change(screen.getByPlaceholderText('e.g. dQw4w9WgXcQ'), {
+      target: { value: 'abc123' },
+    });
+    const calls = vi.mocked(useUnsavedChangesWarning).mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall[0]).toBe(true);
+  });
+
+  it('navigates to /surprise on successful creation via onSuccess callback', async () => {
+    // Make mutate call the onSuccess callback
+    mockMutate.mockImplementation((_data: unknown, opts: { onSuccess: () => void }) => {
+      opts.onSuccess();
+    });
+    renderWithProviders(<NewSurpriseContentPage />);
+
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), {
+      target: { value: 'Test' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('e.g. dQw4w9WgXcQ'), {
+      target: { value: 'abc' },
+    });
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'song' } });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(mockRouterPush).toHaveBeenCalledWith('/surprise');
+    });
+  });
+
+  it('isDirty becomes true when category is selected', () => {
+    renderWithProviders(<NewSurpriseContentPage />);
+    fireEvent.change(screen.getByLabelText('Category'), {
+      target: { value: 'song' },
+    });
+    const calls = vi.mocked(useUnsavedChangesWarning).mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall[0]).toBe(true);
   });
 });

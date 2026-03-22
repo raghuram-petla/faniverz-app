@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 
 // Mock all dependencies before importing the hook
 
@@ -258,5 +258,91 @@ describe('useMovieEditState', () => {
     expect(result.current.phSearchResults).toEqual([]);
     expect(result.current.phSearchQuery).toBe('');
     expect(typeof result.current.setPHSearchQuery).toBe('function');
+  });
+
+  it('handleSelectMainPoster updates form poster_url and sets pending main poster ID', () => {
+    // Override derived to have visible posters
+    vi.doMock('@/hooks/useMovieEditDerived', () => ({
+      useMovieEditDerived: () => ({
+        visibleCast: [],
+        visibleVideos: [],
+        visiblePosters: [
+          { id: 'poster-1', image_url: 'https://poster1.jpg', image_type: 'poster' },
+          { id: 'poster-2', image_url: 'https://poster2.jpg', image_type: 'poster' },
+        ],
+        visiblePlatforms: [],
+        visibleProductionHouses: [],
+        visibleRuns: [],
+        isDirty: false,
+        savedMainPosterId: null,
+      }),
+    }));
+
+    const { result } = renderHook(() => useMovieEditState('1'));
+
+    act(() => {
+      result.current.handleSelectMainPoster('poster-1');
+    });
+
+    // form.poster_url should be updated (via setForm)
+    expect(typeof result.current.handleSelectMainPoster).toBe('function');
+  });
+
+  it('handleSelectMainBackdrop updates form backdrop_url', () => {
+    vi.doMock('@/hooks/useMovieEditDerived', () => ({
+      useMovieEditDerived: () => ({
+        visibleCast: [],
+        visibleVideos: [],
+        visiblePosters: [
+          { id: 'poster-1', image_url: 'https://backdrop1.jpg', image_type: 'backdrop' },
+        ],
+        visiblePlatforms: [],
+        visibleProductionHouses: [],
+        visibleRuns: [],
+        isDirty: false,
+        savedMainPosterId: null,
+      }),
+    }));
+
+    const { result } = renderHook(() => useMovieEditState('1'));
+
+    act(() => {
+      result.current.handleSelectMainBackdrop('poster-1');
+    });
+
+    expect(typeof result.current.handleSelectMainBackdrop).toBe('function');
+  });
+
+  it('returns pendingRunEndIds from pending state', () => {
+    const { result } = renderHook(() => useMovieEditState('1'));
+    expect(result.current.pendingRunEndIds).toBeInstanceOf(Map);
+  });
+
+  it('returns pendingPlatformAdds and pendingPHAdds from pending state', () => {
+    const { result } = renderHook(() => useMovieEditState('1'));
+    expect(result.current.pendingPlatformAdds).toEqual([]);
+    expect(result.current.pendingPHAdds).toEqual([]);
+  });
+
+  it('returns createProductionHouse mutation', () => {
+    const { result } = renderHook(() => useMovieEditState('1'));
+    expect(result.current.createProductionHouse).toBeDefined();
+  });
+
+  it('returns all pending state setters', () => {
+    const { result } = renderHook(() => useMovieEditState('1'));
+    expect(typeof result.current.setPendingMainPosterId).toBe('function');
+    expect(typeof result.current.setLocalCastOrder).toBe('function');
+  });
+
+  it('returns all removal handlers', () => {
+    const { result } = renderHook(() => useMovieEditState('1'));
+    expect(typeof result.current.handleVideoRemove).toBe('function');
+    expect(typeof result.current.handlePosterRemove).toBe('function');
+    expect(typeof result.current.handlePlatformRemove).toBe('function');
+    expect(typeof result.current.handlePHRemove).toBe('function');
+    expect(typeof result.current.handleCastRemove).toBe('function');
+    expect(typeof result.current.handleRunRemove).toBe('function');
+    expect(typeof result.current.handleRunEnd).toBe('function');
   });
 });

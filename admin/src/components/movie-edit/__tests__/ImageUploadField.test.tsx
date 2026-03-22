@@ -187,4 +187,14 @@ describe('ImageUploadField', () => {
     fireEvent.change(fileInput);
     expect(mockOnUpload).not.toHaveBeenCalled();
   });
+
+  it('triggers file input click when Change button is clicked (url set)', () => {
+    const { container } = render(
+      <ImageUploadField {...defaultProps} url="https://cdn/photo.jpg" />,
+    );
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const clickSpy = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
+    fireEvent.click(screen.getByText('Change'));
+    expect(clickSpy).toHaveBeenCalled();
+  });
 });

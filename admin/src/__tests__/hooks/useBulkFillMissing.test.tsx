@@ -245,6 +245,112 @@ describe('useBulkFillMissing', () => {
     expect(result.current.state.total).toBe(0);
   });
 
+  it('sets error when session is not authenticated', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    } as never);
+
+    const movies = [makeMovie('1')];
+    const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run(movies, tmdb);
+    });
+
+    expect(result.current.state.error).toBe('Not authenticated');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('counts failures when fetch throws a network error', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+    mockFetchOk();
+
+    const movies = [makeMovie('1'), makeMovie('2')];
+    const tmdb = makeTmdbMap([
+      [1, makeTmdb(1)],
+      [2, makeTmdb(2)],
+    ]);
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run(movies, tmdb);
+    });
+
+    await waitFor(() => expect(result.current.state.isRunning).toBe(false));
+    expect(result.current.state.failed).toBe(1);
+    expect(result.current.state.done).toBe(1);
+  });
+
+  it('uses fallback 429 error message when json error field is missing', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: () => Promise.resolve({}), // no error field
+    });
+
+    const movies = [makeMovie('1')];
+    const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run(movies, tmdb);
+    });
+
+    expect(result.current.state.error).toContain('TMDB rate limited');
+  });
+
+  it('does nothing when tmdbMap is not provided', async () => {
+    const movies = [makeMovie('1')];
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run(movies);
+    });
+
+    expect(result.current.state.total).toBe(0);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('reset clears state back to initial', async () => {
+    mockFetchOk();
+    const movies = [makeMovie('1')];
+    const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run(movies, tmdb);
+    });
+
+    expect(result.current.state.total).toBeGreaterThan(0);
+
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.state.total).toBe(0);
+    expect(result.current.state.done).toBe(0);
+    expect(result.current.state.failed).toBe(0);
+    expect(result.current.state.isRunning).toBe(false);
+    expect(result.current.state.error).toBeNull();
+  });
+
+  it('handles fetch exception (network error)', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+    const movies = [makeMovie('1')];
+    const tmdb = makeTmdbMap([[1, makeTmdb(1)]]);
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run(movies, tmdb);
+    });
+
+    expect(result.current.state.failed).toBe(1);
+  });
+
   it('skips movies without TMDB data in the map', async () => {
     const movies = [makeMovie('1'), makeMovie('2')];
     // Only movie 1 has TMDB data

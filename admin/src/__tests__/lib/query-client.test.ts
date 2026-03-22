@@ -24,3 +24,35 @@ describe('getQueryClient', () => {
     expect(first).toBeInstanceOf(QueryClient);
   });
 });
+
+describe('makeQueryClient — default options', () => {
+  it('sets staleTime to 5 minutes', () => {
+    const client = makeQueryClient();
+    const defaultOpts = client.getDefaultOptions();
+    expect(defaultOpts.queries?.staleTime).toBe(5 * 60 * 1000);
+  });
+
+  it('sets gcTime to 10 minutes', () => {
+    const client = makeQueryClient();
+    const defaultOpts = client.getDefaultOptions();
+    expect(defaultOpts.queries?.gcTime).toBe(10 * 60 * 1000);
+  });
+
+  it('disables refetchOnWindowFocus', () => {
+    const client = makeQueryClient();
+    const defaultOpts = client.getDefaultOptions();
+    expect(defaultOpts.queries?.refetchOnWindowFocus).toBe(false);
+  });
+
+  it('disables refetchOnReconnect', () => {
+    const client = makeQueryClient();
+    const defaultOpts = client.getDefaultOptions();
+    expect(defaultOpts.queries?.refetchOnReconnect).toBe(false);
+  });
+
+  it('sets retry to 1', () => {
+    const client = makeQueryClient();
+    const defaultOpts = client.getDefaultOptions();
+    expect(defaultOpts.queries?.retry).toBe(1);
+  });
+});

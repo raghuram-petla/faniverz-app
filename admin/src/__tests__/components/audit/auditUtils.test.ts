@@ -313,3 +313,41 @@ describe('getRevertDescription', () => {
     expect(getRevertDescription('sync')).toBe('Revert this change');
   });
 });
+
+describe('getEntityDisplayName - additional edge cases', () => {
+  it('returns platform_name for movie_platforms', () => {
+    expect(getEntityDisplayName('movie_platforms', { new: { platform_name: 'Netflix' } })).toBe(
+      'Netflix',
+    );
+  });
+
+  it('returns production_house_name for movie_production_houses', () => {
+    expect(
+      getEntityDisplayName('movie_production_houses', {
+        new: { production_house_name: 'Mythri' },
+      }),
+    ).toBe('Mythri');
+  });
+
+  it('returns null for movie_platforms without platform_name', () => {
+    expect(getEntityDisplayName('movie_platforms', { new: { platform_id: 'p1' } })).toBeNull();
+  });
+
+  it('returns null for unknown entity without title or name', () => {
+    expect(getEntityDisplayName('something_else', { new: { foo: 'bar' } })).toBeNull();
+  });
+
+  it('returns null for movie_images with neither title nor image_type', () => {
+    expect(getEntityDisplayName('movie_images', { new: { display_order: 0 } })).toBeNull();
+  });
+});
+
+describe('canRevert - additional edge cases', () => {
+  it('returns true for an unknown action with data (defaults to true)', () => {
+    expect(canRevert('unknown_action', { old: { x: 1 } })).toBe(true);
+  });
+
+  it('returns false for update with empty details', () => {
+    expect(canRevert('update', {})).toBe(false);
+  });
+});

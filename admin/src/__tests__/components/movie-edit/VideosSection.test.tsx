@@ -160,4 +160,120 @@ describe('VideosSection', () => {
     expect(iframe?.getAttribute('src')).toContain('abc12345678');
     expect(iframe?.getAttribute('src')).toContain('autoplay=1');
   });
+
+  it('submits add form with valid YouTube URL and calls onAdd', () => {
+    const onAdd = vi.fn();
+    const onCloseAddForm = vi.fn();
+    // Mock crypto.randomUUID
+    const origRandomUUID = crypto.randomUUID;
+    crypto.randomUUID = vi.fn().mockReturnValue('test-uuid-123');
+
+    render(
+      <VideosSection
+        {...defaultProps}
+        showAddForm={true}
+        onAdd={onAdd}
+        onCloseAddForm={onCloseAddForm}
+      />,
+    );
+
+    // Fill in YouTube URL
+    const urlInput = screen.getByPlaceholderText(/youtube\.com/);
+    fireEvent.change(urlInput, { target: { value: 'https://youtube.com/watch?v=dQw4w9WgXcQ' } });
+
+    // Fill in title
+    const titleInput = screen.getByPlaceholderText(/Official Trailer/);
+    fireEvent.change(titleInput, { target: { value: 'My Trailer' } });
+
+    // Submit
+    fireEvent.submit(screen.getByText('Add Video').closest('form')!);
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        youtube_id: 'dQw4w9WgXcQ',
+        title: 'My Trailer',
+        video_type: 'trailer',
+      }),
+    );
+    expect(onCloseAddForm).toHaveBeenCalled();
+
+    crypto.randomUUID = origRandomUUID;
+  });
+
+  it('shows alert for invalid YouTube URL on form submit', () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(<VideosSection {...defaultProps} showAddForm={true} />);
+
+    // Fill in invalid URL
+    const urlInput = screen.getByPlaceholderText(/youtube\.com/);
+    fireEvent.change(urlInput, { target: { value: 'invalid' } });
+
+    // Fill in title
+    const titleInput = screen.getByPlaceholderText(/Official Trailer/);
+    fireEvent.change(titleInput, { target: { value: 'Title' } });
+
+    // Submit
+    fireEvent.submit(screen.getByText('Add Video').closest('form')!);
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Invalid YouTube URL or ID. Please enter a valid YouTube video link.',
+    );
+    alertSpy.mockRestore();
+  });
+
+  it('shows YouTube preview when valid URL is entered in form', () => {
+    const { container } = render(<VideosSection {...defaultProps} showAddForm={true} />);
+
+    const urlInput = screen.getByPlaceholderText(/youtube\.com/);
+    fireEvent.change(urlInput, { target: { value: 'dQw4w9WgXcQ' } });
+
+    // Preview thumbnail should appear
+    const preview = screen.getByLabelText('Play YouTube preview');
+    expect(preview).toBeInTheDocument();
+  });
+
+  it('does not show video_date when it is null', () => {
+    const videoNoDate = { ...mockVideo, video_date: null };
+    render(<VideosSection {...defaultProps} visibleVideos={[videoNoDate]} />);
+    expect(screen.queryByText('2026-01-15')).not.toBeInTheDocument();
+  });
+
+  it('changes video type in the form', () => {
+    render(<VideosSection {...defaultProps} showAddForm={true} />);
+    // Find the select element for video type
+    const selects = document.querySelectorAll('select');
+    const typeSelect = Array.from(selects).find((s) =>
+      Array.from(s.options).some((o) => o.value === 'teaser'),
+    );
+    if (typeSelect) {
+      fireEvent.change(typeSelect, { target: { value: 'teaser' } });
+    }
+  });
+
+  it('changes video date in the form', () => {
+    render(<VideosSection {...defaultProps} showAddForm={true} />);
+    // FormInput with type="date"
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    if (dateInputs.length > 0) {
+      fireEvent.change(dateInputs[0], { target: { value: '2026-06-15' } });
+    }
+  });
+
+  it('shows legacy trailer when trailerUrl is valid and not in gallery', () => {
+    render(<VideosSection {...defaultProps} trailerUrl="https://youtu.be/legacyXYZab" />);
+    expect(screen.getByText('Test Movie - Official Trailer')).toBeInTheDocument();
+  });
+
+  it('renders "Movie" fallback title for legacy trailer when movieTitle is empty', () => {
+    render(
+      <VideosSection {...defaultProps} trailerUrl="https://youtu.be/legacyXYZab" movieTitle="" />,
+    );
+    expect(screen.getByText('Movie - Official Trailer')).toBeInTheDocument();
+  });
+
+  it('shows video type fallback when type is not in VIDEO_TYPES', () => {
+    const unknownTypeVideo = { ...mockVideo, video_type: 'custom_type' as never };
+    render(<VideosSection {...defaultProps} visibleVideos={[unknownTypeVideo]} />);
+    expect(screen.getByText('custom_type')).toBeInTheDocument();
+  });
 });

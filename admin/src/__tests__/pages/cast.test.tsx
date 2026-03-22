@@ -398,6 +398,32 @@ describe('CastPage', () => {
       });
     });
 
+    it('invokes onError callback with error message when delete fails', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockCanDelete = true;
+
+      mockUseAdminActors.mockReturnValue({
+        data: { pages: [[makeActor('a1')]] },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminActors>);
+
+      renderWithProviders(<CastPage />);
+      const buttons = screen.getAllByRole('button');
+      fireEvent.click(buttons[buttons.length - 1]);
+
+      // Extract the onError callback and invoke it
+      const mutateCall = mockDeleteMutate.mock.calls[0];
+      const options = mutateCall[1];
+      options.onError(new Error('Delete failed'));
+
+      expect(window.alert).toHaveBeenCalledWith('Error: Delete failed');
+    });
+
     it('does not call deleteActor.mutate when confirm returns false', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
       mockCanDelete = true;

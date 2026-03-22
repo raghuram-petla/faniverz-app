@@ -249,6 +249,59 @@ describe('handleSubmit', () => {
     expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('1 operation(s) failed'));
   });
 
+  it('catches unexpected non-Error objects and alerts with JSON', async () => {
+    const { buildChildMutationPromises } = await import('@/hooks/useMovieEditSubmitHelpers');
+    (buildChildMutationPromises as ReturnType<typeof vi.fn>).mockRejectedValueOnce({
+      code: 'CUSTOM',
+    });
+
+    const deps = createMockDeps();
+    const handlers = createMovieEditHandlers(deps);
+
+    await handlers.handleSubmit();
+
+    expect(window.alert).toHaveBeenCalledWith('Save failed: {"code":"CUSTOM"}');
+    expect(deps.setIsSaving).toHaveBeenCalledWith(false);
+  });
+
+  it('shows allSettled failure reasons as strings when not Error instances', async () => {
+    const deps = createMockDeps();
+    deps.updateMovie.mutateAsync = vi.fn().mockRejectedValue('string error');
+    const handlers = createMovieEditHandlers(deps);
+
+    await handlers.handleSubmit();
+
+    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('1 operation(s) failed'));
+  });
+
+  it('uses pendingPosterAdds first match (is_main_poster) when no pendingMainPosterId', async () => {
+    const deps = createMockDeps({
+      pendingMainPosterId: null,
+      pendingPosterAdds: [
+        {
+          _id: 'pending-1',
+          image_url: 'https://first-poster.jpg',
+          title: 'First',
+          description: null,
+          poster_date: null,
+          is_main_poster: true,
+          is_main_backdrop: false,
+          image_type: 'poster',
+          display_order: 0,
+        },
+      ],
+    });
+    const handlers = createMovieEditHandlers(deps);
+
+    await handlers.handleSubmit();
+
+    expect(deps.updateMovie.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        poster_url: 'https://first-poster.jpg',
+      }),
+    );
+  });
+
   it('catches unexpected errors and alerts', async () => {
     const { buildChildMutationPromises } = await import('@/hooks/useMovieEditSubmitHelpers');
     (buildChildMutationPromises as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
@@ -309,6 +362,43 @@ describe('handleSubmit', () => {
     );
   });
 
+  it('calls setForm and setInitialForm with functional updaters that update poster_url', async () => {
+    const deps = createMockDeps();
+    const handlers = createMovieEditHandlers(deps);
+
+    await handlers.handleSubmit();
+
+    // setForm should be called with a function that updates poster_url
+    expect(deps.setForm).toHaveBeenCalled();
+    const setFormCall = (deps.setForm as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => typeof c[0] === 'function',
+    );
+    expect(setFormCall).toBeDefined();
+    // Invoke the functional updater to cover the arrow function
+    const updater = setFormCall![0] as (prev: Record<string, unknown>) => Record<string, unknown>;
+    const result = updater({ poster_url: 'old.jpg', title: 'Test' });
+    expect(result.poster_url).toBe('https://example.com/poster.jpg');
+    expect(result.title).toBe('Test');
+
+    // setInitialForm should also be called with a functional updater
+    expect(deps.setInitialForm).toHaveBeenCalled();
+    const setInitialFormCall = (deps.setInitialForm as ReturnType<typeof vi.fn>).mock.calls.find(
+      (c: unknown[]) => typeof c[0] === 'function',
+    );
+    expect(setInitialFormCall).toBeDefined();
+    const initialUpdater = setInitialFormCall![0] as (
+      prev: Record<string, unknown> | null,
+    ) => Record<string, unknown> | null;
+    // Test with non-null prev
+    const result2 = initialUpdater({ poster_url: 'old.jpg', title: 'Test' });
+    expect(result2).toEqual(
+      expect.objectContaining({ poster_url: 'https://example.com/poster.jpg' }),
+    );
+    // Test with null prev
+    const result3 = initialUpdater(null);
+    expect(result3).toBeNull();
+  });
+
   it('invalidates theater-related queries on success', async () => {
     const deps = createMockDeps();
     const handlers = createMovieEditHandlers(deps);
@@ -354,6 +444,30 @@ describe('handleDelete', () => {
     await handlers.handleDelete();
 
     expect(window.alert).toHaveBeenCalledWith('Delete failed: Delete failed');
+  });
+
+  it('shows alert with stringified error when delete fails with non-Error', async () => {
+    const deps = createMockDeps();
+    deps.deleteMovie.mutateAsync = vi.fn().mockRejectedValue({ code: 'PGRST116' });
+    const handlers = createMovieEditHandlers(deps);
+
+    await handlers.handleDelete();
+
+    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Delete failed'));
+  });
+
+  it('invalidates platform-movie-ids and ott caches on delete', async () => {
+    const deps = createMockDeps();
+    const handlers = createMovieEditHandlers(deps);
+
+    await handlers.handleDelete();
+
+    expect(deps.queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['admin', 'platform-movie-ids'],
+    });
+    expect(deps.queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['admin', 'ott'],
+    });
   });
 
   it('invalidates all related caches on delete', async () => {

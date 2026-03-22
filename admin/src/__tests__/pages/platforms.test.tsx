@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PlatformsPage from '@/app/(dashboard)/platforms/page';
 
@@ -179,5 +179,97 @@ describe('PlatformsPage', () => {
     renderWithProviders(<PlatformsPage />);
     const editLink = screen.getByTitle('Edit platform');
     expect(editLink).toHaveAttribute('href', '/platforms/netflix');
+  });
+
+  it('renders platform logo when logo_url is provided', () => {
+    mockUseAdminPlatforms.mockReturnValue({
+      data: [
+        {
+          id: 'aha',
+          name: 'aha',
+          logo: 'A',
+          logo_url: 'https://r2.dev/aha.png',
+          color: '#000',
+          display_order: 1,
+          tmdb_provider_id: null,
+          regions: ['IN'],
+        },
+      ],
+      isLoading: false,
+    });
+    renderWithProviders(<PlatformsPage />);
+    const img = screen.getByAltText('aha');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://r2.dev/aha.png');
+  });
+
+  it('shows singular "platform" text for 1 platform', () => {
+    mockUseAdminPlatforms.mockReturnValue({
+      data: [
+        {
+          id: 'p1',
+          name: 'P1',
+          logo: 'P',
+          logo_url: null,
+          color: '#000',
+          display_order: 1,
+          tmdb_provider_id: null,
+          regions: ['IN'],
+        },
+      ],
+      isLoading: false,
+    });
+    renderWithProviders(<PlatformsPage />);
+    expect(screen.getByText('1 platform')).toBeInTheDocument();
+  });
+
+  it('calls delete mutation when delete button clicked and confirmed', () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+    mockUseAdminPlatforms.mockReturnValue({
+      data: [
+        {
+          id: 'netflix',
+          name: 'Netflix',
+          logo: 'N',
+          logo_url: null,
+          color: '#E50914',
+          display_order: 1,
+          tmdb_provider_id: 8,
+          regions: ['IN'],
+        },
+      ],
+      isLoading: false,
+    });
+    renderWithProviders(<PlatformsPage />);
+    fireEvent.click(screen.getByTitle('Delete platform'));
+    expect(mockDeleteMutate).toHaveBeenCalledWith('netflix');
+  });
+
+  it('does not delete when confirm is cancelled', () => {
+    window.confirm = vi.fn().mockReturnValue(false);
+    mockUseAdminPlatforms.mockReturnValue({
+      data: [
+        {
+          id: 'netflix',
+          name: 'Netflix',
+          logo: 'N',
+          logo_url: null,
+          color: '#E50914',
+          display_order: 1,
+          tmdb_provider_id: 8,
+          regions: ['IN'],
+        },
+      ],
+      isLoading: false,
+    });
+    renderWithProviders(<PlatformsPage />);
+    fireEvent.click(screen.getByTitle('Delete platform'));
+    expect(mockDeleteMutate).not.toHaveBeenCalled();
+  });
+
+  it('includes country query param in Add Platform link', () => {
+    renderWithProviders(<PlatformsPage />);
+    const addLink = screen.getByText('Add Platform').closest('a');
+    expect(addLink).toHaveAttribute('href', '/platforms/new?country=IN');
   });
 });

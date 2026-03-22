@@ -533,4 +533,126 @@ describe('CalendarScreen', () => {
     const { getByText } = render(<CalendarScreen />);
     expect(getByText('Day 15')).toBeTruthy();
   });
+
+  it('toggles year picker visibility', () => {
+    const { getByRole, getAllByText } = render(<CalendarScreen />);
+    fireEvent.press(getByRole('button', { name: 'Toggle filters' }));
+    // Open year picker
+    const allYears = getAllByText('All Years');
+    fireEvent.press(allYears[0]);
+    // Year picker is now open — "All Years" appears as button + dropdown option
+    expect(getAllByText('All Years').length).toBeGreaterThanOrEqual(2);
+    // Close year picker by pressing button again
+    fireEvent.press(allYears[0]);
+  });
+
+  it('filters movies by year only', () => {
+    const movieDate = new Date('2025-03-15T00:00:00');
+    useCalendarStore.setState({
+      selectedYear: movieDate.getFullYear(),
+      selectedMonth: null,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+
+    const { getByText } = render(<CalendarScreen />);
+    expect(getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('filters movies by month only', () => {
+    const movieDate = new Date('2025-03-15T00:00:00');
+    useCalendarStore.setState({
+      selectedYear: null,
+      selectedMonth: movieDate.getMonth(),
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+
+    const { getByText } = render(<CalendarScreen />);
+    expect(getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('excludes movies without release_date when filters are active', () => {
+    const moviesWithNull = [
+      ...mockMovies,
+      { ...mockMovies[0], id: '99', title: 'TBA Movie', release_date: null },
+    ];
+    setupDefaultMock({ data: { pages: [moviesWithNull], pageParams: [0] } });
+    useCalendarStore.setState({
+      selectedYear: 2025,
+      selectedMonth: null,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+
+    const { queryByText } = render(<CalendarScreen />);
+    expect(queryByText('TBA Movie')).toBeNull();
+  });
+
+  it('handles empty data gracefully', () => {
+    setupDefaultMock({ data: undefined });
+    const { getByText } = render(<CalendarScreen />);
+    expect(getByText('No releases found for the selected filters.')).toBeTruthy();
+  });
+
+  it('pressing year filter pill X removes year filter', () => {
+    useCalendarStore.setState({
+      selectedYear: 2025,
+      selectedMonth: null,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+    const { getByText } = render(<CalendarScreen />);
+    // Find the "×" close button next to the year pill "2025"
+    const { TouchableOpacity } = require('react-native');
+    const allTouchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    // The close icon is inside FilterPill — find the one associated with the year pill
+    const closeIcons = screen.UNSAFE_queryAllByProps({ name: 'close' });
+    if (closeIcons.length > 0) {
+      // Press the first close icon (year pill's onRemove)
+      fireEvent.press(closeIcons[0].parent!);
+    }
+    const state = useCalendarStore.getState();
+    expect(state.selectedYear).toBeNull();
+  });
+
+  it('pressing month filter pill X removes month filter', () => {
+    useCalendarStore.setState({
+      selectedYear: null,
+      selectedMonth: 5,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+    render(<CalendarScreen />);
+    // Only month pill is shown (year is null, day is null)
+    const closeIcons = screen.UNSAFE_queryAllByProps({ name: 'close' });
+    if (closeIcons.length > 0) {
+      fireEvent.press(closeIcons[0].parent!);
+    }
+    const state = useCalendarStore.getState();
+    expect(state.selectedMonth).toBeNull();
+  });
+
+  it('pressing day filter pill X removes day filter', () => {
+    useCalendarStore.setState({
+      selectedYear: null,
+      selectedMonth: null,
+      selectedDay: 15,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+    render(<CalendarScreen />);
+    // Only day pill is shown (year is null, month is null)
+    const closeIcons = screen.UNSAFE_queryAllByProps({ name: 'close' });
+    if (closeIcons.length > 0) {
+      fireEvent.press(closeIcons[0].parent!);
+    }
+    const state = useCalendarStore.getState();
+    expect(state.selectedDay).toBeNull();
+  });
 });

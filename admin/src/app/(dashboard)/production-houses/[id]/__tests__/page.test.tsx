@@ -50,10 +50,12 @@ vi.mock('@/components/common/FormChangesDock', () => ({
     saveStatus,
     onSave,
     onDiscard,
+    onRevertField,
   }: {
     saveStatus: string;
     onSave: () => void;
     onDiscard: () => void;
+    onRevertField?: (key: string) => void;
   }) => (
     <div data-testid="form-changes-dock">
       <span data-testid="save-status">{saveStatus}</span>
@@ -63,6 +65,11 @@ vi.mock('@/components/common/FormChangesDock', () => ({
       <button onClick={onDiscard} data-testid="discard-btn">
         Discard
       </button>
+      {onRevertField && (
+        <button onClick={() => onRevertField('name')} data-testid="revert-btn">
+          Revert
+        </button>
+      )}
     </div>
   ),
 }));
@@ -371,5 +378,25 @@ describe('EditProductionHousePage', () => {
   it('shows PosterVariantStatus when logo_url is set', () => {
     render(<EditProductionHousePage />);
     expect(screen.getByTestId('poster-variant-status')).toBeInTheDocument();
+  });
+
+  it('reverts form to initial values when discard is clicked', () => {
+    render(<EditProductionHousePage />);
+    const nameInput = screen.getByDisplayValue('Arka Media Works');
+    fireEvent.change(nameInput, { target: { value: 'Changed Name' } });
+    expect(screen.getByDisplayValue('Changed Name')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('discard-btn'));
+    expect(screen.getByDisplayValue('Arka Media Works')).toBeInTheDocument();
+  });
+
+  it('reverts a single field when revert button is clicked', () => {
+    render(<EditProductionHousePage />);
+    const nameInput = screen.getByDisplayValue('Arka Media Works');
+    fireEvent.change(nameInput, { target: { value: 'Changed Name' } });
+    expect(screen.getByDisplayValue('Changed Name')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('revert-btn'));
+    expect(screen.getByDisplayValue('Arka Media Works')).toBeInTheDocument();
   });
 });

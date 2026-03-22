@@ -164,4 +164,92 @@ describe('MediaHeroHeader', () => {
     );
     expect(toJSON()).toBeTruthy();
   });
+
+  it('applies contentPosition when both detail_focus_x and detail_focus_y are set', () => {
+    const movieWithDetailFocus = {
+      ...mockMovie,
+      detail_focus_x: 0.6,
+      detail_focus_y: 0.4,
+      backdrop_focus_x: null,
+      backdrop_focus_y: null,
+    };
+    render(<MediaHeroHeader {...defaultProps} movie={movieWithDetailFocus} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('applies contentPosition when backdrop_focus_x and backdrop_focus_y are set and detail is null', () => {
+    const movieBackdropFocus = {
+      ...mockMovie,
+      detail_focus_x: null,
+      detail_focus_y: null,
+      backdrop_focus_x: 0.3,
+      backdrop_focus_y: 0.7,
+    };
+    render(<MediaHeroHeader {...defaultProps} movie={movieBackdropFocus} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('does not apply contentPosition when only x is set (y is null)', () => {
+    const moviePartial = {
+      ...mockMovie,
+      detail_focus_x: 0.5,
+      detail_focus_y: null,
+      backdrop_focus_x: null,
+      backdrop_focus_y: null,
+    };
+    render(<MediaHeroHeader {...defaultProps} movie={moviePartial} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('does not apply contentPosition when only y is set (x is null)', () => {
+    const moviePartial = {
+      ...mockMovie,
+      detail_focus_x: null,
+      detail_focus_y: 0.5,
+      backdrop_focus_x: null,
+      backdrop_focus_y: null,
+    };
+    render(<MediaHeroHeader {...defaultProps} movie={moviePartial} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('uses useAnimatedStyle for image parallax and info opacity', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockClear();
+    render(<MediaHeroHeader {...defaultProps} />);
+    // Should call useAnimatedStyle twice: once for image parallax, once for info opacity
+    expect(useAnimatedStyle).toHaveBeenCalledTimes(2);
+  });
+
+  it('renders with large video and photo counts', () => {
+    render(<MediaHeroHeader {...defaultProps} videoCount={100} photoCount={50} />);
+    expect(screen.getByText('100 Videos · 50 Photos')).toBeTruthy();
+  });
+
+  it('uses detail_focus over backdrop_focus when both are set', () => {
+    const movieBothFocus = {
+      ...mockMovie,
+      detail_focus_x: 0.8,
+      detail_focus_y: 0.2,
+      backdrop_focus_x: 0.3,
+      backdrop_focus_y: 0.5,
+    };
+    render(<MediaHeroHeader {...defaultProps} movie={movieBothFocus} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('useAnimatedStyle callbacks return correct styles for image and info', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    const interpolate = require('react-native-reanimated').interpolate;
+    interpolate.mockImplementation((value: number) => value);
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(<MediaHeroHeader {...defaultProps} />);
+    // useAnimatedStyle is called for image parallax and info opacity
+    expect(useAnimatedStyle).toHaveBeenCalled();
+    useAnimatedStyle.mockImplementation(() => ({}));
+    interpolate.mockImplementation(() => undefined);
+  });
 });

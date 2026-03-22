@@ -15,6 +15,7 @@ vi.mock('@/lib/supabase-browser', () => ({
         data: { session: { access_token: 'test-token' } },
         error: null,
       }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
     },
   },
 }));
@@ -388,5 +389,225 @@ describe('useActorSearch', () => {
     const { result } = renderHook(() => useActorSearch('A'), { wrapper: createWrapper() });
 
     expect(result.current.fetchStatus).toBe('idle');
+  });
+});
+
+// ── syncApi edge cases ────────────────────────────────────────────────────────
+
+describe('syncApi — session expired (401)', () => {
+  it('throws session expired error on 401 response', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: 'unauthorized' }),
+    });
+
+    const { result } = renderHook(() => useDiscoverMovies(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ year: 2025 });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain('Session expired');
+  });
+});
+
+describe('syncApi — no session', () => {
+  it('throws when getSession returns null session', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    } as never);
+
+    const { result } = renderHook(() => useDiscoverMovies(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ year: 2025 });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain('Session expired');
+  });
+});
+
+describe('syncApi — non-JSON error response', () => {
+  it('handles non-JSON error body gracefully', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: () => Promise.reject(new SyntaxError('Unexpected token')),
+    });
+
+    const { result } = renderHook(() => useDiscoverMovies(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ year: 2025 });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain('Sync API error: 500');
+  });
+});
+
+// ── useStaleItems with sinceYear ──────────────────────────────────────────────
+
+describe('useStaleItems — sinceYear parameter', () => {
+  it('includes sinceYear in query params', async () => {
+    const response = { type: 'movies', items: [], days: 30 };
+    mockFetchOk(response);
+
+    const { result } = renderHook(() => useStaleItems('movies', 30, 2020), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/sync/stale-items?type=movies&days=30&sinceYear=2020',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+});
+
+// ── useLinkTmdbId ─────────────────────────────────────────────────────────────
+
+import { useLinkTmdbId, useImportActor, useTmdbSearch } from '@/hooks/useSync';
+
+describe('useLinkTmdbId', () => {
+  it('calls PATCH /api/admin-crud to link TMDB ID', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ id: 'm1', tmdb_id: 999 }),
+    });
+
+    const { result } = renderHook(() => useLinkTmdbId(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ movieId: 'm1', tmdbId: 999 });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ table: 'movies', id: 'm1', data: { tmdb_id: 999 } }),
+      }),
+    );
+  });
+
+  it('throws on non-ok response', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      json: () => Promise.resolve({ error: 'Already linked' }),
+    });
+
+    const { result } = renderHook(() => useLinkTmdbId(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ movieId: 'm1', tmdbId: 999 });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('throws when session is expired', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    } as never);
+
+    const { result } = renderHook(() => useLinkTmdbId(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ movieId: 'm1', tmdbId: 999 });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toContain('Session expired');
+    alertSpy.mockRestore();
+  });
+});
+
+// ── useImportActor ────────────────────────────────────────────────────────────
+
+describe('useImportActor', () => {
+  it('calls POST /api/sync/import-actor', async () => {
+    const response = {
+      syncLogId: 'log-4',
+      result: { actorId: 'a1', name: 'Actor', tmdbPersonId: 12345 },
+    };
+    mockFetchOk(response);
+
+    const { result } = renderHook(() => useImportActor(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate(12345);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetch).toHaveBeenCalledWith('/api/sync/import-actor', {
+      method: 'POST',
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdbPersonId: 12345 }),
+    });
+  });
+
+  it('shows alert on error', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockFetchError(500, 'Import failed');
+
+    const { result } = renderHook(() => useImportActor(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate(12345);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
+// ── useTmdbSearch ─────────────────────────────────────────────────────────────
+
+describe('useTmdbSearch', () => {
+  it('calls POST /api/sync/search with query', async () => {
+    const response = { movies: [], persons: [] };
+    mockFetchOk(response);
+
+    const { result } = renderHook(() => useTmdbSearch(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ query: 'Pushpa' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockFetch).toHaveBeenCalledWith('/api/sync/search', {
+      method: 'POST',
+      headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'Pushpa' }),
+    });
+  });
+
+  it('shows alert on search error', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockFetchError(500, 'Search failed');
+
+    const { result } = renderHook(() => useTmdbSearch(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ query: 'Test' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
   });
 });

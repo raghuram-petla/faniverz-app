@@ -75,4 +75,43 @@ describe('RereleasesSection', () => {
     render(<RereleasesSection rereleases={noLabel} daysUntil={daysUntil} />);
     expect(screen.getByText('Re-release')).toBeInTheDocument();
   });
+
+  it('renders poster image when poster_url is present', () => {
+    const withPoster = [
+      {
+        ...mockRereleases[0],
+        movies: { ...mockRereleases[0].movies, poster_url: 'https://example.com/poster.jpg' },
+      },
+    ];
+    const { container } = render(
+      <RereleasesSection rereleases={withPoster} daysUntil={daysUntil} />,
+    );
+    const img = container.querySelector('img');
+    expect(img).toBeInTheDocument();
+  });
+
+  it('renders placeholder icon when poster_url is null', () => {
+    const { container } = render(
+      <RereleasesSection rereleases={mockRereleases} daysUntil={daysUntil} />,
+    );
+    // poster_url is null in mockRereleases, so no img element
+    const img = container.querySelector('img');
+    expect(img).not.toBeInTheDocument();
+  });
+
+  it('renders multiple rereleases', () => {
+    const multi = [
+      mockRereleases[0],
+      {
+        ...mockRereleases[0],
+        id: 'run-2',
+        movie_id: 'movie-2',
+        movies: { id: 'movie-2', title: 'Another Film', poster_url: null, in_theaters: false },
+      },
+    ];
+    render(<RereleasesSection rereleases={multi} daysUntil={daysUntil} />);
+    expect(screen.getByText('(2)')).toBeInTheDocument();
+    expect(screen.getByText('Classic Film')).toBeInTheDocument();
+    expect(screen.getByText('Another Film')).toBeInTheDocument();
+  });
 });

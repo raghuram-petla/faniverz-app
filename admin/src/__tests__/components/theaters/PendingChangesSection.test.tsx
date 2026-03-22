@@ -187,4 +187,102 @@ describe('PendingChangesDock', () => {
     render(<PendingChangesDock {...defaultProps} changes={[removal]} />);
     expect(screen.queryByText('Before release date:')).not.toBeInTheDocument();
   });
+
+  it('calls scrollBy down when scroll-down button is clicked', () => {
+    const manyChanges: PendingChangeItem[] = Array.from({ length: 20 }, (_, i) => ({
+      movieId: `m${i}`,
+      title: `Movie ${i}`,
+      posterUrl: null,
+      inTheaters: true,
+      date: '2026-03-14',
+      label: null,
+      releaseDate: '2026-03-20',
+      dateAction: 'none' as const,
+    }));
+
+    render(<PendingChangesDock {...defaultProps} changes={manyChanges} />);
+
+    const scrollDiv = document.querySelector('.overflow-y-auto')!;
+    const scrollByMock = vi.fn();
+    scrollDiv.scrollBy = scrollByMock;
+
+    // Simulate overflow so canScrollDown becomes true
+    Object.defineProperty(scrollDiv, 'scrollTop', { value: 0, configurable: true });
+    Object.defineProperty(scrollDiv, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(scrollDiv, 'scrollHeight', { value: 500, configurable: true });
+    fireEvent.scroll(scrollDiv);
+
+    // Find the scroll-down button by its class
+    const allButtons = screen.getAllByRole('button');
+    const downButton = allButtons.find(
+      (btn) => btn.querySelector('.animate-bounce') && btn.className.includes('rounded-t-lg'),
+    );
+    expect(downButton).toBeTruthy();
+    fireEvent.click(downButton!);
+    expect(scrollByMock).toHaveBeenCalledWith({ top: 44, behavior: 'smooth' });
+  });
+
+  it('calls scrollBy up when scroll-up button is clicked', () => {
+    const manyChanges: PendingChangeItem[] = Array.from({ length: 20 }, (_, i) => ({
+      movieId: `m${i}`,
+      title: `Movie ${i}`,
+      posterUrl: null,
+      inTheaters: true,
+      date: '2026-03-14',
+      label: null,
+      releaseDate: '2026-03-20',
+      dateAction: 'none' as const,
+    }));
+
+    render(<PendingChangesDock {...defaultProps} changes={manyChanges} />);
+
+    const scrollDiv = document.querySelector('.overflow-y-auto')!;
+    const scrollByMock = vi.fn();
+    scrollDiv.scrollBy = scrollByMock;
+
+    // Simulate scrolled-down state so canScrollUp becomes true
+    Object.defineProperty(scrollDiv, 'scrollTop', { value: 100, configurable: true });
+    Object.defineProperty(scrollDiv, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(scrollDiv, 'scrollHeight', { value: 500, configurable: true });
+    fireEvent.scroll(scrollDiv);
+
+    const allButtons = screen.getAllByRole('button');
+    const upButton = allButtons.find(
+      (btn) => btn.querySelector('.animate-bounce') && btn.className.includes('rounded-b-lg'),
+    );
+    expect(upButton).toBeTruthy();
+    fireEvent.click(upButton!);
+    expect(scrollByMock).toHaveBeenCalledWith({ top: -44, behavior: 'smooth' });
+  });
+
+  it('renders poster image when posterUrl is set', () => {
+    const withPoster: PendingChangeItem = {
+      movieId: '1',
+      title: 'Movie With Poster',
+      posterUrl: 'poster.jpg',
+      inTheaters: true,
+      date: '2026-03-14',
+      label: null,
+      releaseDate: '2026-03-20',
+      dateAction: 'none',
+    };
+    render(<PendingChangesDock {...defaultProps} changes={[withPoster]} />);
+    const img = document.querySelector('img');
+    expect(img).toBeTruthy();
+  });
+
+  it('shows "Update release date to match" radio option', () => {
+    const earlyStart: PendingChangeItem = {
+      movieId: '1',
+      title: 'Movie A',
+      posterUrl: null,
+      inTheaters: true,
+      date: '2026-03-14',
+      label: null,
+      releaseDate: '2026-03-20',
+      dateAction: 'none',
+    };
+    render(<PendingChangesDock {...defaultProps} changes={[earlyStart]} />);
+    expect(screen.getByText('Update release date to match')).toBeInTheDocument();
+  });
 });

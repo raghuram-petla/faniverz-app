@@ -112,4 +112,36 @@ describe('UpcomingRow', () => {
     renderInTable(<UpcomingRow movie={mockMovie} countdown="Tomorrow" />);
     expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   });
+
+  it('renders poster image when poster_url is present', () => {
+    const { container } = renderInTable(
+      <UpcomingRow
+        movie={{ ...mockMovie, poster_url: 'https://example.com/poster.jpg' }}
+        countdown="In 10 days"
+      />,
+    );
+    const img = container.querySelector('img');
+    expect(img).toBeInTheDocument();
+  });
+
+  it('renders placeholder icon when poster_url is null', () => {
+    const { container } = renderInTable(
+      <UpcomingRow movie={{ ...mockMovie, poster_url: null }} countdown="In 10 days" />,
+    );
+    const img = container.querySelector('img');
+    expect(img).not.toBeInTheDocument();
+  });
+
+  it('renders dash when release_date is null', () => {
+    renderInTable(
+      <UpcomingRow movie={{ ...mockMovie, release_date: null }} countdown="In 10 days" />,
+    );
+    expect(screen.getByText('—')).toBeInTheDocument();
+  });
+
+  it('renders formatted release_date when present', () => {
+    renderInTable(<UpcomingRow movie={mockMovie} countdown="In 10 days" />);
+    // release_date is '2026-04-15', should render some formatted date
+    expect(screen.queryByText('—')).not.toBeInTheDocument();
+  });
 });

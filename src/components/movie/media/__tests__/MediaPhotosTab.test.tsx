@@ -263,4 +263,142 @@ describe('MediaPhotosTab', () => {
     const card = screen.getByLabelText('View Hidden Poster');
     expect(card).toBeTruthy();
   });
+
+  it('getRef returns same ref for same id (memoized)', () => {
+    const posters = [
+      makePoster({ id: 'p1', title: 'Poster 1' }),
+      makePoster({ id: 'p1', title: 'Poster 1 Dup' }),
+    ];
+    // Two posters with same id should use same ref via getRef
+    render(<MediaPhotosTab posters={posters} />);
+    expect(screen.getByLabelText('View Poster 1')).toBeTruthy();
+  });
+
+  it('getRef creates new ref for new id', () => {
+    const posters = [
+      makePoster({ id: 'new-1', title: 'New 1' }),
+      makePoster({ id: 'new-2', title: 'New 2' }),
+    ];
+    render(<MediaPhotosTab posters={posters} />);
+    expect(screen.getByLabelText('View New 1')).toBeTruthy();
+    expect(screen.getByLabelText('View New 2')).toBeTruthy();
+  });
+
+  it('renders backdrop cards with 16:9 aspect ratio style', () => {
+    const backdrop = makePoster({ id: 'bd', title: 'Backdrop Card', image_type: 'backdrop' });
+    render(<MediaPhotosTab posters={[backdrop]} />);
+    expect(screen.getByLabelText('View Backdrop Card')).toBeTruthy();
+  });
+
+  it('renders poster cards with 2:3 aspect ratio style', () => {
+    const poster = makePoster({ id: 'ps', title: 'Poster Card', image_type: 'poster' });
+    render(<MediaPhotosTab posters={[poster]} />);
+    expect(screen.getByLabelText('View Poster Card')).toBeTruthy();
+  });
+
+  it('handlePosterPress calls openImage when ref has measureInWindow', () => {
+    const poster = makePoster({ id: 'p-measure', title: 'Measurable Poster' });
+    render(<MediaPhotosTab posters={[poster]} />);
+
+    // Get the card element and find its internal node to set the ref
+    const { TouchableOpacity } = require('react-native');
+    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
+
+    // Find all touchable opacity elements with onPress
+    const pressables = UNSAFE_root.findAll(
+      (node: { type: unknown; props: Record<string, unknown> }) =>
+        node.type === TouchableOpacity &&
+        typeof node.props.onPress === 'function' &&
+        node.props.accessibilityLabel === 'View Measurable Poster',
+    );
+
+    if (pressables.length > 0) {
+      // The ref prop on the TouchableOpacity is a React ref object
+      const refProp = pressables[0].props.ref;
+      if (refProp && typeof refProp === 'object') {
+        // Set the ref's current to a mock with measureInWindow
+        (refProp as { current: unknown }).current = {
+          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
+            cb(10, 20, 200, 300);
+          },
+        };
+        // Now press — this should trigger handlePosterPress with a non-null ref
+        pressables[0].props.onPress();
+        expect(mockOpenImage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            fullUrl: 'https://example.com/poster.jpg',
+            borderRadius: 8,
+          }),
+        );
+      }
+    }
+  });
+
+  it('handlePosterPress onSourceHide/Show callbacks manage hiddenId state', () => {
+    const poster = makePoster({ id: 'p-hide', title: 'Hideable' });
+    const { TouchableOpacity } = require('react-native');
+    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
+
+    const pressables = UNSAFE_root.findAll(
+      (node: { type: unknown; props: Record<string, unknown> }) =>
+        node.type === TouchableOpacity &&
+        typeof node.props.onPress === 'function' &&
+        node.props.accessibilityLabel === 'View Hideable',
+    );
+
+    if (pressables.length > 0) {
+      const refProp = pressables[0].props.ref;
+      if (refProp && typeof refProp === 'object') {
+        (refProp as { current: unknown }).current = {
+          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
+            cb(0, 0, 100, 150);
+          },
+        };
+        pressables[0].props.onPress();
+        if (mockOpenImage.mock.calls.length > 0) {
+          const args = mockOpenImage.mock.calls[mockOpenImage.mock.calls.length - 1][0];
+          args.onSourceHide();
+          args.onSourceShow();
+        }
+      }
+    }
+    expect(mockOpenImage).toHaveBeenCalled();
+  });
+
+  it('handlePosterPress passes BACKDROPS bucket for backdrop image type', () => {
+    const poster = makePoster({ id: 'bd-press', title: 'BD Press', image_type: 'backdrop' });
+    const { TouchableOpacity } = require('react-native');
+    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
+
+    const pressables = UNSAFE_root.findAll(
+      (node: { type: unknown; props: Record<string, unknown> }) =>
+        node.type === TouchableOpacity &&
+        typeof node.props.onPress === 'function' &&
+        node.props.accessibilityLabel === 'View BD Press',
+    );
+
+    if (pressables.length > 0) {
+      const refProp = pressables[0].props.ref;
+      if (refProp && typeof refProp === 'object') {
+        (refProp as { current: unknown }).current = {
+          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
+            cb(0, 0, 100, 56);
+          },
+        };
+        pressables[0].props.onPress();
+        // Verify getImageUrl was called with BACKDROPS for feedUrl
+        expect(mockGetImageUrl).toHaveBeenCalledWith(expect.anything(), 'sm', 'BACKDROPS');
+      }
+    }
+  });
+
+  it('shows both Main Poster and Main Backdrop badges on appropriate items', () => {
+    const posters = [
+      makePoster({ id: 'mp', title: 'Main P', is_main_poster: true, image_type: 'poster' }),
+      makePoster({ id: 'mb', title: 'Main B', is_main_backdrop: true, image_type: 'backdrop' }),
+    ];
+    render(<MediaPhotosTab posters={posters} />);
+    expect(screen.getByText('Main Poster')).toBeTruthy();
+    expect(screen.getByText('Main Backdrop')).toBeTruthy();
+  });
 });

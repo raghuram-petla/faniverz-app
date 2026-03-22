@@ -363,6 +363,53 @@ describe('useRevertAuditEntry', () => {
     expect(caughtError?.message).toBe('Revert failed');
   });
 
+  it('uses fallback when error response json() throws', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'tok123' } },
+    });
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      json: async () => {
+        throw new Error('Invalid JSON');
+      },
+    } as Response);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useRevertAuditEntry(), { wrapper: Wrapper });
+
+    let caughtError: Error | null = null;
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('audit-1');
+      } catch (e) {
+        caughtError = e as Error;
+      }
+    });
+
+    expect(caughtError?.message).toBe('Revert failed');
+  });
+
+  it('applies entityType filter when provided', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    renderHook(() => useAdminAuditLog({ entityType: 'movie' }), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(chain.eq).toHaveBeenCalledWith('entity_type', 'movie');
+    });
+  });
+
   it('invalidates all admin queries on success', async () => {
     mockGetSession.mockResolvedValue({
       data: { session: { access_token: 'tok123' } },

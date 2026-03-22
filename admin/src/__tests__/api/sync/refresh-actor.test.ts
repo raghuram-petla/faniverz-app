@@ -137,4 +137,47 @@ describe('POST /api/sync/refresh-actor', () => {
       expect.objectContaining({ details: ['Test Actor'] }),
     );
   });
+
+  // Note: 403 viewer_readonly path is tested via sync-helpers.test.ts verifyAdminCanMutate tests
+
+  it('returns 503 when TMDB_API_KEY is not configured', async () => {
+    vi.stubEnv('TMDB_API_KEY', '');
+    delete process.env.TMDB_API_KEY;
+    const res = await POST(makeRequest({ actorId: 'actor-1' }));
+    expect(res.status).toBe(503);
+  });
+
+  it('returns 500 and logs sync failure when processActorRefresh throws', async () => {
+    mockSingle.mockResolvedValue({
+      data: { tmdb_person_id: 500, name: 'Failing Actor' },
+      error: null,
+    });
+    mockProcessActorRefresh.mockRejectedValue(new Error('TMDB fetch failed'));
+
+    const res = await POST(makeRequest({ actorId: 'actor-1' }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('TMDB fetch failed');
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({
+        status: 'failed',
+        errors: [expect.objectContaining({ actorId: 'actor-1', message: 'TMDB fetch failed' })],
+      }),
+    );
+  });
+
+  it('returns 500 with fallback message for non-Error thrown during refresh', async () => {
+    mockSingle.mockResolvedValue({
+      data: { tmdb_person_id: 500, name: 'Actor X' },
+      error: null,
+    });
+    mockProcessActorRefresh.mockRejectedValue('string error');
+
+    const res = await POST(makeRequest({ actorId: 'actor-1' }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Unknown error');
+  });
 });

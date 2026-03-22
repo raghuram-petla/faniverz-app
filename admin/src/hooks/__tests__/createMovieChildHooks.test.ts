@@ -140,6 +140,24 @@ describe('createMovieChildHooks', () => {
       await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Insert failed'));
     });
 
+    it('shows "Operation failed" when add error has empty message', async () => {
+      mockCrudFetch.mockRejectedValue(new Error(''));
+
+      const { useAdd } = createMovieChildHooks({ table: 'movie_videos', keySuffix: 'videos' });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useAdd(), { wrapper: Wrapper });
+
+      await act(async () => {
+        try {
+          await result.current.mutateAsync({ movie_id: 'movie-1' });
+        } catch {
+          // expected
+        }
+      });
+
+      await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Operation failed'));
+    });
+
     it('invalidates extraInvalidateKeys on success', async () => {
       const item = { movie_id: 'movie-1', platform_id: 'netflix' };
       mockCrudFetch.mockResolvedValue(item);
@@ -203,6 +221,24 @@ describe('createMovieChildHooks', () => {
       });
 
       await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Patch failed'));
+    });
+
+    it('shows "Operation failed" when update error has empty message', async () => {
+      mockCrudFetch.mockRejectedValue(new Error(''));
+
+      const { useUpdate } = createMovieChildHooks({ table: 'movie_videos', keySuffix: 'videos' });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useUpdate(), { wrapper: Wrapper });
+
+      await act(async () => {
+        try {
+          await result.current.mutateAsync({ id: 'v-1', movieId: 'movie-1' } as never);
+        } catch {
+          // expected
+        }
+      });
+
+      await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Operation failed'));
     });
   });
 

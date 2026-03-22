@@ -382,6 +382,61 @@ describe('syncAllImages', () => {
     expect(mockUpload).not.toHaveBeenCalled();
   });
 
+  it('handles poster insert error and warns', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockGetMovieImages.mockResolvedValue({
+      posters: [makePoster({ file_path: '/fail.jpg', iso_639_1: null })],
+      backdrops: [],
+      logos: [],
+    });
+    // Poster insert fails
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
+
+    const result = await syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never);
+
+    expect(consoleWarn).toHaveBeenCalledWith('syncPosters: insert failed', 'insert failed');
+    expect(result.posterCount).toBe(0);
+    consoleWarn.mockRestore();
+  });
+
+  it('handles backdrop insert error and warns', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mockGetMovieImages.mockResolvedValue({
+      posters: [],
+      backdrops: [makeBackdrop({ file_path: '/fail-b.jpg' })],
+      logos: [],
+    });
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'backdrop insert failed' } });
+
+    const result = await syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never);
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      'syncBackdrops: insert failed',
+      'backdrop insert failed',
+    );
+    expect(result.backdropCount).toBe(0);
+    consoleWarn.mockRestore();
+  });
+
+  it('uses "no lang" fallback when poster iso_639_1 is null', async () => {
+    mockGetMovieImages.mockResolvedValue({
+      posters: [
+        makePoster({ file_path: '/main.jpg', iso_639_1: 'te', vote_average: 9 }),
+        makePoster({ file_path: '/nolang.jpg', iso_639_1: null, vote_average: 3 }),
+      ],
+      backdrops: [],
+      logos: [],
+    });
+
+    const result = await syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never);
+
+    // Non-main poster with null iso_639_1 should use "no lang" fallback
+    expect(supabase.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Poster (no lang)' }),
+    );
+    expect(result.posterCount).toBe(2);
+  });
+
   it('passes tmdbMainPaths to syncPosters and syncBackdrops', async () => {
     mockGetMovieImages.mockResolvedValue({
       posters: [makePoster({ file_path: '/p.jpg', iso_639_1: 'te' })],

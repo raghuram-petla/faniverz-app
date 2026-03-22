@@ -605,4 +605,103 @@ describe('ActorDetailScreen', () => {
     expect(screen.queryByText('From')).toBeNull();
     expect(screen.queryByText('Height')).toBeNull();
   });
+
+  it('handles follow toggle for actor entity type', () => {
+    const mockFollowMutate = jest.fn();
+    const mockUnfollowMutate = jest.fn();
+    jest.spyOn(require('@/features/feed'), 'useFollowEntity').mockReturnValue({
+      mutate: mockFollowMutate,
+      isPending: false,
+    });
+    jest.spyOn(require('@/features/feed'), 'useUnfollowEntity').mockReturnValue({
+      mutate: mockUnfollowMutate,
+      isPending: false,
+    });
+
+    render(<ActorDetailScreen />);
+    // The FollowButton is in rightContent - find it
+    const followBtn = screen.getByLabelText('Follow Nagarjuna Akkineni');
+    fireEvent.press(followBtn);
+    expect(mockFollowMutate).toHaveBeenCalledWith({
+      entityType: 'actor',
+      entityId: 'actor-1',
+    });
+
+    jest.restoreAllMocks();
+  });
+
+  it('handles unfollow toggle when already following', () => {
+    const mockUnfollowMutate = jest.fn();
+    jest.spyOn(require('@/features/feed'), 'useEntityFollows').mockReturnValue({
+      followSet: new Set(['actor:actor-1']),
+    });
+    jest.spyOn(require('@/features/feed'), 'useUnfollowEntity').mockReturnValue({
+      mutate: mockUnfollowMutate,
+      isPending: false,
+    });
+
+    render(<ActorDetailScreen />);
+    const unfollowBtn = screen.getByLabelText('Following Nagarjuna Akkineni, tap to unfollow');
+    fireEvent.press(unfollowBtn);
+    expect(mockUnfollowMutate).toHaveBeenCalledWith({
+      entityType: 'actor',
+      entityId: 'actor-1',
+    });
+
+    jest.restoreAllMocks();
+  });
+
+  it('does not call follow/unfollow while mutations are pending', () => {
+    const mockFollowMutate = jest.fn();
+    jest.spyOn(require('@/features/feed'), 'useFollowEntity').mockReturnValue({
+      mutate: mockFollowMutate,
+      isPending: true,
+    });
+    jest.spyOn(require('@/features/feed'), 'useUnfollowEntity').mockReturnValue({
+      mutate: jest.fn(),
+      isPending: false,
+    });
+
+    render(<ActorDetailScreen />);
+    const followBtn = screen.getByLabelText('Follow Nagarjuna Akkineni');
+    fireEvent.press(followBtn);
+    expect(mockFollowMutate).not.toHaveBeenCalled();
+
+    jest.restoreAllMocks();
+  });
+
+  it('does not show height when height_cm is null', () => {
+    const noHeight = { ...mockActor, height_cm: null };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: noHeight,
+      filmography: [],
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.queryByText('Height')).toBeNull();
+  });
+
+  it('does not show place_of_birth when null', () => {
+    const noPlace = { ...mockActor, place_of_birth: null };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: noPlace,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.queryByText('From')).toBeNull();
+  });
+
+  it('does not show gender badge when gender is 0 (unknown)', () => {
+    const unknownGender = { ...mockActor, gender: 0 };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: unknownGender,
+      filmography: [],
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.queryByText('Male')).toBeNull();
+    expect(screen.queryByText('Female')).toBeNull();
+    expect(screen.queryByText('Non-binary')).toBeNull();
+  });
 });

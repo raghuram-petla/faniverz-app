@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppUsersPage from '@/app/(dashboard)/app-users/page';
 
@@ -417,6 +417,184 @@ describe('AppUsersPage', () => {
       renderWithProviders(<AppUsersPage />);
 
       expect(screen.getByTitle('Next page')).not.toBeDisabled();
+    });
+  });
+
+  describe('edit user profile', () => {
+    beforeEach(() => {
+      mockUseAdminEndUsers.mockReturnValue({
+        data: { users: mockUsers, totalCount: 2 },
+        isLoading: false,
+        isError: false,
+        error: null,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminEndUsers>);
+    });
+
+    it('renders edit buttons for each user', () => {
+      renderWithProviders(<AppUsersPage />);
+      const editButtons = screen.getAllByTitle('Edit profile');
+      expect(editButtons).toHaveLength(2);
+    });
+
+    it('shows input field when edit button is clicked', () => {
+      renderWithProviders(<AppUsersPage />);
+      const editButtons = screen.getAllByTitle('Edit profile');
+      fireEvent.click(editButtons[0]);
+      // Input should appear with current name
+      const input = screen.getByDisplayValue('John Doe');
+      expect(input).toBeInTheDocument();
+    });
+
+    it('shows save and cancel buttons in edit mode', () => {
+      renderWithProviders(<AppUsersPage />);
+      const editButtons = screen.getAllByTitle('Edit profile');
+      fireEvent.click(editButtons[0]);
+      expect(screen.getByTitle('Save')).toBeInTheDocument();
+      expect(screen.getByTitle('Cancel')).toBeInTheDocument();
+    });
+
+    it('cancels edit when cancel button is clicked', () => {
+      renderWithProviders(<AppUsersPage />);
+      const editButtons = screen.getAllByTitle('Edit profile');
+      fireEvent.click(editButtons[0]);
+      fireEvent.click(screen.getByTitle('Cancel'));
+      // Should be back to normal view
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.queryByTitle('Save')).not.toBeInTheDocument();
+    });
+
+    it('calls updateProfile.mutate when save is clicked', () => {
+      const mockUpdateMutate = vi.fn();
+      mockUseUpdateEndUserProfile.mockReturnValue({
+        mutate: mockUpdateMutate,
+        isPending: false,
+      } as unknown as ReturnType<typeof useUpdateEndUserProfile>);
+
+      renderWithProviders(<AppUsersPage />);
+      const editButtons = screen.getAllByTitle('Edit profile');
+      fireEvent.click(editButtons[0]);
+
+      const input = screen.getByDisplayValue('John Doe');
+      fireEvent.change(input, { target: { value: 'New Name' } });
+      fireEvent.click(screen.getByTitle('Save'));
+
+      expect(mockUpdateMutate).toHaveBeenCalledWith(
+        { userId: 'usr-1', fields: { display_name: 'New Name' } },
+        expect.objectContaining({ onSuccess: expect.any(Function) }),
+      );
+    });
+
+    it('uses email in ban confirm when display_name is null', () => {
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      renderWithProviders(<AppUsersPage />);
+      const banButtons = screen.getAllByTitle('Ban user');
+      // usr-2 has null display_name, so should use email
+      fireEvent.click(banButtons[1]);
+      expect(confirmSpy).toHaveBeenCalledWith(
+        'Ban jane@example.com? They will not be able to log in.',
+      );
+    });
+  });
+
+  describe('singular count', () => {
+    it('shows "1 user" (singular) when totalCount is 1', () => {
+      mockUseAdminEndUsers.mockReturnValue({
+        data: { users: [mockUsers[0]], totalCount: 1 },
+        isLoading: false,
+        isError: false,
+        error: null,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminEndUsers>);
+
+      renderWithProviders(<AppUsersPage />);
+      expect(screen.getByText('1 user')).toBeInTheDocument();
+    });
+  });
+
+  describe('error message formatting', () => {
+    it('shows "Unknown error" when error is not an Error instance', () => {
+      mockUseAdminEndUsers.mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: 'string error',
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminEndUsers>);
+
+      renderWithProviders(<AppUsersPage />);
+      expect(screen.getByText(/Unknown error/)).toBeInTheDocument();
+    });
+  });
+
+  describe('saveEdit onSuccess callback', () => {
+    it('clears editingUser on successful save', async () => {
+      const mockUpdateMutate = vi.fn();
+      mockUseUpdateEndUserProfile.mockReturnValue({
+        mutate: mockUpdateMutate,
+        isPending: false,
+      } as unknown as ReturnType<typeof useUpdateEndUserProfile>);
+
+      mockUseAdminEndUsers.mockReturnValue({
+        data: { users: mockUsers, totalCount: 2 },
+        isLoading: false,
+        isError: false,
+        error: null,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminEndUsers>);
+
+      renderWithProviders(<AppUsersPage />);
+      const editButtons = screen.getAllByTitle('Edit profile');
+      fireEvent.click(editButtons[0]);
+      fireEvent.click(screen.getByTitle('Save'));
+
+      // Call the onSuccess callback manually
+      const call = mockUpdateMutate.mock.calls[0];
+      const options = call[1];
+      act(() => {
+        options.onSuccess();
+      });
+
+      // After onSuccess, edit mode should be closed — Save button gone
+      await waitFor(() => {
+        expect(screen.queryByTitle('Save')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('pagination navigation', () => {
+    it('navigates to next page when next button is clicked', () => {
+      mockUseAdminEndUsers.mockReturnValue({
+        data: { users: mockUsers, totalCount: 75 },
+        isLoading: false,
+        isError: false,
+        error: null,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminEndUsers>);
+
+      renderWithProviders(<AppUsersPage />);
+      fireEvent.click(screen.getByTitle('Next page'));
+      // After clicking next, the page should advance — this triggers a re-render
+      // with useAdminEndUsers called with page=1
+      expect(mockUseAdminEndUsers).toHaveBeenCalledWith(expect.objectContaining({ page: 1 }));
+    });
+
+    it('navigates to previous page when previous button is clicked', () => {
+      mockUseAdminEndUsers.mockReturnValue({
+        data: { users: mockUsers, totalCount: 150 },
+        isLoading: false,
+        isError: false,
+        error: null,
+        isFetching: false,
+      } as unknown as ReturnType<typeof useAdminEndUsers>);
+
+      renderWithProviders(<AppUsersPage />);
+      // Go to page 2 first
+      fireEvent.click(screen.getByTitle('Next page'));
+      // Then go back
+      fireEvent.click(screen.getByTitle('Previous page'));
+      // Should be back to page 0
+      expect(mockUseAdminEndUsers).toHaveBeenCalledWith(expect.objectContaining({ page: 0 }));
     });
   });
 });

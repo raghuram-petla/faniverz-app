@@ -131,4 +131,93 @@ describe('MainImageSelector', () => {
     render(<MainImageSelector {...defaultProps} images={[]} currentImageUrl={null} />);
     // Can't click disabled button, so no dropdown to test
   });
+
+  it('adapts thumbnail shape when current image is a backdrop', () => {
+    const backdropImage = makeImage({
+      id: 'bd-1',
+      image_url: 'backdrop1.jpg',
+      image_type: 'backdrop',
+    });
+    render(
+      <MainImageSelector
+        {...defaultProps}
+        currentImageUrl="backdrop1.jpg"
+        images={[backdropImage]}
+      />,
+    );
+    // Should render landscape thumbnail for backdrop
+    expect(screen.getByAltText('Main Poster')).toBeInTheDocument();
+  });
+
+  it('adapts thumbnail shape when current image is a poster', () => {
+    const posterImage = makeImage({
+      id: 'p-1',
+      image_url: 'poster1.jpg',
+      image_type: 'poster',
+    });
+    render(
+      <MainImageSelector
+        {...defaultProps}
+        currentImageUrl="poster1.jpg"
+        images={[posterImage]}
+        bucket="BACKDROPS"
+      />,
+    );
+    // Should render portrait thumbnail for poster even when bucket is BACKDROPS
+    expect(screen.getByAltText('Main Poster')).toBeInTheDocument();
+  });
+
+  it('uses default aspect when current image type is neither poster nor backdrop', () => {
+    const unknownImage = makeImage({
+      id: 'u-1',
+      image_url: 'unknown.jpg',
+      image_type: 'logo' as 'poster',
+    });
+    render(
+      <MainImageSelector
+        {...defaultProps}
+        currentImageUrl="unknown.jpg"
+        images={[unknownImage]}
+        aspectClass="aspect-square"
+        widthClass="w-40"
+      />,
+    );
+    expect(screen.getByAltText('Main Poster')).toBeInTheDocument();
+  });
+
+  it('uses default bucket when image is not found in gallery', () => {
+    render(<MainImageSelector {...defaultProps} currentImageUrl="nonexistent.jpg" images={[]} />);
+    // Should still render with the "None" placeholder (no matching image)
+    expect(screen.getByAltText('Main Poster')).toBeInTheDocument();
+  });
+
+  it('closes dropdown on outside click', () => {
+    render(
+      <div>
+        <span data-testid="outside">Outside</span>
+        <MainImageSelector {...defaultProps} />
+      </div>,
+    );
+    fireEvent.click(screen.getByText('Change'));
+    expect(screen.getByAltText('First Look')).toBeInTheDocument();
+    // Click outside
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(screen.queryByAltText('First Look')).not.toBeInTheDocument();
+  });
+
+  it('shows backdrop images in gallery with correct aspect', () => {
+    const images = [
+      makeImage({ id: 'bd-1', image_url: 'bd1.jpg', image_type: 'backdrop', title: 'Backdrop 1' }),
+    ];
+    render(<MainImageSelector {...defaultProps} currentImageUrl="poster1.jpg" images={images} />);
+    fireEvent.click(screen.getByText('Change'));
+    expect(screen.getByAltText('Backdrop 1')).toBeInTheDocument();
+  });
+
+  it('shows image without title using "Image" alt text', () => {
+    const images = [makeImage({ id: 'nt-1', image_url: 'notitle.jpg', title: '' })];
+    render(<MainImageSelector {...defaultProps} images={images} />);
+    fireEvent.click(screen.getByText('Change'));
+    expect(screen.getByAltText('Image')).toBeInTheDocument();
+  });
 });

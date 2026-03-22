@@ -407,4 +407,134 @@ describe('UsersPage', () => {
     fireEvent.click(screen.getByTestId('confirm-block'));
     expect(window.alert).toHaveBeenCalledWith('Cannot block the last active super admin.');
   });
+
+  it('does not revoke when confirm is cancelled', () => {
+    window.confirm = vi.fn(() => false);
+    mockUseAdminUserList.mockReturnValue({
+      data: [makeUser('u1', 'admin'), makeUser('u2', 'admin')],
+      isLoading: false,
+    });
+    render(<UsersPage />);
+    fireEvent.click(screen.getByTestId('revoke-u1'));
+    expect(mockRevokeAdminMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not block when blockTarget is null or realUser is null', () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    render(<UsersPage />);
+    fireEvent.click(screen.getByTestId('block-user-1'));
+    fireEvent.click(screen.getByTestId('confirm-block'));
+    expect(mockBlockAdminMutate).not.toHaveBeenCalled();
+  });
+
+  it('calls blockAdminMutate onSuccess to close modal', () => {
+    mockBlockAdminMutate.mockImplementation((_data: unknown, opts: { onSuccess?: () => void }) => {
+      opts?.onSuccess?.();
+    });
+    render(<UsersPage />);
+    fireEvent.click(screen.getByTestId('block-user-1'));
+    fireEvent.click(screen.getByTestId('confirm-block'));
+    expect(mockBlockAdminMutate).toHaveBeenCalled();
+    // After onSuccess, block modal should be closed
+    expect(screen.queryByTestId('block-modal')).not.toBeInTheDocument();
+  });
+
+  it('calls blockAdminMutate onError to show alert', () => {
+    mockBlockAdminMutate.mockImplementation(
+      (_data: unknown, opts: { onError?: (err: Error) => void }) => {
+        opts?.onError?.(new Error('Block failed'));
+      },
+    );
+    render(<UsersPage />);
+    fireEvent.click(screen.getByTestId('block-user-1'));
+    fireEvent.click(screen.getByTestId('confirm-block'));
+    expect(window.alert).toHaveBeenCalledWith('Error: Block failed');
+  });
+
+  it('calls revokeAdmin.mutate onError to show alert', () => {
+    mockRevokeAdminMutate.mockImplementation(
+      (_data: unknown, opts: { onError?: (err: Error) => void }) => {
+        opts?.onError?.(new Error('Revoke failed'));
+      },
+    );
+    mockUseAdminUserList.mockReturnValue({
+      data: [makeUser('u1', 'admin'), makeUser('u2', 'root'), makeUser('u3', 'root')],
+      isLoading: false,
+    });
+    render(<UsersPage />);
+    fireEvent.click(screen.getByTestId('revoke-u1'));
+    expect(window.alert).toHaveBeenCalledWith('Error: Revoke failed');
+  });
+
+  it('calls updateRole.mutate onError to show alert', () => {
+    mockUpdateRoleMutate.mockImplementation(
+      (_data: unknown, opts: { onError?: (err: Error) => void }) => {
+        opts?.onError?.(new Error('Role update failed'));
+      },
+    );
+    render(<UsersPage />);
+    fireEvent.click(screen.getByTestId('role-user-1'));
+    expect(window.alert).toHaveBeenCalledWith('Error: Role update failed');
+  });
+
+  it('calls unblockAdmin.mutate onError to show alert', () => {
+    mockUnblockAdminMutate.mockImplementation(
+      (_data: unknown, opts: { onError?: (err: Error) => void }) => {
+        opts?.onError?.(new Error('Unblock failed'));
+      },
+    );
+    render(<UsersPage />);
+    fireEvent.click(screen.getByTestId('unblock-user-1'));
+    expect(window.alert).toHaveBeenCalledWith('Error: Unblock failed');
+  });
+
+  it('calls revokeInvitation.mutate onError to show alert', () => {
+    mockRevokeInvitationMutate.mockImplementation(
+      (_data: unknown, opts: { onError?: (err: Error) => void }) => {
+        opts?.onError?.(new Error('Revoke invite failed'));
+      },
+    );
+    mockUseAdminInvitations.mockReturnValue({
+      data: [{ id: 'invite-1' }],
+      isLoading: false,
+    });
+    render(<UsersPage />);
+    fireEvent.click(screen.getByText('Invitations'));
+    fireEvent.click(screen.getByTestId('revoke-invite-invite-1'));
+    expect(window.alert).toHaveBeenCalledWith('Error: Revoke invite failed');
+  });
+
+  it('does not revoke invitation when confirm is cancelled', () => {
+    window.confirm = vi.fn(() => false);
+    mockUseAdminInvitations.mockReturnValue({
+      data: [{ id: 'invite-1' }],
+      isLoading: false,
+    });
+    render(<UsersPage />);
+    fireEvent.click(screen.getByText('Invitations'));
+    fireEvent.click(screen.getByTestId('revoke-invite-invite-1'));
+    expect(mockRevokeInvitationMutate).not.toHaveBeenCalled();
+  });
+
+  it('handles users being undefined (nullish coalesce)', () => {
+    mockUseAdminUserList.mockReturnValue({ data: undefined, isLoading: false });
+    render(<UsersPage />);
+    // Should not crash; admins table renders with undefined users
+    expect(screen.getByTestId('admins-table')).toBeInTheDocument();
+  });
+
+  it('handles unknown role in ROLE_RANK (defaults to rank 0)', () => {
+    mockUsePermissions.mockReturnValue({
+      role: 'unknown_role',
+      isSuperAdmin: false,
+      canManageAdmin: false,
+    });
+    mockUseAdminUserList.mockReturnValue({
+      data: [makeUser('u1', 'admin')],
+      isLoading: false,
+    });
+    render(<UsersPage />);
+    // admin rank (2) > unknown rank (0), so admin user should be hidden
+    expect(screen.queryByTestId('user-row-u1')).not.toBeInTheDocument();
+  });
 });

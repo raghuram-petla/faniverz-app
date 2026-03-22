@@ -184,4 +184,70 @@ describe('ValidationsScanPanel', () => {
     expect(screen.getByText('MD')).toBeInTheDocument();
     expect(screen.getByText('LG')).toBeInTheDocument();
   });
+
+  it('calls onToggle with itemKey when row checkbox is toggled', () => {
+    const onToggle = vi.fn();
+    render(<ValidationsScanPanel {...defaultProps} onToggle={onToggle} />);
+    // Find checkboxes — each row has a checkbox
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBeGreaterThan(0);
+    fireEvent.click(checkboxes[0]);
+    expect(onToggle).toHaveBeenCalled();
+  });
+
+  it('calls onDeselectAll when deselect button clicked', () => {
+    const onDeselectAll = vi.fn();
+    render(
+      <ValidationsScanPanel
+        {...defaultProps}
+        selectedItems={new Set(['mov-2-poster_url'])}
+        onDeselectAll={onDeselectAll}
+      />,
+    );
+    fireEvent.click(screen.getByText('Deselect all'));
+    expect(onDeselectAll).toHaveBeenCalled();
+  });
+
+  it('calls onSelectAllIssues when select all button clicked', () => {
+    const onSelectAllIssues = vi.fn();
+    render(<ValidationsScanPanel {...defaultProps} onSelectAllIssues={onSelectAllIssues} />);
+    fireEvent.click(screen.getByText('Select all issues (2)'));
+    expect(onSelectAllIssues).toHaveBeenCalled();
+  });
+
+  it('calls onFix when Fix Selected button clicked', () => {
+    const onFix = vi.fn();
+    render(
+      <ValidationsScanPanel
+        {...defaultProps}
+        selectedItems={new Set(['mov-2-poster_url'])}
+        onFix={onFix}
+      />,
+    );
+    fireEvent.click(screen.getByText('Fix Selected (1)'));
+    expect(onFix).toHaveBeenCalled();
+  });
+
+  it('shows "No results found." when scan completed but nothing found', () => {
+    render(
+      <ValidationsScanPanel
+        {...defaultProps}
+        results={[]}
+        totalResultCount={0}
+        scanProgress={{ entity: 'movies', scanned: 10, total: 10, isScanning: false }}
+      />,
+    );
+    expect(screen.getByText('No results found.')).toBeInTheDocument();
+  });
+
+  it('shows spinner during active scan at bottom of panel', () => {
+    render(
+      <ValidationsScanPanel
+        {...defaultProps}
+        scanProgress={{ entity: 'movies', scanned: 5, total: 50, isScanning: true }}
+      />,
+    );
+    // Should have both progress bar and spinner
+    expect(screen.getByText('Scanning...')).toBeInTheDocument();
+  });
 });

@@ -13,7 +13,7 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-import { useAdminReviews, useDeleteReview } from '@/hooks/useAdminReviews';
+import { useAdminReviews, useDeleteReview, useUpdateReview } from '@/hooks/useAdminReviews';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -377,5 +377,133 @@ describe('useDeleteReview', () => {
     );
 
     fetchSpy.mockRestore();
+  });
+});
+
+describe('useUpdateReview', () => {
+  it('updates a review via /api/admin-crud', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
+
+    const { result } = renderHook(() => useUpdateReview(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'rev-1', title: 'Updated Title', body: 'Updated Body' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'reviews',
+          id: 'rev-1',
+          data: { title: 'Updated Title', body: 'Updated Body' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
+  });
+
+  it('returns the updated review id on success', async () => {
+    const fetchSpy = mockCrudApi({ success: true });
+
+    const { result } = renderHook(() => useUpdateReview(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'rev-1', contains_spoiler: true });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toBe('rev-1');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('reports error when update fails', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+
+    const { result } = renderHook(() => useUpdateReview(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'rev-1', body: 'fail' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(result.current.error).toBeTruthy();
+
+    fetchSpy.mockRestore();
+  });
+});
+
+describe('useAdminReviews — sanitizeSearchTerm', () => {
+  it('strips special characters from search term', async () => {
+    const { self, chain } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('test(with"special)'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // The sanitized term should have special chars removed
+    expect(chain.or).toHaveBeenCalledWith(
+      'title.ilike.%testwithspecial%,body.ilike.%testwithspecial%',
+    );
+  });
+
+  it('does not apply .or filter when search sanitizes to empty string', async () => {
+    const { self, chain } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('()'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Sanitized '()' becomes empty string — no .or call
+    expect(chain.or).toBeUndefined();
+  });
+
+  it('filters client-side by body text when searching', async () => {
+    const reviews = [
+      {
+        ...mockReviews[0],
+        title: null,
+        body: 'Loved it',
+        movie: { id: 'mov-1', title: 'Movie A', poster_url: null },
+        profile: { id: 'usr-1', display_name: 'Someone', email: 'a@b.com' },
+      },
+      {
+        ...mockReviews[1],
+        title: null,
+        body: 'Hated it',
+        movie: { id: 'mov-2', title: 'Movie B', poster_url: null },
+        profile: { id: 'usr-2', display_name: 'Other', email: 'c@d.com' },
+      },
+    ];
+    const { self } = buildChain(reviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('Loved'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].body).toBe('Loved it');
   });
 });

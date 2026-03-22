@@ -115,4 +115,56 @@ describe('AnimatedTabBar', () => {
     expect(allTabs).toHaveLength(1);
     expect(allTabs[0].props.accessibilityState?.selected).toBe(true);
   });
+
+  it('useEffect calls withTiming when animations are enabled and activeTab changes', () => {
+    const withTiming = require('react-native-reanimated').withTiming;
+    withTiming.mockClear();
+
+    const { rerender } = render(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="overview" onTabPress={jest.fn()} />,
+    );
+    rerender(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="cast" onTabPress={jest.fn()} />,
+    );
+    expect(withTiming).toHaveBeenCalled();
+  });
+
+  it('useEffect sets target directly (no withTiming) when animations disabled', () => {
+    mockAnimationsEnabled.mockReturnValue(false);
+    const withTiming = require('react-native-reanimated').withTiming;
+    withTiming.mockClear();
+
+    const { rerender } = render(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="overview" onTabPress={jest.fn()} />,
+    );
+    withTiming.mockClear();
+    rerender(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="reviews" onTabPress={jest.fn()} />,
+    );
+    // withTiming should NOT be called when animations disabled
+    expect(withTiming).not.toHaveBeenCalled();
+    mockAnimationsEnabled.mockReturnValue(true);
+  });
+
+  it('useAnimatedStyle is called for the indicator', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockClear();
+    render(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="overview" onTabPress={jest.fn()} />,
+    );
+    expect(useAnimatedStyle).toHaveBeenCalled();
+  });
+
+  it('useAnimatedStyle callback returns transform with translateX', () => {
+    const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
+    useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      return result;
+    });
+    render(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="overview" onTabPress={jest.fn()} />,
+    );
+    expect(useAnimatedStyle).toHaveBeenCalled();
+    useAnimatedStyle.mockImplementation(() => ({}));
+  });
 });

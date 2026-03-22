@@ -8,14 +8,16 @@ vi.mock('@/lib/r2-client', () => ({
   getR2Client: () => mockGetR2Client(),
 }));
 
+const mockRoleData = {
+  current: { role_id: 'admin', status: 'active' } as Record<string, unknown> | null,
+};
 vi.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     auth: { getUser: mockGetUser },
     from: () => ({
       select: () => ({
         eq: () => ({
-          single: () =>
-            Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+          single: () => Promise.resolve({ data: mockRoleData.current, error: null }),
         }),
       }),
     }),
@@ -102,6 +104,7 @@ describe('createUploadHandler', () => {
       error: null,
     });
     vi.unstubAllEnvs();
+    mockRoleData.current = { role_id: 'admin', status: 'active' };
   });
 
   it('returns 401 when authorization header is missing', async () => {
@@ -208,5 +211,32 @@ describe('createUploadHandler', () => {
     const webpRes = await handler(makeRequest(makeFormData(webpFile)));
     const webpData = await webpRes.json();
     expect(webpData.url).toMatch(/\.webp$/);
+  });
+
+  it('returns 403 for viewer role (read-only)', async () => {
+    mockRoleData.current = { role_id: 'viewer', status: 'active' };
+    const res = await handler(makeRequest(makeFormData()));
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.error).toBe('Viewer role is read-only');
+  });
+
+  it('returns 403 for ph_admin on non-production bucket', async () => {
+    mockRoleData.current = { role_id: 'production_house_admin', status: 'active' };
+    const res = await handler(makeRequest(makeFormData()));
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.error).toBe('Insufficient permissions for this upload type');
+  });
+
+  it('returns 500 when R2 upload throws', async () => {
+    vi.stubEnv('R2_PUBLIC_BASE_URL_TEST', 'https://cdn.example.com/test');
+    mockSend.mockRejectedValue(new Error('R2 network error'));
+
+    const file = new File(['img'], 'photo.png', { type: 'image/png' });
+    const res = await handler(makeRequest(makeFormData(file)));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Upload failed');
   });
 });

@@ -19,8 +19,9 @@ jest.mock('@/components/common/ScreenHeader', () => {
   return { __esModule: true, default: ({ title }: { title: string }) => <Text>{title}</Text> };
 });
 
+const mockUseProfile = jest.fn(() => ({ data: { username: null } }));
 jest.mock('@/features/auth/hooks/useProfile', () => ({
-  useProfile: () => ({ data: { username: null } }),
+  useProfile: (...args: unknown[]) => mockUseProfile(...args),
 }));
 
 const mockMutateAsync = jest.fn();
@@ -156,5 +157,79 @@ describe('UsernameScreen', () => {
     render(<UsernameScreen />);
     // ActivityIndicator renders — just verify no crash
     expect(screen.getByPlaceholderText('username')).toBeTruthy();
+  });
+
+  it('syncs username from profile when profile loads and user has not edited', () => {
+    mockUseProfile.mockReturnValue({ data: { username: 'existing_user' } });
+
+    render(<UsernameScreen />);
+    const input = screen.getByPlaceholderText('username');
+    expect(input.props.value).toBe('existing_user');
+
+    mockUseProfile.mockReturnValue({ data: { username: null } });
+  });
+
+  it('does not overwrite user-edited username when profile loads', () => {
+    render(<UsernameScreen />);
+    const input = screen.getByPlaceholderText('username');
+    // User types a new username
+    fireEvent.changeText(input, 'newname');
+    expect(input.props.value).toBe('newname');
+  });
+
+  it('shows mutation error when setUsernameMutation has error', () => {
+    const mockUseSetUsername = jest.requireMock('@/features/auth/hooks/useUsername').useSetUsername;
+    const origUseSetUsername = mockUseSetUsername;
+    jest.requireMock('@/features/auth/hooks/useUsername').useSetUsername = () => ({
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+      error: new Error('Username already taken'),
+    });
+
+    render(<UsernameScreen />);
+    expect(screen.getByText('Username already taken')).toBeTruthy();
+
+    jest.requireMock('@/features/auth/hooks/useUsername').useSetUsername = origUseSetUsername;
+  });
+
+  it('shows loading state when mutation is pending', () => {
+    jest.requireMock('@/features/auth/hooks/useUsername').useSetUsername = () => ({
+      mutateAsync: mockMutateAsync,
+      isPending: true,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    // Save button should show ActivityIndicator instead of text
+    expect(screen.queryByText('profile.saveUsername')).toBeNull();
+
+    // Restore
+    jest.requireMock('@/features/auth/hooks/useUsername').useSetUsername = () => ({
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+      error: null,
+    });
+  });
+
+  it('shows checkmark icon when username is available', () => {
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: true,
+      isChecking: false,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    expect(screen.UNSAFE_queryByProps({ name: 'checkmark-circle' })).toBeTruthy();
+  });
+
+  it('shows close icon when username is not available', () => {
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: false,
+      isChecking: false,
+      error: 'Taken',
+    });
+
+    render(<UsernameScreen />);
+    expect(screen.UNSAFE_queryByProps({ name: 'close-circle' })).toBeTruthy();
   });
 });

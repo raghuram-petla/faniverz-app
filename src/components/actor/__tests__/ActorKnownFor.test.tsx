@@ -2,8 +2,11 @@ jest.mock('@/styles/actorDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
+const mockGetImageUrl = jest.fn((url: string | null) => url);
 jest.mock('@shared/imageUrl', () => ({
-  getImageUrl: (url: string | null) => url,
+  get getImageUrl() {
+    return mockGetImageUrl;
+  },
 }));
 
 import React from 'react';
@@ -180,5 +183,51 @@ describe('ActorKnownFor', () => {
     render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
     expect(screen.getByText('Alpha')).toBeTruthy();
     expect(screen.getByText('Epsilon')).toBeTruthy();
+  });
+
+  it('filters out credits where movie.rating is exactly 0', () => {
+    const credits = [makeCredit('c1', 0, 'Zero Rated'), makeCredit('c2', 5.0, 'Five Rated')];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.queryByText('Zero Rated')).toBeNull();
+    expect(screen.getByText('Five Rated')).toBeTruthy();
+  });
+
+  it('sorts by descending rating (highest first)', () => {
+    const credits = [
+      makeCredit('lo', 1.0, 'Low Rated'),
+      makeCredit('hi', 9.0, 'High Rated'),
+      makeCredit('md', 5.0, 'Mid Rated'),
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    // All three should show but in correct order
+    expect(screen.getByText('High Rated')).toBeTruthy();
+    expect(screen.getByText('Mid Rated')).toBeTruthy();
+    expect(screen.getByText('Low Rated')).toBeTruthy();
+  });
+
+  it('handles mixed null and valid movie credits', () => {
+    const credits = [
+      makeCredit('c1', 8.0, 'Valid Movie'),
+      { id: 'c2', credit_type: 'cast', role_name: 'Hero', movie: null } as unknown as FilmCredit,
+      makeCredit('c3', 7.0, 'Another Valid'),
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Valid Movie')).toBeTruthy();
+    expect(screen.getByText('Another Valid')).toBeTruthy();
+  });
+
+  it('renders placeholder when getImageUrl returns null for poster_url', () => {
+    mockGetImageUrl.mockReturnValueOnce(null);
+    const credits = [makeCredit('c1', 8.0, 'No Poster Movie')];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('No Poster Movie')).toBeTruthy();
+    mockGetImageUrl.mockImplementation((url: string | null) => url);
+  });
+
+  it('handles sort when movies have equal ratings', () => {
+    const credits = [makeCredit('c1', 8.0, 'Movie A'), makeCredit('c2', 8.0, 'Movie B')];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Movie A')).toBeTruthy();
+    expect(screen.getByText('Movie B')).toBeTruthy();
   });
 });

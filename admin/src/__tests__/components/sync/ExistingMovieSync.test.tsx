@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ExistingMovieSync } from '@/components/sync/ExistingMovieSync';
 import type { ExistingMovieData } from '@/hooks/useSync';
@@ -9,7 +9,7 @@ const mockLookupData = vi.hoisted(() => ({ current: undefined as unknown }));
 const mockLookupPending = vi.hoisted(() => ({ current: false }));
 const mockLookupError = vi.hoisted(() => ({ current: false }));
 const mockFillError = vi.hoisted(() => ({ current: false }));
-const mockBulkRun = vi.hoisted(() => vi.fn());
+const mockBulkRun = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock('@/hooks/useSync', () => ({
   useTmdbLookup: () => ({
@@ -198,6 +198,244 @@ describe('ExistingMovieSync', () => {
     fireEvent.click(screen.getByText('Existing movies'));
     fireEvent.click(screen.getByText('Baahubali'));
     expect(screen.getByText('Apply failed')).toBeInTheDocument();
+  });
+
+  it('expands/collapses on Enter and Space key', () => {
+    wrap(<ExistingMovieSync movies={[makeExisting()]} />);
+    const header = screen.getByRole('button');
+    fireEvent.keyDown(header, { key: 'Enter' });
+    expect(screen.getByText('Baahubali')).toBeInTheDocument();
+    fireEvent.keyDown(header, { key: ' ' });
+    expect(screen.queryByText('Baahubali')).not.toBeInTheDocument();
+  });
+
+  it('shows "No gaps" when tmdb data loaded and everything matches', async () => {
+    // Mock fetch so TMDB data returns with all fields matching the existing movie (all null)
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          type: 'movie',
+          data: {
+            tmdbId: 101,
+            title: 'Baahubali',
+            overview: null,
+            releaseDate: null,
+            runtime: null,
+            genres: [],
+            posterUrl: null,
+            backdropUrl: null,
+            director: null,
+            trailerUrl: null,
+            castCount: 0,
+            crewCount: 0,
+            posterCount: 0,
+            backdropCount: 0,
+            videoCount: 0,
+            providerNames: [],
+            keywordCount: 0,
+            imdbId: null,
+            titleTe: null,
+            synopsisTe: null,
+            tagline: null,
+            tmdbStatus: null,
+            tmdbVoteAverage: null,
+            tmdbVoteCount: null,
+            budget: null,
+            revenue: null,
+            certification: null,
+            spokenLanguages: [],
+            productionCompanyCount: 0,
+          },
+        }),
+    });
+
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { access_token: 'token-123' } },
+    } as never);
+
+    wrap(<ExistingMovieSync movies={[makeExisting()]} />);
+
+    await vi.waitFor(
+      () => {
+        expect(screen.getByText('No gaps')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    vi.restoreAllMocks();
+  });
+
+  it('calls onGapCountChange with gap count after fetching', async () => {
+    const onGapCountChange = vi.fn();
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          type: 'movie',
+          data: {
+            tmdbId: 101,
+            title: 'Baahubali: New',
+            overview: 'A synopsis',
+            releaseDate: null,
+            runtime: 159,
+            genres: ['Action'],
+            posterUrl: null,
+            backdropUrl: null,
+            director: 'Rajamouli',
+            trailerUrl: null,
+            castCount: 0,
+            crewCount: 0,
+            posterCount: 0,
+            backdropCount: 0,
+            videoCount: 0,
+            providerNames: [],
+            keywordCount: 0,
+            imdbId: null,
+            titleTe: null,
+            synopsisTe: null,
+            tagline: null,
+            tmdbStatus: null,
+            tmdbVoteAverage: null,
+            tmdbVoteCount: null,
+            budget: null,
+            revenue: null,
+            certification: null,
+            spokenLanguages: [],
+            productionCompanyCount: 0,
+          },
+        }),
+    });
+
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { access_token: 'token-123' } },
+    } as never);
+
+    wrap(<ExistingMovieSync movies={[makeExisting()]} onGapCountChange={onGapCountChange} />);
+
+    await vi.waitFor(
+      () => {
+        expect(onGapCountChange).toHaveBeenCalledWith(expect.any(Number));
+      },
+      { timeout: 3000 },
+    );
+
+    vi.restoreAllMocks();
+  });
+
+  it('shows "Fill all missing" button when gaps exist', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          type: 'movie',
+          data: {
+            tmdbId: 101,
+            title: 'Baahubali',
+            overview: 'A synopsis',
+            releaseDate: null,
+            runtime: 159,
+            genres: ['Action'],
+            posterUrl: null,
+            backdropUrl: null,
+            director: 'Rajamouli',
+            trailerUrl: null,
+            castCount: 0,
+            crewCount: 0,
+            posterCount: 0,
+            backdropCount: 0,
+            videoCount: 0,
+            providerNames: [],
+            keywordCount: 0,
+            imdbId: null,
+            titleTe: null,
+            synopsisTe: null,
+            tagline: null,
+            tmdbStatus: null,
+            tmdbVoteAverage: null,
+            tmdbVoteCount: null,
+            budget: null,
+            revenue: null,
+            certification: null,
+            spokenLanguages: [],
+            productionCompanyCount: 0,
+          },
+        }),
+    });
+
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { access_token: 'token-123' } },
+    } as never);
+
+    wrap(<ExistingMovieSync movies={[makeExisting()]} />);
+
+    await vi.waitFor(
+      () => {
+        expect(screen.getByText(/Fill all missing/)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    // Click Fill all missing and flush microtasks for optimistic update
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Fill all missing/));
+    });
+    expect(mockBulkRun).toHaveBeenCalled();
+
+    vi.restoreAllMocks();
+  });
+
+  it('does not fetch for movies in importedIds set', async () => {
+    global.fetch = vi.fn();
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { access_token: 'token-123' } },
+    } as never);
+
+    const importedIds = new Set([101]);
+    wrap(<ExistingMovieSync movies={[makeExisting()]} importedIds={importedIds} />);
+
+    // Should not fetch since the movie is in importedIds
+    await new Promise((r) => setTimeout(r, 100));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    vi.restoreAllMocks();
+  });
+
+  it('skips fetch when no auth session', async () => {
+    global.fetch = vi.fn();
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: null },
+    } as never);
+
+    wrap(<ExistingMovieSync movies={[makeExisting()]} />);
+
+    await new Promise((r) => setTimeout(r, 100));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    vi.restoreAllMocks();
+  });
+
+  it('handles failed fetch gracefully', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('network'));
+    const { supabase } = await import('@/lib/supabase-browser');
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { access_token: 'token-123' } },
+    } as never);
+
+    wrap(<ExistingMovieSync movies={[makeExisting()]} />);
+
+    // Should not throw, just skip failed lookups
+    await vi.waitFor(() => {
+      expect(screen.getByText('Existing movies')).toBeInTheDocument();
+    });
+
+    vi.restoreAllMocks();
   });
 
   it('shows field comparison panel when TMDB data is available', () => {

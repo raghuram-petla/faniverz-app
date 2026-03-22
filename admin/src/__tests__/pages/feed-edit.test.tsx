@@ -57,8 +57,13 @@ vi.mock('@/hooks/useFormChanges', () => ({
   useFormChanges: () => ({ changes: [], isDirty: false, changeCount: 0 }),
 }));
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const capturedDockProps: Record<string, any> = {};
 vi.mock('@/components/common/FormChangesDock', () => ({
-  FormChangesDock: () => <div data-testid="form-changes-dock" />,
+  FormChangesDock: (props: any) => {
+    capturedDockProps.current = props;
+    return <div data-testid="form-changes-dock" />;
+  },
 }));
 
 const mockMutateAsync = vi.fn();
@@ -338,5 +343,312 @@ describe('EditFeedItemPage', () => {
       expect(screen.getByText('Pin to top')).toBeInTheDocument();
       expect(screen.getByText('Featured')).toBeInTheDocument();
     });
+  });
+
+  it('toggles Pin to top checkbox', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Pin to top')).toBeInTheDocument());
+
+    const checkbox = screen.getByText('Pin to top').closest('label')?.querySelector('input');
+    expect(checkbox).not.toBeChecked();
+    fireEvent.click(checkbox!);
+    expect(checkbox).toBeChecked();
+  });
+
+  it('toggles Featured checkbox', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Featured')).toBeInTheDocument());
+
+    const checkbox = screen.getByText('Featured').closest('label')?.querySelector('input');
+    expect(checkbox).not.toBeChecked();
+    fireEvent.click(checkbox!);
+    expect(checkbox).toBeChecked();
+  });
+
+  it('renders title input that can be changed', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByDisplayValue('Test Feed'), { target: { value: 'New Title' } });
+    expect(screen.getByDisplayValue('New Title')).toBeInTheDocument();
+  });
+
+  it('renders description textarea that can be changed', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, description: 'initial' },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('initial')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByDisplayValue('initial'), { target: { value: 'updated' } });
+    expect(screen.getByDisplayValue('updated')).toBeInTheDocument();
+  });
+
+  it('does not render source_table notice when source_table is null', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, source_table: null },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Edit Feed Item')).toBeInTheDocument());
+    expect(screen.queryByText('Auto-generated from')).not.toBeInTheDocument();
+  });
+
+  it('does not render media when youtube_id and thumbnail_url are null', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, youtube_id: null, thumbnail_url: null },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    const { container } = renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Edit Feed Item')).toBeInTheDocument());
+    expect(container.querySelector('iframe')).not.toBeInTheDocument();
+    expect(container.querySelector('img')).not.toBeInTheDocument();
+  });
+
+  it('does not render movie badge when movie is null', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, movie: null },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Edit Feed Item')).toBeInTheDocument());
+    expect(screen.queryByText(/^Movie:/)).not.toBeInTheDocument();
+  });
+
+  it('shows error alert when delete fails', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
+
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+
+    expect(window.alert).toHaveBeenCalledWith('Error: Delete failed');
+    vi.restoreAllMocks();
+  });
+
+  it('renders back link to /feed', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: '' })).toHaveAttribute('href', '/feed');
+    });
+  });
+
+  it('handleSave calls updateMutation.mutateAsync and sets success', async () => {
+    mockMutateAsync.mockResolvedValue({});
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByDisplayValue('Test Feed'), { target: { value: 'Updated' } });
+
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
+
+    expect(mockMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '1', title: 'Updated' }),
+    );
+    expect(capturedDockProps.current.saveStatus).toBe('success');
+  });
+
+  it('handleSave sets idle and alerts on error', async () => {
+    mockMutateAsync.mockRejectedValue(new Error('Save failed'));
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument());
+
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
+
+    expect(window.alert).toHaveBeenCalledWith('Error: Save failed');
+    expect(capturedDockProps.current.saveStatus).toBe('idle');
+    vi.restoreAllMocks();
+  });
+
+  it('handleSave sends null for empty description', async () => {
+    mockMutateAsync.mockResolvedValue({});
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, description: 'some desc' },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('some desc')).toBeInTheDocument());
+
+    // Clear description
+    const textarea = screen.getByDisplayValue('some desc');
+    fireEvent.change(textarea, { target: { value: '' } });
+
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
+
+    expect(mockMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ description: null }));
+  });
+
+  it('handleDiscard resets all fields to initial values', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByDisplayValue('Test Feed'), { target: { value: 'Changed' } });
+    expect(screen.getByDisplayValue('Changed')).toBeInTheDocument();
+
+    act(() => capturedDockProps.current.onDiscard());
+    expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument();
+  });
+
+  it('handleRevertField reverts only the specified field', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, description: 'original desc' },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByDisplayValue('Test Feed'), { target: { value: 'New Title' } });
+    fireEvent.change(screen.getByDisplayValue('original desc'), { target: { value: 'New Desc' } });
+
+    act(() => capturedDockProps.current.onRevertField('title'));
+    expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('New Desc')).toBeInTheDocument();
+  });
+
+  it('handleRevertField reverts description', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, description: 'orig' },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('orig')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByDisplayValue('orig'), { target: { value: 'changed' } });
+    act(() => capturedDockProps.current.onRevertField('description'));
+    expect(screen.getByDisplayValue('orig')).toBeInTheDocument();
+  });
+
+  it('handleRevertField reverts isPinned', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, is_pinned: false },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Pin to top')).toBeInTheDocument());
+
+    const checkbox = screen.getByText('Pin to top').closest('label')?.querySelector('input');
+    fireEvent.click(checkbox!);
+    expect(checkbox).toBeChecked();
+
+    act(() => capturedDockProps.current.onRevertField('isPinned'));
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('handleRevertField reverts isFeatured', async () => {
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: { ...mockItem, is_featured: false },
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Featured')).toBeInTheDocument());
+
+    const checkbox = screen.getByText('Featured').closest('label')?.querySelector('input');
+    fireEvent.click(checkbox!);
+    expect(checkbox).toBeChecked();
+
+    act(() => capturedDockProps.current.onRevertField('isFeatured'));
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('handleSave error with non-Error value shows generic message', async () => {
+    mockMutateAsync.mockRejectedValue('string error');
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByDisplayValue('Test Feed')).toBeInTheDocument());
+
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
+
+    expect(window.alert).toHaveBeenCalledWith('Error: Operation failed');
+    vi.restoreAllMocks();
+  });
+
+  it('delete error with non-Error value shows generic message', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockDeleteMutateAsync.mockRejectedValue('string error');
+
+    mockedUseAdminFeedItem.mockReturnValue({
+      data: mockItem,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminFeedItem>);
+
+    renderWithProviders(<EditFeedItemPage />);
+    await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+
+    expect(window.alert).toHaveBeenCalledWith('Error: Operation failed');
+    vi.restoreAllMocks();
   });
 });

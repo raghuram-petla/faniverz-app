@@ -164,4 +164,49 @@ describe('FeedVideoPlayer', () => {
     );
     expect(images.length).toBeGreaterThan(0);
   });
+
+  it('renders WebView with correct baseUrl', () => {
+    render(<FeedVideoPlayer {...defaultProps} isActive={true} />);
+    const webview = screen.getByTestId('webview');
+    expect(webview.props.source.baseUrl).toBe('https://example.com');
+  });
+
+  it('onNavRequest returns result from handleYouTubeNavigation', () => {
+    (handleYouTubeNavigation as jest.Mock).mockReturnValueOnce(false);
+    render(<FeedVideoPlayer {...defaultProps} isActive={true} />);
+    const webview = screen.getByTestId('webview');
+    const result = webview.props.onShouldStartLoadWithRequest({ url: 'blocked', isTopFrame: true });
+    expect(result).toBe(false);
+  });
+
+  it('onShare callback uses memoized youtubeId', () => {
+    render(<FeedVideoPlayer {...defaultProps} isActive={true} youtubeId="xyz789" />);
+    fireEvent.press(screen.getByLabelText('Share video'));
+    expect(shareYouTubeVideo).toHaveBeenCalledWith('xyz789');
+  });
+
+  it('uses provided thumbnailUrl when not null', () => {
+    const { root } = render(
+      <FeedVideoPlayer {...defaultProps} thumbnailUrl="https://custom.com/thumb.jpg" />,
+    );
+    const images = root.findAll(
+      (node: { props: Record<string, unknown> }) =>
+        typeof node.props.source === 'object' &&
+        node.props.source !== null &&
+        (node.props.source as { uri: string }).uri === 'https://custom.com/thumb.jpg',
+    );
+    expect(images.length).toBeGreaterThan(0);
+  });
+
+  it('uses PLACEHOLDER_POSTER when thumbnailUrl is empty string (falsy via ||)', () => {
+    // thumbnailUrl '' is not null/undefined so ?? passes it through; '' || PLACEHOLDER_POSTER triggers fallback
+    const { root } = render(<FeedVideoPlayer youtubeId="abc" thumbnailUrl="" isActive={false} />);
+    const images = root.findAll(
+      (node: { props: Record<string, unknown> }) =>
+        typeof node.props.source === 'object' &&
+        node.props.source !== null &&
+        typeof (node.props.source as { uri?: string }).uri === 'string',
+    );
+    expect(images.length).toBeGreaterThan(0);
+  });
 });

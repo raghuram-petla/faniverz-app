@@ -397,4 +397,262 @@ describe('useMovieEditChanges', () => {
       expect(setForm).not.toHaveBeenCalled();
     });
   });
+
+  describe('entity changes — cast/video/poster fallback branches', () => {
+    it('uses "Unknown" when cast add has no _actor', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingCastAdds: [
+              {
+                _id: 'c1',
+                _actor: undefined,
+                role_name: '',
+                display_order: 0,
+                credit_type: 'cast',
+              },
+            ] as never[],
+          }),
+        ),
+      );
+      const castChange = result.current.changes.find((c) => c.key.includes('cast-add'));
+      expect(castChange!.newValue).toContain('Unknown');
+    });
+
+    it('uses video id when video is not found for remove', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingVideoRemoveIds: new Set(['v99']),
+            videosData: [],
+          }),
+        ),
+      );
+      const videoChange = result.current.changes.find((c) => c.key.includes('video-remove'));
+      expect(videoChange!.oldValue).toBe('v99');
+    });
+
+    it('uses poster id when poster is not found for remove', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPosterRemoveIds: new Set(['p99']),
+            postersData: [],
+          }),
+        ),
+      );
+      const posterChange = result.current.changes.find((c) => c.key.includes('poster-remove'));
+      expect(posterChange!.oldValue).toBe('p99');
+    });
+  });
+
+  describe('entity changes — platform branches', () => {
+    it('generates platform add changes with available_from', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPlatformAdds: [
+              {
+                platform_id: 'p1',
+                available_from: '2025-06-01',
+                streaming_url: null,
+                _platform: { id: 'p1', name: 'Netflix' },
+              },
+            ],
+          }),
+        ),
+      );
+      const platformChange = result.current.changes.find((c) => c.key.includes('platform-add'));
+      expect(platformChange).toBeDefined();
+      expect(platformChange!.newValue).toContain('Netflix');
+      expect(platformChange!.newValue).toContain('from 2025-06-01');
+    });
+
+    it('generates platform add changes without available_from', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPlatformAdds: [
+              {
+                platform_id: 'p1',
+                available_from: null,
+                streaming_url: null,
+                _platform: { id: 'p1', name: 'Netflix' },
+              },
+            ],
+          }),
+        ),
+      );
+      const platformChange = result.current.changes.find((c) => c.key.includes('platform-add'));
+      expect(platformChange!.newValue).toBe('+ Netflix');
+    });
+
+    it('uses platform_id when _platform is null', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPlatformAdds: [
+              {
+                platform_id: 'p1',
+                available_from: null,
+                streaming_url: null,
+                _platform: undefined,
+              },
+            ],
+          }),
+        ),
+      );
+      const platformChange = result.current.changes.find((c) => c.key.includes('platform-add'));
+      expect(platformChange!.newValue).toBe('+ p1');
+    });
+
+    it('generates platform remove changes with platform name', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPlatformRemoveIds: new Set(['p1']),
+            moviePlatforms: [
+              { platform_id: 'p1', platform: { id: 'p1', name: 'Netflix' } },
+            ] as never[],
+          }),
+        ),
+      );
+      const platformChange = result.current.changes.find((c) => c.key.includes('platform-remove'));
+      expect(platformChange!.oldValue).toBe('Netflix');
+    });
+
+    it('uses platform_id when moviePlatform has no platform object', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPlatformRemoveIds: new Set(['p1']),
+            moviePlatforms: [] as never[],
+          }),
+        ),
+      );
+      const platformChange = result.current.changes.find((c) => c.key.includes('platform-remove'));
+      expect(platformChange!.oldValue).toBe('p1');
+    });
+  });
+
+  describe('entity changes — production house branches', () => {
+    it('generates PH add changes with name', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPHAdds: [
+              {
+                production_house_id: 'ph1',
+                _ph: { id: 'ph1', name: 'Studio A' },
+              },
+            ],
+          }),
+        ),
+      );
+      const phChange = result.current.changes.find((c) => c.key.includes('ph-add'));
+      expect(phChange!.newValue).toBe('+ Studio A');
+    });
+
+    it('uses production_house_id when _ph is null', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPHAdds: [
+              {
+                production_house_id: 'ph1',
+                _ph: undefined,
+              },
+            ],
+          }),
+        ),
+      );
+      const phChange = result.current.changes.find((c) => c.key.includes('ph-add'));
+      expect(phChange!.newValue).toBe('+ ph1');
+    });
+
+    it('generates PH remove changes with PH name', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPHRemoveIds: new Set(['ph1']),
+            movieProductionHouses: [
+              { production_house_id: 'ph1', production_house: { id: 'ph1', name: 'Studio A' } },
+            ] as never[],
+          }),
+        ),
+      );
+      const phChange = result.current.changes.find((c) => c.key.includes('ph-remove'));
+      expect(phChange!.oldValue).toBe('Studio A');
+    });
+
+    it('uses PH id when production_house object is missing', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingPHRemoveIds: new Set(['ph1']),
+            movieProductionHouses: [] as never[],
+          }),
+        ),
+      );
+      const phChange = result.current.changes.find((c) => c.key.includes('ph-remove'));
+      expect(phChange!.oldValue).toBe('ph1');
+    });
+  });
+
+  describe('entity changes — theatrical run branches', () => {
+    it('generates run remove changes with release_date', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingRunRemoveIds: new Set(['r1']),
+            theatricalRuns: [{ id: 'r1', release_date: '2025-03-15', label: 'Regular' }] as never[],
+          }),
+        ),
+      );
+      const runChange = result.current.changes.find((c) => c.key.includes('run-remove'));
+      expect(runChange!.oldValue).toBe('2025-03-15');
+    });
+
+    it('uses run id when run is not found', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingRunRemoveIds: new Set(['r1']),
+            theatricalRuns: [] as never[],
+          }),
+        ),
+      );
+      const runChange = result.current.changes.find((c) => c.key.includes('run-remove'));
+      expect(runChange!.oldValue).toBe('r1');
+    });
+
+    it('generates run end changes with release_date', () => {
+      const endIds = new Map([['r1', '2025-04-15']]);
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingRunEndIds: endIds,
+            theatricalRuns: [{ id: 'r1', release_date: '2025-03-01', label: null }] as never[],
+          }),
+        ),
+      );
+      const endChange = result.current.changes.find((c) => c.key.includes('run-end'));
+      expect(endChange!.oldValue).toBe('2025-03-01');
+      expect(endChange!.newValue).toBe('ends 2025-04-15');
+    });
+
+    it('uses run id when run is not found for end date change', () => {
+      const endIds = new Map([['r99', '2025-04-15']]);
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingRunEndIds: endIds,
+            theatricalRuns: [] as never[],
+          }),
+        ),
+      );
+      const endChange = result.current.changes.find((c) => c.key.includes('run-end'));
+      expect(endChange!.oldValue).toBe('r99');
+    });
+  });
 });

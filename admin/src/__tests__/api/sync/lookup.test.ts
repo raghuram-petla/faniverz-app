@@ -178,132 +178,182 @@ describe('POST /api/sync/lookup', () => {
     expect(data.existingId).toBe('actor-1');
     expect(data.data.name).toBe('Test Actor');
   });
-});
 
-it('handles movie with no director in crew', async () => {
-  mockGetMovieDetails.mockResolvedValue({
-    id: 101,
-    title: 'No Director Movie',
-    overview: '',
-    release_date: '2025-01-01',
-    runtime: 90,
-    genres: [],
-    poster_path: null,
-    backdrop_path: null,
-    credits: {
-      cast: [],
-      crew: [{ job: 'Producer', name: 'Producer Name' }],
-    },
-    videos: { results: [] },
-    translations: { translations: [] },
-    release_dates: { results: [] },
-    external_ids: {},
-    keywords: { keywords: [] },
-    production_companies: [],
-    spoken_languages: [],
-    tagline: '',
-    status: 'Released',
-    vote_average: 6.0,
-    vote_count: 100,
-    budget: 0,
-    revenue: 0,
+  it('handles movie with no director in crew', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      id: 101,
+      title: 'No Director Movie',
+      overview: '',
+      release_date: '2025-01-01',
+      runtime: 90,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      credits: { cast: [], crew: [{ job: 'Producer', name: 'Producer Name' }] },
+      videos: { results: [] },
+      translations: { translations: [] },
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: 'Released',
+      vote_average: 6.0,
+      vote_count: 100,
+      budget: 0,
+      revenue: 0,
+    });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const res = await POST(makeRequest({ tmdbId: 101, type: 'movie' }));
+    const data = await res.json();
+    expect(data.data.director).toBeNull();
   });
-  mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-  const res = await POST(makeRequest({ tmdbId: 101, type: 'movie' }));
-  const data = await res.json();
-  expect(data.data.director).toBeNull();
-});
+  it('handles movie with no poster or backdrop paths', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      id: 102,
+      title: 'No Images Movie',
+      overview: '',
+      release_date: '2025-01-01',
+      runtime: 90,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      credits: { cast: [], crew: [] },
+      videos: { results: [] },
+      translations: { translations: [] },
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: null,
+      vote_average: null,
+      vote_count: null,
+      budget: null,
+      revenue: null,
+    });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-it('handles movie with no poster or backdrop paths', async () => {
-  mockGetMovieDetails.mockResolvedValue({
-    id: 102,
-    title: 'No Images Movie',
-    overview: '',
-    release_date: '2025-01-01',
-    runtime: 90,
-    genres: [],
-    poster_path: null,
-    backdrop_path: null,
-    credits: { cast: [], crew: [] },
-    videos: { results: [] },
-    translations: { translations: [] },
-    release_dates: { results: [] },
-    external_ids: {},
-    keywords: { keywords: [] },
-    production_companies: [],
-    spoken_languages: [],
-    tagline: '',
-    status: null,
-    vote_average: null,
-    vote_count: null,
-    budget: null,
-    revenue: null,
+    const res = await POST(makeRequest({ tmdbId: 102, type: 'movie' }));
+    const data = await res.json();
+    expect(data.data.posterUrl).toBeNull();
+    expect(data.data.backdropUrl).toBeNull();
   });
-  mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-  const res = await POST(makeRequest({ tmdbId: 102, type: 'movie' }));
-  const data = await res.json();
-  expect(data.data.posterUrl).toBeNull();
-  expect(data.data.backdropUrl).toBeNull();
-});
+  it('includes Telugu title from translations', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      id: 103,
+      title: 'Telugu Movie',
+      overview: '',
+      release_date: '2025-01-01',
+      runtime: 120,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      credits: { cast: [], crew: [] },
+      videos: { results: [] },
+      translations: {
+        translations: [
+          { iso_639_1: 'te', data: { title: 'తెలుగు మూవీ', overview: 'తెలుగు వివరణ' } },
+        ],
+      },
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: '',
+      vote_average: 7.0,
+      vote_count: 500,
+      budget: 1000000,
+      revenue: 5000000,
+    });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-it('includes Telugu title from translations', async () => {
-  mockGetMovieDetails.mockResolvedValue({
-    id: 103,
-    title: 'Telugu Movie',
-    overview: '',
-    release_date: '2025-01-01',
-    runtime: 120,
-    genres: [],
-    poster_path: null,
-    backdrop_path: null,
-    credits: { cast: [], crew: [] },
-    videos: { results: [] },
-    translations: {
-      translations: [{ iso_639_1: 'te', data: { title: 'తెలుగు మూవీ', overview: 'తెలుగు వివరణ' } }],
-    },
-    release_dates: { results: [] },
-    external_ids: {},
-    keywords: { keywords: [] },
-    production_companies: [],
-    spoken_languages: [],
-    tagline: '',
-    status: '',
-    vote_average: 7.0,
-    vote_count: 500,
-    budget: 1000000,
-    revenue: 5000000,
+    const res = await POST(makeRequest({ tmdbId: 103, type: 'movie' }));
+    const data = await res.json();
+    expect(data.data.titleTe).toBe('తెలుగు మూవీ');
+    expect(data.data.synopsisTe).toBe('తెలుగు వివరణ');
   });
-  mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-  const res = await POST(makeRequest({ tmdbId: 103, type: 'movie' }));
-  const data = await res.json();
-  expect(data.data.titleTe).toBe('తెలుగు మూవీ');
-  expect(data.data.synopsisTe).toBe('తెలుగు వివరణ');
-});
+  it('handles errors in POST handler', async () => {
+    mockGetMovieDetails.mockRejectedValue(new Error('TMDB unreachable'));
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-it('handles errors in POST handler', async () => {
-  mockGetMovieDetails.mockRejectedValue(new Error('TMDB unreachable'));
-  mockMaybeSingle.mockResolvedValue({ data: null, error: null });
-
-  const res = await POST(makeRequest({ tmdbId: 999, type: 'movie' }));
-  expect(res.status).toBe(500);
-});
-
-it('returns 200 with person data when person has no profile photo', async () => {
-  mockGetPersonDetails.mockResolvedValue({
-    id: 501,
-    name: 'No Photo Actor',
-    biography: '',
-    birthday: null,
-    place_of_birth: null,
-    profile_path: null,
-    gender: 0,
+    const res = await POST(makeRequest({ tmdbId: 999, type: 'movie' }));
+    expect(res.status).toBe(500);
   });
-  mockMaybeSingle.mockResolvedValue({ data: null, error: null });
 
-  const res = await POST(makeRequest({ tmdbId: 501, type: 'person' }));
-  const data = await res.json();
-  expect(data.data.photoUrl).toBeNull();
+  it('returns 200 with person data when person has no profile photo', async () => {
+    mockGetPersonDetails.mockResolvedValue({
+      id: 501,
+      name: 'No Photo Actor',
+      biography: '',
+      birthday: null,
+      place_of_birth: null,
+      profile_path: null,
+      gender: 0,
+    });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const res = await POST(makeRequest({ tmdbId: 501, type: 'person' }));
+    const data = await res.json();
+    expect(data.data.photoUrl).toBeNull();
+  });
+
+  it('returns movie image and provider counts', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      id: 104,
+      title: 'Count Movie',
+      overview: '',
+      release_date: '2025-01-01',
+      runtime: 90,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      credits: { cast: [{}, {}, {}], crew: [{}, {}] },
+      videos: {
+        results: [
+          { key: 'a', site: 'YouTube', type: 'Clip' },
+          { key: 'b', site: 'YouTube', type: 'Trailer' },
+        ],
+      },
+      translations: { translations: [] },
+      release_dates: { results: [] },
+      external_ids: { imdb_id: 'tt1234567' },
+      keywords: { keywords: [{}, {}, {}] },
+      production_companies: [{}, {}],
+      spoken_languages: [{ iso_639_1: 'en' }, { iso_639_1: 'te' }],
+      tagline: 'Cool tagline',
+      status: 'Released',
+      vote_average: 8.5,
+      vote_count: 1000,
+      budget: 50000000,
+      revenue: 200000000,
+    });
+    mockGetMovieImages.mockResolvedValue({ posters: [{}, {}], backdrops: [{}], logos: [] });
+    mockGetWatchProviders.mockResolvedValue([{ provider_name: 'Netflix' }]);
+    mockMaybeSingle.mockResolvedValue({ data: { id: 'existing-1' }, error: null });
+
+    const res = await POST(makeRequest({ tmdbId: 104, type: 'movie' }));
+    const data = await res.json();
+    expect(data.existsInDb).toBe(true);
+    expect(data.existingId).toBe('existing-1');
+    expect(data.data.castCount).toBe(3);
+    expect(data.data.crewCount).toBe(2);
+    expect(data.data.posterCount).toBe(2);
+    expect(data.data.backdropCount).toBe(1);
+    expect(data.data.videoCount).toBe(2);
+    expect(data.data.providerNames).toEqual(['Netflix']);
+    expect(data.data.keywordCount).toBe(3);
+    expect(data.data.imdbId).toBe('tt1234567');
+    expect(data.data.tagline).toBe('Cool tagline');
+    expect(data.data.productionCompanyCount).toBe(2);
+    expect(data.data.spokenLanguages).toEqual(['en', 'te']);
+  });
 });

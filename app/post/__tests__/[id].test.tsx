@@ -143,9 +143,24 @@ jest.mock('@/components/feed/FeedCard', () => ({
 }));
 
 jest.mock('@/components/feed/CommentsList', () => ({
-  CommentsList: ({ comments }: { comments: { id: string }[] }) => {
-    const { Text } = require('react-native');
-    return <Text testID="comments-list">{comments.length} comments</Text>;
+  CommentsList: ({
+    comments,
+    onDelete,
+  }: {
+    comments: { id: string }[];
+    onDelete?: (commentId: string) => void;
+  }) => {
+    const { Text, TouchableOpacity } = require('react-native');
+    return (
+      <>
+        <Text testID="comments-list">{comments.length} comments</Text>
+        {onDelete && (
+          <TouchableOpacity testID="delete-comment-btn" onPress={() => onDelete('c1')}>
+            <Text>Delete</Text>
+          </TouchableOpacity>
+        )}
+      </>
+    );
   },
 }));
 
@@ -327,6 +342,163 @@ describe('PostDetailScreen', () => {
   it('shows not-found state when post is null and not loading', () => {
     const mockFeedModule = jest.requireMock('@/features/feed');
     const origUseFeedItem = mockFeedModule.useFeedItem;
+    mockFeedModule.useFeedItem = () => ({ data: null, isLoading: false, refetch: jest.fn() });
+
+    render(<PostDetailScreen />);
+    expect(screen.getByText('postDetail.notFound')).toBeTruthy();
+
+    mockFeedModule.useFeedItem = origUseFeedItem;
+  });
+
+  it('switches from downvote to upvote (replaces vote)', () => {
+    mockUserVotesData['post-1'] = 'down';
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('upvote-btn'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'post-1',
+      voteType: 'up',
+      previousVote: 'down',
+    });
+    delete mockUserVotesData['post-1'];
+  });
+
+  it('switches from upvote to downvote (replaces vote)', () => {
+    mockUserVotesData['post-1'] = 'up';
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('downvote-btn'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'post-1',
+      voteType: 'down',
+      previousVote: 'up',
+    });
+    delete mockUserVotesData['post-1'];
+  });
+
+  it('onDelete callback calls deleteMutation.mutate with commentId', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('delete-comment-btn'));
+    expect(mockDeleteMutate).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({
+        onError: expect.any(Function),
+      }),
+    );
+  });
+
+  it('onDelete onError callback shows alert', () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('delete-comment-btn'));
+    // Extract the onError callback from the mutate call and invoke it
+    const mutateCall = mockDeleteMutate.mock.calls[mockDeleteMutate.mock.calls.length - 1];
+    const onError = mutateCall[1].onError;
+    onError();
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('navigates to actor entity correctly', () => {
+    // Need a mock that exposes actor entity press
+    const mockFeedModule = jest.requireMock('@/components/feed/FeedCard');
+    const origFeedCard = mockFeedModule.FeedCard;
+
+    mockFeedModule.FeedCard = ({
+      onEntityPress,
+    }: {
+      onEntityPress: (type: string, id: string) => void;
+    }) => {
+      const { TouchableOpacity, Text } = require('react-native');
+      return (
+        <>
+          <TouchableOpacity testID="actor-entity" onPress={() => onEntityPress('actor', 'a1')}>
+            <Text>Actor</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="ph-entity"
+            onPress={() => onEntityPress('production_house', 'ph1')}
+          >
+            <Text>PH</Text>
+          </TouchableOpacity>
+        </>
+      );
+    };
+
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('actor-entity'));
+    expect(mockPush).toHaveBeenCalledWith('/actor/a1');
+
+    mockPush.mockClear();
+    fireEvent.press(screen.getByTestId('ph-entity'));
+    expect(mockPush).toHaveBeenCalledWith('/production-house/ph1');
+
+    mockFeedModule.FeedCard = origFeedCard;
+  });
+
+  it('handleNoOp does not crash when called', () => {
+    render(<PostDetailScreen />);
+    // The FeedCard receives onPress=handleNoOp which is a no-op
+    expect(screen.getByTestId('feed-card')).toBeTruthy();
+  });
+
+  it('handles null commentsData pages gracefully', () => {
+    const mockFeedModule = jest.requireMock('@/features/feed');
+    const origUseComments = mockFeedModule.useComments;
+    mockFeedModule.useComments = () => ({
+      data: undefined,
+      isLoading: false,
+      hasNextPage: false,
+      fetchNextPage: jest.fn(),
+      refetch: jest.fn(),
+    });
+
+    render(<PostDetailScreen />);
+    // Should render with 0 comments, no crash
+    expect(screen.getByText('0 comments')).toBeTruthy();
+
+    mockFeedModule.useComments = origUseComments;
+  });
+
+  it('renders with user having no id (null userId)', () => {
+    const authModule = jest.requireMock('@/features/auth/providers/AuthProvider');
+    const origUseAuth = authModule.useAuth;
+    authModule.useAuth = () => ({ user: null });
+
+    render(<PostDetailScreen />);
+    expect(screen.getByText('noauth')).toBeTruthy();
+
+    authModule.useAuth = origUseAuth;
+  });
+
+  it('renders correctly on non-ios platform (Platform.OS branch)', () => {
+    const Platform = require('react-native').Platform;
+    const origOS = Platform.OS;
+    Platform.OS = 'android';
+
+    render(<PostDetailScreen />);
+    expect(screen.getByTestId('feed-card')).toBeTruthy();
+
+    Platform.OS = origOS;
+  });
+
+  it('handles undefined id param via nullish coalescing fallback', () => {
+    const routerModule = jest.requireMock('expo-router');
+    const origUseLocalSearchParams = routerModule.useLocalSearchParams;
+    routerModule.useLocalSearchParams = () => ({ id: undefined });
+
+    // When id is undefined, useFeedItem(''), useComments(''), etc. get empty strings
+    // The screen should still render (showing loading or not-found)
+    render(<PostDetailScreen />);
+    expect(screen.getByText('postDetail.title')).toBeTruthy();
+
+    routerModule.useLocalSearchParams = origUseLocalSearchParams;
+  });
+
+  it('handles undefined feedItemIds useMemo default arg when post is null', () => {
+    const mockFeedModule = jest.requireMock('@/features/feed');
+    const origUseFeedItem = mockFeedModule.useFeedItem;
+    // Return null post so feedItemIds useMemo returns []
     mockFeedModule.useFeedItem = () => ({ data: null, isLoading: false, refetch: jest.fn() });
 
     render(<PostDetailScreen />);

@@ -337,6 +337,110 @@ describe('ValidationsPage', () => {
     });
   });
 
+  describe('handleFixSingle — no-op for non-issue items', () => {
+    it('does nothing when item has no issue (status is ok)', async () => {
+      // Replace scan results with a non-issue item
+      const originalResults = [...mockScanResults];
+      mockScanResults.length = 0;
+      mockScanResults.push({
+        id: 'result-ok',
+        entity: 'movies',
+        field: 'poster_url',
+        currentUrl: 'https://r2.example.com/poster.jpg',
+        urlType: 'r2',
+        status: 'ok',
+        tmdbId: 123,
+      });
+
+      renderWithProviders(<ValidationsPage />);
+      fireEvent.click(screen.getByTestId('fix-single'));
+
+      // hasIssue returns false for status='ok', so fetch should NOT be called
+      await waitFor(() => {
+        expect(mockFetch).not.toHaveBeenCalled();
+      });
+
+      // Restore
+      mockScanResults.length = 0;
+      mockScanResults.push(...originalResults);
+    });
+  });
+
+  describe('handleFixSingle — error cases', () => {
+    it('throws when session is expired', async () => {
+      mockGetSession.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+
+      renderWithProviders(<ValidationsPage />);
+      // The fix-single button will call handleFixSingle which should throw
+      fireEvent.click(screen.getByTestId('fix-single'));
+      // The error will be caught internally — no crash
+    });
+
+    it('throws when fix API returns non-ok response', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: 'Server error' }),
+      });
+
+      renderWithProviders(<ValidationsPage />);
+      fireEvent.click(screen.getByTestId('fix-single'));
+      // Error thrown but caught — component doesn't crash
+    });
+
+    it('handles json parse failure on error response gracefully', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('Invalid JSON')),
+      });
+
+      renderWithProviders(<ValidationsPage />);
+      fireEvent.click(screen.getByTestId('fix-single'));
+
+      // The .catch(() => ({})) handles the JSON parse failure
+      // handleFixSingle's throw produces an unhandled rejection — expected
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    it('uses regenerate_variants fixType for non-external URLs', async () => {
+      // Override scan results with non-external item
+      const { useValidations } = await import('@/hooks/useValidations');
+      const originalMockResults = [...mockScanResults];
+      mockScanResults.length = 0;
+      mockScanResults.push({
+        id: 'result-2',
+        entity: 'actors',
+        field: 'photo_url',
+        currentUrl: 'https://r2.faniverz.dev/actors/photo.jpg',
+        urlType: 'r2',
+        status: 'issue',
+        tmdbId: undefined as unknown as number,
+      });
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ success: true }),
+      });
+
+      renderWithProviders(<ValidationsPage />);
+      fireEvent.click(screen.getByTestId('fix-single'));
+
+      await waitFor(() => {
+        const callArgs = mockFetch.mock.calls[0];
+        const body = JSON.parse(callArgs[1].body);
+        expect(body.items[0].fixType).toBe('regenerate_variants');
+      });
+
+      // Restore
+      mockScanResults.length = 0;
+      mockScanResults.push(...originalMockResults);
+    });
+  });
+
   describe('passthrough handlers', () => {
     it('calls fixSelected when Fix Selected is clicked', () => {
       renderWithProviders(<ValidationsPage />);

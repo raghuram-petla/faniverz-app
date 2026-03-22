@@ -240,6 +240,148 @@ describe('ImpersonationProvider — privilege escalation guards', () => {
     expect(result.current.isImpersonating).toBe(true);
   });
 
+  it('startImpersonation blocks super_admin from impersonating root user', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    // buildTargetUser returns a root user
+    const targetProfile = {
+      id: 'root-user-1',
+      display_name: 'Root User',
+      email: 'root@test.com',
+      avatar_url: null,
+      created_at: '2024-01-01',
+    };
+    const targetRole = { role_id: 'root' };
+
+    // Mock different tables differently
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_impersonation_sessions') {
+        return mockChain(null);
+      }
+      if (table === 'profiles') {
+        const chain = mockChain(targetProfile);
+        return chain;
+      }
+      if (table === 'admin_user_roles') {
+        return mockChain(targetRole);
+      }
+      if (table === 'admin_ph_assignments') {
+        const self: Record<string, unknown> = {};
+        self.select = vi.fn().mockReturnValue(self);
+        self.eq = vi.fn().mockResolvedValue({ data: [], error: null });
+        return self;
+      }
+      if (table === 'user_languages') {
+        const self: Record<string, unknown> = {};
+        self.select = vi.fn().mockReturnValue(self);
+        self.eq = vi.fn().mockResolvedValue({ data: [], error: null });
+        return self;
+      }
+      return mockChain(null);
+    });
+
+    const { result } = renderHook(() => useImpersonation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startImpersonation('root-user-1');
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith('super_admin cannot impersonate a root user');
+    expect(result.current.isImpersonating).toBe(false);
+    alertSpy.mockRestore();
+  });
+
+  it('startRoleImpersonation handles DB insert error gracefully', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    // endActiveSession succeeds, but insert throws
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_impersonation_sessions') {
+        const chain: Record<string, unknown> = {};
+        const methods = ['select', 'eq', 'order', 'in'];
+        for (const m of methods) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.update = vi.fn().mockReturnValue(chain);
+        chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
+        chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+        chain.insert = vi.fn().mockResolvedValue({ error: { message: 'insert failed' } });
+        return chain;
+      }
+      return mockChain(null);
+    });
+
+    const { result } = renderHook(() => useImpersonation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startRoleImpersonation('admin');
+    });
+
+    // insErr is thrown, caught by try/catch, alert shown
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('startImpersonation handles DB insert error gracefully', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    // buildTargetUser returns a valid admin user
+    const targetProfile = {
+      id: 'target-1',
+      display_name: 'Target Admin',
+      email: 'target@test.com',
+      avatar_url: null,
+      created_at: '2024-01-01',
+    };
+    const targetRole = { role_id: 'admin' };
+
+    let callCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_impersonation_sessions') {
+        callCount++;
+        if (callCount <= 2) {
+          // First 2 calls are from useEffect and endActiveSession
+          return mockChain(null);
+        }
+        // The insert call
+        const chain: Record<string, unknown> = {};
+        const methods = ['select', 'eq', 'update', 'order', 'in'];
+        for (const m of methods) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.single = vi.fn().mockResolvedValue({ data: null, error: null });
+        chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+        chain.insert = vi.fn().mockResolvedValue({ error: { message: 'insert failed' } });
+        return chain;
+      }
+      if (table === 'profiles') {
+        return mockChain(targetProfile);
+      }
+      if (table === 'admin_user_roles') {
+        return mockChain(targetRole);
+      }
+      if (table === 'admin_ph_assignments') {
+        const self: Record<string, unknown> = {};
+        self.select = vi.fn().mockReturnValue(self);
+        self.eq = vi.fn().mockResolvedValue({ data: [], error: null });
+        return self;
+      }
+      if (table === 'user_languages') {
+        const self: Record<string, unknown> = {};
+        self.select = vi.fn().mockReturnValue(self);
+        self.eq = vi.fn().mockResolvedValue({ data: [], error: null });
+        return self;
+      }
+      return mockChain(null);
+    });
+
+    const { result } = renderHook(() => useImpersonation(), { wrapper });
+
+    await act(async () => {
+      await result.current.startImpersonation('target-1');
+    });
+
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
   it('stopImpersonation shows alert on DB error', async () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     // endActiveSession update call will return error

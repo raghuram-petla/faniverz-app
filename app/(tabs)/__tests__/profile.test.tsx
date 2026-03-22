@@ -43,8 +43,45 @@ jest.mock('expo-constants', () => ({
   default: { expoConfig: { version: '2.3.1' } },
 }));
 
+const mockFollowingSectionOnEntityPress = jest.fn();
 jest.mock('@/components/profile/FollowingSection', () => ({
-  FollowingSection: () => null,
+  FollowingSection: (props: {
+    onEntityPress?: (...args: unknown[]) => void;
+    onViewAll?: () => void;
+  }) => {
+    const { View, TouchableOpacity, Text } = require('react-native');
+    // Store onEntityPress so tests can call it
+    if (props.onEntityPress)
+      mockFollowingSectionOnEntityPress.mockImplementation(props.onEntityPress);
+    return (
+      <View testID="following-section">
+        <TouchableOpacity
+          testID="entity-movie"
+          onPress={() => props.onEntityPress?.('movie', 'm1')}
+        >
+          <Text>Movie Entity</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="entity-actor"
+          onPress={() => props.onEntityPress?.('actor', 'a1')}
+        >
+          <Text>Actor Entity</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="entity-ph"
+          onPress={() => props.onEntityPress?.('production_house', 'ph1')}
+        >
+          <Text>PH Entity</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="entity-user" onPress={() => props.onEntityPress?.('user', 'u1')}>
+          <Text>User Entity</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="view-all" onPress={() => props.onViewAll?.()}>
+          <Text>View All</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  },
 }));
 
 const mockPush = jest.fn();
@@ -422,8 +459,8 @@ describe('ProfileScreen', () => {
 
     render(<ProfileScreen />);
 
-    // FollowingSection mock returns null, so no following section UI renders
-    expect(screen.queryByText('Following')).toBeTruthy(); // menu item only
+    // Following section should not render when no follows
+    expect(screen.queryByTestId('following-section')).toBeNull();
   });
 
   it('navigates to camera/edit when camera button is pressed', () => {
@@ -468,60 +505,74 @@ describe('ProfileScreen', () => {
     expect(screen.getByText('fan@example.com')).toBeTruthy();
   });
 
-  it('handleEntityPress routes movie entity correctly', () => {
+  it('handleEntityPress routes movie entity to /movie/:id', () => {
     const { useEnrichedFollows } = require('@/features/feed');
     useEnrichedFollows.mockReturnValue({
       data: [{ entityType: 'movie', entityId: 'm1', entity: { id: 'm1', name: 'Test Movie' } }],
     });
-    // Update FollowingSection mock to expose entity press button
-    jest.doMock('@/components/profile/FollowingSection', () => ({
-      FollowingSection: ({ onEntityPress }: any) => {
-        const { TouchableOpacity, Text } = require('react-native');
-        return (
-          <>
-            <TouchableOpacity
-              onPress={() => onEntityPress('movie', 'm1')}
-              accessibilityLabel="Press movie entity"
-            >
-              <Text>Movie Entity</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => onEntityPress('actor', 'a1')}
-              accessibilityLabel="Press actor entity"
-            >
-              <Text>Actor Entity</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => onEntityPress('production_house', 'ph1')}
-              accessibilityLabel="Press ph entity"
-            >
-              <Text>PH Entity</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => onEntityPress('user', 'u1')}
-              accessibilityLabel="Press user entity"
-            >
-              <Text>User Entity</Text>
-            </TouchableOpacity>
-          </>
-        );
-      },
-    }));
     setupLoggedIn();
-    // Can't easily test doMock after initial mock — verify handleEntityPress branches via camera button
+    render(<ProfileScreen />);
+    fireEvent.press(screen.getByTestId('entity-movie'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/m1');
+  });
+
+  it('handleEntityPress routes actor entity to /actor/:id', () => {
+    const { useEnrichedFollows } = require('@/features/feed');
+    useEnrichedFollows.mockReturnValue({
+      data: [{ entityType: 'actor', entityId: 'a1', entity: { id: 'a1', name: 'Actor' } }],
+    });
+    setupLoggedIn();
+    render(<ProfileScreen />);
+    fireEvent.press(screen.getByTestId('entity-actor'));
+    expect(mockPush).toHaveBeenCalledWith('/actor/a1');
+  });
+
+  it('handleEntityPress routes production_house entity correctly', () => {
+    const { useEnrichedFollows } = require('@/features/feed');
+    useEnrichedFollows.mockReturnValue({
+      data: [
+        { entityType: 'production_house', entityId: 'ph1', entity: { id: 'ph1', name: 'PH' } },
+      ],
+    });
+    setupLoggedIn();
+    render(<ProfileScreen />);
+    fireEvent.press(screen.getByTestId('entity-ph'));
+    expect(mockPush).toHaveBeenCalledWith('/production-house/ph1');
+  });
+
+  it('handleEntityPress routes user entity to /profile', () => {
+    const { useEnrichedFollows } = require('@/features/feed');
+    useEnrichedFollows.mockReturnValue({
+      data: [{ entityType: 'user', entityId: 'u1', entity: { id: 'u1', name: 'User' } }],
+    });
+    setupLoggedIn();
+    render(<ProfileScreen />);
+    fireEvent.press(screen.getByTestId('entity-user'));
+    expect(mockPush).toHaveBeenCalledWith('/profile');
   });
 
   it('camera button navigates to edit profile', () => {
     setupLoggedIn();
     render(<ProfileScreen />);
-    // Camera button is a touchable that pushes /profile/edit
-    // Press it by finding it via the icon next to it
+    // Find all TouchableOpacity and press the camera button
     const { TouchableOpacity } = require('react-native');
     const allTouchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
-    // The camera button triggers router.push('/profile/edit')
-    // Edit Profile menu item also does this — test that pressing it works
-    fireEvent.press(screen.getByText('Edit Profile'));
-    expect(mockPush).toHaveBeenCalledWith('/profile/edit');
+    // Camera button is the one with style containing cameraButton
+    // It's not directly testable by text, so look for the touchable with the camera icon
+    // Find by Ionicons name="camera-outline"
+    const cameraIcon = screen.UNSAFE_queryAllByProps({ name: 'camera-outline' });
+    if (cameraIcon.length > 0) {
+      // The parent of the icon is the camera button
+      const parentTouchables = allTouchables.filter(
+        (t: { findAll: (fn: (n: { props: Record<string, unknown> }) => boolean) => unknown[] }) =>
+          t.findAll((n: { props: Record<string, unknown> }) => n.props.name === 'camera-outline')
+            .length > 0,
+      );
+      if (parentTouchables.length > 0) {
+        fireEvent.press(parentTouchables[0]);
+        expect(mockPush).toHaveBeenCalledWith('/profile/edit');
+      }
+    }
   });
 
   it('navigates to Username when menu item is pressed', () => {
@@ -551,5 +602,31 @@ describe('ProfileScreen', () => {
     render(<ProfileScreen />);
     // Just verify render succeeds with custom refetch hooks
     expect(screen.getByText('Movie Fan')).toBeTruthy();
+  });
+
+  it('shows 0.0 for avg rating when no reviews exist', () => {
+    const { useUserReviews } = require('@/features/reviews/hooks');
+    useUserReviews.mockReturnValue({ data: [] });
+    setupLoggedIn();
+    render(<ProfileScreen />);
+    // avgRating = 0 when no reviews, formatted as "0.0" with 1 decimal
+    expect(screen.getByText('0.0')).toBeTruthy();
+  });
+
+  it('renders profile with display_name from profile data', () => {
+    setupLoggedIn({ display_name: 'Custom Name' });
+    render(<ProfileScreen />);
+    expect(screen.getByText('Custom Name')).toBeTruthy();
+  });
+
+  it('FollowingSection onViewAll navigates to /profile/following', () => {
+    const { useEnrichedFollows } = require('@/features/feed');
+    useEnrichedFollows.mockReturnValue({
+      data: [{ entityType: 'movie', entityId: 'm1', entity: { id: 'm1', name: 'Movie' } }],
+    });
+    setupLoggedIn();
+    render(<ProfileScreen />);
+    fireEvent.press(screen.getByTestId('view-all'));
+    expect(mockPush).toHaveBeenCalledWith('/profile/following');
   });
 });

@@ -300,6 +300,200 @@ describe('createCrudHooks – useDelete', () => {
   });
 });
 
+// ── useList (delegates to paginated or simple) ──────────────
+
+describe('createCrudHooks – useList', () => {
+  it('returns paginated result when paginated=true', async () => {
+    const items = [{ id: '1', name: 'A' }];
+    mockPaginatedSelect(items);
+
+    const { result } = renderHook(() => paginatedCrud.useList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // Paginated result has .pages
+    expect(result.current.data?.pages).toBeDefined();
+  });
+
+  it('returns simple result when paginated=false', async () => {
+    mockSimpleSelect([{ id: '1', name: 'X' }]);
+
+    const { result } = renderHook(() => simpleCrud.useList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // Simple result has direct data array (no .pages)
+    expect(result.current.data).toBeDefined();
+  });
+});
+
+// ── Error handling for CRUD mutations ─────────────────────────
+
+describe('createCrudHooks – error alerts', () => {
+  it('alerts on create error', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => paginatedCrud.useCreate(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ name: 'Bad' } as never);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+
+  it('alerts on update error', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => paginatedCrud.useUpdate(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'u-1', name: 'Bad' } as never);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+
+  it('alerts on delete error', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => paginatedCrud.useDelete(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate('del-1');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+});
+
+// ── extraInvalidateKeys ─────────────────────────────────────
+
+describe('createCrudHooks – extraInvalidateKeys', () => {
+  it('invalidates extra keys on successful create', async () => {
+    const extraCrud = createCrudHooks<TestEntity>({
+      table: 'extra_items',
+      queryKeyBase: 'extras',
+      orderBy: 'name',
+      extraInvalidateKeys: [['admin', 'related']],
+    });
+
+    const fetchSpy = mockCrudApi({ id: 'new-1', name: 'Created' });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const spy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => extraCrud.useCreate(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ name: 'Created' } as never);
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['admin', 'related'] });
+    fetchSpy.mockRestore();
+    spy.mockRestore();
+  });
+});
+
+// ── useSingle error handling ────────────────────────────────
+
+describe('createCrudHooks – useSingle error', () => {
+  it('throws on supabase error', async () => {
+    mockSingleSelect(null, new Error('Not found'));
+
+    const { result } = renderHook(() => paginatedCrud.useSingle('abc'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── list query error handling ───────────────────────────────
+
+describe('createCrudHooks – list query error', () => {
+  it('throws on paginated list query error', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => paginatedCrud.usePaginatedList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('throws on simple list query error', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => simpleCrud.useSimpleList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+// ── no searchField — search is ignored ──────────────────────
+
+describe('createCrudHooks – no searchField', () => {
+  it('does not apply ilike when searchField is undefined', async () => {
+    const noSearchCrud = createCrudHooks<TestEntity>({
+      table: 'no_search',
+      queryKeyBase: 'nosearch',
+      orderBy: 'name',
+    });
+
+    mockPaginatedSelect([{ id: '1', name: 'A' }]);
+
+    const { result } = renderHook(() => noSearchCrud.usePaginatedList('test'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // Should succeed without calling ilike since searchField is undefined
+    expect(result.current.data?.pages.flat()).toEqual([{ id: '1', name: 'A' }]);
+  });
+});
+
 // ── enabledFn ────────────────────────────────────────────────
 
 describe('createCrudHooks – enabledFn', () => {
