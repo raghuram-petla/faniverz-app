@@ -1,156 +1,118 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useAdminProductionHouses,
-  useCreateProductionHouse,
   useDeleteProductionHouse,
 } from '@/hooks/useAdminProductionHouses';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useImageUpload } from '@/hooks/useImageUpload';
-import { Plus, Trash2, Loader2, Building2, Pencil, Upload, X } from 'lucide-react';
+import { useCountries } from '@/hooks/useAdminMovieAvailability';
+import { Plus, Trash2, Loader2, Building2, Pencil, Globe } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { LoadMoreButton } from '@/components/common/LoadMoreButton';
+import { CountryDropdown, countryFlag } from '@/components/common/CountryDropdown';
+import { AddProductionHouseForm } from '@/components/production-houses/AddProductionHouseForm';
 import Link from 'next/link';
 import { getImageUrl } from '@shared/imageUrl';
+import type { Country } from '@shared/types';
 
-const EMPTY_FORM = {
-  name: '',
-  logo_url: '',
-  description: '',
-};
+const ALL_COUNTRIES = 'ALL';
+const NOT_SET = 'NOT_SET';
 
 export default function ProductionHousesPage() {
   // @boundary: PH admins are scoped to their assigned houses via productionHouseIds filter
   const { isPHAdmin, productionHouseIds, canCreate, canDeleteTopLevel } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
-  // @coupling: passes productionHouseIds to restrict query results for PH admins; null for super_admin/admin
-  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAdminProductionHouses(debouncedSearch, isPHAdmin ? productionHouseIds : undefined);
-  const houses = data?.pages.flat() ?? [];
-  const createHouse = useCreateProductionHouse();
-  const deleteHouse = useDeleteProductionHouse();
+  const [selectedCountry, setSelectedCountry] = useState(ALL_COUNTRIES);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const { upload, uploading } = useImageUpload('/api/upload/production-house-logo');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: countries = [] } = useCountries();
 
-  // @sideeffect: uploads to Supabase Storage via /api/upload/production-house-logo, returns public URL
-  async function handleLogoUpload(file: File) {
-    try {
-      const url = await upload(file);
-      setForm((p) => ({ ...p, logo_url: url }));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Upload failed');
-    }
-  }
+  // @coupling: passes productionHouseIds to restrict query results for PH admins; null for super_admin/admin
+  // @contract: originCountry filter — ALL_COUNTRIES passes undefined (no filter), NOT_SET/code passed through
+  const originFilter = selectedCountry === ALL_COUNTRIES ? undefined : selectedCountry;
+  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useAdminProductionHouses(
+      debouncedSearch,
+      isPHAdmin ? productionHouseIds : undefined,
+      true,
+      originFilter,
+    );
+  const houses = data?.pages.flat() ?? [];
+  const deleteHouse = useDeleteProductionHouse();
 
-  // @sideeffect: inserts into production_houses table, resets inline form on success
-  // @edge: empty logo_url/description coerced to null
-  async function handleAdd() {
-    if (!form.name.trim()) return;
-    try {
-      await createHouse.mutateAsync({
-        name: form.name,
-        logo_url: form.logo_url || null,
-        description: form.description || null,
-      });
-      setForm(EMPTY_FORM);
-      setShowAdd(false);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Failed to add production house: ${msg}`);
+  // @contract: fetch all houses (unfiltered) to compute per-country counts for the dropdown
+  const { data: allData } = useAdminProductionHouses(
+    '',
+    isPHAdmin ? productionHouseIds : undefined,
+  );
+  const allHouses = useMemo(() => allData?.pages.flat() ?? [], [allData]);
+
+  // @contract: build dropdown options — real countries with houses + "All Countries" + "Not Set"
+  const dropdownCountries = useMemo(() => {
+    const countMap = new Map<string, number>();
+    let nullCount = 0;
+    for (const h of allHouses) {
+      if (h.origin_country) {
+        countMap.set(h.origin_country, (countMap.get(h.origin_country) ?? 0) + 1);
+      } else {
+        nullCount++;
+      }
     }
-  }
+    const opts: (Country & { houseCount: number })[] = [
+      {
+        code: ALL_COUNTRIES,
+        name: 'All Countries',
+        display_order: -2,
+        houseCount: allHouses.length,
+      } as Country & { houseCount: number },
+    ];
+    const real = countries
+      .filter((c) => countMap.has(c.code))
+      .map((c) => ({ ...c, houseCount: countMap.get(c.code) ?? 0 }));
+    opts.push(...real);
+    if (nullCount > 0) {
+      opts.push({
+        code: NOT_SET,
+        name: 'Not Set',
+        display_order: 999,
+        houseCount: nullCount,
+      } as Country & { houseCount: number });
+    }
+    return opts;
+  }, [allHouses, countries]);
+
+  // @contract: O(1) lookup for country name by code — avoids O(n) find() inside render loop
+  const countryNameMap = useMemo(
+    () => new Map(countries.map((c) => [c.code, c.name])),
+    [countries],
+  );
 
   return (
     <div className="space-y-6">
-      {showAdd && (
-        <div className="bg-surface-card border border-outline rounded-xl p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="Name *"
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
-            />
-            <div className="flex items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleLogoUpload(file);
-                  e.target.value = '';
-                }}
-              />
-              {form.logo_url ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <img
-                    src={getImageUrl(form.logo_url, 'sm', 'PRODUCTION_HOUSES') ?? form.logo_url}
-                    alt=""
-                    className="w-9 h-9 rounded object-cover border border-outline shrink-0"
-                  />
-                  <span className="text-xs text-on-surface-subtle truncate flex-1">
-                    Logo uploaded
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setForm((p) => ({ ...p, logo_url: '' }))}
-                    className="p-1 text-status-red hover:text-status-red-hover"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 flex items-center justify-center gap-2 bg-input rounded-lg px-4 py-2 text-sm text-on-surface-muted hover:bg-input-hover disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Upload className="w-4 h-4" />
-                  )}
-                  {uploading ? 'Uploading...' : 'Logo (optional)'}
-                </button>
-              )}
-            </div>
-          </div>
-          <div>
-            <textarea
-              placeholder="Description (optional)"
-              rows={2}
-              value={form.description}
-              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm resize-none"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleAdd}
-              disabled={createHouse.isPending}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
-            >
-              {createHouse.isPending ? 'Adding...' : 'Add'}
-            </button>
-            <button
-              onClick={() => {
-                setShowAdd(false);
-                setForm(EMPTY_FORM);
-              }}
-              className="text-on-surface-muted px-4 py-2 rounded-lg text-sm hover:bg-input"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      {showAdd && <AddProductionHouseForm onClose={() => setShowAdd(false)} />}
+
+      {/* @contract: country filter dropdown — shows only countries with production houses + All + Not Set */}
+      <div className="flex items-center gap-4">
+        <CountryDropdown
+          countries={dropdownCountries}
+          value={selectedCountry}
+          onChange={setSelectedCountry}
+          formatLabel={(c) => {
+            const count = (c as (typeof dropdownCountries)[number]).houseCount;
+            return `${c.name} (${count})`;
+          }}
+          renderIcon={(c) => {
+            if (c.code === ALL_COUNTRIES)
+              return <Globe className="w-4 h-4 inline text-on-surface" />;
+            if (c.code === NOT_SET)
+              return <Globe className="w-4 h-4 inline text-on-surface-disabled" />;
+            return countryFlag(c.code);
+          }}
+        />
+        <span className="text-sm text-on-surface-subtle">
+          {houses.length} production house{houses.length !== 1 ? 's' : ''}
+        </span>
+      </div>
 
       <div className="space-y-2">
         <div className="flex gap-3 items-center">
@@ -172,11 +134,8 @@ export default function ProductionHousesPage() {
         {search.length === 1 && (
           <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
         )}
-        {!isLoading && houses.length > 0 && (
-          <p className="text-xs text-on-surface-subtle">
-            Showing {houses.length} production house{houses.length !== 1 ? 's' : ''}
-            {debouncedSearch ? ` matching "${debouncedSearch}"` : ''}
-          </p>
+        {!isLoading && houses.length > 0 && debouncedSearch && (
+          <p className="text-xs text-on-surface-subtle">Matching &ldquo;{debouncedSearch}&rdquo;</p>
         )}
       </div>
 
@@ -198,7 +157,6 @@ export default function ProductionHousesPage() {
                 <div className="w-14 h-14 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                   {house.logo_url ? (
                     <img
-                      // @nullable: getImageUrl returns null if variant not found — falls back to original URL
                       src={getImageUrl(house.logo_url, 'sm', 'PRODUCTION_HOUSES') ?? house.logo_url}
                       alt=""
                       className="w-full h-full object-cover"
@@ -209,11 +167,14 @@ export default function ProductionHousesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-on-surface truncate">{house.name}</p>
-                  {house.description && (
-                    <p className="text-xs text-on-surface-subtle truncate mt-0.5">
-                      {house.description}
-                    </p>
-                  )}
+                  {/* @contract: always show country — "show don't hide" principle */}
+                  <p
+                    className={`text-xs truncate mt-0.5 ${house.origin_country ? 'text-on-surface' : 'text-on-surface-disabled'}`}
+                  >
+                    {house.origin_country
+                      ? `${countryFlag(house.origin_country)} ${countryNameMap.get(house.origin_country) ?? house.origin_country}`
+                      : 'Country not set'}
+                  </p>
                 </div>
               </Link>
               {/* @invariant: PH admins see read-only cards — edit/delete actions hidden via permission check */}

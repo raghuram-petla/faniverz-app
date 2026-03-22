@@ -26,18 +26,20 @@ const crud = createCrudHooks<ProductionHouse>({
 // @contract: PH admins receive only their scoped production houses; super admins see all
 // @assumes: productionHouseIds is populated from the user's role_assignments for PH scoping
 // @nullable: productionHouseIds — omit or pass empty to get unscoped (super admin) results
+// @nullable: originCountry — 'NOT_SET' filters for null origin_country; any other string filters by exact match; omit for all
 export function useAdminProductionHouses(
   search = '',
   productionHouseIds?: string[],
   // @edge: set to false to skip the query until needed (e.g., when PH role isn't selected)
   enabled = true,
+  originCountry?: string,
 ) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
   // @contract: sorted IDs for stable cache key — prevents redundant refetches on array reorder
   const sortedIds = useMemo(() => productionHouseIds?.slice().sort(), [productionHouseIds]);
 
   return useInfiniteQuery({
-    queryKey: ['admin', 'production-houses', search, sortedIds],
+    queryKey: ['admin', 'production-houses', search, sortedIds, originCountry],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -47,6 +49,12 @@ export function useAdminProductionHouses(
       }
       if (search) {
         query = query.ilike('name', `%${search}%`);
+      }
+      // @edge: 'NOT_SET' matches null origin_country; any other value does exact match
+      if (originCountry === 'NOT_SET') {
+        query = query.is('origin_country', null);
+      } else if (originCountry) {
+        query = query.eq('origin_country', originCountry);
       }
       const { data, error } = await query;
       if (error) throw error;

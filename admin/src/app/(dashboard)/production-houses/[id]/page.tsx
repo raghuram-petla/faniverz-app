@@ -11,8 +11,10 @@ import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
-import { ArrowLeft, Loader2, Trash2, Link2, Globe } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, Link2 } from 'lucide-react';
 import { PosterVariantStatus } from '@/components/movie-edit/PosterGalleryCard';
+import { CountryDropdown, countryFlag } from '@/components/common/CountryDropdown';
+import { useCountries } from '@/hooks/useAdminMovieAvailability';
 import Link from 'next/link';
 import { usePermissions } from '@/hooks/usePermissions';
 import type { FieldConfig } from '@/hooks/useFormChanges';
@@ -21,6 +23,7 @@ const FIELD_CONFIG: FieldConfig[] = [
   { key: 'name', label: 'Name', type: 'text' },
   { key: 'logo_url', label: 'Logo', type: 'image' },
   { key: 'description', label: 'Description', type: 'text' },
+  { key: 'origin_country', label: 'Country', type: 'text' },
 ];
 
 export default function EditProductionHousePage() {
@@ -31,7 +34,8 @@ export default function EditProductionHousePage() {
   const updateHouse = useUpdateProductionHouse();
   const deleteHouse = useDeleteProductionHouse();
   const { upload, uploading } = useImageUpload('/api/upload/production-house-logo');
-  const [form, setForm] = useState({ name: '', logo_url: '', description: '' });
+  const { data: countries = [] } = useCountries();
+  const [form, setForm] = useState({ name: '', logo_url: '', description: '', origin_country: '' });
   const initialFormRef = useRef<typeof form | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
 
@@ -41,6 +45,7 @@ export default function EditProductionHousePage() {
         name: house.name,
         logo_url: house.logo_url ?? '',
         description: house.description ?? '',
+        origin_country: house.origin_country ?? '',
       };
       setForm(loaded);
       initialFormRef.current = loaded;
@@ -72,6 +77,7 @@ export default function EditProductionHousePage() {
         name: form.name,
         logo_url: form.logo_url || null,
         description: form.description || null,
+        origin_country: form.origin_country || null,
       });
       initialFormRef.current = { ...form };
       setSaveStatus('success');
@@ -142,18 +148,18 @@ export default function EditProductionHousePage() {
             className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           />
           {/* TMDB metadata — inline below name */}
-          {(house?.tmdb_company_id || house?.origin_country) && (
-            <div className="flex items-center gap-4 text-sm text-on-surface-subtle mt-2">
-              {house.tmdb_company_id && (
-                <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
-                  <Link2 className="w-3.5 h-3.5" />
-                  TMDB #{house.tmdb_company_id}
-                </span>
-              )}
+          {house?.tmdb_company_id && (
+            <div className="flex items-center gap-4 text-sm text-on-surface mt-2">
+              <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
+                <Link2 className="w-3.5 h-3.5" />
+                TMDB #{house.tmdb_company_id}
+              </span>
+              {/* @contract: TMDB-linked + country set → read-only badge with flag + full name */}
               {house.origin_country && (
                 <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
-                  <Globe className="w-3.5 h-3.5" />
-                  {house.origin_country}
+                  <span>{countryFlag(house.origin_country)}</span>
+                  {countries.find((c) => c.code === house.origin_country)?.name ??
+                    house.origin_country}
                 </span>
               )}
             </div>
@@ -189,6 +195,18 @@ export default function EditProductionHousePage() {
             className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600 resize-none"
           />
         </div>
+
+        {/* @contract: country is editable when not TMDB-linked or when origin_country is not set */}
+        {!(house?.tmdb_company_id && house?.origin_country) && (
+          <div>
+            <label className="block text-sm text-on-surface-muted mb-1">Country</label>
+            <CountryDropdown
+              countries={countries}
+              value={form.origin_country}
+              onChange={(code) => setForm((p) => ({ ...p, origin_country: code }))}
+            />
+          </div>
+        )}
       </div>
 
       <FormChangesDock

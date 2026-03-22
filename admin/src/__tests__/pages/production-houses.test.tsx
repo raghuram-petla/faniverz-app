@@ -10,12 +10,14 @@ vi.mock('@/lib/supabase-browser', () => ({
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
       gte: vi.fn().mockReturnThis(),
       range: vi.fn().mockResolvedValue({ data: [], error: null }),
       ilike: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
     })),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
@@ -61,6 +63,7 @@ vi.mock('@/hooks/usePermissions', () => ({
     canCreate: () => true,
     canUpdate: () => true,
     canDelete: () => true,
+    canDeleteTopLevel: () => true,
     auditScope: 'all',
   }),
 }));
@@ -89,15 +92,20 @@ describe('ProductionHousesPage', () => {
     expect(screen.getByPlaceholderText('Name *')).toBeInTheDocument();
   });
 
-  it('shows "Name *" input placeholder in the add form', () => {
-    renderWithProviders(<ProductionHousesPage />);
-    fireEvent.click(screen.getByText('Add Production House'));
-    expect(screen.getByPlaceholderText('Name *')).toBeInTheDocument();
-  });
-
   it('shows "Cancel" button in the add form', () => {
     renderWithProviders(<ProductionHousesPage />);
     fireEvent.click(screen.getByText('Add Production House'));
     expect(screen.getByText('Cancel')).toBeInTheDocument();
+  });
+
+  it('renders country dropdown defaulting to All Countries', () => {
+    renderWithProviders(<ProductionHousesPage />);
+    // @contract: default selection is ALL — "All Countries" option is always present
+    expect(screen.getByText(/All Countries/)).toBeInTheDocument();
+  });
+
+  it('shows production house count summary', () => {
+    renderWithProviders(<ProductionHousesPage />);
+    expect(screen.getByText('0 production houses')).toBeInTheDocument();
   });
 });

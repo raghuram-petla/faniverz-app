@@ -126,6 +126,46 @@ describe('useAdminProductionHouses', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.pages.flat()).toEqual(mockHouses);
   });
+
+  it('filters by origin_country when originCountry is provided', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses('', undefined, true, 'IN'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockEq).toHaveBeenCalledWith('origin_country', 'IN');
+  });
+
+  it('filters by origin_country IS NULL when originCountry is NOT_SET', async () => {
+    const mockIs = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ is: mockIs });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: mockRange,
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminProductionHouses('', undefined, true, 'NOT_SET'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockIs).toHaveBeenCalledWith('origin_country', null);
+  });
 });
 
 describe('useAdminProductionHouse', () => {

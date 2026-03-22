@@ -3,7 +3,8 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import type { Country } from '@shared/types';
 
-function countryFlag(code: string): string {
+// @contract: converts a 2-letter ISO country code to a flag emoji via regional indicator symbols
+export function countryFlag(code: string): string {
   return [...code.toUpperCase()]
     .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
     .join('');
@@ -15,9 +16,17 @@ export interface CountryDropdownProps {
   onChange: (code: string) => void;
   /** @contract Optional formatter for each option label (e.g. append platform count) */
   formatLabel?: (country: Country) => string;
+  /** @contract Optional custom icon renderer — overrides the default flag emoji for specific codes */
+  renderIcon?: (country: Country) => React.ReactNode;
 }
 
-export function CountryDropdown({ countries, value, onChange, formatLabel }: CountryDropdownProps) {
+export function CountryDropdown({
+  countries,
+  value,
+  onChange,
+  formatLabel,
+  renderIcon,
+}: CountryDropdownProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(0);
@@ -84,9 +93,9 @@ export function CountryDropdown({ countries, value, onChange, formatLabel }: Cou
     [filtered, highlightIndex, onChange],
   );
 
-  const label = selected
-    ? `${countryFlag(selected.code)} ${formatLabel ? formatLabel(selected) : selected.name}`
-    : 'Select country…';
+  // @contract: renderIcon overrides the default flag emoji for specific country codes
+  const iconFor = (c: Country) => renderIcon?.(c) ?? countryFlag(c.code);
+  const labelText = selected ? (formatLabel ? formatLabel(selected) : selected.name) : null;
 
   return (
     <div ref={containerRef} className="relative">
@@ -95,7 +104,15 @@ export function CountryDropdown({ countries, value, onChange, formatLabel }: Cou
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-red-600 min-w-[200px]"
       >
-        <span className="flex-1 text-left truncate">{label}</span>
+        <span className="flex-1 text-left truncate flex items-center gap-1.5">
+          {selected ? (
+            <>
+              {iconFor(selected)} {labelText}
+            </>
+          ) : (
+            'Select country…'
+          )}
+        </span>
         <ChevronDown
           className={`w-4 h-4 text-on-surface-muted transition-transform ${open ? 'rotate-180' : ''}`}
         />
@@ -138,7 +155,7 @@ export function CountryDropdown({ countries, value, onChange, formatLabel }: Cou
                         : 'text-on-surface hover:bg-input-active'
                   }`}
                 >
-                  <span>{countryFlag(c.code)}</span>
+                  <span>{iconFor(c)}</span>
                   <span>{formatLabel ? formatLabel(c) : c.name}</span>
                   <span
                     className={`ml-auto text-xs ${i === highlightIndex ? 'text-white/60' : 'text-on-surface-disabled'}`}
