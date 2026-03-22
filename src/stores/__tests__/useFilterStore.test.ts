@@ -70,4 +70,39 @@ describe('useFilterStore', () => {
     useFilterStore.getState().toggleGenre('Horror');
     expect(useFilterStore.getState().selectedGenres).toEqual([]);
   });
+
+  it('toggleProductionHouse adds a production house', () => {
+    useFilterStore.getState().toggleProductionHouse('ph-1');
+    expect(useFilterStore.getState().selectedProductionHouses).toContain('ph-1');
+  });
+
+  it('toggleProductionHouse removes a production house when toggled again', () => {
+    useFilterStore.getState().toggleProductionHouse('ph-2');
+    expect(useFilterStore.getState().selectedProductionHouses).toContain('ph-2');
+    useFilterStore.getState().toggleProductionHouse('ph-2');
+    expect(useFilterStore.getState().selectedProductionHouses).not.toContain('ph-2');
+  });
+
+  it('clearAll resets selectedProductionHouses', () => {
+    useFilterStore.getState().toggleProductionHouse('ph-3');
+    useFilterStore.getState().clearAll();
+    expect(useFilterStore.getState().selectedProductionHouses).toEqual([]);
+  });
+
+  it('setSearchQuery updates searchQuery', () => {
+    useFilterStore.getState().setSearchQuery('pushpa');
+    expect(useFilterStore.getState().searchQuery).toBe('pushpa');
+  });
+
+  it('setSortBy updates sortBy', () => {
+    useFilterStore.getState().setSortBy('latest');
+    expect(useFilterStore.getState().sortBy).toBe('latest');
+    useFilterStore.getState().setSortBy('upcoming');
+    expect(useFilterStore.getState().sortBy).toBe('upcoming');
+  });
+
+  it('setFilter updates selectedFilter', () => {
+    useFilterStore.getState().setFilter('streaming');
+    expect(useFilterStore.getState().selectedFilter).toBe('streaming');
+  });
 });

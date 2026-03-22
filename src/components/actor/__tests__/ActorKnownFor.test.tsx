@@ -76,4 +76,109 @@ describe('ActorKnownFor', () => {
     fireEvent.press(screen.getByTestId('known-for-m-c1'));
     expect(onMoviePress).toHaveBeenCalledWith('m-c1');
   });
+
+  it('shows star rating row when rating is greater than 0', () => {
+    const credits = [makeCredit('c1', 7.5, 'Rated Movie')];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('7.5')).toBeTruthy();
+  });
+
+  it('does not show star rating row for credits with movie rating 0', () => {
+    // Credits with rating=0 are excluded entirely by the topCredits filter
+    const credits = [
+      makeCredit('c1', 8.0, 'Good Movie'),
+      {
+        ...makeCredit('c2', 0, 'Zero Movie'),
+        movie: { ...makeCredit('c2', 0, 'Zero Movie').movie },
+      },
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    // Zero-rated movie is excluded from topCredits, so it doesn't render at all
+    expect(screen.queryByText('Zero Movie')).toBeNull();
+  });
+
+  it('handles credits with missing movie gracefully in render', () => {
+    // Verified by existing test — add additional assertion for null movie in topCredits
+    const credits = [
+      makeCredit('c1', 9.0, 'Good Movie'),
+      {
+        id: 'c2',
+        credit_type: 'cast' as const,
+        role_name: 'Hero',
+        movie: null,
+      } as unknown as import('../ActorFilmography').FilmCredit,
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    // Only the non-null movie renders
+    expect(screen.getByText('Good Movie')).toBeTruthy();
+  });
+
+  it('renders at most 5 movies and sorts descending by rating', () => {
+    const credits = [
+      makeCredit('a', 9.0, 'Movie A'),
+      makeCredit('b', 8.5, 'Movie B'),
+      makeCredit('c', 8.0, 'Movie C'),
+      makeCredit('d', 7.5, 'Movie D'),
+      makeCredit('e', 7.0, 'Movie E'),
+      makeCredit('f', 6.5, 'Movie F'),
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Movie A')).toBeTruthy();
+    expect(screen.getByText('Movie E')).toBeTruthy();
+    // 6th highest rated (6.5) is excluded
+    expect(screen.queryByText('Movie F')).toBeNull();
+  });
+
+  it('renders multiple movies and shows rating for each with rating > 0', () => {
+    const credits = [makeCredit('c1', 8.0, 'Movie 1'), makeCredit('c2', 7.5, 'Movie 2')];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('8')).toBeTruthy();
+    expect(screen.getByText('7.5')).toBeTruthy();
+  });
+
+  it('returns null when credits array is empty', () => {
+    const { toJSON } = render(<ActorKnownFor credits={[]} onMoviePress={onMoviePress} />);
+    expect(toJSON()).toBeNull();
+  });
+
+  it('returns null when all credits have null movies', () => {
+    const credits = [
+      {
+        id: 'c1',
+        credit_type: 'cast' as const,
+        role_name: 'Hero',
+        movie: null,
+      } as unknown as FilmCredit,
+      {
+        id: 'c2',
+        credit_type: 'cast' as const,
+        role_name: 'Hero',
+        movie: null,
+      } as unknown as FilmCredit,
+    ];
+    const { toJSON } = render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(toJSON()).toBeNull();
+  });
+
+  it('onMoviePress is called with correct id for each card', () => {
+    const credits = [makeCredit('x', 8.0, 'Film X'), makeCredit('y', 7.0, 'Film Y')];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    fireEvent.press(screen.getByTestId('known-for-m-x'));
+    expect(onMoviePress).toHaveBeenCalledWith('m-x');
+    fireEvent.press(screen.getByTestId('known-for-m-y'));
+    expect(onMoviePress).toHaveBeenCalledWith('m-y');
+  });
+
+  it('renders exactly 5 movies when 5 rated credits provided', () => {
+    const credits = [
+      makeCredit('a', 9.0, 'Alpha'),
+      makeCredit('b', 8.5, 'Beta'),
+      makeCredit('c', 8.0, 'Gamma'),
+      makeCredit('d', 7.5, 'Delta'),
+      makeCredit('e', 7.0, 'Epsilon'),
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Alpha')).toBeTruthy();
+    expect(screen.getByText('Epsilon')).toBeTruthy();
+  });
 });

@@ -1,5 +1,10 @@
+const mockAnimationsEnabled = jest.fn(() => true);
+jest.mock('@/hooks/useAnimationsEnabled', () => ({
+  useAnimationsEnabled: () => mockAnimationsEnabled(),
+}));
+
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, act } from '@testing-library/react-native';
 import { AnimatedNumber } from '../AnimatedNumber';
 
 describe('AnimatedNumber', () => {
@@ -65,5 +70,23 @@ describe('AnimatedNumber', () => {
       <AnimatedNumber value={0} testID="styled" style={{ color: 'red' }} />,
     );
     expect(getByTestId('styled')).toBeTruthy();
+  });
+
+  it('sets display value immediately without animation when animations are disabled', () => {
+    mockAnimationsEnabled.mockReturnValue(false);
+    render(<AnimatedNumber value={42} testID="instant" />);
+    expect(screen.getByText('42')).toBeTruthy();
+    mockAnimationsEnabled.mockReturnValue(true);
+  });
+
+  it('updates display value immediately on prop change when animations are disabled', () => {
+    mockAnimationsEnabled.mockReturnValue(false);
+    const { rerender } = render(<AnimatedNumber value={10} testID="change" />);
+    expect(screen.getByText('10')).toBeTruthy();
+    act(() => {
+      rerender(<AnimatedNumber value={99} testID="change" />);
+    });
+    expect(screen.getByText('99')).toBeTruthy();
+    mockAnimationsEnabled.mockReturnValue(true);
   });
 });

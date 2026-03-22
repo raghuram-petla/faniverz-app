@@ -59,4 +59,52 @@ describe('usePhoneAuth', () => {
     });
     expect(result.current.error).toBe('rate limited');
   });
+
+  it('sets fallback error message on OTP send failure with non-Error thrown', async () => {
+    (supabase.auth.signInWithOtp as jest.Mock).mockResolvedValueOnce({
+      error: { message: undefined },
+    });
+    // Simulate throwing a non-Error (e.g. a plain string or object)
+    (supabase.auth.signInWithOtp as jest.Mock).mockRejectedValueOnce('string error');
+
+    const { result } = renderHook(() => usePhoneAuth());
+    await act(async () => {
+      try {
+        await result.current.sendOtp('+919876543210');
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('Failed to send OTP');
+  });
+
+  it('sets error on OTP verification failure', async () => {
+    (supabase.auth.verifyOtp as jest.Mock).mockResolvedValueOnce({
+      error: new Error('Invalid OTP'),
+    });
+
+    const { result } = renderHook(() => usePhoneAuth());
+    await act(async () => {
+      try {
+        await result.current.verifyOtp('+919876543210', '000000');
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('Invalid OTP');
+  });
+
+  it('sets fallback error message on verifyOtp failure with non-Error thrown', async () => {
+    (supabase.auth.verifyOtp as jest.Mock).mockRejectedValueOnce('plain string error');
+
+    const { result } = renderHook(() => usePhoneAuth());
+    await act(async () => {
+      try {
+        await result.current.verifyOtp('+919876543210', '000000');
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('OTP verification failed');
+  });
 });

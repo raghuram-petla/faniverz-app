@@ -119,4 +119,61 @@ describe('AnimatedPressable', () => {
     fireEvent(pressable, 'onPressIn');
     fireEvent(pressable, 'onPressOut');
   });
+
+  it('handles pressIn without animation when animations disabled', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+
+    const { getByTestId } = render(
+      <AnimatedPressable testID="no-anim-press" pressScale={0.9}>
+        <Text>No Anim</Text>
+      </AnimatedPressable>,
+    );
+    const pressable = getByTestId('no-anim-press');
+    // Should not throw — scale set directly without withTiming
+    fireEvent(pressable, 'onPressIn');
+    fireEvent(pressable, 'onPressOut');
+
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
+  });
+
+  it('uses custom pressScale value', () => {
+    const { getByTestId } = render(
+      <AnimatedPressable testID="custom-scale" pressScale={0.85}>
+        <Text>Custom Scale</Text>
+      </AnimatedPressable>,
+    );
+    const pressable = getByTestId('custom-scale');
+    // Fires pressIn — no crash, scale applied
+    fireEvent(pressable, 'onPressIn');
+    fireEvent(pressable, 'onPressOut');
+  });
+
+  it('applies accessibilityRole of none', () => {
+    const { getByTestId } = render(
+      <AnimatedPressable testID="none-role" accessibilityRole="none">
+        <Text>None Role</Text>
+      </AnimatedPressable>,
+    );
+    const pressable = getByTestId('none-role');
+    expect(pressable.props.accessibilityRole).toBe('none');
+  });
+
+  it('renders without crashing when pressScale is at boundary (1.0)', () => {
+    const { getByTestId } = render(
+      <AnimatedPressable testID="boundary-scale" pressScale={1.0}>
+        <Text>Boundary</Text>
+      </AnimatedPressable>,
+    );
+    fireEvent(getByTestId('boundary-scale'), 'onPressIn');
+    fireEvent(getByTestId('boundary-scale'), 'onPressOut');
+  });
+
+  it('renders without onLongPress handler (no crash)', () => {
+    const { getByText } = render(
+      <AnimatedPressable>
+        <Text>No Long Press Handler</Text>
+      </AnimatedPressable>,
+    );
+    expect(getByText('No Long Press Handler')).toBeTruthy();
+  });
 });

@@ -108,4 +108,34 @@ describe('ProductionHousesPage', () => {
     renderWithProviders(<ProductionHousesPage />);
     expect(screen.getByText('0 production houses')).toBeInTheDocument();
   });
+
+  it('hides add form after clicking Cancel within the form', () => {
+    renderWithProviders(<ProductionHousesPage />);
+    fireEvent.click(screen.getByText('Add Production House'));
+    // The form is shown — click Cancel within it
+    const cancelBtn = screen.getByText('Cancel');
+    fireEvent.click(cancelBtn);
+    // After cancel, form should be hidden
+    expect(screen.queryByPlaceholderText('Name *')).not.toBeInTheDocument();
+  });
+
+  it('does NOT render the AddProductionHouseForm initially', () => {
+    renderWithProviders(<ProductionHousesPage />);
+    // The add form placeholder input should not exist yet
+    expect(screen.queryByPlaceholderText('Name *')).not.toBeInTheDocument();
+  });
+
+  it('shows search hint for single character search', () => {
+    renderWithProviders(<ProductionHousesPage />);
+    const searchInput = screen.getByPlaceholderText('Search production houses...');
+    fireEvent.change(searchInput, { target: { value: 'a' } });
+    expect(screen.getByText('Type at least 2 characters to search')).toBeInTheDocument();
+  });
+
+  it('hides search hint when search has 2+ characters', () => {
+    renderWithProviders(<ProductionHousesPage />);
+    const searchInput = screen.getByPlaceholderText('Search production houses...');
+    fireEvent.change(searchInput, { target: { value: 'ab' } });
+    expect(screen.queryByText('Type at least 2 characters to search')).not.toBeInTheDocument();
+  });
 });

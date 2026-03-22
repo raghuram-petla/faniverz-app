@@ -123,4 +123,87 @@ describe('ActivityScreen', () => {
     fireEvent.press(screen.getByText('profile.filterVotes'));
     expect(mockUseUserActivity).toHaveBeenCalledWith('votes');
   });
+
+  it('navigates to actor when actor activity is pressed', () => {
+    mockUseUserActivity.mockReturnValue({
+      data: {
+        pages: [[{ id: 'a2', action_type: 'follow', entity_type: 'actor', entity_id: 'ac1' }]],
+      },
+      isLoading: false,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+    });
+
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByText('follow'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/actor/ac1');
+  });
+
+  it('navigates to production house when production_house activity is pressed', () => {
+    mockUseUserActivity.mockReturnValue({
+      data: {
+        pages: [
+          [{ id: 'a3', action_type: 'follow', entity_type: 'production_house', entity_id: 'ph1' }],
+        ],
+      },
+      isLoading: false,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+    });
+
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByText('follow'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/production-house/ph1');
+  });
+
+  it('does not navigate for unknown entity_type', () => {
+    mockUseUserActivity.mockReturnValue({
+      data: {
+        pages: [[{ id: 'a4', action_type: 'vote', entity_type: 'unknown_type', entity_id: 'x1' }]],
+      },
+      isLoading: false,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+    });
+
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByText('vote'));
+    expect(mockRouter.push).not.toHaveBeenCalled();
+  });
+
+  it('calls fetchNextPage when end reached and hasNextPage is true', () => {
+    const mockFetchNextPage = jest.fn();
+    mockUseUserActivity.mockReturnValue({
+      data: {
+        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+      },
+      isLoading: false,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: true,
+      isFetchingNextPage: false,
+    });
+
+    render(<ActivityScreen />);
+    const list = screen.UNSAFE_getByType(require('react-native').FlatList);
+    list.props.onEndReached();
+    expect(mockFetchNextPage).toHaveBeenCalled();
+  });
+
+  it('does not call fetchNextPage when already fetching', () => {
+    const mockFetchNextPage = jest.fn();
+    mockUseUserActivity.mockReturnValue({
+      data: {
+        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+      },
+      isLoading: false,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: true,
+      isFetchingNextPage: true,
+    });
+
+    render(<ActivityScreen />);
+    const list = screen.UNSAFE_getByType(require('react-native').FlatList);
+    list.props.onEndReached();
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
 });

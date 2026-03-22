@@ -4,6 +4,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 
 jest.mock('../activityApi', () => ({
   fetchUserActivity: jest.fn(),
+  PAGE_SIZE: 20,
 }));
 
 import { renderHook, waitFor } from '@testing-library/react-native';
@@ -42,5 +43,39 @@ describe('useUserActivity', () => {
 
     expect(result.current.data).toBeUndefined();
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('stops pagination when last page has fewer items than PAGE_SIZE', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    // Return fewer than PAGE_SIZE (20) items — means no next page
+    mockFetch.mockResolvedValue([{ id: 'a1', action_type: 'vote' }]);
+
+    const { result } = renderHook(() => useUserActivity('all'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    // hasNextPage should be false since fewer than PAGE_SIZE items returned
+    expect(result.current.hasNextPage).toBe(false);
+  });
+
+  it('continues pagination when last page has exactly PAGE_SIZE items', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    // Return exactly PAGE_SIZE (20) items — means there may be more
+    const fullPage = Array.from({ length: 20 }, (_, i) => ({ id: `a${i}`, action_type: 'vote' }));
+    mockFetch.mockResolvedValue(fullPage);
+
+    const { result } = renderHook(() => useUserActivity('all'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.hasNextPage).toBe(true);
+  });
+
+  it('uses the filter parameter in the query key', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    mockFetch.mockResolvedValue([{ id: 'a1', action_type: 'follow' }]);
+
+    const { result } = renderHook(() => useUserActivity('follows'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'follows', 0);
   });
 });

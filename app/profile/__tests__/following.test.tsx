@@ -14,8 +14,9 @@ jest.mock('expo-router', () => ({
   useRouter: () => mockRouter,
 }));
 
+const mockUseAuth = jest.fn(() => ({ user: { id: 'u1' } }));
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'u1' } }),
+  useAuth: () => mockUseAuth(),
 }));
 
 const mockRefetch = jest.fn();
@@ -34,7 +35,7 @@ jest.mock('@/features/feed', () => ({
     isLoading: false,
     refetch: mockRefetch,
   })),
-  useUnfollowEntity: () => ({ mutate: jest.fn() }),
+  useUnfollowEntity: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
 }));
 
 jest.mock('@/components/common/ScreenHeader', () => {
@@ -51,7 +52,7 @@ jest.mock('@/components/profile/ProfileListSkeleton', () => ({
 }));
 
 jest.mock('@shared/imageUrl', () => ({
-  getImageUrl: () => 'https://example.com/img.jpg',
+  getImageUrl: jest.fn(() => 'https://example.com/img.jpg'),
   entityTypeToBucket: (entityType: string) => entityType.toUpperCase(),
 }));
 
@@ -139,5 +140,64 @@ describe('FollowingScreen', () => {
     const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
     fireEvent.press(unfollowButtons[0]);
     // The mutation should have been called (default mock returns jest.fn())
+  });
+
+  it('shows empty state when data is undefined (defaults to empty array)', () => {
+    const { useEnrichedFollows } = require('@/features/feed');
+    useEnrichedFollows.mockReturnValueOnce({
+      isLoading: false,
+      refetch: mockRefetch,
+    });
+    render(<FollowingScreen />);
+    expect(screen.queryByText('Pushpa 2')).toBeNull();
+  });
+
+  it('does not call unfollow when user is not logged in', () => {
+    const mockMutate = jest.fn();
+    const { useUnfollowEntity } = require('@/features/feed');
+    mockUseAuth.mockReturnValueOnce({ user: null });
+    useUnfollowEntity.mockReturnValueOnce({ mutate: mockMutate, isPending: false });
+    render(<FollowingScreen />);
+    const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
+    fireEvent.press(unfollowButtons[0]);
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not call unfollow when mutation is already pending', () => {
+    const mockMutate = jest.fn();
+    const { useUnfollowEntity } = require('@/features/feed');
+    useUnfollowEntity.mockReturnValueOnce({ mutate: mockMutate, isPending: true });
+    render(<FollowingScreen />);
+    const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
+    fireEvent.press(unfollowButtons[0]);
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('renders production_house entity type label', () => {
+    const { useEnrichedFollows } = require('@/features/feed');
+    useEnrichedFollows.mockReturnValueOnce({
+      data: [
+        {
+          entity_type: 'production_house',
+          entity_id: 'ph1',
+          name: 'Mythri Movie Makers',
+          image_url: null,
+          created_at: '',
+        },
+      ],
+      isLoading: false,
+      refetch: mockRefetch,
+    });
+    render(<FollowingScreen />);
+    expect(screen.getByText('Mythri Movie Makers')).toBeTruthy();
+  });
+
+  it('uses placeholder image when getImageUrl returns null', () => {
+    const imageUrl = require('@shared/imageUrl');
+    (imageUrl.getImageUrl as jest.Mock).mockReturnValue(null);
+    render(<FollowingScreen />);
+    // When getImageUrl returns null, placeholder is used — component still renders
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    (imageUrl.getImageUrl as jest.Mock).mockReturnValue('https://example.com/img.jpg');
   });
 });

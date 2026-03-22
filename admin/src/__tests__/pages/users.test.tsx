@@ -194,4 +194,58 @@ describe('UsersPage', () => {
     // We verify the activeSuperAdminCount calculation indirectly via the revoke guard
     expect(screen.getByText('Only Super')).toBeInTheDocument();
   });
+
+  it('switches to Invitations tab when clicked', () => {
+    renderWithProviders(<UsersPage />);
+    fireEvent.click(screen.getByText('Invitations'));
+    // Status filter buttons should no longer be visible (only shown on admins tab)
+    expect(screen.queryByText('active')).not.toBeInTheDocument();
+  });
+
+  it('hides status filter buttons when on invitations tab', () => {
+    renderWithProviders(<UsersPage />);
+    fireEvent.click(screen.getByText('Invitations'));
+    expect(screen.queryByText('blocked')).not.toBeInTheDocument();
+    expect(screen.queryByText('all')).not.toBeInTheDocument();
+  });
+
+  it('renders "Invite Admin" link when isSuperAdmin is true', () => {
+    renderWithProviders(<UsersPage />);
+    const inviteLink = screen.getByText('Invite Admin').closest('a');
+    expect(inviteLink).toHaveAttribute('href', '/users/invite');
+  });
+
+  it('hides users with rank higher than current user', () => {
+    mockUsers = [
+      makeUser({ id: 'r1', display_name: 'Root User', role_id: 'root', status: 'active' }),
+      makeUser({ id: 'a1', display_name: 'Admin User', role_id: 'admin', status: 'active' }),
+    ];
+    renderWithProviders(<UsersPage />);
+    // super_admin (rank 3) can see admin (rank 2) but not root (rank 4)
+    expect(screen.queryByText('Root User')).not.toBeInTheDocument();
+    expect(screen.getByText('Admin User')).toBeInTheDocument();
+  });
+
+  it('hides root users from super_admin view (rank enforcement)', () => {
+    mockUsers = [
+      makeUser({ id: 'r1', display_name: 'Only Root', role_id: 'root', status: 'active' }),
+    ];
+    // super_admin (rank 3) cannot see root (rank 4) — hidden by ROLE_RANK filter
+    renderWithProviders(<UsersPage />);
+    expect(screen.queryByText('Only Root')).not.toBeInTheDocument();
+  });
+
+  it('renders AdminsTable on admins tab with users', () => {
+    mockUsers = [makeUser({ id: 'u1', display_name: 'Test Admin' })];
+    renderWithProviders(<UsersPage />);
+    expect(screen.getByText('Test Admin')).toBeInTheDocument();
+  });
+
+  it('shows InvitationsTable content when invitations tab is selected', () => {
+    renderWithProviders(<UsersPage />);
+    fireEvent.click(screen.getByText('Invitations'));
+    // InvitationsTable is rendered — it receives empty invitations array from mock
+    // Verify we switched tabs (status filter gone)
+    expect(screen.queryByText('active')).not.toBeInTheDocument();
+  });
 });

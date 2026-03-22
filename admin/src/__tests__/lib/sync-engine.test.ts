@@ -313,3 +313,140 @@ describe('processMovieFromTmdb', () => {
     );
   });
 });
+
+describe('processMovieFromTmdb — additional branch coverage', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+    vi.mocked(getMovieDetails).mockResolvedValue(makeTmdbDetail() as never);
+  });
+
+  it('syncs crew members via extractKeyCrewMembers', async () => {
+    const { extractKeyCrewMembers } = await import('../../lib/tmdbTypes');
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 20,
+        name: 'Prabhas',
+        job: 'Director',
+        department: 'Directing',
+        roleName: 'Director',
+        roleOrder: 0,
+        profile_path: '/prabhas.jpg',
+        gender: 2,
+      },
+    ]);
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(upsertActorPreserveType).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ default_person_type: 'technician' }),
+    );
+    expect(result.crewCount).toBe(1);
+  });
+
+  it('skips crew member when upsertActorPreserveType returns null', async () => {
+    const { extractKeyCrewMembers } = await import('../../lib/tmdbTypes');
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 20,
+        name: 'Director',
+        job: 'Director',
+        department: 'Directing',
+        roleName: 'Director',
+        roleOrder: 0,
+        profile_path: null,
+        gender: 0,
+      },
+    ]);
+    vi.mocked(upsertActorPreserveType).mockResolvedValueOnce(null);
+
+    const result = await processMovieFromTmdb(
+      12345,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result.crewCount).toBe(0);
+  });
+
+  it('sets budget and revenue to null when 0 from TMDB', async () => {
+    const detail = makeTmdbDetail({ budget: 0, revenue: 0 });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ budget: null, revenue: null }),
+      expect.anything(),
+    );
+  });
+
+  it('sets original_language to "te" as fallback when missing', async () => {
+    const detail = makeTmdbDetail({ original_language: undefined });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ original_language: 'te' }),
+      expect.anything(),
+    );
+  });
+
+  it('sets spoken_languages to null when not provided', async () => {
+    const detail = makeTmdbDetail({ spoken_languages: undefined });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ spoken_languages: null }),
+      expect.anything(),
+    );
+  });
+
+  it('does not include in_theaters field for existing movies', async () => {
+    // Mark movie as existing
+    supabase.maybeSingle.mockResolvedValueOnce({ data: { id: 'existing-id' }, error: null });
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    const upsertCall = (supabase.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
+    expect(upsertCall).not.toHaveProperty('in_theaters');
+  });
+
+  it('includes imdb_id when external_ids.imdb_id is present', async () => {
+    const detail = makeTmdbDetail({ external_ids: { imdb_id: 'tt9876543' } });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ imdb_id: 'tt9876543' }),
+      expect.anything(),
+    );
+  });
+
+  it('does not include imdb_id when external_ids is missing', async () => {
+    const detail = makeTmdbDetail({ external_ids: undefined });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    const upsertCall = (supabase.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
+    expect(upsertCall).not.toHaveProperty('imdb_id');
+  });
+});

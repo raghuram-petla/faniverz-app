@@ -108,4 +108,21 @@ describe('useDeleteAccount', () => {
     expect(result.current.error).toEqual(rpcError);
     expect(supabase.auth.signOut).not.toHaveBeenCalled();
   });
+
+  it('ignores signOut error after successful account deletion', async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValueOnce({ error: null });
+    (supabase.auth.signOut as jest.Mock).mockRejectedValueOnce(new Error('signout failed'));
+
+    const { result } = renderHook(() => useDeleteAccount(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate();
+    });
+
+    // Mutation should still succeed even if signOut fails (catch swallows the error)
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(supabase.auth.signOut).toHaveBeenCalled();
+  });
 });

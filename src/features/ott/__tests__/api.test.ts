@@ -11,8 +11,17 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
+jest.mock('@/utils/getDeviceCountry', () => ({
+  getDeviceCountry: jest.fn(() => 'IN'),
+}));
+
 import { supabase } from '@/lib/supabase';
-import { fetchPlatforms, fetchOttReleases, fetchMoviePlatformMap } from '../api';
+import {
+  fetchPlatforms,
+  fetchOttReleases,
+  fetchMoviePlatformMap,
+  fetchMovieAvailability,
+} from '../api';
 
 describe('ott api', () => {
   beforeEach(() => {
@@ -99,6 +108,74 @@ describe('ott api', () => {
       mockEq.mockResolvedValue({ data: null, error: new Error('Query error') });
 
       await expect(fetchOttReleases('movie-1')).rejects.toThrow('Query error');
+    });
+  });
+
+  describe('fetchMovieAvailability', () => {
+    it('queries movie_platform_availability for the device country', async () => {
+      const mockEq2 = jest.fn();
+      const mockEq3 = jest.fn();
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockReturnValue({ order: mockEq3 });
+      mockEq3.mockResolvedValue({ data: [], error: null });
+
+      await fetchMovieAvailability('movie-1');
+
+      expect(supabase.from).toHaveBeenCalledWith('movie_platform_availability');
+      expect(mockEq).toHaveBeenCalledWith('movie_id', 'movie-1');
+      expect(mockEq2).toHaveBeenCalledWith('country_code', 'IN');
+    });
+
+    it('groups availability data by type into result object', async () => {
+      const mockEq2 = jest.fn();
+      const mockEq3 = jest.fn();
+      const mockData = [
+        { availability_type: 'flatrate', platform: { id: 'netflix' }, movie_id: 'movie-1' },
+        { availability_type: 'flatrate', platform: { id: 'aha' }, movie_id: 'movie-1' },
+        { availability_type: 'rent', platform: { id: 'prime' }, movie_id: 'movie-1' },
+        { availability_type: 'buy', platform: { id: 'prime' }, movie_id: 'movie-1' },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockReturnValue({ order: mockEq3 });
+      mockEq3.mockResolvedValue({ data: mockData, error: null });
+
+      const result = await fetchMovieAvailability('movie-1');
+
+      expect(result.flatrate).toHaveLength(2);
+      expect(result.rent).toHaveLength(1);
+      expect(result.buy).toHaveLength(1);
+      expect(result.ads).toHaveLength(0);
+      expect(result.free).toHaveLength(0);
+    });
+
+    it('returns empty groups when data is null', async () => {
+      const mockEq2 = jest.fn();
+      const mockEq3 = jest.fn();
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockReturnValue({ order: mockEq3 });
+      mockEq3.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchMovieAvailability('movie-1');
+
+      expect(result.flatrate).toHaveLength(0);
+      expect(result.rent).toHaveLength(0);
+      expect(result.buy).toHaveLength(0);
+      expect(result.ads).toHaveLength(0);
+      expect(result.free).toHaveLength(0);
+    });
+
+    it('throws on error', async () => {
+      const mockEq2 = jest.fn();
+      const mockEq3 = jest.fn();
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockReturnValue({ order: mockEq3 });
+      mockEq3.mockResolvedValue({ data: null, error: new Error('Availability query failed') });
+
+      await expect(fetchMovieAvailability('movie-1')).rejects.toThrow('Availability query failed');
     });
   });
 

@@ -90,4 +90,52 @@ describe('DiscoverSearchHeader', () => {
     // We verify the input shows the query value
     expect(screen.getByDisplayValue('test')).toBeTruthy();
   });
+
+  it('calls onSearchChange with empty string when clear button is pressed', () => {
+    const onSearchChange = jest.fn();
+    const { UNSAFE_getAllByType } = render(
+      <DiscoverSearchHeader {...mockProps} searchQuery="pushpa" onSearchChange={onSearchChange} />,
+    );
+    // The clear button is a TouchableOpacity that only renders when searchQuery.length > 0
+    const { TouchableOpacity } = require('react-native');
+    const touchables = UNSAFE_getAllByType(TouchableOpacity);
+    // Find the clear button: it's the one that has onPress calling onSearchChange('')
+    // It's distinct from back button (first) and filter tab buttons (last N)
+    // With FILTER_TABS mocked to 2 items: [back, clear, tab0, tab1]
+    // The clear button appears inside the search row — not the tab row
+    // Press each candidate and check which triggers onSearchChange
+    let found = false;
+    for (const btn of touchables) {
+      jest.clearAllMocks();
+      fireEvent.press(btn);
+      if (onSearchChange.mock.calls.some((call) => call[0] === '')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+    expect(onSearchChange).toHaveBeenCalledWith('');
+  });
+
+  it('does not render clear button when search query is empty', () => {
+    const { UNSAFE_getAllByType } = render(<DiscoverSearchHeader {...mockProps} searchQuery="" />);
+    const { TouchableOpacity } = require('react-native');
+    const touchables = UNSAFE_getAllByType(TouchableOpacity);
+    // Back button + filter tabs = back(1) + FILTER_TABS(2) = 3 touchables, no clear button
+    // The clear button only shows when searchQuery.length > 0
+    // Compare with one that has a query
+    const { UNSAFE_getAllByType: getWithQuery } = render(
+      <DiscoverSearchHeader {...mockProps} searchQuery="test" />,
+    );
+    const touchablesWithQuery = getWithQuery(TouchableOpacity);
+    // With query: has one extra clear button
+    expect(touchablesWithQuery.length).toBeGreaterThan(touchables.length);
+  });
+
+  it('highlights active filter tab', () => {
+    render(<DiscoverSearchHeader {...mockProps} selectedFilter="in_theaters" />);
+    // Both tabs render but only "In Theaters" is "active"
+    expect(screen.getByText('In Theaters')).toBeTruthy();
+    expect(screen.getByText('All')).toBeTruthy();
+  });
 });

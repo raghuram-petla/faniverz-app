@@ -56,4 +56,24 @@ describe('useAnimationStore', () => {
     expect(useAnimationStore.getState().animationsEnabled).toBe(true);
     expect(useAnimationStore.getState().loaded).toBe(true);
   });
+
+  it('setAnimationsEnabled warns but does not throw when AsyncStorage.setItem fails', async () => {
+    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error('Storage error'));
+
+    useAnimationStore.getState().setAnimationsEnabled(false);
+
+    // State update is synchronous
+    expect(useAnimationStore.getState().animationsEnabled).toBe(false);
+
+    // Wait for the fire-and-forget promise to settle
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Failed to persist animation preference',
+      expect.any(Error),
+    );
+    consoleSpy.mockRestore();
+  });
 });

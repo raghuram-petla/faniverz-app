@@ -139,4 +139,91 @@ describe('MediaVideoCard', () => {
     );
     expect(toJSON()).toBeTruthy();
   });
+
+  it('calls shareYouTubeVideo when share button is pressed', () => {
+    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
+    render(
+      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
+    );
+    fireEvent.press(screen.getByLabelText('Share video'));
+    expect(shareYouTubeVideo).toHaveBeenCalledWith('abc123');
+  });
+
+  it('uses placeholder image when youtube_id is null', () => {
+    const { UNSAFE_getAllByType } = render(
+      <MediaVideoCard
+        video={makeVideo({ youtube_id: null as any })}
+        isPlaying={false}
+        onPlay={onPlay}
+        theme={mockTheme}
+      />,
+    );
+    const images = UNSAFE_getAllByType('Image' as any);
+    // Image should exist with placeholder source
+    expect(images.length).toBeGreaterThanOrEqual(1);
+    const src = images[0].props.source?.uri ?? '';
+    expect(src).toBeTruthy();
+  });
+
+  it('renders youtube thumbnail when youtube_id is provided', () => {
+    const { UNSAFE_getAllByType } = render(
+      <MediaVideoCard
+        video={makeVideo({ youtube_id: 'xyz789' })}
+        isPlaying={false}
+        onPlay={onPlay}
+        theme={mockTheme}
+      />,
+    );
+    const images = UNSAFE_getAllByType('Image' as any);
+    const src = images[0].props.source?.uri ?? '';
+    expect(src).toContain('xyz789');
+  });
+
+  it('renders play-circle icon in thumbnail state', () => {
+    const { UNSAFE_getByProps } = render(
+      <MediaVideoCard video={makeVideo()} isPlaying={false} onPlay={onPlay} theme={mockTheme} />,
+    );
+    expect(UNSAFE_getByProps({ name: 'play-circle' })).toBeTruthy();
+  });
+
+  it('onShouldStartLoadWithRequest callback is invoked by WebView', () => {
+    const { handleYouTubeNavigation } = require('@/utils/youtubeNavigation');
+    const { UNSAFE_getByType } = render(
+      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
+    );
+    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
+    if (webview.props.onShouldStartLoadWithRequest) {
+      webview.props.onShouldStartLoadWithRequest({
+        url: 'https://youtube.com',
+        navigationType: 'other',
+      });
+      expect(handleYouTubeNavigation).toHaveBeenCalled();
+    }
+  });
+
+  it('onOpenWindow callback is invoked by WebView', () => {
+    const { handleYouTubeOpenWindow } = require('@/utils/youtubeNavigation');
+    const { UNSAFE_getByType } = render(
+      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
+    );
+    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
+    if (webview.props.onOpenWindow) {
+      webview.props.onOpenWindow({ nativeEvent: { targetUrl: 'https://youtube.com/watch?v=abc' } });
+      expect(handleYouTubeOpenWindow).toHaveBeenCalled();
+    }
+  });
+
+  it('share button press calls shareYouTubeVideo with correct id', () => {
+    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
+    render(
+      <MediaVideoCard
+        video={makeVideo({ youtube_id: 'xyz789' })}
+        isPlaying={true}
+        onPlay={onPlay}
+        theme={mockTheme}
+      />,
+    );
+    fireEvent.press(screen.getByLabelText('Share video'));
+    expect(shareYouTubeVideo).toHaveBeenCalledWith('xyz789');
+  });
 });

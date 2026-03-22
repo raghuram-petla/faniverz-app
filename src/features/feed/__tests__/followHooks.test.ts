@@ -44,6 +44,15 @@ function createWrapper() {
 describe('useEntityFollows', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  it('does not fetch when user is null', () => {
+    const { useAuth } = require('@/features/auth/providers/AuthProvider');
+    (useAuth as jest.Mock).mockReturnValueOnce({ user: null });
+
+    const { result } = renderHook(() => useEntityFollows(), { wrapper: createWrapper() });
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.followSet.size).toBe(0);
+  });
+
   it('returns follow data and followSet', async () => {
     mockFetchUserFollows.mockResolvedValue([
       { id: '1', user_id: 'user-123', entity_type: 'movie', entity_id: 'm1', created_at: '' },
@@ -83,10 +92,63 @@ describe('useFollowEntity', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockFollowEntity).toHaveBeenCalledWith('user-123', 'movie', 'm1');
   });
+
+  it('rolls back optimistic update and shows Alert on follow error', async () => {
+    mockFollowEntity.mockRejectedValue(new Error('Follow failed'));
+
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    // Seed existing follows in cache so onMutate has a previousFollows context
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const existingFollow = {
+      id: 'f-1',
+      user_id: 'user-123',
+      entity_type: 'actor' as const,
+      entity_id: 'a1',
+      created_at: '',
+    };
+    client.setQueryData(['entity-follows', 'user-123'], [existingFollow]);
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useFollowEntity(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    // Cache should be rolled back to the seeded value
+    expect(client.getQueryData(['entity-follows', 'user-123'])).toEqual([existingFollow]);
+    alertSpy.mockRestore();
+  });
+
+  it('throws when user is not logged in', async () => {
+    const { useAuth } = require('@/features/auth/providers/AuthProvider');
+    (useAuth as jest.Mock).mockReturnValueOnce({ user: null });
+
+    const { result } = renderHook(() => useFollowEntity(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
 });
 
 describe('useEnrichedFollows', () => {
   beforeEach(() => jest.clearAllMocks());
+
+  it('does not fetch when user is null', () => {
+    const { useAuth } = require('@/features/auth/providers/AuthProvider');
+    (useAuth as jest.Mock).mockReturnValueOnce({ user: null });
+
+    const { result } = renderHook(() => useEnrichedFollows(), { wrapper: createWrapper() });
+    expect(result.current.fetchStatus).toBe('idle');
+  });
 
   it('fetches enriched follows for authenticated user', async () => {
     const enriched = [
@@ -122,5 +184,50 @@ describe('useUnfollowEntity', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockUnfollowEntity).toHaveBeenCalledWith('user-123', 'movie', 'm1');
+  });
+
+  it('rolls back optimistic update and shows Alert on unfollow error', async () => {
+    mockUnfollowEntity.mockRejectedValue(new Error('Unfollow failed'));
+
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    // Seed existing follows so onMutate has previousFollows context
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const existingFollow = {
+      id: 'f-2',
+      user_id: 'user-123',
+      entity_type: 'movie' as const,
+      entity_id: 'm1',
+      created_at: '',
+    };
+    client.setQueryData(['entity-follows', 'user-123'], [existingFollow]);
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useUnfollowEntity(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    // Cache should be rolled back to original (with the follow restored)
+    expect(client.getQueryData(['entity-follows', 'user-123'])).toEqual([existingFollow]);
+    alertSpy.mockRestore();
+  });
+
+  it('throws when user is not logged in', async () => {
+    const { useAuth } = require('@/features/auth/providers/AuthProvider');
+    (useAuth as jest.Mock).mockReturnValueOnce({ user: null });
+
+    const { result } = renderHook(() => useUnfollowEntity(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

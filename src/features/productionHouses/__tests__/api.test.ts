@@ -49,6 +49,85 @@ describe('fetchProductionHouseMovies', () => {
     expect(result).toEqual([]);
   });
 
+  it('returns movies when junction entries exist', async () => {
+    const { __mockFrom } = require('@/lib/supabase');
+    const movies = [
+      { id: 'movie-1', title: 'Test Movie', release_date: '2024-01-01' },
+      { id: 'movie-2', title: 'Another Movie', release_date: '2023-06-15' },
+    ];
+
+    // First from() call: junction table
+    const mockJunctionEq = jest.fn().mockResolvedValueOnce({
+      data: [{ movie_id: 'movie-1' }, { movie_id: 'movie-2' }],
+      error: null,
+    });
+    const mockJunctionSelect = jest.fn(() => ({ eq: mockJunctionEq }));
+
+    // Second from() call: movies table
+    const mockOrder = jest.fn().mockResolvedValueOnce({ data: movies, error: null });
+    const mockMoviesIn = jest.fn(() => ({ order: mockOrder }));
+    const mockMoviesSelect = jest.fn(() => ({ in: mockMoviesIn }));
+
+    __mockFrom
+      .mockReturnValueOnce({ select: mockJunctionSelect })
+      .mockReturnValueOnce({ select: mockMoviesSelect });
+
+    const result = await fetchProductionHouseMovies('ph1');
+    expect(result).toEqual(movies);
+    expect(mockMoviesIn).toHaveBeenCalledWith('id', ['movie-1', 'movie-2']);
+  });
+
+  it('throws when movies fetch fails', async () => {
+    const { __mockFrom } = require('@/lib/supabase');
+
+    // First from() call: junction table — success with data
+    const mockJunctionEq = jest.fn().mockResolvedValueOnce({
+      data: [{ movie_id: 'movie-1' }],
+      error: null,
+    });
+    const mockJunctionSelect = jest.fn(() => ({ eq: mockJunctionEq }));
+
+    // Second from() call: movies table — throws error
+    const mockOrder = jest
+      .fn()
+      .mockResolvedValueOnce({ data: null, error: new Error('movies fail') });
+    const mockMoviesIn = jest.fn(() => ({ order: mockOrder }));
+    const mockMoviesSelect = jest.fn(() => ({ in: mockMoviesIn }));
+
+    __mockFrom
+      .mockReturnValueOnce({ select: mockJunctionSelect })
+      .mockReturnValueOnce({ select: mockMoviesSelect });
+
+    await expect(fetchProductionHouseMovies('ph1')).rejects.toThrow('movies fail');
+  });
+
+  it('returns empty array when movies fetch returns null data', async () => {
+    const { __mockFrom } = require('@/lib/supabase');
+
+    const mockJunctionEq = jest.fn().mockResolvedValueOnce({
+      data: [{ movie_id: 'movie-1' }],
+      error: null,
+    });
+    const mockJunctionSelect = jest.fn(() => ({ eq: mockJunctionEq }));
+
+    const mockOrder = jest.fn().mockResolvedValueOnce({ data: null, error: null });
+    const mockMoviesIn = jest.fn(() => ({ order: mockOrder }));
+    const mockMoviesSelect = jest.fn(() => ({ in: mockMoviesIn }));
+
+    __mockFrom
+      .mockReturnValueOnce({ select: mockJunctionSelect })
+      .mockReturnValueOnce({ select: mockMoviesSelect });
+
+    const result = await fetchProductionHouseMovies('ph1');
+    expect(result).toEqual([]);
+  });
+
+  it('returns null for PGRST116 error on fetchProductionHouseById', async () => {
+    __mockSingle.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } });
+    const result = await fetchProductionHouseById('nonexistent');
+    expect(result).toBeNull();
+  });
+
   it('throws on junction error', async () => {
     const mockJunctionEq = jest.fn().mockResolvedValueOnce({
       data: null,

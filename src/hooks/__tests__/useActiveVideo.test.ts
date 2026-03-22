@@ -98,6 +98,24 @@ describe('useActiveVideo', () => {
     expect(result.current.activeVideoId).toBe('v2');
   });
 
+  it('unregisters a video so it is no longer considered', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    act(() => {
+      result.current.registerVideoLayout('v1', 100, 200);
+    });
+
+    act(() => {
+      result.current.unregisterVideoLayout('v1');
+    });
+
+    act(() => {
+      result.current.handleScrollForVideo(0, 800);
+    });
+
+    expect(result.current.activeVideoId).toBeNull();
+  });
+
   it('overwrites layout on re-register', () => {
     const { result } = renderHook(() => useActiveVideo());
 

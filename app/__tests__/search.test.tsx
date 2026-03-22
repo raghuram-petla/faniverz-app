@@ -24,6 +24,14 @@ jest.mock('@/hooks/useMovieAction', () => ({
   }),
 }));
 
+let capturedRefreshCallback: (() => Promise<void>) | null = null;
+jest.mock('@/hooks/useRefresh', () => ({
+  useRefresh: (callback: () => Promise<void>) => {
+    capturedRefreshCallback = callback;
+    return { refreshing: false, onRefresh: jest.fn() };
+  },
+}));
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { Movie } from '@/types';
@@ -497,5 +505,58 @@ describe('SearchScreen', () => {
     fireEvent.press(screen.getByText('Mythri'));
     expect(mockPush).toHaveBeenCalledWith('/production-house/ph1');
     expect(AsyncStorage.setItem).toHaveBeenCalled();
+  });
+
+  it('filters results to movies only when Movies filter is pressed', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: mockResults,
+        actors: [{ id: 'a1', name: 'Allu Arjun', photo_url: null }],
+        productionHouses: [],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'pu');
+
+    // Press the Movies filter chip (shows count since results exist)
+    fireEvent.press(screen.getByText('Movies (1)'));
+    // After filtering, only movies should show — actor should not
+    expect(screen.queryByText('Allu Arjun')).toBeNull();
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('filters results to actors only when Actors filter is pressed', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: mockResults,
+        actors: [{ id: 'a1', name: 'Allu Arjun', photo_url: null }],
+        productionHouses: [],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'pu');
+
+    fireEvent.press(screen.getByText('Actors (1)'));
+    expect(screen.queryByText('Pushpa 2')).toBeNull();
+    expect(screen.getByText('Allu Arjun')).toBeTruthy();
+  });
+
+  it('calls refetchResults in the refresh callback', async () => {
+    const mockRefetch = jest.fn().mockResolvedValue(undefined);
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: [], actors: [], productionHouses: [] },
+      refetch: mockRefetch,
+    });
+
+    render(<SearchScreen />);
+
+    // capturedRefreshCallback should be set now
+    expect(capturedRefreshCallback).not.toBeNull();
+    await capturedRefreshCallback!();
+    expect(mockRefetch).toHaveBeenCalled();
   });
 });

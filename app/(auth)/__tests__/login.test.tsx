@@ -18,17 +18,19 @@ jest.mock('@/features/auth/hooks/useEmailAuth', () => ({
   useEmailAuth: jest.fn(),
 }));
 
+const mockSignInWithGoogle = jest.fn();
 jest.mock('@/features/auth/hooks/useGoogleAuth', () => ({
-  useGoogleAuth: () => ({ signInWithGoogle: jest.fn(), isLoading: false, error: null }),
+  useGoogleAuth: () => ({ signInWithGoogle: mockSignInWithGoogle, isLoading: false, error: null }),
 }));
 
+const mockSignInWithApple = jest.fn();
 jest.mock('@/features/auth/hooks/useAppleAuth', () => ({
-  useAppleAuth: () => ({
-    signInWithApple: jest.fn(),
+  useAppleAuth: jest.fn(() => ({
+    signInWithApple: mockSignInWithApple,
     isLoading: false,
     error: null,
     isAvailable: false,
-  }),
+  })),
 }));
 
 jest.mock('@/features/auth/hooks/usePhoneAuth', () => ({
@@ -36,11 +38,45 @@ jest.mock('@/features/auth/hooks/usePhoneAuth', () => ({
 }));
 
 jest.mock('@/components/auth/SocialSignInButtons', () => ({
-  SocialSignInButtons: () => null,
+  SocialSignInButtons: ({ onGoogle, onApple, onPhone }: any) => {
+    const { TouchableOpacity, Text } = require('react-native');
+    return (
+      <>
+        {onGoogle && (
+          <TouchableOpacity onPress={onGoogle} accessibilityLabel="Sign in with Google">
+            <Text>Google</Text>
+          </TouchableOpacity>
+        )}
+        {onApple && (
+          <TouchableOpacity onPress={onApple} accessibilityLabel="Sign in with Apple">
+            <Text>Apple</Text>
+          </TouchableOpacity>
+        )}
+        {onPhone && (
+          <TouchableOpacity onPress={onPhone} accessibilityLabel="Sign in with Phone">
+            <Text>Phone</Text>
+          </TouchableOpacity>
+        )}
+      </>
+    );
+  },
 }));
 
 jest.mock('@/components/auth/PhoneOtpModal', () => ({
-  PhoneOtpModal: () => null,
+  PhoneOtpModal: ({ onSuccess, onClose, visible }: any) => {
+    if (!visible) return null;
+    const { TouchableOpacity, Text } = require('react-native');
+    return (
+      <>
+        <TouchableOpacity onPress={onSuccess} accessibilityLabel="Phone OTP success">
+          <Text>OTP Success</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onClose} accessibilityLabel="Phone OTP close">
+          <Text>Close OTP</Text>
+        </TouchableOpacity>
+      </>
+    );
+  },
 }));
 
 jest.mock('@/styles/auth.styles', () => ({
@@ -62,6 +98,7 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import LoginScreen from '../login';
 import { useEmailAuth } from '@/features/auth/hooks/useEmailAuth';
+import { useAppleAuth } from '@/features/auth/hooks/useAppleAuth';
 
 const mockUseEmailAuth = useEmailAuth as jest.Mock;
 
@@ -209,6 +246,91 @@ describe('LoginScreen', () => {
 
     // Sign In / Sign Up text should not be visible during loading
     expect(screen.queryByText('auth.signIn')).toBeNull();
+  });
+
+  it('calls signInWithGoogle and navigates on success', async () => {
+    mockSignInWithGoogle.mockResolvedValueOnce(undefined);
+    render(<LoginScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Sign in with Google'));
+    });
+
+    expect(mockSignInWithGoogle).toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('handles Google sign-in error without crashing', async () => {
+    mockSignInWithGoogle.mockRejectedValueOnce(new Error('Google error'));
+    render(<LoginScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Sign in with Google'));
+    });
+
+    expect(mockSignInWithGoogle).toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('calls signInWithApple and navigates on success when available', async () => {
+    (useAppleAuth as jest.Mock).mockReturnValue({
+      signInWithApple: mockSignInWithApple,
+      isLoading: false,
+      error: null,
+      isAvailable: true,
+    });
+    mockSignInWithApple.mockResolvedValueOnce(undefined);
+    render(<LoginScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Sign in with Apple'));
+    });
+
+    expect(mockSignInWithApple).toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('handles Apple sign-in error without crashing', async () => {
+    (useAppleAuth as jest.Mock).mockReturnValue({
+      signInWithApple: mockSignInWithApple,
+      isLoading: false,
+      error: null,
+      isAvailable: true,
+    });
+    mockSignInWithApple.mockRejectedValueOnce(new Error('Apple error'));
+    render(<LoginScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Sign in with Apple'));
+    });
+
+    expect(mockSignInWithApple).toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('opens phone OTP modal when phone button is pressed', () => {
+    render(<LoginScreen />);
+    fireEvent.press(screen.getByLabelText('Sign in with Phone'));
+    // PhoneOtpModal becomes visible — OTP success button should appear
+    expect(screen.getByLabelText('Phone OTP success')).toBeTruthy();
+  });
+
+  it('navigates to tabs when OTP modal success is triggered', () => {
+    render(<LoginScreen />);
+    // Open phone modal first
+    fireEvent.press(screen.getByLabelText('Sign in with Phone'));
+    // Trigger OTP success
+    fireEvent.press(screen.getByLabelText('Phone OTP success'));
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('closes phone OTP modal when onClose is called', () => {
+    render(<LoginScreen />);
+    fireEvent.press(screen.getByLabelText('Sign in with Phone'));
+    expect(screen.getByLabelText('Phone OTP success')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Phone OTP close'));
+    // Modal should be closed — OTP success button should not be visible
+    expect(screen.queryByLabelText('Phone OTP success')).toBeNull();
   });
 
   it('handles signIn rejection without crashing', async () => {

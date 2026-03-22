@@ -78,4 +78,52 @@ describe('useGoogleAuth', () => {
     });
     expect(result.current.error).toBe('No ID token from Google');
   });
+
+  it('throws when EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing', async () => {
+    delete process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+    const { result } = renderHook(() => useGoogleAuth());
+    let caughtError: Error | null = null;
+    await act(async () => {
+      try {
+        await result.current.signInWithGoogle();
+      } catch (err) {
+        caughtError = err as Error;
+      }
+    });
+    expect(caughtError).not.toBeNull();
+    expect((caughtError as unknown as Error).message).toContain('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID');
+  });
+
+  it('sets error when supabase signInWithIdToken returns error', async () => {
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({
+      data: { idToken: 'valid-token' },
+    });
+    const authError = new Error('invalid_grant');
+    (supabase.auth.signInWithIdToken as jest.Mock).mockResolvedValueOnce({ error: authError });
+
+    const { result } = renderHook(() => useGoogleAuth());
+    await act(async () => {
+      try {
+        await result.current.signInWithGoogle();
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('invalid_grant');
+  });
+
+  it('sets error message for non-Error thrown objects', async () => {
+    (GoogleSignin.signIn as jest.Mock).mockRejectedValueOnce('string-error');
+
+    const { result } = renderHook(() => useGoogleAuth());
+    await act(async () => {
+      try {
+        await result.current.signInWithGoogle();
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('Google sign-in failed');
+  });
 });

@@ -1,3 +1,41 @@
+jest.mock('react-native-reanimated', () => {
+  const { View, ScrollView } = require('react-native');
+  const React = require('react');
+  const AnimatedView = React.forwardRef((props: object, ref: unknown) =>
+    React.createElement(View, { ...props, ref }),
+  );
+  const AnimatedScrollView = React.forwardRef((props: object, ref: unknown) =>
+    React.createElement(ScrollView, { ...props, ref }),
+  );
+  return {
+    __esModule: true,
+    default: {
+      createAnimatedComponent: (c: unknown) => c,
+      View: AnimatedView,
+      ScrollView: AnimatedScrollView,
+    },
+    useSharedValue: jest.fn((v: number) => ({ value: v })),
+    useAnimatedStyle: jest.fn(() => ({})),
+    withTiming: jest.fn(
+      (value: number, _config: unknown, callback?: (finished: boolean) => void) => {
+        if (callback) callback(true);
+        return value;
+      },
+    ),
+    withSpring: jest.fn((v: number) => v),
+    withSequence: jest.fn((...args: number[]) => args[args.length - 1]),
+    withDelay: jest.fn((_: unknown, a: unknown) => a),
+    withRepeat: jest.fn((a: unknown) => a),
+    cancelAnimation: jest.fn(),
+    runOnJS: jest.fn((fn: Function) => fn),
+    Easing: {
+      bezier: jest.fn(() => (t: number) => t),
+      inOut: jest.fn((fn: unknown) => fn),
+      ease: (t: number) => t,
+    },
+  };
+});
+
 jest.mock('@/providers/ImageViewerProvider', () => ({
   useImageViewer: jest.fn(),
   ImageViewerProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -118,5 +156,147 @@ describe('ImageViewerOverlay', () => {
     fireEvent.press(closeBtn);
     // Verify onClose is called (through cleanup chain)
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders correctly when animations are enabled (default path)', () => {
+    // useAnimationsEnabled returns true by default (mocked in jest.setup.js via useAnimationStore)
+    // This covers the animation-enabled branch — verify component renders properly
+    const onSourceHide = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onSourceHide={onSourceHide} />);
+    // With animations enabled, onSourceHide is called after OPEN_DURATION timer
+    expect(screen.getByLabelText('Close image')).toBeTruthy();
+  });
+
+  it('does not crash when onSourceHide is not provided', () => {
+    const { feedUrl, fullUrl, sourceLayout, sourceRef, borderRadius, onClose } = defaultProps;
+    expect(() =>
+      render(
+        <ImageViewerOverlay
+          feedUrl={feedUrl}
+          fullUrl={fullUrl}
+          sourceLayout={sourceLayout}
+          sourceRef={sourceRef}
+          borderRadius={borderRadius}
+          onClose={onClose}
+        />,
+      ),
+    ).not.toThrow();
+  });
+
+  it('does not crash when onSourceShow is not provided', () => {
+    const { feedUrl, fullUrl, sourceLayout, sourceRef, borderRadius, onClose, onSourceHide } =
+      defaultProps;
+    const onClose2 = jest.fn();
+    render(
+      <ImageViewerOverlay
+        feedUrl={feedUrl}
+        fullUrl={fullUrl}
+        sourceLayout={sourceLayout}
+        sourceRef={sourceRef}
+        borderRadius={borderRadius}
+        onSourceHide={onSourceHide}
+        onClose={onClose2}
+      />,
+    );
+    // pressing close should not throw even without onSourceShow
+    fireEvent.press(screen.getByLabelText('Close image'));
+    expect(onClose2).toHaveBeenCalled();
+  });
+
+  it('uses PLACEHOLDER_POSTER when feedUrl is empty', () => {
+    const { UNSAFE_getAllByType } = render(
+      <ImageViewerOverlay {...defaultProps} feedUrl="" fullUrl="" />,
+    );
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    // Both images fall back to placeholder — verify they still render
+    expect(images.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('removes BackHandler subscription on unmount', () => {
+    const BackHandler = require('react-native').BackHandler;
+    const removeSpy = jest.fn();
+    jest.spyOn(BackHandler, 'addEventListener').mockReturnValue({ remove: removeSpy });
+
+    const { unmount } = render(<ImageViewerOverlay {...defaultProps} />);
+    unmount();
+
+    expect(removeSpy).toHaveBeenCalled();
+    BackHandler.addEventListener.mockRestore();
+  });
+
+  it('onLoad callback on full-res Image transitions fullResLoaded state', () => {
+    const { UNSAFE_getAllByType } = render(<ImageViewerOverlay {...defaultProps} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    // The second image is the full-res one with onLoad
+    const fullResImage = images.find(
+      (img: { props: { onLoad?: () => void } }) => img.props.onLoad !== undefined,
+    );
+    if (fullResImage?.props.onLoad) {
+      // Calling onLoad should not throw
+      expect(() => fullResImage.props.onLoad()).not.toThrow();
+    }
+  });
+
+  it('renders correctly when animations are disabled (no transition effects)', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+
+    const onSourceHide = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onSourceHide={onSourceHide} />);
+    // When animations disabled, onSourceHide is called immediately (no timer)
+    expect(onSourceHide).toHaveBeenCalled();
+    expect(screen.getByLabelText('Close image')).toBeTruthy();
+
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
+  });
+
+  it('close button does not call cleanup twice (closingRef guard)', () => {
+    const onClose = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
+    const closeBtn = screen.getByLabelText('Close image');
+    fireEvent.press(closeBtn);
+    fireEvent.press(closeBtn);
+    // Should be called only once due to closingRef guard
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('animations disabled close button calls cleanup immediately', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+
+    const onClose = jest.fn();
+    const onSourceShow = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onClose={onClose} onSourceShow={onSourceShow} />);
+    fireEvent.press(screen.getByLabelText('Close image'));
+    expect(onClose).toHaveBeenCalled();
+    expect(onSourceShow).toHaveBeenCalled();
+
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
+  });
+
+  it('measureView fallback path calls animateClose when measure fails', () => {
+    const { measureView } = require('@/utils/measureView');
+    measureView.mockImplementationOnce((_ref: unknown, _onSuccess: unknown, onFail: () => void) =>
+      onFail(),
+    );
+    const onClose = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
+    fireEvent.press(screen.getByLabelText('Close image'));
+    // With measureView failing, animateClose(200) is called — withTiming callback fires cleanup
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('full-res load triggers progress bar hide (useEffect branch)', () => {
+    const { UNSAFE_getAllByType } = render(<ImageViewerOverlay {...defaultProps} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    const fullResImage = images.find(
+      (img: { props: { onLoad?: () => void } }) => img.props.onLoad !== undefined,
+    );
+    // Simulating load should not crash
+    if (fullResImage?.props.onLoad) {
+      fullResImage.props.onLoad();
+    }
+    expect(screen.getByLabelText('Close image')).toBeTruthy();
   });
 });

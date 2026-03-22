@@ -2,7 +2,7 @@
  * Tests for NotificationsPage — notification management.
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import NotificationsPage from '@/app/(dashboard)/notifications/page';
 
@@ -71,20 +71,32 @@ const mockNotifications = [
     status: 'failed',
     scheduled_for: '2025-03-19T10:00:00Z',
   },
+  {
+    id: 'notif-4',
+    type: 'reminder',
+    title: 'Reminder notification',
+    status: 'cancelled',
+    scheduled_for: '2025-03-17T10:00:00Z',
+  },
 ];
 
 let mockIsLoading = false;
 let mockData: typeof mockNotifications | null = mockNotifications;
+
+const mockCancelMutate = vi.fn();
+const mockRetryMutate = vi.fn();
+const mockBulkRetryMutate = vi.fn();
+const mockBulkCancelMutate = vi.fn();
 
 vi.mock('@/hooks/useAdminNotifications', () => ({
   useAdminNotifications: () => ({
     data: mockIsLoading ? undefined : mockData,
     isLoading: mockIsLoading,
   }),
-  useCancelNotification: () => ({ mutate: vi.fn(), isPending: false }),
-  useRetryNotification: () => ({ mutate: vi.fn(), isPending: false }),
-  useBulkRetryFailed: () => ({ mutate: vi.fn(), isPending: false }),
-  useBulkCancelPending: () => ({ mutate: vi.fn(), isPending: false }),
+  useCancelNotification: () => ({ mutate: mockCancelMutate, isPending: false }),
+  useRetryNotification: () => ({ mutate: mockRetryMutate, isPending: false }),
+  useBulkRetryFailed: () => ({ mutate: mockBulkRetryMutate, isPending: false }),
+  useBulkCancelPending: () => ({ mutate: mockBulkCancelMutate, isPending: false }),
 }));
 
 vi.mock('@/lib/utils', () => ({
@@ -100,86 +112,199 @@ function renderWithProviders(ui: React.ReactElement) {
 
 describe('NotificationsPage', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockIsReadOnly = false;
     mockIsLoading = false;
     mockData = mockNotifications;
   });
 
-  it('renders notification table with entries', () => {
-    renderWithProviders(<NotificationsPage />);
+  describe('rendering', () => {
+    it('renders notification table with entries', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('Pushpa 2 Release')).toBeInTheDocument();
+      expect(screen.getByText('Your watchlist movie is out')).toBeInTheDocument();
+      expect(screen.getByText('Trending now')).toBeInTheDocument();
+    });
 
-    expect(screen.getByText('Pushpa 2 Release')).toBeInTheDocument();
-    expect(screen.getByText('Your watchlist movie is out')).toBeInTheDocument();
-    expect(screen.getByText('Trending now')).toBeInTheDocument();
+    it('renders table headers', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('Type')).toBeInTheDocument();
+      expect(screen.getByText('Title')).toBeInTheDocument();
+      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.getByText('Scheduled For')).toBeInTheDocument();
+      expect(screen.getByText('Actions')).toBeInTheDocument();
+    });
+
+    it('shows type badges', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('release')).toBeInTheDocument();
+      expect(screen.getByText('watchlist')).toBeInTheDocument();
+      expect(screen.getByText('trending')).toBeInTheDocument();
+      expect(screen.getByText('reminder')).toBeInTheDocument();
+    });
+
+    it('shows status badges', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('pending')).toBeInTheDocument();
+      expect(screen.getByText('sent')).toBeInTheDocument();
+      expect(screen.getByText('failed')).toBeInTheDocument();
+      expect(screen.getByText('cancelled')).toBeInTheDocument();
+    });
+
+    it('shows cancel button only for pending notifications', () => {
+      renderWithProviders(<NotificationsPage />);
+      // Cancel button (XCircle) only for pending
+      const cancelButtons = screen.getAllByTitle('Cancel');
+      expect(cancelButtons).toHaveLength(1);
+    });
+
+    it('shows retry button only for failed notifications', () => {
+      renderWithProviders(<NotificationsPage />);
+      const retryButtons = screen.getAllByTitle('Retry');
+      expect(retryButtons).toHaveLength(1);
+    });
   });
 
-  it('renders table headers', () => {
-    renderWithProviders(<NotificationsPage />);
-
-    expect(screen.getByText('Type')).toBeInTheDocument();
-    expect(screen.getByText('Title')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
-    expect(screen.getByText('Scheduled For')).toBeInTheDocument();
-    expect(screen.getByText('Actions')).toBeInTheDocument();
+  describe('loading state', () => {
+    it('shows loading spinner when loading', () => {
+      mockIsLoading = true;
+      const { container } = renderWithProviders(<NotificationsPage />);
+      expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+      expect(screen.queryByText('Pushpa 2 Release')).not.toBeInTheDocument();
+    });
   });
 
-  it('shows type badges', () => {
-    renderWithProviders(<NotificationsPage />);
+  describe('empty state', () => {
+    it('shows empty state when no notifications', () => {
+      mockData = [];
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('No notifications found.')).toBeInTheDocument();
+    });
 
-    expect(screen.getByText('release')).toBeInTheDocument();
-    expect(screen.getByText('watchlist')).toBeInTheDocument();
-    expect(screen.getByText('trending')).toBeInTheDocument();
+    it('shows empty state when data is null', () => {
+      mockData = null;
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('No notifications found.')).toBeInTheDocument();
+    });
   });
 
-  it('shows status badges', () => {
-    renderWithProviders(<NotificationsPage />);
+  describe('bulk action buttons', () => {
+    it('shows bulk action buttons for non-readonly users', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('Retry All Failed')).toBeInTheDocument();
+      expect(screen.getByText('Cancel All Pending')).toBeInTheDocument();
+      expect(screen.getByText('Compose')).toBeInTheDocument();
+    });
 
-    expect(screen.getByText('pending')).toBeInTheDocument();
-    expect(screen.getByText('sent')).toBeInTheDocument();
-    expect(screen.getByText('failed')).toBeInTheDocument();
+    it('hides bulk action buttons for read-only users', () => {
+      mockIsReadOnly = true;
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.queryByText('Retry All Failed')).not.toBeInTheDocument();
+      expect(screen.queryByText('Cancel All Pending')).not.toBeInTheDocument();
+      expect(screen.queryByText('Compose')).not.toBeInTheDocument();
+    });
+
+    it('links Compose to /notifications/compose', () => {
+      renderWithProviders(<NotificationsPage />);
+      const link = screen.getByText('Compose').closest('a');
+      expect(link).toHaveAttribute('href', '/notifications/compose');
+    });
   });
 
-  it('shows loading spinner when loading', () => {
-    mockIsLoading = true;
-    renderWithProviders(<NotificationsPage />);
+  describe('filter dropdowns', () => {
+    it('shows filter dropdowns', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('All Statuses')).toBeInTheDocument();
+      expect(screen.getByText('All Types')).toBeInTheDocument();
+    });
 
-    expect(screen.queryByText('Pushpa 2 Release')).not.toBeInTheDocument();
+    it('renders status filter options', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('Pending')).toBeInTheDocument();
+      expect(screen.getByText('Sent')).toBeInTheDocument();
+      expect(screen.getByText('Failed')).toBeInTheDocument();
+      expect(screen.getByText('Cancelled')).toBeInTheDocument();
+    });
+
+    it('renders type filter options', () => {
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('Release')).toBeInTheDocument();
+      expect(screen.getByText('Watchlist')).toBeInTheDocument();
+      expect(screen.getByText('Trending')).toBeInTheDocument();
+      expect(screen.getByText('Reminder')).toBeInTheDocument();
+    });
   });
 
-  it('shows empty state when no notifications', () => {
-    mockData = [];
-    renderWithProviders(<NotificationsPage />);
+  describe('handleCancel', () => {
+    it('calls cancelNotification.mutate when confirm returns true', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByTitle('Cancel'));
+      expect(mockCancelMutate).toHaveBeenCalledWith('notif-1');
+    });
 
-    expect(screen.getByText('No notifications found.')).toBeInTheDocument();
+    it('does not call cancelNotification.mutate when confirm returns false', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByTitle('Cancel'));
+      expect(mockCancelMutate).not.toHaveBeenCalled();
+    });
   });
 
-  it('shows bulk action buttons for non-readonly users', () => {
-    renderWithProviders(<NotificationsPage />);
-
-    expect(screen.getByText('Retry All Failed')).toBeInTheDocument();
-    expect(screen.getByText('Cancel All Pending')).toBeInTheDocument();
-    expect(screen.getByText('Compose')).toBeInTheDocument();
+  describe('handleRetry', () => {
+    it('calls retryNotification.mutate on retry button click', () => {
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByTitle('Retry'));
+      expect(mockRetryMutate).toHaveBeenCalledWith('notif-3');
+    });
   });
 
-  it('hides bulk action buttons for read-only users', () => {
-    mockIsReadOnly = true;
-    renderWithProviders(<NotificationsPage />);
+  describe('handleBulkRetry', () => {
+    it('calls bulkRetry.mutate when confirm returns true', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByText('Retry All Failed'));
+      expect(mockBulkRetryMutate).toHaveBeenCalled();
+    });
 
-    expect(screen.queryByText('Retry All Failed')).not.toBeInTheDocument();
-    expect(screen.queryByText('Cancel All Pending')).not.toBeInTheDocument();
-    expect(screen.queryByText('Compose')).not.toBeInTheDocument();
+    it('does not call bulkRetry.mutate when confirm returns false', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByText('Retry All Failed'));
+      expect(mockBulkRetryMutate).not.toHaveBeenCalled();
+    });
   });
 
-  it('shows filter dropdowns', () => {
-    renderWithProviders(<NotificationsPage />);
+  describe('handleBulkCancel', () => {
+    it('calls bulkCancel.mutate when confirm returns true', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByText('Cancel All Pending'));
+      expect(mockBulkCancelMutate).toHaveBeenCalled();
+    });
 
-    expect(screen.getByText('All Statuses')).toBeInTheDocument();
-    expect(screen.getByText('All Types')).toBeInTheDocument();
+    it('does not call bulkCancel.mutate when confirm returns false', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByText('Cancel All Pending'));
+      expect(mockBulkCancelMutate).not.toHaveBeenCalled();
+    });
   });
 
-  it('links Compose to /notifications/compose', () => {
-    renderWithProviders(<NotificationsPage />);
-    const link = screen.getByText('Compose').closest('a');
-    expect(link).toHaveAttribute('href', '/notifications/compose');
+  describe('status filter interaction', () => {
+    it('updates statusFilter when dropdown changes', () => {
+      renderWithProviders(<NotificationsPage />);
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[0], { target: { value: 'pending' } });
+      // No error means filter state updated correctly
+      expect(selects[0]).toHaveValue('pending');
+    });
+
+    it('updates typeFilter when dropdown changes', () => {
+      renderWithProviders(<NotificationsPage />);
+      const selects = screen.getAllByRole('combobox');
+      fireEvent.change(selects[1], { target: { value: 'release' } });
+      expect(selects[1]).toHaveValue('release');
+    });
   });
 });

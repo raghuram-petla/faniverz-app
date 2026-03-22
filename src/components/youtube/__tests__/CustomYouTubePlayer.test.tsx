@@ -199,6 +199,56 @@ describe('CustomYouTubePlayer', () => {
     expect(webview.props.onShouldStartLoadWithRequest).toBeDefined();
   });
 
+  it('handleSeek returns early when trackWidth is 0', () => {
+    // trackWidth starts at 0 — seek should be a no-op
+    setPlayerState({ isReady: true, duration: 100 });
+    render(<CustomYouTubePlayer youtubeId="abc123" />);
+    const seekBar = screen.getByLabelText('Seek');
+    fireEvent(seekBar, 'press', { nativeEvent: { locationX: 50 } });
+    expect(mockSeek).not.toHaveBeenCalled();
+  });
+
+  it('handleSeek calculates correct seek position', () => {
+    setPlayerState({ isReady: true, duration: 100 });
+    render(<CustomYouTubePlayer youtubeId="abc123" />);
+    const seekBar = screen.getByLabelText('Seek');
+
+    // Simulate layout event to set trackWidth
+    fireEvent(seekBar, 'layout', { nativeEvent: { layout: { width: 200 } } });
+
+    // Press at 50px on a 200px track → ratio=0.25 → seek to 25s
+    fireEvent(seekBar, 'press', { nativeEvent: { locationX: 50 } });
+    expect(mockSeek).toHaveBeenCalledWith(25);
+  });
+
+  it('handleSeek clamps locationX to [0, trackWidth]', () => {
+    setPlayerState({ isReady: true, duration: 100 });
+    render(<CustomYouTubePlayer youtubeId="abc123" />);
+    const seekBar = screen.getByLabelText('Seek');
+
+    fireEvent(seekBar, 'layout', { nativeEvent: { layout: { width: 200 } } });
+
+    // Press at negative position — clamps to 0
+    fireEvent(seekBar, 'press', { nativeEvent: { locationX: -10 } });
+    expect(mockSeek).toHaveBeenCalledWith(0);
+
+    // Press beyond track width — clamps to max (duration)
+    fireEvent(seekBar, 'press', { nativeEvent: { locationX: 500 } });
+    expect(mockSeek).toHaveBeenCalledWith(100);
+  });
+
+  it('handleSeek returns early when duration is 0', () => {
+    setPlayerState({ isReady: true, duration: 0 });
+    render(<CustomYouTubePlayer youtubeId="abc123" />);
+    const seekBar = screen.getByLabelText('Seek');
+
+    fireEvent(seekBar, 'layout', { nativeEvent: { layout: { width: 200 } } });
+    fireEvent(seekBar, 'press', { nativeEvent: { locationX: 50 } });
+
+    // duration=0 → handleSeek returns early
+    expect(mockSeek).not.toHaveBeenCalled();
+  });
+
   describe('onNavRequest whitelist', () => {
     function getNavHandler() {
       render(<CustomYouTubePlayer youtubeId="abc123" />);

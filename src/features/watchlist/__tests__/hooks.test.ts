@@ -141,6 +141,23 @@ describe('useWatchlistPaginated', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.hasNextPage).toBe(false);
   });
+
+  it('returns hasNextPage true when full page size returned', async () => {
+    // 10 items — exactly PAGE_SIZE, so there may be more
+    const fullPage = Array.from({ length: 10 }, (_, i) => ({
+      id: `w${i}`,
+      user_id: 'u1',
+      movie_id: `m${i}`,
+      status: 'watchlist' as const,
+      movie: { id: `m${i}`, title: `Movie ${i}`, in_theaters: false, premiere_date: null },
+    }));
+    (api.fetchWatchlistPaginated as jest.Mock).mockResolvedValue(fullPage);
+
+    const { result } = renderHook(() => useWatchlistPaginated('u1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(true);
+  });
 });
 
 describe('useIsWatchlisted', () => {
@@ -265,6 +282,150 @@ describe('useWatchlistMutations', () => {
 
     await waitFor(() => expect(result.current.moveBack.isSuccess).toBe(true));
     expect(api.moveBackToWatchlist).toHaveBeenCalledWith('u1', 'm1');
+  });
+
+  it('add mutation shows alert on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.addToWatchlist as jest.Mock).mockRejectedValue(new Error('Add failed'));
+
+    const { result } = renderHook(() => useWatchlistMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.add.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.add.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+  });
+
+  it('markWatched mutation shows alert on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.markAsWatched as jest.Mock).mockRejectedValue(new Error('Mark failed'));
+
+    const { result } = renderHook(() => useWatchlistMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.markWatched.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.markWatched.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+  });
+
+  it('moveBack mutation shows alert on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.moveBackToWatchlist as jest.Mock).mockRejectedValue(new Error('MoveBack failed'));
+
+    const { result } = renderHook(() => useWatchlistMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.moveBack.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.moveBack.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+  });
+
+  it('remove mutation rolls back paginated cache on error', async () => {
+    (api.removeFromWatchlist as jest.Mock).mockRejectedValue(new Error('Remove failed'));
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useWatchlistMutations(), { wrapper });
+
+    await act(async () => {
+      result.current.remove.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
+  });
+
+  it('add mutation rolls back optimistic update on error when context.prev is defined', async () => {
+    (api.addToWatchlist as jest.Mock).mockRejectedValue(new Error('Add failed'));
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useWatchlistMutations(), { wrapper });
+
+    await act(async () => {
+      result.current.add.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.add.isError).toBe(true));
+  });
+
+  it('add mutation restores optimistic check cache from context.prev on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.addToWatchlist as jest.Mock).mockRejectedValue(new Error('Add failed'));
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    // Pre-seed the check cache so context.prev is defined
+    const existingEntry = { id: 'prev-w1', movie_id: 'm1', status: 'watchlist' };
+    queryClient.setQueryData(['watchlist', 'check', 'u1', 'm1'], existingEntry);
+
+    function Wrapper({ children }: { children: React.ReactNode }) {
+      return React.createElement(QueryClientProvider, { client: queryClient }, children);
+    }
+
+    const { result } = renderHook(() => useWatchlistMutations(), { wrapper: Wrapper });
+
+    await act(async () => {
+      result.current.add.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.add.isError).toBe(true));
+    // context.prev should be restored
+    const restored = queryClient.getQueryData(['watchlist', 'check', 'u1', 'm1']);
+    expect(restored).toEqual(existingEntry);
+  });
+
+  it('remove mutation rolls back watchlist and paginated cache on error when data is pre-seeded', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.removeFromWatchlist as jest.Mock).mockRejectedValue(new Error('Remove failed'));
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    // Pre-seed watchlist cache so rollback has data to restore
+    queryClient.setQueryData(['watchlist', 'u1'], mockWatchlistEntries);
+    queryClient.setQueryData(['watchlist-paginated', 'u1'], {
+      pages: [mockWatchlistEntries],
+      pageParams: [0],
+    });
+    const checkEntry = { id: 'w1', movie_id: 'm1', status: 'watchlist' };
+    queryClient.setQueryData(['watchlist', 'check', 'u1', 'm1'], checkEntry);
+
+    function Wrapper({ children }: { children: React.ReactNode }) {
+      return React.createElement(QueryClientProvider, { client: queryClient }, children);
+    }
+
+    const { result } = renderHook(() => useWatchlistMutations(), { wrapper: Wrapper });
+
+    await act(async () => {
+      result.current.remove.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+    // Cache should be restored
+    const restoredData = queryClient.getQueryData<typeof mockWatchlistEntries>(['watchlist', 'u1']);
+    expect(restoredData).toEqual(mockWatchlistEntries);
+    // Check cache should be restored from prevCheck
+    const restoredCheck = queryClient.getQueryData(['watchlist', 'check', 'u1', 'm1']);
+    expect(restoredCheck).toEqual(checkEntry);
   });
 });
 

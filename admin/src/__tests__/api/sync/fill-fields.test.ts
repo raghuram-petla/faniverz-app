@@ -346,4 +346,219 @@ describe('POST /api/sync/fill-fields', () => {
     expect(mockMoviePostersInsert).not.toHaveBeenCalled();
     expect(mockMoviePostersUpdate).toHaveBeenCalled();
   });
+
+  it('updates director field from crew', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      credits: { cast: [], crew: [{ job: 'Director', name: 'Spielberg' }] },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['director'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ director: 'Spielberg' }),
+    );
+    const data = await res.json();
+    expect(data.updatedFields).toContain('director');
+  });
+
+  it('sets director to null when no Director in crew', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      credits: { cast: [], crew: [{ job: 'Producer', name: 'Someone' }] },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['director'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ director: null }),
+    );
+  });
+
+  it('updates trailer_url field', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['trailer_url'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('trailer_url');
+  });
+
+  it('updates imdb_id when external_ids has one', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      external_ids: { imdb_id: 'tt1234567' },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['imdb_id'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('imdb_id');
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ imdb_id: 'tt1234567' }),
+    );
+  });
+
+  it('does not push imdb_id to updatedFields when external_ids is null', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      external_ids: { imdb_id: null },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['imdb_id'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).not.toContain('imdb_id');
+  });
+
+  it('updates tagline when TMDB has one', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      tagline: 'A powerful tagline',
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['tagline'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('tagline');
+  });
+
+  it('does not push tagline to updatedFields when TMDB returns empty string', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      tagline: '',
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['tagline'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).not.toContain('tagline');
+  });
+
+  it('updates tmdb_status when status is present', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      status: 'Released',
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['tmdb_status'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('tmdb_status');
+  });
+
+  it('does not push tmdb_status to updatedFields when status is empty', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      status: '',
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['tmdb_status'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).not.toContain('tmdb_status');
+  });
+
+  it('updates tmdb_ratings', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      vote_average: 7.5,
+      vote_count: 1000,
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['tmdb_ratings'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('tmdb_ratings');
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ tmdb_vote_average: 7.5, tmdb_vote_count: 1000 }),
+    );
+  });
+
+  it('updates budget_revenue', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      budget: 100000000,
+      revenue: 500000000,
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['budget_revenue'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('budget_revenue');
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ budget: 100000000, revenue: 500000000 }),
+    );
+  });
+
+  it('stores budget/revenue as null when TMDB returns 0', async () => {
+    // @edge: TMDB returns 0 for unknown budget/revenue — treat as null
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      budget: 0,
+      revenue: 0,
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['budget_revenue'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ budget: null, revenue: null }),
+    );
+  });
+
+  it('updates spoken_languages when present', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      spoken_languages: [
+        { iso_639_1: 'te', english_name: 'Telugu', name: 'తెలుగు' },
+        { iso_639_1: 'hi', english_name: 'Hindi', name: 'हिन्दी' },
+      ],
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['spoken_languages'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('spoken_languages');
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ spoken_languages: ['te', 'hi'] }),
+    );
+  });
+
+  it('does not push spoken_languages to updatedFields when empty', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...baseTmdbDetails,
+      spoken_languages: [],
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['spoken_languages'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).not.toContain('spoken_languages');
+  });
+
+  it('returns 403 when user has viewer role (read-only)', async () => {
+    // @boundary: viewer role cannot mutate
+    // Mock verifyAdminWithRole to return viewer_readonly by returning a role_id of 'viewer'
+    // The existing supabase mock returns 'admin' by default; override to 'viewer'
+    vi.doMock('@/lib/supabase-admin', () => ({
+      getSupabaseAdmin: () => ({
+        from: (table: string) => {
+          if (table === 'admin_user_roles' || table !== 'movies') {
+            return {
+              select: () => ({
+                eq: () => ({
+                  single: () =>
+                    Promise.resolve({ data: { role_id: 'viewer', status: 'active' }, error: null }),
+                }),
+              }),
+            };
+          }
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: () => mockMovieMaybeSingle(),
+              }),
+            }),
+            update: (payload: unknown) => {
+              mockMovieUpdateCapture(payload);
+              return mockMovieUpdate();
+            },
+          };
+        },
+      }),
+    }));
+  });
+
+  it('always refreshes tmdb_last_synced_at even when fields list is minimal', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['title'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdateCapture).toHaveBeenCalledWith(
+      expect.objectContaining({ tmdb_last_synced_at: expect.any(String) }),
+    );
+  });
 });

@@ -96,4 +96,33 @@ describe('MovieDetailHeader', () => {
     fireEvent.press(screen.getByLabelText('Follow Test Movie'));
     expect(onToggleAction).toHaveBeenCalled();
   });
+
+  it('falls back to "movie" in follow label when movieTitle is undefined', () => {
+    const props = { ...baseProps, movieTitle: undefined };
+    render(<MovieDetailHeader {...props} />);
+    expect(screen.getByLabelText('Follow movie')).toBeTruthy();
+  });
+
+  it('falls back to "movie" in following label when movieTitle is undefined', () => {
+    const props = { ...baseProps, movieTitle: undefined, isActionActive: true };
+    render(<MovieDetailHeader {...props} />);
+    expect(screen.getByLabelText('Following movie, tap to unfollow')).toBeTruthy();
+  });
+
+  it('falls back to "movie" in save label when movieTitle is undefined', () => {
+    const props = { ...baseProps, movieTitle: undefined, actionType: 'watchlist' as const };
+    render(<MovieDetailHeader {...props} />);
+    expect(screen.getByLabelText('Save movie')).toBeTruthy();
+  });
+
+  it('falls back to "movie" in saved label when movieTitle is undefined', () => {
+    const props = {
+      ...baseProps,
+      movieTitle: undefined,
+      actionType: 'watchlist' as const,
+      isActionActive: true,
+    };
+    render(<MovieDetailHeader {...props} />);
+    expect(screen.getByLabelText('movie saved, tap to remove')).toBeTruthy();
+  });
 });

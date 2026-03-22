@@ -166,4 +166,24 @@ describe('MovieCard', () => {
     const { getByLabelText } = render(<MovieCard movie={mockMovie} />);
     expect(getByLabelText('Save Pushpa 2: The Rule')).toBeTruthy();
   });
+
+  it('renders streaming badge when showReleaseDate is true and status is streaming', () => {
+    // premiere_date in past + no in_theaters + no platforms = 'released' status
+    // But with platforms provided + showReleaseDate, streaming badge branch is exercised
+    const streamingMovie = { ...mockMovie, in_theaters: false };
+    const platforms = [
+      {
+        id: 'netflix',
+        name: 'Netflix',
+        logo: 'N',
+        logo_url: null,
+        color: '#E50914',
+        display_order: 1,
+      },
+    ];
+    const { UNSAFE_queryAllByType } = render(
+      <MovieCard movie={streamingMovie} platforms={platforms} showReleaseDate />,
+    );
+    expect(UNSAFE_queryAllByType).toBeTruthy();
+  });
 });

@@ -10,7 +10,7 @@ jest.mock('react-i18next', () => ({
 }));
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
@@ -38,6 +38,8 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import WatchedMoviesScreen from '../watched';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useWatchlist } from '@/features/watchlist/hooks';
+
+const mockPush = jest.fn();
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseWatchlist = useWatchlist as jest.Mock;
@@ -342,6 +344,60 @@ describe('WatchedMoviesScreen', () => {
 
     // Rating badge should show the formatted rating (may appear in both stats and badge)
     expect(screen.getAllByText('4.5').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('navigates to movie detail when a watched movie card is pressed', () => {
+    const watchedEntries = [
+      {
+        id: 'w1',
+        user_id: 'user-1',
+        movie_id: 'm1',
+        status: 'watched',
+        watched_at: '2025-03-01T00:00:00Z',
+        movie: {
+          id: 'm1',
+          title: 'Pushpa 2',
+          poster_url: null,
+          rating: 4.5,
+          in_theaters: true,
+          premiere_date: null,
+        },
+      },
+    ];
+    mockUseWatchlist.mockReturnValue({ watched: watchedEntries, isLoading: false });
+
+    render(<WatchedMoviesScreen />);
+    fireEvent.press(screen.getByText('Pushpa 2'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/m1');
+  });
+
+  it('handles entries with null movie gracefully (title and rating fallback)', () => {
+    const watchedEntries = [
+      {
+        id: 'w1',
+        user_id: 'user-1',
+        movie_id: 'm1',
+        status: 'watched',
+        watched_at: '2025-03-01T00:00:00Z',
+        movie: null,
+      },
+    ];
+    mockUseWatchlist.mockReturnValue({ watched: watchedEntries, isLoading: false });
+    // Should render without crashing — movie?.title ?? 'Unknown', movie?.rating ?? 0
+    expect(() => render(<WatchedMoviesScreen />)).not.toThrow();
+  });
+
+  it('handles null user id gracefully (passes empty string to useWatchlist)', () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+    mockUseWatchlist.mockReturnValue({ watched: [], isLoading: false });
+    // user?.id is undefined → ?? '' fallback → useWatchlist('')
+    expect(() => render(<WatchedMoviesScreen />)).not.toThrow();
   });
 
   it('handles entries with null watched_at when sorting by recent', () => {

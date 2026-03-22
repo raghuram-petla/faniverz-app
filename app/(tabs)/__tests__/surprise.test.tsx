@@ -26,6 +26,7 @@ jest.mock('expo-router', () => ({
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 import SurpriseScreen from '../surprise';
 import { useSurpriseContent } from '@/features/surprise/hooks';
 
@@ -135,6 +136,14 @@ describe('SurpriseScreen', () => {
 
   it('shows empty state when no content and not loading', () => {
     mockUseSurpriseContent.mockReturnValue({ data: [], isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    expect(screen.getByText('surprise.noContent')).toBeTruthy();
+  });
+
+  it('shows empty state when data is undefined (defaults to empty array)', () => {
+    mockUseSurpriseContent.mockReturnValue({ isLoading: false });
 
     render(<SurpriseScreen />);
 
@@ -296,5 +305,21 @@ describe('SurpriseScreen', () => {
 
     // FeaturedVideo shows "INTERVIEW" badge (covers getCategoryLabel('interview'))
     expect(screen.getByText('INTERVIEW')).toBeTruthy();
+  });
+
+  it('calls Linking.openURL when a grid card is pressed', () => {
+    const mockOpenURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // Press the first grid card (accessibilityLabel = t('common.playTitle') key returned by mock)
+    const cards = screen.getAllByLabelText('common.playTitle');
+    fireEvent.press(cards[0]);
+
+    expect(mockOpenURL).toHaveBeenCalledWith(
+      `https://www.youtube.com/watch?v=${mockContent[1].youtube_id}`,
+    );
+    mockOpenURL.mockRestore();
   });
 });

@@ -1,3 +1,13 @@
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      const map: Record<string, string> = { 'common.shareVideo': 'Share video' };
+      return map[key] ?? key;
+    },
+    i18n: { language: 'en' },
+  }),
+}));
+
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
@@ -9,16 +19,34 @@ jest.mock('@/styles/tabs/feed.styles', () => ({
   createFeedCardStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
+jest.mock('@/utils/youtubeNavigation', () => ({
+  buildYouTubeEmbedHtml: jest.fn(() => '<html>embed</html>'),
+  shareYouTubeVideo: jest.fn(),
+  handleYouTubeNavigation: jest.fn(() => true),
+  handleYouTubeOpenWindow: jest.fn(),
+}));
+
+jest.mock('@/constants/webview', () => ({
+  WEBVIEW_BASE_URL: 'https://example.com',
+}));
+
 jest.mock('react-native-webview', () => {
-  const { View } = require('react-native');
+  const { View, TouchableOpacity } = require('react-native');
   return {
-    WebView: (props: Record<string, unknown>) => <View testID="webview" {...props} />,
+    WebView: (props: Record<string, unknown>) => {
+      return <View testID="webview" {...props} />;
+    },
   };
 });
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import { FeedVideoPlayer } from '../FeedVideoPlayer';
+import {
+  shareYouTubeVideo,
+  handleYouTubeNavigation,
+  handleYouTubeOpenWindow,
+} from '@/utils/youtubeNavigation';
 
 describe('FeedVideoPlayer', () => {
   const defaultProps = {
@@ -74,5 +102,66 @@ describe('FeedVideoPlayer', () => {
     expect(webview.props.allowsInlineMediaPlayback).toBe(true);
     expect(webview.props.mediaPlaybackRequiresUserAction).toBe(false);
     expect(webview.props.javaScriptEnabled).toBe(true);
+  });
+
+  it('calls handleYouTubeNavigation when WebView navigation is requested', () => {
+    render(<FeedVideoPlayer {...defaultProps} isActive={true} />);
+    const webview = screen.getByTestId('webview');
+    const onShouldStartLoad = webview.props.onShouldStartLoadWithRequest;
+    expect(typeof onShouldStartLoad).toBe('function');
+    const fakeRequest = { url: 'https://youtube.com/watch?v=abc123', isTopFrame: true };
+    onShouldStartLoad(fakeRequest);
+    expect(handleYouTubeNavigation).toHaveBeenCalledWith(fakeRequest, 'abc123');
+  });
+
+  it('calls handleYouTubeOpenWindow when WebView opens a new window', () => {
+    render(<FeedVideoPlayer {...defaultProps} isActive={true} />);
+    const webview = screen.getByTestId('webview');
+    const onOpenWindow = webview.props.onOpenWindow;
+    expect(typeof onOpenWindow).toBe('function');
+    onOpenWindow({ nativeEvent: { targetUrl: 'https://youtube.com/watch?v=abc123' } });
+    expect(handleYouTubeOpenWindow).toHaveBeenCalledWith(
+      'https://youtube.com/watch?v=abc123',
+      'abc123',
+    );
+  });
+
+  it('calls shareYouTubeVideo when share button is pressed', () => {
+    render(<FeedVideoPlayer {...defaultProps} isActive={true} />);
+    const webview = screen.getByTestId('webview');
+    // The share functionality is accessible via the share overlay, we test through onShare
+    // which is exposed as the onPress handler on a TouchableOpacity
+    // Access via the accessibilityLabel on the TouchableOpacity share button
+    const shareBtn = screen.getByLabelText('Share video');
+    fireEvent.press(shareBtn);
+    expect(shareYouTubeVideo).toHaveBeenCalledWith('abc123');
+  });
+
+  it('uses YouTube fallback thumbnail URL when thumbnailUrl is null', () => {
+    const { root } = render(
+      <FeedVideoPlayer {...defaultProps} thumbnailUrl={null} isActive={false} />,
+    );
+    // Should use youtube auto-generated thumb
+    const images = root.findAll(
+      (node: { props: Record<string, unknown> }) =>
+        typeof node.props.source === 'object' &&
+        node.props.source !== null &&
+        typeof (node.props.source as { uri?: string }).uri === 'string' &&
+        ((node.props.source as { uri: string }).uri.includes('youtube.com') ||
+          (node.props.source as { uri: string }).uri.includes('placeholder')),
+    );
+    expect(images.length).toBeGreaterThan(0);
+  });
+
+  it('falls back to PLACEHOLDER_POSTER when both thumbnailUrl and youtube thumb resolve to empty', () => {
+    // thumbnailUrl is null AND youtubeId is empty string → thumb = '' → PLACEHOLDER_POSTER used
+    const { root } = render(<FeedVideoPlayer youtubeId="" thumbnailUrl={null} isActive={false} />);
+    const images = root.findAll(
+      (node: { props: Record<string, unknown> }) =>
+        typeof node.props.source === 'object' &&
+        node.props.source !== null &&
+        typeof (node.props.source as { uri?: string }).uri === 'string',
+    );
+    expect(images.length).toBeGreaterThan(0);
   });
 });

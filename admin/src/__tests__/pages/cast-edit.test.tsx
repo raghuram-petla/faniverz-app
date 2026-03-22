@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EditActorPage from '@/app/(dashboard)/cast/[id]/page';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
@@ -27,7 +27,7 @@ vi.mock('@/lib/supabase-browser', () => ({
 }));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: mockRouterPush, back: vi.fn() }),
   usePathname: () => '/cast/1',
   useParams: () => ({ id: '1' }),
 }));
@@ -52,18 +52,29 @@ vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
   useUnsavedChangesWarning: vi.fn(),
 }));
 
+vi.mock('@/hooks/useFormChanges', () => ({
+  useFormChanges: vi.fn(() => ({ changes: [], isDirty: false, changeCount: 0 })),
+}));
+
 vi.mock('@/hooks/useAdminCast', () => ({
   useAdminActor: vi.fn(),
-  useUpdateActor: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useDeleteActor: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateActor: vi.fn(),
+  useDeleteActor: vi.fn(),
 }));
 
 vi.mock('@/hooks/useImageUpload', () => ({
-  useImageUpload: () => ({ upload: vi.fn(), uploading: false }),
+  useImageUpload: vi.fn(() => ({ upload: mockUpload, uploading: false })),
+}));
+
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: vi.fn(() => ({ isReadOnly: false })),
 }));
 
 vi.mock('@shared/constants', () => ({
-  DEVICES: [{ name: 'iPhone', width: 375, height: 812, scale: 3 }],
+  DEVICES: [
+    { name: 'iPhone', width: 375, height: 812, scale: 3 },
+    { name: 'iPad', width: 768, height: 1024, scale: 2 },
+  ],
 }));
 
 vi.mock('@/components/preview/DeviceFrame', () => ({
@@ -81,12 +92,70 @@ vi.mock('@/components/preview/ActorDetailPreview', () => ({
 }));
 
 vi.mock('@/components/cast-edit/ActorFormFields', () => ({
-  ActorFormFields: () => <div data-testid="actor-form-fields" />,
+  ActorFormFields: ({ onPhotoUpload }: { onPhotoUpload: (file: File) => void }) => (
+    <div data-testid="actor-form-fields">
+      <button
+        data-testid="trigger-photo-upload"
+        onClick={() => onPhotoUpload(new File(['img'], 'photo.jpg', { type: 'image/jpeg' }))}
+      >
+        Upload Photo
+      </button>
+    </div>
+  ),
 }));
 
-import { useAdminActor } from '@/hooks/useAdminCast';
+vi.mock('@/components/common/FormChangesDock', () => ({
+  FormChangesDock: ({
+    onSave,
+    onDiscard,
+    onRevertField,
+  }: {
+    onSave: () => void;
+    onDiscard: () => void;
+    onRevertField: (key: string) => void;
+    changes: unknown[];
+    changeCount: number;
+    saveStatus: string;
+  }) => (
+    <div data-testid="form-changes-dock">
+      <button data-testid="save-btn" onClick={onSave}>
+        Save
+      </button>
+      <button data-testid="discard-btn" onClick={onDiscard}>
+        Discard
+      </button>
+      <button data-testid="revert-field-btn" onClick={() => onRevertField('name')}>
+        Revert Name
+      </button>
+    </div>
+  ),
+}));
+
+import { useAdminActor, useUpdateActor, useDeleteActor } from '@/hooks/useAdminCast';
+import { usePermissions } from '@/hooks/usePermissions';
 
 const mockedUseAdminActor = vi.mocked(useAdminActor);
+const mockedUseUpdateActor = vi.mocked(useUpdateActor);
+const mockedUseDeleteActor = vi.mocked(useDeleteActor);
+const mockedUsePermissions = vi.mocked(usePermissions);
+
+const mockRouterPush = vi.fn();
+const mockUpload = vi.fn();
+const mockUpdateMutateAsync = vi.fn();
+const mockDeleteMutateAsync = vi.fn();
+
+const actorData = {
+  id: '1',
+  name: 'Test Actor',
+  photo_url: null,
+  person_type: 'actor' as const,
+  birth_date: null,
+  gender: 0,
+  biography: null,
+  place_of_birth: null,
+  height_cm: null,
+  tmdb_person_id: null,
+};
 
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({
@@ -98,6 +167,22 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('EditActorPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRouterPush.mockReset();
+    mockUpload.mockReset();
+    mockUpdateMutateAsync.mockReset();
+    mockDeleteMutateAsync.mockReset();
+
+    mockedUsePermissions.mockReturnValue({ isReadOnly: false } as ReturnType<
+      typeof usePermissions
+    >);
+    mockedUseUpdateActor.mockReturnValue({
+      mutateAsync: mockUpdateMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useUpdateActor>);
+    mockedUseDeleteActor.mockReturnValue({
+      mutateAsync: mockDeleteMutateAsync,
+      isPending: false,
+    } as unknown as ReturnType<typeof useDeleteActor>);
   });
 
   it('renders loading spinner when loading', () => {
@@ -113,18 +198,7 @@ describe('EditActorPage', () => {
 
   it('renders "Edit Actor" heading when data is loaded', async () => {
     mockedUseAdminActor.mockReturnValue({
-      data: {
-        id: '1',
-        name: 'Test Actor',
-        photo_url: null,
-        person_type: 'actor',
-        birth_date: null,
-        gender: 0,
-        biography: null,
-        place_of_birth: null,
-        height_cm: null,
-        tmdb_person_id: null,
-      },
+      data: actorData,
       isLoading: false,
     } as unknown as ReturnType<typeof useAdminActor>);
 
@@ -136,18 +210,7 @@ describe('EditActorPage', () => {
 
   it('renders actor form fields', async () => {
     mockedUseAdminActor.mockReturnValue({
-      data: {
-        id: '1',
-        name: 'Test Actor',
-        photo_url: null,
-        person_type: 'actor',
-        birth_date: null,
-        gender: 0,
-        biography: null,
-        place_of_birth: null,
-        height_cm: null,
-        tmdb_person_id: null,
-      },
+      data: actorData,
       isLoading: false,
     } as unknown as ReturnType<typeof useAdminActor>);
 
@@ -159,22 +222,215 @@ describe('EditActorPage', () => {
 
   it('calls useUnsavedChangesWarning hook', () => {
     mockedUseAdminActor.mockReturnValue({
-      data: {
-        id: '1',
-        name: 'Test Actor',
-        photo_url: null,
-        person_type: 'actor',
-        birth_date: null,
-        gender: 0,
-        biography: null,
-        place_of_birth: null,
-        height_cm: null,
-        tmdb_person_id: null,
-      },
+      data: actorData,
       isLoading: false,
     } as unknown as ReturnType<typeof useAdminActor>);
 
     renderWithProviders(<EditActorPage />);
     expect(useUnsavedChangesWarning).toHaveBeenCalled();
+  });
+
+  it('renders FormChangesDock with save/discard buttons', async () => {
+    mockedUseAdminActor.mockReturnValue({
+      data: actorData,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminActor>);
+
+    renderWithProviders(<EditActorPage />);
+    await waitFor(() => {
+      expect(screen.getByTestId('form-changes-dock')).toBeInTheDocument();
+      expect(screen.getByTestId('save-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('discard-btn')).toBeInTheDocument();
+    });
+  });
+
+  it('shows delete button when not read-only', async () => {
+    mockedUseAdminActor.mockReturnValue({
+      data: actorData,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminActor>);
+
+    renderWithProviders(<EditActorPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Delete')).toBeInTheDocument();
+    });
+  });
+
+  it('hides delete button when read-only', async () => {
+    mockedUsePermissions.mockReturnValue({ isReadOnly: true } as ReturnType<typeof usePermissions>);
+    mockedUseAdminActor.mockReturnValue({
+      data: actorData,
+      isLoading: false,
+    } as unknown as ReturnType<typeof useAdminActor>);
+
+    renderWithProviders(<EditActorPage />);
+    await waitFor(() => {
+      expect(screen.queryByText('Delete')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('handleSave', () => {
+    it('calls updateActor.mutateAsync when save is clicked', async () => {
+      mockUpdateMutateAsync.mockResolvedValue({});
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByTestId('save-btn')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('save-btn'));
+      });
+
+      expect(mockUpdateMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ id: '1' }));
+    });
+
+    it('calls alert on save error', async () => {
+      mockUpdateMutateAsync.mockRejectedValue(new Error('Save error'));
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByTestId('save-btn')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('save-btn'));
+      });
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Save failed'));
+      });
+    });
+  });
+
+  describe('handleDiscard', () => {
+    it('clicking discard does not throw', async () => {
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByTestId('discard-btn')).toBeInTheDocument());
+
+      expect(() => fireEvent.click(screen.getByTestId('discard-btn'))).not.toThrow();
+    });
+  });
+
+  describe('handleRevertField', () => {
+    it('clicking revert field does not throw', async () => {
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByTestId('revert-field-btn')).toBeInTheDocument());
+
+      expect(() => fireEvent.click(screen.getByTestId('revert-field-btn'))).not.toThrow();
+    });
+  });
+
+  describe('handleDelete', () => {
+    it('calls deleteActor.mutateAsync and navigates when confirm is true', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockDeleteMutateAsync.mockResolvedValue({});
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Delete'));
+      });
+
+      await waitFor(() => {
+        expect(mockDeleteMutateAsync).toHaveBeenCalledWith('1');
+        expect(mockRouterPush).toHaveBeenCalledWith('/cast');
+      });
+    });
+
+    it('does not call deleteActor.mutateAsync when confirm is false', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
+
+      fireEvent.click(screen.getByText('Delete'));
+      expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
+      expect(mockRouterPush).not.toHaveBeenCalled();
+    });
+
+    it('calls alert when delete fails', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      mockDeleteMutateAsync.mockRejectedValue(new Error('Delete error'));
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Delete'));
+      });
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Delete failed'));
+      });
+    });
+  });
+
+  describe('handlePhotoUpload', () => {
+    it('calls upload and does not throw on success', async () => {
+      mockUpload.mockResolvedValue('https://example.com/photo.jpg');
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByTestId('trigger-photo-upload')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger-photo-upload'));
+      });
+
+      expect(mockUpload).toHaveBeenCalled();
+    });
+
+    it('calls alert when upload fails', async () => {
+      mockUpload.mockRejectedValue(new Error('Upload failed'));
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      mockedUseAdminActor.mockReturnValue({
+        data: actorData,
+        isLoading: false,
+      } as unknown as ReturnType<typeof useAdminActor>);
+
+      renderWithProviders(<EditActorPage />);
+      await waitFor(() => expect(screen.getByTestId('trigger-photo-upload')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger-photo-upload'));
+      });
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith('Upload failed');
+      });
+    });
   });
 });

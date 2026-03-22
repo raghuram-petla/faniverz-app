@@ -456,4 +456,74 @@ describe('HeroCarousel', () => {
     fireEvent.press(getByLabelText('Save Kalki'));
     expect(mockAddMutate).not.toHaveBeenCalled();
   });
+
+  it('calls watchlist remove mutation when movie is already in watchlist', () => {
+    mockWatchlistSet.add('2');
+    const { getByLabelText } = render(
+      <HeroCarousel movies={[mockMovies[1]]} platformMap={mockPlatformMap} />,
+    );
+    fireEvent.press(getByLabelText('Kalki saved, tap to remove'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: '2' });
+  });
+
+  it('does not call mutation when unfollowMutation is pending', () => {
+    mockUnfollowIsPending = true;
+    const { getByLabelText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
+    fireEvent.press(getByLabelText('Follow Pushpa 2'));
+    expect(mockFollowMutate).not.toHaveBeenCalled();
+  });
+
+  it('does not call mutation when removeWatchlist is pending', () => {
+    mockRemoveIsPending = true;
+    mockWatchlistSet.add('2');
+    const { getByLabelText } = render(
+      <HeroCarousel movies={[mockMovies[1]]} platformMap={mockPlatformMap} />,
+    );
+    fireEvent.press(getByLabelText('Kalki saved, tap to remove'));
+    expect(mockRemoveMutate).not.toHaveBeenCalled();
+  });
+
+  it('advances auto-play past clone index back to 0', () => {
+    jest.useFakeTimers();
+    render(<HeroCarousel movies={mockMovies} />);
+
+    // Advance auto-play 3 times: index goes 0→1→2 (clone) → triggers wrap-around
+    act(() => {
+      jest.advanceTimersByTime(5000 * 3);
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('calls onViewableItemsChanged with clone index and resets to 0', () => {
+    jest.useFakeTimers();
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    // Simulate clone slide becoming visible (index = movies.length = 2)
+    act(() => {
+      flatList.props.onViewableItemsChanged?.({
+        viewableItems: [{ index: 2, item: mockMovies[0] }],
+        changed: [],
+      });
+    });
+
+    // After CLONE_RESET_DELAY, should scroll back to 0
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('calls onViewableItemsChanged with empty viewableItems without crashing', () => {
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    expect(() => {
+      flatList.props.onViewableItemsChanged?.({ viewableItems: [], changed: [] });
+    }).not.toThrow();
+  });
 });

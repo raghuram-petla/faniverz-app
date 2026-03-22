@@ -147,4 +147,37 @@ describe('useYouTubePlayer', () => {
     expect(result.current.state.playerState).toBe('unstarted');
     expect(result.current.state.isReady).toBe(false);
   });
+
+  it('defaults duration to 0 on ready message when duration is missing', () => {
+    const { result } = renderHook(() => useYouTubePlayer());
+    act(() => {
+      result.current.handleMessage(makeMessageEvent({ type: 'ready' }));
+    });
+    expect(result.current.state.isReady).toBe(true);
+    expect(result.current.state.duration).toBe(0);
+  });
+
+  it('defaults playerState to unknown on stateChange when playerState is missing', () => {
+    const { result } = renderHook(() => useYouTubePlayer());
+    act(() => {
+      result.current.handleMessage(makeMessageEvent({ type: 'stateChange' }));
+    });
+    expect(result.current.state.playerState).toBe('unknown');
+  });
+
+  it('preserves existing currentTime when timeUpdate message has no currentTime', () => {
+    const { result } = renderHook(() => useYouTubePlayer());
+    // Set initial time
+    act(() => {
+      result.current.handleMessage(
+        makeMessageEvent({ type: 'timeUpdate', currentTime: 30, duration: 120 }),
+      );
+    });
+    // Send timeUpdate without currentTime
+    act(() => {
+      result.current.handleMessage(makeMessageEvent({ type: 'timeUpdate', duration: 150 }));
+    });
+    expect(result.current.state.currentTime).toBe(30);
+    expect(result.current.state.duration).toBe(150);
+  });
 });

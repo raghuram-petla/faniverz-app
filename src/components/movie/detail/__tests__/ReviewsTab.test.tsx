@@ -86,4 +86,36 @@ describe('ReviewsTab', () => {
     fireEvent.press(helpfulBtn);
     expect(onHelpful).toHaveBeenCalledWith('r1');
   });
+
+  it('shows empty text when there are no reviews', () => {
+    render(<ReviewsTab {...baseProps} reviews={[]} />);
+    expect(screen.getByText('No reviews yet. Be the first to share your thoughts!')).toBeTruthy();
+  });
+
+  it('shows fallback user name when profile is null', () => {
+    const reviewNoProfile = { ...mockReview, profile: null };
+    render(<ReviewsTab {...baseProps} reviews={[reviewNoProfile] as any} />);
+    expect(screen.getByText('User')).toBeTruthy();
+  });
+
+  it('does not call onHelpful when userId is empty (unauthenticated)', () => {
+    const onHelpful = jest.fn();
+    render(<ReviewsTab {...baseProps} userId="" onHelpful={onHelpful} />);
+    const helpfulBtn = screen.getByLabelText(/helpful/i);
+    fireEvent.press(helpfulBtn);
+    expect(onHelpful).not.toHaveBeenCalled();
+  });
+
+  it('renders review without title when title is null', () => {
+    const reviewNoTitle = { ...mockReview, title: null };
+    render(<ReviewsTab {...baseProps} reviews={[reviewNoTitle] as any} />);
+    expect(screen.getByText('Loved the action sequences')).toBeTruthy();
+    expect(screen.queryByText('Great Movie')).toBeNull();
+  });
+
+  it('renders review without body when body is null', () => {
+    const reviewNoBody = { ...mockReview, body: null };
+    render(<ReviewsTab {...baseProps} reviews={[reviewNoBody] as any} />);
+    expect(screen.getByText('Great Movie')).toBeTruthy();
+  });
 });

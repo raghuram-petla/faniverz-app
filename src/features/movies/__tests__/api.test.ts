@@ -215,6 +215,20 @@ describe('movies api', () => {
       expect(result!.crew[0].id).toBe('director');
       expect(result!.crew[1].id).toBe('unknown');
     });
+
+    it('filters out null production_house entries from productionHouses junction table', async () => {
+      // One entry has production_house: null (join failed or orphaned row) — should be filtered out
+      mockFromForById(
+        [],
+        [],
+        [],
+        [],
+        [{ production_house: { id: 'ph1', name: 'Mythri' } }, { production_house: null }],
+      );
+      const result = await fetchMovieById('123');
+      expect(result!.productionHouses).toHaveLength(1);
+      expect((result!.productionHouses[0] as { id: string }).id).toBe('ph1');
+    });
   });
 
   describe('searchMovies', () => {
@@ -577,6 +591,147 @@ describe('movies api', () => {
       mockRange.mockReturnValue(makeRangeResult(null, new Error('Upcoming fetch failed')));
 
       await expect(fetchUpcomingMovies(0)).rejects.toThrow('Upcoming fetch failed');
+    });
+  });
+
+  describe('fetchMovies — streaming and released filters', () => {
+    it('filters by streaming status when matching movie_platform ids exist', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformResolved = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockResolvedValue({
+        data: [{ movie_id: 'm1' }, { movie_id: 'm1' }, { movie_id: 'm2' }],
+        error: null,
+      });
+      mockSelect.mockReturnValue({ in: mockIn });
+      mockIn.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue(makeOrderResult([{ id: 'm1' }]));
+
+      const result = await fetchMovies({ movieStatus: 'streaming' });
+      // Deduplication: m1, m2 → 2 unique IDs
+      expect(mockIn).toHaveBeenCalledWith('id', ['m1', 'm2']);
+      expect(result).toHaveLength(1);
+    });
+
+    it('returns empty array when streaming status yields no movie_platform rows', async () => {
+      const mockPlatformSelect = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockResolvedValue({ data: [], error: null });
+
+      const result = await fetchMovies({ movieStatus: 'streaming' });
+      expect(result).toEqual([]);
+    });
+
+    it('throws when streaming status query errors', async () => {
+      const mockPlatformSelect = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockResolvedValue({
+        data: null,
+        error: new Error('Streaming query error'),
+      });
+
+      await expect(fetchMovies({ movieStatus: 'streaming' })).rejects.toThrow(
+        'Streaming query error',
+      );
+    });
+
+    it('filters by released status using lte and eq(in_theaters, false)', async () => {
+      const mockEq2 = jest.fn();
+      mockSelect.mockReturnValue({ lte: mockLte });
+      mockLte.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue(makeOrderResult([]));
+
+      await fetchMovies({ movieStatus: 'released' });
+      expect(mockLte).toHaveBeenCalledWith('release_date', expect.any(String));
+      expect(mockEq2).toHaveBeenCalledWith('in_theaters', false);
+    });
+
+    it('filters by upcoming status using gt(release_date)', async () => {
+      mockSelect.mockReturnValue({ gt: jest.fn().mockReturnValue({ order: mockOrder }) });
+      mockOrder.mockReturnValue(makeOrderResult([]));
+
+      // Just verify the filter runs without error
+      await expect(fetchMovies({ movieStatus: 'upcoming' })).resolves.toBeDefined();
+    });
+  });
+
+  describe('fetchMovieById — error paths', () => {
+    it('throws when main movie query fails', async () => {
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movies') return { select: mockSelect };
+        return { select: jest.fn() };
+      });
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ single: mockSingle });
+      mockSingle.mockResolvedValue({ data: null, error: new Error('Movie not found') });
+
+      await expect(fetchMovieById('unknown')).rejects.toThrow('Movie not found');
+    });
+
+    it('returns null when movie data is null and error is null', async () => {
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movies') return { select: mockSelect };
+        return { select: jest.fn() };
+      });
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ single: mockSingle });
+      mockSingle.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchMovieById('unknown');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('fetchMoviesByPlatform — null data branch', () => {
+    it('returns empty array when movieIds data is null', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      const mockPlatformLimit = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
+      mockPlatformLimit.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchMoviesByPlatform('netflix');
+      expect(result).toEqual([]);
+    });
+
+    it('throws when platform_id filter errors in fetchMoviesByPlatform', async () => {
+      const mockPlatformSelect = jest.fn();
+      const mockPlatformEq = jest.fn();
+      const mockPlatformLimit = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
+      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
+      mockPlatformLimit.mockResolvedValue({ data: null, error: new Error('Platform ID error') });
+
+      await expect(fetchMoviesByPlatform('broken')).rejects.toThrow('Platform ID error');
     });
   });
 

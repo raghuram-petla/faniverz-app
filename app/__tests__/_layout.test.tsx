@@ -42,6 +42,18 @@ jest.mock('@/features/notifications/useNotificationHandler', () => ({
   useNotificationHandler: jest.fn(),
 }));
 
+const mockIsDark = { value: true };
+jest.mock('@/theme', () => ({
+  ThemeProvider: ({ children }: { children: unknown }) => children,
+  useTheme: () => ({
+    theme: { background: '#000', surfaceElevated: '#111' },
+    colors: {},
+    isDark: mockIsDark.value,
+    mode: 'dark',
+    setMode: jest.fn(),
+  }),
+}));
+
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import RootLayout from '../_layout';
@@ -78,5 +90,13 @@ describe('RootLayout', () => {
     mockUseFonts.mockReturnValue([false]);
     render(<RootLayout />);
     expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
+  });
+
+  it('renders with light StatusBar style when isDark is false', () => {
+    mockIsDark.value = false;
+    mockUseFonts.mockReturnValue([true]);
+    // Should not throw — isDark=false path renders StatusBar with style="dark"
+    expect(() => render(<RootLayout />)).not.toThrow();
+    mockIsDark.value = true;
   });
 });

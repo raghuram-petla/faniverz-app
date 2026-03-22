@@ -100,4 +100,61 @@ describe('UsernameScreen', () => {
     fireEvent.changeText(input, 'MyUser');
     expect(input.props.value).toBe('myuser');
   });
+
+  it('calls mutateAsync and router.back when save is pressed and username is available', async () => {
+    mockMutateAsync.mockResolvedValue(undefined);
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: true,
+      isChecking: false,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    const saveBtn = screen.getByText('profile.saveUsername');
+    await fireEvent.press(saveBtn);
+
+    expect(mockMutateAsync).toHaveBeenCalled();
+    expect(mockRouter.back).toHaveBeenCalled();
+  });
+
+  it('does not call mutateAsync when username is not available', async () => {
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: false,
+      isChecking: false,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    fireEvent.press(screen.getByText('profile.saveUsername'));
+
+    expect(mockMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not navigate back when mutateAsync throws', async () => {
+    mockMutateAsync.mockRejectedValue(new Error('save failed'));
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: true,
+      isChecking: false,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    await fireEvent.press(screen.getByText('profile.saveUsername'));
+
+    expect(mockMutateAsync).toHaveBeenCalled();
+    // router.back should not be called after an error
+    expect(mockRouter.back).not.toHaveBeenCalled();
+  });
+
+  it('shows activity indicator when isChecking', () => {
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: null,
+      isChecking: true,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    // ActivityIndicator renders — just verify no crash
+    expect(screen.getByPlaceholderText('username')).toBeTruthy();
+  });
 });

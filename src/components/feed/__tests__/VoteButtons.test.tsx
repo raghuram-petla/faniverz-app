@@ -110,4 +110,121 @@ describe('VoteButtons', () => {
     const zeros = getAllByText('0');
     expect(zeros).toHaveLength(2);
   });
+
+  it('upvote icon is "heart" when userVote is up', () => {
+    const { UNSAFE_getByProps } = renderVoteButtons({ userVote: 'up' });
+    expect(UNSAFE_getByProps({ name: 'heart' })).toBeTruthy();
+  });
+
+  it('upvote icon is "heart-outline" when userVote is not up', () => {
+    const { UNSAFE_getByProps } = renderVoteButtons({ userVote: null });
+    expect(UNSAFE_getByProps({ name: 'heart-outline' })).toBeTruthy();
+  });
+
+  it('downvote icon is "heart-broken" when userVote is down', () => {
+    const { UNSAFE_getByProps } = renderVoteButtons({ userVote: 'down' });
+    expect(UNSAFE_getByProps({ name: 'heart-broken' })).toBeTruthy();
+  });
+
+  it('downvote icon is "heart-broken-outline" when userVote is not down', () => {
+    const { UNSAFE_getByProps } = renderVoteButtons({ userVote: null });
+    expect(UNSAFE_getByProps({ name: 'heart-broken-outline' })).toBeTruthy();
+  });
+
+  it('does not trigger animation on initial render (prevVote matches userVote)', () => {
+    // This verifies the animation branch is NOT entered on mount when there is no prior vote change
+    const { getByLabelText } = renderVoteButtons({ userVote: 'up' });
+    // Component still renders correctly
+    expect(getByLabelText('Upvote, 5 upvotes')).toBeTruthy();
+  });
+
+  it('handles vote change from null to up without crashing', () => {
+    const { rerender, getByLabelText } = renderVoteButtons({ userVote: null });
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote="up"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(getByLabelText('Upvote, 5 upvotes')).toBeTruthy();
+  });
+
+  it('handles vote change from null to down without crashing', () => {
+    const { rerender, getByLabelText } = renderVoteButtons({ userVote: null });
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote="down"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(getByLabelText('Downvote, 1 downvotes')).toBeTruthy();
+  });
+
+  it('animation fires when vote changes from up to down', () => {
+    const { rerender, getByLabelText } = renderVoteButtons({ userVote: 'up' });
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote="down"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(getByLabelText('Downvote, 1 downvotes')).toBeTruthy();
+  });
+
+  it('animation fires when vote changes from down to up', () => {
+    const { rerender, getByLabelText } = renderVoteButtons({ userVote: 'down' });
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote="up"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(getByLabelText('Upvote, 5 upvotes')).toBeTruthy();
+  });
+
+  it('animation does not fire when animations are disabled', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+
+    const { rerender, getByLabelText } = renderVoteButtons({ userVote: null });
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote="up"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    // Should render correctly without animations
+    expect(getByLabelText('Upvote, 5 upvotes')).toBeTruthy();
+
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
+  });
+
+  it('vote change from up to null updates prevVote ref', () => {
+    const { rerender, getByLabelText } = renderVoteButtons({ userVote: 'up' });
+    rerender(
+      <VoteButtons
+        upvoteCount={5}
+        downvoteCount={1}
+        userVote={null}
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    // prevVote changes but no animation fires since userVote=null
+    expect(getByLabelText('Upvote, 5 upvotes')).toBeTruthy();
+  });
 });

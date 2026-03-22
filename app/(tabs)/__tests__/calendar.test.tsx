@@ -435,4 +435,102 @@ describe('CalendarScreen', () => {
     expect(getByText('Kalki')).toBeTruthy();
     expect(getByText('RRR 2')).toBeTruthy();
   });
+
+  it('calls fetchNextPage when hasNextPage is true and end is reached', () => {
+    setupDefaultMock({
+      hasNextPage: true,
+      isFetchingNextPage: false,
+      fetchNextPage: mockFetchNextPage,
+    });
+
+    const { UNSAFE_getByType } = render(<CalendarScreen />);
+    const { FlashList } = require('@shopify/flash-list');
+    const flashList = UNSAFE_getByType(FlashList);
+
+    flashList.props.onEndReached?.();
+
+    expect(mockFetchNextPage).toHaveBeenCalled();
+  });
+
+  it('does not call fetchNextPage when already fetching next page', () => {
+    setupDefaultMock({
+      hasNextPage: true,
+      isFetchingNextPage: true,
+      fetchNextPage: mockFetchNextPage,
+    });
+
+    const { UNSAFE_getByType } = render(<CalendarScreen />);
+    const { FlashList } = require('@shopify/flash-list');
+    const flashList = UNSAFE_getByType(FlashList);
+
+    flashList.props.onEndReached?.();
+
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('does not call fetchNextPage when hasNextPage is false', () => {
+    setupDefaultMock({
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      fetchNextPage: mockFetchNextPage,
+    });
+
+    const { UNSAFE_getByType } = render(<CalendarScreen />);
+    const { FlashList } = require('@shopify/flash-list');
+    const flashList = UNSAFE_getByType(FlashList);
+
+    flashList.props.onEndReached?.();
+
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('groups movies with same release_date into one group', () => {
+    // Both mockMovies share release_date '2025-03-15' — they go in the same group
+    const { getByText } = render(<CalendarScreen />);
+    expect(getByText('Pushpa 2')).toBeTruthy();
+    expect(getByText('Kalki')).toBeTruthy();
+  });
+
+  it('excludes movies with null release_date from grouping', () => {
+    const moviesWithNull = [
+      ...mockMovies,
+      {
+        ...mockMovies[0],
+        id: '99',
+        title: 'No Date Movie',
+        release_date: null,
+      },
+    ];
+    setupDefaultMock({ data: { pages: [moviesWithNull], pageParams: [0] } });
+
+    const { queryByText } = render(<CalendarScreen />);
+    // null release_date movie should be excluded from groups
+    expect(queryByText('No Date Movie')).toBeNull();
+  });
+
+  it('shows year pill filter', () => {
+    useCalendarStore.setState({
+      selectedYear: 2025,
+      selectedMonth: null,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+
+    const { getByText } = render(<CalendarScreen />);
+    expect(getByText('2025')).toBeTruthy();
+  });
+
+  it('shows day pill and allows removing it individually', () => {
+    useCalendarStore.setState({
+      selectedYear: null,
+      selectedMonth: null,
+      selectedDay: 15,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+
+    const { getByText } = render(<CalendarScreen />);
+    expect(getByText('Day 15')).toBeTruthy();
+  });
 });

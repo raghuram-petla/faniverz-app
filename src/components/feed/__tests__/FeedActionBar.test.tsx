@@ -125,4 +125,52 @@ describe('FeedActionBar', () => {
     expect(upBtn.props.accessibilityState?.disabled).toBe(true);
     expect(downBtn.props.accessibilityState?.disabled).toBe(true);
   });
+
+  it('handles null/undefined counts gracefully (defaults to 0)', () => {
+    render(
+      <FeedActionBar
+        commentCount={undefined as unknown as number}
+        upvoteCount={undefined as unknown as number}
+        downvoteCount={undefined as unknown as number}
+        viewCount={undefined as unknown as number}
+        userVote={null}
+      />,
+    );
+    // Should not crash and default to 0
+    expect(screen.getByLabelText('Comments, 0 comments')).toBeTruthy();
+    expect(screen.getByLabelText('0 views')).toBeTruthy();
+  });
+
+  it('does not disable comment button when callback is provided', () => {
+    const onComment = jest.fn();
+    render(<FeedActionBar {...defaultProps} onComment={onComment} />);
+    const commentBtn = screen.getByLabelText('Comments, 12 comments');
+    expect(commentBtn.props.accessibilityState?.disabled).toBeFalsy();
+  });
+
+  it('does not disable upvote button when callback is provided', () => {
+    const onUpvote = jest.fn();
+    render(<FeedActionBar {...defaultProps} onUpvote={onUpvote} />);
+    const upBtn = screen.getByLabelText('Upvote, 24 upvotes');
+    expect(upBtn.props.accessibilityState?.disabled).toBeFalsy();
+  });
+
+  it('does not disable downvote button when callback is provided', () => {
+    const onDownvote = jest.fn();
+    render(<FeedActionBar {...defaultProps} onDownvote={onDownvote} />);
+    const downBtn = screen.getByLabelText('Downvote, 3 downvotes');
+    expect(downBtn.props.accessibilityState?.disabled).toBeFalsy();
+  });
+
+  it('uses outline icons when userVote is null', () => {
+    const { toJSON } = render(<FeedActionBar {...defaultProps} userVote={null} />);
+    const json = JSON.stringify(toJSON());
+    expect(json).toContain('"heart-outline"');
+    expect(json).toContain('"heart-broken-outline"');
+  });
+
+  it('renders 1K for counts around 1000', () => {
+    render(<FeedActionBar {...defaultProps} commentCount={1000} />);
+    expect(screen.getByText('1K')).toBeTruthy();
+  });
 });

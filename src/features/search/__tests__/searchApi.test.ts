@@ -44,6 +44,56 @@ describe('searchAll', () => {
     expect(result.productionHouses).toEqual([]);
   });
 
+  it('returns empty arrays when supabase returns error field set (fulfilled but with error)', async () => {
+    const mockFrom = supabase.from as jest.Mock;
+    mockFrom.mockImplementation((table: string) => ({
+      select: jest.fn(() => ({
+        ilike: jest.fn(() => {
+          if (table === 'movies') {
+            return {
+              order: jest.fn(() => ({
+                limit: jest.fn().mockResolvedValue({ data: null, error: new Error('query error') }),
+              })),
+            };
+          }
+          return {
+            limit: jest.fn().mockResolvedValue({ data: null, error: new Error('query error') }),
+          };
+        }),
+      })),
+    }));
+
+    const result = await searchAll('broken');
+    expect(result.movies).toEqual([]);
+    expect(result.actors).toEqual([]);
+    expect(result.productionHouses).toEqual([]);
+  });
+
+  it('returns empty arrays when supabase returns null data and no error', async () => {
+    const mockFrom = supabase.from as jest.Mock;
+    mockFrom.mockImplementation((table: string) => ({
+      select: jest.fn(() => ({
+        ilike: jest.fn(() => {
+          if (table === 'movies') {
+            return {
+              order: jest.fn(() => ({
+                limit: jest.fn().mockResolvedValue({ data: null, error: null }),
+              })),
+            };
+          }
+          return {
+            limit: jest.fn().mockResolvedValue({ data: null, error: null }),
+          };
+        }),
+      })),
+    }));
+
+    const result = await searchAll('empty');
+    expect(result.movies).toEqual([]);
+    expect(result.actors).toEqual([]);
+    expect(result.productionHouses).toEqual([]);
+  });
+
   it('returns partial results when one query fails', async () => {
     const movieData = [{ id: '1', title: 'Test Movie' }];
     const mockFrom = supabase.from as jest.Mock;

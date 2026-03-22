@@ -33,18 +33,36 @@ jest.mock('@/features/productionHouses/hooks', () => ({
   useProductionHouseDetail: (...args: unknown[]) => mockUseProductionHouseDetail(...args),
 }));
 
+const mockFollowMutate = jest.fn();
+const mockUnfollowMutate = jest.fn();
+let mockFollowSet = new Set(['production_house:ph1']);
+
 jest.mock('@/features/feed', () => ({
-  useEntityFollows: () => ({ followSet: new Set(['production_house:ph1']) }),
-  useFollowEntity: () => ({ mutate: jest.fn() }),
-  useUnfollowEntity: () => ({ mutate: jest.fn() }),
+  useEntityFollows: () => ({ followSet: mockFollowSet }),
+  useFollowEntity: () => ({ mutate: mockFollowMutate, isPending: false }),
+  useUnfollowEntity: () => ({ mutate: mockUnfollowMutate, isPending: false }),
 }));
 
 jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: (fn: () => void) => fn }),
 }));
 
+jest.mock('@/components/productionHouse/ProductionHouseDetailSkeleton', () => ({
+  ProductionHouseDetailSkeleton: () => {
+    const { Text } = require('react-native');
+    return <Text testID="skeleton">Loading...</Text>;
+  },
+}));
+
 jest.mock('@/components/common/CollapsibleProfileLayout', () => ({
-  CollapsibleProfileLayout: ({ name, onBack, rightContent, heroContent, children }: any) => {
+  CollapsibleProfileLayout: ({
+    name,
+    onBack,
+    rightContent,
+    heroContent,
+    children,
+    renderImage,
+  }: any) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
@@ -53,6 +71,7 @@ jest.mock('@/components/common/CollapsibleProfileLayout', () => ({
         </TouchableOpacity>
         {rightContent}
         <Text>{name}</Text>
+        {renderImage && renderImage(120)}
         {heroContent}
         {children}
       </View>
@@ -139,6 +158,7 @@ const defaultHookReturn = {
 describe('ProductionHouseDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFollowSet = new Set(['production_house:ph1']);
     mockUseProductionHouseDetail.mockReturnValue(defaultHookReturn);
   });
 
@@ -195,5 +215,75 @@ describe('ProductionHouseDetailScreen', () => {
     render(<ProductionHouseDetailScreen />);
     expect(screen.getByText('common.noResults')).toBeTruthy();
     expect(screen.getByLabelText('Go back')).toBeTruthy();
+  });
+
+  it('shows skeleton loader when isLoading is true', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      house: null,
+      movies: [],
+      isLoading: true,
+      refetch: jest.fn(),
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByTestId('skeleton')).toBeTruthy();
+  });
+
+  it('renders empty state when movies list is empty', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      movies: [],
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByText('productionHouse.movies (0)')).toBeTruthy();
+  });
+
+  it('unfollows when follow button is pressed and already following', () => {
+    render(<ProductionHouseDetailScreen />);
+    fireEvent.press(screen.getByTestId('follow-btn'));
+    expect(mockUnfollowMutate).toHaveBeenCalledWith({
+      entityType: 'production_house',
+      entityId: 'ph1',
+    });
+  });
+
+  it('follows when follow button is pressed and not following', () => {
+    mockFollowSet = new Set();
+    render(<ProductionHouseDetailScreen />);
+    fireEvent.press(screen.getByTestId('follow-btn'));
+    expect(mockFollowMutate).toHaveBeenCalledWith({
+      entityType: 'production_house',
+      entityId: 'ph1',
+    });
+  });
+
+  it('renders placeholder icon when house has no logo_url', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      house: { ...defaultHookReturn.house, logo_url: null },
+    });
+    render(<ProductionHouseDetailScreen />);
+    const { root } = render(<ProductionHouseDetailScreen />);
+    const icons = root.findAll(
+      (node: { props: Record<string, unknown> }) => node.props.name === 'business',
+    );
+    expect(icons.length).toBeGreaterThan(0);
+  });
+
+  it('renders movie rating row when rating is greater than 0', () => {
+    render(<ProductionHouseDetailScreen />);
+    const { root } = render(<ProductionHouseDetailScreen />);
+    const starIcons = root.findAll(
+      (node: { props: Record<string, unknown> }) => node.props.name === 'star',
+    );
+    expect(starIcons.length).toBeGreaterThan(0);
+  });
+
+  it('does not render rating row when rating is 0', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      movies: [{ id: 'm3', title: 'No Rating', poster_url: null, release_date: null, rating: 0 }],
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.queryByText('0')).toBeNull();
   });
 });

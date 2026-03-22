@@ -1,12 +1,17 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
-import { ActiveFilterPills, ActiveFilterPillsProps } from '../ActiveFilterPills';
+const mockAnimationsEnabled = jest.fn(() => true);
+jest.mock('@/hooks/useAnimationsEnabled', () => ({
+  useAnimationsEnabled: () => mockAnimationsEnabled(),
+}));
 
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     colors: { red400: '#f87171' },
   }),
 }));
+
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react-native';
+import { ActiveFilterPills, ActiveFilterPillsProps } from '../ActiveFilterPills';
 
 const mockStyles = new Proxy({}, { get: () => ({}) });
 
@@ -102,5 +107,13 @@ describe('ActiveFilterPills', () => {
     expect(screen.getByText('Aha')).toBeTruthy();
     expect(screen.getByText('Mythri Movie Makers')).toBeTruthy();
     expect(screen.getByText('Clear All')).toBeTruthy();
+  });
+
+  it('renders pills without animations when animations are disabled', () => {
+    mockAnimationsEnabled.mockReturnValue(false);
+    render(<ActiveFilterPills {...defaultProps} selectedGenres={['Action']} />);
+    expect(screen.getByText('Action')).toBeTruthy();
+    expect(screen.getByText('Clear All')).toBeTruthy();
+    mockAnimationsEnabled.mockReturnValue(true);
   });
 });

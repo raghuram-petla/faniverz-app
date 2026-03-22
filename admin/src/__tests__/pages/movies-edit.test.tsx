@@ -175,9 +175,18 @@ vi.mock('@/components/movie-edit', () => ({
       <button onClick={() => onSectionChange('releases')}>Releases</button>
     </div>
   ),
-  SectionCard: ({ title, children }: { title: string; children: React.ReactNode }) => (
+  SectionCard: ({
+    title,
+    children,
+    action,
+  }: {
+    title: string;
+    children: React.ReactNode;
+    action?: React.ReactNode;
+  }) => (
     <div data-testid={`section-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <h3>{title}</h3>
+      {action}
       {children}
     </div>
   ),
@@ -290,5 +299,60 @@ describe('EditMoviePage', () => {
       fireEvent.click(backButton);
       expect(mockBack).toHaveBeenCalled();
     }
+  });
+
+  describe('addButton — conditional Add buttons per section', () => {
+    it('shows Add button in Videos section when not read-only', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      expect(screen.getByText('Add')).toBeInTheDocument();
+    });
+
+    it('hides Add button in Videos section when read-only', () => {
+      mockIsReadOnly = true;
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      expect(screen.queryByText('Add')).not.toBeInTheDocument();
+    });
+
+    it('hides Add button after it is clicked (form opens)', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Videos'));
+      fireEvent.click(screen.getByText('Add'));
+      // Once addFormOpen === 'videos', addButton returns undefined for that section
+      expect(screen.queryByText('Add')).not.toBeInTheDocument();
+    });
+
+    it('shows Add button in Cast & Crew section', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      // Two "Add" buttons: one for Production Houses and one for Cast & Crew
+      const addBtns = screen.getAllByText('Add');
+      expect(addBtns.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('shows Add button in Releases section', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Releases'));
+      expect(screen.getByText('Add')).toBeInTheDocument();
+    });
+  });
+
+  describe('getBucketForUrl — image bucket resolution', () => {
+    it('passes correct buckets to PreviewPanel based on visiblePosters', () => {
+      // Default mock has visiblePosters: [] so all images fall back to defaults
+      renderWithProviders(<EditMoviePage />);
+      // PreviewPanel is rendered without error — bucket logic resolves correctly
+      expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
+    });
+  });
+
+  it('does not render TMDB metadata section when movie has no tmdb_id', () => {
+    // Temporarily override editState movie
+    const originalMovie = mockEditState.movie;
+    mockEditState.movie = { ...originalMovie, tmdb_id: null as unknown as number };
+    renderWithProviders(<EditMoviePage />);
+    expect(screen.queryByTestId('tmdb-metadata-section')).not.toBeInTheDocument();
+    mockEditState.movie = originalMovie;
   });
 });

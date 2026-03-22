@@ -61,4 +61,36 @@ describe('ActivityItem', () => {
     render(<ActivityItem activity={unfollowActivity} onPress={jest.fn()} />);
     expect(screen.getByText('Unfollowed an actor')).toBeTruthy();
   });
+
+  it('falls back to vote config for unknown action_type', () => {
+    const unknownActivity = {
+      ...mockActivity,
+      action_type: 'unknown_action' as never,
+      entity_type: 'movie' as const,
+    };
+    render(<ActivityItem activity={unknownActivity} onPress={jest.fn()} />);
+    // Falls back to vote config which shows 'Voted on a post'
+    expect(screen.getByText('Voted on a post')).toBeTruthy();
+  });
+
+  it('falls back to empty string for unknown entity_type in follow activity', () => {
+    const followUnknownEntity = {
+      ...mockActivity,
+      action_type: 'follow' as const,
+      entity_type: 'unknown_entity' as never,
+    };
+    render(<ActivityItem activity={followUnknownEntity} onPress={jest.fn()} />);
+    // entity_type not in ENTITY_LABEL_KEYS, falls back to '' translation
+    expect(screen.getByText('Followed')).toBeTruthy();
+  });
+
+  it('renders production_house entity label for follow', () => {
+    const followStudio = {
+      ...mockActivity,
+      action_type: 'follow' as const,
+      entity_type: 'production_house' as const,
+    };
+    render(<ActivityItem activity={followStudio} onPress={jest.fn()} />);
+    expect(screen.getByText('Followed a studio')).toBeTruthy();
+  });
 });

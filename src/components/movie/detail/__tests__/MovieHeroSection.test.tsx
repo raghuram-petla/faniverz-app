@@ -82,4 +82,67 @@ describe('MovieHeroSection', () => {
     render(<MovieHeroSection {...baseProps} />);
     expect(screen.getByText('2024')).toBeTruthy();
   });
+
+  it('does not render runtime when runtime is null', () => {
+    render(<MovieHeroSection {...baseProps} movie={{ ...mockMovie, runtime: null }} />);
+    expect(screen.queryByText(/m$/)).toBeNull();
+  });
+
+  it('does not render certification when certification is null/undefined', () => {
+    render(<MovieHeroSection {...baseProps} movie={{ ...mockMovie, certification: null }} />);
+    expect(screen.queryByText('UA')).toBeNull();
+  });
+
+  it('renders null releaseYear without crashing', () => {
+    render(<MovieHeroSection {...baseProps} releaseYear={null} />);
+    // Should still render the title
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders review count when rating > 0', () => {
+    render(<MovieHeroSection {...baseProps} />);
+    // review count label is rendered via t('movie.reviewCountLabel', { count: 120 })
+    // The global i18n mock resolves this to "(120 reviews)"
+    expect(screen.getByText('(120 reviews)')).toBeTruthy();
+  });
+
+  it('does not render rating row when rating is 0', () => {
+    render(<MovieHeroSection {...baseProps} movie={{ ...mockMovie, rating: 0 }} />);
+    expect(screen.queryByText('movie.reviewCountLabel')).toBeNull();
+  });
+
+  it('renders with focus position when detail_focus_x and detail_focus_y are set', () => {
+    // Verify it renders without crashing when both focus values are provided
+    const movieWithFocus = {
+      ...mockMovie,
+      detail_focus_x: 0.5,
+      detail_focus_y: 0.3,
+    };
+    render(<MovieHeroSection {...baseProps} movie={movieWithFocus} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders with backdrop focus position when only backdrop_focus values are set', () => {
+    const movieWithBackdropFocus = {
+      ...mockMovie,
+      detail_focus_x: null,
+      detail_focus_y: null,
+      backdrop_focus_x: 0.6,
+      backdrop_focus_y: 0.4,
+    };
+    render(<MovieHeroSection {...baseProps} movie={movieWithBackdropFocus} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders without focus position when no focus values are set', () => {
+    const movieNoFocus = {
+      ...mockMovie,
+      detail_focus_x: null,
+      detail_focus_y: null,
+      backdrop_focus_x: null,
+      backdrop_focus_y: null,
+    };
+    render(<MovieHeroSection {...baseProps} movie={movieNoFocus} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
 });

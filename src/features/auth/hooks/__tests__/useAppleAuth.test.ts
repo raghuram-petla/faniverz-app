@@ -68,4 +68,100 @@ describe('useAppleAuth', () => {
     });
     expect(result.current.error).toBe('user cancelled');
   });
+
+  it('marks not available on Android', () => {
+    Platform.OS = 'android';
+    const { result } = renderHook(() => useAppleAuth());
+    expect(result.current.isAvailable).toBe(false);
+  });
+
+  it('returns early without calling Apple auth on Android', async () => {
+    Platform.OS = 'android';
+    const { result } = renderHook(() => useAppleAuth());
+    await act(async () => {
+      await result.current.signInWithApple();
+    });
+    expect(AppleAuthentication.signInAsync).not.toHaveBeenCalled();
+  });
+
+  it('throws when identity token is missing', async () => {
+    Platform.OS = 'ios';
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
+      identityToken: null,
+    });
+
+    const { result } = renderHook(() => useAppleAuth());
+    await act(async () => {
+      try {
+        await result.current.signInWithApple();
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('No identity token from Apple');
+    expect(supabase.auth.signInWithIdToken).not.toHaveBeenCalled();
+  });
+
+  it('throws when supabase auth returns an error', async () => {
+    Platform.OS = 'ios';
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
+      identityToken: 'valid-token',
+    });
+    const authError = new Error('Supabase auth failed');
+    (supabase.auth.signInWithIdToken as jest.Mock).mockResolvedValueOnce({ error: authError });
+
+    const { result } = renderHook(() => useAppleAuth());
+    await act(async () => {
+      try {
+        await result.current.signInWithApple();
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('Supabase auth failed');
+  });
+
+  it('resets isLoading to false after successful sign-in', async () => {
+    Platform.OS = 'ios';
+    (AppleAuthentication.signInAsync as jest.Mock).mockResolvedValueOnce({
+      identityToken: 'token',
+    });
+    (supabase.auth.signInWithIdToken as jest.Mock).mockResolvedValueOnce({ error: null });
+
+    const { result } = renderHook(() => useAppleAuth());
+    await act(async () => {
+      await result.current.signInWithApple();
+    });
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('resets isLoading to false after failed sign-in', async () => {
+    Platform.OS = 'ios';
+    (AppleAuthentication.signInAsync as jest.Mock).mockRejectedValueOnce(new Error('fail'));
+
+    const { result } = renderHook(() => useAppleAuth());
+    await act(async () => {
+      try {
+        await result.current.signInWithApple();
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('sets non-Error thrown value to generic message', async () => {
+    Platform.OS = 'ios';
+    (AppleAuthentication.signInAsync as jest.Mock).mockRejectedValueOnce('string error');
+
+    const { result } = renderHook(() => useAppleAuth());
+    await act(async () => {
+      try {
+        await result.current.signInWithApple();
+      } catch {
+        // expected
+      }
+    });
+    expect(result.current.error).toBe('Apple sign-in failed');
+  });
 });

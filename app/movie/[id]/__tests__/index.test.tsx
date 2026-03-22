@@ -457,6 +457,53 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
   });
 
+  it('calls router.back when Go back button is pressed', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Go back'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  it('navigates to actor page when actor is pressed in cast tab', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Cast'));
+    // Press the actor button — CastTab renders actors as pressable items
+    fireEvent.press(screen.getByText('Allu Arjun'));
+    expect(mockPush).toHaveBeenCalledWith('/actor/a1');
+  });
+
+  it('shares movie without year when release_date is null', async () => {
+    const noYearMovie = { ...mockMovie, release_date: null };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: noYearMovie });
+    const shareSpy = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({ action: 'sharedAction' } as never);
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share'));
+    expect(shareSpy).toHaveBeenCalledWith({ message: expect.not.stringContaining('(') });
+    shareSpy.mockRestore();
+  });
+
+  it('handles share when synopsis is null', async () => {
+    const noSynopsisMovie = { ...mockMovie, synopsis: null };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: noSynopsisMovie });
+    const shareSpy = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({ action: 'sharedAction' } as never);
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share'));
+    expect(shareSpy).toHaveBeenCalled();
+    shareSpy.mockRestore();
+  });
+
+  it('does not submit review when rating is 0 (early return guard)', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+    // Do NOT select a star rating — submit with rating = 0
+    fireEvent.press(screen.getByText('Submit'));
+    expect(mockCreateReviewMutate).not.toHaveBeenCalled();
+  });
+
   it('renders movie with no trailer without showing Watch Trailer button', () => {
     const noTrailerMovie = { ...mockMovie, trailer_url: null };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: noTrailerMovie });

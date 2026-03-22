@@ -121,4 +121,34 @@ describe('useNotificationMutations', () => {
     await waitFor(() => expect(result.current.markAllRead.isSuccess).toBe(true));
     expect(api.markAllAsRead).toHaveBeenCalledWith('u1');
   });
+
+  it('markRead mutation silently handles errors (onError is a no-op)', async () => {
+    (api.markAsRead as jest.Mock).mockRejectedValue(new Error('Network error'));
+
+    const { result } = renderHook(() => useNotificationMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.markRead.mutate('n1');
+    });
+
+    await waitFor(() => expect(result.current.markRead.isError).toBe(true));
+    // No alert should be thrown — error is silent
+  });
+
+  it('markAllRead mutation silently handles errors (onError is a no-op)', async () => {
+    (api.markAllAsRead as jest.Mock).mockRejectedValue(new Error('Network error'));
+
+    const { result } = renderHook(() => useNotificationMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.markAllRead.mutate('u1');
+    });
+
+    await waitFor(() => expect(result.current.markAllRead.isError).toBe(true));
+    // No alert — silent failure
+  });
 });

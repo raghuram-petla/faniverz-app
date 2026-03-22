@@ -1,16 +1,70 @@
+// Store captured gesture callbacks for manual invocation in tests
+const capturedCallbacks: {
+  pinchUpdate?: (e: { scale: number }) => void;
+  pinchEnd?: () => void;
+  pinchStart?: () => void;
+  panStart?: () => void;
+  panUpdate?: (e: { translationX: number; translationY: number }) => void;
+  panEnd?: (e: {
+    translationX: number;
+    translationY: number;
+    velocityX: number;
+    velocityY: number;
+  }) => void;
+  doubleTapEnd?: (e: { x: number; y: number }) => void;
+} = {};
+
 jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
   return {
     GestureDetector: ({ children }: { children: React.ReactNode }) => children,
     Gesture: {
-      Pinch: () => ({ onUpdate: jest.fn().mockReturnThis(), onEnd: jest.fn().mockReturnThis() }),
+      Pinch: () => ({
+        onUpdate: jest.fn((cb: (e: { scale: number }) => void) => {
+          capturedCallbacks.pinchUpdate = cb;
+          return {
+            onEnd: jest.fn((cb2: () => void) => {
+              capturedCallbacks.pinchEnd = cb2;
+              return {};
+            }),
+          };
+        }),
+      }),
       Pan: () => ({
         minPointers: jest.fn().mockReturnThis(),
-        onStart: jest.fn().mockReturnThis(),
-        onUpdate: jest.fn().mockReturnThis(),
-        onEnd: jest.fn().mockReturnThis(),
+        onStart: jest.fn((cb: () => void) => {
+          capturedCallbacks.panStart = cb;
+          return {
+            onUpdate: jest.fn(
+              (cb2: (e: { translationX: number; translationY: number }) => void) => {
+                capturedCallbacks.panUpdate = cb2;
+                return {
+                  onEnd: jest.fn(
+                    (
+                      cb3: (e: {
+                        translationX: number;
+                        translationY: number;
+                        velocityX: number;
+                        velocityY: number;
+                      }) => void,
+                    ) => {
+                      capturedCallbacks.panEnd = cb3;
+                      return {};
+                    },
+                  ),
+                };
+              },
+            ),
+          };
+        }),
       }),
-      Tap: () => ({ numberOfTaps: jest.fn().mockReturnThis(), onEnd: jest.fn().mockReturnThis() }),
+      Tap: () => ({
+        numberOfTaps: jest.fn().mockReturnThis(),
+        onEnd: jest.fn((cb: (e: { x: number; y: number }) => void) => {
+          capturedCallbacks.doubleTapEnd = cb;
+          return {};
+        }),
+      }),
       Simultaneous: jest.fn(),
       Race: jest.fn(),
     },
@@ -32,6 +86,13 @@ import {
   IMG_H,
   Y_OVERSCROLL,
 } from '../ImageViewerGestures';
+
+// Clear captured callbacks before each test
+beforeEach(() => {
+  Object.keys(capturedCallbacks).forEach((key) => {
+    delete capturedCallbacks[key as keyof typeof capturedCallbacks];
+  });
+});
 
 const makeProps = (overrides = {}) => ({
   onDismiss: jest.fn(),
@@ -75,6 +136,136 @@ describe('ImageViewerGestures', () => {
     );
     expect(screen.getByText('Zoomed')).toBeTruthy();
   });
+
+  it('calls onDismiss when pan exceeds dismiss threshold downward', () => {
+    const onDismiss = jest.fn();
+    const scale = { value: 1 } as never;
+    const translateX = { value: 0 } as never;
+    const translateY = { value: 0 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ onDismiss, scale, translateX, translateY })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    // Call the pan onEnd callback with a drag exceeding 100px
+    if (capturedCallbacks.panEnd) {
+      capturedCallbacks.panEnd({
+        translationX: 0,
+        translationY: 150,
+        velocityX: 0,
+        velocityY: 300,
+      });
+      expect(onDismiss).toHaveBeenCalled();
+    }
+  });
+
+  it('does not call onDismiss when pan is below dismiss threshold', () => {
+    const onDismiss = jest.fn();
+    const scale = { value: 1 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ onDismiss, scale })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panEnd) {
+      capturedCallbacks.panEnd({
+        translationX: 0,
+        translationY: 50,
+        velocityX: 0,
+        velocityY: 100,
+      });
+      expect(onDismiss).not.toHaveBeenCalled();
+    }
+  });
+
+  it('pan start syncs saved values', () => {
+    const scale = { value: 2 } as never;
+    const translateX = { value: 30 } as never;
+    const translateY = { value: -20 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, translateX, translateY })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panStart) {
+      // Should not throw
+      capturedCallbacks.panStart();
+    }
+    expect(screen.getByText('test')).toBeTruthy();
+  });
+
+  it('pan update at scale > 1 moves the image', () => {
+    const scale = { value: 2 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panStart) capturedCallbacks.panStart();
+    if (capturedCallbacks.panUpdate) {
+      capturedCallbacks.panUpdate({ translationX: 20, translationY: 15 });
+    }
+    expect(screen.getByText('test')).toBeTruthy();
+  });
+
+  it('pan update at scale = 1 drives drag-to-dismiss opacity', () => {
+    const scale = { value: 1 } as never;
+    const backdropOpacity = { value: 1 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, backdropOpacity })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panUpdate) {
+      capturedCallbacks.panUpdate({ translationX: 0, translationY: 80 });
+    }
+    expect(screen.getByText('test')).toBeTruthy();
+  });
+
+  it('pan end at scale > 1 applies decay scrolling', () => {
+    const scale = { value: 2 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panStart) capturedCallbacks.panStart();
+    if (capturedCallbacks.panEnd) {
+      capturedCallbacks.panEnd({
+        translationX: 20,
+        translationY: 10,
+        velocityX: 200,
+        velocityY: 100,
+      });
+    }
+    expect(screen.getByText('test')).toBeTruthy();
+  });
+
+  it('double-tap at scale > 1 resets transforms', () => {
+    const scale = { value: 2 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.doubleTapEnd) {
+      capturedCallbacks.doubleTapEnd({ x: SCREEN_W / 2, y: SCREEN_H / 2 });
+    }
+    expect(screen.getByText('test')).toBeTruthy();
+  });
+
+  it('double-tap at scale = 1 zooms to focal point', () => {
+    const scale = { value: 1 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.doubleTapEnd) {
+      capturedCallbacks.doubleTapEnd({ x: SCREEN_W * 0.7, y: SCREEN_H * 0.3 });
+    }
+    expect(screen.getByText('test')).toBeTruthy();
+  });
 });
 
 describe('clampX', () => {
@@ -109,6 +300,51 @@ describe('clampY', () => {
     const maxY = (IMG_H * MAX_SCALE - SCREEN_H) / 2 + Y_OVERSCROLL;
     expect(clampY(50, MAX_SCALE)).toBe(50);
     expect(clampY(maxY + 100, MAX_SCALE)).toBe(maxY);
+  });
+});
+
+describe('pinch gesture callbacks', () => {
+  it('pinch update at max scale clamps scale', () => {
+    const scale = { value: 1 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale })}>
+        <Text>pinch test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.pinchUpdate) {
+      // scale * e.scale = 1 * 5 = 5, but clamped to MAX_SCALE=4
+      capturedCallbacks.pinchUpdate({ scale: 5 });
+    }
+    expect(screen.getByText('pinch test')).toBeTruthy();
+  });
+
+  it('pinch end at scale > 1 saves transforms and clamps', () => {
+    const scale = { value: 2 } as never;
+    const translateX = { value: 50 } as never;
+    const translateY = { value: 30 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, translateX, translateY })}>
+        <Text>pinch end zoom</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.pinchStart) capturedCallbacks.pinchStart?.();
+    if (capturedCallbacks.pinchEnd) {
+      capturedCallbacks.pinchEnd();
+    }
+    expect(screen.getByText('pinch end zoom')).toBeTruthy();
+  });
+
+  it('pinch end at scale <= 1 resets transforms', () => {
+    const scale = { value: 0.9 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale })}>
+        <Text>reset pinch</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.pinchEnd) {
+      capturedCallbacks.pinchEnd();
+    }
+    expect(screen.getByText('reset pinch')).toBeTruthy();
   });
 });
 

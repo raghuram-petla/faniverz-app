@@ -23,7 +23,13 @@ vi.mock('../../lib/sync-images', () => ({
   syncAllImages: vi.fn(),
 }));
 
-import { syncVideos, syncWatchProviders, syncKeywords } from '../../lib/sync-extended';
+import {
+  syncVideos,
+  syncWatchProviders,
+  syncKeywords,
+  syncProductionCompanies,
+} from '../../lib/sync-extended';
+import type { TmdbProductionCompany } from '../../lib/tmdbTypes';
 import { getWatchProviders } from '../../lib/tmdb';
 import { mapTmdbVideoType } from '../../lib/tmdbTypes';
 
@@ -260,5 +266,190 @@ describe('syncKeywords', () => {
     const detail = {} as unknown as TmdbMovieDetailExtended;
     const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
     expect(result).toBe(0);
+  });
+});
+
+describe('syncProductionCompanies', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+  });
+
+  it('returns 0 for empty companies array', async () => {
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      [],
+      supabase as unknown as SupabaseClient,
+    );
+    expect(result).toBe(0);
+    expect(supabase.insert).not.toHaveBeenCalled();
+  });
+
+  it('uses existing production house by tmdb_company_id', async () => {
+    const companies: TmdbProductionCompany[] = [
+      { id: 100, name: 'Dream Warrior Pictures', logo_path: '/logo.png', origin_country: 'IN' },
+    ];
+    supabase.maybeSingle
+      .mockResolvedValueOnce({ data: { id: 'ph-existing' }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      companies,
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result).toBe(1);
+    expect(supabase.insert).toHaveBeenCalledWith({
+      movie_id: MOVIE_ID,
+      production_house_id: 'ph-existing',
+    });
+  });
+
+  it('auto-creates production house when not found', async () => {
+    const companies: TmdbProductionCompany[] = [
+      { id: 200, name: 'New Studio', logo_path: '/logo.png', origin_country: 'US' },
+    ];
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const singleFn = vi.fn().mockResolvedValue({ data: { id: 'ph-new' }, error: null });
+    const selectFn = vi.fn().mockReturnValue({ single: singleFn });
+    supabase.insert.mockReturnValueOnce({ select: selectFn } as never);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      companies,
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result).toBe(1);
+    expect(singleFn).toHaveBeenCalled();
+  });
+
+  it('skips company when PH creation fails', async () => {
+    const companies: TmdbProductionCompany[] = [
+      { id: 300, name: 'Bad Studio', logo_path: null, origin_country: '' },
+    ];
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const singleFn = vi.fn().mockResolvedValue({ data: null, error: { message: 'insert failed' } });
+    const selectFn = vi.fn().mockReturnValue({ single: singleFn });
+    supabase.insert.mockReturnValueOnce({ select: selectFn } as never);
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      companies,
+      supabase as unknown as SupabaseClient,
+    );
+    consoleWarn.mockRestore();
+
+    expect(result).toBe(0);
+  });
+
+  it('skips already linked production houses', async () => {
+    const companies: TmdbProductionCompany[] = [
+      { id: 100, name: 'Existing Studio', logo_path: null, origin_country: 'IN' },
+    ];
+    supabase.maybeSingle
+      .mockResolvedValueOnce({ data: { id: 'ph-1' }, error: null })
+      .mockResolvedValueOnce({ data: { movie_id: MOVIE_ID }, error: null });
+
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      companies,
+      supabase as unknown as SupabaseClient,
+    );
+    expect(result).toBe(0);
+  });
+
+  it('sets logo_url to null when logo_path is null', async () => {
+    const companies: TmdbProductionCompany[] = [
+      { id: 201, name: 'No Logo Studio', logo_path: null, origin_country: 'IN' },
+    ];
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const singleFn = vi.fn().mockResolvedValue({ data: { id: 'ph-new' }, error: null });
+    const selectFn = vi.fn().mockReturnValue({ single: singleFn });
+    supabase.insert.mockReturnValueOnce({ select: selectFn } as never);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      companies,
+      supabase as unknown as SupabaseClient,
+    );
+    expect(result).toBe(1);
+  });
+
+  it('sets empty string origin_country to null', async () => {
+    const companies: TmdbProductionCompany[] = [
+      { id: 202, name: 'International Studio', logo_path: null, origin_country: '' },
+    ];
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const singleFn = vi.fn().mockResolvedValue({ data: { id: 'ph-new' }, error: null });
+    const selectFn = vi.fn().mockReturnValue({ single: singleFn });
+    supabase.insert.mockReturnValueOnce({ select: selectFn } as never);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await syncProductionCompanies(
+      MOVIE_ID,
+      companies,
+      supabase as unknown as SupabaseClient,
+    );
+    expect(result).toBe(1);
+  });
+});
+
+describe('syncWatchProviders edge cases', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+  });
+
+  it('skips platform when insert fails', async () => {
+    vi.mocked(getWatchProviders).mockResolvedValue([
+      { provider_id: 999, provider_name: 'Bad Platform', logo_path: null as unknown as string },
+    ]);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const singleFn = vi
+      .fn()
+      .mockResolvedValue({ data: null, error: { message: 'platform insert failed' } });
+    const selectFn = vi.fn().mockReturnValue({ single: singleFn });
+    supabase.insert.mockReturnValueOnce({ select: selectFn } as never);
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await syncWatchProviders(
+      MOVIE_ID,
+      1,
+      'key',
+      supabase as unknown as SupabaseClient,
+    );
+    consoleWarn.mockRestore();
+
+    expect(result).toBe(0);
+  });
+
+  it('sets logo_url to null when logo_path is empty/null', async () => {
+    vi.mocked(getWatchProviders).mockResolvedValue([
+      { provider_id: 555, provider_name: 'No Logo Platform', logo_path: '' },
+    ]);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const singleFn = vi
+      .fn()
+      .mockResolvedValue({ data: { id: 'no-logo-platform-555' }, error: null });
+    const selectFn = vi.fn().mockReturnValue({ single: singleFn });
+    supabase.insert.mockReturnValueOnce({ select: selectFn } as never);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await syncWatchProviders(
+      MOVIE_ID,
+      1,
+      'key',
+      supabase as unknown as SupabaseClient,
+    );
+    expect(result).toBe(1);
   });
 });

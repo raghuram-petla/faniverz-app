@@ -173,4 +173,34 @@ describe('MediaScreen', () => {
     expect(screen.queryByText('Trailer (1)')).toBeNull();
     expect(screen.queryByText('Song (1)')).toBeNull();
   });
+
+  it('navigates back when back button in sticky nav is pressed', () => {
+    const mockBack = jest.fn();
+    jest.requireMock('expo-router').useRouter = () => ({
+      push: jest.fn(),
+      back: mockBack,
+      dismissAll: jest.fn(),
+    });
+
+    render(<MediaScreen />);
+    fireEvent.press(screen.getByLabelText('Go back'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
+  it('handles scroll event without crashing', () => {
+    render(<MediaScreen />);
+    const scrollView = screen.UNSAFE_getByType(require('react-native').ScrollView);
+    fireEvent.scroll(scrollView, {
+      nativeEvent: { contentOffset: { y: 120, x: 0 }, layoutMeasurement: {}, contentSize: {} },
+    });
+    // No crash is the assertion — handleScroll updates shared value
+  });
+
+  it('filters videos by active category when a filter pill is pressed', () => {
+    render(<MediaScreen />);
+    // Click Trailer filter pill
+    fireEvent.press(screen.getByText('Trailer (1)'));
+    // Official Trailer should still be visible (Trailer type), Title Song should be hidden
+    expect(screen.getByText('Official Trailer')).toBeTruthy();
+  });
 });

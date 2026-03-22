@@ -121,4 +121,47 @@ describe('MediaHeroHeader', () => {
     const { toJSON } = render(<MediaHeroHeader {...defaultProps} movie={movieNoBackdrop} />);
     expect(toJSON()).toBeTruthy();
   });
+
+  it('renders with null backdrop and null poster (uses placeholder)', () => {
+    const movieNone = { ...mockMovie, backdrop_url: null, poster_url: null };
+    const { toJSON } = render(<MediaHeroHeader {...defaultProps} movie={movieNone} />);
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('renders with detail_focus_x and detail_focus_y overrides', () => {
+    const movieDetailFocus = {
+      ...mockMovie,
+      detail_focus_x: 0.6,
+      detail_focus_y: 0.4,
+    };
+    const { toJSON } = render(<MediaHeroHeader {...defaultProps} movie={movieDetailFocus} />);
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('does not apply content position when only x focus is set', () => {
+    const moviePartialFocus = {
+      ...mockMovie,
+      backdrop_focus_x: 0.5,
+      backdrop_focus_y: null,
+    };
+    const { toJSON } = render(<MediaHeroHeader {...defaultProps} movie={moviePartialFocus} />);
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('does not apply content position when only y focus is set', () => {
+    const moviePartialFocus = {
+      ...mockMovie,
+      backdrop_focus_x: null,
+      backdrop_focus_y: 0.5,
+    };
+    const { toJSON } = render(<MediaHeroHeader {...defaultProps} movie={moviePartialFocus} />);
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('renders with scrollOffset at non-zero value', () => {
+    const { toJSON } = render(
+      <MediaHeroHeader {...defaultProps} scrollOffset={{ value: 100 } as any} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
 });

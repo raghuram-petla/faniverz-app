@@ -44,6 +44,9 @@ const mockUser: AdminUserWithDetails = {
 describe('ImpersonateModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: PH fetch returns empty (no-op for non-PH role)
+    const noop = vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ then: vi.fn() }) });
+    mockFrom.mockReturnValue({ select: noop });
   });
 
   it('renders role mode when targetUser is null', () => {
@@ -57,10 +60,163 @@ describe('ImpersonateModal', () => {
     expect(screen.getByText('John')).toBeInTheDocument();
   });
 
+  it('shows email when display_name is present', () => {
+    render(<ImpersonateModal targetUser={mockUser} onClose={mockOnClose} />);
+    expect(screen.getByText('john@example.com')).toBeInTheDocument();
+  });
+
+  it('shows role label badge', () => {
+    render(<ImpersonateModal targetUser={mockUser} onClose={mockOnClose} />);
+    // ADMIN_ROLE_LABELS['admin'] appears as badge in the user info panel
+    const badge = document.querySelector('.bg-red-600\\/10');
+    expect(badge).toBeTruthy();
+    expect(badge!.textContent).toMatch(/admin/i);
+  });
+
+  it('shows email only (no subtitle) when display_name is null', () => {
+    const userNoName = { ...mockUser, display_name: null };
+    render(<ImpersonateModal targetUser={userNoName} onClose={mockOnClose} />);
+    // email shown as primary name
+    expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    // no separate subtitle
+    const emailEls = screen.queryAllByText('john@example.com');
+    expect(emailEls).toHaveLength(1);
+  });
+
+  it('shows PH assignments when user has them', () => {
+    const userWithPH = {
+      ...mockUser,
+      ph_assignments: [{ production_house_id: 'ph1', production_house: { name: 'Studio A' } }],
+    } as AdminUserWithDetails;
+    render(<ImpersonateModal targetUser={userWithPH} onClose={mockOnClose} />);
+    expect(screen.getByText(/Studio A/i)).toBeInTheDocument();
+  });
+
+  it('shows production_house_id fallback when production_house is null', () => {
+    const userWithPH = {
+      ...mockUser,
+      ph_assignments: [{ production_house_id: 'ph-fallback-id', production_house: null }],
+    } as AdminUserWithDetails;
+    render(<ImpersonateModal targetUser={userWithPH} onClose={mockOnClose} />);
+    expect(screen.getByText(/ph-fallback-id/i)).toBeInTheDocument();
+  });
+
   it('calls onClose when Cancel clicked', () => {
     render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
     fireEvent.click(screen.getByText('Cancel'));
     expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it('calls onClose when X button clicked', () => {
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.click(screen.getByTestId('x-icon').closest('button')!);
+    expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it('calls onClose when backdrop clicked', () => {
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    // The outer overlay div has onClick={onClose}
+    const overlay = document.querySelector('.fixed.inset-0') as HTMLElement;
+    fireEvent.click(overlay);
+    expect(mockOnClose).toHaveBeenCalled();
+  });
+
+  it('does not call onClose when inner card is clicked', () => {
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    const card = document.querySelector('.bg-surface-card') as HTMLElement;
+    fireEvent.click(card);
+    expect(mockOnClose).not.toHaveBeenCalled();
+  });
+
+  it('calls startImpersonation when targetUser is set and Start clicked', async () => {
+    mockStartImpersonation.mockResolvedValue(undefined);
+    render(<ImpersonateModal targetUser={mockUser} onClose={mockOnClose} />);
+    fireEvent.click(screen.getByText('Start Impersonating'));
+    await waitFor(() => {
+      expect(mockStartImpersonation).toHaveBeenCalledWith('u1');
+      expect(mockOnClose).toHaveBeenCalled();
+    });
+  });
+
+  it('calls startRoleImpersonation for admin role', async () => {
+    mockStartRoleImpersonation.mockResolvedValue(undefined);
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    // Default role is 'admin'
+    fireEvent.click(screen.getByText('Start Impersonating'));
+    await waitFor(() => {
+      expect(mockStartRoleImpersonation).toHaveBeenCalledWith('admin', []);
+      expect(mockOnClose).toHaveBeenCalled();
+    });
+  });
+
+  it('disables Start Impersonating when PH admin selected and no PHs chosen', () => {
+    const noop = vi.fn().mockReturnValue({
+      order: vi.fn().mockReturnValue({ then: vi.fn() }),
+    });
+    mockFrom.mockReturnValue({ select: noop });
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+    const btn = screen.getByText('Start Impersonating').closest('button')!;
+    expect(btn).toBeDisabled();
+  });
+
+  it('enables Start Impersonating for admin role (default)', () => {
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    // admin role with no PH requirement — button should be enabled
+    const btn = screen.getByText('Start Impersonating').closest('button')!;
+    expect(btn).not.toBeDisabled();
+  });
+
+  it('toggles PH selection in and out', async () => {
+    const mockSelect = vi.fn().mockReturnValue({
+      order: vi.fn().mockReturnValue({
+        then: (resolve: Function) => {
+          resolve({ data: [{ id: 'ph1', name: 'Studio One' }] });
+        },
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+
+    await waitFor(() => screen.getByText('Studio One'));
+
+    const checkbox = screen.getByRole('checkbox');
+    // Select it
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+    // Deselect it
+    fireEvent.click(checkbox);
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it('clears selectedPhIds when switching away from PH admin role', async () => {
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    // Switch to PH admin then back to admin
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } });
+    // admin role: Start button should be enabled (selectedPhIds cleared)
+    const btn = screen.getByText('Start Impersonating').closest('button')!;
+    expect(btn).not.toBeDisabled();
+  });
+
+  it('shows "No production houses found" when empty list returned', async () => {
+    const mockSelect = vi.fn().mockReturnValue({
+      order: vi.fn().mockReturnValue({
+        then: (resolve: Function) => {
+          resolve({ data: [] });
+        },
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('No production houses found')).toBeInTheDocument();
+    });
   });
 
   describe('production houses fetch — rejection handler regression', () => {

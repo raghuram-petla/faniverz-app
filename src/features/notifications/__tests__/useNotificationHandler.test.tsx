@@ -44,8 +44,20 @@ describe('useNotificationHandler', () => {
     jest.clearAllMocks();
   });
 
-  it('sets notification handler on module load', () => {
+  it('sets notification handler on module load and handleNotification returns correct flags', async () => {
     expect(Notifications.setNotificationHandler).toHaveBeenCalled();
+    // Find the handler argument from the most recent call
+    const calls = (Notifications.setNotificationHandler as jest.Mock).mock.calls;
+    const handlerArg = calls[calls.length - 1]?.[0];
+    expect(handlerArg).toBeDefined();
+    if (handlerArg?.handleNotification) {
+      const behavior = await handlerArg.handleNotification({} as never);
+      expect(behavior.shouldShowAlert).toBe(true);
+      expect(behavior.shouldPlaySound).toBe(true);
+      expect(behavior.shouldSetBadge).toBe(true);
+      expect(behavior.shouldShowBanner).toBe(true);
+      expect(behavior.shouldShowList).toBe(true);
+    }
   });
 
   it('adds notification response listener on mount', () => {

@@ -5,7 +5,7 @@ import type { Movie } from '@/types';
 import type { OTTPlatform } from '@/types/ott';
 
 jest.mock('@shared/imageUrl', () => ({
-  getImageUrl: (url: string | null) => url,
+  getImageUrl: jest.fn((url: string | null) => url),
 }));
 
 jest.mock('@shared/movieStatus', () => ({
@@ -149,5 +149,29 @@ describe('SearchResultMovie', () => {
   it('renders action button on poster', () => {
     render(<SearchResultMovie movie={mockMovie} platforms={[]} onPress={jest.fn()} />);
     expect(screen.getByLabelText('Follow Pushpa 2')).toBeTruthy();
+  });
+
+  it('uses placeholder poster when getImageUrl returns null', () => {
+    const imageUrl = require('@shared/imageUrl');
+    (imageUrl.getImageUrl as jest.Mock).mockReturnValueOnce(null);
+    render(
+      <SearchResultMovie
+        movie={{ ...mockMovie, poster_url: null }}
+        platforms={[]}
+        onPress={jest.fn()}
+      />,
+    );
+    expect(screen.getByLabelText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('hides genres when genres is null (defaults to empty array)', () => {
+    render(
+      <SearchResultMovie
+        movie={{ ...mockMovie, genres: null }}
+        platforms={[]}
+        onPress={jest.fn()}
+      />,
+    );
+    expect(screen.queryByText('Action • Drama')).toBeNull();
   });
 });

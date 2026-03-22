@@ -68,6 +68,14 @@ describe('AvailableCard', () => {
     render(<AvailableCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     expect(screen.getByLabelText('Mark as watched')).toBeTruthy();
   });
+
+  it('renders genres as empty row when genres is null in AvailableCard', () => {
+    const noGenresEntry = { movie: { ...mockEntry.movie, genres: null } } as any;
+    const { toJSON } = render(
+      <AvailableCard entry={noGenresEntry} userId="u1" styles={mockStyles} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
 });
 
 describe('UpcomingCard', () => {
@@ -86,6 +94,26 @@ describe('UpcomingCard', () => {
   it('renders "Soon" badge text', () => {
     render(<UpcomingCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     expect(screen.getByText('watchlist.soon')).toBeTruthy();
+  });
+
+  it('renders TBA when release_date is null', () => {
+    const noDateEntry = { movie: { ...mockEntry.movie, release_date: null } } as any;
+    render(<UpcomingCard entry={noDateEntry} userId="u1" styles={mockStyles} />);
+    expect(screen.getByText('movie.tba')).toBeTruthy();
+  });
+
+  it('renders genres as empty row when genres is null', () => {
+    const noGenresEntry = { movie: { ...mockEntry.movie, genres: null } } as any;
+    const { toJSON } = render(
+      <UpcomingCard entry={noGenresEntry} userId="u1" styles={mockStyles} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('uses placeholder when poster_url is null in UpcomingCard', () => {
+    const noPosterEntry = { movie: { ...mockEntry.movie, poster_url: null } } as any;
+    render(<UpcomingCard entry={noPosterEntry} userId="u1" styles={mockStyles} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
   });
 });
 
@@ -110,6 +138,20 @@ describe('WatchedCard', () => {
   it('renders "Remove from watched" accessibility label', () => {
     render(<WatchedCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     expect(screen.getByLabelText('Remove from watched')).toBeTruthy();
+  });
+
+  it('renders genres as empty row when genres is null in WatchedCard', () => {
+    const noGenresEntry = { movie: { ...mockEntry.movie, genres: null } } as any;
+    const { toJSON } = render(
+      <WatchedCard entry={noGenresEntry} userId="u1" styles={mockStyles} />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('uses placeholder when poster_url is null in WatchedCard', () => {
+    const noPosterEntry = { movie: { ...mockEntry.movie, poster_url: null } } as any;
+    render(<WatchedCard entry={noPosterEntry} userId="u1" styles={mockStyles} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
   });
 });
 
@@ -165,6 +207,12 @@ describe('UpcomingCard — interactions', () => {
     render(<UpcomingCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     fireEvent.press(screen.getByLabelText('Remove from watchlist'));
     expect(mockRemoveMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: 'movie-1' });
+  });
+
+  it('calls markWatched.mutate when mark as watched button is pressed on UpcomingCard', () => {
+    render(<UpcomingCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Mark as watched'));
+    expect(mockMarkWatchedMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: 'movie-1' });
   });
 });
 

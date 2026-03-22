@@ -1,7 +1,3 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
-import { FeaturedVideoCard } from '../FeaturedVideoCard';
-
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -11,14 +7,33 @@ jest.mock('react-i18next', () => ({
 
 jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
-  return { WebView: View };
+  // Expose props so tests can call WebView callbacks
+  return {
+    WebView: (props: {
+      onShouldStartLoadWithRequest?: (req: object) => boolean;
+      onOpenWindow?: (e: object) => void;
+      [key: string]: unknown;
+    }) => <View testID="webview" {...props} />,
+  };
 });
+
+jest.mock('@/utils/youtubeNavigation', () => ({
+  buildYouTubeEmbedHtml: jest.fn(() => '<html>embed</html>'),
+  shareYouTubeVideo: jest.fn(),
+  handleYouTubeNavigation: jest.fn(() => true),
+  handleYouTubeOpenWindow: jest.fn(),
+}));
+
 jest.mock('@/constants/surpriseHelpers', () => ({
   getCategoryColor: () => '#FF0000',
   getCategoryLabel: () => 'Behind the Scenes',
   getCategoryIconName: () => 'videocam',
   formatViews: (n: number) => `${n}`,
 }));
+
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react-native';
+import { FeaturedVideoCard } from '../FeaturedVideoCard';
 
 const mockStyles = new Proxy({}, { get: () => ({}) });
 
@@ -91,5 +106,74 @@ describe('FeaturedVideoCard', () => {
     fireEvent.press(screen.getByLabelText('common.playVideo'));
     // Share button should be visible
     expect(screen.getByLabelText('common.shareVideo')).toBeTruthy();
+  });
+
+  it('shows thumbnail play button when youtube_id is present', () => {
+    const itemWithYoutube = { ...mockItem, youtube_id: 'abc123' };
+    render(<FeaturedVideoCard item={itemWithYoutube} styles={mockStyles} />);
+    // Should show play button in thumbnail state
+    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
+  });
+
+  it('shows thumbnail play button when youtube_id is null (uses fallback)', () => {
+    const noYoutubeItem = { ...mockItem, youtube_id: null };
+    render(<FeaturedVideoCard item={noYoutubeItem} styles={mockStyles} />);
+    // Should still render thumbnail mode with play button using fallback video id
+    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
+  });
+
+  it('WebView replaces thumbnail after activation', () => {
+    render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('common.playVideo'));
+    // After activation, the play button should be gone (WebView took over)
+    expect(screen.queryByLabelText('common.playVideo')).toBeNull();
+  });
+
+  it('onNavRequest callback delegates to handleYouTubeNavigation', () => {
+    const { handleYouTubeNavigation } = require('@/utils/youtubeNavigation');
+    const { UNSAFE_getByType } = render(
+      <FeaturedVideoCard item={{ ...mockItem, youtube_id: 'vid123' }} styles={mockStyles} />,
+    );
+    fireEvent.press(screen.getByLabelText('common.playVideo'));
+    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
+    if (webview.props.onShouldStartLoadWithRequest) {
+      webview.props.onShouldStartLoadWithRequest({
+        url: 'https://youtube.com',
+        navigationType: 'click',
+      });
+      expect(handleYouTubeNavigation).toHaveBeenCalled();
+    }
+  });
+
+  it('onOpenWindow callback delegates to handleYouTubeOpenWindow', () => {
+    const { handleYouTubeOpenWindow } = require('@/utils/youtubeNavigation');
+    const { UNSAFE_getByType } = render(
+      <FeaturedVideoCard item={{ ...mockItem, youtube_id: 'vid123' }} styles={mockStyles} />,
+    );
+    fireEvent.press(screen.getByLabelText('common.playVideo'));
+    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
+    if (webview.props.onOpenWindow) {
+      webview.props.onOpenWindow({
+        nativeEvent: { targetUrl: 'https://youtube.com/watch?v=vid123' },
+      });
+      expect(handleYouTubeOpenWindow).toHaveBeenCalled();
+    }
+  });
+
+  it('share button press calls shareYouTubeVideo', () => {
+    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
+    render(<FeaturedVideoCard item={{ ...mockItem, youtube_id: 'vid123' }} styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('common.playVideo'));
+    fireEvent.press(screen.getByLabelText('common.shareVideo'));
+    expect(shareYouTubeVideo).toHaveBeenCalledWith('vid123');
+  });
+
+  it('share uses fallback video ID when youtube_id is null', () => {
+    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
+    render(<FeaturedVideoCard item={{ ...mockItem, youtube_id: null }} styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('common.playVideo'));
+    fireEvent.press(screen.getByLabelText('common.shareVideo'));
+    // FALLBACK_VIDEO_ID = 'roYRXbhxhlM'
+    expect(shareYouTubeVideo).toHaveBeenCalledWith('roYRXbhxhlM');
   });
 });

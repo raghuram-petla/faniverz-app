@@ -182,4 +182,65 @@ describe('ImageViewerProvider', () => {
     fireEvent.press(screen.getByLabelText('Noop'));
     // Should not throw
   });
+
+  it('calls default closeImage noop outside provider without crashing', () => {
+    function StandaloneClose() {
+      const { closeImage } = useImageViewer();
+      return (
+        <TouchableOpacity accessibilityLabel="NoopClose" onPress={closeImage}>
+          <Text>Close Noop</Text>
+        </TouchableOpacity>
+      );
+    }
+    render(<StandaloneClose />);
+    fireEvent.press(screen.getByLabelText('NoopClose'));
+    // default closeImage is () => {} — should not throw
+  });
+
+  it('replaces the current image when openImage is called while another is already open', () => {
+    function MultiConsumer() {
+      const { openImage } = useImageViewer();
+      return (
+        <View>
+          <TouchableOpacity
+            accessibilityLabel="Open First"
+            onPress={() =>
+              openImage({
+                feedUrl: 'https://example.com/first.jpg',
+                fullUrl: 'https://example.com/first-full.jpg',
+                sourceLayout: { x: 0, y: 0, width: 100, height: 150 },
+                sourceRef: { current: null } as never,
+                borderRadius: 8,
+              })
+            }
+          >
+            <Text>First</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityLabel="Open Second"
+            onPress={() =>
+              openImage({
+                feedUrl: 'https://example.com/second.jpg',
+                fullUrl: 'https://example.com/second-full.jpg',
+                sourceLayout: { x: 0, y: 0, width: 100, height: 150 },
+                sourceRef: { current: null } as never,
+                borderRadius: 8,
+              })
+            }
+          >
+            <Text>Second</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    render(
+      <ImageViewerProvider>
+        <MultiConsumer />
+      </ImageViewerProvider>,
+    );
+    fireEvent.press(screen.getByLabelText('Open First'));
+    expect(screen.getByText('https://example.com/first.jpg')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Open Second'));
+    expect(screen.getByText('https://example.com/second.jpg')).toBeTruthy();
+  });
 });

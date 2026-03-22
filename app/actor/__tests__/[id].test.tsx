@@ -507,4 +507,102 @@ describe('ActorDetailScreen', () => {
     expect(Linking.openURL).toHaveBeenCalledWith('https://www.imdb.com/name/nm0012345');
     jest.restoreAllMocks();
   });
+
+  it('opens correct Instagram URL on press', () => {
+    const { Linking } = require('react-native');
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const withIg = { ...mockActor, instagram_id: 'naikiniki' };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withIg,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    fireEvent.press(screen.getByTestId('social-instagram'));
+    expect(Linking.openURL).toHaveBeenCalledWith('https://www.instagram.com/naikiniki');
+    jest.restoreAllMocks();
+  });
+
+  it('opens correct Twitter URL on press', () => {
+    const { Linking } = require('react-native');
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    const withTwitter = { ...mockActor, twitter_id: 'king_nagarjuna' };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withTwitter,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    fireEvent.press(screen.getByTestId('social-twitter'));
+    expect(Linking.openURL).toHaveBeenCalledWith('https://twitter.com/king_nagarjuna');
+    jest.restoreAllMocks();
+  });
+
+  it('shows Non-binary gender badge', () => {
+    const nonBinary = { ...mockActor, gender: 3 };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: nonBinary,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.getByText('Non-binary')).toBeTruthy();
+  });
+
+  it('shows crew role name from filmography for technician person type', () => {
+    const technician = { ...mockActor, person_type: 'technician' as const };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: technician,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    // The first crew credit has role_name 'Director', so it shows 'Director' badge instead of 'Technician'
+    // Multiple 'Director' texts may appear (type badge + filmography)
+    expect(screen.getAllByText('Director').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('navigates to known-for movie on press', () => {
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: mockActor,
+      filmography: mockFilmography,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    // The first credit (m1) has rating 3.5 > 0 so it shows in known for
+    fireEvent.press(screen.getByTestId('known-for-m1'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/m1');
+  });
+
+  it('filters empty strings from also_known_as', () => {
+    const withEmptyAka = { ...mockActor, also_known_as: ['', 'King Nagarjuna', ''] };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: withEmptyAka,
+      filmography: [],
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    // Empty strings are filtered out, only 'King Nagarjuna' should show
+    expect(screen.getByText('King Nagarjuna')).toBeTruthy();
+    // Empty strings should not render as chips
+  });
+
+  it('does not show bio card when no bio info', () => {
+    const noBioInfo = {
+      ...mockActor,
+      birth_date: null,
+      place_of_birth: null,
+      height_cm: null,
+      death_date: null,
+    };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: noBioInfo,
+      filmography: [],
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.queryByText('Born')).toBeNull();
+    expect(screen.queryByText('From')).toBeNull();
+    expect(screen.queryByText('Height')).toBeNull();
+  });
 });

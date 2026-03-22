@@ -44,6 +44,7 @@ const mockDeleteMutate = jest.fn();
 const mockFetchNextPage = jest.fn();
 const mockVoteMutate = jest.fn();
 const mockRemoveMutate = jest.fn();
+const mockUserVotesData: Record<string, string> = {};
 
 jest.mock('@/features/feed', () => ({
   useFeedItem: () => ({
@@ -97,7 +98,7 @@ jest.mock('@/features/feed', () => ({
   useDeleteComment: () => ({ mutate: mockDeleteMutate }),
   useVoteFeedItem: () => ({ mutate: mockVoteMutate }),
   useRemoveFeedVote: () => ({ mutate: mockRemoveMutate }),
-  useUserVotes: () => ({ data: {}, refetch: jest.fn() }),
+  useUserVotes: () => ({ data: mockUserVotesData, refetch: jest.fn() }),
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
@@ -275,5 +276,62 @@ describe('PostDetailScreen', () => {
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('user-entity-other'));
     expect(mockPush).toHaveBeenCalledWith('/user/other-user');
+  });
+
+  it('removes upvote when already upvoted', () => {
+    mockUserVotesData['post-1'] = 'up';
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('upvote-btn'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({
+      feedItemId: 'post-1',
+      previousVote: 'up',
+    });
+    delete mockUserVotesData['post-1'];
+  });
+
+  it('removes downvote when already downvoted', () => {
+    mockUserVotesData['post-1'] = 'down';
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('downvote-btn'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({
+      feedItemId: 'post-1',
+      previousVote: 'down',
+    });
+    delete mockUserVotesData['post-1'];
+  });
+
+  it('shows error alert when add comment fails', () => {
+    render(<PostDetailScreen />);
+    const addCall = mockMutate.mock.calls[0];
+    // mockMutate is called via onSubmit — call it and extract onError
+    fireEvent.press(screen.getByTestId('submit-btn'));
+    const callArgs = mockMutate.mock.calls[mockMutate.mock.calls.length - 1];
+    const { onError } = callArgs[1];
+    onError(new Error('network error'));
+    expect(Alert.alert).toHaveBeenCalledWith('common.error', 'common.failedToAddComment');
+    void addCall; // avoid unused var warning
+  });
+
+  it('shows loading skeleton when post is loading', () => {
+    const mockFeedModule = jest.requireMock('@/features/feed');
+    const origUseFeedItem = mockFeedModule.useFeedItem;
+    mockFeedModule.useFeedItem = () => ({ data: undefined, isLoading: true, refetch: jest.fn() });
+
+    render(<PostDetailScreen />);
+    // PostContentSkeleton is rendered; no crash
+    expect(screen.queryByTestId('feed-card')).toBeNull();
+
+    mockFeedModule.useFeedItem = origUseFeedItem;
+  });
+
+  it('shows not-found state when post is null and not loading', () => {
+    const mockFeedModule = jest.requireMock('@/features/feed');
+    const origUseFeedItem = mockFeedModule.useFeedItem;
+    mockFeedModule.useFeedItem = () => ({ data: null, isLoading: false, refetch: jest.fn() });
+
+    render(<PostDetailScreen />);
+    expect(screen.getByText('postDetail.notFound')).toBeTruthy();
+
+    mockFeedModule.useFeedItem = origUseFeedItem;
   });
 });

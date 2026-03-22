@@ -149,4 +149,77 @@ describe('useReviewMutations', () => {
     await waitFor(() => expect(result.current.helpful.isSuccess).toBe(true));
     expect(api.toggleHelpful).toHaveBeenCalledWith('u1', 'r1');
   });
+
+  it('create mutation shows alert on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.createReview as jest.Mock).mockRejectedValue(new Error('Create failed'));
+
+    const { result } = renderHook(() => useReviewMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.create.mutate({
+        movie_id: 'm1',
+        user_id: 'u1',
+        rating: 4,
+        content: 'Good',
+      } as never);
+    });
+
+    await waitFor(() => expect(result.current.create.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+  });
+
+  it('update mutation shows alert on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.updateReview as jest.Mock).mockRejectedValue(new Error('Update failed'));
+
+    const { result } = renderHook(() => useReviewMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.update.mutate({ id: 'r1', input: { rating: 5 } as never, movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.update.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+  });
+
+  it('remove mutation shows alert on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.deleteReview as jest.Mock).mockRejectedValue(new Error('Delete failed'));
+
+    const { result } = renderHook(() => useReviewMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.remove.mutate({ id: 'r1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+  });
+
+  it('helpful mutation shows alert on error', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.toggleHelpful as jest.Mock).mockRejectedValue(new Error('Helpful failed'));
+
+    const { result } = renderHook(() => useReviewMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.helpful.mutate({ userId: 'u1', reviewId: 'r1' });
+    });
+
+    await waitFor(() => expect(result.current.helpful.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalled();
+  });
 });

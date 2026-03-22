@@ -63,4 +63,21 @@ describe('CastTab', () => {
     fireEvent.press(screen.getByText('Allu Arjun'));
     expect(onActorPress).toHaveBeenCalledWith('a1');
   });
+
+  it('calls onActorPress when crew item is pressed', () => {
+    const onActorPress = jest.fn();
+    render(<CastTab {...baseProps} onActorPress={onActorPress} />);
+    fireEvent.press(screen.getByText('Sukumar'));
+    expect(onActorPress).toHaveBeenCalledWith('a3');
+  });
+
+  it('does not call onActorPress when crew actor has no id', () => {
+    const onActorPress = jest.fn();
+    const crewNoId = [
+      { id: 'cr2', role_name: 'Producer', actor: { id: null, name: 'Unknown', photo_url: null } },
+    ];
+    render(<CastTab cast={[]} crew={crewNoId as any} onActorPress={onActorPress} />);
+    fireEvent.press(screen.getByText('Unknown'));
+    expect(onActorPress).not.toHaveBeenCalled();
+  });
 });

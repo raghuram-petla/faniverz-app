@@ -359,4 +359,89 @@ describe('WatchlistScreen', () => {
 
     expect(screen.queryByTestId('footer-loader')).toBeNull();
   });
+
+  it('navigates to login when Sign In button is pressed in guest state', () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: true,
+      setIsGuest: jest.fn(),
+    });
+    setupWatchlistMock();
+    mockUseWatchlistMutations.mockReturnValue(mockMutations);
+
+    render(<WatchlistScreen />);
+
+    const signInButton = screen.getByText('Sign In / Sign Up');
+    fireEvent.press(signInButton);
+    expect(mockPush).toHaveBeenCalledWith('/(auth)/login');
+  });
+
+  it('navigates to discover when Discover Movies button is pressed in empty state', () => {
+    setupLoggedIn();
+    setupWatchlistMock();
+
+    render(<WatchlistScreen />);
+
+    const discoverButton = screen.getByText('Discover Movies');
+    fireEvent.press(discoverButton);
+    expect(mockPush).toHaveBeenCalledWith('/discover');
+  });
+
+  it('calls fetchNextPage when FlatList reaches end and hasNextPage is true', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+      hasNextPage: true,
+      isFetchingNextPage: false,
+    });
+
+    render(<WatchlistScreen />);
+
+    const { FlatList } = require('react-native');
+    const flatList = screen.UNSAFE_getByType(FlatList);
+    fireEvent(flatList, 'endReached');
+    expect(mockFetchNextPage).toHaveBeenCalled();
+  });
+
+  it('does not call fetchNextPage when hasNextPage is false', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    });
+
+    render(<WatchlistScreen />);
+
+    const { FlatList } = require('react-native');
+    const flatList = screen.UNSAFE_getByType(FlatList);
+    fireEvent(flatList, 'endReached');
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('collapses Available section when section header is toggled', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+
+    // Pushpa 2 should be visible initially
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+
+    // Press section header text to toggle collapse
+    fireEvent.press(screen.getByText('Available to Watch'));
+
+    // Entry should now be hidden (section collapsed)
+    expect(screen.queryByText('Pushpa 2')).toBeNull();
+  });
 });

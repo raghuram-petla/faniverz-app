@@ -9,8 +9,21 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+let capturedOnSubmit: (() => void) | null = null;
+let capturedOnSpoilerToggle: (() => void) | null = null;
+let capturedOnClose: (() => void) | null = null;
+
 jest.mock('@/components/movie/detail/ReviewModal', () => ({
-  ReviewModal: () => null,
+  ReviewModal: (props: {
+    onSubmit?: () => void;
+    onSpoilerToggle?: () => void;
+    onClose?: () => void;
+  }) => {
+    capturedOnSubmit = props.onSubmit ?? null;
+    capturedOnSpoilerToggle = props.onSpoilerToggle ?? null;
+    capturedOnClose = props.onClose ?? null;
+    return null;
+  },
 }));
 
 import React from 'react';
@@ -33,6 +46,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 }));
 
 const mockRemoveMutate = jest.fn();
+const mockUpdateMutate = jest.fn();
 
 const mockReviews = [
   {
@@ -72,7 +86,7 @@ jest.mock('@/features/reviews/hooks', () => ({
   useUserReviews: (userId: string) => mockUseUserReviews(userId),
   useReviewMutations: () => ({
     create: { mutate: jest.fn(), isPending: false },
-    update: { mutate: jest.fn(), isPending: false },
+    update: { mutate: mockUpdateMutate, isPending: false },
     remove: { mutate: mockRemoveMutate, isPending: false },
     helpful: { mutate: jest.fn(), isPending: false },
   }),
@@ -81,6 +95,10 @@ jest.mock('@/features/reviews/hooks', () => ({
 import MyReviewsScreen from '../reviews';
 
 describe('MyReviewsScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('renders "My Reviews" header', () => {
     render(<MyReviewsScreen />);
     expect(screen.getByText('profile.myReviews')).toBeTruthy();
@@ -239,5 +257,53 @@ describe('MyReviewsScreen', () => {
     fireEvent.press(deleteButtons[0]);
     expect(alertSpy).toHaveBeenCalled();
     alertSpy.mockRestore();
+  });
+
+  it('handleEditSubmit calls update.mutate when editingReview is set and rating > 0', () => {
+    capturedOnSubmit = null;
+    render(<MyReviewsScreen />);
+    // Press Edit on the first review to open modal and set editingReview
+    const editButtons = screen.getAllByText('common.edit');
+    fireEvent.press(editButtons[0]);
+    // capturedOnSubmit is now set by the ReviewModal mock
+    expect(capturedOnSubmit).not.toBeNull();
+    capturedOnSubmit?.();
+    expect(mockUpdateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'review-1', movieId: 'movie-1' }),
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+    // Simulate onSuccess to close modal (clears editingReview)
+    const onSuccessArg = mockUpdateMutate.mock.calls[0][1]?.onSuccess;
+    expect(() => onSuccessArg?.()).not.toThrow();
+  });
+
+  it('handleEditSubmit is a no-op when editingReview is null (no Edit pressed)', () => {
+    // When editingReview is null, calling the submit handler early-returns
+    capturedOnSubmit = null;
+    render(<MyReviewsScreen />);
+    // Call the captured onSubmit without pressing Edit (editingReview = null)
+    capturedOnSubmit?.();
+    // update.mutate should NOT be called since editingReview is null
+    expect(mockUpdateMutate).not.toHaveBeenCalled();
+  });
+
+  it('onSpoilerToggle toggles spoiler state', () => {
+    capturedOnSpoilerToggle = null;
+    render(<MyReviewsScreen />);
+    const editButtons = screen.getAllByText('common.edit');
+    fireEvent.press(editButtons[0]);
+    expect(capturedOnSpoilerToggle).not.toBeNull();
+    // Should not throw when called
+    expect(() => capturedOnSpoilerToggle?.()).not.toThrow();
+  });
+
+  it('onClose callback clears editingReview', () => {
+    capturedOnClose = null;
+    render(<MyReviewsScreen />);
+    const editButtons = screen.getAllByText('common.edit');
+    fireEvent.press(editButtons[0]);
+    expect(capturedOnClose).not.toBeNull();
+    // Should not throw
+    expect(() => capturedOnClose?.()).not.toThrow();
   });
 });

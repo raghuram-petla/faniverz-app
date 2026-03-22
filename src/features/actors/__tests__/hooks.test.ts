@@ -1,7 +1,12 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useFavoriteActors, useSearchActors, useFavoriteActorMutations } from '../hooks';
+import {
+  useFavoriteActors,
+  useSearchActors,
+  useFavoriteActorMutations,
+  useActorDetail,
+} from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
@@ -80,6 +85,81 @@ describe('useSearchActors', () => {
   });
 });
 
+describe('useActorDetail', () => {
+  const mockActor = { id: 'a1', name: 'Allu Arjun', biography: 'Actor', photo_url: null };
+  const mockFilmography = [{ id: 'm1', title: 'Pushpa', role: 'Lead' }];
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('returns actor and filmography when both queries succeed', async () => {
+    (api.fetchActorById as jest.Mock).mockResolvedValue(mockActor);
+    (api.fetchActorFilmography as jest.Mock).mockResolvedValue(mockFilmography);
+
+    const { result } = renderHook(() => useActorDetail('a1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.actor).toEqual(mockActor);
+    expect(result.current.filmography).toEqual(mockFilmography);
+  });
+
+  it('returns null actor and empty filmography when not loaded yet', () => {
+    (api.fetchActorById as jest.Mock).mockResolvedValue(mockActor);
+    (api.fetchActorFilmography as jest.Mock).mockResolvedValue(mockFilmography);
+
+    const { result } = renderHook(() => useActorDetail('a1'), { wrapper: createWrapper() });
+
+    // Initially loading — actor is null, filmography is []
+    expect(result.current.actor).toBeNull();
+    expect(result.current.filmography).toEqual([]);
+  });
+
+  it('isLoading is true while either query is pending', () => {
+    (api.fetchActorById as jest.Mock).mockImplementation(() => new Promise(() => {}));
+    (api.fetchActorFilmography as jest.Mock).mockImplementation(() => new Promise(() => {}));
+
+    const { result } = renderHook(() => useActorDetail('a1'), { wrapper: createWrapper() });
+
+    expect(result.current.isLoading).toBe(true);
+  });
+
+  it('does not fetch when id is empty', async () => {
+    (api.fetchActorById as jest.Mock).mockResolvedValue(mockActor);
+    (api.fetchActorFilmography as jest.Mock).mockResolvedValue(mockFilmography);
+
+    const { result } = renderHook(() => useActorDetail(''), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(api.fetchActorById).not.toHaveBeenCalled();
+    expect(api.fetchActorFilmography).not.toHaveBeenCalled();
+  });
+
+  it('calls refetch for both queries', async () => {
+    (api.fetchActorById as jest.Mock).mockResolvedValue(mockActor);
+    (api.fetchActorFilmography as jest.Mock).mockResolvedValue(mockFilmography);
+
+    const { result } = renderHook(() => useActorDetail('a1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Call refetch — should not throw
+    await act(async () => {
+      await result.current.refetch();
+    });
+    expect(api.fetchActorById).toHaveBeenCalledTimes(2);
+    expect(api.fetchActorFilmography).toHaveBeenCalledTimes(2);
+  });
+
+  it('exposes refetch function', () => {
+    (api.fetchActorById as jest.Mock).mockResolvedValue(mockActor);
+    (api.fetchActorFilmography as jest.Mock).mockResolvedValue(mockFilmography);
+
+    const { result } = renderHook(() => useActorDetail('a1'), { wrapper: createWrapper() });
+    expect(typeof result.current.refetch).toBe('function');
+  });
+});
+
 describe('useFavoriteActorMutations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -122,5 +202,43 @@ describe('useFavoriteActorMutations', () => {
 
     await waitFor(() => expect(result.current.remove.isSuccess).toBe(true));
     expect(api.removeFavoriteActor).toHaveBeenCalledWith('u1', 'a1');
+  });
+
+  it('shows alert when add mutation fails', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+    (api.addFavoriteActor as jest.Mock).mockRejectedValue(new Error('add failed'));
+
+    const { result } = renderHook(() => useFavoriteActorMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.add.mutate({ userId: 'u1', actorId: 'a1' });
+    });
+
+    await waitFor(() => expect(result.current.add.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('shows alert when remove mutation fails', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+    (api.removeFavoriteActor as jest.Mock).mockRejectedValue(new Error('remove failed'));
+
+    const { result } = renderHook(() => useFavoriteActorMutations(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.remove.mutate({ userId: 'u1', actorId: 'a1' });
+    });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
   });
 });

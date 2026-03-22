@@ -198,4 +198,41 @@ describe('WatchOnSection', () => {
     );
     expect(screen.getByText('A')).toBeTruthy();
   });
+
+  it('renders local logo Image when getPlatformLogo returns an asset', () => {
+    const { getPlatformLogo } = require('@/constants/platformLogos');
+    (getPlatformLogo as jest.Mock).mockReturnValueOnce(123);
+    render(
+      <WatchOnSection
+        platforms={[makePlatform()] as any}
+        movieStatus="streaming"
+        releaseDate="2024-12-05"
+      />,
+    );
+    // When a local logo asset is returned, no logo text is rendered
+    expect(screen.queryByText('A')).toBeNull();
+  });
+
+  it('renders remote logo Image when platform has logo_url but no local asset', () => {
+    const { getPlatformLogo } = require('@/constants/platformLogos');
+    (getPlatformLogo as jest.Mock).mockReturnValueOnce(null);
+    const platform = makePlatform({
+      platform: {
+        id: 'aha',
+        name: 'Aha',
+        color: '#FF5722',
+        logo: 'A',
+        logo_url: 'https://example.com/logo.png',
+      },
+    });
+    render(
+      <WatchOnSection
+        platforms={[platform] as any}
+        movieStatus="streaming"
+        releaseDate="2024-12-05"
+      />,
+    );
+    // Remote logo image renders, no text logo fallback
+    expect(screen.queryByText('A')).toBeNull();
+  });
 });

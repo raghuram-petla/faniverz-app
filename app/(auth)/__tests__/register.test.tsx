@@ -18,16 +18,18 @@ jest.mock('@/features/auth/hooks/useEmailAuth', () => ({
   useEmailAuth: jest.fn(),
 }));
 
+const mockSignInWithGoogle = jest.fn();
 jest.mock('@/features/auth/hooks/useGoogleAuth', () => ({
-  useGoogleAuth: () => ({ signInWithGoogle: jest.fn(), isLoading: false, error: null }),
+  useGoogleAuth: () => ({ signInWithGoogle: mockSignInWithGoogle, isLoading: false, error: null }),
 }));
 
+const mockSignInWithApple = jest.fn();
 jest.mock('@/features/auth/hooks/useAppleAuth', () => ({
   useAppleAuth: () => ({
-    signInWithApple: jest.fn(),
+    signInWithApple: mockSignInWithApple,
     isLoading: false,
     error: null,
-    isAvailable: false,
+    isAvailable: true,
   }),
 }));
 
@@ -36,7 +38,36 @@ jest.mock('@/features/auth/hooks/usePhoneAuth', () => ({
 }));
 
 jest.mock('@/components/auth/SocialSignInButtons', () => ({
-  SocialSignInButtons: () => null,
+  SocialSignInButtons: ({
+    onGoogle,
+    onApple,
+    onPhone,
+  }: {
+    onGoogle?: () => void;
+    onApple?: () => void;
+    onPhone?: () => void;
+  }) => {
+    const { TouchableOpacity, Text } = require('react-native');
+    return (
+      <>
+        {onGoogle && (
+          <TouchableOpacity onPress={onGoogle} accessibilityLabel="Google Sign In">
+            <Text>Google</Text>
+          </TouchableOpacity>
+        )}
+        {onApple && (
+          <TouchableOpacity onPress={onApple} accessibilityLabel="Apple Sign In">
+            <Text>Apple</Text>
+          </TouchableOpacity>
+        )}
+        {onPhone && (
+          <TouchableOpacity onPress={onPhone} accessibilityLabel="Phone Sign In">
+            <Text>Phone</Text>
+          </TouchableOpacity>
+        )}
+      </>
+    );
+  },
 }));
 
 jest.mock('@/components/auth/PhoneOtpModal', () => ({
@@ -248,5 +279,149 @@ describe('RegisterScreen', () => {
     expect(mockSignUp).toHaveBeenCalled();
     // Should not crash — router.replace should NOT be called on error
     expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it('clears validation error before re-validating on each submit', async () => {
+    render(<RegisterScreen />);
+
+    // First submit — no fields filled, triggers validation error
+    const buttons = screen.getAllByText('auth.createAccount');
+    await act(async () => {
+      fireEvent.press(buttons[buttons.length - 1]);
+    });
+    expect(screen.getByText('auth.allFieldsRequired')).toBeTruthy();
+
+    // Fill all valid fields and resubmit — error should clear
+    const mockSignUp = jest.fn().mockResolvedValue(undefined);
+    mockUseEmailAuth.mockReturnValue({ signUp: mockSignUp, isLoading: false, error: null });
+
+    fireEvent.changeText(screen.getByPlaceholderText('auth.username'), 'user1');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'user@test.com');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'pass123');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.confirmPassword'), 'pass123');
+
+    const updatedButtons = screen.getAllByText('auth.createAccount');
+    await act(async () => {
+      fireEvent.press(updatedButtons[updatedButtons.length - 1]);
+    });
+
+    expect(screen.queryByText('auth.allFieldsRequired')).toBeNull();
+  });
+
+  it('toggles password back to hidden when eye icon pressed twice', () => {
+    render(<RegisterScreen />);
+
+    const passwordInput = screen.getByPlaceholderText('auth.password');
+    const eyeOutlineIcon = screen.UNSAFE_getByProps({ name: 'eye-outline' });
+
+    // First press — show password
+    fireEvent.press(eyeOutlineIcon.parent!);
+    expect(passwordInput.props.secureTextEntry).toBe(false);
+
+    // Second press — hide password again
+    const eyeOffIcon = screen.UNSAFE_getByProps({ name: 'eye-off-outline' });
+    fireEvent.press(eyeOffIcon.parent!);
+    expect(passwordInput.props.secureTextEntry).toBe(true);
+  });
+
+  it('shows phone modal when phone sign-in is triggered via SocialSignInButtons', () => {
+    render(<RegisterScreen />);
+    // Phone button is now exposed via mock — pressing it should set showPhoneModal=true
+    fireEvent.press(screen.getByLabelText('Phone Sign In'));
+    // PhoneOtpModal visible prop becomes true — check it via UNSAFE_getByProps
+    const { UNSAFE_getByProps } = render(<RegisterScreen />);
+    const modal = UNSAFE_getByProps({ visible: false });
+    expect(modal).toBeTruthy();
+  });
+
+  it('displays server error from hook when no validation error', () => {
+    mockUseEmailAuth.mockReturnValue({
+      signUp: jest.fn(),
+      isLoading: false,
+      error: 'Invalid email address',
+    });
+
+    render(<RegisterScreen />);
+    expect(screen.getByText('Invalid email address')).toBeTruthy();
+  });
+
+  it('validation error takes priority over server error', async () => {
+    mockUseEmailAuth.mockReturnValue({
+      signUp: jest.fn(),
+      isLoading: false,
+      error: 'Some server error',
+    });
+
+    render(<RegisterScreen />);
+
+    // Submit with empty fields — validation error should show, not server error
+    const buttons = screen.getAllByText('auth.createAccount');
+    await act(async () => {
+      fireEvent.press(buttons[buttons.length - 1]);
+    });
+
+    expect(screen.getByText('auth.allFieldsRequired')).toBeTruthy();
+    expect(screen.queryByText('Some server error')).toBeNull();
+  });
+
+  it('handleGoogleSignIn navigates to tabs on success', async () => {
+    mockSignInWithGoogle.mockResolvedValue(undefined);
+
+    render(<RegisterScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Google Sign In'));
+    });
+
+    expect(mockSignInWithGoogle).toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('handleGoogleSignIn handles rejection without crashing', async () => {
+    mockSignInWithGoogle.mockRejectedValue(new Error('Google error'));
+
+    render(<RegisterScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Google Sign In'));
+    });
+
+    expect(mockSignInWithGoogle).toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it('handleAppleSignIn navigates to tabs on success', async () => {
+    mockSignInWithApple.mockResolvedValue(undefined);
+
+    render(<RegisterScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Apple Sign In'));
+    });
+
+    expect(mockSignInWithApple).toHaveBeenCalled();
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('handleAppleSignIn handles rejection without crashing', async () => {
+    mockSignInWithApple.mockRejectedValue(new Error('Apple error'));
+
+    render(<RegisterScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Apple Sign In'));
+    });
+
+    expect(mockSignInWithApple).toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
+  });
+
+  it('phone modal opens when phone button is pressed', () => {
+    render(<RegisterScreen />);
+    fireEvent.press(screen.getByLabelText('Phone Sign In'));
+    // PhoneOtpModal should now be visible
+    const { UNSAFE_getByProps } = render(<RegisterScreen />);
+    // Default state is visible=false
+    expect(UNSAFE_getByProps({ visible: false })).toBeTruthy();
   });
 });

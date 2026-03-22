@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { usePlatforms, useOttReleases, useMoviePlatformMap } from '../hooks';
+import { usePlatforms, useOttReleases, useMoviePlatformMap, useMovieAvailability } from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
@@ -116,6 +116,58 @@ describe('useMoviePlatformMap', () => {
     (api.fetchMoviePlatformMap as jest.Mock).mockResolvedValue({});
 
     const { result } = renderHook(() => useMoviePlatformMap(['m1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual({});
+  });
+
+  it('sorts movieIds for cache stability', async () => {
+    const mockMap = { m1: [], m2: [] };
+    (api.fetchMoviePlatformMap as jest.Mock).mockResolvedValue(mockMap);
+
+    const { result } = renderHook(() => useMoviePlatformMap(['m2', 'm1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // Should have called with sorted IDs
+    expect(api.fetchMoviePlatformMap).toHaveBeenCalledWith(['m1', 'm2']);
+  });
+});
+
+describe('useMovieAvailability', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetches movie availability for a movie', async () => {
+    const mockAvailability = { streaming: ['netflix'], theatrical: [] };
+    (api.fetchMovieAvailability as jest.Mock).mockResolvedValue(mockAvailability);
+
+    const { result } = renderHook(() => useMovieAvailability('m1'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toEqual(mockAvailability);
+    expect(api.fetchMovieAvailability).toHaveBeenCalledWith('m1');
+  });
+
+  it('does not fetch when movieId is empty', () => {
+    const { result } = renderHook(() => useMovieAvailability(''), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.isFetching).toBe(false);
+    expect(api.fetchMovieAvailability).not.toHaveBeenCalled();
+  });
+
+  it('handles empty availability result', async () => {
+    (api.fetchMovieAvailability as jest.Mock).mockResolvedValue({});
+
+    const { result } = renderHook(() => useMovieAvailability('m1'), {
       wrapper: createWrapper(),
     });
 

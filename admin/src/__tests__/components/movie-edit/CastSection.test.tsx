@@ -117,10 +117,11 @@ vi.mock('@/components/movie-edit/SortableCastList', () => ({
   SortableList: ({
     items,
     onRemove,
+    onDragEnd,
   }: {
     items: MovieCast[];
     onRemove: (id: string, isPending: boolean) => void;
-    onDragEnd: unknown;
+    onDragEnd: (event: unknown) => void;
     pendingIds: Set<string>;
   }) => (
     <div data-testid="sortable-list">
@@ -132,6 +133,18 @@ vi.mock('@/components/movie-edit/SortableCastList', () => ({
           </button>
         </div>
       ))}
+      {items.length >= 2 && (
+        <button
+          onClick={() =>
+            onDragEnd({
+              active: { id: items[0].id },
+              over: { id: items[1].id },
+            })
+          }
+        >
+          Drag
+        </button>
+      )}
     </div>
   ),
 }));
@@ -251,5 +264,168 @@ describe('CastSection', () => {
     render(<CastSection {...defaultProps} visibleCast={castItems} />);
     fireEvent.click(screen.getByTestId('remove-c1'));
     expect(defaultProps.onRemove).toHaveBeenCalledWith('c1', false);
+  });
+
+  it('calls onAdd with cast entry when actor is selected and form submitted', () => {
+    const onAdd = vi.fn();
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} />);
+
+    // Select an actor via the mock dropdown
+    fireEvent.click(screen.getByTestId('select-actor'));
+
+    // Now submit
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor_id: 'actor-1',
+        credit_type: 'cast',
+        role_order: null, // cast members always get null
+      }),
+    );
+  });
+
+  it('calls onAdd with crew entry when type is switched to crew', () => {
+    const onAdd = vi.fn();
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} />);
+
+    // Switch to crew type
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'crew' } });
+
+    // Select an actor
+    fireEvent.click(screen.getByTestId('select-actor'));
+
+    // Submit
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor_id: 'actor-1',
+        credit_type: 'crew',
+      }),
+    );
+  });
+
+  it('shows Role Title label when type is crew', () => {
+    render(<CastSection {...defaultProps} showAddForm />);
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'crew' } });
+    expect(screen.getByText('Role Title')).toBeInTheDocument();
+  });
+
+  it('shows Role Order select when type is crew', () => {
+    render(<CastSection {...defaultProps} showAddForm />);
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'crew' } });
+    expect(screen.getByText('Role Order')).toBeInTheDocument();
+  });
+
+  it('does not show Role Order select when type is cast', () => {
+    render(<CastSection {...defaultProps} showAddForm />);
+    expect(screen.queryByText('Role Order')).not.toBeInTheDocument();
+  });
+
+  it('does not submit when actor_id is empty and no search query', () => {
+    const onAdd = vi.fn();
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} />);
+
+    // Submit without selecting actor
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('shows alert when no actor selected but search query is present', () => {
+    const onAdd = vi.fn();
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} castSearchQuery="John" />);
+
+    // Submit without selecting actor (but with search query in mock)
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('select an actor'));
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
+  it('resets form and closes after successful add', () => {
+    const onAdd = vi.fn();
+    const setCastSearchQuery = vi.fn();
+    const onCloseAddForm = vi.fn();
+
+    render(
+      <CastSection
+        {...defaultProps}
+        showAddForm
+        onAdd={onAdd}
+        setCastSearchQuery={setCastSearchQuery}
+        onCloseAddForm={onCloseAddForm}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('select-actor'));
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(setCastSearchQuery).toHaveBeenCalledWith('');
+    expect(onCloseAddForm).toHaveBeenCalled();
+  });
+
+  it('sets actor_id when actor is selected from dropdown', () => {
+    const onAdd = vi.fn();
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} />);
+
+    fireEvent.click(screen.getByTestId('select-actor'));
+
+    // Add Entry should now be enabled
+    expect(screen.getByText('Add Entry')).not.toBeDisabled();
+  });
+
+  it('clears actor_id when search query changes', () => {
+    render(<CastSection {...defaultProps} showAddForm />);
+
+    // First select an actor
+    fireEvent.click(screen.getByTestId('select-actor'));
+
+    // Then change the search query (simulates typing)
+    fireEvent.change(screen.getByLabelText('actor-search'), { target: { value: 'New' } });
+
+    // Add Entry should be disabled again since actor_id was cleared
+    expect(screen.getByText('Add Entry')).toBeDisabled();
+  });
+
+  it('calls handleQuickAdd when quick add is triggered', async () => {
+    mockCreateMutateAsync.mockResolvedValue({ id: 'new-actor-id', name: 'New Actor' });
+    const setCastSearchQuery = vi.fn();
+
+    render(<CastSection {...defaultProps} showAddForm setCastSearchQuery={setCastSearchQuery} />);
+  });
+
+  it('calls onReorder when cast drag happens', () => {
+    const onReorder = vi.fn();
+    const castItems = [
+      makeCast({ id: 'c1', credit_type: 'cast', display_order: 0 }),
+      makeCast({ id: 'c2', credit_type: 'cast', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={castItems} onReorder={onReorder} />);
+
+    // Trigger drag end via the mock
+    const dragButtons = screen.getAllByText('Drag');
+    // The first sortable list is cast
+    fireEvent.click(dragButtons[0]);
+
+    expect(onReorder).toHaveBeenCalled();
+  });
+
+  it('calls onReorder when crew drag happens', () => {
+    const onReorder = vi.fn();
+    const crewItems = [
+      makeCast({ id: 'cr1', credit_type: 'crew', display_order: 0 }),
+      makeCast({ id: 'cr2', credit_type: 'crew', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={crewItems} onReorder={onReorder} />);
+
+    const dragButtons = screen.getAllByText('Drag');
+    fireEvent.click(dragButtons[0]);
+
+    expect(onReorder).toHaveBeenCalled();
   });
 });

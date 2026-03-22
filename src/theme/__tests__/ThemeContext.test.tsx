@@ -5,6 +5,7 @@ import { Text, LayoutAnimation } from 'react-native';
 import { render, renderHook, waitFor, act } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider, useTheme } from '../ThemeContext';
+import { useAnimationStore } from '@/stores/useAnimationStore';
 
 // AsyncStorage is already mocked globally in jest.setup.js
 
@@ -95,5 +96,22 @@ describe('useTheme', () => {
     expect(result.current.isDark).toBe(true);
     act(() => result.current.setMode('light'));
     expect(result.current.isDark).toBe(false);
+  });
+
+  it('setMode skips LayoutAnimation when animations are disabled', async () => {
+    // Temporarily disable animations in the store
+    useAnimationStore.setState({ animationsEnabled: false });
+    const spy = jest.spyOn(LayoutAnimation, 'configureNext').mockImplementation();
+
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('system'));
+    act(() => result.current.setMode('dark'));
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(AsyncStorage.setItem).toHaveBeenCalledWith(expect.any(String), 'dark');
+
+    spy.mockRestore();
+    // Restore animations for subsequent tests
+    useAnimationStore.setState({ animationsEnabled: true });
   });
 });

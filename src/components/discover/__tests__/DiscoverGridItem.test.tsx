@@ -42,12 +42,13 @@ jest.mock('@shared/imageUrl', () => ({
 }));
 
 const mockActionPress = jest.fn();
+const mockUseMovieAction = jest.fn(() => ({
+  actionType: 'follow' as const,
+  isActive: false,
+  onPress: mockActionPress,
+}));
 jest.mock('@/hooks/useMovieAction', () => ({
-  useMovieAction: () => ({
-    actionType: 'follow',
-    isActive: false,
-    onPress: mockActionPress,
-  }),
+  useMovieAction: (...args: unknown[]) => mockUseMovieAction(...args),
 }));
 
 jest.mock('@/constants/placeholders', () => ({
@@ -123,7 +124,14 @@ const mockPlatforms: OTTPlatform[] = [
 ];
 
 describe('DiscoverGridItem', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseMovieAction.mockReturnValue({
+      actionType: 'follow' as const,
+      isActive: false,
+      onPress: mockActionPress,
+    });
+  });
 
   it('renders without crashing', () => {
     const { toJSON } = render(
@@ -184,5 +192,61 @@ describe('DiscoverGridItem', () => {
       <DiscoverGridItem item={baseMovie} platforms={[mockPlatforms[0]]} styles={mockStyles} />,
     );
     expect(screen.getByText('Aha')).toBeTruthy();
+  });
+
+  it('renders watchlist action when actionType is watchlist', () => {
+    mockUseMovieAction.mockReturnValue({
+      actionType: 'watchlist' as const,
+      isActive: false,
+      onPress: jest.fn(),
+    });
+
+    render(<DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />);
+    expect(screen.getByLabelText('Save Test Movie')).toBeTruthy();
+  });
+
+  it('renders active watchlist state', () => {
+    mockUseMovieAction.mockReturnValue({
+      actionType: 'watchlist' as const,
+      isActive: true,
+      onPress: jest.fn(),
+    });
+
+    render(<DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />);
+    expect(screen.getByLabelText('Test Movie saved, tap to remove')).toBeTruthy();
+  });
+
+  it('calls onPress from useMovieAction when quick action is pressed', () => {
+    const mockPress = jest.fn();
+    mockUseMovieAction.mockReturnValue({
+      actionType: 'follow' as const,
+      isActive: false,
+      onPress: mockPress,
+    });
+
+    render(<DiscoverGridItem item={baseMovie} platforms={[]} styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Follow Test Movie'));
+    expect(mockPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders without crashing when movie has null poster_url', () => {
+    const movieNoPoster = { ...baseMovie, poster_url: null };
+    const { toJSON } = render(
+      <DiscoverGridItem item={movieNoPoster} platforms={[]} styles={mockStyles} />,
+    );
+    // Component should not crash even when poster_url is null — PLACEHOLDER_POSTER used
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('passes correct platform count to deriveMovieStatus', () => {
+    const { deriveMovieStatus } = require('@shared/movieStatus');
+    render(<DiscoverGridItem item={baseMovie} platforms={mockPlatforms} styles={mockStyles} />);
+    // deriveMovieStatus is called with 3 platforms (mockPlatforms.length)
+    expect(deriveMovieStatus).toHaveBeenCalledWith(baseMovie, 3);
+  });
+
+  it('passes correct platform count to useMovieAction', () => {
+    render(<DiscoverGridItem item={baseMovie} platforms={mockPlatforms} styles={mockStyles} />);
+    expect(mockUseMovieAction).toHaveBeenCalledWith(baseMovie, 3);
   });
 });

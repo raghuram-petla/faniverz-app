@@ -1,17 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
+const mockGetSession = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    auth: {
+      getSession: (...args: unknown[]) => mockGetSession(...args),
+    },
   },
 }));
 
-import { useAdminEndUsers } from '@/hooks/useAdminEndUsers';
+import {
+  useAdminEndUsers,
+  useBanUser,
+  useUnbanUser,
+  useUpdateEndUserProfile,
+} from '@/hooks/useAdminEndUsers';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -225,5 +234,243 @@ describe('useAdminEndUsers', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(chain.range).toHaveBeenCalledWith(0, 49);
+  });
+
+  it('escapes LIKE wildcards in search string', async () => {
+    const { self, chain } = buildChain([], null, 0);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: '50%_off\\test', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // % _ and \ should be escaped with backslash
+    expect(chain.or).toHaveBeenCalledWith(expect.stringContaining('\\%\\_off\\\\test'));
+  });
+});
+
+describe('useBanUser', () => {
+  const mockFetch = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.alert = vi.fn();
+    global.fetch = mockFetch;
+  });
+
+  it('calls /api/manage-user with action=ban', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'tok-123' } },
+    });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+    });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useBanUser(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync('usr-1');
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/manage-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer tok-123',
+      },
+      body: JSON.stringify({ action: 'ban', userId: 'usr-1' }),
+    });
+  });
+
+  it('shows alert when session is expired', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: null },
+    });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useBanUser(), { wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('usr-1');
+      } catch {
+        // expected to throw
+      }
+    });
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Session expired'));
+    });
+  });
+
+  it('shows alert when API returns non-ok response with error body', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'tok-123' } },
+    });
+    mockFetch.mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: 'User not found' }),
+    });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useBanUser(), { wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('usr-1');
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith('User not found');
+    });
+  });
+
+  it('shows fallback error message when API returns non-ok with no error body', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'tok-123' } },
+    });
+    mockFetch.mockResolvedValue({
+      ok: false,
+      json: () => Promise.reject(new Error('parse failed')),
+    });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useBanUser(), { wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('usr-1');
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith('Failed to ban user');
+    });
+  });
+});
+
+describe('useUnbanUser', () => {
+  const mockFetch = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.alert = vi.fn();
+    global.fetch = mockFetch;
+  });
+
+  it('calls /api/manage-user with action=unban', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'tok-123' } },
+    });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+    });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useUnbanUser(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync('usr-1');
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/manage-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer tok-123',
+      },
+      body: JSON.stringify({ action: 'unban', userId: 'usr-1' }),
+    });
+  });
+
+  it('shows alert on error', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null } });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useUnbanUser(), { wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync('usr-1');
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalled();
+    });
+  });
+});
+
+describe('useUpdateEndUserProfile', () => {
+  const mockFetch = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.alert = vi.fn();
+    global.fetch = mockFetch;
+  });
+
+  it('calls /api/manage-user with action=update-profile and fields', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'tok-123' } },
+    });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true }),
+    });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useUpdateEndUserProfile(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        userId: 'usr-1',
+        fields: { display_name: 'New Name', bio: 'New bio' },
+      });
+    });
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/manage-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer tok-123',
+      },
+      body: JSON.stringify({
+        action: 'update-profile',
+        userId: 'usr-1',
+        fields: { display_name: 'New Name', bio: 'New bio' },
+      }),
+    });
+  });
+
+  it('shows alert on error', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null } });
+
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useUpdateEndUserProfile(), { wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ userId: 'usr-1', fields: {} });
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalled();
+    });
   });
 });

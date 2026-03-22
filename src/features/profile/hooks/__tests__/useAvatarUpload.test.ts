@@ -194,4 +194,72 @@ describe('useAvatarUpload', () => {
       contentType: 'image/jpeg',
     });
   });
+
+  it('falls back to jpg extension when uri has no dot', async () => {
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///tmp/photo-without-extension' }],
+    });
+
+    const { result } = renderHook(() => useAvatarUpload());
+
+    await act(async () => {
+      await result.current.pickAndUpload();
+    });
+
+    expect(mockUpload).toHaveBeenCalledWith(
+      expect.stringContaining('/avatar.'),
+      mockBlob,
+      expect.objectContaining({ upsert: true }),
+    );
+  });
+
+  it('falls back to image/jpeg contentType for unknown extension', async () => {
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///tmp/photo.xyz' }],
+    });
+
+    const { result } = renderHook(() => useAvatarUpload());
+
+    await act(async () => {
+      await result.current.pickAndUpload();
+    });
+
+    expect(mockUpload).toHaveBeenCalledWith('u1/avatar.xyz', mockBlob, {
+      upsert: true,
+      contentType: 'image/jpeg',
+    });
+  });
+
+  it('does not set isUploading after unmount (mountedRef check)', async () => {
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///tmp/photo.jpg' }],
+    });
+
+    let resolveUpload!: (value: { error: null }) => void;
+    mockUpload.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveUpload = resolve;
+      }),
+    );
+
+    const { result, unmount } = renderHook(() => useAvatarUpload());
+
+    let pickPromise: Promise<void>;
+    await act(async () => {
+      pickPromise = result.current.pickAndUpload();
+    });
+
+    // Unmount before upload resolves to test mountedRef check
+    unmount();
+
+    await act(async () => {
+      resolveUpload({ error: null });
+      await pickPromise!;
+    });
+
+    // Should not throw — mountedRef prevents state update on unmounted component
+  });
 });

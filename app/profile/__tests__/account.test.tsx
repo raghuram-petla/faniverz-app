@@ -134,4 +134,85 @@ describe('AccountScreen', () => {
 
     mockModule.useAuth = origImpl;
   });
+
+  it('handles signOut error gracefully without crashing', async () => {
+    mockSignOut.mockRejectedValue(new Error('sign out failed'));
+    let capturedOnPress: (() => Promise<void>) | undefined;
+    jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
+      const destructive = buttons?.find((b) => b.style === 'destructive');
+      capturedOnPress = destructive?.onPress as () => Promise<void>;
+    });
+
+    render(<AccountScreen />);
+    fireEvent.press(screen.getByText('profile.logOut'));
+
+    // Should not throw even if signOut fails
+    await expect(capturedOnPress?.()).resolves.toBeUndefined();
+    expect(mockSignOut).toHaveBeenCalled();
+    // router.replace should NOT have been called since signOut threw
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('onSuccess callback navigates to profile tab after delete account', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<AccountScreen />);
+    fireEvent.press(screen.getByText('profile.deleteAccount'));
+
+    const alertArgs = alertSpy.mock.calls[0];
+    const buttons = alertArgs[2] as Array<{ text: string; onPress?: () => void }>;
+    const deleteAction = buttons.find((b) => b.text === 'common.delete');
+    deleteAction?.onPress?.();
+
+    // Extract the onSuccess callback from mockDeleteMutate call
+    const mutateCall = mockDeleteMutate.mock.calls[0];
+    const { onSuccess } = mutateCall[1];
+    onSuccess();
+
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)/profile');
+    alertSpy.mockRestore();
+  });
+
+  it('onError callback shows alert with error message', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<AccountScreen />);
+    fireEvent.press(screen.getByText('profile.deleteAccount'));
+
+    const deleteActionButtons = alertSpy.mock.calls[0][2] as Array<{
+      text: string;
+      onPress?: () => void;
+    }>;
+    const deleteAction = deleteActionButtons.find((b) => b.text === 'common.delete');
+    deleteAction?.onPress?.();
+
+    const mutateCall = mockDeleteMutate.mock.calls[0];
+    const { onError } = mutateCall[1];
+
+    // Test with Error instance
+    onError(new Error('deletion failed'));
+    expect(Alert.alert).toHaveBeenCalledWith('common.error', 'deletion failed');
+
+    alertSpy.mockRestore();
+  });
+
+  it('onError callback shows fallback message for non-Error objects', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    render(<AccountScreen />);
+    fireEvent.press(screen.getByText('profile.deleteAccount'));
+
+    const deleteActionButtons = alertSpy.mock.calls[0][2] as Array<{
+      text: string;
+      onPress?: () => void;
+    }>;
+    const deleteAction = deleteActionButtons.find((b) => b.text === 'common.delete');
+    deleteAction?.onPress?.();
+
+    const mutateCall = mockDeleteMutate.mock.calls[0];
+    const { onError } = mutateCall[1];
+
+    // Test with non-Error object
+    onError('some string error');
+    expect(Alert.alert).toHaveBeenCalledWith('common.error', 'profile.deleteFailed');
+
+    alertSpy.mockRestore();
+  });
 });

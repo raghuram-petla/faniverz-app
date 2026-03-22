@@ -2,6 +2,11 @@ jest.mock('../AnimatedTabBar.styles', () => ({
   animatedTabBarStyles: new Proxy({}, { get: () => ({}) }),
 }));
 
+const mockAnimationsEnabled = jest.fn(() => true);
+jest.mock('@/hooks/useAnimationsEnabled', () => ({
+  useAnimationsEnabled: () => mockAnimationsEnabled(),
+}));
+
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { AnimatedTabBar } from '../AnimatedTabBar';
@@ -70,5 +75,44 @@ describe('AnimatedTabBar', () => {
       <AnimatedTabBar tabs={tabs} labels={labels} activeTab="reviews" onTabPress={jest.fn()} />,
     );
     expect(screen.getByText('Reviews')).toBeTruthy();
+  });
+
+  it('uses direct target value (no animation) when animations are disabled', () => {
+    mockAnimationsEnabled.mockReturnValue(false);
+    const { rerender } = render(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="overview" onTabPress={jest.fn()} />,
+    );
+    // Switch tab to trigger the useEffect with animationsEnabled=false
+    rerender(
+      <AnimatedTabBar tabs={tabs} labels={labels} activeTab="cast" onTabPress={jest.fn()} />,
+    );
+    expect(screen.getByText('Cast')).toBeTruthy();
+    mockAnimationsEnabled.mockReturnValue(true);
+  });
+
+  it('marks the active tab as selected', () => {
+    render(<AnimatedTabBar tabs={tabs} labels={labels} activeTab="cast" onTabPress={jest.fn()} />);
+    const castTab = screen.getAllByRole('tab')[1];
+    expect(castTab.props.accessibilityState?.selected).toBe(true);
+    const overviewTab = screen.getAllByRole('tab')[0];
+    expect(overviewTab.props.accessibilityState?.selected).toBe(false);
+  });
+
+  it('renders a single tab correctly', () => {
+    type SingleTab = 'overview';
+    const singleTabs: SingleTab[] = ['overview'];
+    const singleLabels: Record<SingleTab, string> = { overview: 'Overview' };
+    render(
+      <AnimatedTabBar
+        tabs={singleTabs}
+        labels={singleLabels}
+        activeTab="overview"
+        onTabPress={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('Overview')).toBeTruthy();
+    const allTabs = screen.getAllByRole('tab');
+    expect(allTabs).toHaveLength(1);
+    expect(allTabs[0].props.accessibilityState?.selected).toBe(true);
   });
 });
