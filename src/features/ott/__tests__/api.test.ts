@@ -109,15 +109,20 @@ describe('ott api', () => {
       expect(supabase.from).not.toHaveBeenCalled();
     });
 
-    it('queries movie_platforms with in() for movie IDs', async () => {
+    it('queries movie_platform_availability with country and type filters', async () => {
+      const mockEq2 = jest.fn();
       mockSelect.mockReturnValue({ in: mockIn });
-      mockIn.mockResolvedValue({ data: [], error: null });
+      mockIn.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockResolvedValue({ data: [], error: null });
 
       await fetchMoviePlatformMap(['m1', 'm2']);
 
-      expect(supabase.from).toHaveBeenCalledWith('movie_platforms');
+      expect(supabase.from).toHaveBeenCalledWith('movie_platform_availability');
       expect(mockSelect).toHaveBeenCalledWith('movie_id, platform:platforms(*)');
       expect(mockIn).toHaveBeenCalledWith('movie_id', ['m1', 'm2']);
+      expect(mockEq).toHaveBeenCalledWith('country_code', expect.any(String));
+      expect(mockEq2).toHaveBeenCalledWith('availability_type', 'flatrate');
     });
 
     it('builds map correctly from results', async () => {
@@ -126,8 +131,11 @@ describe('ott api', () => {
         { movie_id: 'm1', platform: { id: 'aha', name: 'Aha' } },
         { movie_id: 'm2', platform: { id: 'netflix', name: 'Netflix' } },
       ];
+      const mockEq2 = jest.fn();
       mockSelect.mockReturnValue({ in: mockIn });
-      mockIn.mockResolvedValue({ data: mockData, error: null });
+      mockIn.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockResolvedValue({ data: mockData, error: null });
 
       const result = await fetchMoviePlatformMap(['m1', 'm2']);
 
@@ -137,16 +145,22 @@ describe('ott api', () => {
     });
 
     it('handles null data gracefully', async () => {
+      const mockEq2 = jest.fn();
       mockSelect.mockReturnValue({ in: mockIn });
-      mockIn.mockResolvedValue({ data: null, error: null });
+      mockIn.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockResolvedValue({ data: null, error: null });
 
       const result = await fetchMoviePlatformMap(['m1']);
       expect(result).toEqual({});
     });
 
     it('throws on error', async () => {
+      const mockEq2 = jest.fn();
       mockSelect.mockReturnValue({ in: mockIn });
-      mockIn.mockResolvedValue({ data: null, error: new Error('Map error') });
+      mockIn.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockResolvedValue({ data: null, error: new Error('Map error') });
 
       await expect(fetchMoviePlatformMap(['m1'])).rejects.toThrow('Map error');
     });

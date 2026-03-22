@@ -82,4 +82,73 @@ describe('ReviewModal', () => {
     fireEvent.press(screen.getByText('movie.submit'));
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it('renders "Edit Review" title when isEditing is true', () => {
+    render(<ReviewModal {...baseProps} isEditing />);
+    expect(screen.getByText('movie.editReview')).toBeTruthy();
+    expect(screen.queryByText('movie.writeReview')).toBeNull();
+  });
+
+  it('renders "Update" button text when isEditing', () => {
+    render(<ReviewModal {...baseProps} isEditing />);
+    expect(screen.getByText('movie.update')).toBeTruthy();
+    expect(screen.queryByText('movie.submit')).toBeNull();
+  });
+
+  it('calls onTitleChange when review title input changes', () => {
+    const onTitleChange = jest.fn();
+    render(<ReviewModal {...baseProps} onTitleChange={onTitleChange} />);
+    fireEvent.changeText(screen.getByPlaceholderText('movie.reviewTitle'), 'Great movie');
+    expect(onTitleChange).toHaveBeenCalledWith('Great movie');
+  });
+
+  it('calls onBodyChange when review body input changes', () => {
+    const onBodyChange = jest.fn();
+    render(<ReviewModal {...baseProps} onBodyChange={onBodyChange} />);
+    fireEvent.changeText(screen.getByPlaceholderText('movie.writeYourReview'), 'Loved it');
+    expect(onBodyChange).toHaveBeenCalledWith('Loved it');
+  });
+
+  it('calls onSpoilerToggle when spoiler toggle is pressed', () => {
+    const onSpoilerToggle = jest.fn();
+    render(<ReviewModal {...baseProps} onSpoilerToggle={onSpoilerToggle} />);
+    fireEvent.press(screen.getByText('movie.containsSpoiler'));
+    expect(onSpoilerToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onClose when close icon is pressed', () => {
+    const onClose = jest.fn();
+    render(<ReviewModal {...baseProps} onClose={onClose} />);
+    // There are two close actions: close icon and cancel button
+    // The close icon is the Ionicons "close" next to the header
+    fireEvent.press(screen.getByText('common.cancel'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('calls onSubmit when rating > 0 and submit pressed', () => {
+    const onSubmit = jest.fn();
+    render(<ReviewModal {...baseProps} reviewRating={4} onSubmit={onSubmit} />);
+    fireEvent.press(screen.getByText('movie.submit'));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows movie meta with year and director', () => {
+    render(<ReviewModal {...baseProps} releaseYear={2024} director="Sukumar" />);
+    expect(screen.getByText('2024 • Sukumar')).toBeTruthy();
+  });
+
+  it('shows only year when director is null', () => {
+    render(<ReviewModal {...baseProps} releaseYear={2024} director={null} />);
+    expect(screen.getByText('2024')).toBeTruthy();
+  });
+
+  it('shows only director when releaseYear is null', () => {
+    render(<ReviewModal {...baseProps} releaseYear={null} director="Sukumar" />);
+    expect(screen.getByText('Sukumar')).toBeTruthy();
+  });
+
+  it('does not show meta when both releaseYear and director are null', () => {
+    render(<ReviewModal {...baseProps} releaseYear={null} director={null} />);
+    expect(screen.queryByText('•')).toBeNull();
+  });
 });

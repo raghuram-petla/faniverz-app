@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import { AvailableCard, UpcomingCard, WatchedCard } from '../WatchlistCards';
 
 jest.mock('react-i18next', () => ({
@@ -9,14 +9,18 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
+const mockRemoveMutate = jest.fn();
+const mockMarkWatchedMutate = jest.fn();
+const mockMoveBackMutate = jest.fn();
 jest.mock('@/features/watchlist/hooks', () => ({
   useWatchlistMutations: () => ({
-    remove: { mutate: jest.fn() },
-    markWatched: { mutate: jest.fn() },
-    moveBack: { mutate: jest.fn() },
+    remove: { mutate: mockRemoveMutate, isPending: false },
+    markWatched: { mutate: mockMarkWatchedMutate, isPending: false },
+    moveBack: { mutate: mockMoveBackMutate, isPending: false },
   }),
 }));
 jest.mock('@shared/movieStatus', () => ({
@@ -106,5 +110,87 @@ describe('WatchedCard', () => {
   it('renders "Remove from watched" accessibility label', () => {
     render(<WatchedCard entry={mockEntry} userId="u1" styles={mockStyles} />);
     expect(screen.getByLabelText('Remove from watched')).toBeTruthy();
+  });
+});
+
+describe('AvailableCard — interactions', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls remove.mutate when remove button is pressed', () => {
+    render(<AvailableCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Remove from watchlist'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: 'movie-1' });
+  });
+
+  it('calls markWatched.mutate when mark as watched button is pressed', () => {
+    render(<AvailableCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Mark as watched'));
+    expect(mockMarkWatchedMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: 'movie-1' });
+  });
+
+  it('navigates to movie detail on card press', () => {
+    render(<AvailableCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Pushpa 2'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/movie-1');
+  });
+
+  it('shows rating when rating > 0', () => {
+    render(<AvailableCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    expect(screen.getByText('4.5')).toBeTruthy();
+  });
+
+  it('hides rating when rating is 0', () => {
+    const zeroRatingEntry = { movie: { ...mockEntry.movie, rating: 0 } } as any;
+    render(<AvailableCard entry={zeroRatingEntry} userId="u1" styles={mockStyles} />);
+    expect(screen.queryByText('0.0')).toBeNull();
+  });
+
+  it('uses placeholder when poster_url is null', () => {
+    const noPosterEntry = { movie: { ...mockEntry.movie, poster_url: null } } as any;
+    render(<AvailableCard entry={noPosterEntry} userId="u1" styles={mockStyles} />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+});
+
+describe('UpcomingCard — interactions', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('navigates to movie detail on card press', () => {
+    render(<UpcomingCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Pushpa 2'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/movie-1');
+  });
+
+  it('calls remove.mutate when remove button is pressed', () => {
+    render(<UpcomingCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Remove from watchlist'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: 'movie-1' });
+  });
+});
+
+describe('WatchedCard — interactions', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('calls moveBack.mutate when move back button is pressed', () => {
+    render(<WatchedCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Move back to watchlist'));
+    expect(mockMoveBackMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: 'movie-1' });
+  });
+
+  it('calls remove.mutate when remove button is pressed', () => {
+    render(<WatchedCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Remove from watched'));
+    expect(mockRemoveMutate).toHaveBeenCalledWith({ userId: 'u1', movieId: 'movie-1' });
+  });
+
+  it('navigates to movie detail on card press', () => {
+    render(<WatchedCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('Pushpa 2'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/movie-1');
+  });
+
+  it('shows rating when rating > 0', () => {
+    render(<WatchedCard entry={mockEntry} userId="u1" styles={mockStyles} />);
+    expect(screen.getByText('4.5')).toBeTruthy();
   });
 });

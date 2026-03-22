@@ -52,4 +52,38 @@ describe('PullToRefreshIndicator', () => {
     );
     expect(getByText('Release to refresh')).toBeTruthy();
   });
+
+  it('shows spinner when refreshing is true', () => {
+    const { getByTestId } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={makeIsRefreshing(true)}
+        refreshing={true}
+      />,
+    );
+    expect(getByTestId('refresh-spinner')).toBeTruthy();
+  });
+
+  it('hides arrow and text when refreshing', () => {
+    const { queryByTestId, queryByText } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(60)}
+        isRefreshing={makeIsRefreshing(true)}
+        refreshing={true}
+      />,
+    );
+    expect(queryByTestId('pull-arrow')).toBeNull();
+    expect(queryByText('Release to refresh')).toBeNull();
+  });
+
+  it('renders at zero pull distance without crashing', () => {
+    const { toJSON } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={makeIsRefreshing(false)}
+        refreshing={false}
+      />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
 });

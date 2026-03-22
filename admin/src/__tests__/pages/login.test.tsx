@@ -1,22 +1,34 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginPage from '@/app/login/page';
+
+const mockSignInWithGoogle = vi.fn();
+const mockReplace = vi.fn();
 
 vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({
     user: null,
     isLoading: false,
-    signInWithGoogle: vi.fn(),
+    signInWithGoogle: mockSignInWithGoogle,
     signOut: vi.fn(),
   }),
 }));
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: mockReplace, back: vi.fn() }),
   usePathname: () => '/login',
   useParams: () => ({}),
 }));
 
+vi.mock('next/image', () => ({
+  default: (props: Record<string, unknown>) => <img {...props} />,
+}));
+
 describe('LoginPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSignInWithGoogle.mockResolvedValue(undefined);
+  });
+
   it('has Faniverz logo', () => {
     render(<LoginPage />);
     expect(screen.getByAltText('Faniverz')).toBeInTheDocument();
@@ -31,5 +43,44 @@ describe('LoginPage', () => {
     render(<LoginPage />);
     expect(screen.queryByPlaceholderText('Email')).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText('Password')).not.toBeInTheDocument();
+  });
+
+  it('calls signInWithGoogle when button is clicked', async () => {
+    render(<LoginPage />);
+    fireEvent.click(screen.getByRole('button', { name: /sign in with google/i }));
+    await waitFor(() => {
+      expect(mockSignInWithGoogle).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('shows error when signInWithGoogle fails', async () => {
+    mockSignInWithGoogle.mockRejectedValue(new Error('OAuth failed'));
+    render(<LoginPage />);
+    fireEvent.click(screen.getByRole('button', { name: /sign in with google/i }));
+    await waitFor(() => {
+      expect(screen.getByText('OAuth failed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows generic error message for non-Error failures', async () => {
+    mockSignInWithGoogle.mockRejectedValue('unknown error');
+    render(<LoginPage />);
+    fireEvent.click(screen.getByRole('button', { name: /sign in with google/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Google sign-in failed')).toBeInTheDocument();
+    });
+  });
+
+  it('renders Admin text below logo', () => {
+    render(<LoginPage />);
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+  });
+});
+
+describe('LoginPage - layout', () => {
+  it('does not redirect when user is not authenticated', () => {
+    render(<LoginPage />);
+    // mockReplace should NOT be called when user is null
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 });

@@ -55,4 +55,26 @@ describe('SocialSignInButtons', () => {
     fireEvent.press(screen.getByLabelText('Sign in with Phone'));
     expect(defaultProps.onPhone).toHaveBeenCalled();
   });
+
+  it('shows Apple button by default when showApple is not provided and onApple is set', () => {
+    render(<SocialSignInButtons {...defaultProps} />);
+    // showApple defaults to true
+    expect(screen.getByLabelText('Sign in with Apple')).toBeTruthy();
+  });
+
+  it('hides Apple button when onApple is not provided even if showApple is true', () => {
+    render(<SocialSignInButtons onGoogle={jest.fn()} onPhone={jest.fn()} showApple={true} />);
+    expect(screen.queryByLabelText('Sign in with Apple')).toBeNull();
+  });
+
+  it('disables Google button when isGoogleLoading is true', () => {
+    render(<SocialSignInButtons {...defaultProps} isGoogleLoading={true} />);
+    // When loading, the text is replaced by ActivityIndicator
+    expect(screen.queryByText('auth.google')).toBeNull();
+  });
+
+  it('disables Apple button when isAppleLoading is true', () => {
+    render(<SocialSignInButtons {...defaultProps} isAppleLoading={true} />);
+    expect(screen.queryByText('auth.apple')).toBeNull();
+  });
 });

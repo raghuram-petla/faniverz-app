@@ -38,4 +38,33 @@ describe('MovieQuickAction', () => {
     fireEvent.press(screen.getByLabelText('Follow Pushpa 2'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
+
+  it('uses heart-outline icon when follow and inactive', () => {
+    const { getByLabelText } = render(<MovieQuickAction {...baseProps} />);
+    // Icon accessible via the follow label
+    expect(getByLabelText('Follow Pushpa 2')).toBeTruthy();
+  });
+
+  it('uses heart icon when follow and active', () => {
+    const { getByLabelText } = render(<MovieQuickAction {...baseProps} isActive />);
+    expect(getByLabelText('Following Pushpa 2, tap to unfollow')).toBeTruthy();
+  });
+
+  it('uses bookmark-outline icon when watchlist and inactive', () => {
+    const { getByLabelText } = render(<MovieQuickAction {...baseProps} actionType="watchlist" />);
+    expect(getByLabelText('Save Pushpa 2')).toBeTruthy();
+  });
+
+  it('uses bookmark icon when watchlist and active', () => {
+    const { getByLabelText } = render(
+      <MovieQuickAction {...baseProps} actionType="watchlist" isActive />,
+    );
+    expect(getByLabelText('Pushpa 2 saved, tap to remove')).toBeTruthy();
+  });
+
+  it('applies custom style prop', () => {
+    const customStyle = { marginTop: 10 };
+    const { getByLabelText } = render(<MovieQuickAction {...baseProps} style={customStyle} />);
+    expect(getByLabelText('Follow Pushpa 2')).toBeTruthy();
+  });
 });

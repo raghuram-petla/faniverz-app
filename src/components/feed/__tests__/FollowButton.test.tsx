@@ -38,4 +38,15 @@ describe('FollowButton', () => {
     render(<FollowButton isFollowing={false} onPress={jest.fn()} />);
     expect(screen.getByLabelText('Follow entity')).toBeTruthy();
   });
+
+  it('renders as a button role', () => {
+    render(<FollowButton isFollowing={false} onPress={jest.fn()} />);
+    expect(screen.getByRole('button')).toBeTruthy();
+  });
+
+  it('renders following text with correct label when following', () => {
+    render(<FollowButton isFollowing={true} onPress={jest.fn()} entityName="Pushpa" />);
+    expect(screen.getByText('Following')).toBeTruthy();
+    expect(screen.getByLabelText('Following Pushpa, tap to unfollow')).toBeTruthy();
+  });
 });

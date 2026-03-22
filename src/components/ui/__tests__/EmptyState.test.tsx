@@ -62,4 +62,38 @@ describe('EmptyState', () => {
     fireEvent.press(getByText('Discover Movies'));
     expect(onAction).toHaveBeenCalledTimes(1);
   });
+
+  it('action button fires callback on multiple presses', () => {
+    const onAction = jest.fn();
+    const { getByText } = render(
+      <EmptyState
+        icon="bookmark-outline"
+        title="Empty"
+        actionLabel="Try Again"
+        onAction={onAction}
+      />,
+    );
+    fireEvent.press(getByText('Try Again'));
+    fireEvent.press(getByText('Try Again'));
+    expect(onAction).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not render button when only actionLabel is provided without onAction', () => {
+    const { queryByText } = render(
+      <EmptyState icon="bookmark-outline" title="Empty" actionLabel="Discover Movies" />,
+    );
+    expect(queryByText('Discover Movies')).toBeNull();
+  });
+
+  it('does not render button when only onAction is provided without actionLabel', () => {
+    const { queryByRole } = render(
+      <EmptyState icon="bookmark-outline" title="Empty" onAction={jest.fn()} />,
+    );
+    expect(queryByRole('button')).toBeNull();
+  });
+
+  it('renders with different icon names', () => {
+    const { getByText } = render(<EmptyState icon="heart-outline" title="No favorites" />);
+    expect(getByText('No favorites')).toBeTruthy();
+  });
 });

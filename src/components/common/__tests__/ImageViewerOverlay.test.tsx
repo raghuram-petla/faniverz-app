@@ -78,4 +78,45 @@ describe('ImageViewerOverlay', () => {
     fireEvent.press(screen.getByLabelText('Close image'));
     expect(mockOnSourceShow).toHaveBeenCalled();
   });
+
+  it('handles BackHandler press by calling onClose', () => {
+    const BackHandler = require('react-native').BackHandler;
+    const listeners: Array<() => boolean> = [];
+    const removeSpy = jest.fn();
+    jest
+      .spyOn(BackHandler, 'addEventListener')
+      .mockImplementation((_event: string, handler: () => boolean) => {
+        listeners.push(handler);
+        return { remove: removeSpy };
+      });
+
+    const onClose = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
+
+    // Simulate hardware back press
+    const lastListener = listeners[listeners.length - 1];
+    expect(lastListener).toBeDefined();
+    const result = lastListener();
+    expect(result).toBe(true);
+    expect(onClose).toHaveBeenCalled();
+
+    BackHandler.addEventListener.mockRestore();
+  });
+
+  it('renders two Image components for feed and full resolution', () => {
+    const { UNSAFE_getAllByType } = render(<ImageViewerOverlay {...defaultProps} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    expect(images.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('close button is accessible via touchable', () => {
+    const onClose = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
+    const closeBtn = screen.getByLabelText('Close image');
+    expect(closeBtn).toBeTruthy();
+    fireEvent.press(closeBtn);
+    // Verify onClose is called (through cleanup chain)
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

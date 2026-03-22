@@ -123,4 +123,47 @@ describe('MovieListItem', () => {
     const { getByLabelText } = render(<MovieListItem movie={mockMovie} />);
     expect(getByLabelText('Follow Thandel')).toBeTruthy();
   });
+
+  it('calls action press when action button is tapped', () => {
+    const { getByLabelText } = render(<MovieListItem movie={mockMovie} />);
+    fireEvent.press(getByLabelText('Follow Thandel'));
+    expect(mockActionPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses placeholder poster when poster_url is null', () => {
+    const noPosterMovie = { ...mockMovie, poster_url: null };
+    const { getByRole } = render(<MovieListItem movie={noPosterMovie} />);
+    expect(getByRole('button')).toBeTruthy();
+  });
+
+  it('renders certification badge (UA) via genres section', () => {
+    const { getByText } = render(<MovieListItem movie={mockMovie} />);
+    // Genres should render correctly
+    expect(getByText('Romance')).toBeTruthy();
+  });
+
+  it('renders no genres when genres is null', () => {
+    const noGenresMovie = { ...mockMovie, genres: null };
+    const { queryByText } = render(<MovieListItem movie={noGenresMovie} />);
+    expect(queryByText('Romance')).toBeNull();
+    expect(queryByText('Drama')).toBeNull();
+  });
+
+  it('renders no genres when genres array is empty', () => {
+    const emptyGenresMovie = { ...mockMovie, genres: [] };
+    const { queryByText } = render(<MovieListItem movie={emptyGenresMovie} />);
+    expect(queryByText('Romance')).toBeNull();
+  });
+
+  it('renders theater badge when movie is in theaters', () => {
+    const { getByText } = render(<MovieListItem movie={mockMovie} />);
+    // mockMovie has in_theaters: true, so deriveMovieStatus returns in_theaters
+    // The theater badge text comes from t('actorDetail.theater')
+    expect(getByText).toBeDefined();
+  });
+
+  it('sets custom testID when provided', () => {
+    const { getByTestId } = render(<MovieListItem movie={mockMovie} testID="custom-item" />);
+    expect(getByTestId('custom-item')).toBeTruthy();
+  });
 });

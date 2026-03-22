@@ -55,4 +55,33 @@ describe('FaqAccordion', () => {
     fireEvent.press(screen.getByText('What is the watchlist?'));
     expect(screen.getByText(/your personal collection of movies/)).toBeTruthy();
   });
+
+  it('toggles expand and collapse on same item', () => {
+    render(<FaqAccordion items={FAQ_ITEMS} theme={mockTheme} />);
+    const question = screen.getByText('What does following a movie do?');
+    // Expand
+    fireEvent.press(question);
+    expect(screen.getByText(/Following a movie keeps you in the loop/)).toBeTruthy();
+    // Collapse
+    fireEvent.press(question);
+    expect(screen.queryByText(/Following a movie keeps you in the loop/)).toBeNull();
+    // Expand again
+    fireEvent.press(question);
+    expect(screen.getByText(/Following a movie keeps you in the loop/)).toBeTruthy();
+  });
+
+  it('renders nothing for empty items array', () => {
+    const { toJSON } = render(<FaqAccordion items={[]} theme={mockTheme} />);
+    // Should render the card container with no children
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('renders single FAQ item correctly', () => {
+    const singleItem = [FAQ_ITEMS[0]];
+    render(<FaqAccordion items={singleItem} theme={mockTheme} />);
+    expect(
+      screen.getByText('Why do I see a heart icon sometimes and a bookmark icon other times?'),
+    ).toBeTruthy();
+    expect(screen.queryByText('What does following a movie do?')).toBeNull();
+  });
 });

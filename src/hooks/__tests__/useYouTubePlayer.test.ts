@@ -83,4 +83,68 @@ describe('useYouTubePlayer', () => {
       act(() => result.current.actions.togglePlayPause());
     }).not.toThrow();
   });
+
+  it('togglePlayPause sends pause command when playing', () => {
+    const mockInjectJS = jest.fn();
+    const { result } = renderHook(() => useYouTubePlayer());
+
+    // Set state to playing
+    act(() => {
+      result.current.handleMessage(
+        makeMessageEvent({ type: 'stateChange', playerState: 'playing' }),
+      );
+    });
+
+    // Attach mock webview ref
+    (result.current.webViewRef as any).current = { injectJavaScript: mockInjectJS };
+
+    act(() => {
+      result.current.actions.togglePlayPause();
+    });
+
+    expect(mockInjectJS).toHaveBeenCalledWith("window.receiveCommand('pause'); true;");
+  });
+
+  it('togglePlayPause sends play command when paused', () => {
+    const mockInjectJS = jest.fn();
+    const { result } = renderHook(() => useYouTubePlayer());
+
+    // Set state to paused
+    act(() => {
+      result.current.handleMessage(
+        makeMessageEvent({ type: 'stateChange', playerState: 'paused' }),
+      );
+    });
+
+    (result.current.webViewRef as any).current = { injectJavaScript: mockInjectJS };
+
+    act(() => {
+      result.current.actions.togglePlayPause();
+    });
+
+    expect(mockInjectJS).toHaveBeenCalledWith("window.receiveCommand('play'); true;");
+  });
+
+  it('seek sends seek command with time value', () => {
+    const mockInjectJS = jest.fn();
+    const { result } = renderHook(() => useYouTubePlayer());
+
+    (result.current.webViewRef as any).current = { injectJavaScript: mockInjectJS };
+
+    act(() => {
+      result.current.actions.seek(45);
+    });
+
+    expect(mockInjectJS).toHaveBeenCalledWith("window.receiveCommand('seek', 45); true;");
+  });
+
+  it('handles unknown message type gracefully', () => {
+    const { result } = renderHook(() => useYouTubePlayer());
+    act(() => {
+      result.current.handleMessage(makeMessageEvent({ type: 'unknown', data: 'test' }));
+    });
+    // State should not change
+    expect(result.current.state.playerState).toBe('unstarted');
+    expect(result.current.state.isReady).toBe(false);
+  });
 });

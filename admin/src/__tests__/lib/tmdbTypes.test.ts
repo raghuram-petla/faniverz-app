@@ -3,6 +3,7 @@ import {
   extractKeyCrewMembers,
   extractTrailerUrl,
   extractTeluguTranslation,
+  extractIndiaCertification,
   mapTmdbVideoType,
   CREW_JOB_MAP,
   TmdbCrewMember,
@@ -252,5 +253,98 @@ describe('CREW_JOB_MAP', () => {
 
   it('Director has roleOrder 1 (highest priority)', () => {
     expect(CREW_JOB_MAP['Director'].roleOrder).toBe(1);
+  });
+});
+
+// ── extractIndiaCertification ────────────────────────────────────────────────
+
+describe('extractIndiaCertification', () => {
+  function makeReleaseDates(releases: { type: number; certification: string }[], country = 'IN') {
+    return {
+      results: [
+        {
+          iso_3166_1: country,
+          release_dates: releases,
+        },
+      ],
+    };
+  }
+
+  it('returns U for U certification', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: 'U' }]);
+    expect(extractIndiaCertification(rd)).toBe('U');
+  });
+
+  it('returns UA for U/A certification (TMDB format)', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: 'U/A' }]);
+    expect(extractIndiaCertification(rd)).toBe('UA');
+  });
+
+  it('returns UA for UA certification', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: 'UA' }]);
+    expect(extractIndiaCertification(rd)).toBe('UA');
+  });
+
+  it('returns A for A certification', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: 'A' }]);
+    expect(extractIndiaCertification(rd)).toBe('A');
+  });
+
+  it('returns null for unknown certification', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: 'R' }]);
+    expect(extractIndiaCertification(rd)).toBeNull();
+  });
+
+  it('returns null when no IN country exists', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: 'PG-13' }], 'US');
+    expect(extractIndiaCertification(rd)).toBeNull();
+  });
+
+  it('returns null for undefined input', () => {
+    expect(extractIndiaCertification(undefined)).toBeNull();
+  });
+
+  it('returns null when results is missing', () => {
+    expect(extractIndiaCertification({} as any)).toBeNull();
+  });
+
+  it('returns null when no certification is present', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: '' }]);
+    expect(extractIndiaCertification(rd)).toBeNull();
+  });
+
+  it('prefers theatrical release (type 3) over others', () => {
+    const rd = {
+      results: [
+        {
+          iso_3166_1: 'IN',
+          release_dates: [
+            { type: 4, certification: 'A' },
+            { type: 3, certification: 'U' },
+          ],
+        },
+      ],
+    };
+    expect(extractIndiaCertification(rd)).toBe('U');
+  });
+
+  it('falls back to any release with certification when no type 3', () => {
+    const rd = {
+      results: [
+        {
+          iso_3166_1: 'IN',
+          release_dates: [
+            { type: 1, certification: '' },
+            { type: 4, certification: 'UA' },
+          ],
+        },
+      ],
+    };
+    expect(extractIndiaCertification(rd)).toBe('UA');
+  });
+
+  it('trims whitespace from certification', () => {
+    const rd = makeReleaseDates([{ type: 3, certification: ' U ' }]);
+    expect(extractIndiaCertification(rd)).toBe('U');
   });
 });

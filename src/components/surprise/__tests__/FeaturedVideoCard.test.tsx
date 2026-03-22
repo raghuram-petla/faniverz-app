@@ -63,4 +63,33 @@ describe('FeaturedVideoCard', () => {
     // After pressing play, the WebView component should be rendered
     expect(screen.queryByLabelText('common.playVideo')).toBeNull();
   });
+
+  it('renders thumbnail image before activation', () => {
+    const { UNSAFE_getAllByType } = render(
+      <FeaturedVideoCard item={mockItem} styles={mockStyles} />,
+    );
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    expect(images.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not render description when item.description is falsy', () => {
+    const noDescItem = { ...mockItem, description: null };
+    render(<FeaturedVideoCard item={noDescItem} styles={mockStyles} />);
+    expect(screen.queryByText('Behind the scenes footage')).toBeNull();
+  });
+
+  it('uses fallback video ID when youtube_id is null', () => {
+    const noYoutubeItem = { ...mockItem, youtube_id: null };
+    render(<FeaturedVideoCard item={noYoutubeItem} styles={mockStyles} />);
+    // Should still render the play button with the fallback video
+    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
+  });
+
+  it('renders share button after video activation', () => {
+    render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
+    fireEvent.press(screen.getByLabelText('common.playVideo'));
+    // Share button should be visible
+    expect(screen.getByLabelText('common.shareVideo')).toBeTruthy();
+  });
 });

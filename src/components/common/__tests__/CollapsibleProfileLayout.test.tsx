@@ -11,9 +11,10 @@ jest.mock('@/styles/collapsibleProfile.styles', () => ({
   HERO_NAME_PLACEHOLDER_HEIGHT: 50,
 }));
 
-jest.mock('@/components/common/HomeButton', () => ({
-  HomeButton: () => null,
-}));
+jest.mock('@/components/common/HomeButton', () => {
+  const { Text } = require('react-native');
+  return { HomeButton: () => <Text>HomeBtn</Text> };
+});
 
 import React from 'react';
 import { Text, View } from 'react-native';
@@ -96,5 +97,27 @@ describe('CollapsibleProfileLayout', () => {
   it('renders scrollHeader at top of scroll area', () => {
     render(<CollapsibleProfileLayout {...defaultProps} scrollHeader={<Text>Pull Header</Text>} />);
     expect(screen.getByText('Pull Header')).toBeTruthy();
+  });
+
+  it('renders HomeButton in nav bar', () => {
+    render(<CollapsibleProfileLayout {...defaultProps} />);
+    expect(screen.getByText('HomeBtn')).toBeTruthy();
+  });
+
+  it('renders children passed as content', () => {
+    render(
+      <CollapsibleProfileLayout {...defaultProps}>
+        <Text>Some content</Text>
+        <Text>More content</Text>
+      </CollapsibleProfileLayout>,
+    );
+    expect(screen.getByText('Some content')).toBeTruthy();
+    expect(screen.getByText('More content')).toBeTruthy();
+  });
+
+  it('renders without optional props', () => {
+    render(<CollapsibleProfileLayout {...defaultProps} />);
+    // Should not crash without rightContent, heroContent, children, scrollHeader
+    expect(screen.getByTestId('floating-avatar')).toBeTruthy();
   });
 });
