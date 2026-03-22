@@ -13,7 +13,7 @@ Cycle 1 → 12 missing tests → write them → Cycle 2 → 3 gaps → fix → C
 **Rules for loop mode:**
 
 - Each cycle is a full Phase 1–4 pass (scan, report, write, verify)
-- A "clean cycle" means Phase 1 found exactly 0 missing test files AND 0 incomplete tests
+- A "clean cycle" means Phase 1 found exactly 0 missing test files AND 0 files below coverage thresholds
 - The 3-clean-cycle counter resets to 0 if any gaps are found
 - Between cycles, print: `### Cycle N complete — {X gaps found | clean} (consecutive clean: M/3)`
 - After 3 consecutive clean cycles, print: `### Test Coverage complete — 3 consecutive clean cycles achieved`
@@ -27,9 +27,52 @@ Cycle 1 → 12 missing tests → write them → Cycle 2 → 3 gaps → fix → C
 - **Do not batch consecutive clean declarations.** Each clean cycle must be a separate, verifiable scan.
 - **Each cycle's agents start fresh** — do not rely on memory of previous cycles' findings.
 
+## Coverage Thresholds
+
+All source files must meet these minimum thresholds. Files below these numbers are treated as gaps, even if a test file exists.
+
+| Metric         | Minimum |
+| -------------- | ------- |
+| **Lines**      | 90%     |
+| **Branches**   | 85%     |
+| **Functions**  | 90%     |
+| **Statements** | 90%     |
+
+A file that has a test but falls below ANY of these thresholds is a gap that must be fixed.
+
 ## Phase 1 — Scan for Coverage Gaps
 
 Find all source files missing tests AND files with incomplete test coverage. Do NOT modify any files during this phase.
+
+### Step 1A — Run coverage reports
+
+Run coverage tools to get **per-file** metrics. This is the primary data source for finding gaps.
+
+**Mobile:**
+
+```bash
+npx jest --silent --forceExit --coverage --coverageReporters=json-summary --coverageDirectory=./coverage 2>&1
+```
+
+Then read `./coverage/coverage-summary.json` to extract per-file line/branch/function/statement percentages.
+
+**Admin:**
+
+```bash
+cd admin && npx vitest run --coverage --coverage.reporter=json-summary 2>&1
+```
+
+Then read `admin/coverage/coverage-summary.json` to extract per-file metrics.
+
+Parse the JSON to identify:
+
+- Files with **0% coverage** (test file likely missing)
+- Files **below thresholds** (test file exists but incomplete)
+- Files **meeting all thresholds** (no action needed)
+
+### Step 1B — Check for missing test files
+
+For any file not appearing in coverage reports (not instrumented), fall back to the file-existence scan:
 
 ### What must have tests
 
@@ -61,6 +104,9 @@ Find all source files missing tests AND files with incomplete test coverage. Do 
 - `admin/src/components/<feature>/<Component>.tsx` → `admin/src/components/<feature>/__tests__/<Component>.test.tsx`
 - `admin/src/hooks/<hook>.ts` → `admin/src/hooks/__tests__/<hook>.test.ts`
 - `admin/src/app/**/page.tsx` → `admin/src/app/**/__tests__/page.test.tsx`
+- `admin/src/app/**/layout.tsx` → `admin/src/app/**/__tests__/layout.test.tsx`
+- `admin/src/lib/<module>.ts` → `admin/src/__tests__/lib/<module>.test.ts`
+- `admin/src/app/api/**/*.ts` → `admin/src/__tests__/api/**/*.test.ts`
 
 ### How to find missing tests
 
@@ -79,46 +125,15 @@ For each file, check whether a test file exists at the expected location. If not
 
 **Skip type-only files**: If the file contains only `type`, `interface`, or `enum` exports with no functions/components, mark as exempt.
 
-### Scan for incomplete tests
+### Step 1C — Analyze coverage gaps
 
-For each source file that DOES have a test file, analyze coverage completeness:
+For files that have tests but are below thresholds, identify WHAT is uncovered using the coverage data:
 
-**Components:**
+- Which functions have 0% or low coverage?
+- Which branches are missed?
+- Which line ranges are uncovered?
 
-- [ ] Renders without crashing (basic render test)
-- [ ] All conditional rendering branches tested (if/ternary in JSX)
-- [ ] User interactions tested (onPress, onChangeText, onSubmit, etc.)
-- [ ] Callback props invoked with correct arguments
-- [ ] Loading/error/empty states tested
-- [ ] Accessibility labels verified where present
-
-**Hooks:**
-
-- [ ] Initial return values verified
-- [ ] All state transitions triggered and verified
-- [ ] Side effects tested (API calls, navigation, etc.)
-- [ ] Error/edge states tested
-- [ ] Cleanup behavior verified (if applicable)
-
-**Utilities/helpers:**
-
-- [ ] All exported functions tested
-- [ ] Edge cases covered (empty input, null, boundary values)
-- [ ] All code branches exercised (if/else, switch, ternary)
-- [ ] Error handling paths tested
-
-**API modules:**
-
-- [ ] Each exported function has at least one test
-- [ ] Success responses handled
-- [ ] Error responses handled
-- [ ] Request parameters validated
-
-**Scoring:**
-
-- **Full**: All checks applicable to the file type are covered
-- **Partial**: Some key behaviors or branches are untested
-- **Minimal**: Only basic render/smoke test exists, no interaction or branch tests
+Use this data to write targeted tests in Phase 3 rather than guessing from code inspection alone.
 
 ### Approach
 
@@ -126,37 +141,48 @@ Launch **at least 2 parallel agents** (one for mobile, one for admin) with expli
 
 ## Phase 2 — Report
 
-Present findings as markdown tables:
+Present findings as markdown tables, **sorted by coverage percentage ascending** (worst coverage first):
 
 ```
 ## Test Coverage Report (Cycle N)
+
+### Coverage Summary
+| Codebase | Statements | Branches | Functions | Lines |
+|----------|-----------|----------|-----------|-------|
+| Mobile   | XX.XX%    | XX.XX%   | XX.XX%    | XX.XX%|
+| Admin    | XX.XX%    | XX.XX%   | XX.XX%    | XX.XX%|
 
 ### Missing Test Files (X found)
 | Source File | Expected Test Path | File Type |
 |-------------|-------------------|-----------|
 
-### Incomplete Tests (X found)
-| Source File | Test File | Grade | Missing Coverage |
-|-------------|-----------|-------|------------------|
+### Files Below Coverage Thresholds (X found)
+| Source File | Lines | Branches | Functions | Stmts | Worst Gap |
+|-------------|-------|----------|-----------|-------|-----------|
 
 ### Summary
 - Files with tests: X / Y (Z%)
-- Full coverage: A files
-- Partial coverage: B files
-- Minimal coverage: C files
-- No tests: D files
+- Files meeting all thresholds: A
+- Files below thresholds: B (need more tests)
+- Files with no tests: C
 ```
 
 **Do NOT wait for user confirmation.** Proceed directly to Phase 3 and write ALL missing tests.
 
 ## Phase 3 — Write Tests
 
-Write tests for all gaps found in Phase 1, in this priority order:
+Write tests for all gaps found in Phase 1, **prioritized by lowest coverage first** (biggest impact per test written):
 
-1. Missing tests for API modules and utilities (easiest, highest value)
-2. Missing tests for hooks
-3. Missing tests for components
-4. Incomplete tests upgraded to full coverage
+1. **Files with 0% coverage** — missing test files entirely
+2. **Files below 50% line coverage** — critical gaps
+3. **Files between 50-90% line coverage** — moderate gaps
+4. **Files below threshold on branches/functions only** — targeted gap-filling
+
+Within each priority tier, prefer:
+
+- API modules and utilities (easiest, highest value)
+- Hooks
+- Components
 
 ### Test conventions — Mobile
 
@@ -210,6 +236,17 @@ describe('ComponentName', () => {
 });
 ```
 
+### Writing targeted tests for coverage gaps
+
+When the coverage report shows specific uncovered lines/branches:
+
+1. Read the source file at the uncovered line ranges
+2. Identify the conditions or code paths not exercised
+3. Write tests that specifically trigger those paths
+4. After writing, re-run coverage on just that file to verify improvement:
+   - Mobile: `npx jest <test-file> --forceExit --coverage --collectCoverageFrom='<source-file>'`
+   - Admin: `cd admin && npx vitest run <test-file> --coverage`
+
 ### Rules for writing tests
 
 - Test behavior and contracts, not implementation details
@@ -221,19 +258,25 @@ describe('ComponentName', () => {
 
 ## Phase 4 — Verify
 
-Run quality gates for each affected codebase:
+Run quality gates AND coverage for each affected codebase:
 
 **Mobile** (if tests were added/modified):
 
 ```bash
-npx eslint . && npx tsc --noEmit && npx jest --silent --forceExit
+npx eslint . && npx tsc --noEmit && npx jest --silent --forceExit --coverage --coverageReporters=text-summary
 ```
 
 **Admin** (if tests were added/modified):
 
 ```bash
-cd admin && npx eslint . --max-warnings 0 && npx tsc --noEmit && npx vitest run
+cd admin && npx eslint . --max-warnings 0 && npx tsc --noEmit && npx vitest run --coverage --coverage.reporter=text-summary
 ```
+
+Verify:
+
+1. All tests pass
+2. Overall coverage numbers improved (or at minimum didn't regress)
+3. Files targeted in this cycle now meet thresholds
 
 If any test fails:
 
@@ -250,6 +293,12 @@ After 3 consecutive clean cycles, print:
 
 ```
 ## Test Coverage — Complete
+
+### Coverage Summary
+| Codebase | Statements | Branches | Functions | Lines | Delta |
+|----------|-----------|----------|-----------|-------|-------|
+| Mobile   | XX.XX%    | XX.XX%   | XX.XX%    | XX.XX%| +X.XX%|
+| Admin    | XX.XX%    | XX.XX%   | XX.XX%    | XX.XX%| +X.XX%|
 
 ### Stats
 - Total cycles: N
@@ -283,3 +332,5 @@ After 3 consecutive clean cycles, print:
 - Jest uses `--forceExit` (TanStack Query timer leaks)
 - Admin ESLint uses `--max-warnings 0`
 - **Code-intel annotations** — add `@contract`, `@assumes`, etc. annotations to any source code fixes per CLAUDE.md rules (test files themselves don't need annotations)
+- **Coverage data is the source of truth** — prefer coverage report data over manual code inspection when determining what needs testing
+- **Clean up coverage artifacts** — delete `coverage/` directories after the final report
