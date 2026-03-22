@@ -51,7 +51,7 @@ Run coverage tools to get **per-file** metrics. This is the primary data source 
 **Mobile:**
 
 ```bash
-npx jest --silent --forceExit --coverage --coverageReporters=json-summary --coverageDirectory=./coverage 2>&1
+npx jest --silent --forceExit --maxWorkers=2 --coverage --coverageReporters=json-summary --coverageDirectory=./coverage 2>&1
 ```
 
 Then read `./coverage/coverage-summary.json` to extract per-file line/branch/function/statement percentages.
@@ -59,7 +59,7 @@ Then read `./coverage/coverage-summary.json` to extract per-file line/branch/fun
 **Admin:**
 
 ```bash
-cd admin && npx vitest run --coverage --coverage.reporter=json-summary 2>&1
+cd admin && npx vitest run --maxWorkers=2 --coverage --coverage.reporter=json-summary 2>&1
 ```
 
 Then read `admin/coverage/coverage-summary.json` to extract per-file metrics.
@@ -244,8 +244,8 @@ When the coverage report shows specific uncovered lines/branches:
 2. Identify the conditions or code paths not exercised
 3. Write tests that specifically trigger those paths
 4. After writing, re-run coverage on just that file to verify improvement:
-   - Mobile: `npx jest <test-file> --forceExit --coverage --collectCoverageFrom='<source-file>'`
-   - Admin: `cd admin && npx vitest run <test-file> --coverage`
+   - Mobile: `npx jest <test-file> --forceExit --maxWorkers=2 --coverage --collectCoverageFrom='<source-file>'`
+   - Admin: `cd admin && npx vitest run <test-file> --maxWorkers=2 --coverage`
 
 ### Rules for writing tests
 
@@ -254,7 +254,7 @@ When the coverage report shows specific uncovered lines/branches:
 - Keep tests independent — no shared mutable state between tests
 - Use `beforeEach` for common setup, not test-to-test dependencies
 - Mock external dependencies (API, navigation, storage), not internal logic
-- Verify the new test file passes in isolation: `npx jest <test-file-path> --forceExit` (mobile) or `cd admin && npx vitest run <test-file-path>` (admin)
+- Verify the new test file passes in isolation: `npx jest <test-file-path> --forceExit --maxWorkers=2` (mobile) or `cd admin && npx vitest run <test-file-path> --maxWorkers=2` (admin)
 
 ## Phase 4 — Verify
 
@@ -263,13 +263,13 @@ Run quality gates AND coverage for each affected codebase:
 **Mobile** (if tests were added/modified):
 
 ```bash
-npx eslint . && npx tsc --noEmit && npx jest --silent --forceExit --coverage --coverageReporters=text-summary
+npx eslint . && npx tsc --noEmit && npx jest --silent --forceExit --maxWorkers=2 --coverage --coverageReporters=text-summary
 ```
 
 **Admin** (if tests were added/modified):
 
 ```bash
-cd admin && npx eslint . --max-warnings 0 && npx tsc --noEmit && npx vitest run --coverage --coverage.reporter=text-summary
+cd admin && npx eslint . --max-warnings 0 && npx tsc --noEmit && npx vitest run --maxWorkers=2 --coverage --coverage.reporter=text-summary
 ```
 
 Verify:
