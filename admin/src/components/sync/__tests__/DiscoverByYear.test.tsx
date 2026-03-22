@@ -30,6 +30,7 @@ vi.mock('@/components/sync/DiscoverResults', () => ({
     onGapCountChange,
     existingMovies,
     existingSet,
+    importProgress,
   }: {
     results: Array<{ id: number; title: string }>;
     newMovies: Array<{ id: number; title: string }>;
@@ -48,8 +49,18 @@ vi.mock('@/components/sync/DiscoverResults', () => ({
     onGapCountChange: (count: number | null) => void;
     existingMovies: unknown[];
     existingSet: Set<number>;
+    importProgress?: Array<{ tmdbId: number; title: string; status: string }>;
   }) => (
     <div data-testid="discover-results">
+      {importProgress && importProgress.length > 0 && (
+        <div data-testid="import-progress">
+          {importProgress.map((item) => (
+            <span key={item.tmdbId} data-testid={`progress-${item.tmdbId}`}>
+              {item.status}
+            </span>
+          ))}
+        </div>
+      )}
       <span data-testid="results-count">{results.length}</span>
       <span data-testid="new-movies-count">{newMovies.length}</span>
       <span data-testid="selected-count">{selected.size}</span>
@@ -86,19 +97,6 @@ vi.mock('@/components/sync/DiscoverResults', () => ({
       <button onClick={() => onGapCountChange(5)} data-testid="gap-count-btn">
         Set Gap
       </button>
-    </div>
-  ),
-  ImportProgressList: ({
-    items,
-  }: {
-    items: Array<{ tmdbId: number; title: string; status: string }>;
-  }) => (
-    <div data-testid="import-progress">
-      {items.map((item) => (
-        <span key={item.tmdbId} data-testid={`progress-${item.tmdbId}`}>
-          {item.status}
-        </span>
-      ))}
     </div>
   ),
 }));

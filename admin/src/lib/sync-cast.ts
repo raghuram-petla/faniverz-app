@@ -145,7 +145,7 @@ async function getExistingCastKeys(
 
 /**
  * Additive cast/crew sync — only processes missing members, skips already-synced.
- * R2 uploads parallelized in batches of 5 for speed.
+ * R2 uploads sequential (batch 1 to avoid DNS EBUSY on Vercel free plan).
  * Cleans up stale entries only when ALL members are processed (function completes).
  *
  * @sideeffect: uploads actor photos to R2, upserts actors, inserts movie_cast rows.
@@ -162,9 +162,9 @@ export async function syncCastCrewAdditive(
   const missingCast = allCast.filter((cm) => !existingCastKeys.has(String(cm.id)));
   let castCount = allCast.length - missingCast.length;
 
-  // @sideeffect: process missing cast in parallel batches of 5
-  for (let i = 0; i < missingCast.length; i += 5) {
-    const batch = missingCast.slice(i, i + 5);
+  // @sideeffect: process missing cast sequentially (batch 1 to avoid DNS EBUSY)
+  for (let i = 0; i < missingCast.length; i += 1) {
+    const batch = missingCast.slice(i, i + 1);
     const batchResults = await Promise.all(
       batch.map(async (cm) => {
         const photoUrl = await maybeUploadImage(
@@ -205,8 +205,8 @@ export async function syncCastCrewAdditive(
   const missingCrew = keyCrew.filter((cm) => !existingCrewKeys.has(`${cm.id}-${cm.roleOrder}`));
   let crewCount = keyCrew.length - missingCrew.length;
 
-  for (let i = 0; i < missingCrew.length; i += 5) {
-    const batch = missingCrew.slice(i, i + 5);
+  for (let i = 0; i < missingCrew.length; i += 1) {
+    const batch = missingCrew.slice(i, i + 1);
     const crewResults = await Promise.all(
       batch.map(async (cm) => {
         const photoUrl = await maybeUploadImage(

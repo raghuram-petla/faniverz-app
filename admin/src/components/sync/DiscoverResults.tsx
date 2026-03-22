@@ -34,6 +34,8 @@ export interface DiscoverResultsProps {
   onImport: () => void;
   /** @sideeffect selects all new movies and immediately triggers import */
   onImportAllNew: () => void;
+  /** @sideeffect cancels ongoing and pending imports */
+  onCancelImport?: () => void;
   /** TMDB IDs of movies imported this session */
   importedIds?: Set<number>;
   /** @nullable TMDB ID → local movie with matching title but no tmdb_id */
@@ -44,6 +46,8 @@ export interface DiscoverResultsProps {
   linkingTmdbId?: number | null;
   /** @nullable callback from ExistingMovieSync to propagate gap count */
   onGapCountChange?: (count: number | null) => void;
+  /** @contract import progress items — shown between buttons and movie grid */
+  importProgress?: ImportProgress[];
 }
 
 export function DiscoverResults({
@@ -59,11 +63,13 @@ export function DiscoverResults({
   onDeselectAll,
   onImport,
   onImportAllNew,
+  onCancelImport,
   importedIds,
   duplicateSuspects,
   onLinkDuplicate,
   linkingTmdbId,
   onGapCountChange,
+  importProgress,
 }: DiscoverResultsProps) {
   return (
     <>
@@ -90,7 +96,7 @@ export function DiscoverResults({
             </>
           )}
         </p>
-        {newMovies.length > 0 && (
+        {newMovies.length > 0 && !isImporting && (
           <button
             onClick={selected.size > 0 ? onDeselectAll : onSelectAllNew}
             className="border border-outline hover:border-on-surface-subtle text-on-surface px-3 py-1 rounded-lg text-xs font-medium transition-colors"
@@ -98,31 +104,37 @@ export function DiscoverResults({
             {selected.size > 0 ? 'Deselect all' : `Select all new (${newMovies.length})`}
           </button>
         )}
-        {selected.size > 0 && (
+        {selected.size > 0 && !isImporting && (
           <button
             onClick={onImport}
-            disabled={isImporting}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
           >
-            {isImporting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Download className="w-3.5 h-3.5" />
-            )}
+            <Download className="w-3.5 h-3.5" />
             Import {selected.size} selected
           </button>
         )}
-        {newMovies.length > 0 && selected.size === 0 && (
+        {newMovies.length > 0 && selected.size === 0 && !isImporting && (
           <button
             onClick={onImportAllNew}
-            disabled={isImporting}
-            className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             Import all new ({newMovies.length})
           </button>
         )}
+        {isImporting && onCancelImport && (
+          <button
+            onClick={onCancelImport}
+            className="flex items-center gap-2 border border-status-red text-status-red hover:bg-status-red/10 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          >
+            <XCircle className="w-3.5 h-3.5" />
+            Cancel import
+          </button>
+        )}
       </div>
+
+      {/* @contract: progress list between buttons and grid so user sees it immediately */}
+      {importProgress && importProgress.length > 0 && <ImportProgressList items={importProgress} />}
 
       {/* New-only grid — auto-fill keeps cards ~100px wide; columns adjust to container */}
       <div

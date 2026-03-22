@@ -205,10 +205,14 @@ describe('DiscoverResults', () => {
     expect(onImportAllNew).toHaveBeenCalled();
   });
 
-  it('disables import button when isImporting', () => {
-    wrap(<DiscoverResults {...defaultProps} isImporting={true} />);
-    const btn = screen.getByText('Import all new (2)').closest('button')!;
-    expect(btn).toBeDisabled();
+  it('hides import buttons and shows cancel when isImporting', () => {
+    const onCancel = vi.fn();
+    wrap(<DiscoverResults {...defaultProps} isImporting={true} onCancelImport={onCancel} />);
+    // Import buttons should be hidden during import
+    expect(screen.queryByText('Import all new (2)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Select all new (2)')).not.toBeInTheDocument();
+    // Cancel button should be visible
+    expect(screen.getByText('Cancel import')).toBeInTheDocument();
   });
 
   it('renders "Link to TMDB" button for duplicate suspects', () => {

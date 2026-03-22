@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useImportMovies, useLinkTmdbId } from '@/hooks/useSync';
 import type { DiscoverResult, DuplicateSuspect, ExistingMovieData } from '@/hooks/useSync';
 import type { ImportProgress } from './syncHelpers';
-import { DiscoverResults, ImportProgressList } from './DiscoverResults';
+import { DiscoverResults } from './DiscoverResults';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 
 export interface DiscoverByYearProps {
@@ -22,6 +22,8 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
   const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
   const [importedMovieData, setImportedMovieData] = useState<ExistingMovieData[]>([]);
   const [linkingTmdbId, setLinkingTmdbId] = useState<number | null>(null);
+  // @contract: cancel ref checked between movies — when true, pending movies are skipped
+  const cancelledRef = useRef(false);
 
   const existingMovies = useMemo(
     () => [...((data.existingMovies ?? []) as ExistingMovieData[]), ...importedMovieData],
@@ -88,11 +90,21 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
 
   /** @sideeffect import 1 movie at a time with automatic 504 retry for resumable imports */
   const runBatchImport = async (movies: Array<{ id: number; title: string }>) => {
+    cancelledRef.current = false;
     setImportProgress(
       movies.map((m) => ({ tmdbId: m.id, title: m.title, status: 'pending' as const })),
     );
     // @contract: batch size 1 — each movie gets its own API call for resumable import
     for (const movie of movies) {
+      // @contract: check cancel flag between movies — skip remaining if cancelled
+      if (cancelledRef.current) {
+        setImportProgress((prev) =>
+          prev.map((p) =>
+            p.status === 'pending' ? { ...p, status: 'failed', error: 'Cancelled' } : p,
+          ),
+        );
+        break;
+      }
       const batch = [movie.id];
       // @contract: retry on 504 — backend saves progress, each retry resumes from checkpoint
       const MAX_RETRIES = 15;
@@ -185,6 +197,10 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
     'Movies are still being imported. If you leave now, the remaining movies will not be imported. Are you sure you want to leave?',
   );
 
+  const handleCancelImport = useCallback(() => {
+    cancelledRef.current = true;
+  }, []);
+
   const handleImportAllNew = () => {
     if (newMovies.length === 0 || isImporting) return;
     setSelected(new Set(newMovies.map((m) => m.id)));
@@ -212,13 +228,14 @@ export function DiscoverByYear({ data }: DiscoverByYearProps) {
         onDeselectAll={() => setSelected(new Set())}
         onImport={handleImport}
         onImportAllNew={handleImportAllNew}
+        onCancelImport={handleCancelImport}
         importedIds={importedIds}
         duplicateSuspects={data.duplicateSuspects}
         onLinkDuplicate={handleLinkDuplicate}
         linkingTmdbId={linkingTmdbId}
         onGapCountChange={setGapCount}
+        importProgress={importProgress}
       />
-      {importProgress.length > 0 && <ImportProgressList items={importProgress} />}
     </div>
   );
 }

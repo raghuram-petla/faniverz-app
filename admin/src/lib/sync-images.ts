@@ -68,7 +68,7 @@ async function cleanupStaleImages(
  * Sync all posters from TMDB images endpoint into movie_images table.
  * Additive: only uploads missing images, skips already-synced ones.
  *
- * @sideeffect: uploads missing posters to R2 in parallel batches of 5.
+ * @sideeffect: uploads missing posters to R2 in sequential R2 uploads (batch 1 to avoid DNS EBUSY on Vercel free plan).
  */
 export async function syncPosters(
   movieId: string,
@@ -96,9 +96,9 @@ export async function syncPosters(
   const indexMap = new Map(sorted.map((p, i) => [p.file_path, i]));
   let count = sorted.length - missing.length; // already-done count
 
-  // @sideeffect: upload missing posters in parallel batches of 5
-  for (let i = 0; i < missing.length; i += 5) {
-    const batch = missing.slice(i, i + 5);
+  // @sideeffect: upload missing posters in sequential R2 uploads (batch 1 to avoid DNS EBUSY on Vercel free plan)
+  for (let i = 0; i < missing.length; i += 1) {
+    const batch = missing.slice(i, i + 1);
     const results = await Promise.all(
       batch.map(async (poster) => {
         const key = `${randomUUID()}.jpg`;
@@ -159,7 +159,7 @@ export async function syncPosters(
  * Sync all backdrops from TMDB images endpoint into movie_images table.
  * Additive: only uploads missing backdrops, skips already-synced ones.
  *
- * @sideeffect: uploads missing backdrops to R2 in parallel batches of 5.
+ * @sideeffect: uploads missing backdrops to R2 in sequential R2 uploads (batch 1 to avoid DNS EBUSY on Vercel free plan).
  */
 export async function syncBackdrops(
   movieId: string,
@@ -186,9 +186,9 @@ export async function syncBackdrops(
   const indexMap = new Map(sorted.map((b, i) => [b.file_path, i]));
   let count = sorted.length - missing.length;
 
-  // @sideeffect: upload missing backdrops in parallel batches of 5
-  for (let i = 0; i < missing.length; i += 5) {
-    const batch = missing.slice(i, i + 5);
+  // @sideeffect: upload missing backdrops in sequential R2 uploads (batch 1 to avoid DNS EBUSY on Vercel free plan)
+  for (let i = 0; i < missing.length; i += 1) {
+    const batch = missing.slice(i, i + 1);
     const results = await Promise.all(
       batch.map(async (backdrop) => {
         const key = `${randomUUID()}.jpg`;
