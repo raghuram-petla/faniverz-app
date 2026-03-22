@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCreatePlatform } from '@/hooks/useAdminPlatforms';
 import { useCountries } from '@/hooks/useAdminMovieAvailability';
 import { useImageUpload } from '@/hooks/useImageUpload';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
 import { ArrowLeft, Loader2, Plus, X } from 'lucide-react';
 import { colors } from '@shared/colors';
@@ -30,6 +31,14 @@ export default function NewPlatformPage() {
   const [tmdbProviderId, setTmdbProviderId] = useState('');
   const [regions, setRegions] = useState<string[]>([defaultCountry]);
   const [addingCountry, setAddingCountry] = useState(false);
+
+  // @contract: isDirty when any field has been filled (create page pattern)
+  const isDirty =
+    name.trim().length > 0 ||
+    logoUrl.length > 0 ||
+    tmdbProviderId.trim().length > 0 ||
+    regions.length > 1;
+  useUnsavedChangesWarning(isDirty);
 
   async function handleLogoUpload(file: File) {
     try {

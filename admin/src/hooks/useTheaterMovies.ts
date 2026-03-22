@@ -103,21 +103,32 @@ export function useRemoveFromTheaters() {
   return useMutation({
     mutationFn: async (params: { movieId: string; endDate: string }) => {
       // @contract Close the active run (end_date IS NULL) and flip the in_theaters flag in parallel
-      await Promise.all([
+      // @sideeffect Both operations go through crudFetch for audit attribution
+      // @edge Find the active run ID first so crudFetch can target by id
+      const { data: activeRun } = await supabase
+        .from('movie_theatrical_runs')
+        .select('id')
+        .eq('movie_id', params.movieId)
+        .is('end_date', null)
+        .maybeSingle();
+
+      const promises: Promise<unknown>[] = [
         crudFetch('PATCH', {
           table: 'movies',
           id: params.movieId,
           data: { in_theaters: false },
         }),
-        supabase
-          .from('movie_theatrical_runs')
-          .update({ end_date: params.endDate })
-          .eq('movie_id', params.movieId)
-          .is('end_date', null)
-          .then(({ error }) => {
-            if (error) throw error;
+      ];
+      if (activeRun?.id) {
+        promises.push(
+          crudFetch('PATCH', {
+            table: 'movie_theatrical_runs',
+            id: activeRun.id,
+            data: { end_date: params.endDate },
           }),
-      ]);
+        );
+      }
+      await Promise.all(promises);
       return params.movieId;
     },
     // @sideeffect Also invalidate single movie + theatrical-runs so edit page shows fresh data

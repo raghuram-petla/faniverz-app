@@ -35,11 +35,13 @@ export function useMovieAvailability(movieId: string) {
 }
 
 // @invariant: queryKey uses sorted movieIds for cache stability — ['a','b'] and ['b','a'] hit the same cache
+// @edge: stabilize via join/split to prevent new array ref from triggering redundant queries
 export function useMoviePlatformMap(movieIds: string[]) {
-  const sortedIds = useMemo(() => [...movieIds].sort(), [movieIds]);
+  const stableKey = useMemo(() => [...movieIds].sort().join(','), [movieIds]);
+  const sortedIds = useMemo(() => (stableKey ? stableKey.split(',') : []), [stableKey]);
 
   return useQuery({
-    queryKey: ['movie-platforms', sortedIds],
+    queryKey: ['movie-platforms', stableKey],
     queryFn: () => fetchMoviePlatformMap(sortedIds),
     enabled: sortedIds.length > 0,
     staleTime: 5 * 60 * 1000,

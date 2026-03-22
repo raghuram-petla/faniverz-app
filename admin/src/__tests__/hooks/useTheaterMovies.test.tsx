@@ -160,18 +160,19 @@ describe('useTheaterSearch', () => {
 });
 
 describe('useRemoveFromTheaters', () => {
-  it('calls PATCH on movies + updates theatrical run end_date', async () => {
+  it('calls crudFetch PATCH for both movie and theatrical run via audit trail', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
       json: async () => ({}),
     } as Response);
 
-    // @contract supabase.from().update().eq().is() chain for closing the active run
-    const mockIs = vi.fn().mockResolvedValue({ data: [], error: null });
+    // @contract supabase.from().select().eq().is().maybeSingle() chain for finding active run
+    const mockMaybeSingle = vi.fn().mockResolvedValue({ data: { id: 'run-1' }, error: null });
+    const mockIs = vi.fn().mockReturnValue({ maybeSingle: mockMaybeSingle });
     const mockEq = vi.fn().mockReturnValue({ is: mockIs });
-    const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
-    mockFrom.mockReturnValue({ update: mockUpdate });
+    const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+    mockFrom.mockReturnValue({ select: mockSelect });
 
     const { result } = renderHook(() => useRemoveFromTheaters(), { wrapper: createWrapper() });
 
@@ -181,7 +182,7 @@ describe('useRemoveFromTheaters', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // Verifies the crudFetch call for flipping in_theaters
+    // Verifies crudFetch was called for both movies and theatrical run
     expect(fetchSpy).toHaveBeenCalledWith(
       '/api/admin-crud',
       expect.objectContaining({
@@ -189,12 +190,17 @@ describe('useRemoveFromTheaters', () => {
         body: JSON.stringify({ table: 'movies', id: 'movie-1', data: { in_theaters: false } }),
       }),
     );
-
-    // Verifies the supabase call for closing the active run
-    expect(mockFrom).toHaveBeenCalledWith('movie_theatrical_runs');
-    expect(mockUpdate).toHaveBeenCalledWith({ end_date: '2026-03-14' });
-    expect(mockEq).toHaveBeenCalledWith('movie_id', 'movie-1');
-    expect(mockIs).toHaveBeenCalledWith('end_date', null);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movie_theatrical_runs',
+          id: 'run-1',
+          data: { end_date: '2026-03-14' },
+        }),
+      }),
+    );
 
     fetchSpy.mockRestore();
   });

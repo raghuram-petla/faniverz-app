@@ -36,7 +36,8 @@ export default function ActivityScreen() {
   const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useUserActivity(filter);
   // @contract: pages are flattened into a single array for FlatList consumption
-  const activities = useMemo(() => data?.pages.flatMap((p) => p) ?? [], [data]);
+  // @edge: depend on data?.pages (not data) to avoid recomputation on isFetching toggles
+  const activities = useMemo(() => data?.pages.flatMap((p) => p) ?? [], [data?.pages]);
 
   const { refreshing, onRefresh } = useRefresh(async () => {
     await refetch();

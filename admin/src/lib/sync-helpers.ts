@@ -35,9 +35,11 @@ export async function verifyBearer(authHeader: string | null): Promise<User | nu
   if (!authHeader?.startsWith('Bearer ')) return null;
 
   const token = authHeader.slice(7);
+  // @edge: persistSession:false + autoRefreshToken:false prevents resource leaks in serverless functions
   const supabaseAuth = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
   );
   const {
     data: { user },

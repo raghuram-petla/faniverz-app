@@ -27,7 +27,8 @@ export function useUpdateProfile() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        // @edge: .catch() guards against non-JSON error responses (e.g. HTML 502 from proxy)
+        const data = await res.json().catch(() => ({ error: 'Update failed' }));
         throw new Error(data.error ?? 'Update failed');
       }
 

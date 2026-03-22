@@ -69,7 +69,7 @@ export default function DiscoverScreen() {
     transform: [{ rotate: `${chevronRotate.value}deg` }],
   }));
 
-  // @sideeffect: applies deep-link params on mount only (empty deps intentional)
+  // @sideeffect: applies deep-link params when they change (supports re-navigation with different params)
   // @assumes: params.filter is a valid MovieStatus or 'all'
   // @edge: only togglePlatform if not already selected — prevents toggling OFF on re-mount when Zustand persists
   useEffect(() => {
@@ -77,8 +77,7 @@ export default function DiscoverScreen() {
     if (params.platform && !useFilterStore.getState().selectedPlatforms.includes(params.platform)) {
       togglePlatform(params.platform);
     }
-    // @edge: empty deps intentional — mount-only
-  }, []);
+  }, [params.filter, params.platform, setFilter, togglePlatform]);
 
   // @contract: only movieStatus and sortBy are sent to the API; genre/platform/PH filtering is client-side
   const filters = useMemo(
@@ -101,7 +100,8 @@ export default function DiscoverScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
-  const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
+  // @edge: depend on data?.pages (not data) to avoid recomputation on isFetching toggles
+  const allMovies = useMemo(() => data?.pages.flat() ?? [], [data?.pages]);
   const { data: platforms = [] } = usePlatforms();
   const { data: productionHouses = [] } = useProductionHouses();
   const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);

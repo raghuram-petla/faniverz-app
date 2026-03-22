@@ -34,7 +34,8 @@ export default function CalendarScreen() {
     useUpcomingMovies();
 
   // @coupling: pages come from useUpcomingMovies infinite query — each page is Movie[]
-  const allMovies = useMemo(() => data?.pages.flat() ?? [], [data]);
+  // @edge: depend on data?.pages (not data) to avoid recomputation on isFetching toggles
+  const allMovies = useMemo(() => data?.pages.flat() ?? [], [data?.pages]);
   const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);
   // @sync: platformMap is refetched alongside movie data during pull-to-refresh
   const { data: platformMap = {}, refetch: refetchPlatforms } = useMoviePlatformMap(movieIds);

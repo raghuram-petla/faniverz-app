@@ -179,22 +179,23 @@ describe('useRemoveFromTheaters', () => {
     vi.clearAllMocks();
   });
 
-  function buildUpdateChain(error: unknown = null) {
-    // supabase chain: .from(...).update({...}).eq(...).is(...).then(...)
-    // The `.then` is on the final promise-like returned by .is()
-    const terminalPromise = Promise.resolve({ error });
-    const isResult = {
-      then: terminalPromise.then.bind(terminalPromise),
-    };
-    const eqFn = vi.fn().mockReturnValue({ is: vi.fn().mockReturnValue(isResult) });
-    const updateFn = vi.fn().mockReturnValue({ eq: eqFn });
-    return { update: updateFn };
+  /** Build a select chain that resolves with maybeSingle() for the active run lookup */
+  function buildSelectSingleChain(resolveData: unknown) {
+    const terminal = Promise.resolve({ data: resolveData, error: null });
+    const chain: Record<string, unknown> = {};
+    ['select', 'eq', 'is'].forEach((m) => {
+      chain[m] = vi.fn().mockReturnValue(chain);
+    });
+    chain.maybeSingle = vi.fn().mockReturnValue(terminal);
+    (chain as Record<string, unknown>).then = (terminal as Promise<unknown>).then.bind(terminal);
+    return chain;
   }
 
-  it('calls crudFetch PATCH and supabase update in parallel', async () => {
+  it('calls crudFetch PATCH for both movie and theatrical run via audit trail', async () => {
     mockCrudFetch.mockResolvedValue({});
-    const updateChain = buildUpdateChain();
-    mockSupabaseFrom.mockReturnValue(updateChain);
+    // First call: select active run; returns a run with id
+    const selectChain = buildSelectSingleChain({ id: 'run-1' });
+    mockSupabaseFrom.mockReturnValue(selectChain);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useRemoveFromTheaters(), { wrapper: Wrapper });
@@ -203,6 +204,7 @@ describe('useRemoveFromTheaters', () => {
       await result.current.mutateAsync({ movieId: 'movie-1', endDate: '2026-03-22' });
     });
 
+    // Should call crudFetch twice: once for movies, once for theatrical run
     expect(mockCrudFetch).toHaveBeenCalledWith(
       'PATCH',
       expect.objectContaining({
@@ -211,13 +213,45 @@ describe('useRemoveFromTheaters', () => {
         data: { in_theaters: false },
       }),
     );
-    expect(updateChain.update).toHaveBeenCalledWith({ end_date: '2026-03-22' });
+    expect(mockCrudFetch).toHaveBeenCalledWith(
+      'PATCH',
+      expect.objectContaining({
+        table: 'movie_theatrical_runs',
+        id: 'run-1',
+        data: { end_date: '2026-03-22' },
+      }),
+    );
+  });
+
+  it('only updates movie flag when no active run exists', async () => {
+    mockCrudFetch.mockResolvedValue({});
+    // No active run found
+    const selectChain = buildSelectSingleChain(null);
+    mockSupabaseFrom.mockReturnValue(selectChain);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useRemoveFromTheaters(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ movieId: 'movie-1', endDate: '2026-03-22' });
+    });
+
+    // Should only call crudFetch once (for movies)
+    expect(mockCrudFetch).toHaveBeenCalledTimes(1);
+    expect(mockCrudFetch).toHaveBeenCalledWith(
+      'PATCH',
+      expect.objectContaining({
+        table: 'movies',
+        id: 'movie-1',
+        data: { in_theaters: false },
+      }),
+    );
   });
 
   it('invalidates query keys on success', async () => {
     mockCrudFetch.mockResolvedValue({});
-    const updateChain = buildUpdateChain();
-    mockSupabaseFrom.mockReturnValue(updateChain);
+    const selectChain = buildSelectSingleChain({ id: 'run-1' });
+    mockSupabaseFrom.mockReturnValue(selectChain);
 
     const { qc, Wrapper } = makeWrapper();
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
@@ -229,21 +263,6 @@ describe('useRemoveFromTheaters', () => {
     });
 
     expect(invalidateSpy).toHaveBeenCalled();
-  });
-
-  it('throws when supabase update returns error', async () => {
-    mockCrudFetch.mockResolvedValue({});
-    const updateChain = buildUpdateChain({ message: 'Update failed' });
-    mockSupabaseFrom.mockReturnValue(updateChain);
-
-    const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useRemoveFromTheaters(), { wrapper: Wrapper });
-
-    await act(async () => {
-      await expect(
-        result.current.mutateAsync({ movieId: 'movie-1', endDate: '2026-03-22' }),
-      ).rejects.toBeDefined();
-    });
   });
 });
 

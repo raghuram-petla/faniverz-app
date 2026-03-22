@@ -146,6 +146,31 @@ describe('useUpdateProfile', () => {
     expect(mockAlert).toHaveBeenCalledWith('Profile update failed');
   });
 
+  it('handles non-JSON error response gracefully', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: { access_token: 'my-token' } },
+    });
+    mockFetch.mockResolvedValue({
+      ok: false,
+      json: async () => {
+        throw new SyntaxError('Unexpected token <');
+      },
+    });
+
+    const { result } = renderHook(() => useUpdateProfile(), { wrapper });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({ display_name: 'X' });
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(mockAlert).toHaveBeenCalledWith('Update failed');
+  });
+
   it('updates avatar_url successfully', async () => {
     mockGetSession.mockResolvedValue({
       data: { session: { access_token: 'my-token' } },

@@ -4,6 +4,11 @@ import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
 import type { FeedComment } from '@/lib/types';
 
+// @boundary: PostgREST .ilike() uses LIKE patterns — strip special chars to avoid syntax errors
+function sanitizeSearchTerm(term: string): string {
+  return term.replace(/[,()"'\\%_]/g, '').trim();
+}
+
 // @boundary: joins feed_comments with news_feed and profiles via PostgREST foreign-key selects
 // @edge: search filters body via ilike server-side, but profile.display_name is matched client-side
 //        because PostgREST cannot OR across foreign table columns
@@ -12,14 +17,15 @@ export function useAdminComments(search = '') {
   return useQuery({
     queryKey: ['admin', 'comments', search],
     queryFn: async () => {
+      const sanitized = sanitizeSearchTerm(search);
       let query = supabase
         .from('feed_comments')
         .select('*, feed_item:news_feed(id, title), profile:profiles(id, display_name, email)')
         .order('created_at', { ascending: false })
         .limit(200);
 
-      if (search) {
-        query = query.ilike('body', `%${search}%`);
+      if (sanitized) {
+        query = query.ilike('body', `%${sanitized}%`);
       }
 
       const { data, error } = await query;
@@ -28,8 +34,9 @@ export function useAdminComments(search = '') {
 
       // Also match on profile display_name client-side
       // (PostgREST cannot OR across foreign table columns)
-      if (search) {
-        const lower = search.toLowerCase();
+      // @edge: use sanitized term for consistency with server-side ilike filter
+      if (sanitized) {
+        const lower = sanitized.toLowerCase();
         return comments.filter(
           (c) =>
             c.body?.toLowerCase().includes(lower) ||

@@ -160,6 +160,7 @@ export async function removeFeedVote(feedItemId: string, userId: string): Promis
 }
 
 // @contract: batches .in() calls in chunks of 40 to stay within URL length limits (~2000 chars)
+// @edge: batches run in parallel via Promise.all for faster vote loading on long feeds
 export async function fetchUserVotes(
   userId: string,
   feedItemIds: string[],
@@ -167,21 +168,28 @@ export async function fetchUserVotes(
   if (feedItemIds.length === 0) return {};
 
   const BATCH_SIZE = 40;
-  const votes: Record<string, 'up' | 'down'> = {};
-
+  const batches: string[][] = [];
   for (let i = 0; i < feedItemIds.length; i += BATCH_SIZE) {
-    const batch = feedItemIds.slice(i, i + BATCH_SIZE);
-    const { data, error } = await supabase
-      .from('feed_votes')
-      .select('feed_item_id, vote_type')
-      .eq('user_id', userId)
-      .in('feed_item_id', batch);
+    batches.push(feedItemIds.slice(i, i + BATCH_SIZE));
+  }
 
-    if (error) throw error;
-    for (const row of data ?? []) {
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const { data, error } = await supabase
+        .from('feed_votes')
+        .select('feed_item_id, vote_type')
+        .eq('user_id', userId)
+        .in('feed_item_id', batch);
+      if (error) throw error;
+      return data ?? [];
+    }),
+  );
+
+  const votes: Record<string, 'up' | 'down'> = {};
+  for (const rows of results) {
+    for (const row of rows) {
       votes[row.feed_item_id] = row.vote_type as 'up' | 'down';
     }
   }
-
   return votes;
 }
