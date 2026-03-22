@@ -18,6 +18,7 @@ interface SpotlightPreviewProps {
 
 /** @coupling mirrors mobile SpotlightCard layout — must stay visually in sync with app/ */
 export function SpotlightPreview({
+  safeAreaTop = 0,
   title,
   backdropUrl,
   movieStatus,
@@ -44,21 +45,24 @@ export function SpotlightPreview({
     <div
       style={{
         width: '100%',
-        height: HERO_HEIGHT,
+        height: HERO_HEIGHT + safeAreaTop,
         position: 'relative',
         backgroundColor: colors.black,
       }}
     >
-      {/* Backdrop */}
+      {/* Backdrop — offset by safeAreaTop so image starts below status bar */}
       {backdropUrl && (
         <img
           src={backdropUrl}
           alt=""
           style={{
             position: 'absolute',
-            inset: 0,
+            top: safeAreaTop,
+            left: 0,
+            right: 0,
+            bottom: 0,
             width: '100%',
-            height: '100%',
+            height: `calc(100% - ${safeAreaTop}px)`,
             objectFit: 'cover',
             objectPosition,
           }}
@@ -67,7 +71,16 @@ export function SpotlightPreview({
       )}
 
       {/* Gradient overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: gradientCss }} />
+      <div
+        style={{
+          position: 'absolute',
+          top: safeAreaTop,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: gradientCss,
+        }}
+      />
 
       {/* Content overlay */}
       <div
