@@ -407,4 +407,24 @@ describe('MovieSearchResults', () => {
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
     expect(screen.getByText(/zz/)).toBeInTheDocument();
   });
+
+  it('shows "In DB" badge immediately after successful import without re-search', async () => {
+    mockImportMutateAsync.mockResolvedValue({
+      results: [{ tmdbId: 1, movieId: 'db-1', title: 'Test Movie' }],
+      errors: [],
+    });
+    const movies = [makeMovie()];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+
+    // Select and import
+    fireEvent.click(screen.getByText(/Select all new/));
+    fireEvent.click(screen.getByText('Import 1 selected'));
+
+    // After import completes, movie should show "In DB" badge immediately
+    await waitFor(() => {
+      expect(screen.getByText('In DB')).toBeInTheDocument();
+    });
+    // "Select all new" should disappear since there are no more new movies
+    expect(screen.queryByText(/Select all new/)).not.toBeInTheDocument();
+  });
 });
