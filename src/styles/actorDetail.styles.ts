@@ -5,41 +5,6 @@ import type { SemanticTheme } from '@shared/themes';
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
-    content: { paddingHorizontal: 16, paddingBottom: 48 },
-    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-    headerSection: {
-      marginBottom: 16,
-    },
-    navRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      zIndex: 1,
-    },
-    navButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: t.input,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarCenter: {
-      alignItems: 'center',
-      paddingTop: 4,
-    },
-
-    actorName: {
-      fontSize: 24,
-      fontWeight: '800',
-      color: t.textPrimary,
-      textAlign: 'center',
-      marginBottom: 8,
-    },
     badgeRow: {
       flexDirection: 'row',
       justifyContent: 'center',

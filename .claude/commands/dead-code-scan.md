@@ -2,9 +2,34 @@
 
 Systematically detect and remove dead code across the mobile app (`app/`, `src/`), admin dashboard (`admin/src/`), and shared modules (`shared/`).
 
+## Loop Mode
+
+This skill runs in a **loop until clean**. After completing a full scan-report-fix cycle, immediately start a new scan from Phase 1. Keep looping until **3 consecutive runs find zero dead code**. Track the run counter:
+
+```
+Run 1 → found 8 items → fix → Run 2 → found 2 items → fix → Run 3 → found 0 → Run 4 → found 0 → Run 5 → found 0 → DONE (3 consecutive clean runs)
+```
+
+**Rules for loop mode:**
+
+- Each run is a full Phase 1–4 cycle (scan, report, fix all, verify)
+- A "clean run" means Phase 1 found exactly 0 dead code items across all 7 categories
+- The 3-clean-run counter resets to 0 if any dead code is found
+- Between runs, print: `### Run N complete — {X items found | clean} (consecutive clean: M/3)`
+- After 3 consecutive clean runs, print: `### Dead Code Scan complete — 3 consecutive clean runs achieved`
+
+**CRITICAL — No shortcuts allowed:**
+
+- **Every single run MUST perform a full scan.** You MUST actually read source files and search for usage in every iteration — no skipping, no "nothing changed so it's clean", no assuming previous runs were thorough enough.
+- **Launch parallel Agents** for each scan to ensure independent, thorough review. Do not rely on memory of previous runs.
+- **Never declare a run "clean" without reading the actual code.** If you cannot prove you searched for usage in that run, it doesn't count.
+- A clean run requires actively scanning and finding nothing — not passively assuming nothing changed.
+
 ## Phase 1 — Scan
 
 Work through each category below. For every finding, record: **file path**, **line number(s)**, **symbol name**, and **category**. Do NOT modify any files during this phase.
+
+**Agent strategy**: Launch **parallel agents** to scan different categories simultaneously. Each agent should use Glob, Grep, and Read tools to find dead code.
 
 ### Category 1: Unused Exports
 
@@ -29,14 +54,6 @@ For each `.ts` and `.tsx` source file (excluding `node_modules`, `.next`, `__tes
 ### Category 2: Unused Files (Orphans)
 
 Find source files never imported by any other source file.
-
-```bash
-find . \( -name '*.ts' -o -name '*.tsx' \) \
-  ! -path '*/node_modules/*' ! -path '*/.next/*' ! -path '*/__tests__/*' \
-  ! -name '*.test.*' ! -name '*.d.ts' ! -name '*.config.*' \
-  ! -name 'jest.setup*' ! -path '*/scripts/*' ! -path '*/.expo/*' \
-  | sort
-```
 
 For each file, derive its import path (with and without extension, with path alias resolution) and search for any file that imports it.
 
@@ -86,14 +103,14 @@ For each `.styles.ts` file, extract all keys from `StyleSheet.create({...})`. Ch
 
 ### Category 7: Unused Test Mocks/Helpers
 
-Within `__tests__/` directories and `.test.` files, find helper functions, mock factories, and test fixtures defined but never called. **Informational only** — report but let the user decide.
+Within `__tests__/` directories and `.test.` files, find helper functions, mock factories, and test fixtures defined but never called. Clean these up automatically — no need to wait for user confirmation.
 
 ## Phase 2 — Report
 
 Present findings as markdown tables grouped by category:
 
 ```
-## Dead Code Report
+## Dead Code Report (Run N)
 
 ### Category 1: Unused Exports (X found)
 | File | Line | Symbol | Type | Confidence |
@@ -119,7 +136,7 @@ Present findings as markdown tables grouped by category:
 | Style File | Key | Component | Confidence |
 |------------|-----|-----------|------------|
 
-### Category 7: Unused Test Mocks (X found) — informational
+### Category 7: Unused Test Mocks (X found)
 | File | Line | Symbol | Confidence |
 |------|------|--------|------------|
 ```
@@ -132,55 +149,53 @@ Present findings as markdown tables grouped by category:
 
 End with a summary count per category.
 
-## Phase 3 — Cleanup
+**Do NOT wait for user confirmation.** Proceed directly to Phase 3 and fix ALL High and Medium confidence items. Skip Low confidence items (report only).
 
-**Wait for explicit user confirmation before proceeding.** Ask which categories to clean up.
+## Phase 3 — Cleanup
 
 Remove in safest-first order:
 
 1. Commented-out code (Category 5)
 2. Unused style keys (Category 6)
 3. Unused exports (Category 1) — remove `export` keyword if used locally, delete declaration if unused entirely
-4. Backwards-compat re-exports (Category 4)
+4. Backwards-compat re-exports (Category 4) — only if no consumers use the re-export path
 5. Unused files (Category 2) — delete file AND remove from barrel `index.ts`
 6. Unused dependencies (Category 3) — remove from `package.json` only, do NOT run install
-7. Unused test mocks (Category 7) — only if user opts in
+7. Unused test mocks (Category 7)
 
-## Phase 4 — Verify
+### Cleanup Workflow
 
-Run quality gates for each affected codebase:
+1. **Group related removals** — batch removals that touch the same file together
+2. **Remove the dead code** — apply the minimal removal
+3. **Run quality gates** after each category batch:
+   - Mobile: `npx eslint . && npx tsc --noEmit && npx jest --silent --forceExit`
+   - Admin: `cd admin && npx eslint . --max-warnings 0 && npx tsc --noEmit && npx vitest run`
+4. **If any check fails**: Read the error, revert the specific removal that caused it, note as false positive, re-run gates
+5. **Check 300-line limit** on all modified files (removals should shrink files)
 
-**Mobile** (if modified):
+After cleanup, loop back to Phase 1 with a new scan.
 
-```bash
-npx eslint . && npx tsc --noEmit && npx jest --silent --forceExit
-```
-
-**Admin** (if modified):
-
-```bash
-cd admin && npx eslint . --max-warnings 0 && npx tsc --noEmit && npx vitest run
-```
-
-If any check fails:
-
-1. Read the error output
-2. Revert the specific removal that caused the failure
-3. Note it as a false positive
-4. Re-run quality gates to confirm
-
-## Phase 5 — Final Report
+## Phase 4 — Final Report (after 3 consecutive clean runs)
 
 ```
-## Dead Code Cleanup — Summary
+## Dead Code Scan — Summary
 
-**Removed**: X exports, Y files, Z style keys, W commented blocks, V re-exports
-**Dependencies flagged**: [list for user to remove manually]
+### Items Removed (across all runs)
+| # | Category | File(s) | Symbol/Item | Action |
+|---|----------|---------|-------------|--------|
+
+**Removed**: X exports, Y files, Z style keys, W commented blocks, V re-exports, U test mocks
+**Dependencies removed from package.json**: [list]
 **False positives reverted**: [list with explanation]
-**Quality gates**: Mobile ✅/❌ | Admin ✅/❌
 
-### Files Modified
-- path/to/file.ts — removed unused export `symbolName`
+### Quality Gates
+- Mobile: PASS/FAIL (X suites, Y tests)
+- Admin: PASS/FAIL (X suites, Y tests)
+- 300-line limit: All files compliant
+
+### Stats
+- Total runs: N
+- Total items found and removed: M
 ```
 
 ## Rules
@@ -190,8 +205,10 @@ If any check fails:
 - Never modify migration files (`supabase/`) or config files
 - Always resolve both path alias (`@/`, `@shared/`) and relative import forms
 - Always search test files when checking export usage
-- Conservative: when in doubt, report as Low confidence rather than removing
+- Conservative: when in doubt, report as Low confidence and skip removal
 - No new npm packages — use grep/glob/read only
 - Respect the 300-line file limit (removals should shrink files)
 - Admin ESLint uses `--max-warnings 0`
 - Jest uses `--forceExit` (TanStack Query timer leaks)
+- **No new features** — only remove dead code
+- **Minimal changes** — don't refactor surrounding code beyond the removal

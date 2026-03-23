@@ -3,9 +3,9 @@ import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - 16 * 2 - 16) / 2;
 const VIDEO_WIDTH = SCREEN_WIDTH - 32;
 const VIDEO_HEIGHT = Math.round((VIDEO_WIDTH * 9) / 16);
+const CARD_WIDTH = (SCREEN_WIDTH - 16 * 2 - 16) / 2;
 
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
@@ -124,7 +124,6 @@ export const createStyles = (t: SemanticTheme) =>
       backgroundColor: colors.red600,
       alignItems: 'center',
       justifyContent: 'center',
-      // Slight shadow for contrast on thumbnails
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.5,

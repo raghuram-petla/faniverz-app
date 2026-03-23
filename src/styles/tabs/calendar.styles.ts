@@ -230,19 +230,6 @@ export const createStyles = (t: SemanticTheme) =>
       color: t.textSecondary,
       flexShrink: 0,
     },
-    emptyState: {
-      alignItems: 'center',
-      paddingTop: 48,
-    },
-    emptyText: {
-      color: t.textSecondary,
-      fontSize: 16,
-    },
-    clearFiltersLink: {
-      color: colors.red500,
-      marginTop: 16,
-      textDecorationLine: 'underline',
-    },
     footerLoader: {
       paddingVertical: 24,
       alignItems: 'center',

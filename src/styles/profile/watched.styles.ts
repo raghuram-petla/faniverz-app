@@ -16,11 +16,6 @@ export const createStyles = (t: SemanticTheme) =>
       paddingHorizontal: 16,
       paddingBottom: 48,
     },
-    centered: {
-      paddingVertical: 64,
-      alignItems: 'center',
-    },
-
     // Header badge
     countBadge: {
       backgroundColor: t.input,

@@ -8,59 +8,12 @@ export const createProductionHouseStyles = (t: SemanticTheme) =>
       flex: 1,
       backgroundColor: t.background,
     },
-    content: {
-      paddingBottom: 40,
-    },
-    navRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      marginBottom: 20,
-    },
-    navButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: t.surfaceElevated,
-    },
-    logoCenter: {
-      alignItems: 'center',
-      marginBottom: 16,
-    },
-    logoImage: {
-      width: 100,
-      height: 100,
-      borderRadius: 16,
-    },
-    logoFallback: {
-      width: 100,
-      height: 100,
-      borderRadius: 16,
-      backgroundColor: t.surfaceElevated,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    name: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: t.textPrimary,
-      textAlign: 'center',
-      paddingHorizontal: 16,
-      marginBottom: 8,
-    },
     description: {
       fontSize: 14,
       lineHeight: 20,
       color: t.textSecondary,
       paddingHorizontal: 16,
       marginBottom: 16,
-    },
-    followRow: {
-      alignItems: 'center',
-      marginBottom: 20,
     },
     sectionTitle: {
       fontSize: 17,
@@ -111,10 +64,5 @@ export const createProductionHouseStyles = (t: SemanticTheme) =>
       fontSize: 13,
       fontWeight: '600',
       color: colors.yellow400,
-    },
-    centered: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
   });

@@ -11,7 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPersonDetails, TMDB_IMAGE } from './tmdb';
 import { maybeUploadImage, R2_BUCKETS } from './r2-sync';
 
-export interface RefreshActorResult {
+interface RefreshActorResult {
   actorId: string;
   name: string;
   updated: boolean;

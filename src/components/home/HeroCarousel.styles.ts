@@ -145,16 +145,4 @@ export const createStyles = (_t: SemanticTheme) =>
       justifyContent: 'center',
       gap: 8,
     },
-    dot: {
-      height: 6,
-      borderRadius: 3,
-    },
-    dotActive: {
-      width: 32,
-      backgroundColor: '#FFFFFF',
-    },
-    dotInactive: {
-      width: 6,
-      backgroundColor: 'rgba(255,255,255,0.3)',
-    },
   });

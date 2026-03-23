@@ -74,10 +74,6 @@ export const createFeedStyles = (t: SemanticTheme) =>
     scrollContent: {
       paddingBottom: 100,
     },
-    loadingContainer: {
-      paddingTop: 40,
-      alignItems: 'center',
-    },
     emptyContainer: {
       paddingTop: 60,
       alignItems: 'center',
