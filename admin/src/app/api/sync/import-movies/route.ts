@@ -18,7 +18,9 @@ export async function POST(request: NextRequest) {
     const { apiKey } = guard;
 
     const body = await request.json();
-    const { tmdbIds } = body as { tmdbIds: number[] };
+    // @edge: originalLanguage is optional — when provided (from discover results),
+    // it enables fetching videos in the movie's native language alongside English.
+    const { tmdbIds, originalLanguage } = body as { tmdbIds: number[]; originalLanguage?: string };
 
     if (!tmdbIds?.length) {
       return NextResponse.json({ error: 'tmdbIds array is required.' }, { status: 400 });
@@ -47,6 +49,7 @@ export async function POST(request: NextRequest) {
       try {
         const result = await processMovieFromTmdb(tmdbId, apiKey, supabase, {
           resumable: true,
+          originalLanguage,
         });
         results.push(result);
         if (result.isNew) added++;

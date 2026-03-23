@@ -184,7 +184,7 @@ describe('useSync', () => {
       const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
       const { result } = renderHook(() => useImportMovies(), { wrapper: Wrapper });
       await act(async () => {
-        await result.current.mutateAsync([101, 102]);
+        await result.current.mutateAsync({ tmdbIds: [101, 102] });
       });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'sync'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'movies'] });

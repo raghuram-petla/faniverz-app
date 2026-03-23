@@ -35,6 +35,9 @@ interface ProcessMovieOptions {
   /** @contract: when true, uses additive sync for cast/crew/images/extended
    * so that 504 retries make forward progress instead of starting from scratch */
   resumable?: boolean;
+  /** @edge: pass original_language (e.g. "te") to fetch videos in that language
+   * alongside English. Without this, only en + untagged videos are fetched. */
+  originalLanguage?: string;
 }
 
 // ── Movie import/refresh ──────────────────────────────────────────────────────
@@ -55,7 +58,7 @@ export async function processMovieFromTmdb(
   supabase: SupabaseClient,
   options?: ProcessMovieOptions,
 ): Promise<ImportMovieResult> {
-  const detail = await getMovieDetails(tmdbId, apiKey);
+  const detail = await getMovieDetails(tmdbId, apiKey, options?.originalLanguage);
 
   // @edge: picks the FIRST Director credit — movies with co-directors (e.g. Russo Brothers)
   // only store one name. The full crew list is synced separately via syncCastCrew.

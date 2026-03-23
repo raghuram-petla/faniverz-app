@@ -158,7 +158,7 @@ describe('useImportMovies', () => {
     const { result } = renderHook(() => useImportMovies(), { wrapper: createWrapper() });
 
     await act(async () => {
-      result.current.mutate([100, 200]);
+      result.current.mutate({ tmdbIds: [100, 200], originalLanguage: 'te' });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -166,7 +166,7 @@ describe('useImportMovies', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/import-movies', {
       method: 'POST',
       headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdbIds: [100, 200] }),
+      body: JSON.stringify({ tmdbIds: [100, 200], originalLanguage: 'te' }),
     });
   });
 
@@ -178,7 +178,7 @@ describe('useImportMovies', () => {
     const { result } = renderHook(() => useImportMovies(), { wrapper: createWrapper() });
 
     await act(async () => {
-      result.current.mutate([100]);
+      result.current.mutate({ tmdbIds: [100] });
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -194,7 +194,7 @@ describe('useImportMovies', () => {
     const { result } = renderHook(() => useImportMovies(), { wrapper: createWrapper() });
 
     await act(async () => {
-      result.current.mutate([100]);
+      result.current.mutate({ tmdbIds: [100] });
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

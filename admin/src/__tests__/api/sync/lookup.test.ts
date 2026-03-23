@@ -297,6 +297,7 @@ describe('POST /api/sync/lookup', () => {
       genres: [],
       poster_path: null,
       backdrop_path: null,
+      original_language: 'te',
       credits: { cast: [{}, {}, {}], crew: [{}, {}] },
       videos: {
         results: [
@@ -336,5 +337,6 @@ describe('POST /api/sync/lookup', () => {
     expect(data.data.tagline).toBe('Cool tagline');
     expect(data.data.productionCompanyCount).toBe(2);
     expect(data.data.spokenLanguages).toEqual(['en', 'te']);
+    expect(data.data.originalLanguage).toBe('te');
   });
 });

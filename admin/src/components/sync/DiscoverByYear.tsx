@@ -91,7 +91,9 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
   const selectAllNew = () => setSelected(new Set(newMovies.map((m) => m.id)));
 
   /** @sideeffect import 1 movie at a time with automatic 504 retry for resumable imports */
-  const runBatchImport = async (movies: Array<{ id: number; title: string }>) => {
+  const runBatchImport = async (
+    movies: Array<{ id: number; title: string; original_language: string }>,
+  ) => {
     cancelledRef.current = false;
     setImportProgress(
       movies.map((m) => ({ tmdbId: m.id, title: m.title, status: 'pending' as const })),
@@ -118,7 +120,10 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
           ),
         );
         try {
-          const response = await importMovies.mutateAsync(batch);
+          const response = await importMovies.mutateAsync({
+            tmdbIds: batch,
+            originalLanguage: movie.original_language,
+          });
           const successResults = response.results;
           if (successResults.length > 0) {
             setImportedIds((prev) => new Set([...prev, ...successResults.map((r) => r.tmdbId)]));

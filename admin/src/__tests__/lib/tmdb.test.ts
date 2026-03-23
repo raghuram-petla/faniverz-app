@@ -138,7 +138,7 @@ describe('discoverMoviesByLanguageAndMonth', () => {
 // ── getMovieDetails ──────────────────────────────────────────────────────────
 
 describe('getMovieDetails', () => {
-  it('fetches movie details with appended resources', async () => {
+  it('fetches movie details with appended resources and default video languages', async () => {
     const detail = { id: 123, title: 'Test Movie' };
     mockFetch.mockResolvedValueOnce(mockJsonResponse(detail));
 
@@ -150,6 +150,18 @@ describe('getMovieDetails', () => {
     expect(url).toContain(
       'append_to_response=credits%2Cvideos%2Cexternal_ids%2Ctranslations%2Ckeywords%2Crelease_dates',
     );
+    // Without originalLanguage, defaults to en + null (untagged)
+    expect(url).toContain('include_video_language=en%2Cnull');
+  });
+
+  it('includes originalLanguage in video language filter when provided', async () => {
+    const detail = { id: 456, title: 'Telugu Movie' };
+    mockFetch.mockResolvedValueOnce(mockJsonResponse(detail));
+
+    await getMovieDetails(456, 'key', 'te');
+
+    const url = mockFetch.mock.calls[0][0];
+    expect(url).toContain('include_video_language=en%2Cte%2Cnull');
   });
 
   it('throws on error response', async () => {

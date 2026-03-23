@@ -86,6 +86,7 @@ export interface LookupMovieData {
   certification: string | null;
   spokenLanguages: string[];
   productionCompanyCount: number;
+  originalLanguage: string;
 }
 
 export interface LookupPersonData {

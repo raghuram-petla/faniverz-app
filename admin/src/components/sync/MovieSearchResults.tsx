@@ -30,6 +30,7 @@ export function MovieSearchResults({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
   const [linkedIds, setLinkedIds] = useState<Set<number>>(new Set());
+  const [importedIds, setImportedIds] = useState<Set<number>>(new Set());
   const [linkingTmdbId, setLinkingTmdbId] = useState<number | null>(null);
 
   // @contract Import gating uses BOTH role-based language codes AND the active switcher selection.
@@ -46,10 +47,13 @@ export function MovieSearchResults({
       ? movies.filter((m) => canImportMovie(m.original_language))
       : movies;
 
-  // @contract merge linked IDs into existing set so linked movies show "In DB" badge
+  // @contract merge linked/imported IDs into existing set so movies show "In DB" badge immediately
   const effectiveExistingSet = useMemo(
-    () => (linkedIds.size > 0 ? new Set([...existingSet, ...linkedIds]) : existingSet),
-    [existingSet, linkedIds],
+    () =>
+      linkedIds.size > 0 || importedIds.size > 0
+        ? new Set([...existingSet, ...linkedIds, ...importedIds])
+        : existingSet,
+    [existingSet, linkedIds, importedIds],
   );
   const newMovies = visibleMovies.filter(
     (m) =>
@@ -82,23 +86,29 @@ export function MovieSearchResults({
     });
   };
 
-  /** @sideeffect batch import selected movies — 5 per batch to stay under TMDB rate limits
-   *  @edge errors per-movie are tracked individually; batch continues on individual failures */
+  /** @sideeffect batch import 5/batch; @edge per-movie error tracking, batch continues on failure */
   const handleImport = async () => {
     if (selected.size === 0) return;
     const toImport = movies.filter((m) => selected.has(m.id));
+    const ids = toImport.map((m) => m.id);
     setImportProgress(
       toImport.map((m) => ({ tmdbId: m.id, title: m.title, status: 'pending' as const })),
     );
-    const ids = toImport.map((m) => m.id);
-
     for (let i = 0; i < ids.length; i += 5) {
       const batch = ids.slice(i, i + 5);
       setImportProgress((prev) =>
         prev.map((p) => (batch.includes(p.tmdbId) ? { ...p, status: 'importing' } : p)),
       );
       try {
-        const response = await importMovies.mutateAsync(batch);
+        // @edge: use first movie's language for the batch — search results are typically same-language
+        const batchLang = toImport.find((m) => batch.includes(m.id))?.original_language;
+        const response = await importMovies.mutateAsync({
+          tmdbIds: batch,
+          originalLanguage: batchLang,
+        });
+        // @sideeffect track successfully imported IDs so they show "In DB" immediately
+        const okIds = batch.filter((id) => !response.errors.find((e) => e.tmdbId === id));
+        if (okIds.length) setImportedIds((prev) => new Set([...prev, ...okIds]));
         setImportProgress((prev) =>
           prev.map((p) => {
             if (!batch.includes(p.tmdbId)) return p;

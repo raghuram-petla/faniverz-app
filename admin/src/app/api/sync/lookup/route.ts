@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
           certification: extractIndiaCertification(detail.release_dates),
           spokenLanguages: detail.spoken_languages?.map((l) => l.iso_639_1) ?? [],
           productionCompanyCount: detail.production_companies?.length ?? 0,
+          originalLanguage: detail.original_language,
         },
       });
     } else {

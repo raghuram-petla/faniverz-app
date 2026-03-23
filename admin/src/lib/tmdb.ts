@@ -134,13 +134,19 @@ export async function discoverMoviesByLanguageAndMonth(
 
 // @contract: returns credits, videos, external_ids, translations, keywords, and
 // release_dates in a single request via append_to_response (counts as 1 API call).
+// @edge: include_video_language must be set — without it, TMDB only returns videos
+// matching the request language (default en-US), missing native-language trailers.
+// Pass originalLanguage (e.g. "te") to also fetch videos tagged in that language.
 export async function getMovieDetails(
   tmdbId: number,
   apiKey: string,
+  originalLanguage?: string,
 ): Promise<TmdbMovieDetailExtended> {
+  const videoLangs = originalLanguage ? `en,${originalLanguage},null` : 'en,null';
   return tmdbGet<TmdbMovieDetailExtended>(`/movie/${tmdbId}`, {
     api_key: apiKey,
     append_to_response: 'credits,videos,external_ids,translations,keywords,release_dates',
+    include_video_language: videoLangs,
   });
 }
 

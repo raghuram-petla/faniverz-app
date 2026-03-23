@@ -73,7 +73,10 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
   const handleLookupImport = async () => {
     const result = lookup.data as LookupResult | undefined;
     if (!result || result.type !== 'movie') return;
-    await importMovies.mutateAsync([result.data.tmdbId]);
+    await importMovies.mutateAsync({
+      tmdbIds: [result.data.tmdbId],
+      originalLanguage: result.data.originalLanguage,
+    });
   };
 
   const handleRefreshPerson = async () => {

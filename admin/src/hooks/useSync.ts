@@ -114,7 +114,8 @@ export function useTmdbLookup() {
 export function useImportMovies() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (tmdbIds: number[]) => syncApi<ImportMoviesResponse>('import-movies', { tmdbIds }),
+    mutationFn: (params: { tmdbIds: number[]; originalLanguage?: string }) =>
+      syncApi<ImportMoviesResponse>('import-movies', params),
     onSuccess: () => {
       invalidateSync(qc, [...MOVIE_SYNC_KEYS, 'platform-movie-ids']);
     },
