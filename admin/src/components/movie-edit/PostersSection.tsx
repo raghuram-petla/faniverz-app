@@ -78,7 +78,11 @@ export function PostersSection({
             focusX={form.poster_focus_x}
             focusY={form.poster_focus_y}
             onFocusChange={(x, y) =>
-              setForm((p) => ({ ...p, poster_focus_x: x, poster_focus_y: y }))
+              setForm((p) => ({
+                ...p,
+                poster_focus_x: Math.round(x * 1e6) / 1e6,
+                poster_focus_y: Math.round(y * 1e6) / 1e6,
+              }))
             }
             onFocusClear={() =>
               setForm((p) => ({ ...p, poster_focus_x: null, poster_focus_y: null }))
@@ -97,7 +101,11 @@ export function PostersSection({
             focusX={form.backdrop_focus_x}
             focusY={form.backdrop_focus_y}
             onFocusChange={(x, y) =>
-              setForm((p) => ({ ...p, backdrop_focus_x: x, backdrop_focus_y: y }))
+              setForm((p) => ({
+                ...p,
+                backdrop_focus_x: Math.round(x * 1e6) / 1e6,
+                backdrop_focus_y: Math.round(y * 1e6) / 1e6,
+              }))
             }
             onFocusClear={() =>
               setForm((p) => ({ ...p, backdrop_focus_x: null, backdrop_focus_y: null }))

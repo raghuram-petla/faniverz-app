@@ -103,12 +103,17 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         const msgs = failures.map((f) => f.reason?.message ?? String(f.reason));
         alert(`${failures.length} operation(s) failed:\n${msgs.join('\n')}`);
       }
-      // @contract Use functional updaters to read latest state — avoids stale closure race where
-      //           useEffect updates form mid-await and setInitialForm({ ...form }) writes back stale data
+      // @contract Use functional updater on setForm to read latest state — avoids stale closure race
+      //           where useEffect updates form mid-await and setInitialForm({ ...form }) writes back stale data
+      // @sideeffect Sets initialForm inside setForm updater to capture the true current form values,
+      //             ensuring isDirty becomes false immediately (not after refetch)
       const savedPosterUrl = effectivePosterUrl || form.poster_url;
       resetPendingState();
-      setForm((prev) => ({ ...prev, poster_url: savedPosterUrl }));
-      setInitialForm((prev) => (prev ? { ...prev, poster_url: savedPosterUrl } : null));
+      setForm((currentForm) => {
+        const updated = { ...currentForm, poster_url: savedPosterUrl };
+        setInitialForm(updated);
+        return updated;
+      });
       setSaveStatus('success');
       // @sideeffect: invalidate theater-related queries so navigating to In Theaters shows fresh data
       queryClient.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
