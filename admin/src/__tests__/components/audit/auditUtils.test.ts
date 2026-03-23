@@ -340,6 +340,70 @@ describe('getEntityDisplayName - additional edge cases', () => {
   it('returns null for movie_images with neither title nor image_type', () => {
     expect(getEntityDisplayName('movie_images', { new: { display_order: 0 } })).toBeNull();
   });
+
+  it('returns title for news_feed', () => {
+    expect(getEntityDisplayName('news_feed', { new: { title: 'Breaking News' } })).toBe(
+      'Breaking News',
+    );
+  });
+
+  it('returns name for countries', () => {
+    expect(getEntityDisplayName('countries', { new: { name: 'India' } })).toBe('India');
+  });
+
+  it('returns name for languages', () => {
+    expect(getEntityDisplayName('languages', { new: { name: 'Telugu' } })).toBe('Telugu');
+  });
+
+  it('returns name for admin_roles', () => {
+    expect(getEntityDisplayName('admin_roles', { new: { name: 'super_admin' } })).toBe(
+      'super_admin',
+    );
+  });
+
+  it('returns truncated user_id for admin_user_roles', () => {
+    expect(
+      getEntityDisplayName('admin_user_roles', {
+        new: { user_id: '12345678-abcd-efgh-ijkl-mnopqrstuvwx' },
+      }),
+    ).toBe('12345678');
+  });
+
+  it('returns truncated user_id for admin_ph_assignments', () => {
+    expect(
+      getEntityDisplayName('admin_ph_assignments', {
+        new: { user_id: 'abcdefgh-1234-5678-9012-ijklmnopqrst' },
+      }),
+    ).toBe('abcdefgh');
+  });
+
+  it('returns email for admin_invitations', () => {
+    expect(
+      getEntityDisplayName('admin_invitations', { new: { email: 'admin@faniverz.com' } }),
+    ).toBe('admin@faniverz.com');
+  });
+
+  it('returns image_type for movie_backdrops', () => {
+    expect(getEntityDisplayName('movie_backdrops', { new: { image_type: 'backdrop' } })).toBe(
+      'backdrop',
+    );
+  });
+
+  it('returns keyword for movie_keywords', () => {
+    expect(getEntityDisplayName('movie_keywords', { new: { keyword: 'action' } })).toBe('action');
+  });
+
+  it('returns platform_name for movie_platform_availability', () => {
+    expect(
+      getEntityDisplayName('movie_platform_availability', {
+        new: { platform_name: 'Amazon Prime' },
+      }),
+    ).toBe('Amazon Prime');
+  });
+
+  it('returns language_code for user_languages', () => {
+    expect(getEntityDisplayName('user_languages', { new: { language_code: 'te' } })).toBe('te');
+  });
 });
 
 describe('canRevert - additional edge cases', () => {

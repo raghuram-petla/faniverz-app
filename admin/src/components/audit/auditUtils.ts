@@ -44,30 +44,45 @@ export function getEntityDisplayName(
   const entity = (details.new ?? details.old) as Record<string, unknown> | undefined;
   if (!entity) return null;
 
-  // @edge Each entity type has a different "name" field
+  // @edge Each entity type has a different "name" field — matches TG_TABLE_NAME values
   switch (entityType) {
     case 'movies':
-      return (entity.title as string) ?? null;
-    case 'actors':
-      return (entity.name as string) ?? null;
-    case 'platforms':
-    case 'production_houses':
-      return (entity.name as string) ?? null;
-    case 'movie_cast':
-      return (entity.character_name as string) ?? null;
     case 'notifications':
     case 'surprise_content':
+    case 'news_feed':
       return (entity.title as string) ?? null;
+    case 'actors':
+    case 'platforms':
+    case 'production_houses':
+    case 'countries':
+    case 'languages':
+      return (entity.name as string) ?? null;
+    case 'admin_roles':
+      return (entity.name as string) ?? null;
+    case 'admin_user_roles':
+    case 'admin_ph_assignments':
+      return (entity.user_id as string)?.slice(0, 8) ?? null;
+    case 'admin_invitations':
+      return (entity.email as string) ?? null;
+    case 'movie_cast':
+      return (entity.character_name as string) ?? null;
     case 'movie_images':
       return (entity.title as string) ?? (entity.image_type as string) ?? null;
+    case 'movie_backdrops':
+      return (entity.image_type as string) ?? null;
+    case 'movie_keywords':
+      return (entity.keyword as string) ?? null;
     case 'movie_theatrical_runs':
       // @edge movie_theatrical_runs only has movie_id (UUID), not the movie title;
       // entity_display_name from the DB view resolves this — return label as fallback
       return (entity.label as string) ?? null;
     case 'movie_platforms':
+    case 'movie_platform_availability':
       return (entity.platform_name as string) ?? null;
     case 'movie_production_houses':
       return (entity.production_house_name as string) ?? null;
+    case 'user_languages':
+      return (entity.language_code as string) ?? null;
     default:
       // Try common name fields
       return (entity.title as string) ?? (entity.name as string) ?? null;

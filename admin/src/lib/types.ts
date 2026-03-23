@@ -79,22 +79,33 @@ export interface AuditLogEntry {
   entity_display_name: string | null;
 }
 
-// @coupling: AUDIT_ENTITY_TYPES must match all entity_type values written by audit log triggers/hooks
+// @coupling: AUDIT_ENTITY_TYPES must match TG_TABLE_NAME values written by audit_trigger_fn()
+// @invariant: these are actual PostgreSQL table names (plural), not singular aliases
 export const AUDIT_ENTITY_TYPES = [
-  'actor',
-  'movie',
+  'actors',
+  'admin_invitations',
+  'admin_ph_assignments',
+  'admin_roles',
+  'admin_user_roles',
+  'countries',
+  'languages',
+  'movie_backdrops',
   'movie_cast',
-  'movie_poster',
-  'movie_production_house',
-  'movie_video',
+  'movie_images',
+  'movie_keywords',
+  'movie_platform_availability',
+  'movie_platforms',
+  'movie_posters',
+  'movie_production_houses',
+  'movie_theatrical_runs',
+  'movie_videos',
+  'movies',
   'news_feed',
-  'notification',
-  'ott_release',
-  'platform',
-  'production_house',
-  'surprise',
-  'sync',
-  'theatrical_run',
+  'notifications',
+  'platforms',
+  'production_houses',
+  'surprise_content',
+  'user_languages',
 ] as const;
 
 export interface SyncLog {
