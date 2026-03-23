@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
     if (!existing) return NextResponse.json({ error: 'Movie not found in DB.' }, { status: 404 });
     const movieId = existing.id as string;
 
-    const detail = await getMovieDetails(tmdbId, apiKey);
+    // @edge Fetch with original_language so videos/translations include native-language content
+    let detail = await getMovieDetails(tmdbId, apiKey);
+    if (detail.original_language && detail.original_language !== 'en') {
+      detail = await getMovieDetails(tmdbId, apiKey, detail.original_language);
+    }
 
     // @contract: extract Telugu translation once (used by title_te / synopsis_te cases below)
     const { titleTe, synopsisTe } = extractTeluguTranslation(detail.translations);
