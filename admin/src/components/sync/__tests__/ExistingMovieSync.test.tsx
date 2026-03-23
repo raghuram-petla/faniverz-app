@@ -69,7 +69,6 @@ const makeMovie = (tmdbId: number, title = `Movie ${tmdbId}`): ExistingMovieData
   synopsis: null,
   poster_url: null,
   backdrop_url: null,
-  trailer_url: null,
   director: null,
   runtime: null,
   genres: null,

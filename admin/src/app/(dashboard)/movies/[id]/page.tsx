@@ -172,11 +172,8 @@ export default function EditMoviePage() {
             <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add')}>
               <VideosSection
                 visibleVideos={editState.visibleVideos}
-                trailerUrl={editState.form.trailer_url}
-                movieTitle={editState.form.title}
                 onAdd={(video) => editState.setPendingVideoAdds((prev) => [...prev, video])}
                 onRemove={editState.handleVideoRemove}
-                onClearTrailerUrl={() => editState.updateField('trailer_url', '')}
                 showAddForm={addFormOpen === 'videos'}
                 onCloseAddForm={closeAdd}
                 pendingIds={editState.pendingVideoIds}

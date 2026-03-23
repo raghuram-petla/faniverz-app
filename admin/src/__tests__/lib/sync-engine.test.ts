@@ -139,7 +139,7 @@ describe('processMovieFromTmdb', () => {
       supabase as unknown as SupabaseClient,
     );
 
-    expect(getMovieDetails).toHaveBeenCalledWith(12345, 'api-key');
+    expect(getMovieDetails).toHaveBeenCalledWith(12345, 'api-key', undefined);
     expect(result.tmdbId).toBe(12345);
     expect(result.title).toBe('Test Movie');
     expect(result.movieId).toBe('movie-uuid-123');

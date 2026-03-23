@@ -15,7 +15,6 @@ const makeMovie = (overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
   synopsis: 'A test synopsis',
   poster_url: 'poster.jpg',
   backdrop_url: 'backdrop.jpg',
-  trailer_url: 'https://youtube.com/watch?v=abc12345678',
   director: 'Director Name',
   runtime: 120,
   genres: ['Action', 'Drama'],
@@ -49,7 +48,6 @@ const makeTmdb = (overrides: Partial<LookupMovieData> = {}): LookupMovieData => 
   posterUrl: 'tmdb-poster.jpg',
   backdropUrl: 'tmdb-backdrop.jpg',
   director: 'Director Name',
-  trailerUrl: 'https://youtube.com/watch?v=abc12345678',
   castCount: 10,
   crewCount: 5,
   posterCount: 3,
@@ -157,32 +155,6 @@ describe('getStatus', () => {
 
     it('returns missing when DB backdrop is null', () => {
       expect(getStatus(makeMovie({ backdrop_url: null }), tmdb, 'backdrop_url')).toBe('missing');
-    });
-  });
-
-  describe('trailer_url', () => {
-    it('returns same when YouTube IDs match', () => {
-      expect(getStatus(movie, tmdb, 'trailer_url')).toBe('same');
-    });
-
-    it('returns missing when DB trailer is null and TMDB has one', () => {
-      expect(getStatus(makeMovie({ trailer_url: null }), tmdb, 'trailer_url')).toBe('missing');
-    });
-
-    it('returns same when both are null', () => {
-      expect(
-        getStatus(makeMovie({ trailer_url: null }), makeTmdb({ trailerUrl: null }), 'trailer_url'),
-      ).toBe('same');
-    });
-
-    it('returns changed when YouTube IDs differ', () => {
-      expect(
-        getStatus(
-          makeMovie({ trailer_url: 'https://youtube.com/watch?v=zzz99999999' }),
-          tmdb,
-          'trailer_url',
-        ),
-      ).toBe('changed');
     });
   });
 

@@ -93,16 +93,14 @@ export function FieldDiffPanel({
 
   const canApply = selected.size > 0 || forceResyncCast;
 
-  // @contract Media URL map for poster/backdrop/trailer preview thumbnails in FieldDiffRow
+  // @contract Media URL map for poster/backdrop preview thumbnails in FieldDiffRow
   const dbMediaUrls: Record<string, string | null> = {
     poster_url: movie.poster_url ?? null,
     backdrop_url: movie.backdrop_url ?? null,
-    trailer_url: movie.trailer_url ?? null,
   };
   const tmdbMediaUrls: Record<string, string | null> = {
     poster_url: tmdb.posterUrl ?? null,
     backdrop_url: tmdb.backdropUrl ?? null,
-    trailer_url: tmdb.trailerUrl ?? null,
   };
 
   return (

@@ -409,13 +409,6 @@ describe('POST /api/sync/fill-fields', () => {
     );
   });
 
-  it('updates trailer_url field', async () => {
-    const res = await POST(makeRequest({ tmdbId: 101, fields: ['trailer_url'] }));
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.updatedFields).toContain('trailer_url');
-  });
-
   it('updates imdb_id when external_ids has one', async () => {
     mockGetMovieDetails.mockResolvedValue({
       ...baseTmdbDetails,

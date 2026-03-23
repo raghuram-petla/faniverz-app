@@ -114,11 +114,8 @@ function makeVideo(overrides: Partial<MovieVideo> = {}): MovieVideo {
 function makeProps(overrides: Partial<React.ComponentProps<typeof VideosSection>> = {}) {
   return {
     visibleVideos: [],
-    trailerUrl: '',
-    movieTitle: 'Test Movie',
     onAdd: vi.fn(),
     onRemove: vi.fn(),
-    onClearTrailerUrl: vi.fn(),
     showAddForm: false,
     onCloseAddForm: vi.fn(),
     pendingIds: new Set<string>(),
@@ -185,121 +182,64 @@ describe('VideosSection', () => {
       fireEvent.click(screen.getByRole('button', { name: /Remove Official Trailer/i }));
       expect(onRemove).toHaveBeenCalledWith(pendingId, true);
     });
+  });
+});
 
-    it('calls onClearTrailerUrl for legacy trailer entry', () => {
-      const onClearTrailerUrl = vi.fn();
-      render(
-        <VideosSection
-          {...makeProps({
-            trailerUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            onClearTrailerUrl,
-          })}
-        />,
-      );
-      fireEvent.click(screen.getByRole('button', { name: /Remove.*Trailer/i }));
-      expect(onClearTrailerUrl).toHaveBeenCalled();
-    });
+describe('add form', () => {
+  it('renders form when showAddForm is true', () => {
+    render(<VideosSection {...makeProps({ showAddForm: true })} />);
+    expect(screen.getByPlaceholderText(/youtube\.com/i)).toBeInTheDocument();
   });
 
-  describe('legacy trailer consolidation', () => {
-    it('shows legacy trailer entry when trailerUrl is set and not in gallery', () => {
-      render(
-        <VideosSection
-          {...makeProps({ trailerUrl: 'https://www.youtube.com/watch?v=abc12345678' })}
-        />,
-      );
-      expect(screen.getByText('Test Movie - Official Trailer')).toBeInTheDocument();
+  it('calls onAdd with extracted youtubeId on valid submission', () => {
+    const onAdd = vi.fn();
+    render(<VideosSection {...makeProps({ showAddForm: true, onAdd })} />);
+    fireEvent.change(screen.getByPlaceholderText(/youtube\.com/i), {
+      target: { value: 'dQw4w9WgXcQ' },
     });
-
-    it('does not duplicate trailer when already in gallery', () => {
-      const video = makeVideo({ youtube_id: 'dQw4w9WgXcQ' });
-      render(
-        <VideosSection
-          {...makeProps({
-            visibleVideos: [video],
-            trailerUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          })}
-        />,
-      );
-      // Only one video shown
-      const cards = screen.getAllByText('Official Trailer');
-      expect(cards).toHaveLength(1);
+    fireEvent.change(screen.getByPlaceholderText('e.g. Official Trailer'), {
+      target: { value: 'My Trailer' },
     });
-
-    it('skips legacy entry when trailerUrl has no extractable YouTube ID', () => {
-      render(<VideosSection {...makeProps({ trailerUrl: 'https://example.com/video' })} />);
-      expect(screen.queryByText(/Official Trailer/)).not.toBeInTheDocument();
-    });
-
-    it('uses "Movie" as fallback title when movieTitle is empty', () => {
-      render(
-        <VideosSection
-          {...makeProps({
-            trailerUrl: 'https://www.youtube.com/watch?v=abc12345678',
-            movieTitle: '',
-          })}
-        />,
-      );
-      expect(screen.getByText('Movie - Official Trailer')).toBeInTheDocument();
-    });
+    fireEvent.submit(document.querySelector('form')!);
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        youtube_id: 'dQw4w9WgXcQ',
+        title: 'My Trailer',
+        video_type: 'trailer',
+      }),
+    );
   });
 
-  describe('add form', () => {
-    it('renders form when showAddForm is true', () => {
-      render(<VideosSection {...makeProps({ showAddForm: true })} />);
-      expect(screen.getByPlaceholderText(/youtube\.com/i)).toBeInTheDocument();
+  it('calls alert when youtube input is invalid', () => {
+    render(<VideosSection {...makeProps({ showAddForm: true })} />);
+    fireEvent.change(screen.getByPlaceholderText(/youtube\.com/i), {
+      target: { value: 'not-a-youtube-url' },
     });
+    fireEvent.change(screen.getByPlaceholderText('e.g. Official Trailer'), {
+      target: { value: 'Trailer' },
+    });
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Invalid YouTube URL'));
+  });
 
-    it('calls onAdd with extracted youtubeId on valid submission', () => {
-      const onAdd = vi.fn();
-      render(<VideosSection {...makeProps({ showAddForm: true, onAdd })} />);
-      fireEvent.change(screen.getByPlaceholderText(/youtube\.com/i), {
-        target: { value: 'dQw4w9WgXcQ' },
-      });
-      fireEvent.change(screen.getByPlaceholderText('e.g. Official Trailer'), {
-        target: { value: 'My Trailer' },
-      });
-      fireEvent.submit(document.querySelector('form')!);
-      expect(onAdd).toHaveBeenCalledWith(
-        expect.objectContaining({
-          youtube_id: 'dQw4w9WgXcQ',
-          title: 'My Trailer',
-          video_type: 'trailer',
-        }),
-      );
-    });
+  it('calls onCloseAddForm when Cancel is clicked', () => {
+    const onCloseAddForm = vi.fn();
+    render(<VideosSection {...makeProps({ showAddForm: true, onCloseAddForm })} />);
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(onCloseAddForm).toHaveBeenCalled();
+  });
 
-    it('calls alert when youtube input is invalid', () => {
-      render(<VideosSection {...makeProps({ showAddForm: true })} />);
-      fireEvent.change(screen.getByPlaceholderText(/youtube\.com/i), {
-        target: { value: 'not-a-youtube-url' },
-      });
-      fireEvent.change(screen.getByPlaceholderText('e.g. Official Trailer'), {
-        target: { value: 'Trailer' },
-      });
-      const form = document.querySelector('form')!;
-      fireEvent.submit(form);
-      expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Invalid YouTube URL'));
+  it('sets description to null when empty', () => {
+    const onAdd = vi.fn();
+    render(<VideosSection {...makeProps({ showAddForm: true, onAdd })} />);
+    fireEvent.change(screen.getByPlaceholderText(/youtube\.com/i), {
+      target: { value: 'dQw4w9WgXcQ' },
     });
-
-    it('calls onCloseAddForm when Cancel is clicked', () => {
-      const onCloseAddForm = vi.fn();
-      render(<VideosSection {...makeProps({ showAddForm: true, onCloseAddForm })} />);
-      fireEvent.click(screen.getByText('Cancel'));
-      expect(onCloseAddForm).toHaveBeenCalled();
+    fireEvent.change(screen.getByPlaceholderText('e.g. Official Trailer'), {
+      target: { value: 'Trailer' },
     });
-
-    it('sets description to null when empty', () => {
-      const onAdd = vi.fn();
-      render(<VideosSection {...makeProps({ showAddForm: true, onAdd })} />);
-      fireEvent.change(screen.getByPlaceholderText(/youtube\.com/i), {
-        target: { value: 'dQw4w9WgXcQ' },
-      });
-      fireEvent.change(screen.getByPlaceholderText('e.g. Official Trailer'), {
-        target: { value: 'Trailer' },
-      });
-      fireEvent.submit(document.querySelector('form')!);
-      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ description: null }));
-    });
+    fireEvent.submit(document.querySelector('form')!);
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ description: null }));
   });
 });

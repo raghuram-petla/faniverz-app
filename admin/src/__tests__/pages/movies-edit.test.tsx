@@ -65,7 +65,6 @@ const mockEditState = {
     title: 'Test Movie',
     poster_url: 'poster.jpg',
     backdrop_url: 'backdrop.jpg',
-    trailer_url: 'https://youtube.com/watch?v=123',
   },
   setForm: vi.fn(),
   updateField: vi.fn(),
@@ -488,13 +487,6 @@ describe('EditMoviePage', () => {
       fireEvent.click(screen.getByText('Videos'));
       capturedProps.VideosSection.onRemove('vid-1');
       expect(mockEditState.handleVideoRemove).toHaveBeenCalledWith('vid-1');
-    });
-
-    it('VideosSection onClearTrailerUrl calls updateField', () => {
-      renderWithProviders(<EditMoviePage />);
-      fireEvent.click(screen.getByText('Videos'));
-      capturedProps.VideosSection.onClearTrailerUrl();
-      expect(mockEditState.updateField).toHaveBeenCalledWith('trailer_url', '');
     });
 
     it('VideosSection onCloseAddForm resets addFormOpen', () => {

@@ -23,7 +23,6 @@ function makeForm(overrides = {}) {
     runtime: 120,
     certification: 'UA',
     synopsis: '',
-    trailer_url: '',
     in_theaters: false,
     premiere_date: '',
     original_language: 'te',

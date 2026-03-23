@@ -69,54 +69,26 @@ interface Props {
     | MovieVideo
     | (PendingVideo & { id: string; movie_id: string; created_at: string })
   )[];
-  trailerUrl: string;
-  movieTitle: string;
   onAdd: (video: PendingVideo) => void;
   onRemove: (id: string, isPending: boolean) => void;
-  // @contract clears the legacy trailer_url field on the movies table
-  onClearTrailerUrl: () => void;
   showAddForm: boolean;
   onCloseAddForm: () => void;
-  // @sync: Set of _id values for pending (unsaved) videos — replaces startsWith('pending-video-')
-  // after _id migration, pending items carry stable UUIDs, not 'pending-video-N' strings
+  // @sync: Set of _id values for pending (unsaved) videos
   pendingIds: Set<string>;
 }
 
 export function VideosSection({
   visibleVideos,
-  trailerUrl,
-  movieTitle,
   onAdd,
   onRemove,
-  onClearTrailerUrl,
   showAddForm,
   onCloseAddForm,
   pendingIds,
 }: Props) {
   const [videoForm, setVideoForm] = useState(EMPTY_VIDEO_FORM);
 
-  // @contract unify legacy trailer_url with video entries — always include unless already in gallery
-  const consolidatedVideos = useMemo(() => {
-    if (!trailerUrl) return visibleVideos;
-    const youtubeId = extractYouTubeId(trailerUrl);
-    if (!youtubeId) return visibleVideos;
-    const alreadyInGallery = visibleVideos.some((v) => v.youtube_id === youtubeId);
-    if (alreadyInGallery) return visibleVideos;
-    const legacyEntry = {
-      id: 'legacy-trailer',
-      movie_id: '',
-      youtube_id: youtubeId,
-      title: `${movieTitle || 'Movie'} - Official Trailer`,
-      video_type: 'trailer' as VideoType,
-      description: null,
-      video_date: null,
-      display_order: -1,
-      created_at: '',
-    };
-    return [legacyEntry, ...visibleVideos];
-  }, [visibleVideos, trailerUrl, movieTitle]);
   // @contract reverse so newest videos appear first
-  const displayVideos = useMemo(() => [...consolidatedVideos].reverse(), [consolidatedVideos]);
+  const displayVideos = useMemo(() => [...visibleVideos].reverse(), [visibleVideos]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -214,43 +186,38 @@ export function VideosSection({
       {/* ─── Video list — below add form ─── */}
       {displayVideos.length > 0 && (
         <div className="grid grid-cols-2 gap-4">
-          {displayVideos.map((video) => {
-            const isLegacy = video.id === 'legacy-trailer';
-            return (
-              <div key={video.id} className="bg-surface-elevated rounded-xl overflow-hidden">
-                {/* Title + type + date — above the iframe */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-on-surface font-medium text-sm truncate">{video.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs bg-purple-600/20 text-status-purple px-2 py-0.5 rounded font-medium">
-                        {VIDEO_TYPES.find((t) => t.value === video.video_type)?.label ??
-                          video.video_type}
+          {displayVideos.map((video) => (
+            <div key={video.id} className="bg-surface-elevated rounded-xl overflow-hidden">
+              {/* Title + type + date — above the iframe */}
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-on-surface font-medium text-sm truncate">{video.title}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs bg-purple-600/20 text-status-purple px-2 py-0.5 rounded font-medium">
+                      {VIDEO_TYPES.find((t) => t.value === video.video_type)?.label ??
+                        video.video_type}
+                    </span>
+                    {video.video_date && (
+                      <span className="text-xs text-on-surface-subtle flex items-center gap-1">
+                        <Calendar className="w-3 h-3" /> {video.video_date}
                       </span>
-                      {video.video_date && (
-                        <span className="text-xs text-on-surface-subtle flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {video.video_date}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
-                  <Button
-                    variant="icon"
-                    size="sm"
-                    onClick={() =>
-                      isLegacy ? onClearTrailerUrl() : onRemove(video.id, pendingIds.has(video.id))
-                    }
-                    aria-label={`Remove ${video.title}`}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
                 </div>
-                <div className="overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                  <YouTubeThumbnail youtubeId={video.youtube_id} title={video.title} />
-                </div>
+                <Button
+                  variant="icon"
+                  size="sm"
+                  onClick={() => onRemove(video.id, pendingIds.has(video.id))}
+                  aria-label={`Remove ${video.title}`}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-            );
-          })}
+              <div className="overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                <YouTubeThumbnail youtubeId={video.youtube_id} title={video.title} />
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@ import {
   getWatchProviders,
   TMDB_IMAGE,
 } from '@/lib/tmdb';
-import { extractTrailerUrl, extractIndiaCertification } from '@/lib/tmdbTypes';
+import { extractIndiaCertification } from '@/lib/tmdbTypes';
 import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
 
 /**
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
           posterUrl: detail.poster_path ? TMDB_IMAGE.poster(detail.poster_path) : null,
           backdropUrl: detail.backdrop_path ? TMDB_IMAGE.backdrop(detail.backdrop_path) : null,
           director,
-          trailerUrl: extractTrailerUrl(detail.videos.results),
+          trailerUrl: null, // @deprecated trailer_url removed — videos stored in movie_videos
           castCount: detail.credits.cast.length,
           crewCount: detail.credits.crew.length,
           // @contract: extended counts for diff panel

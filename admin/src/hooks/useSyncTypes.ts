@@ -10,7 +10,6 @@ export interface ExistingMovieData {
   synopsis: string | null;
   poster_url: string | null;
   backdrop_url: string | null;
-  trailer_url: string | null;
   director: string | null;
   runtime: number | null;
   genres: string[] | null;
@@ -64,7 +63,6 @@ export interface LookupMovieData {
   posterUrl: string | null;
   backdropUrl: string | null;
   director: string | null;
-  trailerUrl: string | null;
   castCount: number;
   crewCount: number;
   // @contract: extended counts from TMDB

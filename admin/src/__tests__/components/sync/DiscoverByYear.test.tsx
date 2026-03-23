@@ -56,7 +56,6 @@ const makeExisting = (tmdb_id: number, title: string) => ({
   synopsis: null,
   poster_url: null,
   backdrop_url: null,
-  trailer_url: null,
   director: null,
   runtime: null,
   genres: null,
@@ -157,8 +156,8 @@ describe('DiscoverByYear', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Import all new (1)'));
     });
-    // Batch size is 1 — each movie gets its own API call
-    expect(mockImportMutateAsync).toHaveBeenCalledWith([1]);
+    // Batch size is 1 — each movie gets its own API call with {tmdbIds, originalLanguage}
+    expect(mockImportMutateAsync).toHaveBeenCalledWith({ tmdbIds: [1], originalLanguage: 'te' });
   });
 
   it('imports movies one at a time (batch size 1)', async () => {
@@ -187,9 +186,9 @@ describe('DiscoverByYear', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Import all new (2)'));
     });
-    // Each movie should be imported separately (batch size 1)
-    expect(mockImportMutateAsync).toHaveBeenCalledWith([1]);
-    expect(mockImportMutateAsync).toHaveBeenCalledWith([2]);
+    // Each movie should be imported separately (batch size 1) with {tmdbIds, originalLanguage}
+    expect(mockImportMutateAsync).toHaveBeenCalledWith({ tmdbIds: [1], originalLanguage: 'te' });
+    expect(mockImportMutateAsync).toHaveBeenCalledWith({ tmdbIds: [2], originalLanguage: 'te' });
   });
 
   it('retries on 504 error during import', async () => {

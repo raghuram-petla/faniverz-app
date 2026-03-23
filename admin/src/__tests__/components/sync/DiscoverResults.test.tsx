@@ -27,7 +27,6 @@ const makeExisting = (tmdb_id: number, title: string) => ({
   synopsis: null,
   poster_url: null,
   backdrop_url: null,
-  trailer_url: null,
   director: null,
   runtime: null,
   genres: null,

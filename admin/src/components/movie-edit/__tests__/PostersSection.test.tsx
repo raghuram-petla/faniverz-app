@@ -172,7 +172,6 @@ const makeForm = (overrides: Partial<MovieForm> = {}): MovieForm => ({
   genres: [],
   certification: '',
   synopsis: '',
-  trailer_url: '',
   in_theaters: false,
   premiere_date: '',
   original_language: '',

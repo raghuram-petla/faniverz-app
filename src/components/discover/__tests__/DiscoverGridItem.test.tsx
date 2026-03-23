@@ -72,7 +72,6 @@ const baseMovie: Movie = {
   runtime: 120,
   genres: ['Action'],
   certification: 'UA',
-  trailer_url: null,
   synopsis: 'A test movie',
   director: 'Test Director',
   in_theaters: false,

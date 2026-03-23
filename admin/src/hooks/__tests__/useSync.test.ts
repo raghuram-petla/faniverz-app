@@ -186,9 +186,23 @@ describe('useSync', () => {
       await act(async () => {
         await result.current.mutateAsync({ tmdbIds: [101, 102] });
       });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'sync'] });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'movies'] });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'actors'] });
+      // @contract MOVIE_SYNC_KEYS + 'platform-movie-ids' are all invalidated
+      for (const key of [
+        'sync',
+        'movies',
+        'movie',
+        'actors',
+        'actor',
+        'cast',
+        'dashboard',
+        'theater-movies',
+        'upcoming-movies',
+        'upcoming-rereleases',
+        'theater-search',
+        'platform-movie-ids',
+      ]) {
+        expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', key] });
+      }
     });
   });
 
@@ -200,8 +214,22 @@ describe('useSync', () => {
       await act(async () => {
         await result.current.mutateAsync('movie-uuid');
       });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'movie', 'movie-uuid'] });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'cast', 'movie-uuid'] });
+      // @contract MOVIE_SYNC_KEYS are prefix-invalidated (no movie-uuid suffix needed)
+      for (const key of [
+        'sync',
+        'movies',
+        'movie',
+        'actors',
+        'actor',
+        'cast',
+        'dashboard',
+        'theater-movies',
+        'upcoming-movies',
+        'upcoming-rereleases',
+        'theater-search',
+      ]) {
+        expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', key] });
+      }
     });
 
     it('shows alert on error', async () => {

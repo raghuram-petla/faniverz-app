@@ -83,9 +83,6 @@ export function applyTmdbFields(
       case 'backdrop_url':
         updated.backdrop_url = tmdb.backdropUrl;
         break;
-      case 'trailer_url':
-        updated.trailer_url = tmdb.trailerUrl;
-        break;
       case 'director':
         updated.director = tmdb.director;
         break;

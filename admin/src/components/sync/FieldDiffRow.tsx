@@ -1,7 +1,6 @@
 import { CheckCircle2 } from 'lucide-react';
 import type { FillableField } from '@/lib/syncUtils';
-import { type FieldStatus, extractYouTubeId } from './fieldDiffHelpers';
-import { getYouTubeThumbnail } from '@/lib/youtube';
+import type { FieldStatus } from './fieldDiffHelpers';
 
 // @contract Renders a single row in the field diff table with checkbox, DB value, TMDB value, and status
 export interface FieldDiffRowProps {
@@ -45,11 +44,8 @@ export function FieldDiffRow({
   rowBg,
   onToggle,
 }: FieldDiffRowProps) {
-  const isTrailer = fieldKey === 'trailer_url';
   const isPoster = fieldKey === 'poster_url';
   const isBackdrop = fieldKey === 'backdrop_url';
-  const dbYtId = isTrailer ? extractYouTubeId(dbMediaUrl ?? null) : null;
-  const tmdbYtId = isTrailer ? extractYouTubeId(tmdbMediaUrl ?? null) : null;
 
   return (
     <tr className={rowBg}>
@@ -81,19 +77,6 @@ export function FieldDiffRow({
         {isBackdrop && dbMediaUrl && (
           <img src={dbMediaUrl} alt="" className="w-24 h-14 object-cover rounded mt-1" />
         )}
-        {dbYtId && (
-          <a
-            href={`https://www.youtube.com/watch?v=${dbYtId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src={getYouTubeThumbnail(dbYtId)}
-              alt=""
-              className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
-            />
-          </a>
-        )}
       </td>
       <td className="py-2 pr-3 align-top text-on-surface-subtle">
         {tmdbDisplay || '—'}
@@ -102,19 +85,6 @@ export function FieldDiffRow({
         )}
         {isBackdrop && tmdbMediaUrl && (
           <img src={tmdbMediaUrl} alt="" className="w-24 h-14 object-cover rounded mt-1" />
-        )}
-        {tmdbYtId && (
-          <a
-            href={`https://www.youtube.com/watch?v=${tmdbYtId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              src={getYouTubeThumbnail(tmdbYtId)}
-              alt=""
-              className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
-            />
-          </a>
         )}
       </td>
       <td className={`py-2 align-top text-right ${statusColor[status]}`}>

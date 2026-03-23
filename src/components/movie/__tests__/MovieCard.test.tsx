@@ -37,7 +37,6 @@ const mockMovie: Movie = {
   runtime: 180,
   genres: ['Action', 'Thriller'],
   certification: 'UA',
-  trailer_url: null,
   synopsis: null,
   director: 'Sukumar',
   in_theaters: true,

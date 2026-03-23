@@ -12,7 +12,6 @@ function makeParams(overrides: Partial<Parameters<typeof useMovieEditDerived>[0]
     tagline: '',
     poster_url: '',
     backdrop_url: '',
-    trailer_url: '',
     director: '',
     runtime: '',
     imdb_id: '',

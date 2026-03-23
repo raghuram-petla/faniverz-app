@@ -19,7 +19,6 @@ export interface MovieForm {
   genres: string[];
   certification: string;
   synopsis: string;
-  trailer_url: string;
   in_theaters: boolean;
   premiere_date: string;
   original_language: string;
@@ -134,7 +133,6 @@ export interface MovieEditHandlerDeps {
     genres: string[];
     certification: 'U' | 'UA' | 'A' | null;
     synopsis: string | null;
-    trailer_url: string | null;
     in_theaters: boolean;
     premiere_date: string | null;
     original_language: string | null;

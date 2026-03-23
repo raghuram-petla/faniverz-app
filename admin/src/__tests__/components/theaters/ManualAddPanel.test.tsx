@@ -60,7 +60,6 @@ const mockMovie: Movie = {
   collection_name: null,
   language_id: null,
   tmdb_last_synced_at: null,
-  trailer_url: null,
   created_at: '',
   updated_at: '',
 };

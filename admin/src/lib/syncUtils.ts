@@ -18,7 +18,6 @@ export const FILLABLE_DATA_FIELDS = [
   'synopsis',
   'poster_url',
   'backdrop_url',
-  'trailer_url',
   'director',
   'runtime',
   'genres',
@@ -51,7 +50,6 @@ export function getMissingFields(m: ExistingMovieData): FillableDataField[] {
   if (!m.synopsis) missing.push('synopsis');
   if (!m.poster_url) missing.push('poster_url');
   if (!m.backdrop_url) missing.push('backdrop_url');
-  if (!m.trailer_url) missing.push('trailer_url');
   if (!m.director) missing.push('director');
   // @edge runtime and genres are optional — TMDB often has 0/empty for these,
   // so they're still included for bulk fill (server handles 0→null gracefully)

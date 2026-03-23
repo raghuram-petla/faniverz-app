@@ -11,7 +11,6 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
     synopsis: null,
     poster_url: null,
     backdrop_url: null,
-    trailer_url: null,
     director: null,
     runtime: null,
     genres: null,
@@ -43,7 +42,6 @@ function makeTmdb(overrides: Partial<LookupMovieData> = {}): LookupMovieData {
     overview: null,
     posterUrl: null,
     backdropUrl: null,
-    trailerUrl: null,
     director: null,
     runtime: null,
     genres: [],
@@ -225,33 +223,6 @@ describe('getStatus — backdrop_url', () => {
         'backdrop_url',
       ),
     ).toBe('same');
-  });
-});
-
-// ── getStatus — trailer_url ───────────────────────────────────────────────────
-
-describe('getStatus — trailer_url', () => {
-  it('returns same when db null and tmdb null', () => {
-    expect(getStatus(makeMovie(), makeTmdb(), 'trailer_url')).toBe('same');
-  });
-  it('returns missing when db null and tmdb has trailer', () => {
-    expect(
-      getStatus(
-        makeMovie(),
-        makeTmdb({ trailerUrl: 'https://youtu.be/abc1234abcd' }),
-        'trailer_url',
-      ),
-    ).toBe('missing');
-  });
-  it('returns same when same YouTube video id', () => {
-    const movie = makeMovie({ trailer_url: 'https://www.youtube.com/watch?v=abc1234abcd' });
-    const tmdb = makeTmdb({ trailerUrl: 'https://youtu.be/abc1234abcd' });
-    expect(getStatus(movie, tmdb, 'trailer_url')).toBe('same');
-  });
-  it('returns changed when different YouTube video ids', () => {
-    const movie = makeMovie({ trailer_url: 'https://youtu.be/aaaaaaaaaaa' });
-    const tmdb = makeTmdb({ trailerUrl: 'https://youtu.be/bbbbbbbbbbb' });
-    expect(getStatus(movie, tmdb, 'trailer_url')).toBe('changed');
   });
 });
 

@@ -72,7 +72,6 @@ const makeMovie = (overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
   synopsis: 'Action film',
   poster_url: 'https://example.com/poster.jpg',
   backdrop_url: null,
-  trailer_url: null,
   director: null,
   runtime: null,
   genres: null,

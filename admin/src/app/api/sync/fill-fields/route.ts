@@ -2,11 +2,7 @@ import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getMovieDetails, TMDB_IMAGE } from '@/lib/tmdb';
-import {
-  extractTrailerUrl,
-  extractTeluguTranslation,
-  extractIndiaCertification,
-} from '@/lib/tmdbTypes';
+import { extractTeluguTranslation, extractIndiaCertification } from '@/lib/tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 import { syncAllImages } from '@/lib/sync-images';
@@ -90,10 +86,6 @@ export async function POST(request: NextRequest) {
           updatedFields.push('backdrop_url');
           break;
         }
-        case 'trailer_url':
-          updatePayload.trailer_url = extractTrailerUrl(detail.videos.results);
-          updatedFields.push('trailer_url');
-          break;
         case 'director':
           updatePayload.director =
             detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;

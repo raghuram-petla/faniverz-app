@@ -34,7 +34,6 @@ const mockMovie = {
   synopsis: 'The continuation of Pushpa Raj story.',
   director: 'Sukumar',
   genres: ['Action', 'Drama'],
-  trailer_url: 'https://youtube.com/watch?v=123',
   videos: [],
   posters: [],
   cast: [],

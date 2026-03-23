@@ -28,11 +28,8 @@ const mockVideo: MovieVideo = {
 
 const defaultProps = {
   visibleVideos: [] as MovieVideo[],
-  trailerUrl: '',
-  movieTitle: 'Test Movie',
   onAdd: vi.fn(),
   onRemove: vi.fn(),
-  onClearTrailerUrl: vi.fn(),
   showAddForm: false,
   onCloseAddForm: vi.fn(),
   // @sync: empty Set for non-pending test cases — matches new pendingIds prop requirement
@@ -89,39 +86,6 @@ describe('VideosSection', () => {
     );
     fireEvent.click(screen.getByLabelText('Remove Pending Teaser'));
     expect(onRemove).toHaveBeenCalledWith(pendingUuid, true);
-  });
-
-  // @contract legacy trailer from trailer_url field must also have a remove button
-  it('renders remove button for legacy trailer', () => {
-    render(<VideosSection {...defaultProps} trailerUrl="https://youtu.be/legacyYTid1" />);
-    expect(screen.getByLabelText('Remove Test Movie - Official Trailer')).toBeInTheDocument();
-  });
-
-  it('calls onClearTrailerUrl when legacy trailer remove button clicked', () => {
-    const onClearTrailerUrl = vi.fn();
-    render(
-      <VideosSection
-        {...defaultProps}
-        trailerUrl="https://youtu.be/legacyYTid1"
-        onClearTrailerUrl={onClearTrailerUrl}
-      />,
-    );
-    fireEvent.click(screen.getByLabelText('Remove Test Movie - Official Trailer'));
-    expect(onClearTrailerUrl).toHaveBeenCalled();
-  });
-
-  it('does not duplicate legacy trailer if already in gallery', () => {
-    const videoMatchingLegacy = { ...mockVideo, youtube_id: 'legacyYTid1' };
-    render(
-      <VideosSection
-        {...defaultProps}
-        visibleVideos={[videoMatchingLegacy]}
-        trailerUrl="https://youtu.be/legacyYTid1"
-      />,
-    );
-    // Should only show one video card, not two
-    const removeButtons = screen.getAllByLabelText(/^Remove /);
-    expect(removeButtons).toHaveLength(1);
   });
 
   it('hides add form when showAddForm is false', () => {
@@ -259,18 +223,6 @@ describe('VideosSection', () => {
     if (dateInputs.length > 0) {
       fireEvent.change(dateInputs[0], { target: { value: '2026-06-15' } });
     }
-  });
-
-  it('shows legacy trailer when trailerUrl is valid and not in gallery', () => {
-    render(<VideosSection {...defaultProps} trailerUrl="https://youtu.be/legacyXYZab" />);
-    expect(screen.getByText('Test Movie - Official Trailer')).toBeInTheDocument();
-  });
-
-  it('renders "Movie" fallback title for legacy trailer when movieTitle is empty', () => {
-    render(
-      <VideosSection {...defaultProps} trailerUrl="https://youtu.be/legacyXYZab" movieTitle="" />,
-    );
-    expect(screen.getByText('Movie - Official Trailer')).toBeInTheDocument();
   });
 
   it('shows video type fallback when type is not in VIDEO_TYPES', () => {

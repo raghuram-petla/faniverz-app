@@ -106,7 +106,7 @@ describe('POST /api/sync/discover', () => {
 
   it('discovers movies by year and returns full DB snapshots for existing movies', async () => {
     // @contract: route selects id, tmdb_id, title, synopsis, poster_url, backdrop_url,
-    // trailer_url, director, runtime, genres — mock must return full ExistingMovieData shape
+    // director, runtime, genres — mock must return full ExistingMovieData shape
     mockDiscoverMoviesByLanguage.mockResolvedValue([{ id: 100 }, { id: 200 }]);
     mockSelectIn.mockResolvedValue({
       data: [
@@ -117,7 +117,6 @@ describe('POST /api/sync/discover', () => {
           synopsis: null,
           poster_url: null,
           backdrop_url: null,
-          trailer_url: null,
           director: null,
           runtime: null,
           genres: null,

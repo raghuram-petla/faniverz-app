@@ -502,7 +502,6 @@ describe('useMovieAddState', () => {
         synopsis: null,
         poster_url: null,
         backdrop_url: null,
-        trailer_url: null,
         tmdb_id: null,
       }),
     );

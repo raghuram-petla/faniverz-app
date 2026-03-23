@@ -33,7 +33,6 @@ const makeMovie = (id: string, title: string) => ({
   runtime: 150,
   synopsis: '',
   director: 'Director',
-  trailer_url: null,
   tmdb_id: null,
   tmdb_last_synced_at: null,
   original_language: null,

@@ -12,7 +12,6 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
     synopsis: null,
     poster_url: null,
     backdrop_url: null,
-    trailer_url: null,
     director: null,
     runtime: null,
     genres: null,
@@ -32,8 +31,8 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
 }
 
 describe('FILLABLE_DATA_FIELDS', () => {
-  it('contains exactly 22 field keys', () => {
-    expect(FILLABLE_DATA_FIELDS).toHaveLength(22);
+  it('contains exactly 21 field keys', () => {
+    expect(FILLABLE_DATA_FIELDS).toHaveLength(21);
   });
 
   it('includes all expected data fields', () => {
@@ -42,7 +41,6 @@ describe('FILLABLE_DATA_FIELDS', () => {
       'synopsis',
       'poster_url',
       'backdrop_url',
-      'trailer_url',
       'director',
       'runtime',
       'genres',
@@ -77,7 +75,6 @@ describe('getMissingFields', () => {
     expect(missing).toContain('synopsis');
     expect(missing).toContain('poster_url');
     expect(missing).toContain('backdrop_url');
-    expect(missing).toContain('trailer_url');
     expect(missing).toContain('director');
     expect(missing).toContain('runtime');
     expect(missing).toContain('genres');
@@ -91,7 +88,7 @@ describe('getMissingFields', () => {
     expect(missing).toContain('certification_auto');
     expect(missing).not.toContain('production_companies'); // aggregate, not auto-filled
     expect(missing).toContain('spoken_languages');
-    expect(missing).toHaveLength(16);
+    expect(missing).toHaveLength(15);
   });
 
   it('returns empty array when all fields are filled', () => {
@@ -100,7 +97,6 @@ describe('getMissingFields', () => {
       synopsis: 'An epic tale',
       poster_url: '/p.jpg',
       backdrop_url: '/b.jpg',
-      trailer_url: 'https://youtu.be/abc',
       director: 'S. S. Rajamouli',
       runtime: 159,
       genres: ['Action', 'Drama'],
@@ -157,7 +153,6 @@ describe('getMissingFields', () => {
     expect(missing).not.toContain('synopsis');
     expect(missing).not.toContain('poster_url');
     expect(missing).toContain('backdrop_url');
-    expect(missing).toContain('trailer_url');
     expect(missing).toContain('director');
     expect(missing).toContain('runtime');
     expect(missing).toContain('genres');
@@ -186,8 +181,8 @@ describe('getMissingFields', () => {
 
 describe('countMissing', () => {
   it('counts all null fillable fields', () => {
-    // makeMovie() has title set, everything else null = 16
-    expect(countMissing(makeMovie())).toBe(16);
+    // makeMovie() has title set, everything else null = 15
+    expect(countMissing(makeMovie())).toBe(15);
   });
 
   it('returns 0 for a fully filled movie', () => {
@@ -195,7 +190,6 @@ describe('countMissing', () => {
       synopsis: 'An epic tale',
       poster_url: '/p.jpg',
       backdrop_url: '/b.jpg',
-      trailer_url: 'https://youtu.be/abc',
       director: 'S. S. Rajamouli',
       runtime: 159,
       genres: ['Action'],
@@ -213,9 +207,9 @@ describe('countMissing', () => {
     expect(countMissing(full)).toBe(0);
   });
 
-  it('returns 17 when all fields including title are null', () => {
+  it('returns 16 when all fields including title are null', () => {
     const empty = makeMovie({ title: null });
-    expect(countMissing(empty)).toBe(17);
+    expect(countMissing(empty)).toBe(16);
   });
 
   it('equals getMissingFields length', () => {
@@ -223,7 +217,6 @@ describe('countMissing', () => {
       synopsis: 'filled',
       poster_url: '/p.jpg',
       backdrop_url: '/b.jpg',
-      trailer_url: 'https://youtu.be/abc',
       director: 'Director',
     });
     expect(countMissing(m)).toBe(getMissingFields(m).length);

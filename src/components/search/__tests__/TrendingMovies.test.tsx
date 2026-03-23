@@ -53,7 +53,6 @@ const mockMovie = (id: string, title: string): Movie => ({
   premiere_date: null,
   release_date: '2025-01-01',
   is_featured: false,
-  trailer_url: null,
   tmdb_id: null,
   tmdb_last_synced_at: null,
   original_language: null,

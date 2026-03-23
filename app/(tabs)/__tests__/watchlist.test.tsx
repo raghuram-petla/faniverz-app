@@ -49,7 +49,6 @@ const mockMovie = (overrides: object = {}) => ({
   runtime: 180,
   synopsis: '',
   director: 'Sukumar',
-  trailer_url: null,
   tmdb_id: null,
   tmdb_last_synced_at: null,
   created_at: '2024-01-01T00:00:00Z',

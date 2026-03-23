@@ -447,7 +447,10 @@ describe('DiscoverTab', () => {
       fireEvent.click(screen.getByText('Lookup'));
       // Click the Import button in MoviePreview mock
       fireEvent.click(screen.getByText('Import'));
-      expect(importMutateAsync).toHaveBeenCalledWith([999]);
+      expect(importMutateAsync).toHaveBeenCalledWith({
+        tmdbIds: [999],
+        originalLanguage: undefined,
+      });
     });
 
     it('handleLookupImport does nothing when lookup result is not a movie', async () => {

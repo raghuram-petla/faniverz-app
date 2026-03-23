@@ -71,7 +71,6 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         genres: form.genres,
         certification: (form.certification || null) as 'U' | 'UA' | 'A' | null,
         synopsis: form.synopsis || null,
-        trailer_url: form.trailer_url || null,
         in_theaters: form.in_theaters,
         premiere_date: form.premiere_date || null,
         original_language: form.original_language || null,
@@ -102,6 +101,8 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       if (failures.length > 0) {
         const msgs = failures.map((f) => f.reason?.message ?? String(f.reason));
         alert(`${failures.length} operation(s) failed:\n${msgs.join('\n')}`);
+        // @edge Don't reset pending state on failure — preserves failed operations for retry
+        return;
       }
       // @contract Use functional updater on setForm to read latest state — avoids stale closure race
       //           where useEffect updates form mid-await and setInitialForm({ ...form }) writes back stale data

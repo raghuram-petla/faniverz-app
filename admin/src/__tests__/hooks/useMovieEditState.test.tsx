@@ -27,7 +27,6 @@ const mockMovie = {
   genres: ['Action'],
   certification: 'UA',
   synopsis: 'A synopsis',
-  trailer_url: null,
   in_theaters: false,
   premiere_date: null,
   original_language: 'te',
@@ -175,7 +174,6 @@ describe('useMovieEditState', () => {
     const { result } = renderHook(() => useMovieEditState('1'));
 
     expect(result.current.form.backdrop_url).toBe('');
-    expect(result.current.form.trailer_url).toBe('');
     expect(result.current.form.premiere_date).toBe('');
   });
 

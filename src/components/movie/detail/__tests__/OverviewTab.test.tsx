@@ -35,7 +35,6 @@ const mockMovie = {
   synopsis: 'The continuation of Pushpa Raj story.',
   director: 'Sukumar',
   genres: ['Action', 'Drama'],
-  trailer_url: 'https://youtube.com/watch?v=123',
   videos: [
     {
       id: 'v1',
@@ -111,28 +110,6 @@ describe('OverviewTab', () => {
     render(<OverviewTab movie={mockMovie} onExploreMedia={onExploreMedia} />);
     fireEvent.press(screen.getByText('Explore All Media'));
     expect(onExploreMedia).toHaveBeenCalledTimes(1);
-  });
-
-  it('renders "Watch Trailer" button when no media but trailer_url exists', () => {
-    const noMediaMovie = { ...mockMovie, videos: [], posters: [] };
-    render(<OverviewTab movie={noMediaMovie} onExploreMedia={onExploreMedia} />);
-    expect(screen.getByText(/Watch Trailer/)).toBeTruthy();
-  });
-
-  it('opens trailer URL when Watch Trailer is pressed', () => {
-    const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
-    const noMediaMovie = { ...mockMovie, videos: [], posters: [] };
-    render(<OverviewTab movie={noMediaMovie} onExploreMedia={onExploreMedia} />);
-    fireEvent.press(screen.getByText('Watch Trailer'));
-    expect(linkingSpy).toHaveBeenCalledWith('https://youtube.com/watch?v=123');
-    linkingSpy.mockRestore();
-  });
-
-  it('renders nothing for media when no media and no trailer_url', () => {
-    const noMediaMovie = { ...mockMovie, videos: [], posters: [], trailer_url: null };
-    render(<OverviewTab movie={noMediaMovie} onExploreMedia={onExploreMedia} />);
-    expect(screen.queryByText('Explore All Media')).toBeNull();
-    expect(screen.queryByText('Watch Trailer')).toBeNull();
   });
 
   it('renders production house chips', () => {

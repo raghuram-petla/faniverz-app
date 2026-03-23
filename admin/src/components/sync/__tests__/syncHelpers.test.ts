@@ -86,7 +86,6 @@ describe('applyTmdbFields', () => {
     synopsis: null,
     poster_url: null,
     backdrop_url: null,
-    trailer_url: null,
     director: null,
     runtime: null,
     genres: null,
@@ -108,7 +107,6 @@ describe('applyTmdbFields', () => {
     overview: 'Great movie',
     posterUrl: 'https://img.tmdb.org/poster.jpg',
     backdropUrl: 'https://img.tmdb.org/backdrop.jpg',
-    trailerUrl: 'https://youtube.com/trailer',
     director: 'Director Name',
     runtime: 120,
     genres: ['Action', 'Drama'],
@@ -138,11 +136,6 @@ describe('applyTmdbFields', () => {
   it('applies backdrop_url field', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['backdrop_url']);
     expect(result.backdrop_url).toBe('https://img.tmdb.org/backdrop.jpg');
-  });
-
-  it('applies trailer_url field', () => {
-    const result = applyTmdbFields(baseMovie, tmdb, ['trailer_url']);
-    expect(result.trailer_url).toBe('https://youtube.com/trailer');
   });
 
   it('applies director field', () => {

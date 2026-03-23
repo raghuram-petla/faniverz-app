@@ -99,7 +99,6 @@ const mockMovies = [
     runtime: 120,
     synopsis: '',
     director: 'Dir',
-    trailer_url: null,
   },
   {
     id: '2',
@@ -117,7 +116,6 @@ const mockMovies = [
     runtime: 90,
     synopsis: '',
     director: 'Dir2',
-    trailer_url: null,
   },
   {
     id: '3',
@@ -135,7 +133,6 @@ const mockMovies = [
     runtime: null,
     synopsis: '',
     director: '',
-    trailer_url: null,
   },
 ];
 
@@ -334,7 +331,6 @@ describe('SpotlightScreen', () => {
       runtime: null,
       synopsis: '',
       director: '',
-      trailer_url: null,
     };
     mockUseMovies.mockReturnValue({ data: [...mockMovies, upcomingOTTMovie] });
     mockUseMoviePlatformMap.mockReturnValue({

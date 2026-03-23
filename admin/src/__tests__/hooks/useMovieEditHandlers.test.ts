@@ -38,7 +38,6 @@ function createMockDeps(overrides?: Partial<MovieEditHandlerDeps>): MovieEditHan
       genres: ['Action'],
       certification: 'UA',
       synopsis: 'A test movie',
-      trailer_url: '',
       in_theaters: false,
       premiere_date: '',
       original_language: 'te',
@@ -239,7 +238,7 @@ describe('handleSubmit', () => {
     );
   });
 
-  it('shows alert with failure details on partial failures', async () => {
+  it('shows alert with failure details on partial failures and preserves pending state', async () => {
     const deps = createMockDeps();
     deps.updateMovie.mutateAsync = vi.fn().mockRejectedValue(new Error('DB error'));
     const handlers = createMovieEditHandlers(deps);
@@ -247,6 +246,9 @@ describe('handleSubmit', () => {
     await handlers.handleSubmit();
 
     expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('1 operation(s) failed'));
+    // @edge Pending state must NOT be reset on failure — allows user to retry
+    expect(deps.resetPendingState).not.toHaveBeenCalled();
+    expect(deps.setSaveStatus).not.toHaveBeenCalledWith('success');
   });
 
   it('catches unexpected non-Error objects and alerts with JSON', async () => {
@@ -328,7 +330,6 @@ describe('handleSubmit', () => {
         genres: [],
         certification: '',
         synopsis: '',
-        trailer_url: '',
         in_theaters: false,
         premiere_date: '',
         original_language: '',
@@ -353,7 +354,6 @@ describe('handleSubmit', () => {
         runtime: null,
         certification: null,
         synopsis: null,
-        trailer_url: null,
         premiere_date: null,
         original_language: null,
         tmdb_id: null,
@@ -380,23 +380,11 @@ describe('handleSubmit', () => {
     expect(result.poster_url).toBe('https://example.com/poster.jpg');
     expect(result.title).toBe('Test');
 
-    // setInitialForm should also be called with a functional updater
-    expect(deps.setInitialForm).toHaveBeenCalled();
-    const setInitialFormCall = (deps.setInitialForm as ReturnType<typeof vi.fn>).mock.calls.find(
-      (c: unknown[]) => typeof c[0] === 'function',
+    // @contract setInitialForm is called inside the setForm updater (not directly)
+    // Invoking the updater above triggers setInitialForm with the updated form
+    expect(deps.setInitialForm).toHaveBeenCalledWith(
+      expect.objectContaining({ poster_url: 'https://example.com/poster.jpg', title: 'Test' }),
     );
-    expect(setInitialFormCall).toBeDefined();
-    const initialUpdater = setInitialFormCall![0] as (
-      prev: Record<string, unknown> | null,
-    ) => Record<string, unknown> | null;
-    // Test with non-null prev
-    const result2 = initialUpdater({ poster_url: 'old.jpg', title: 'Test' });
-    expect(result2).toEqual(
-      expect.objectContaining({ poster_url: 'https://example.com/poster.jpg' }),
-    );
-    // Test with null prev
-    const result3 = initialUpdater(null);
-    expect(result3).toBeNull();
   });
 
   it('invalidates theater-related queries on success', async () => {

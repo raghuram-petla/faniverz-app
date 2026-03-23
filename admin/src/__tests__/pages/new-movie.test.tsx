@@ -50,7 +50,6 @@ vi.mock('@/hooks/useMovieAddState', () => ({
       genres: [],
       certification: '',
       synopsis: '',
-      trailer_url: '',
       in_theaters: false,
       premiere_date: '',
       original_language: '',
@@ -386,13 +385,6 @@ describe('NewMoviePage', () => {
     fireEvent.click(screen.getByText('Videos'));
     act(() => capturedProps.VideosSection.onRemove('vid-1'));
     expect(mockHandleVideoRemove).toHaveBeenCalledWith('vid-1');
-  });
-
-  it('VideosSection onClearTrailerUrl calls updateField', () => {
-    renderPage();
-    fireEvent.click(screen.getByText('Videos'));
-    act(() => capturedProps.VideosSection.onClearTrailerUrl());
-    expect(mockUpdateField).toHaveBeenCalledWith('trailer_url', '');
   });
 
   it('VideosSection onCloseAddForm closes the add form', () => {

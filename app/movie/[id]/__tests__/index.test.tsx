@@ -103,7 +103,6 @@ const mockMovie = {
   runtime: 180,
   synopsis: 'An exciting action movie about pushpa.',
   director: 'Sukumar',
-  trailer_url: 'https://youtube.com/watch?v=abc',
   cast: [
     {
       id: 'c1',
@@ -502,13 +501,6 @@ describe('MovieDetailScreen', () => {
     // Do NOT select a star rating — submit with rating = 0
     fireEvent.press(screen.getByText('Submit'));
     expect(mockCreateReviewMutate).not.toHaveBeenCalled();
-  });
-
-  it('renders movie with no trailer without showing Watch Trailer button', () => {
-    const noTrailerMovie = { ...mockMovie, trailer_url: null };
-    (useMovieDetail as jest.Mock).mockReturnValue({ data: noTrailerMovie });
-    render(<MovieDetailScreen />);
-    expect(screen.queryByText('Watch Trailer')).toBeNull();
   });
 
   it('renders streaming status badge for ott movies', () => {

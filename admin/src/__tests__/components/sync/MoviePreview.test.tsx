@@ -15,7 +15,6 @@ const makeMovieResult = (overrides: Record<string, unknown> = {}) => ({
     posterUrl: null as string | null,
     backdropUrl: null,
     director: 'Test Director',
-    trailerUrl: null,
     castCount: 20,
     crewCount: 10,
     posterCount: 0,

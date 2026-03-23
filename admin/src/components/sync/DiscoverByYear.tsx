@@ -57,7 +57,6 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
           ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}`
           : null,
         backdrop_url: null,
-        trailer_url: null,
         director: null,
         runtime: null,
         genres: null,

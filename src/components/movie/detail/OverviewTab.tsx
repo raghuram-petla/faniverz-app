@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -132,24 +132,13 @@ export function OverviewTab({ movie, onExploreMedia }: OverviewTabProps) {
         </View>
       )}
 
-      {/** @edge Falls back to direct trailer_url button when no structured media exists */}
-      {hasMedia ? (
+      {hasMedia && (
         <MediaSummaryCard
           videos={movie.videos}
           posters={movie.posters}
           onExploreMedia={onExploreMedia}
         />
-      ) : movie.trailer_url ? (
-        <TouchableOpacity
-          style={styles.trailerButton}
-          onPress={() => {
-            if (movie.trailer_url) Linking.openURL(movie.trailer_url);
-          }}
-        >
-          <Ionicons name="play" size={20} color={colors.red400} />
-          <Text style={styles.trailerButtonText}>{t('movie.watchTrailer')}</Text>
-        </TouchableOpacity>
-      ) : null}
+      )}
     </View>
   );
 }

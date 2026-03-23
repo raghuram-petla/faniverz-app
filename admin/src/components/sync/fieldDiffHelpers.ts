@@ -41,13 +41,6 @@ export function getStatus(
     case 'backdrop_url':
       if (!movie.backdrop_url && !tmdb.backdropUrl) return 'same';
       return !movie.backdrop_url ? 'missing' : 'same';
-    case 'trailer_url': {
-      if (!movie.trailer_url) return tmdb.trailerUrl ? 'missing' : 'same';
-      // @edge compare YouTube video IDs — URLs may differ in format
-      const dbVideoId = extractYouTubeId(movie.trailer_url);
-      const tmdbVideoId = extractYouTubeId(tmdb.trailerUrl);
-      return dbVideoId && tmdbVideoId && dbVideoId === tmdbVideoId ? 'same' : 'changed';
-    }
     case 'director':
       if (!movie.director && !tmdb.director) return 'same';
       if (!movie.director) return 'missing';
@@ -159,12 +152,6 @@ export function buildFieldDefs(movie: ExistingMovieData, tmdb: LookupMovieData):
       label: 'Backdrop',
       dbDisplay: movie.backdrop_url ? '✓ set' : '',
       tmdbDisplay: tmdb.backdropUrl ? '✓ available' : '',
-    },
-    {
-      key: 'trailer_url',
-      label: 'Trailer',
-      dbDisplay: extractYouTubeId(movie.trailer_url) ?? (movie.trailer_url ? '✓ set' : ''),
-      tmdbDisplay: extractYouTubeId(tmdb.trailerUrl) ?? (tmdb.trailerUrl ? '✓ available' : ''),
     },
     {
       key: 'director',

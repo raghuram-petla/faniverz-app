@@ -27,7 +27,6 @@ const mockMovie: Movie = {
   runtime: 150,
   genres: ['Romance', 'Drama', 'Action'],
   certification: 'UA',
-  trailer_url: null,
   synopsis: null,
   director: 'Chandoo Mondeti',
   in_theaters: true,

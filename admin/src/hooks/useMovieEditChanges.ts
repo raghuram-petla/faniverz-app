@@ -20,7 +20,6 @@ const BASIC_FIELD_CONFIG: FieldConfig[] = [
     options: { U: 'U', UA: 'UA', A: 'A' },
   },
   { key: 'synopsis', label: 'Synopsis', type: 'text' },
-  { key: 'trailer_url', label: 'Trailer URL', type: 'text' },
   { key: 'in_theaters', label: 'In Theaters', type: 'boolean' },
   { key: 'premiere_date', label: 'Premiere Date', type: 'date' },
   { key: 'original_language', label: 'Language', type: 'text' },

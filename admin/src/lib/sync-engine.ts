@@ -5,7 +5,6 @@ import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getMovieDetails, TMDB_IMAGE } from './tmdb';
 import {
-  extractTrailerUrl,
   extractKeyCrewMembers,
   extractTeluguTranslation,
   extractIndiaCertification,
@@ -79,7 +78,8 @@ export async function processMovieFromTmdb(
     ),
   ]);
 
-  const trailerUrl = extractTrailerUrl(detail.videos.results);
+  // @deprecated trailer_url is redundant — trailers are stored in movie_videos table.
+  // Stop writing trailer_url during sync to prevent ghost duplication in admin UI.
   const genres = detail.genres.map((g) => g.name);
 
   const { data: existing } = await supabase
@@ -110,7 +110,7 @@ export async function processMovieFromTmdb(
         genres,
         poster_url: posterUrl,
         backdrop_url: backdropUrl,
-        trailer_url: trailerUrl,
+        // @deprecated trailer_url no longer written — movie_videos is the single source of truth
         director,
         ...(isNew && { in_theaters: false }),
         ...(isNew && indiaCert && { certification: indiaCert }),

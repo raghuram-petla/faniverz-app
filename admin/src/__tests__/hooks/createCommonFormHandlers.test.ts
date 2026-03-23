@@ -35,7 +35,6 @@ const defaultForm: MovieForm = {
   genres: ['Action', 'Drama'],
   certification: 'UA',
   synopsis: '',
-  trailer_url: '',
   in_theaters: false,
   premiere_date: '',
   original_language: 'te',

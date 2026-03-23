@@ -127,11 +127,8 @@ export default function NewMoviePage() {
             <SectionCard title="Videos" icon={Play} action={addButton('videos', 'Add')}>
               <VideosSection
                 visibleVideos={s.visibleVideos}
-                trailerUrl={s.form.trailer_url}
-                movieTitle={s.form.title}
                 onAdd={(video) => s.setPendingVideoAdds((prev) => [...prev, video])}
                 onRemove={s.handleVideoRemove}
-                onClearTrailerUrl={() => s.updateField('trailer_url', '')}
                 showAddForm={addFormOpen === 'videos'}
                 onCloseAddForm={closeAdd}
                 pendingIds={s.pendingVideoIds}

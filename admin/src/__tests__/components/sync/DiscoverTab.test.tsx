@@ -265,7 +265,6 @@ describe('DiscoverTab', () => {
         posterUrl: null,
         backdropUrl: null,
         director: 'Dir',
-        trailerUrl: null,
         castCount: 5,
         crewCount: 10,
       },

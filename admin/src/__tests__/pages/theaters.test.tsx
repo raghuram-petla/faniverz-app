@@ -448,9 +448,10 @@ describe('TheatersPage', () => {
   });
 
   it('Upcoming column getSubtitle returns day count for future date', () => {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 5);
-    const futureDateStr = futureDate.toISOString().split('T')[0];
+    // @edge Use UTC-consistent date to match daysUntil() UTC math — avoids timezone off-by-one
+    const now = new Date();
+    const futureUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + 5);
+    const futureDateStr = new Date(futureUtc).toISOString().split('T')[0];
 
     mockUpcomingMovies = [
       { id: 'm1', title: 'Movie 1', poster_url: null, release_date: futureDateStr },
@@ -464,7 +465,9 @@ describe('TheatersPage', () => {
   });
 
   it('Upcoming column getSubtitle returns "Today" for today', () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStr = new Date(todayUtc).toISOString().split('T')[0];
     mockUpcomingMovies = [{ id: 'm1', title: 'Movie 1', poster_url: null, release_date: todayStr }];
     renderWithProviders(<TheatersPage />);
 
@@ -473,9 +476,9 @@ describe('TheatersPage', () => {
   });
 
   it('Upcoming column getSubtitle returns "Tomorrow" for tomorrow', () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const now = new Date();
+    const tomorrowUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const tomorrowStr = new Date(tomorrowUtc).toISOString().split('T')[0];
 
     mockUpcomingMovies = [
       { id: 'm1', title: 'Movie 1', poster_url: null, release_date: tomorrowStr },

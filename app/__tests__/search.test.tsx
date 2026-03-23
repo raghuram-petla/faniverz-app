@@ -61,7 +61,6 @@ const mockResults: Movie[] = [
     runtime: 180,
     synopsis: null,
     director: 'Sukumar',
-    trailer_url: null,
     original_language: null,
     backdrop_focus_x: null,
     backdrop_focus_y: null,

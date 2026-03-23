@@ -27,7 +27,6 @@ export interface Movie {
   runtime: number | null;
   genres: string[] | null;
   certification: Certification | null;
-  trailer_url: string | null;
   synopsis: string | null;
   director: string | null;
   in_theaters: boolean;
