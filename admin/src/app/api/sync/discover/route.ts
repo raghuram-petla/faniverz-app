@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     // can use poster_url directly without needing env vars (Turbopack doesn't substitute
     // process.env in client bundles for non-NEXT_PUBLIC_ vars)
     const postersBase = process.env.R2_PUBLIC_BASE_URL_POSTERS?.replace(/\/$/, '');
+    const backdropsBase = process.env.R2_PUBLIC_BASE_URL_BACKDROPS?.replace(/\/$/, '');
     const rows = existingRows ?? [];
     const existingIds = rows.map((r) => r.id);
 
@@ -107,6 +108,10 @@ export async function POST(request: NextRequest) {
         row.poster_url && !row.poster_url.startsWith('http') && postersBase
           ? `${postersBase}/${row.poster_url}`
           : row.poster_url,
+      backdrop_url:
+        row.backdrop_url && !row.backdrop_url.startsWith('http') && backdropsBase
+          ? `${backdropsBase}/${row.backdrop_url}`
+          : row.backdrop_url,
       poster_count: posterCounts.get(row.id) ?? 0,
       backdrop_count: backdropCounts.get(row.id) ?? 0,
       video_count: videoCounts.get(row.id) ?? 0,

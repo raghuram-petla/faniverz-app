@@ -38,7 +38,12 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     if (type === 'movie') {
-      const detail = await getMovieDetails(tmdbId, tmdb.apiKey);
+      // @edge First fetch without language to get original_language, then re-fetch if needed
+      // to include native-language videos in the count
+      let detail = await getMovieDetails(tmdbId, tmdb.apiKey);
+      if (detail.original_language && detail.original_language !== 'en') {
+        detail = await getMovieDetails(tmdbId, tmdb.apiKey, detail.original_language);
+      }
 
       // Check if already in our DB
       const { data: existing } = await supabase
@@ -73,7 +78,6 @@ export async function POST(request: NextRequest) {
           posterUrl: detail.poster_path ? TMDB_IMAGE.poster(detail.poster_path) : null,
           backdropUrl: detail.backdrop_path ? TMDB_IMAGE.backdrop(detail.backdrop_path) : null,
           director,
-          trailerUrl: null, // @deprecated trailer_url removed — videos stored in movie_videos
           castCount: detail.credits.cast.length,
           crewCount: detail.credits.crew.length,
           // @contract: extended counts for diff panel
