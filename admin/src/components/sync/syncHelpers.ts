@@ -92,6 +92,51 @@ export function applyTmdbFields(
       case 'genres':
         updated.genres = tmdb.genres;
         break;
+      case 'videos':
+        updated.video_count = tmdb.videoCount;
+        break;
+      case 'images':
+        updated.poster_count = tmdb.posterCount;
+        updated.backdrop_count = tmdb.backdropCount;
+        break;
+      case 'keywords':
+        updated.keyword_count = tmdb.keywordCount;
+        break;
+      case 'watch_providers':
+        updated.platform_names = tmdb.providerNames;
+        break;
+      case 'production_companies':
+        updated.production_house_count = tmdb.productionCompanyCount;
+        break;
+      case 'imdb_id':
+        updated.imdb_id = tmdb.imdbId;
+        break;
+      case 'title_te':
+        updated.title_te = tmdb.titleTe;
+        break;
+      case 'synopsis_te':
+        updated.synopsis_te = tmdb.synopsisTe;
+        break;
+      case 'tagline':
+        updated.tagline = tmdb.tagline;
+        break;
+      case 'tmdb_status':
+        updated.tmdb_status = tmdb.tmdbStatus;
+        break;
+      case 'tmdb_ratings':
+        updated.tmdb_vote_average = tmdb.tmdbVoteAverage;
+        updated.tmdb_vote_count = tmdb.tmdbVoteCount;
+        break;
+      case 'budget_revenue':
+        updated.budget = tmdb.budget;
+        updated.revenue = tmdb.revenue;
+        break;
+      case 'certification_auto':
+        updated.certification = tmdb.certification;
+        break;
+      case 'spoken_languages':
+        updated.spoken_languages = tmdb.spokenLanguages;
+        break;
     }
   }
   return updated;

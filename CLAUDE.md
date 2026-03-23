@@ -122,3 +122,4 @@ These rules were extracted from 60+ sessions and 160+ commits. They address recu
 
 21. **Expect 2-3 rounds of UI feedback.** For sizing/spacing changes, make conservative first attempts. Don't overshoot — it's easier to go bigger than to revert.
 22. **Ensure consistency across all screens.** If a component looks one way on the spotlight page, it must look the same on the movie detail page, search results, and feed cards.
+23. **Keep optimistic state updates in sync with comparison logic.** When any fill/sync/update operation applies fields to the DB, the client-side optimistic update (`applyTmdbFields`) must mirror ALL fields that the gap/status comparison checks (`getStatus`). When adding a new fillable field, update BOTH. Before declaring a sync-related change done, verify every case in `getStatus` has a matching case in `applyTmdbFields`.
