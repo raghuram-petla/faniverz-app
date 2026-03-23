@@ -16,7 +16,11 @@ const actorsCrud = createCrudHooks<Actor>({
   orderAscending: true,
   searchField: 'name',
   enabledFn: (s) => s.length >= 2 || s === '',
-  extraInvalidateKeys: [['admin', 'cast']],
+  // @sideeffect: actor create/delete changes totalActors in dashboard
+  extraInvalidateKeys: [
+    ['admin', 'cast'],
+    ['admin', 'dashboard'],
+  ],
 });
 
 export const useAdminActors = actorsCrud.usePaginatedList;

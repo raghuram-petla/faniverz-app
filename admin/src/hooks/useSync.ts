@@ -68,7 +68,24 @@ async function syncApi<T>(path: string, body?: unknown): Promise<T> {
   return data as T;
 }
 
-// ── Hooks ─────────────────────────────────────────────────────────────────────
+// @contract Helper to invalidate common cache keys after sync operations
+function invalidateSync(qc: ReturnType<typeof useQueryClient>, keys: string[]) {
+  for (const key of keys) qc.invalidateQueries({ queryKey: ['admin', key] });
+}
+
+const MOVIE_SYNC_KEYS = [
+  'sync',
+  'movies',
+  'movie',
+  'actors',
+  'actor',
+  'cast',
+  'dashboard',
+  'theater-movies',
+  'upcoming-movies',
+  'upcoming-rereleases',
+  'theater-search',
+];
 
 /** Discover movies from TMDB by language, year, and optional month. */
 export function useDiscoverMovies() {
@@ -98,15 +115,8 @@ export function useImportMovies() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (tmdbIds: number[]) => syncApi<ImportMoviesResponse>('import-movies', { tmdbIds }),
-    // @sideeffect invalidate all affected caches after import
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actor'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+      invalidateSync(qc, [...MOVIE_SYNC_KEYS, 'platform-movie-ids']);
     },
     // @contract: no onError — handled in DiscoverByYear retry loop (avoids alert flash on 504)
   });
@@ -118,13 +128,10 @@ export function useRefreshMovie() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (movieId: string) => syncApi<RefreshMovieResponse>('refresh-movie', { movieId }),
-    // @sideeffect Refresh may update cast/crew — invalidate cast cache for the movie
-    onSuccess: (_data, movieId) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movie', movieId] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'cast', movieId] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+    // @sideeffect Refresh may update cast/crew, release_date, in_theaters
+    // @contract MOVIE_SYNC_KEYS includes 'movie' and 'cast' which prefix-match movieId-scoped keys
+    onSuccess: () => {
+      invalidateSync(qc, MOVIE_SYNC_KEYS);
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
@@ -142,8 +149,7 @@ export function useImportActor() {
         result: { actorId: string; name: string; tmdbPersonId: number };
       }>('import-actor', { tmdbPersonId }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+      invalidateSync(qc, ['sync', 'actors', 'dashboard']);
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Import failed');
@@ -156,12 +162,9 @@ export function useRefreshActor() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (actorId: string) => syncApi<RefreshActorResponse>('refresh-actor', { actorId }),
-    // @sideeffect Actor name/photo changes affect cast views that JOIN with actors
     onSuccess: (_data, actorId) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
+      invalidateSync(qc, ['sync', 'actors', 'cast']);
       qc.invalidateQueries({ queryKey: ['admin', 'actor', actorId] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
@@ -203,14 +206,8 @@ export function useFillFields() {
       fields: string[];
       forceResyncCast?: boolean;
     }) => syncApi<FillFieldsResponse>('fill-fields', { tmdbId, fields, forceResyncCast }),
-    // @coupling 'movie' (singular) is the single-movie cache used by edit pages
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'actor'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'sync'] });
+      invalidateSync(qc, MOVIE_SYNC_KEYS);
     },
     // @contract: callers surface errors via fillFields.isError + fillFields.error
   });
@@ -239,10 +236,7 @@ export function useLinkTmdbId() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
-    },
+    onSuccess: () => invalidateSync(qc, ['movies', 'movie']),
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Failed to link TMDB ID');
     },

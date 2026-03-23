@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 
 interface ProfileUpdate {
@@ -9,7 +9,9 @@ interface ProfileUpdate {
 // @boundary: calls /api/profile REST endpoint, not Supabase directly
 // @assumes: active Supabase session exists; throws if unauthenticated
 // @sideeffect: window.alert on error — blocks UI thread
+// @sideeffect: invalidates admin users list — display_name/avatar shown in user management
 export function useUpdateProfile() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (updates: ProfileUpdate) => {
       const {
@@ -33,6 +35,10 @@ export function useUpdateProfile() {
       }
 
       return res.json();
+    },
+    // @sideeffect: admin users list JOINs with profiles — show updated name/avatar
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Profile update failed');

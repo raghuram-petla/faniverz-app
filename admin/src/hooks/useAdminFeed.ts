@@ -1,20 +1,26 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
 import { createCrudHooks } from '@/hooks/createCrudHooks';
+import { createSimpleMutation } from './createSimpleMutation';
 import type { NewsFeedItem, FeedType } from '@/lib/types';
 
 const QUERY_KEY = ['admin', 'news-feed'];
 
 // @sideeffect Feed item deletion cascades comments via FK — invalidate comments cache
+// @sideeffect Create/delete changes totalFeedItems count — invalidate dashboard
 const crud = createCrudHooks<NewsFeedItem>({
   table: 'news_feed',
   queryKeyBase: 'news-feed',
   orderBy: 'published_at',
   orderAscending: false,
   paginated: false,
-  extraInvalidateKeys: [['admin', 'comments']],
+  // @sideeffect: dashboard totalFeedItems count changes on create/delete
+  extraInvalidateKeys: [
+    ['admin', 'comments'],
+    ['admin', 'dashboard'],
+  ],
 });
 
 // Custom list: multi-column ordering + JOIN + feed_type filter
@@ -66,53 +72,29 @@ export const useUpdateFeedItem = crud.useUpdate;
 export const useDeleteFeedItem = crud.useDelete;
 
 // @sideeffect Toggles is_pinned flag via /api/admin-crud
-export function useTogglePinFeed() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
-      await crudFetch('PATCH', { table: 'news_feed', id, data: { is_pinned } });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEY });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useTogglePinFeed = createSimpleMutation<{ id: string; is_pinned: boolean }>({
+  mutationFn: async ({ id, is_pinned }) => {
+    await crudFetch('PATCH', { table: 'news_feed', id, data: { is_pinned } });
+  },
+  invalidateKeys: [QUERY_KEY],
+});
 
-export function useToggleFeatureFeed() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, is_featured }: { id: string; is_featured: boolean }) => {
-      await crudFetch('PATCH', { table: 'news_feed', id, data: { is_featured } });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEY });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useToggleFeatureFeed = createSimpleMutation<{ id: string; is_featured: boolean }>({
+  mutationFn: async ({ id, is_featured }) => {
+    await crudFetch('PATCH', { table: 'news_feed', id, data: { is_featured } });
+  },
+  invalidateKeys: [QUERY_KEY],
+});
 
 // @sideeffect Batch-updates display_order for all items via /api/admin-crud
 // @edge If one update fails mid-batch, earlier updates persist — no transaction rollback
-export function useReorderFeed() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (items: { id: string; display_order: number }[]) => {
-      await Promise.all(
-        items.map(({ id, display_order }) =>
-          crudFetch('PATCH', { table: 'news_feed', id, data: { display_order } }),
-        ),
-      );
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: QUERY_KEY });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useReorderFeed = createSimpleMutation<{ id: string; display_order: number }[]>({
+  mutationFn: async (items) => {
+    await Promise.all(
+      items.map(({ id, display_order }) =>
+        crudFetch('PATCH', { table: 'news_feed', id, data: { display_order } }),
+      ),
+    );
+  },
+  invalidateKeys: [QUERY_KEY],
+});

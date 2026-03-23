@@ -2,6 +2,7 @@
 import { useState, useMemo } from 'react';
 import type React from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCreateMovie } from '@/hooks/useAdminMovies';
 import { validateMovieForm, formatErrors } from '@/lib/movie-validation';
 import { useAdminActors, useAddCast } from '@/hooks/useAdminCast';
@@ -48,6 +49,7 @@ const INITIAL_FORM: MovieForm = {
 // @coupling Uses useMovieEditDerived with id='new' to compute visible lists and isDirty
 export function useMovieAddState() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Reference data
   const [castSearchQuery, setCastSearchQuery] = useState('');
@@ -196,6 +198,8 @@ export function useMovieAddState() {
         );
       }
       await Promise.all(promises);
+      // @sideeffect: new movie changes totalMovies count on dashboard
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
       router.push(`/movies/${movieId}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);

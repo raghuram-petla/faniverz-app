@@ -98,6 +98,10 @@ export function useBulkFillMissing() {
     qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
     qc.invalidateQueries({ queryKey: ['admin', 'movie'] });
     qc.invalidateQueries({ queryKey: ['admin', 'cast'] });
+    // @sideeffect: fill-fields may create actors + cast rows; dashboard counts may change
+    qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'actor'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
   };
 
   const reset = () => setState(INITIAL_STATE);

@@ -115,6 +115,8 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'upcoming-movies'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'upcoming-rereleases'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
+      // @sideeffect: movie edits may change dashboard-relevant fields
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
       alert(`Save failed: ${msg}`);
