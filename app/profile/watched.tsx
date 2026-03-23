@@ -36,7 +36,7 @@ const SORT_OPTION_KEYS: { key: SortKey; i18nKey: string }[] = [
 export default function WatchedMoviesScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();

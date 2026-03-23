@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
@@ -30,7 +31,7 @@ export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createUserProfileStyles(theme);
+  const styles = useMemo(() => createUserProfileStyles(theme), [theme]);
 
   // @contract: query is disabled when id is falsy — prevents fetching with empty string
   // @nullable: profile may be null even on success if the user doesn't exist

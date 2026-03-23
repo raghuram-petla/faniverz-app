@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
@@ -18,7 +19,7 @@ export interface DateGroupItemProps {
 export function DateGroupItem({ item, today, platformMap }: DateGroupItemProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const isPast = item.movieDate < today;
   const isToday = item.movieDate.toDateString() === today.toDateString();

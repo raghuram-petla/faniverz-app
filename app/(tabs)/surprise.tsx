@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +33,7 @@ interface ContentCardProps {
 function ContentCard({ item, index }: ContentCardProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const catColor = getCategoryColor(item.category);
   const iconName = getCategoryIconName(item.category);
   // @invariant CARD_GRADIENTS cycles via modulo — ensures no index-out-of-bounds
@@ -86,7 +86,7 @@ interface FunFactBoxProps {
 function FunFactBox({ fact }: FunFactBoxProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   return (
     <View style={styles.funFact}>
       <Ionicons name="sparkles" size={20} color={colors.white} style={styles.funFactIcon} />
@@ -102,7 +102,7 @@ function FunFactBox({ fact }: FunFactBoxProps) {
 export default function SurpriseScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<FilterOption>('all');
 

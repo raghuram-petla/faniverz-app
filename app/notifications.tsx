@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -127,6 +127,8 @@ export default function NotificationsScreen() {
   };
 
   // @edge: no-op when there are no unread notifications or user is logged out
+  const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);
+
   const handleMarkAllRead = () => {
     if (userId && unreadCount > 0) {
       markAllRead.mutate(userId, {
@@ -181,7 +183,7 @@ export default function NotificationsScreen() {
           notifications.length === 0 ? styles.listEmptyContent : styles.listContent
         }
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={renderSeparator}
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}

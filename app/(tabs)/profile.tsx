@@ -50,7 +50,7 @@ const MENU_ITEM_DEFS: Omit<MenuItem, 'badge'>[] = [
 export default function ProfileScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();

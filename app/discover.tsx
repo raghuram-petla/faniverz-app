@@ -34,7 +34,7 @@ import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 export default function DiscoverScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   // @boundary: deep-link params — filter/platform may arrive from home screen shortcuts

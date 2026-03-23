@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ScrollView, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -35,7 +35,7 @@ type DisplayTab = TabName | 'media';
 export default function MovieDetailScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

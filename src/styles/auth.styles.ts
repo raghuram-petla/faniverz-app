@@ -86,10 +86,10 @@ export const createRegisterStyles = (t: SemanticTheme) =>
     },
     inputIcon: { marginRight: 10 },
     input: { flex: 1, fontSize: 15, color: t.textPrimary },
-    errorText: { fontSize: 13, color: '#EF4444', marginBottom: 8, paddingHorizontal: 4 },
+    errorText: { fontSize: 13, color: palette.red500, marginBottom: 8, paddingHorizontal: 4 },
     createButton: {
       height: 52,
-      backgroundColor: '#DC2626',
+      backgroundColor: palette.red600,
       borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
@@ -103,5 +103,5 @@ export const createRegisterStyles = (t: SemanticTheme) =>
     socialSection: { marginBottom: 16 },
     signInRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 24 },
     signInLabel: { fontSize: 14, color: t.textSecondary },
-    signInLink: { fontSize: 14, color: '#EF4444', fontWeight: '600' },
+    signInLink: { fontSize: 14, color: palette.red500, fontWeight: '600' },
   });

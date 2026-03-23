@@ -43,7 +43,7 @@ function StarRow({ rating, styles }: { rating: number; styles: ReturnType<typeof
 export default function MyReviewsScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   // @contract: useUserReviews joins reviews with movie data (poster_url, title) for display

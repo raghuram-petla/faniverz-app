@@ -9,6 +9,7 @@ import {
   removeFeedVote,
   fetchUserVotes,
 } from './api';
+import { STALE_2M, STALE_5M, STALE_10M } from '@/constants/queryConfig';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
@@ -27,7 +28,7 @@ export function useNewsFeed(filter?: FeedFilterOption) {
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 
@@ -35,7 +36,7 @@ export function useFeaturedFeed() {
   return useQuery({
     queryKey: ['news-feed', 'featured'],
     queryFn: fetchFeaturedFeedItems,
-    staleTime: 10 * 60 * 1000,
+    staleTime: STALE_10M,
   });
 }
 
@@ -51,7 +52,7 @@ export function usePersonalizedFeed(filter: FeedFilterOption = 'all') {
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 
@@ -60,7 +61,7 @@ export function useFeedItem(id: string) {
     queryKey: ['feed-item', id],
     queryFn: () => fetchFeedItemById(id),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 
@@ -120,11 +121,34 @@ export function useVoteFeedItem() {
           };
         });
       }
-      return { previousFeedData };
+      // @sync: also optimistically update feed-votes cache so vote icon state changes instantly
+      await queryClient.cancelQueries({ queryKey: ['feed-votes'] });
+      const previousVoteData: {
+        queryKey: readonly unknown[];
+        data: Record<string, 'up' | 'down'>;
+      }[] = [];
+      queryClient
+        .getQueriesData<Record<string, 'up' | 'down'>>({ queryKey: ['feed-votes'] })
+        .forEach(([queryKey, data]) => {
+          if (data) previousVoteData.push({ queryKey, data });
+        });
+      queryClient.setQueriesData<Record<string, 'up' | 'down'>>(
+        { queryKey: ['feed-votes'] },
+        (old) => {
+          if (!old) return old;
+          return { ...old, [feedItemId]: voteType };
+        },
+      );
+      return { previousFeedData, previousVoteData };
     },
     onError: (_err, _vars, context) => {
       if (context?.previousFeedData) {
         for (const { queryKey, data } of context.previousFeedData) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+      if (context?.previousVoteData) {
+        for (const { queryKey, data } of context.previousVoteData) {
           queryClient.setQueryData(queryKey, data);
         }
       }
@@ -186,11 +210,36 @@ export function useRemoveFeedVote() {
           };
         });
       }
-      return { previousFeedData };
+      // @sync: also optimistically remove from feed-votes cache so vote icon state changes instantly
+      await queryClient.cancelQueries({ queryKey: ['feed-votes'] });
+      const previousVoteData: {
+        queryKey: readonly unknown[];
+        data: Record<string, 'up' | 'down'>;
+      }[] = [];
+      queryClient
+        .getQueriesData<Record<string, 'up' | 'down'>>({ queryKey: ['feed-votes'] })
+        .forEach(([queryKey, data]) => {
+          if (data) previousVoteData.push({ queryKey, data });
+        });
+      queryClient.setQueriesData<Record<string, 'up' | 'down'>>(
+        { queryKey: ['feed-votes'] },
+        (old) => {
+          if (!old) return old;
+          const updated = { ...old };
+          delete updated[feedItemId];
+          return updated;
+        },
+      );
+      return { previousFeedData, previousVoteData };
     },
     onError: (_err, _vars, context) => {
       if (context?.previousFeedData) {
         for (const { queryKey, data } of context.previousFeedData) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+      if (context?.previousVoteData) {
+        for (const { queryKey, data } of context.previousVoteData) {
           queryClient.setQueryData(queryKey, data);
         }
       }
@@ -219,6 +268,6 @@ export function useUserVotes(feedItemIds: string[]) {
     // @sync: must use sortedIds (not feedItemIds) to match the sorted queryKey and avoid stale-closure mismatches
     queryFn: () => fetchUserVotes(userId ?? '', sortedIds),
     enabled: !!userId && sortedIds.length > 0,
-    staleTime: 2 * 60 * 1000,
+    staleTime: STALE_2M,
   });
 }

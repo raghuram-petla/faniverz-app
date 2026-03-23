@@ -224,6 +224,93 @@ Code that adds indirection without value:
 
 **Approach**: Grep for `=> {[^}]*\(.*\).*}` patterns (single-call arrow functions). Read custom hooks that are thin wrappers. Look for `!!` in boolean contexts.
 
+### Category 15: Project-Specific Anti-Patterns (High)
+
+Violations of learned design principles and feedback corrections accumulated across 189+ sessions. These are patterns the user has explicitly flagged as wrong. Check against all memory files in `~/.claude/projects/-Users-raghup-faniverz-app/memory/` (feedback memories, design principles) and the CLAUDE.md behavioral rules.
+
+**Before scanning**: Read all memory files (`feedback_*.md`, `design_principles_*.md`) and the full design docs (`docs/DESIGN_PRINCIPLES_MOBILE.md`, `docs/DESIGN_PRINCIPLES_ADMIN.md`) to load the complete set of learned rules. Then check the codebase for violations of each.
+
+#### 15a: "Show Don't Hide" Violations (from `feedback_show_dont_hide.md`)
+
+- **Hidden empty fields**: Conditional rendering that hides a field when its value is null/empty (`{value && <Field>}` or `if (!value) return null`) instead of showing the field with "Not set" / "Not available" placeholder text
+- **Blank screens on empty data**: Lists or sections that render nothing when the data array is empty — should show an `EmptyState` component
+- **Missing placeholder images**: `<Image>` without a fallback `source` when `uri` could be null/undefined
+
+**Approach**: Grep for `{.*&&` and `? null` patterns in JSX that gate entire field/section rendering on data presence. Read admin form pages and check if optional fields (TMDB ID, description, URLs, dates) are conditionally hidden. Check all `<Image>` components for placeholder fallback.
+
+#### 15b: Safe Area Violations (from mobile design principles §2)
+
+- **Missing `useSafeAreaInsets()`**: Screen-level components that don't use safe area insets
+- **Hardcoded top padding**: `paddingTop: 56` or similar hardcoded values instead of `paddingTop: insets.top`
+- **Content in status bar zone**: Hero/backdrop images starting before safe area padding
+
+**Approach**: Read screen files in `app/` and check for `useSafeAreaInsets()` usage. Grep for hardcoded `paddingTop` values (numeric literals, not `insets.top`).
+
+#### 15c: Theme Violations (from mobile §1, admin §2)
+
+- **Hardcoded hex colors**: Using `#000000`, `#FFFFFF`, `color: 'red'` etc. instead of semantic theme tokens (`bg-surface-card`, `text-on-surface`, `colors.background`)
+- **Missing dark/light variant**: Admin Tailwind classes like `text-amber-400` without corresponding `dark:text-amber-400` (or vice versa) where both themes need different values
+- **Non-theme-aware overlays**: Dropdowns, modals, docks that don't use theme-aware backgrounds
+
+**Approach**: Grep for hardcoded hex values (`#[0-9a-fA-F]{6}`) and `color:` with string literals in style objects. In admin, grep for Tailwind color classes and check if `dark:` variants exist where needed.
+
+#### 15d: Missing `useUnsavedChangesWarning` (from admin design principles §5, CLAUDE.md rule 17)
+
+- **Admin form pages without unsaved changes protection**: Any admin page with a form/edit functionality that doesn't call `useUnsavedChangesWarning(isDirty)`
+- **Wrong `isDirty` computation**: Edit pages not comparing to initial `useRef` values; create pages not checking if any field is filled
+
+**Approach**: Find all admin pages under `admin/src/app/` that contain form elements (`<form`, `<input`, `<select`, `<textarea`, `useForm`, `Controller`). Check each for `useUnsavedChangesWarning` import and invocation.
+
+#### 15e: Hardcoded URLs & Config (from `feedback_never_fabricate_config.md`, mobile §15, admin §20)
+
+- **Localhost URLs**: Any `localhost`, `127.0.0.1`, or hardcoded port references in source files (not config/env files)
+- **Hardcoded API endpoints**: Supabase URLs, API keys, or service endpoints not read from environment variables
+- **Fabricated config values**: Config values that don't match actual environment/command output
+
+**Approach**: Grep for `localhost`, `127.0.0.1`, hardcoded `supabase.co` URLs, and API key strings in source files (excluding `.env*`, `*.config.*`).
+
+#### 15f: Loading & Empty State Violations (from mobile §12, admin §17)
+
+- **Blank loading states**: Components that show nothing while data loads (no skeleton, no spinner, no `LoadingCenter`)
+- **"0" shown while loading**: Stats/counts displaying `0` before data arrives instead of a skeleton
+- **Missing empty states**: Lists/grids that render an empty container when data array has 0 items
+- **"undefined" in UI**: Any path where `undefined`, `null`, or `NaN` could render as visible text
+
+**Approach**: Read components with data fetching (`useQuery`, `useSuspenseQuery`) and check for `isLoading` / `isPending` handling. Grep for `{count}` or `{data.length}` without loading guards. Check FlatList/list components for `ListEmptyComponent` or equivalent.
+
+#### 15g: Navigation Anti-Patterns (from mobile §3)
+
+- **Animated screen transitions**: Screen transition animations that should be instant
+- **Missing home button at depth >= 2**: Deep stack screens without a home button alongside back
+- **Wrong post-auth navigation**: Redirecting to home after login/logout instead of staying on current screen
+
+**Approach**: Check navigation configuration for animation settings. Read stack screens at depth >= 2 for home button presence. Check auth flow handlers for navigation after login/logout.
+
+#### 15h: Data Import Completeness (from `feedback_subset_imports.md`, admin §11)
+
+- **Subset imports**: API import/sync functions that only fetch some fields when more are available (e.g., first poster only, subset of TMDB metadata)
+- **Silent data skipping**: Import functions that skip records/fields without logging what was skipped
+
+**Approach**: Read TMDB import/sync functions and verify all available API fields are mapped. Check for comments like `// TODO` or partial field lists in import mappers.
+
+#### 15i: Feed & Media Layout Violations (from mobile §5, §6)
+
+- **Two-column video grid**: Videos displayed in multi-column layout instead of one per row
+- **Non-edge-to-edge media**: YouTube videos or posters in feed with horizontal padding (should be full-width)
+- **Missing avatar shapes**: Wrong avatar shape for entity type (movie=portrait rect, actor=diamond, user=circle, PH=rounded square)
+
+**Approach**: Read feed card components and check video/poster container styles for horizontal padding. Check avatar components for entity-type-specific shape rendering.
+
+#### 15j: Admin UX Anti-Patterns (from admin design principles §6, §9, §12)
+
+- **Auto-save on interaction**: Changes saved automatically on toggle/drag instead of requiring explicit "Save Changes" click
+- **Navigate away after save**: `router.push()` or redirect after successful save instead of staying on page with inline success
+- **UUIDs displayed to users**: Raw UUID strings shown in tables, audit logs, or any user-facing display instead of entity names
+- **Missing breadcrumbs**: Admin subpages without `ADMIN → SECTION → PAGE` breadcrumb navigation
+- **Plain dropdown for large lists**: Using a basic `<select>` for entities with many records (actors, production houses) instead of typeahead/searchable dropdown
+
+**Approach**: Read admin form submit handlers for `router.push`/`router.replace` after save. Grep for UUID display patterns (36-char hex strings in JSX). Check admin subpages for breadcrumb components. Read dropdown components for large entity lists.
+
 ## Phase 2 — Report
 
 Present findings as a severity-ranked report:
@@ -297,6 +384,21 @@ Fix all bugs in order of severity (Critical first).
 - **Redundant memoization** → Remove `useMemo`/`useCallback` around trivial operations (property access, boolean checks)
 - **Large list without virtualization** → Replace `ScrollView` + `.map()` with `FlatList` or `FlashList`
 - **Context re-render cascade** → Memoize context value with `useMemo` or split context into separate providers
+- **Hidden empty field** → Replace `{value && <Field>}` with always-rendered field showing `"Not set"` in disabled text when empty
+- **Missing placeholder image** → Add fallback: `source={{ uri: imageUrl }} defaultSource={PLACEHOLDER}` or conditional `source={imageUrl ? { uri: imageUrl } : PLACEHOLDER}`
+- **Hardcoded hex color** → Replace with semantic theme token (`colors.background`, `bg-surface-card`, `text-on-surface`)
+- **Missing safe area** → Add `const insets = useSafeAreaInsets()` and replace hardcoded padding with `insets.top` / `insets.bottom`
+- **Missing `useUnsavedChangesWarning`** → Import hook, compute `isDirty` from `useRef` initial values vs current state, call `useUnsavedChangesWarning(isDirty)`
+- **Hardcoded localhost URL** → Replace with environment variable (`process.env.NEXT_PUBLIC_*` or `Constants.expoConfig.extra.*`)
+- **Missing empty state** → Add `ListEmptyComponent` for FlatList or conditional `EmptyState` component for other lists
+- **"0" while loading** → Guard count display with `isLoading ? <Skeleton> : count`
+- **Auto-save on interaction** → Remove auto-save, add to pending changes state, require explicit "Save Changes" click
+- **Navigate away after save** → Remove `router.push()` after save, show inline success toast/message instead
+- **UUID in display** → Replace with entity name lookup (join query or pre-fetched name map)
+- **Missing breadcrumbs** → Add `<Breadcrumb>` component: `ADMIN → SECTION → PAGE`
+- **Animated screen transition** → Set `animation: 'none'` in screen options
+- **Missing home button** → Add home button alongside back button for screens at stack depth >= 2
+- **Subset import** → Map all available API fields; if intentionally skipping, add explicit comment with reason
 
 ## Phase 4 — Final Report
 

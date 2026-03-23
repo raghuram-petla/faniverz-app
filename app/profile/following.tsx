@@ -82,6 +82,8 @@ export default function FollowingScreen() {
     [user?.id, unfollowMutation],
   );
 
+  const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);
+
   const renderItem = useCallback(
     ({ item }: { item: EnrichedFollow }) => {
       const placeholder = item.entity_type === 'actor' ? PLACEHOLDER_PHOTO : PLACEHOLDER_POSTER;
@@ -150,13 +152,17 @@ export default function FollowingScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="heart-outline"
-              title={t('profile.noFollowing')}
-              subtitle={t('profile.noFollowingSubtitle')}
+              title={filter === 'all' ? t('profile.noFollowing') : t('profile.noFollowingFiltered')}
+              subtitle={
+                filter === 'all'
+                  ? t('profile.noFollowingSubtitle')
+                  : t('profile.noFollowingFilteredSubtitle')
+              }
             />
           }
           contentContainerStyle={filtered.length === 0 ? styles.emptyContent : styles.listContent}
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={renderSeparator}
           onScroll={handlePullScroll}
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}

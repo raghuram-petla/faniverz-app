@@ -36,7 +36,7 @@ import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 export default function FeedScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createFeedStyles(theme);
+  const styles = useMemo(() => createFeedStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   // @sync filter persists in Zustand store — survives tab switches but not app restarts
   const { filter, setFilter } = useFeedStore();

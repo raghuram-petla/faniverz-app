@@ -41,7 +41,7 @@ const PLATFORM_GRID_GAP_TOTAL = 36;
 export default function SpotlightScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();

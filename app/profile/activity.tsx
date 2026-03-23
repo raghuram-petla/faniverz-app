@@ -27,7 +27,7 @@ const FILTER_KEYS: { key: ActivityFilter; i18nKey: string }[] = [
 export default function ActivityScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [filter, setFilter] = useState<ActivityFilter>('all');

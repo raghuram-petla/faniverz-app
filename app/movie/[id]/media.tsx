@@ -31,7 +31,7 @@ type MediaTabName = 'videos' | 'photos';
 export default function MediaScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

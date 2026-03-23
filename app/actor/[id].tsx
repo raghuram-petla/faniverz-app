@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -49,7 +49,7 @@ const GENDER_LABEL_KEYS: Record<number, string> = {
 export default function ActorDetailScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   // @assumes: id is a UUID string from the actors table; undefined if deep-linked with invalid param
   const { id } = useLocalSearchParams<{ id: string }>();

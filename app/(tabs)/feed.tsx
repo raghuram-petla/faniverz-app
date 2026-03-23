@@ -34,7 +34,7 @@ import type { FeedFilterOption } from '@/types';
 export default function FeedScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
-  const styles = createFeedStyles(theme);
+  const styles = useMemo(() => createFeedStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   // @sync filter persists in Zustand store — shared with index.tsx feed
   const { filter, setFilter } = useFeedStore();

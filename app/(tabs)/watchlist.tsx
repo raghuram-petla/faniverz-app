@@ -37,7 +37,7 @@ import { createStyles } from '@/styles/tabs/watchlist.styles';
 export default function WatchlistScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +27,7 @@ import ScreenHeader from '@/components/common/ScreenHeader';
 export default function ProductionHouseDetailScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
-  const styles = createProductionHouseStyles(theme);
+  const styles = useMemo(() => createProductionHouseStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

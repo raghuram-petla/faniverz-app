@@ -36,7 +36,7 @@ type SearchFilter = 'all' | 'movies' | 'actors' | 'studios';
 export default function SearchScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [query, setQuery] = useState('');

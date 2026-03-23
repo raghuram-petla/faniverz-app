@@ -40,7 +40,7 @@ import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 export default function PostDetailScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
-  const styles = createPostDetailStyles(theme);
+  const styles = useMemo(() => createPostDetailStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();

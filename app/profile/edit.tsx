@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -34,7 +34,7 @@ const BIO_LIMIT = 150;
 export default function EditProfileScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();

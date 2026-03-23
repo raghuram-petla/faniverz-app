@@ -28,7 +28,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 export default function CalendarScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
-  const styles = createStyles(theme);
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch } =
     useUpcomingMovies();

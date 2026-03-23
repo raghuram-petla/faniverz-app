@@ -22,7 +22,7 @@ export interface AuditFilters {
 // so searching for "O'Brien" actually searches for "OBrien" — partial match loss.
 // @edge: only strip characters that break PostgREST full-text search syntax; preserve dots for emails
 function sanitizeSearchTerm(term: string): string {
-  return term.replace(/[,()"'\\]/g, '').trim();
+  return term.replace(/[,()"'\\%_]/g, '').trim();
 }
 
 export function useAdminAuditLog(filters?: AuditFilters) {
