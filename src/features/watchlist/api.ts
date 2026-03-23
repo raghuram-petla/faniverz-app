@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { WatchlistEntry } from '@/types';
+import { unwrapOne } from '@/utils/supabaseQuery';
 
 // @coupling: selects movie:movies(*) which fetches ALL movie columns plus a platform_count aggregate.
 // Consumers call deriveMovieStatus(e.movie, platformCount) which needs release_date, in_theaters, and
@@ -26,14 +27,13 @@ export async function fetchWatchlist(userId: string): Promise<WatchlistEntry[]> 
 // @edge: .select() after insert returns the watchlist row WITHOUT the movie join. The returned WatchlistEntry has movie=undefined. The hook (useWatchlistMutations.add) doesn't use the returned data — it just invalidates. But if someone adds onSuccess logic that reads the returned entry's movie, it will be null.
 // @assumes: no UNIQUE constraint on (user_id, movie_id) is documented in the migration — if one exists, duplicate adds throw. If none exists, a user can add the same movie to watchlist multiple times, creating duplicate entries.
 export async function addToWatchlist(userId: string, movieId: string): Promise<WatchlistEntry> {
-  const { data, error } = await supabase
-    .from('watchlists')
-    .insert({ user_id: userId, movie_id: movieId, status: 'watchlist' })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  return unwrapOne(
+    await supabase
+      .from('watchlists')
+      .insert({ user_id: userId, movie_id: movieId, status: 'watchlist' })
+      .select()
+      .single(),
+  ) as WatchlistEntry;
 }
 
 export async function removeFromWatchlist(userId: string, movieId: string): Promise<void> {
@@ -101,13 +101,12 @@ export async function isMovieWatchlisted(
   userId: string,
   movieId: string,
 ): Promise<WatchlistEntry | null> {
-  const { data, error } = await supabase
-    .from('watchlists')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('movie_id', movieId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
+  return unwrapOne(
+    await supabase
+      .from('watchlists')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('movie_id', movieId)
+      .maybeSingle(),
+  );
 }

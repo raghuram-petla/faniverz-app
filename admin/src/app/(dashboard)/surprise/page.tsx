@@ -14,6 +14,8 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
   trailer: { bg: 'bg-red-600/20', text: 'text-status-red' },
 };
 
+// @contract Surprise content is a flat list (no pagination/infinite scroll) — assumes < 200 items.
+// @coupling Delete uses confirm() dialog — no undo/soft-delete support.
 export default function SurpriseContentPage() {
   const { isReadOnly } = usePermissions();
   const { data: items, isLoading } = useAdminSurprise();

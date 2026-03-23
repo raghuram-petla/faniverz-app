@@ -13,6 +13,11 @@ import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 import { colors as palette } from '@/theme/colors';
 
+/**
+ * @contract Two-step OTP flow: phone entry -> OTP verification, presented in a bottom sheet modal.
+ * @boundary Phone validation uses E.164-ish regex; rejects invalid formats silently (no error shown).
+ * @coupling onSendOtp/onVerifyOtp must propagate errors via the `error` prop — catch blocks are empty.
+ */
 export interface PhoneOtpModalProps {
   visible: boolean;
   onClose: () => void;

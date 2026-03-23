@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import type { ProductionHouse } from '@shared/types';
 import type { Movie } from '@/types';
+import { unwrapList } from '@/utils/supabaseQuery';
 
+// @contract: uses .single() with PGRST116 catch — returns null on not-found, matching the pattern in fetchFeedItemById. Differs from fetchMovieById which throws on PGRST116.
 export async function fetchProductionHouseById(id: string): Promise<ProductionHouse | null> {
   const { data, error } = await supabase
     .from('production_houses')
@@ -28,11 +30,11 @@ export async function fetchProductionHouseMovies(id: string): Promise<Movie[]> {
   if (!junction || junction.length === 0) return [];
 
   const movieIds = junction.map((j) => j.movie_id);
-  const { data, error } = await supabase
-    .from('movies')
-    .select('*')
-    .in('id', movieIds)
-    .order('release_date', { ascending: false });
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase
+      .from('movies')
+      .select('*')
+      .in('id', movieIds)
+      .order('release_date', { ascending: false }),
+  );
 }

@@ -9,6 +9,7 @@ export interface FaqItem {
   answer: string;
 }
 
+/** @coupling Translation keys must exist in i18n JSON files — missing keys render as raw key strings */
 export const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'settings.faqQ1',

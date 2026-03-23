@@ -8,20 +8,13 @@ jest.mock('../activityApi', () => ({
 }));
 
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { fetchUserActivity } from '../activityApi';
 import { useUserActivity } from '../activityHooks';
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockFetch = fetchUserActivity as jest.Mock;
-
-function createWrapper() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: qc }, children);
-}
 
 describe('useUserActivity', () => {
   beforeEach(() => jest.clearAllMocks());

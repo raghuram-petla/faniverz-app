@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { getYouTubeThumbnail } from '@/constants/feedHelpers';
 import {
   buildYouTubeEmbedHtml,
   shareYouTubeVideo,
@@ -28,7 +29,7 @@ export function FeedVideoPlayer({ youtubeId, thumbnailUrl, isActive }: FeedVideo
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
   /** @nullable thumbnailUrl — falls back to YouTube's auto-generated thumbnail */
-  const thumb = thumbnailUrl ?? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  const thumb = thumbnailUrl ?? getYouTubeThumbnail(youtubeId);
 
   const onNavRequest = useCallback(
     /** @boundary intercepts WebView navigation to prevent leaving the embed context */

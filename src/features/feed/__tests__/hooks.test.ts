@@ -18,6 +18,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useNewsFeed,
   useFeaturedFeed,
@@ -48,14 +49,6 @@ const mockVoteFeedItem = voteFeedItem as jest.MockedFunction<typeof voteFeedItem
 const mockRemoveFeedVote = removeFeedVote as jest.MockedFunction<typeof removeFeedVote>;
 const mockFetchFeedItemById = fetchFeedItemById as jest.MockedFunction<typeof fetchFeedItemById>;
 const mockFetchUserVotes = fetchUserVotes as jest.MockedFunction<typeof fetchUserVotes>;
-
-function createWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client }, children);
-}
 
 const mockItem = {
   id: '1',

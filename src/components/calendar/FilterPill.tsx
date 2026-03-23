@@ -3,8 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { createStyles } from '@/styles/tabs/calendar.styles';
 
+/** @contract Small removable pill with close icon; used for active calendar date filters */
 export interface FilterPillProps {
   label: string;
+  /** @sideeffect Removes this filter from the calendar filter state */
   onRemove: () => void;
 }
 

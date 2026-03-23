@@ -148,8 +148,20 @@ describe('getFeedTypeIconName', () => {
 });
 
 describe('getYouTubeThumbnail', () => {
-  it('constructs correct YouTube thumbnail URL', () => {
+  it('constructs correct YouTube thumbnail URL with default quality', () => {
     expect(getYouTubeThumbnail('abc123')).toBe('https://img.youtube.com/vi/abc123/hqdefault.jpg');
+  });
+
+  it('constructs correct URL with mqdefault quality', () => {
+    expect(getYouTubeThumbnail('abc123', 'mqdefault')).toBe(
+      'https://img.youtube.com/vi/abc123/mqdefault.jpg',
+    );
+  });
+
+  it('constructs correct URL with maxresdefault quality', () => {
+    expect(getYouTubeThumbnail('abc123', 'maxresdefault')).toBe(
+      'https://img.youtube.com/vi/abc123/maxresdefault.jpg',
+    );
   });
 });
 

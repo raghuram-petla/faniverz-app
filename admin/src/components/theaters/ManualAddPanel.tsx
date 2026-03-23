@@ -34,6 +34,7 @@ export function ManualAddPanel({
   isAdding,
 }: ManualAddPanelProps) {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  // @edge startDate defaults to today's local date; timezone offset not accounted for
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [label, setLabel] = useState('');
 

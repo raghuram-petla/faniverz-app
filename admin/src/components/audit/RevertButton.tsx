@@ -14,6 +14,7 @@ export interface RevertButtonProps {
 }
 
 // @contract Shows revert status if already reverted, otherwise shows revert button with confirm flow
+// @sideeffect revert mutation calls /api/audit/revert which undoes the DB change recorded in audit_log
 export function RevertButton({ entryId, action, revertedAt, revertedByName }: RevertButtonProps) {
   const [confirming, setConfirming] = useState(false);
   const revertMutation = useRevertAuditEntry();

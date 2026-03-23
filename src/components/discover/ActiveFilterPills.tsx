@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
+/** @contract Renders removable pills for each active filter; returns null when no filters are active */
 export interface ActiveFilterPillsProps {
   selectedGenres: string[];
   selectedPlatforms: string[];

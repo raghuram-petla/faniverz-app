@@ -13,6 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getWatchProviders } from './tmdb';
 import { mapTmdbVideoType } from './tmdbTypes';
 import type { TmdbMovieDetailExtended, TmdbProductionCompany, TmdbVideo } from './tmdbTypes';
+import { colors } from '@shared/colors';
 
 // ── Video sync ──────────────────────────────────────────────────────────────
 
@@ -120,7 +121,7 @@ export async function syncWatchProviders(
           logo_url: provider.logo_path
             ? `https://image.tmdb.org/t/p/w92${provider.logo_path}`
             : null,
-          color: '#6B7280',
+          color: colors.gray500,
           tmdb_provider_id: provider.provider_id,
           display_order: 99,
         })

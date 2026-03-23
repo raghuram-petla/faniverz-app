@@ -61,6 +61,8 @@ function sleep(ms: number) {
  * Fetch all Telugu-language films for a given year from TMDB Discover.
  * Paginates automatically.
  */
+// @edge: TMDB caps total_pages at 500 (10,000 results). For prolific languages like Hindi,
+// a year can exceed this cap — movies beyond page 500 are silently dropped.
 export async function discoverMoviesByLanguage(
   year: number,
   language: string,

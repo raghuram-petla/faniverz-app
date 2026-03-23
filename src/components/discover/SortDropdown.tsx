@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { SORT_OPTIONS } from './DiscoverFilterModal';
 import type { SortBy } from '@/stores/useFilterStore';
 
+/** @boundary SortBy type must match SORT_OPTIONS values — adding a sort option requires updating SortBy union */
 export interface SortDropdownProps {
   visible: boolean;
   sortBy: SortBy;

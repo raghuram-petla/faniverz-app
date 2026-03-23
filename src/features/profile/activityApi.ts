@@ -26,6 +26,7 @@ const FILTER_MAP: Record<ActivityFilter, ActivityActionType[]> = {
   comments: ['comment'],
 };
 
+// @boundary: user_activity table is populated by DB triggers (on vote, follow, comment actions) — this API only reads. If a trigger is disabled or fails, activities silently stop appearing. There's no backfill mechanism.
 export async function fetchUserActivity(
   userId: string,
   filter: ActivityFilter = 'all',

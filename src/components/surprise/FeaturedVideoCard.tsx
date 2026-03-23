@@ -18,11 +18,13 @@ import {
   getCategoryIconName,
   formatViews,
 } from '@/constants/surpriseHelpers';
+import { getYouTubeThumbnail } from '@/constants/feedHelpers';
 import { useTranslation } from 'react-i18next';
 import type { SurpriseContent } from '@/types';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 
-/** @edge fallback video ID used when item.youtube_id is null — must be a valid public YouTube video */
+/** @edge fallback video ID used when item.youtube_id is null — must be a valid public YouTube video
+ * @invariant If this video is removed from YouTube, all items without youtube_id will show a broken player */
 const FALLBACK_VIDEO_ID = 'roYRXbhxhlM';
 
 interface FeaturedVideoCardProps {
@@ -36,9 +38,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   const { t } = useTranslation();
   /** @nullable youtube_id — uses FALLBACK_VIDEO_ID when null */
   const videoId = item.youtube_id ?? FALLBACK_VIDEO_ID;
-  const thumbnailUrl = videoId
-    ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-    : PLACEHOLDER_POSTER;
+  const thumbnailUrl = videoId ? getYouTubeThumbnail(videoId) : PLACEHOLDER_POSTER;
   const catColor = getCategoryColor(item.category);
   const catLabel = getCategoryLabel(item.category);
   const iconName = getCategoryIconName(item.category);

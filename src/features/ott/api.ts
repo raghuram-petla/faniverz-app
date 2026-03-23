@@ -1,17 +1,17 @@
 import { supabase } from '@/lib/supabase';
 import { OTTPlatform, MoviePlatform, MoviePlatformAvailability, AvailabilityType } from '@/types';
 import { getDeviceCountry } from '@/utils/getDeviceCountry';
+import { unwrapList } from '@/utils/supabaseQuery';
 
+// @contract: returns platforms sorted by display_order — UI renders them in this order for OTT badges and filter chips. If display_order has gaps or duplicates, the visual order may differ from admin intent.
 export async function fetchPlatforms(): Promise<OTTPlatform[]> {
-  const { data, error } = await supabase
-    .from('platforms')
-    .select('*')
-    .order('display_order', { ascending: true });
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase.from('platforms').select('*').order('display_order', { ascending: true }),
+  );
 }
 
-/** @contract Fetch availability for a movie in the user's country, grouped by type */
+// @boundary: getDeviceCountry() returns a 2-letter ISO code (e.g., 'IN', 'US') from expo-localization. If the device locale doesn't map to a country (e.g., simulator with no region set), it defaults to 'IN'. Movies available only in other regions silently return empty results.
+// @coupling: groups by AvailabilityType which must match the CHECK constraint on movie_platform_availability.availability_type in the DB. If a new type is added to the DB but not to the AvailabilityType union, those rows are fetched but crash at `result[r.availability_type]` (undefined key access on Record).
 export async function fetchMovieAvailability(
   movieId: string,
 ): Promise<Record<AvailabilityType, MoviePlatformAvailability[]>> {
@@ -37,17 +37,18 @@ export async function fetchMovieAvailability(
   return result;
 }
 
-/** @contract Legacy fetch for backward compat — returns flat MoviePlatform[] */
+// @sync: legacy endpoint — used by older components that haven't migrated to fetchMovieAvailability. Both query different tables (movie_platforms vs movie_platform_availability). movie_platforms has no country_code filter, so it returns global results. Callers should migrate to fetchMovieAvailability for region-aware data.
 export async function fetchOttReleases(movieId: string): Promise<MoviePlatform[]> {
-  const { data, error } = await supabase
-    .from('movie_platforms')
-    .select('*, platform:platforms(*)')
-    .eq('movie_id', movieId);
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase
+      .from('movie_platforms')
+      .select('*, platform:platforms(*)')
+      .eq('movie_id', movieId),
+  );
 }
 
-/** @contract Fetch platforms per movie for card badges — uses new table with country filter */
+// @edge: only returns 'flatrate' availability — rent/buy/ads/free platforms are excluded from card badges. If a movie is only available for rent (no flatrate), its card shows no platform badges even though the movie IS available.
+// @invariant: deduplicates platforms per movie using a Set<string> — without this, movies with multiple country entries for the same platform would show duplicate badges.
 export async function fetchMoviePlatformMap(
   movieIds: string[],
 ): Promise<Record<string, OTTPlatform[]>> {

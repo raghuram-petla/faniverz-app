@@ -6,6 +6,7 @@ import type { MoviePlatform } from '@/lib/types';
 
 // Movie-specific platform hooks (for movie edit page)
 // @boundary scoped to a single movie, no PH check needed
+// @coupling JOINs movie_platforms + platforms via PostgREST foreign-key embed
 export function useMoviePlatforms(movieId: string) {
   return useQuery({
     queryKey: ['admin', 'movie_platforms', movieId],
@@ -22,6 +23,7 @@ export function useMoviePlatforms(movieId: string) {
 }
 
 // @sideeffect Invalidates both movie-specific AND global OTT caches
+// @coupling Also invalidates platform-movie-ids — used by useAdminMovies 'streaming'/'released' filters
 export function useAddMoviePlatform() {
   const qc = useQueryClient();
   return useMutation({

@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { getYouTubeThumbnail } from '@/constants/feedHelpers';
 import { useTranslation } from 'react-i18next';
 import type { MovieVideo, MoviePoster } from '@/types';
 import { createStyles } from '@/styles/movieDetail.styles';
@@ -67,7 +68,7 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
             /** @boundary YouTube thumbnail URL constructed from youtube_id; falls back to placeholder */
             source={{
               uri: featured.youtube_id
-                ? `https://img.youtube.com/vi/${featured.youtube_id}/mqdefault.jpg`
+                ? getYouTubeThumbnail(featured.youtube_id, 'mqdefault')
                 : PLACEHOLDER_POSTER,
             }}
             style={styles.mediaSummaryImage}

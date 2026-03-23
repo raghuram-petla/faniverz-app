@@ -36,6 +36,8 @@ function getStatusBadge(movie: Movie) {
   };
 }
 
+// @contract Infinite scroll via TanStack Query useInfiniteQuery — pages are cursor-based (offset).
+// @boundary Movie status is DERIVED at render time via deriveMovieStatus, never stored in DB.
 export default function MoviesPage() {
   // @coupling usePermissions gates data scoping, delete button, and edit visibility
   const { isPHAdmin, productionHouseIds, canDeleteTopLevel, isReadOnly } = usePermissions();

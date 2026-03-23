@@ -6,7 +6,8 @@ import { formatDateTime } from '@/lib/utils';
 import { formatDuration, statusStyles } from './syncHelpers';
 import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 
-/** @contract displays sync_logs table with status/function filters and expandable error details */
+/** @contract displays sync_logs table with status/function filters and expandable error details
+ *  @sideeffect auto-refreshes via useAdminSyncLogs when any log has status='running' */
 export function HistoryTab() {
   /** @coupling useAdminSyncLogs auto-refeshes when any log has status 'running' */
   const { data: logs, isLoading } = useAdminSyncLogs();

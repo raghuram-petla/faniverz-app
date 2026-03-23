@@ -1,6 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import { useMovieSearch } from '../useMovieSearch';
 import * as api from '../../api';
 
@@ -12,15 +11,6 @@ const mockResults = [
   { id: 'm1', title: 'Pushpa 2', rating: 4.5 },
   { id: 'm2', title: 'Pushpa: The Rise', rating: 4.2 },
 ];
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
 
 describe('useMovieSearch', () => {
   beforeEach(() => {

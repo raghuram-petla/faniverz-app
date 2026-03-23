@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { nextResponseMock } from './test-utils';
 import type { NextRequest } from 'next/server';
 
 const mockVerifyAdminWithRole = vi.fn();
@@ -40,17 +41,7 @@ vi.mock('@/lib/supabase-admin', () => ({
   }),
 }));
 
-vi.mock('next/server', () => ({
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
-      body,
-      status: init?.status ?? 200,
-      async json() {
-        return body;
-      },
-    }),
-  },
-}));
+vi.mock('next/server', () => nextResponseMock);
 
 import { GET, POST } from '@/app/api/user-languages/route';
 

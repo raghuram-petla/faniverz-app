@@ -18,6 +18,7 @@ export interface MediaVideosTabProps {
   activeCategory: string;
 }
 
+/** @coupling Must match the "All" label used in MediaFilterPills categories[0] */
 const ALL_CATEGORY = 'All';
 
 export function MediaVideosTab({ videosByType, activeCategory }: MediaVideosTabProps) {

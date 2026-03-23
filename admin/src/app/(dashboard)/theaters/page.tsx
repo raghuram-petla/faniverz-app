@@ -38,6 +38,11 @@ function daysUntil(dateStr: string): string {
   return diff <= 0 ? 'Today' : diff === 1 ? 'Tomorrow' : `In ${diff} days`;
 }
 
+// @contract Theaters page uses a batch-save pattern (not immediate mutations) — all toggle
+// changes accumulate in pendingChanges Map and are committed together via handleSave.
+// @coupling addToTheaters and removeFromTheaters hooks call different API routes:
+// add creates a theatrical_runs row + optionally updates movies.release_date;
+// remove sets theatrical_runs.end_date.
 export default function TheatersPage() {
   const { isReadOnly } = usePermissions();
   const { data: theaterMovies, isLoading } = useTheaterMovies();
@@ -233,8 +238,7 @@ export default function TheatersPage() {
         />
       </div>
 
-      {/* @sideeffect Sticky bottom dock — pending changes + actions.
-          Centered floating panel, doesn't overlap sidebar. */}
+      {/* @sideeffect Sticky dock — pending changes + actions */}
       {(isDirty || saveStatus === 'success') && (
         <div className="sticky bottom-4 z-40 max-w-2xl mx-auto mt-6 rounded-2xl border border-dock-border bg-dock shadow-dock">
           {isDirty && (

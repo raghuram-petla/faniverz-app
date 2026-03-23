@@ -1,25 +1,33 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useAdminPlatform, useUpdatePlatform, useDeletePlatform } from '@/hooks/useAdminPlatforms';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
-import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
 import { PosterVariantStatus } from '@/components/movie-edit/PosterGalleryCard';
-import { ArrowLeft, Loader2, Trash2, Link2, Plus, X } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2, Plus, X } from 'lucide-react';
 import Link from 'next/link';
+import type { OTTPlatform } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useCountries } from '@/hooks/useAdminMovieAvailability';
 import { SearchableCountryPicker } from '@/components/common/SearchableCountryPicker';
+import { useEditPageState } from '@/hooks/useEditPageState';
+import type { FieldConfig } from '@/hooks/useFormChanges';
 
+// @assumes code is a 2-letter ISO country code (A-Z only); non-alpha chars produce invalid codepoints
 function countryFlag(code: string): string {
   return [...code.toUpperCase()]
     .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
     .join('');
 }
-import type { FieldConfig } from '@/hooks/useFormChanges';
+
+interface PlatformForm {
+  name: string;
+  logo_url: string;
+  tmdb_provider_id: string;
+  regions: string;
+}
 
 const FIELD_CONFIG: FieldConfig[] = [
   { key: 'name', label: 'Name', type: 'text' },
@@ -28,87 +36,82 @@ const FIELD_CONFIG: FieldConfig[] = [
   { key: 'regions', label: 'Countries', type: 'text' },
 ];
 
+const INITIAL_FORM: PlatformForm = {
+  name: '',
+  logo_url: '',
+  tmdb_provider_id: '',
+  regions: '',
+};
+
+/** @boundary Converts raw API data to form shape; unsafe cast from unknown */
+// @assumes data is a valid OTTPlatform — no runtime validation
+function dataToForm(data: unknown): PlatformForm {
+  const platform = data as OTTPlatform;
+  return {
+    name: platform.name,
+    logo_url: platform.logo_url ?? '',
+    tmdb_provider_id: platform.tmdb_provider_id != null ? String(platform.tmdb_provider_id) : '',
+    regions: (platform.regions ?? []).join(','),
+  };
+}
+
+/** @boundary Converts form state to API payload; coerces string to number for tmdb_provider_id */
+// @edge empty name string is allowed through — no validation before save
+function formToPayload(form: PlatformForm, id: string) {
+  const tmdbId = form.tmdb_provider_id.trim() ? Number(form.tmdb_provider_id) : null;
+  return {
+    id,
+    name: form.name,
+    logo_url: form.logo_url || null,
+    tmdb_provider_id: tmdbId !== null && isNaN(tmdbId) ? null : tmdbId,
+    regions: form.regions ? form.regions.split(',').filter(Boolean) : [],
+  };
+}
+
+/** @coupling useEditPageState, useAdminPlatform, useUpdatePlatform, useDeletePlatform, useImageUpload, useCountries */
+// @sideeffect delete navigates to /platforms; logo upload hits /api/upload/platform-logo
 export default function EditPlatformPage() {
   const { isReadOnly } = usePermissions();
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const { data: platform, isLoading } = useAdminPlatform(id);
-  const updatePlatform = useUpdatePlatform();
-  const deletePlatform = useDeletePlatform();
+  const dataResult = useAdminPlatform(id);
+  const updateMutation = useUpdatePlatform();
+  const deleteMutation = useDeletePlatform();
   const { upload, uploading } = useImageUpload('/api/upload/platform-logo');
   const { data: countries = [] } = useCountries();
-  const [form, setForm] = useState({ name: '', logo_url: '', tmdb_provider_id: '', regions: '' });
-  const initialFormRef = useRef<typeof form | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
   const [addingCountry, setAddingCountry] = useState(false);
 
-  useEffect(() => {
-    if (platform) {
-      const loaded = {
-        name: platform.name,
-        logo_url: platform.logo_url ?? '',
-        tmdb_provider_id:
-          platform.tmdb_provider_id != null ? String(platform.tmdb_provider_id) : '',
-        regions: (platform.regions ?? []).join(','),
-      };
-      setForm(loaded);
-      initialFormRef.current = loaded;
-    }
-  }, [platform]);
-
-  const { changes, isDirty, changeCount } = useFormChanges(
-    FIELD_CONFIG,
-    initialFormRef.current,
+  const {
     form,
+    setForm,
+    saveStatus,
+    changes,
+    changeCount,
+    isLoading,
+    handleSave,
+    handleDiscard,
+    handleRevertField,
+    handleDelete,
+  } = useEditPageState<PlatformForm>(
+    {
+      id,
+      fieldConfig: FIELD_CONFIG,
+      initialForm: INITIAL_FORM,
+      dataToForm,
+      formToPayload,
+      deleteRoute: '/platforms',
+      deleteMessage: 'Delete this platform? All related OTT releases will also be removed.',
+    },
+    { dataResult, updateMutation, deleteMutation },
   );
-  useUnsavedChangesWarning(isDirty);
 
+  // @sideeffect uploads file to /api/upload/platform-logo, then updates form state with returned URL
+  // @edge upload failure shows alert() — blocks UI thread; no toast fallback
   async function handleLogoUpload(file: File) {
     try {
       const url = await upload(file);
       setForm((prev) => ({ ...prev, logo_url: url }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    }
-  }
-
-  async function handleSave() {
-    setSaveStatus('saving');
-    try {
-      await updatePlatform.mutateAsync({
-        id,
-        name: form.name,
-        logo_url: form.logo_url || null,
-        tmdb_provider_id: form.tmdb_provider_id.trim() ? Number(form.tmdb_provider_id) : null,
-        regions: form.regions ? form.regions.split(',').filter(Boolean) : [],
-      });
-      initialFormRef.current = { ...form };
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err: unknown) {
-      setSaveStatus('idle');
-      alert(`Save failed: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
-    }
-  }
-
-  const handleDiscard = useCallback(() => {
-    if (initialFormRef.current) setForm(initialFormRef.current);
-  }, []);
-
-  const handleRevertField = useCallback((key: string) => {
-    const initial = initialFormRef.current;
-    if (!initial) return;
-    setForm((prev) => ({ ...prev, [key]: initial[key as keyof typeof prev] }));
-  }, []);
-
-  async function handleDelete() {
-    if (confirm('Delete this platform? All related OTT releases will also be removed.')) {
-      try {
-        await deletePlatform.mutateAsync(id);
-        router.push('/platforms');
-      } catch (err: unknown) {
-        alert(`Delete failed: ${err instanceof Error ? err.message : JSON.stringify(err)}`);
-      }
     }
   }
 
@@ -186,7 +189,9 @@ export default function EditPlatformPage() {
         <div>
           <label className="block text-sm text-on-surface-muted mb-1">Countries</label>
           {(() => {
-            const regionsList = form.regions ? form.regions.split(',').filter(Boolean) : [];
+            const regionsList = form.regions
+              ? (form.regions as string).split(',').filter(Boolean)
+              : [];
             return (
               <>
                 <div className="flex flex-wrap items-center gap-1.5">

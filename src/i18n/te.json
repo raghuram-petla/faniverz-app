@@ -269,6 +269,8 @@
     "addActors": "నటులను జోడించు",
     "noFollowing": "ఇంకా ఎవరినీ ఫాలో చేయడం లేదు",
     "noFollowingSubtitle": "అప్‌డేట్‌లు చూడటానికి సినిమాలు, నటులు మరియు స్టూడియోలను ఫాలో చేయండి.",
+    "noFollowingFiltered": "ఈ ఫిల్టర్‌కు ఫలితాలు లేవు",
+    "noFollowingFilteredSubtitle": "మీరు ఈ కేటగిరీలో ఇంకా ఏదీ ఫాలో చేయలేదు.",
     "logOut": "లాగ్ అవుట్",
     "logOutConfirm": "మీరు లాగ్ అవుట్ చేయాలనుకుంటున్నారా?",
     "deleteAccount": "ఖాతా తొలగించు",

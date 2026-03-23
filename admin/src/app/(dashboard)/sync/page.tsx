@@ -14,6 +14,9 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number]['id'];
 
+// @coupling DiscoverTab reports import state back via onImportingChange callback;
+// this controls whether tab switching is blocked with a confirmation dialog.
+// @boundary TMDB API calls happen inside tab components, not here — this page is purely navigation.
 export default function SyncPage() {
   const [activeTab, setActiveTab] = useState<Tab>('Discover');
   const [isImporting, setIsImporting] = useState(false);

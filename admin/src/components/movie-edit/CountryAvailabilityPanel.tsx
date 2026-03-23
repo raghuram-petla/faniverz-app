@@ -48,6 +48,7 @@ export function CountryAvailabilityPanel({
   const [manualCollapsed, setManualCollapsed] = useState<
     Partial<Record<AvailabilityType, boolean>>
   >({});
+  // @invariant rows grouped by AvailabilityType and rendered in AVAIL_ORDER for consistent section ordering
   const grouped = new Map<AvailabilityType, MoviePlatformAvailability[]>();
   for (const r of rows) {
     const list = grouped.get(r.availability_type) ?? [];

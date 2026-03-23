@@ -13,6 +13,8 @@ function isValidDate(value: string): boolean {
   return !isNaN(d.getTime());
 }
 
+// @edge: uses server's timezone for "today" — a movie released today in IST may appear
+// as "future" if the Vercel function runs in a US timezone, blocking in_theaters toggle.
 function isFutureDate(value: string): boolean {
   const today = new Date().toISOString().slice(0, 10);
   return value > today;

@@ -62,7 +62,7 @@ export function CountryDropdown({
     item?.scrollIntoView({ block: 'nearest' });
   }, [highlightIndex]);
 
-  // Close on outside click
+  // @sideeffect global mousedown listener closes dropdown on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {

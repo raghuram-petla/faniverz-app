@@ -56,6 +56,9 @@ export default function NewPlatformPage() {
     setAddingCountry(false);
   };
 
+  // @contract Platform ID is client-generated (slug + 4-char random suffix) — NOT a UUID.
+  // @edge Collision risk is low but nonzero; DB has a unique constraint on platforms.id that
+  // will reject duplicates, surfacing as a mutation error.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;

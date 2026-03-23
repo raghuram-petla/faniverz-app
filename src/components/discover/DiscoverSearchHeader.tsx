@@ -7,6 +7,7 @@ import { createStyles } from '@/styles/discover.styles';
 import { FILTER_TABS } from '@/components/discover/DiscoverFilterModal';
 import type { MovieStatus } from '@/types';
 
+/** @contract Header with search input + status filter tabs; search clears via onSearchChange('') */
 export interface DiscoverSearchHeaderProps {
   insetTop: number;
   searchQuery: string;

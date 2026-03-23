@@ -70,6 +70,7 @@ export function useFormChanges(
     for (const field of fields) {
       const oldVal = initialValues[field.key];
       const newVal = currentValues[field.key];
+      // @edge String coercion means 0 !== '' is a change, but null === undefined (both become '')
       if (String(oldVal ?? '') !== String(newVal ?? '')) {
         result.push({
           key: field.key,

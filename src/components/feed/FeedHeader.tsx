@@ -21,7 +21,10 @@ export interface CollapsibleHeaderState {
   handleScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
-/** @contract returns scroll handler that collapses header on scroll-down, reveals on scroll-up */
+/**
+ * @contract returns scroll handler that collapses header on scroll-down, reveals on scroll-up
+ * @sync Uses RN Animated.Value (not Reanimated) — setValue runs on JS thread, not worklet
+ */
 export function useCollapsibleHeader(insetTop: number): CollapsibleHeaderState {
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
@@ -62,6 +65,7 @@ export interface FeedHeaderProps {
   totalHeaderHeight: number;
 }
 
+/** @coupling logo-full.png asset must exist at assets/logo-full.png — build fails silently if missing */
 export function FeedHeader({ insetTop, headerTranslateY, totalHeaderHeight }: FeedHeaderProps) {
   const { theme } = useTheme();
   const router = useRouter();

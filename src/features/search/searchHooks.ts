@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { STALE_5M } from '@/constants/queryConfig';
 import { searchAll, UniversalSearchResult } from './searchApi';
 
 // @sync: 300ms debounce matches useMovieSearch — prevents 3 parallel Supabase queries on every keystroke.
@@ -18,6 +19,6 @@ export function useUniversalSearch(query: string) {
     queryKey: ['universal-search', debouncedQuery],
     queryFn: () => searchAll(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }

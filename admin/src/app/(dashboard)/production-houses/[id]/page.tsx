@@ -1,23 +1,29 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   useAdminProductionHouse,
   useUpdateProductionHouse,
   useDeleteProductionHouse,
 } from '@/hooks/useAdminProductionHouses';
 import { useImageUpload } from '@/hooks/useImageUpload';
-import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
-import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { ImageUploadField } from '@/components/movie-edit/ImageUploadField';
+import type { ProductionHouse } from '@/lib/types';
 import { ArrowLeft, Loader2, Trash2, Link2 } from 'lucide-react';
 import { PosterVariantStatus } from '@/components/movie-edit/PosterGalleryCard';
 import { CountryDropdown, countryFlag } from '@/components/common/CountryDropdown';
 import { useCountries } from '@/hooks/useAdminMovieAvailability';
 import Link from 'next/link';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useEditPageState } from '@/hooks/useEditPageState';
 import type { FieldConfig } from '@/hooks/useFormChanges';
+
+interface ProductionHouseForm {
+  name: string;
+  logo_url: string;
+  description: string;
+  origin_country: string;
+}
 
 const FIELD_CONFIG: FieldConfig[] = [
   { key: 'name', label: 'Name', type: 'text' },
@@ -26,39 +32,65 @@ const FIELD_CONFIG: FieldConfig[] = [
   { key: 'origin_country', label: 'Country', type: 'text' },
 ];
 
+const INITIAL_FORM: ProductionHouseForm = {
+  name: '',
+  logo_url: '',
+  description: '',
+  origin_country: '',
+};
+
+function dataToForm(data: unknown): ProductionHouseForm {
+  const house = data as ProductionHouse;
+  return {
+    name: house.name,
+    logo_url: house.logo_url ?? '',
+    description: house.description ?? '',
+    origin_country: house.origin_country ?? '',
+  };
+}
+
+function formToPayload(form: ProductionHouseForm, id: string) {
+  return {
+    id,
+    name: form.name,
+    logo_url: form.logo_url || null,
+    description: form.description || null,
+    origin_country: form.origin_country || null,
+  };
+}
+
 export default function EditProductionHousePage() {
   const { isReadOnly } = usePermissions();
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const { data: house, isLoading } = useAdminProductionHouse(id);
-  const updateHouse = useUpdateProductionHouse();
-  const deleteHouse = useDeleteProductionHouse();
+  const dataResult = useAdminProductionHouse(id);
+  const house = dataResult.data;
+  const updateMutation = useUpdateProductionHouse();
+  const deleteMutation = useDeleteProductionHouse();
   const { upload, uploading } = useImageUpload('/api/upload/production-house-logo');
   const { data: countries = [] } = useCountries();
-  const [form, setForm] = useState({ name: '', logo_url: '', description: '', origin_country: '' });
-  const initialFormRef = useRef<typeof form | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
 
-  useEffect(() => {
-    if (house) {
-      const loaded = {
-        name: house.name,
-        logo_url: house.logo_url ?? '',
-        description: house.description ?? '',
-        origin_country: house.origin_country ?? '',
-      };
-      setForm(loaded);
-      initialFormRef.current = loaded;
-    }
-  }, [house]);
-
-  const { changes, isDirty, changeCount } = useFormChanges(
-    FIELD_CONFIG,
-    initialFormRef.current,
+  const {
     form,
+    setForm,
+    saveStatus,
+    changes,
+    changeCount,
+    isLoading,
+    handleSave,
+    handleDiscard,
+    handleRevertField,
+    handleDelete,
+  } = useEditPageState<ProductionHouseForm>(
+    {
+      id,
+      fieldConfig: FIELD_CONFIG,
+      initialForm: INITIAL_FORM,
+      dataToForm,
+      formToPayload,
+      deleteRoute: '/production-houses',
+    },
+    { dataResult, updateMutation, deleteMutation },
   );
-
-  useUnsavedChangesWarning(isDirty);
 
   async function handleLogoUpload(file: File) {
     try {
@@ -66,48 +98,6 @@ export default function EditProductionHousePage() {
       setForm((prev) => ({ ...prev, logo_url: url }));
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    }
-  }
-
-  async function handleSave() {
-    setSaveStatus('saving');
-    try {
-      await updateHouse.mutateAsync({
-        id,
-        name: form.name,
-        logo_url: form.logo_url || null,
-        description: form.description || null,
-        origin_country: form.origin_country || null,
-      });
-      initialFormRef.current = { ...form };
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err: unknown) {
-      setSaveStatus('idle');
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Save failed: ${msg}`);
-    }
-  }
-
-  const handleDiscard = useCallback(() => {
-    if (initialFormRef.current) setForm(initialFormRef.current);
-  }, []);
-
-  const handleRevertField = useCallback((key: string) => {
-    const initial = initialFormRef.current;
-    if (!initial) return;
-    setForm((prev) => ({ ...prev, [key]: initial[key as keyof typeof prev] }));
-  }, []);
-
-  async function handleDelete() {
-    if (confirm('Are you sure? This cannot be undone.')) {
-      try {
-        await deleteHouse.mutateAsync(id);
-        router.push('/production-houses');
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : JSON.stringify(err);
-        alert(`Delete failed: ${msg}`);
-      }
     }
   }
 
@@ -147,14 +137,14 @@ export default function EditProductionHousePage() {
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
             className="w-full bg-input rounded-xl px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           />
-          {/* TMDB metadata — inline below name */}
+          {/* TMDB metadata -- inline below name */}
           {house?.tmdb_company_id && (
             <div className="flex items-center gap-4 text-sm text-on-surface mt-2">
               <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
                 <Link2 className="w-3.5 h-3.5" />
                 TMDB #{house.tmdb_company_id}
               </span>
-              {/* @contract: TMDB-linked + country set → read-only badge with flag + full name */}
+              {/* @contract: TMDB-linked + country set -> read-only badge with flag + full name */}
               {house.origin_country && (
                 <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
                   <span>{countryFlag(house.origin_country)}</span>
@@ -196,7 +186,9 @@ export default function EditProductionHousePage() {
           />
         </div>
 
-        {/* @contract: country is editable when not TMDB-linked or when origin_country is not set */}
+        {/* @contract: country is editable when not TMDB-linked or when origin_country is not set.
+            Once a TMDB-linked house has a country, it becomes read-only because TMDB sync would
+            overwrite any manual edits on next sync cycle. */}
         {!(house?.tmdb_company_id && house?.origin_country) && (
           <div>
             <label className="block text-sm text-on-surface-muted mb-1">Country</label>

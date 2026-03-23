@@ -49,6 +49,7 @@ export function useMovieEditData(id: string) {
   const { data: castData = [] } = useMovieCast(id);
   const [castSearchQuery, setCastSearchQuery] = useState('');
   const { data: actorsData } = useAdminActors(castSearchQuery.trim());
+  // @edge pages.flat() — actors from createCrudHooks use infinite query; empty search returns all actors
   const actors = actorsData?.pages.flat() ?? [];
   const addCast = useAddCast();
   const removeCast = useRemoveCast();

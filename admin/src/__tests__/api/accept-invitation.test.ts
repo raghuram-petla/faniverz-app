@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { makeRequest } from './test-utils';
 import type { NextRequest } from 'next/server';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,16 +48,6 @@ vi.mock('next/server', () => {
 });
 
 import { POST } from '@/app/api/accept-invitation/route';
-
-function makeRequest(body: Record<string, unknown>, authHeader?: string) {
-  return {
-    json: async () => body,
-    headers: {
-      get: (name: string) =>
-        name === 'authorization' ? (authHeader ?? 'Bearer valid-token') : null,
-    },
-  } as unknown as NextRequest;
-}
 
 const INVITATION = {
   id: 'inv-1',

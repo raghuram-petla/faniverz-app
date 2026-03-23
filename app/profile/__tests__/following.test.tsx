@@ -44,7 +44,15 @@ jest.mock('@/components/common/ScreenHeader', () => {
 });
 
 jest.mock('@/components/ui/EmptyState', () => ({
-  EmptyState: () => null,
+  EmptyState: ({ title, subtitle }: { title: string; subtitle: string }) => {
+    const { Text } = require('react-native');
+    return (
+      <>
+        <Text testID="empty-title">{title}</Text>
+        <Text testID="empty-subtitle">{subtitle}</Text>
+      </>
+    );
+  },
 }));
 
 jest.mock('@/components/profile/ProfileListSkeleton', () => ({
@@ -199,5 +207,24 @@ describe('FollowingScreen', () => {
     // When getImageUrl returns null, placeholder is used — component still renders
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
     (imageUrl.getImageUrl as jest.Mock).mockReturnValue('https://example.com/img.jpg');
+  });
+
+  it('shows filter-specific empty state when filter has no results', () => {
+    render(<FollowingScreen />);
+    // Filter by studios — no production houses in mock data
+    fireEvent.press(screen.getByText('search.studios'));
+    expect(screen.getByTestId('empty-title')).toBeTruthy();
+    expect(screen.getByText('profile.noFollowingFiltered')).toBeTruthy();
+  });
+
+  it('shows generic empty state when all filter has no results', () => {
+    const { useEnrichedFollows } = require('@/features/feed');
+    useEnrichedFollows.mockReturnValueOnce({
+      data: [],
+      isLoading: false,
+      refetch: mockRefetch,
+    });
+    render(<FollowingScreen />);
+    expect(screen.getByText('profile.noFollowing')).toBeTruthy();
   });
 });

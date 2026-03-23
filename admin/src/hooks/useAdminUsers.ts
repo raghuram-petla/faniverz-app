@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { createSimpleMutation } from './createSimpleMutation';
 import type {
   AdminUserWithDetails,
   AdminInvitation,
@@ -72,6 +73,7 @@ export function useAdminUserList() {
 }
 
 /** List all invitations */
+// @contract Returns all statuses (pending, accepted, revoked) — filtering is done in the UI
 export function useAdminInvitations() {
   return useQuery({
     queryKey: ['admin', 'invitations'],
@@ -118,121 +120,78 @@ export function useInviteAdmin() {
 }
 
 /** Revoke an invitation */
-export function useRevokeInvitation() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('admin_invitations')
-        .update({ status: 'revoked' })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'invitations'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useRevokeInvitation = createSimpleMutation<string>({
+  mutationFn: async (id) => {
+    const { error } = await supabase
+      .from('admin_invitations')
+      .update({ status: 'revoked' })
+      .eq('id', id);
+    if (error) throw error;
+  },
+  invalidateKeys: [['admin', 'invitations']],
+});
 
 /** Revoke admin access (delete role + PH assignments) */
 // @sideeffect Deletes PH assignments first (FK constraint), then role — ordering matters
 // @edge No transaction — if role delete fails after PH delete, user has no role but also no PH links
-export function useRevokeAdmin() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (userId: string) => {
-      // Delete PH assignments first (FK constraint)
-      const { error: phDelErr } = await supabase
-        .from('admin_ph_assignments')
-        .delete()
-        .eq('user_id', userId);
-      if (phDelErr) throw new Error(`PH assignment delete failed: ${phDelErr.message}`);
-      // Delete role assignment
-      const { error } = await supabase.from('admin_user_roles').delete().eq('user_id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useRevokeAdmin = createSimpleMutation<string>({
+  mutationFn: async (userId) => {
+    // Delete PH assignments first (FK constraint)
+    const { error: phDelErr } = await supabase
+      .from('admin_ph_assignments')
+      .delete()
+      .eq('user_id', userId);
+    if (phDelErr) throw new Error(`PH assignment delete failed: ${phDelErr.message}`);
+    // Delete role assignment
+    const { error } = await supabase.from('admin_user_roles').delete().eq('user_id', userId);
+    if (error) throw error;
+  },
+  invalidateKeys: [['admin', 'users']],
+});
 
 /** Update admin role */
-export function useUpdateAdminRole() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ userId, roleId }: { userId: string; roleId: AdminRoleId }) => {
-      const { error } = await supabase
-        .from('admin_user_roles')
-        .update({ role_id: roleId })
-        .eq('user_id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+// @edge No hierarchy check here — caller must verify canManageAdmin before invoking
+export const useUpdateAdminRole = createSimpleMutation<{ userId: string; roleId: AdminRoleId }>({
+  mutationFn: async ({ userId, roleId }) => {
+    const { error } = await supabase
+      .from('admin_user_roles')
+      .update({ role_id: roleId })
+      .eq('user_id', userId);
+    if (error) throw error;
+  },
+  invalidateKeys: [['admin', 'users']],
+});
 
 /** Block an admin (set status to blocked with reason) */
 // @contract blocked_by must be the current admin's userId; reason is freeform text
-export function useBlockAdmin() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      userId,
-      blockedBy,
-      reason,
-    }: {
-      userId: string;
-      blockedBy: string;
-      reason: string;
-    }) => {
-      const { error } = await supabase
-        .from('admin_user_roles')
-        .update({
-          status: 'blocked',
-          blocked_by: blockedBy,
-          blocked_reason: reason,
-        })
-        .eq('user_id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useBlockAdmin = createSimpleMutation<{
+  userId: string;
+  blockedBy: string;
+  reason: string;
+}>({
+  mutationFn: async ({ userId, blockedBy, reason }) => {
+    const { error } = await supabase
+      .from('admin_user_roles')
+      .update({
+        status: 'blocked',
+        blocked_by: blockedBy,
+        blocked_reason: reason,
+      })
+      .eq('user_id', userId);
+    if (error) throw error;
+  },
+  invalidateKeys: [['admin', 'users']],
+});
 
 /** Unblock an admin (restore active status) */
 // @sideeffect Clears block status AND resets blocked_by/blocked_reason/blocked_at columns
-export function useUnblockAdmin() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from('admin_user_roles')
-        .update({ status: 'active', blocked_by: null, blocked_reason: null, blocked_at: null })
-        .eq('user_id', userId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useUnblockAdmin = createSimpleMutation<string>({
+  mutationFn: async (userId) => {
+    const { error } = await supabase
+      .from('admin_user_roles')
+      .update({ status: 'active', blocked_by: null, blocked_reason: null, blocked_at: null })
+      .eq('user_id', userId);
+    if (error) throw error;
+  },
+  invalidateKeys: [['admin', 'users']],
+});

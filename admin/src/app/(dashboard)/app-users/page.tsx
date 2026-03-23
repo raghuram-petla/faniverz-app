@@ -9,6 +9,8 @@ import { PaginationControls } from '@/components/common/PaginationControls';
 import { Loader2, Ban, Pencil, X, Check } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 
+// @contract PAGE_SIZE=50 is sent as a query param to /api/manage-user; changing this value
+// here also requires the API route to accept the new size (currently hardcoded to match)
 const PAGE_SIZE = 50;
 
 // @nullable Both url and name can be null — renders initials fallback or '?' placeholder

@@ -1,6 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { createSimpleMutation } from './createSimpleMutation';
 import type { Notification } from '@/lib/types';
 
 // @nullable filters param and both sub-fields — omitted = all notifications
@@ -23,6 +24,8 @@ export function useAdminNotifications(filters?: { status?: string; type?: string
   });
 }
 
+// @contract Not using createSimpleMutation because onSuccess triggers a side-effect
+// (edge function push delivery) with its own error handling that must not surface via window.alert.
 export function useCreateNotification() {
   const qc = useQueryClient();
   return useMutation({
@@ -35,7 +38,7 @@ export function useCreateNotification() {
       if (error) throw error;
 
       // @sideeffect Triggers edge function 'send-push' for immediate notifications
-      // @edge Fire-and-forget: push failure is logged but does not reject the mutation
+      // @edge Push failure is surfaced via window.alert so admin can retry manually
       // @assumes Notifications within 60s of now are treated as "immediate"
       const isImmediate =
         !notification.scheduled_for ||
@@ -45,9 +48,17 @@ export function useCreateNotification() {
           const { error: pushError } = await supabase.functions.invoke('send-push', {
             body: { notification_id: data.id },
           });
-          if (pushError) console.error('Push delivery failed:', pushError);
+          if (pushError) {
+            console.error('Push delivery failed:', pushError);
+            window.alert(
+              `Notification created but push delivery failed: ${pushError.message ?? 'Unknown error'}. You can retry from the notifications list.`,
+            );
+          }
         } catch (pushErr) {
           console.error('Push delivery error:', pushErr);
+          window.alert(
+            `Notification created but push delivery failed. You can retry from the notifications list.`,
+          );
         }
       }
 
@@ -62,84 +73,53 @@ export function useCreateNotification() {
   });
 }
 
-export function useCancelNotification() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ status: 'cancelled' })
-        .eq('id', id);
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+// @sideeffect Sets status to 'cancelled' — does NOT send cancellation to already-delivered push notifications
+export const useCancelNotification = createSimpleMutation<string, string>({
+  mutationFn: async (id) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ status: 'cancelled' })
+      .eq('id', id);
+    if (error) throw error;
+    return id;
+  },
+  invalidateKeys: [['admin', 'notifications']],
+});
 
 // @sideeffect Resets failed notification to 'pending' — does NOT re-trigger push delivery
-export function useRetryNotification() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ status: 'pending' })
-        .eq('id', id);
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useRetryNotification = createSimpleMutation<string, string>({
+  mutationFn: async (id) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ status: 'pending' })
+      .eq('id', id);
+    if (error) throw error;
+    return id;
+  },
+  invalidateKeys: [['admin', 'notifications']],
+});
 
 // @sideeffect Batch status transition: all 'failed' -> 'pending' in one UPDATE
 // @edge No row-count limit — large volumes could cause slow queries
-export function useBulkRetryFailed() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ status: 'pending' })
-        .eq('status', 'failed');
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useBulkRetryFailed = createSimpleMutation<void>({
+  mutationFn: async () => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ status: 'pending' })
+      .eq('status', 'failed');
+    if (error) throw error;
+  },
+  invalidateKeys: [['admin', 'notifications']],
+});
 
 // @sideeffect Batch status transition: all 'pending' -> 'cancelled' in one UPDATE
-export function useBulkCancelPending() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ status: 'cancelled' })
-        .eq('status', 'pending');
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useBulkCancelPending = createSimpleMutation<void>({
+  mutationFn: async () => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ status: 'cancelled' })
+      .eq('status', 'pending');
+    if (error) throw error;
+  },
+  invalidateKeys: [['admin', 'notifications']],
+});

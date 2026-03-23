@@ -5,6 +5,8 @@ import { crudFetch } from '@/lib/admin-crud-client';
 import type { MoviePlatformAvailability, Country, AvailabilityType } from '@shared/types';
 
 /** @contract Fetches all availability rows for a movie, with platform relation */
+// @coupling JOINs movie_platform_availability + platforms via PostgREST foreign-key embed
+// @edge triple-sort: country_code → availability_type → tmdb_display_priority (nulls last)
 export function useMovieAvailability(movieId: string) {
   return useQuery({
     queryKey: ['admin', 'movie_availability', movieId],
@@ -24,6 +26,7 @@ export function useMovieAvailability(movieId: string) {
 }
 
 /** @contract Fetches countries reference table sorted by display_order */
+// @edge staleTime 24h — countries rarely change; avoids re-fetching on every movie edit page visit
 export function useCountries() {
   return useQuery({
     queryKey: ['admin', 'countries'],
@@ -36,6 +39,8 @@ export function useCountries() {
   });
 }
 
+// @sideeffect Inserts availability row via /api/admin-crud; invalidates movie-scoped cache
+// @edge Composite unique constraint (movie_id, platform_id, country_code, availability_type) — duplicate insert throws
 export function useAddMovieAvailability() {
   const qc = useQueryClient();
   return useMutation({
@@ -61,6 +66,7 @@ export function useAddMovieAvailability() {
   });
 }
 
+// @contract Only available_from and streaming_url are updatable; platform/country/type are immutable natural keys
 export function useUpdateMovieAvailability() {
   const qc = useQueryClient();
   return useMutation({
@@ -89,6 +95,7 @@ export function useUpdateMovieAvailability() {
   });
 }
 
+// @sideeffect Hard-deletes availability row by surrogate id via /api/admin-crud
 export function useRemoveMovieAvailability() {
   const qc = useQueryClient();
   return useMutation({

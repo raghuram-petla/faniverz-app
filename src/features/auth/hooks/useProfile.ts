@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { STALE_5M } from '@/constants/queryConfig';
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types';
 import { useAuth } from '../providers/AuthProvider';
@@ -24,6 +25,6 @@ export function useProfile() {
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user?.id ?? ''),
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes — balances freshness with avoiding excessive refetches
+    staleTime: STALE_5M, // 5 minutes — balances freshness with avoiding excessive refetches
   });
 }

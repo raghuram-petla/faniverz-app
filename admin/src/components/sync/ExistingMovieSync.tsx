@@ -53,7 +53,7 @@ export function ExistingMovieSync({
       const token = session.data.session?.access_token;
       if (!token || cancelled) return;
 
-      // @edge sequential fetches to avoid TMDB rate limits (40 req/10s)
+      // @edge sequential fetches to avoid TMDB rate limits (40 req/10s); no parallelism
       for (const m of moviesToFetch) {
         if (cancelled) break;
         try {

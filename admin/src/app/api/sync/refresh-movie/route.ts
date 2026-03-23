@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
+import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/refresh-movie
@@ -12,16 +12,9 @@ import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/syn
 // @sideeffect: overwrites movie + related credits/genres with latest TMDB data; writes sync_log
 export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyAdminCanMutate(request.headers.get('authorization'));
-    if (auth === 'viewer_readonly') {
-      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-    }
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const tmdb = ensureTmdbApiKey();
-    if (!tmdb.ok) return tmdb.response;
+    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
+    if (!guard.ok) return guard.response;
+    const { apiKey } = guard;
 
     const body = await request.json();
     // @assumes: movieId is a local UUID, not a TMDB ID
@@ -55,7 +48,7 @@ export async function POST(request: NextRequest) {
     const syncLogId = await createSyncLog(supabase, `refresh-movie`);
 
     try {
-      const result = await processMovieFromTmdb(movie.tmdb_id, tmdb.apiKey, supabase);
+      const result = await processMovieFromTmdb(movie.tmdb_id, apiKey, supabase);
 
       await completeSyncLog(supabase, syncLogId, {
         status: 'success',

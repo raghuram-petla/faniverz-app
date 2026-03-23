@@ -51,6 +51,7 @@ export function useValidations() {
   });
 
   // @sideeffect: DB-based scan — single request, classifies URLs by type
+  // @edge: deep=true triggers HEAD requests per URL on the server — slow for large tables
   const startScan = useCallback(async (entity: ScanEntity, deep = false) => {
     abortRef.current = false;
     setScanResults([]);
@@ -78,7 +79,8 @@ export function useValidations() {
     abortRef.current = true;
   }, []);
 
-  // @sideeffect: sends selected items to fix endpoint in batches
+  // @sideeffect: sends selected items to fix endpoint in batches of 10
+  // @edge: partial failure — earlier batches persist even if a later batch fails
   const fixSelected = useCallback(async () => {
     const items = getSelectedFixItems(scanResults, selectedItems);
     if (items.length === 0) return;
@@ -161,10 +163,12 @@ export function useValidations() {
 
 // --- Helpers ---
 
+// @contract Composite key for deduplication — assumes (id, field) pair is unique across scan results
 export function itemKey(r: ScanResult): string {
   return `${r.id}-${r.field}`;
 }
 
+// @contract External URLs are always flagged as issues; local URLs are issues only if variants are missing
 export function hasIssue(r: ScanResult): boolean {
   if (r.urlType === 'external') return true;
   if (r.originalExists === false) return true;

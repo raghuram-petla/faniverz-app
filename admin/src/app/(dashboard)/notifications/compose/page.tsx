@@ -7,6 +7,9 @@ import { Bell, ArrowLeft, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { ComposeForm } from '@/components/notifications/ComposeForm';
 
+// @coupling ComposeForm handles all form state internally; this page is a thin shell
+// @boundary useAllMovies fetches ALL movies (no pagination) for the movie picker dropdown —
+// may become slow with thousands of movies. Consider search-as-you-type if catalog grows.
 export default function ComposeNotificationPage() {
   const router = useRouter();
   const { data: movies } = useAllMovies();
@@ -36,6 +39,8 @@ export default function ComposeNotificationPage() {
         </p>
       </div>
 
+      {/* @contract ComposeForm receives the raw mutation object — it calls mutateAsync internally
+          and handles loading/error states. onSuccess fires after DB insert, NOT after push delivery. */}
       <ComposeForm
         movies={movies}
         createNotification={createNotification}

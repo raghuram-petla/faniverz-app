@@ -27,18 +27,19 @@ export function useNotificationHandler() {
   useEffect(() => {
     responseListenerRef.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        // @boundary: data comes from the push notification payload set by the server. Its shape is unvalidated —
-        // if the server sends a malformed payload (e.g., movie_id as a number instead of string, or a typo
-        // like 'movieId'), the router.push silently navigates to '/movie/undefined' which shows a "not found" screen.
+        // @boundary: data comes from the push notification payload set by the server.
+        // @contract: validates payload fields are non-empty strings before deep-linking.
+        // Supports movie_id, actor_id, and production_house_id — falls back to /notifications.
         const data = response.notification.request.content.data;
 
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
-        // @contract: only movie_id is handled for deep linking. Notifications about actors, production houses,
-        // or other entities all fall through to the generic '/notifications' screen. Adding new deep link
-        // types requires updating this conditional — there's no registry or mapping pattern.
-        if (data?.movie_id) {
+        if (data?.movie_id && typeof data.movie_id === 'string') {
           router.push(`/movie/${data.movie_id}`);
+        } else if (data?.actor_id && typeof data.actor_id === 'string') {
+          router.push(`/actor/${data.actor_id}`);
+        } else if (data?.production_house_id && typeof data.production_house_id === 'string') {
+          router.push(`/production-house/${data.production_house_id}`);
         } else {
           router.push('/notifications');
         }

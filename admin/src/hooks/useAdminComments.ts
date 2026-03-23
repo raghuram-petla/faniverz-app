@@ -1,13 +1,10 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
+import { createSimpleMutation } from './createSimpleMutation';
 import type { FeedComment } from '@/lib/types';
-
-// @boundary: PostgREST .ilike() uses LIKE patterns — strip special chars to avoid syntax errors
-function sanitizeSearchTerm(term: string): string {
-  return term.replace(/[,()"'\\%_]/g, '').trim();
-}
+import { sanitizeSearchTerm } from '@/lib/sanitizeSearchTerm';
 
 // @boundary: joins feed_comments with news_feed and profiles via PostgREST foreign-key selects
 // @edge: search filters body via ilike server-side, but profile.display_name is matched client-side
@@ -34,13 +31,13 @@ export function useAdminComments(search = '') {
 
       // Also match on profile display_name client-side
       // (PostgREST cannot OR across foreign table columns)
-      // @edge: use sanitized term for consistency with server-side ilike filter
+      // @edge: body already filtered server-side via ilike — only display_name needs client-side check
       if (sanitized) {
         const lower = sanitized.toLowerCase();
         return comments.filter(
           (c) =>
-            c.body?.toLowerCase().includes(lower) ||
-            c.profile?.display_name?.toLowerCase().includes(lower),
+            c.profile?.display_name?.toLowerCase().includes(lower) ||
+            c.body?.toLowerCase().includes(lower),
         );
       }
 
@@ -51,35 +48,25 @@ export function useAdminComments(search = '') {
 }
 
 // @sideeffect: invalidates all ['admin', 'comments'] queries on success; window.alert on error
-export function useUpdateComment() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, body }: { id: string; body: string }) => {
-      await crudFetch('PATCH', { table: 'feed_comments', id, data: { body } });
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'comments'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to update comment');
-    },
-  });
-}
+export const useUpdateComment = createSimpleMutation<{ id: string; body: string }, string>({
+  mutationFn: async ({ id, body }) => {
+    await crudFetch('PATCH', { table: 'feed_comments', id, data: { body } });
+    return id;
+  },
+  invalidateKeys: [['admin', 'comments']],
+  errorMessage: 'Failed to update comment',
+});
 
 // @sideeffect: hard-deletes comment row from feed_comments; no soft-delete
-export function useDeleteComment() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await crudFetch('DELETE', { table: 'feed_comments', id });
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'comments'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to delete comment');
-    },
-  });
-}
+// @sideeffect: invalidates dashboard — totalComments count changes
+export const useDeleteComment = createSimpleMutation<string, string>({
+  mutationFn: async (id) => {
+    await crudFetch('DELETE', { table: 'feed_comments', id });
+    return id;
+  },
+  invalidateKeys: [
+    ['admin', 'comments'],
+    ['admin', 'dashboard'],
+  ],
+  errorMessage: 'Failed to delete comment',
+});

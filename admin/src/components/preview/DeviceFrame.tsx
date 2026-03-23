@@ -7,7 +7,8 @@ interface DeviceFrameProps {
   children: React.ReactNode;
 }
 
-/** @contract scales device resolution to fit maxWidth while preserving aspect ratio */
+/** @contract scales device resolution to fit maxWidth while preserving aspect ratio
+ *  @edge content renders at native resolution then CSS-scaled down — text remains crisp */
 export function DeviceFrame({ device, maxWidth = 320, children }: DeviceFrameProps) {
   /** @invariant scale factor applied uniformly to width and height to preserve aspect ratio */
   const scale = maxWidth / device.width;

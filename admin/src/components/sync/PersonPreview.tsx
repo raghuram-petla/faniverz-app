@@ -11,7 +11,8 @@ export interface PersonPreviewProps {
   onClose?: () => void;
 }
 
-/** @contract shows TMDB person details; refresh if in DB, import if not */
+/** @contract shows TMDB person details; refresh if in DB, import if not
+ *  @boundary onRefresh and onImport are mutually exclusive — only one renders based on existsInDb */
 export function PersonPreview({
   result,
   isPending,

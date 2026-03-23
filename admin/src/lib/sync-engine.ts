@@ -1,15 +1,5 @@
-/**
- * Sync engine — shared logic for importing/refreshing movies and actors from TMDB.
- * Used by API routes. Server-side only.
- *
- * @boundary: TMDB API + R2 uploads + Supabase writes happen in sequence, not in a
- * transaction. With resumable=true, each phase is additive — retries after a 504
- * timeout pick up where the last call left off instead of starting from scratch.
- *
- * @coupling: depends on r2-sync.ts maybeUploadImage for all image uploads — if R2
- * credentials are missing, the entire sync still succeeds but stores TMDB CDN URLs
- * directly in the DB, which will break if TMDB changes their image CDN paths.
- */
+// @boundary Sync engine — TMDB import/refresh for movies and actors. Server-side only.
+// @coupling r2-sync.ts for image uploads; tmdb.ts for API calls. Not transactional — resumable.
 
 import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -67,6 +57,8 @@ export async function processMovieFromTmdb(
 ): Promise<ImportMovieResult> {
   const detail = await getMovieDetails(tmdbId, apiKey);
 
+  // @edge: picks the FIRST Director credit — movies with co-directors (e.g. Russo Brothers)
+  // only store one name. The full crew list is synced separately via syncCastCrew.
   const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
   // @sideeffect: parallel R2 uploads — if one fails the other may succeed
   const [posterUrl, backdropUrl] = await Promise.all([
@@ -99,7 +91,10 @@ export async function processMovieFromTmdb(
   const imdbId = detail.external_ids?.imdb_id ?? null;
   const indiaCert = extractIndiaCertification(detail.release_dates);
 
-  // @invariant: upsert only writes TMDB-sourced fields — admin-curated fields are preserved
+  // @invariant: upsert only writes TMDB-sourced fields — admin-curated fields (release_type,
+  // in_theaters, ott_release_date, curated descriptions, etc.) are preserved across re-syncs.
+  // @edge: if TMDB returns empty overview, synopsis is set to null, overwriting any previously
+  // synced synopsis. Admin-written synopsis (via the edit form) would also be overwritten.
   const { data: movie, error: movieErr } = await supabase
     .from('movies')
     .upsert(
@@ -301,7 +296,5 @@ async function fullReplaceSync(
     ...imgCounts,
   };
 }
-
-// Re-export sync log helpers for backwards compatibility
 export { createSyncLog, completeSyncLog } from './sync-log';
 export { processActorRefresh } from './sync-actor';

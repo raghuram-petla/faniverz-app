@@ -22,6 +22,7 @@ export async function fetchComments(
   return (data ?? []) as unknown as FeedComment[];
 }
 
+// @sideeffect: insert fires trg_feed_comment_count trigger which increments news_feed.comment_count by 1. The optimistic update in useAddComment increments the local count immediately — if the insert fails, onError must decrement it back. If the trigger is disabled/removed, comment_count drifts from actual comment rows over time.
 export async function addComment(
   feedItemId: string,
   userId: string,

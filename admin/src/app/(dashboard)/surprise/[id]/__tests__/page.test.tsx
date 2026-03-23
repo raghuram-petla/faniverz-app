@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 
@@ -9,19 +9,19 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'surprise-1' }),
 }));
 
-const mockUpdateMutate = vi.fn();
-const mockDeleteMutate = vi.fn();
+const mockUpdateMutateAsync = vi.fn().mockResolvedValue(undefined);
+const mockDeleteMutateAsync = vi.fn().mockResolvedValue(undefined);
 const mockUseAdminSurpriseItem = vi.fn();
 
 vi.mock('@/hooks/useAdminSurprise', () => ({
   useAdminSurpriseItem: () => mockUseAdminSurpriseItem(),
   useUpdateSurprise: () => ({
-    mutate: mockUpdateMutate,
+    mutateAsync: mockUpdateMutateAsync,
     isError: false,
     error: null,
     isPending: false,
   }),
-  useDeleteSurprise: () => ({ mutate: mockDeleteMutate, isPending: false }),
+  useDeleteSurprise: () => ({ mutateAsync: mockDeleteMutateAsync, isPending: false }),
 }));
 
 const mockUsePermissions = vi.fn();
@@ -181,18 +181,22 @@ describe('EditSurpriseContentPage', () => {
     expect(screen.getByTestId('form-changes-dock')).toBeInTheDocument();
   });
 
-  it('calls updateItem.mutate on save', () => {
+  it('calls updateItem.mutateAsync on save', async () => {
     render(<EditSurpriseContentPage />);
-    fireEvent.click(screen.getByTestId('dock-save'));
-    expect(mockUpdateMutate).toHaveBeenCalledWith(
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('dock-save'));
+    });
+    expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'surprise-1', title: 'My Song' }),
-      expect.any(Object),
     );
   });
 
-  it('updates saveStatus to saving when dock save is clicked', () => {
+  it('updates saveStatus to saving when dock save is clicked', async () => {
+    mockUpdateMutateAsync.mockImplementation(() => new Promise(() => {})); // never resolves
     render(<EditSurpriseContentPage />);
-    fireEvent.click(screen.getByTestId('dock-save'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('dock-save'));
+    });
     expect(screen.getByTestId('save-status').textContent).toBe('saving');
   });
 
@@ -204,20 +208,21 @@ describe('EditSurpriseContentPage', () => {
     );
   });
 
-  it('calls deleteItem.mutate when confirmed', () => {
+  it('calls deleteItem.mutateAsync when confirmed', async () => {
     render(<EditSurpriseContentPage />);
-    fireEvent.click(screen.getByText('Delete'));
-    expect(mockDeleteMutate).toHaveBeenCalledWith(
-      'surprise-1',
-      expect.objectContaining({ onSuccess: expect.any(Function) }),
-    );
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+    expect(mockDeleteMutateAsync).toHaveBeenCalledWith('surprise-1');
   });
 
-  it('does not delete when confirm cancelled', () => {
+  it('does not delete when confirm cancelled', async () => {
     window.confirm = vi.fn(() => false);
     render(<EditSurpriseContentPage />);
-    fireEvent.click(screen.getByText('Delete'));
-    expect(mockDeleteMutate).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+    expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
   });
 
   it('applies pointer-events-none when read-only', () => {

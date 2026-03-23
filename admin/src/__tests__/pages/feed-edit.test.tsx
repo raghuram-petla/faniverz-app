@@ -452,7 +452,7 @@ describe('EditFeedItemPage', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Error: Delete failed');
+    expect(window.alert).toHaveBeenCalledWith('Delete failed: Delete failed');
     vi.restoreAllMocks();
   });
 
@@ -505,7 +505,7 @@ describe('EditFeedItemPage', () => {
       capturedDockProps.current.onSave();
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Error: Save failed');
+    expect(window.alert).toHaveBeenCalledWith('Save failed: Save failed');
     expect(capturedDockProps.current.saveStatus).toBe('idle');
     vi.restoreAllMocks();
   });
@@ -627,7 +627,7 @@ describe('EditFeedItemPage', () => {
       capturedDockProps.current.onSave();
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Error: Operation failed');
+    expect(window.alert).toHaveBeenCalledWith('Save failed: "string error"');
     vi.restoreAllMocks();
   });
 
@@ -648,7 +648,7 @@ describe('EditFeedItemPage', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Error: Operation failed');
+    expect(window.alert).toHaveBeenCalledWith('Delete failed: "string error"');
     vi.restoreAllMocks();
   });
 });

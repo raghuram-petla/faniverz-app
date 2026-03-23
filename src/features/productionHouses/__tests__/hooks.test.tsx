@@ -16,20 +16,12 @@ jest.mock('../api', () => ({
 }));
 
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useProductionHouses,
   useMovieIdsByProductionHouse,
   useProductionHouseDetail,
 } from '../hooks';
-
-function createWrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  );
-}
 
 // Helper to build a chained Supabase mock for production_houses table
 function mockProductionHousesSelect(data: any[], error: any = null) {

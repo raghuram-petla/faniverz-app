@@ -128,10 +128,13 @@ export function getFeedTypeIconName(
 }
 
 // @boundary external dependency on YouTube's thumbnail CDN — no auth required
-export function getYouTubeThumbnail(youtubeId: string): string {
+export function getYouTubeThumbnail(
+  youtubeId: string,
+  quality: 'default' | 'mqdefault' | 'hqdefault' | 'maxresdefault' = 'hqdefault',
+): string {
   // @contract: strip non-alphanumeric/dash/underscore to prevent URL traversal
   const safeId = youtubeId.replace(/[^a-zA-Z0-9_-]/g, '');
-  return `https://img.youtube.com/vi/${safeId}/hqdefault.jpg`;
+  return `https://img.youtube.com/vi/${safeId}/${quality}.jpg`;
 }
 
 // ── Entity helpers (for X-style feed layout) ────────────────────────────────────

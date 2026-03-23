@@ -4,6 +4,9 @@ import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import './globals.css';
 
+// @contract Exo_2 is used ONLY for the logo/brand text via CSS var --font-exo2;
+// all other text uses Tailwind's default sans stack. Changing weight/style here
+// affects the brand header in Sidebar and login page.
 const exo2 = Exo_2({
   subsets: ['latin'],
   weight: '800',

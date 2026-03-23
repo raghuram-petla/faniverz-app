@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NextRequest } from 'next/server';
+import { makeRequest, nextResponseMock } from '../test-utils';
 
 // @boundary: use vi.hoisted so variables are available when vi.mock factory runs
 const mockGetUser = vi.hoisted(() => vi.fn());
@@ -158,17 +158,7 @@ vi.mock('@/lib/sync-watch-providers', () => ({
   syncWatchProvidersMultiCountry: mockSyncWatchProviders,
 }));
 
-vi.mock('next/server', () => ({
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
-      body,
-      status: init?.status ?? 200,
-      async json() {
-        return body;
-      },
-    }),
-  },
-}));
+vi.mock('next/server', () => nextResponseMock);
 
 import { POST } from '@/app/api/sync/fill-fields/route';
 
@@ -184,13 +174,6 @@ const baseTmdbDetails = {
   videos: { results: [] },
   credits: { cast: [], crew: [] },
 };
-
-function makeRequest(body: unknown, authHeader = 'Bearer valid-token') {
-  return {
-    json: async () => body,
-    headers: { get: (name: string) => (name === 'authorization' ? authHeader : null) },
-  } as unknown as NextRequest;
-}
 
 describe('POST /api/sync/fill-fields', () => {
   beforeEach(() => {

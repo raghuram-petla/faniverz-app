@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { STALE_5M } from '@/constants/queryConfig';
 import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from './followApi';
 import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
 
@@ -16,7 +17,7 @@ export function useEntityFollows() {
     queryKey: ['entity-follows', userId],
     queryFn: () => fetchUserFollows(userId ?? ''),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 
   const followSet = useMemo(() => {
@@ -85,7 +86,7 @@ export function useEnrichedFollows() {
     queryKey: ['enriched-follows', userId],
     queryFn: () => fetchEnrichedFollows(userId ?? ''),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 

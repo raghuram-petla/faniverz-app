@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import type { ViewStyle, TextStyle } from 'react-native';
 
+/** @contract rating is expected on a 0-5 scale; values above 5 are displayed as-is (no clamping) */
 export interface MovieRatingProps {
   rating: number;
   size?: number;

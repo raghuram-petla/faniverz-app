@@ -4,7 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getPersonDetails, TMDB_IMAGE } from '@/lib/tmdb';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
+import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/import-actor
@@ -14,16 +14,9 @@ import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/syn
  */
 export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyAdminCanMutate(request.headers.get('authorization'));
-    if (auth === 'viewer_readonly') {
-      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-    }
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const tmdb = ensureTmdbApiKey();
-    if (!tmdb.ok) return tmdb.response;
+    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
+    if (!guard.ok) return guard.response;
+    const { apiKey } = guard;
 
     const body = await request.json();
     const { tmdbPersonId } = body as { tmdbPersonId: number };
@@ -36,7 +29,7 @@ export async function POST(request: NextRequest) {
     const syncLogId = await createSyncLog(supabase, 'import-actor');
 
     try {
-      const person = await getPersonDetails(tmdbPersonId, tmdb.apiKey);
+      const person = await getPersonDetails(tmdbPersonId, apiKey);
 
       // @sideeffect Upload photo to R2 (or fall back to TMDB CDN URL)
       const photoUrl = await maybeUploadImage(

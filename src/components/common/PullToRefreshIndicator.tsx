@@ -51,7 +51,7 @@ export function PullToRefreshIndicator({
     ),
   }));
 
-  // Arrow rotates 0° → 180° as pull distance crosses threshold
+  // @sync Arrow rotates 0deg to 180deg as pull distance crosses threshold (worklet-driven)
   const arrowRotateStyle = useAnimatedStyle(() => {
     const rotation = interpolate(
       pullDistance.value,

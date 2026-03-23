@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { STALE_1M } from '@/constants/queryConfig';
 import { fetchNotifications, markAsRead, markAllAsRead } from './api';
 
 export function useNotifications(userId: string) {
@@ -6,7 +7,7 @@ export function useNotifications(userId: string) {
     queryKey: ['notifications', userId],
     queryFn: () => fetchNotifications(userId),
     enabled: !!userId,
-    staleTime: 60 * 1000,
+    staleTime: STALE_1M,
   });
 }
 

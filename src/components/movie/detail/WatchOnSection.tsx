@@ -17,6 +17,7 @@ interface WatchOnSectionProps {
   releaseDate: string | null;
 }
 
+/** @sideeffect Linking.openURL launches external app/browser for streaming URLs */
 export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnSectionProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();

@@ -4,6 +4,10 @@ import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 import { colors as palette } from '@/theme/colors';
 
+/**
+ * @contract All three auth methods (Google, Apple, Phone) rendered as equal-width buttons in a row.
+ * @assumes showApple should be false on Android — caller must check Platform.OS before passing.
+ */
 export interface SocialSignInButtonsProps {
   onGoogle: () => void;
   onApple?: () => void;

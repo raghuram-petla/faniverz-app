@@ -17,6 +17,7 @@ import {
 } from './api';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
+import { STALE_2M } from '@/constants/queryConfig';
 import { WatchlistEntry } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
@@ -49,7 +50,7 @@ export function useWatchlist(userId: string) {
     queryKey: ['watchlist', userId],
     queryFn: () => fetchWatchlist(userId),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: STALE_2M,
   });
 
   const entries = query.data ?? [];
@@ -66,7 +67,7 @@ export function useWatchlistPaginated(userId: string) {
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: STALE_2M,
   });
 
   const entries = query.data?.pages.flat() ?? [];
@@ -80,7 +81,7 @@ export function useIsWatchlisted(userId: string, movieId: string) {
     queryKey: ['watchlist', 'check', userId, movieId],
     queryFn: () => isMovieWatchlisted(userId, movieId),
     enabled: !!userId && !!movieId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: STALE_2M,
   });
 }
 
@@ -216,7 +217,7 @@ export function useWatchlistSet() {
     queryKey: ['watchlist', userId],
     queryFn: () => fetchWatchlist(userId),
     enabled: !!userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: STALE_2M,
   });
 
   const watchlistSet = useMemo(() => {

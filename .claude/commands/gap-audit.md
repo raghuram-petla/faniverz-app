@@ -1,6 +1,29 @@
 # Gap Audit
 
-Deep-scan the entire codebase for functional gaps, incomplete features, non-functional code, and code quality issues. Produces a severity-ranked report, then optionally fixes everything.
+Deep-scan the entire codebase for functional gaps, incomplete features, non-functional code, and code quality issues. Finds and fixes everything in a loop until clean.
+
+## Loop Mode
+
+This skill runs in a **loop until clean**. After completing a full scan-fix-verify cycle, immediately start a new scan from Phase 1. Keep looping until **3 consecutive runs find zero gap issues worth fixing**. Track the run counter:
+
+```
+Run 1 → found 8 gaps → fix → Run 2 → found 3 gaps → fix → Run 3 → found 0 → Run 4 → found 0 → Run 5 → found 0 → DONE (3 consecutive clean runs)
+```
+
+**Rules for loop mode:**
+
+- Each run is a full Phase 1–4 cycle (scan, report, fix all, verify)
+- A "clean run" means Phase 1 found exactly 0 gap issues worth fixing across all 6 categories
+- The 3-clean-run counter resets to 0 if any fixable gap is found
+- Between runs, print: `### Run N complete — {X gaps fixed | clean} (consecutive clean: M/3)`
+- After 3 consecutive clean runs, print: `### Gap Audit complete — 3 consecutive clean runs achieved`
+
+**CRITICAL — No shortcuts allowed:**
+
+- **Every single run MUST perform a full scan.** You MUST actually read source files in every iteration — no skipping, no "the code hasn't changed so it's clean", no assuming previous runs were thorough enough.
+- **Launch parallel Explore or general-purpose Agents** for each scan to ensure independent, thorough review. Do not rely on memory of previous runs.
+- **Never declare a run "clean" without reading the actual code.** If you cannot prove you read the files in that run, it doesn't count.
+- A clean run requires actively scanning and finding nothing — not passively assuming nothing changed.
 
 ## Phase 1 — Scan
 
@@ -76,7 +99,7 @@ Features that exist in UI but aren't wired to real backend logic:
 Present findings as a severity-ranked table:
 
 ```
-## Gap Audit Report
+## Gap Audit Report — Run N
 
 ### Critical (Active bugs / Security)
 | # | Category | File:Line | Issue | Impact |
@@ -102,11 +125,11 @@ Present findings as a severity-ranked table:
 - Total: N issues
 ```
 
-**Wait for user confirmation before proceeding to Phase 3.** Ask which severity levels to fix and whether to fix all or select specific issues.
+**Do NOT wait for user confirmation.** Proceed directly to Phase 3 and fix ALL issues across all severity levels, starting with Critical.
 
 ## Phase 3 — Fix
 
-For each approved issue, fix in order of severity (Critical → High → Medium → Low).
+Fix all issues in order of severity (Critical → High → Medium → Low).
 
 ### Fix Workflow
 
@@ -129,10 +152,43 @@ For each approved issue, fix in order of severity (Critical → High → Medium 
 - **300-line violations** → Extract components to `src/components/<feature>/` or `admin/src/components/<feature>/` with typed props + test files
 - **Security issues** → Add auth checks, `SET search_path`, `REVOKE/GRANT`, input validation. Create new migrations (never modify applied ones).
 
-## Phase 4 — Final Report
+## Phase 4 — Verify
+
+Run quality gates for each affected codebase:
+
+**Mobile** (if modified):
+
+```bash
+npx eslint . && npx tsc --noEmit && npx jest --silent --forceExit
+```
+
+**Admin** (if modified):
+
+```bash
+cd admin && npx eslint . --max-warnings 0 && npx tsc --noEmit && npx vitest run
+```
+
+If any check fails:
+
+1. Read the error output
+2. Fix the issue (do not revert the fix unless unfixable)
+3. Re-run quality gates to confirm
+4. If unfixable, revert the specific fix and note it as infeasible
+
+Also verify:
+
+- All files under 300 lines
+- Every new file has a corresponding test file
+- All existing tests still pass
+
+Then loop back to Phase 1 with a new scan.
+
+## Final Report
+
+After 3 consecutive clean runs, print:
 
 ```
-## Gap Audit Fix Summary
+## Gap Audit Summary
 
 ### Issues Fixed
 | # | Severity | File(s) | Fix Description |
@@ -168,3 +224,5 @@ For each approved issue, fix in order of severity (Critical → High → Medium 
 - **Every extracted component needs typed props + test file**
 - **Mobile mocks**: `jest.mock()`. Admin mocks: `vi.mock()`
 - **Admin ESLint**: `--max-warnings 0`. Jest: `--forceExit`
+- **Do NOT commit** — leave all changes uncommitted for the user to review.
+- **Code-intel annotations** — add `@contract`, `@assumes`, etc. annotations to new/changed code per CLAUDE.md rules.

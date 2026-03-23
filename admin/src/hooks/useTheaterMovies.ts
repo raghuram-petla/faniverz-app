@@ -32,6 +32,7 @@ export function useTheaterMovies() {
   });
 }
 
+// @edge: computed at call time, not at module load — ensures freshness across midnight boundaries
 function oneMonthFromToday(): string {
   const d = new Date();
   d.setMonth(d.getMonth() + 1);
@@ -59,6 +60,7 @@ export function useUpcomingMovies() {
 }
 
 // @contract Fetches theatrical runs with future dates (up to 1 month out), joined with movie data
+// @coupling !inner JOIN — only returns runs where the movie still exists (cascading FK safety)
 export function useUpcomingRereleases() {
   const today = new Date().toISOString().split('T')[0];
   const maxDate = oneMonthFromToday();

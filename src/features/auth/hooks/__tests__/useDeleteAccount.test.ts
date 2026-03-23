@@ -12,20 +12,10 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import { renderHook, waitFor, act } from '@testing-library/react-native';
-import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import { useDeleteAccount } from '../useDeleteAccount';
 import { useAuth } from '../../providers/AuthProvider';
 import { supabase } from '@/lib/supabase';
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
 
 describe('useDeleteAccount', () => {
   beforeEach(() => {

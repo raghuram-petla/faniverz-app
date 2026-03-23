@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { processActorRefresh, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
+import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/refresh-actor
@@ -12,16 +12,9 @@ import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/syn
 // @sideeffect: updates actors table with latest TMDB data; writes sync_log entry
 export async function POST(request: NextRequest) {
   try {
-    const auth = await verifyAdminCanMutate(request.headers.get('authorization'));
-    if (auth === 'viewer_readonly') {
-      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-    }
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const tmdb = ensureTmdbApiKey();
-    if (!tmdb.ok) return tmdb.response;
+    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
+    if (!guard.ok) return guard.response;
+    const { apiKey } = guard;
 
     const body = await request.json();
     // @assumes: actorId is a valid UUID from the actors table, not a TMDB person ID
@@ -55,12 +48,7 @@ export async function POST(request: NextRequest) {
     const syncLogId = await createSyncLog(supabase, `refresh-actor`);
 
     try {
-      const result = await processActorRefresh(
-        actorId,
-        actor.tmdb_person_id,
-        tmdb.apiKey,
-        supabase,
-      );
+      const result = await processActorRefresh(actorId, actor.tmdb_person_id, apiKey, supabase);
 
       await completeSyncLog(supabase, syncLogId, {
         status: 'success',

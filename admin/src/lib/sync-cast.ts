@@ -7,6 +7,8 @@ import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { upsertActorPreserveType } from '@/lib/sync-actor';
 
 // @sideeffect: mirrors poster_url into movie_images so admin gallery stays in sync
+// @coupling: called from refresh-movie API route after poster_url changes — if the route
+// forgets to call this, movie_images table gets out of sync with movies.poster_url.
 export async function mirrorMainPoster(
   movieId: string,
   posterUrl: string,

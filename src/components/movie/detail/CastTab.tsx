@@ -17,7 +17,7 @@ export function CastTab({ cast: rawCast, crew: rawCrew, onActorPress }: CastTabP
   const { theme } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
-  // @contract: filter out entries where actor was deleted to prevent ghost rows
+  // @boundary Filters out entries where actor was deleted to prevent ghost rows with null data
   const cast = rawCast.filter((cm) => cm.actor);
   const crew = rawCrew.filter((cm) => cm.actor);
   return (

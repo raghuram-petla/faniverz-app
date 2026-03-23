@@ -1,14 +1,20 @@
 'use client';
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
-import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { useAdminFeedItem, useUpdateFeedItem, useDeleteFeedItem } from '@/hooks/useAdminFeed';
-import type { FieldConfig } from '@/hooks/useFormChanges';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useEditPageState } from '@/hooks/useEditPageState';
+import type { FieldConfig } from '@/hooks/useFormChanges';
+import type { NewsFeedItem } from '@/lib/types';
+
+interface FeedForm {
+  title: string;
+  description: string;
+  isPinned: boolean;
+  isFeatured: boolean;
+}
 
 const FIELD_CONFIG: FieldConfig[] = [
   { key: 'title', label: 'Title', type: 'text' },
@@ -17,100 +23,72 @@ const FIELD_CONFIG: FieldConfig[] = [
   { key: 'isFeatured', label: 'Featured', type: 'boolean' },
 ];
 
+const INITIAL_FORM: FeedForm = {
+  title: '',
+  description: '',
+  isPinned: false,
+  isFeatured: false,
+};
+
+/** @boundary Converts raw API data to form shape; unsafe cast from unknown */
+// @assumes data is a valid NewsFeedItem — no runtime validation
+function dataToForm(data: unknown): FeedForm {
+  const item = data as NewsFeedItem;
+  return {
+    title: item.title,
+    description: item.description ?? '',
+    isPinned: item.is_pinned,
+    isFeatured: item.is_featured,
+  };
+}
+
+/** @boundary Converts form state to API payload shape */
+// @edge empty title string is allowed through — no validation before save
+function formToPayload(form: FeedForm, id: string) {
+  return {
+    id,
+    title: form.title,
+    description: form.description || null,
+    is_pinned: form.isPinned,
+    is_featured: form.isFeatured,
+  };
+}
+
+/** @coupling useEditPageState, useAdminFeedItem, useUpdateFeedItem, useDeleteFeedItem */
+// @sideeffect delete navigates to /feed via useEditPageState
 export default function EditFeedItemPage() {
   const { isReadOnly } = usePermissions();
-  const router = useRouter();
   const params = useParams();
+  // @nullable: UNGUARDED — params.id cast to string without null check
   const id = params.id as string;
-  const { data: item, isLoading } = useAdminFeedItem(id);
+  const dataResult = useAdminFeedItem(id);
+  const item = dataResult.data;
   const updateMutation = useUpdateFeedItem();
   const deleteMutation = useDeleteFeedItem();
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPinned, setIsPinned] = useState(false);
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
-  const initialRef = useRef<{
-    title: string;
-    description: string;
-    isPinned: boolean;
-    isFeatured: boolean;
-  } | null>(null);
-
-  useEffect(() => {
-    if (item) {
-      const loaded = {
-        title: item.title,
-        description: item.description ?? '',
-        isPinned: item.is_pinned,
-        isFeatured: item.is_featured,
-      };
-      setTitle(loaded.title);
-      setDescription(loaded.description);
-      setIsPinned(loaded.isPinned);
-      setIsFeatured(loaded.isFeatured);
-      initialRef.current = loaded;
-    }
-  }, [item]);
-
-  const currentValues = useMemo(
-    () => ({ title, description, isPinned, isFeatured }),
-    [title, description, isPinned, isFeatured],
+  const {
+    form,
+    setForm,
+    saveStatus,
+    changes,
+    changeCount,
+    isLoading,
+    handleSave,
+    handleDiscard,
+    handleRevertField,
+    handleDelete,
+  } = useEditPageState<FeedForm>(
+    {
+      id,
+      fieldConfig: FIELD_CONFIG,
+      initialForm: INITIAL_FORM,
+      dataToForm,
+      formToPayload,
+      deleteRoute: '/feed',
+      deleteMessage: 'Delete this feed item?',
+    },
+    { dataResult, updateMutation, deleteMutation },
   );
-  const { changes, isDirty, changeCount } = useFormChanges(
-    FIELD_CONFIG,
-    initialRef.current,
-    currentValues,
-  );
-
-  useUnsavedChangesWarning(isDirty);
-
-  async function handleSave() {
-    setSaveStatus('saving');
-    try {
-      await updateMutation.mutateAsync({
-        id,
-        title,
-        description: description || null,
-        is_pinned: isPinned,
-        is_featured: isFeatured,
-      } as Partial<import('@/lib/types').NewsFeedItem> & { id: string });
-      initialRef.current = { title, description, isPinned, isFeatured };
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err) {
-      setSaveStatus('idle');
-      alert(`Error: ${err instanceof Error ? err.message : 'Operation failed'}`);
-    }
-  }
-
-  const handleDiscard = useCallback(() => {
-    if (!initialRef.current) return;
-    setTitle(initialRef.current.title);
-    setDescription(initialRef.current.description);
-    setIsPinned(initialRef.current.isPinned);
-    setIsFeatured(initialRef.current.isFeatured);
-  }, []);
-
-  const handleRevertField = useCallback((key: string) => {
-    if (!initialRef.current) return;
-    const init = initialRef.current;
-    if (key === 'title') setTitle(init.title);
-    if (key === 'description') setDescription(init.description);
-    if (key === 'isPinned') setIsPinned(init.isPinned);
-    if (key === 'isFeatured') setIsFeatured(init.isFeatured);
-  }, []);
-
-  const handleDelete = async () => {
-    if (!confirm('Delete this feed item?')) return;
-    try {
-      await deleteMutation.mutateAsync(id);
-      router.push('/feed');
-    } catch (err) {
-      alert(`Error: ${err instanceof Error ? err.message : 'Operation failed'}`);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -189,8 +167,8 @@ export default function EditFeedItemPage() {
           <label className="block text-sm font-medium text-on-surface mb-2">Title *</label>
           <input
             type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={form.title}
+            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
             required
             className="w-full bg-input rounded-lg px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600"
           />
@@ -199,8 +177,8 @@ export default function EditFeedItemPage() {
         <div>
           <label className="block text-sm font-medium text-on-surface mb-2">Description</label>
           <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={form.description}
+            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
             rows={3}
             className="w-full bg-input rounded-lg px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-red-600 resize-none"
           />
@@ -210,8 +188,8 @@ export default function EditFeedItemPage() {
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={isPinned}
-              onChange={(e) => setIsPinned(e.target.checked)}
+              checked={form.isPinned as boolean}
+              onChange={(e) => setForm((p) => ({ ...p, isPinned: e.target.checked }))}
               className="rounded"
             />
             <span className="text-sm text-on-surface">Pin to top</span>
@@ -219,8 +197,8 @@ export default function EditFeedItemPage() {
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={isFeatured}
-              onChange={(e) => setIsFeatured(e.target.checked)}
+              checked={form.isFeatured as boolean}
+              onChange={(e) => setForm((p) => ({ ...p, isFeatured: e.target.checked }))}
               className="rounded"
             />
             <span className="text-sm text-on-surface">Featured</span>

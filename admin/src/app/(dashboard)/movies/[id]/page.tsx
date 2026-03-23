@@ -45,7 +45,10 @@ function getBucketForUrl(
   return t === 'backdrop' ? 'BACKDROPS' : t === 'poster' ? 'POSTERS' : fallback;
 }
 
-// @coupling: entire edit state managed by useMovieEditState; 5 tabs with conditional rendering
+// @coupling: entire edit state managed by useMovieEditState (~12 pieces of pending state);
+// changes are tracked by useMovieEditChanges which diffs current vs initial to populate FormChangesDock.
+// @contract: 5 section tabs are mutually exclusive but share a single pending state —
+// switching tabs preserves unsaved edits. The dock (FormChangesDock) is always visible at the bottom.
 export default function EditMoviePage() {
   const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { id } = useParams<{ id: string }>();

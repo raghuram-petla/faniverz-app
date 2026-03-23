@@ -9,17 +9,10 @@ jest.mock('../../usernameApi', () => ({
 }));
 
 import { renderHook, act, waitFor } from '@testing-library/react-native';
-import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCheckUsername, useSetUsername } from '../useUsername';
 import { checkUsernameAvailable, validateUsername } from '../../usernameApi';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
-
-const createWrapper = () => {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient }, children);
-};
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 
 describe('useCheckUsername', () => {
   beforeEach(() => {

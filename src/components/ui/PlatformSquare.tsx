@@ -16,6 +16,7 @@ interface PlatformSquareProps {
   onPress: () => void;
 }
 
+/** @coupling isDark from colorUtils — parses hex color to determine luminance threshold */
 export function PlatformSquare({ platform, size, onPress }: PlatformSquareProps) {
   const { theme } = useTheme();
   const logo = getPlatformLogo(platform.id);

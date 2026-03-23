@@ -5,6 +5,7 @@ import { useTheme } from '@/theme';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import type { OTTPlatform, ProductionHouse } from '@/types';
 
+/** @contract Full-screen filter modal with platform, genre, and production house multi-select */
 interface DiscoverFilterModalProps {
   visible: boolean;
   platforms: OTTPlatform[];

@@ -7,6 +7,7 @@ import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { createStyles } from '@/styles/tabs/watchlist.styles';
 import type { WatchlistEntry } from '@/types';
 
+/** @coupling FlatList in watchlist.tsx uses this discriminated union for renderItem dispatch */
 export type WatchlistListItem =
   | {
       type: 'section-header';

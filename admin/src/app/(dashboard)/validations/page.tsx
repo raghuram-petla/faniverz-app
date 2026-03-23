@@ -9,6 +9,9 @@ import type { ScanResult, ScanEntity } from '@/hooks/useValidationTypes';
 import { supabase } from '@/lib/supabase-browser';
 
 // @boundary: admin validations page — scans image URLs and fixes issues
+// @coupling: handleFixSingle directly calls /api/validations/fix with a Bearer token from
+// Supabase session, bypassing TanStack Query — response is not cached. The fix API writes
+// to R2 storage and updates the DB URL in a single transaction.
 export default function ValidationsPage() {
   const { isReadOnly } = usePermissions();
   const {

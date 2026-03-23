@@ -8,6 +8,7 @@ interface StatusBadgeProps {
   type: MovieStatus;
 }
 
+/** @edge unknown MovieStatus values produce default gray badge via getMovieStatusColor fallback */
 export function StatusBadge({ type }: StatusBadgeProps) {
   return (
     <View style={[styles.badge, { backgroundColor: getMovieStatusColor(type) }]}>

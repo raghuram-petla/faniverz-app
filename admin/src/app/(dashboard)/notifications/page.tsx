@@ -28,6 +28,9 @@ const typeStyles: Record<string, { bg: string; text: string }> = {
   reminder: { bg: 'bg-green-600/20', text: 'text-status-green' },
 };
 
+// @contract Notifications have a lifecycle: pending -> sent | failed | cancelled.
+// Only pending can be cancelled; only failed can be retried (resets to pending).
+// @boundary Bulk operations (retry all / cancel all) affect ALL matching items, not just visible ones.
 export default function NotificationsPage() {
   const { isReadOnly } = usePermissions();
   // @contract Empty string means "all" — filters only sent when non-empty

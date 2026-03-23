@@ -214,7 +214,8 @@ export function MovieDetailHero({
   );
 }
 
-/** @boundary converts shared gradient config (colors[] + locations[]) to CSS linear-gradient string */
+/** @boundary converts shared gradient config (colors[] + locations[]) to CSS linear-gradient string
+ *  @coupling DETAIL_GRADIENT from @shared/constants — colors must be valid CSS color strings */
 export function buildGradientCss(gradientConfig: typeof DETAIL_GRADIENT): string {
   const { colors: gc, locations: gl } = gradientConfig;
   const stops = gc.map((c, i) => `${c} ${gl[i] * 100}%`).join(', ');

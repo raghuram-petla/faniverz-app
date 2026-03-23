@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { VideosSection } from '@/components/movie-edit/VideosSection';
 import type { MovieVideo } from '@/lib/types';
 
-// @contract mock extractYouTubeId to control parsing behavior in tests
+// @contract mock extractYouTubeId and getYouTubeThumbnail to control parsing behavior in tests
 vi.mock('@/lib/youtube', () => ({
   extractYouTubeId: (input: string) => {
     if (input === 'invalid') return null;
@@ -10,6 +10,8 @@ vi.mock('@/lib/youtube', () => ({
     const match = input.match(/[?&]v=([^&]+)/);
     return match ? match[1] : input.replace('https://youtu.be/', '');
   },
+  getYouTubeThumbnail: (id: string, quality?: string) =>
+    `https://img.youtube.com/vi/${id}/${quality || 'mqdefault'}.jpg`,
 }));
 
 const mockVideo: MovieVideo = {

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { STALE_5M } from '@/constants/queryConfig';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import {
@@ -17,7 +18,7 @@ export function useMovieReviews(movieId: string) {
     queryKey: ['reviews', movieId],
     queryFn: () => fetchMovieReviews(movieId),
     enabled: !!movieId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 
@@ -26,7 +27,7 @@ export function useUserReviews(userId: string) {
     queryKey: ['reviews', 'user', userId],
     queryFn: () => fetchUserReviews(userId),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 

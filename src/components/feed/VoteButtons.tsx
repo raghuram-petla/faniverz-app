@@ -11,10 +11,13 @@ import Animated, {
 import { useTheme } from '@/theme';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
+/** @contract Compact upvote/downvote pill pair with bounce animation on state change */
 export interface VoteButtonsProps {
   upvoteCount: number;
   downvoteCount: number;
+  /** @nullable null = user hasn't voted; 'up'/'down' = active vote state */
   userVote: 'up' | 'down' | null;
+  /** @sideeffect Toggles vote via mutation — caller must handle optimistic count updates */
   onUpvote: () => void;
   onDownvote: () => void;
 }

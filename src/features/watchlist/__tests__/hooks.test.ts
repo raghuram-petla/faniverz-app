@@ -1,6 +1,7 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useWatchlist,
   useWatchlistPaginated,
@@ -47,15 +48,6 @@ const mockWatchlistEntries = [
     movie: { id: 'm3', title: 'Movie 3', in_theaters: true, premiere_date: null },
   },
 ];
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
 
 describe('useWatchlist', () => {
   beforeEach(() => {

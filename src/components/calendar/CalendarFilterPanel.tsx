@@ -4,6 +4,7 @@ import { useTheme } from '@/theme';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+/** @contract Three-level date filter: year dropdown + month grid + day horizontal scroll */
 interface CalendarFilterPanelProps {
   selectedYear: number | null;
   selectedMonth: number | null;

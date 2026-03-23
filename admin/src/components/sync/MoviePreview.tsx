@@ -9,7 +9,8 @@ export interface MoviePreviewProps {
   onImport: () => void;
 }
 
-/** @contract shows TMDB movie details with import/re-sync action; existsInDb controls button label */
+/** @contract shows TMDB movie details with import/re-sync action; existsInDb controls button label
+ *  @nullable posterUrl, releaseDate, runtime, director, genres — all fall back to '—' */
 export function MoviePreview({ result, isPending, onImport }: MoviePreviewProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">

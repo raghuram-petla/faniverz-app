@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { STALE_5M } from '@/constants/queryConfig';
 import { fetchUpcomingMovies } from '../api';
 
 const PAGE_SIZE = 10;
@@ -11,6 +12,6 @@ export function useUpcomingMovies() {
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }

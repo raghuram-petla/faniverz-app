@@ -84,6 +84,7 @@ export function ValidationRow({
   );
 }
 
+/** @contract tri-state dot: green=exists, red=missing, gray=N/A (null) */
 function renderDot(value: boolean | null): React.ReactElement {
   if (value === null)
     return <span className="inline-block w-3 h-3 rounded-full bg-zinc-600" title="N/A" />;

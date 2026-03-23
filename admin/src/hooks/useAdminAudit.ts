@@ -2,6 +2,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { AuditLogEntry } from '@/lib/types';
+import { sanitizeSearchTerm } from '@/lib/sanitizeSearchTerm';
 
 const PAGE_SIZE = 50;
 
@@ -13,16 +14,6 @@ export interface AuditFilters {
   dateTo?: string;
   /** When set, only show entries for this admin user (non-super admins) */
   adminUserId?: string;
-}
-
-// @boundary: PostgREST's .or() filter uses commas as delimiters and parentheses for
-// grouping. Unsanitized search terms containing these characters (e.g. "O'Brien" or
-// "actor, director") would corrupt the filter syntax, causing Supabase to return a
-// 400 error instead of filtered results. This strips them rather than escaping them,
-// so searching for "O'Brien" actually searches for "OBrien" — partial match loss.
-// @edge: only strip characters that break PostgREST full-text search syntax; preserve dots for emails
-function sanitizeSearchTerm(term: string): string {
-  return term.replace(/[,()"'\\%_]/g, '').trim();
 }
 
 export function useAdminAuditLog(filters?: AuditFilters) {

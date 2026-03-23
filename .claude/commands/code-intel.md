@@ -2,6 +2,22 @@
 
 Add structured comments to source files that give future bug-hunting agents rich context for spotting inconsistencies, implicit assumptions, and latent bugs. **This skill ONLY adds comments. It MUST NOT make any functional changes, refactors, or 300-line fixes.**
 
+## Loop Mode
+
+This skill runs in a **loop until clean**. After completing a full scan-annotate-verify cycle, immediately start a new scan from Phase 1. Keep looping until **2 consecutive runs find zero files needing new annotations**. Track the run counter:
+
+```
+Run 1 → annotated 85 files → verify → Run 2 → annotated 12 files → verify → Run 3 → found 0 → Run 4 → found 0 → DONE (2 consecutive clean runs)
+```
+
+**Rules for loop mode:**
+
+- Each run is a full Phase 1–4 cycle (inventory, annotate, verify, report)
+- A "clean run" means Phase 1 found exactly 0 files needing new annotations across all layers
+- The 2-clean-run counter resets to 0 if any files are annotated
+- Between runs, print: `### Run N complete — {X files annotated | clean} (consecutive clean: M/2)`
+- After 2 consecutive clean runs, print: `### Code Intel complete — 2 consecutive clean runs achieved`
+
 ## Guiding Principle
 
 Bug-hunting agents are fast at pattern-matching but lack domain context. They can spot `data.items.map(...)` but can't know whether `data.items` is guaranteed non-null by the caller or is a ticking crash. The comments this skill adds bridge that gap — they encode **what the developer assumed**, **what the data contract is**, and **what would break if those assumptions were violated**.
@@ -143,7 +159,9 @@ Collect all source files that need annotation. Process in this order:
 
 Skip exempt files: `.styles.ts`, `.test.ts`, `.test.tsx`, `__tests__/`, `.d.ts`, `.config.*`, `scripts/`, `.next/`
 
-Use parallel agents to read files across layers simultaneously.
+Use parallel agents to read files across layers simultaneously. **Each agent prompt MUST include this verbatim instruction:**
+
+> "You MUST ONLY add comment lines starting with `//` or `/** */`. You MUST NOT change ANY code — no imports, no function calls, no logic, no guards, no invalidation queries, no tests. If you notice a bug, add an `@edge` or `@nullable: UNGUARDED` comment describing it — do NOT fix it. After finishing, the orchestrator will verify your diff and revert any non-comment changes."
 
 ### Phase 2 — Annotate
 
@@ -171,6 +189,13 @@ For each file, read it fully and add comments using the taxonomy above. Follow t
 - Do NOT fix 300-line violations — just add comments, even if the file goes over 300 lines
 - Do NOT modify test files, style files, or config files
 - Do NOT change imports, exports, types, or any code structure
+- Do NOT add `import` statements — if you're adding an import, you're making a functional change
+- Do NOT add `invalidateQueries()`, `useRef()`, `useQueryClient()`, or any React hook calls
+- Do NOT add guard logic like `isFirstLoadRef`, `if (isFirstLoad)`, or conditional setters
+- Do NOT modify `extraInvalidateKeys`, mutation callbacks, or `onSuccess`/`onError` handlers
+- Do NOT add new tests — test files are exempt from this skill entirely
+
+**If you feel tempted to "fix" something you noticed, add an `@edge` or `@nullable: UNGUARDED` comment describing the issue instead. The bug-hunt skill handles fixes.**
 
 **Density guideline**: Aim for 5-15 annotation comments per 100 lines of source code in complex files (API, hooks, screens). Simple utility files may need only 2-5. Don't pad for coverage — only annotate where context genuinely helps.
 
@@ -228,32 +253,47 @@ const add = useMutation({
 4. **Cross-reference files** — name the specific file/function that would break if this code changes
 5. **Expose invisible contracts** — RLS policies, DB constraints, TMDB rate limits, R2 key formats — things the code depends on but doesn't encode
 
-### Phase 3 — Verify No Functional Changes
+### Phase 3 — Verify No Functional Changes (MANDATORY)
 
-After annotating each batch of files, run a verification:
+This phase is **mandatory** after every batch. Do NOT skip it.
 
-```bash
-# Check that only comment lines were added (no functional changes)
-git diff --stat
-```
-
-For each modified file, review the diff to confirm ONLY comment lines (starting with `//`) were added. If any functional line was changed, **revert that specific change immediately**.
-
-Then run type-check to confirm nothing broke:
-
-**Mobile:**
+**Step 1 — Detect non-comment changes:**
 
 ```bash
-npx tsc --noEmit
+# Find files where non-comment lines were changed
+git diff --name-only | while IFS= read -r f; do
+  has_func=$(git diff -U0 -- "$f" | grep "^[+-]" | grep -v "^[+-][+-][+-]" | grep -v "^[+-]$" | \
+    grep -v "^\+\s*\/\/" | grep -v "^\-\s*\/\/" | \
+    grep -v "^\+\s*\*" | grep -v "^\-\s*\*" | \
+    grep -v "^\+\s*\/\*" | grep -v "^\-\s*\/\*" | \
+    grep -v "^\+/\*\*" | grep -v "^\-/\*\*" | \
+    grep -v "^\+ *$" | grep -v "^\- *$" | wc -l)
+  if [ "$has_func" -gt 0 ]; then echo "FUNCTIONAL CHANGE: $f"; fi
+done
 ```
 
-**Admin:**
+**Step 2 — Revert any functional changes:**
+
+For every file flagged as `FUNCTIONAL CHANGE`, immediately run `git checkout HEAD -- "file"` to revert it entirely. Then re-annotate it with comments only.
+
+**CRITICAL: Common agent mistakes to watch for (and revert):**
+
+- Adding `import` statements (e.g., `useQueryClient`, `useRef`)
+- Adding `invalidateQueries()` calls
+- Adding `isFirstLoadRef` or similar guard logic
+- Changing function parameters, return values, or conditionals
+- Modifying test files or adding new tests
+- Changing `extraInvalidateKeys` arrays
+- Any line that doesn't start with `//`, `*`, or `/**`
+
+**Step 3 — Type-check:**
 
 ```bash
-cd admin && npx tsc --noEmit
+npx tsc --noEmit                    # Mobile
+cd admin && npx tsc --noEmit        # Admin
 ```
 
-Do NOT run full quality gates (ESLint, tests) — comments don't affect those, and running them wastes time. Only tsc to ensure no accidental syntax errors.
+Do NOT run full quality gates (ESLint, tests) — comments don't affect those. Only tsc to catch accidental syntax errors.
 
 ### Phase 4 — Summary Report
 

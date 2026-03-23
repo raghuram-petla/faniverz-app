@@ -1,6 +1,5 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import { useMovieReviews, useUserReviews, useReviewMutations } from '../hooks';
 import * as api from '../api';
 
@@ -15,15 +14,6 @@ const mockMovieReviews = [
 const mockUserReviews = [
   { id: 'r1', movie_id: 'm1', user_id: 'u1', rating: 4, movie: { title: 'Movie 1' } },
 ];
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
 
 describe('useMovieReviews', () => {
   beforeEach(() => {

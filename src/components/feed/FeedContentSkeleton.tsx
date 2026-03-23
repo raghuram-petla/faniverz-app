@@ -6,6 +6,7 @@ const W = Dimensions.get('window').width;
 /** @invariant 3 cards gives a full-screen illusion on most device sizes */
 const CARDS = [1, 2, 3];
 
+/** @coupling Skeleton dimensions mirror the actual FeedCard layout — changes to FeedCard sizing should update this */
 function CardSkeleton() {
   return (
     <View style={styles.card}>

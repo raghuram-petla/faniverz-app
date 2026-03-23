@@ -42,7 +42,7 @@ export function SearchableCountryPicker({
     setHighlightIndex(0);
   }, [query]);
 
-  // @contract: scroll highlighted item into view
+  // @sideeffect scroll highlighted item into view
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;

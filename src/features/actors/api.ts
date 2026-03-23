@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { Actor, ActorCredit, FavoriteActor } from '@/types';
 import { escapeLike } from '@/utils/escapeLike';
+import { unwrapList, unwrapOne } from '@/utils/supabaseQuery';
 
 // @coupling: returns FavoriteActor with nested actor:actors(*) join. No FK constraint on actor_id,
 // so orphaned favorites (deleted actor) are filtered out to prevent null crashes.
@@ -37,21 +38,14 @@ export async function removeFavoriteActor(userId: string, actorId: string): Prom
 // @edge: no ordering specified — Supabase returns in insertion order. Results for common names like "Ram" could return 20 results in arbitrary order, with the most relevant match possibly excluded by the limit.
 export async function searchActors(query: string): Promise<Actor[]> {
   const escaped = escapeLike(query);
-  const { data, error } = await supabase
-    .from('actors')
-    .select('*')
-    .ilike('name', `%${escaped}%`)
-    .limit(20);
-
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase.from('actors').select('*').ilike('name', `%${escaped}%`).limit(20),
+  );
 }
 
+// @contract: uses .maybeSingle() — returns null on not-found (unlike fetchMovieById which uses .single() and throws PGRST116). Callers can safely check null without try/catch.
 export async function fetchActorById(id: string): Promise<Actor | null> {
-  const { data, error } = await supabase.from('actors').select('*').eq('id', id).maybeSingle();
-
-  if (error) throw error;
-  return data;
+  return unwrapOne(await supabase.from('actors').select('*').eq('id', id).maybeSingle());
 }
 
 // @coupling: joins movie:movies(*) — the ActorCredit type expects movie as optional Movie.
@@ -63,7 +57,7 @@ export async function fetchActorFilmography(actorId: string): Promise<ActorCredi
 
   if (error) throw error;
 
-  // Deduplicate by movie_id — actor credited as both cast + crew shows once (keep first credit)
+  // @invariant: deduplicates by movie_id — an actor credited as both cast AND crew for the same movie shows once (keeps the first row encountered, which is arbitrary since no ORDER BY was specified in the query). The "kept" credit's role_name is displayed in the filmography UI.
   const seen = new Set<string>();
   const deduped = (data ?? []).filter((c) => {
     if (!c.movie_id || seen.has(c.movie_id)) return false;

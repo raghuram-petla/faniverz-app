@@ -90,6 +90,7 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
   });
 }
 
+// @edge: delete matches on all three columns (user_id, entity_type, entity_id). If the follow doesn't exist (already unfollowed via another device), Supabase returns success with 0 affected rows — no error. The caller's optimistic update already removed it from the local set, so the UI stays consistent.
 export async function unfollowEntity(
   userId: string,
   entityType: FeedEntityType,

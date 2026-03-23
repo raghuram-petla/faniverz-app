@@ -39,8 +39,9 @@ export default function AuditLogPage() {
   if (debouncedSearch.length >= 2) filters.search = debouncedSearch;
   if (dateFrom) filters.dateFrom = dateFrom;
   if (dateTo) filters.dateTo = dateTo;
-  // @invariant Non-super admins only see their own audit entries — enforced client-side
-  // Non-super admins only see their own audit entries
+  // @invariant Non-super admins only see their own audit entries — enforced client-side.
+  // @boundary Server also enforces this via RLS policy on admin_audit_log, so removing this
+  // client filter would still show only own entries for non-super-admins.
   if (!isSuperAdmin && user?.id) filters.adminUserId = user.id;
 
   const {

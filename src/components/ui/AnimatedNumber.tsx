@@ -41,6 +41,7 @@ export function AnimatedNumber({
   const fromRef = useRef(0);
 
   // @edge closure captures stale displayValue — fromRef.current bridges the gap correctly
+  // @sideeffect each value change cancels the previous rAF chain and starts a new interpolation
   useEffect(() => {
     if (!animationsEnabled) {
       setDisplayValue(value);

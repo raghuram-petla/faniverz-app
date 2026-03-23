@@ -17,8 +17,9 @@ jest.mock('@/lib/supabase', () => {
 });
 
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import { useProfile } from '../useProfile';
 import { useAuth } from '../../providers/AuthProvider';
 
@@ -26,15 +27,6 @@ const { __mocks } = require('@/lib/supabase');
 const { mockFrom, mockSelect, mockEq, mockMaybeSingle } = __mocks;
 
 const mockUseAuth = useAuth as jest.Mock;
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, children);
-  };
-}
 
 const mockProfile = {
   id: 'user-1',

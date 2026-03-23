@@ -18,6 +18,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useEntityFollows,
   useEnrichedFollows,
@@ -32,14 +33,6 @@ const mockFetchEnrichedFollows = fetchEnrichedFollows as jest.MockedFunction<
 >;
 const mockFollowEntity = followEntity as jest.MockedFunction<typeof followEntity>;
 const mockUnfollowEntity = unfollowEntity as jest.MockedFunction<typeof unfollowEntity>;
-
-function createWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client }, children);
-}
 
 describe('useEntityFollows', () => {
   beforeEach(() => jest.clearAllMocks());

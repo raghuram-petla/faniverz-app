@@ -9,6 +9,10 @@ import { supabase } from '@/lib/supabase-browser';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
+// @contract This page has NO useUnsavedChangesWarning because avatar changes are saved
+// immediately on upload/remove — there's no "dirty" form state to protect.
+// @coupling refreshUser() must be called after every profile mutation to update the
+// AuthProvider context (which feeds the Header avatar display).
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
   const updateProfile = useUpdateProfile();

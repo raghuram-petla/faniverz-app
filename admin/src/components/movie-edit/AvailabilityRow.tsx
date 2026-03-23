@@ -4,6 +4,8 @@ import type { MoviePlatformAvailability } from '@shared/types';
 import { getImageUrl } from '@shared/imageUrl';
 import { colors } from '@shared/colors';
 
+// @contract single platform availability row with logo, dates, streaming URL, and remove action
+// @nullable platform relation may not be joined — falls back to platform_id
 export interface AvailabilityRowProps {
   row: MoviePlatformAvailability;
   onRemove: (id: string, movieId: string) => void;

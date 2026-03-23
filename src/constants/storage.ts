@@ -1,3 +1,5 @@
+// @invariant all keys must be unique strings — collision causes silent data corruption
+// @coupling read/written by: useAnimationStore, settings.tsx, search.tsx, language.tsx, ThemeProvider
 export const STORAGE_KEYS = {
   RECENT_SEARCHES: 'recent_searches',
   PREFERRED_LANG: 'preferred_lang',

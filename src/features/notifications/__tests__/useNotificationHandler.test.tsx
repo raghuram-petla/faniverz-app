@@ -107,14 +107,49 @@ describe('useNotificationHandler', () => {
     expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
 
-  it('navigates to notifications screen when data has unrecognized keys', () => {
+  it('navigates to actor when notification has actor_id', () => {
     const callback = captureResponseCallback();
     renderHook(() => useNotificationHandler());
 
-    callback(buildResponse({ actor_id: 'actor-1', type: 'new_role' }));
+    callback(buildResponse({ actor_id: 'actor-1' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/actor/actor-1');
+  });
+
+  it('navigates to production house when notification has production_house_id', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ production_house_id: 'ph-1' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/production-house/ph-1');
+  });
+
+  it('navigates to notifications when payload has non-string movie_id', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ movie_id: 123 }));
 
     expect(mockPush).toHaveBeenCalledWith('/notifications');
-    expect(mockPush).not.toHaveBeenCalledWith(expect.stringContaining('/movie/'));
+  });
+
+  it('prioritizes movie_id over actor_id when both present', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ movie_id: 'movie-1', actor_id: 'actor-1' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/movie/movie-1');
+  });
+
+  it('navigates to notifications when data has unrecognized keys', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ unknown_key: 'value' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
 
   it('invalidates notifications query on every notification response', () => {

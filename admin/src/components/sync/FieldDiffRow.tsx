@@ -1,6 +1,7 @@
 import { CheckCircle2 } from 'lucide-react';
 import type { FillableField } from '@/lib/syncUtils';
 import { type FieldStatus, extractYouTubeId } from './fieldDiffHelpers';
+import { getYouTubeThumbnail } from '@/lib/youtube';
 
 // @contract Renders a single row in the field diff table with checkbox, DB value, TMDB value, and status
 export interface FieldDiffRowProps {
@@ -87,7 +88,7 @@ export function FieldDiffRow({
             rel="noopener noreferrer"
           >
             <img
-              src={`https://img.youtube.com/vi/${dbYtId}/mqdefault.jpg`}
+              src={getYouTubeThumbnail(dbYtId)}
               alt=""
               className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
             />
@@ -109,7 +110,7 @@ export function FieldDiffRow({
             rel="noopener noreferrer"
           >
             <img
-              src={`https://img.youtube.com/vi/${tmdbYtId}/mqdefault.jpg`}
+              src={getYouTubeThumbnail(tmdbYtId)}
               alt=""
               className="w-32 h-18 object-cover rounded mt-1 hover:opacity-80 transition-opacity"
             />

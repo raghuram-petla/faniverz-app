@@ -8,7 +8,11 @@
 
 import type { ExistingMovieData } from '@/hooks/useSync';
 
-/** Fields the admin can selectively apply from TMDB (excluding 'cast' which is a special action). */
+/** Fields the admin can selectively apply from TMDB (excluding 'cast' which is a special action).
+ * @coupling: the fill-fields API route (/api/movies/[id]/fill-fields) must handle every field
+ * listed here. Adding a field here without a server-side handler causes a silent no-op —
+ * the admin sees "1 field filled" but nothing actually changes in the DB.
+ */
 export const FILLABLE_DATA_FIELDS = [
   'title',
   'synopsis',

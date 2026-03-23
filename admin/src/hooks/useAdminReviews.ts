@@ -1,13 +1,10 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
+import { createSimpleMutation } from './createSimpleMutation';
 import type { Review } from '@/lib/types';
-
-// @boundary: PostgREST .or() filter uses commas as delimiters — strip special chars to avoid syntax errors
-function sanitizeSearchTerm(term: string): string {
-  return term.replace(/[,()"'\\]/g, '').trim();
-}
+import { sanitizeSearchTerm } from '@/lib/sanitizeSearchTerm';
 
 // @boundary: joins reviews with movies and profiles via PostgREST foreign-key selects
 // @edge: search matches title/body server-side via .or(), but movie.title and profile.display_name
@@ -27,11 +24,10 @@ export function useAdminReviews(search = '', ratingFilter = 0) {
         query = query.eq('rating', ratingFilter);
       }
 
-      if (search) {
-        const term = sanitizeSearchTerm(search);
-        if (term) {
-          query = query.or(`title.ilike.%${term}%,body.ilike.%${term}%`);
-        }
+      const sanitized = search ? sanitizeSearchTerm(search) : '';
+
+      if (sanitized) {
+        query = query.or(`title.ilike.%${sanitized}%,body.ilike.%${sanitized}%`);
       }
 
       const { data, error } = await query;
@@ -40,8 +36,9 @@ export function useAdminReviews(search = '', ratingFilter = 0) {
 
       // Also match on joined movie title and profile display_name client-side
       // (PostgREST cannot OR across foreign table columns in a single .or())
-      if (search) {
-        const lower = search.toLowerCase();
+      // @edge: reuse sanitized term for consistency with server-side .or() filter
+      if (sanitized) {
+        const lower = sanitized.toLowerCase();
         return reviews.filter(
           (r) =>
             r.title?.toLowerCase().includes(lower) ||
@@ -66,35 +63,25 @@ export interface UpdateReviewPayload {
 
 // @sideeffect: invalidates all ['admin', 'reviews'] queries on success; window.alert on error
 // @nullable: title and body fields are optional — only provided fields are updated
-export function useUpdateReview() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...fields }: UpdateReviewPayload) => {
-      await crudFetch('PATCH', { table: 'reviews', id, data: fields });
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'reviews'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to update review');
-    },
-  });
-}
+export const useUpdateReview = createSimpleMutation<UpdateReviewPayload, string>({
+  mutationFn: async ({ id, ...fields }) => {
+    await crudFetch('PATCH', { table: 'reviews', id, data: fields });
+    return id;
+  },
+  invalidateKeys: [['admin', 'reviews']],
+  errorMessage: 'Failed to update review',
+});
 
 // @sideeffect: hard-deletes review row; no soft-delete or audit trail
-export function useDeleteReview() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      await crudFetch('DELETE', { table: 'reviews', id });
-      return id;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'reviews'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to delete review');
-    },
-  });
-}
+// @sideeffect: invalidates dashboard — totalReviews count changes
+export const useDeleteReview = createSimpleMutation<string, string>({
+  mutationFn: async (id) => {
+    await crudFetch('DELETE', { table: 'reviews', id });
+    return id;
+  },
+  invalidateKeys: [
+    ['admin', 'reviews'],
+    ['admin', 'dashboard'],
+  ],
+  errorMessage: 'Failed to delete review',
+});

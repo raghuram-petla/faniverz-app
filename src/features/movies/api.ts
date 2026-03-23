@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { Movie, MovieWithDetails, MovieStatus } from '@/types';
 import { escapeLike } from '@/utils/escapeLike';
+import { unwrapList } from '@/utils/supabaseQuery';
 
 /** Returns today's date as YYYY-MM-DD in local timezone (avoids UTC offset bug with toISOString). */
 export function getLocalDateString(date: Date = new Date()): string {
@@ -112,9 +113,7 @@ export async function fetchMovies(filters?: MovieFilters): Promise<Movie[]> {
   if (result === null) return [];
   query = result;
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(await query);
 }
 
 // @coupling: the actor join in movie_cast.select() explicitly lists columns (id, name, photo_url, birth_date, person_type, tmdb_person_id, created_at) — if the Actor type in shared/types.ts adds new fields (e.g., biography, height_cm), they won't appear here unless the select() is updated. The cast/crew CastMember type assumes .actor is the full Actor shape but gets a partial.
@@ -209,29 +208,27 @@ export async function fetchMoviesByMonth(year: number, month: number): Promise<M
   const startDate = getLocalDateString(new Date(year, month, 1));
   const endDate = getLocalDateString(new Date(year, month + 1, 0));
 
-  const { data, error } = await supabase
-    .from('movies')
-    .select('*')
-    .gte('release_date', startDate)
-    .lte('release_date', endDate)
-    .order('release_date', { ascending: true });
-
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase
+      .from('movies')
+      .select('*')
+      .gte('release_date', startDate)
+      .lte('release_date', endDate)
+      .order('release_date', { ascending: true }),
+  );
 }
 
 // @edge: only searches title and director columns — genres, cast names, and production houses are not searched. Users searching for an actor name get no results here; must use searchActors separately.
 export async function searchMovies(query: string): Promise<Movie[]> {
   const escaped = escapeLike(query);
-  const { data, error } = await supabase
-    .from('movies')
-    .select('*')
-    .or(`title.ilike.%${escaped}%,director.ilike.%${escaped}%`)
-    .order('rating', { ascending: false })
-    .limit(20);
-
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase
+      .from('movies')
+      .select('*')
+      .or(`title.ilike.%${escaped}%,director.ilike.%${escaped}%`)
+      .order('rating', { ascending: false })
+      .limit(20),
+  );
 }
 
 // @sync: shares filter/sort logic with fetchMovies via applyMovieFilters helper — adding a new MovieStatus case or sort option only requires updating applyMovieFilters.
@@ -251,9 +248,7 @@ export async function fetchMoviesPaginated(
   const to = from + pageSize - 1;
   query = query.range(from, to);
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(await query);
 }
 
 // @assumes: getLocalDateString() returns the device's local date — if a user's device clock is off by a day, they'll see yesterday's releases in upcoming or miss today's.
@@ -262,17 +257,18 @@ export async function fetchUpcomingMovies(page: number, pageSize: number = 10): 
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error } = await supabase
-    .from('movies')
-    .select('*')
-    .gte('release_date', todayStr)
-    .order('release_date', { ascending: true })
-    .range(from, to);
-
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase
+      .from('movies')
+      .select('*')
+      .gte('release_date', todayStr)
+      .order('release_date', { ascending: true })
+      .range(from, to),
+  );
 }
 
+// @edge: limit defaults to 50 but applies to the junction table query (movie_platforms), not the final movies query. A platform with 100 movies only returns 50 — but there's no pagination or "load more" for this endpoint. The second query (movies) has no limit, returning all matched IDs.
+// @coupling: uses movie_platforms table (legacy), not movie_platform_availability. Country-specific availability is ignored — all movies linked to this platform globally are returned.
 export async function fetchMoviesByPlatform(
   platformId: string,
   limit: number = 50,
@@ -285,15 +281,14 @@ export async function fetchMoviesByPlatform(
   if (platErr3) throw platErr3;
   if (!movieIds || movieIds.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from('movies')
-    .select('*')
-    .in(
-      'id',
-      movieIds.map((m) => m.movie_id),
-    )
-    .order('release_date', { ascending: false });
-
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase
+      .from('movies')
+      .select('*')
+      .in(
+        'id',
+        movieIds.map((m) => m.movie_id),
+      )
+      .order('release_date', { ascending: false }),
+  );
 }

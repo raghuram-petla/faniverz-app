@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useCreateFeedItem } from '@/hooks/useAdminFeed';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import type { FeedType } from '@/lib/types';
+import { getYouTubeThumbnail } from '@/lib/youtube';
 
 // @contract: FEED_TYPES must match feed_items.feed_type CHECK constraint in the database
 const FEED_TYPES: { label: string; value: FeedType }[] = [
@@ -77,8 +78,7 @@ export default function NewFeedItemPage() {
         description: description || null,
         youtube_id: youtubeId || null,
         thumbnail_url:
-          thumbnailUrl ||
-          (youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : null),
+          thumbnailUrl || (youtubeId ? getYouTubeThumbnail(youtubeId, 'hqdefault') : null),
         is_pinned: isPinned,
         is_featured: isFeatured,
       } as Partial<import('@/lib/types').NewsFeedItem>);

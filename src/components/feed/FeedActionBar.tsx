@@ -3,6 +3,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { formatCompactNumber } from '@/utils/formatNumber';
 
+/** @contract Horizontal action bar: comments | upvote | downvote | views | share */
 export interface FeedActionBarProps {
   commentCount: number;
   upvoteCount: number;

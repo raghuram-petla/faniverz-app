@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NextRequest } from 'next/server';
+import { makeRequest, nextResponseMock } from '../test-utils';
 
 const mockGetUser = vi.fn();
 const mockProcessMovieFromTmdb = vi.fn();
@@ -39,28 +39,9 @@ vi.mock('@/lib/sync-engine', () => ({
   completeSyncLog: (...args: unknown[]) => mockCompleteSyncLog(...args),
 }));
 
-vi.mock('next/server', () => ({
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
-      body,
-      status: init?.status ?? 200,
-      async json() {
-        return body;
-      },
-    }),
-  },
-}));
+vi.mock('next/server', () => nextResponseMock);
 
 import { POST } from '@/app/api/sync/import-movies/route';
-
-function makeRequest(body: unknown, authHeader = 'Bearer valid-token') {
-  return {
-    json: async () => body,
-    headers: {
-      get: (name: string) => (name === 'authorization' ? authHeader : null),
-    },
-  } as unknown as NextRequest;
-}
 
 describe('POST /api/sync/import-movies', () => {
   beforeEach(() => {

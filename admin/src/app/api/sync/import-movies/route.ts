@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
+import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/import-movies
@@ -13,16 +13,9 @@ import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/syn
 export async function POST(request: NextRequest) {
   try {
     // @boundary: admin-only — import creates significant DB state
-    const auth = await verifyAdminCanMutate(request.headers.get('authorization'));
-    if (auth === 'viewer_readonly') {
-      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-    }
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const tmdb = ensureTmdbApiKey();
-    if (!tmdb.ok) return tmdb.response;
+    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
+    if (!guard.ok) return guard.response;
+    const { apiKey } = guard;
 
     const body = await request.json();
     const { tmdbIds } = body as { tmdbIds: number[] };
@@ -52,7 +45,7 @@ export async function POST(request: NextRequest) {
     // @contract: resumable=true makes each movie import additive — 504 retries skip already-done items
     for (const tmdbId of tmdbIds) {
       try {
-        const result = await processMovieFromTmdb(tmdbId, tmdb.apiKey, supabase, {
+        const result = await processMovieFromTmdb(tmdbId, apiKey, supabase, {
           resumable: true,
         });
         results.push(result);

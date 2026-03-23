@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { STALE_5M } from '@/constants/queryConfig';
 import { useState, useEffect } from 'react';
 import { searchMovies } from '../api';
 
@@ -16,6 +17,6 @@ export function useMovieSearch(query: string) {
     queryKey: ['movies', 'search', debouncedQuery],
     queryFn: () => searchMovies(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }

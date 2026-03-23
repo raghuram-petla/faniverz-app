@@ -7,7 +7,9 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 
-// @contract Inline editing uses local state (editingId/editBody) — only one comment editable at a time
+// @contract Inline editing uses local state (editingId/editBody) — only one comment editable at a time.
+// @boundary No pagination — all matching comments loaded in a single query.
+// @coupling Shares identical inline-edit UX pattern with ReviewsPage (same Save/Cancel buttons).
 export default function CommentsPage() {
   const { isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();

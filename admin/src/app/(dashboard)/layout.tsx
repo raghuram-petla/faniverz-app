@@ -46,7 +46,8 @@ function getPageForRoute(pathname: string): AdminPage | null {
 // @contract Last path segments that create new resources — blocked for read-only viewers
 const CREATE_SEGMENTS = new Set(['new', 'compose', 'invite']);
 
-/** Inner layout that uses usePermissions (must be inside ImpersonationProvider) */
+/** @coupling Must be rendered inside ImpersonationProvider — usePermissions reads impersonated role from context.
+ *  If rendered outside, permissions resolve to the real user's role, bypassing impersonation. */
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { canViewPage, isReadOnly } = usePermissions();
   const pathname = usePathname();
@@ -105,6 +106,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!user) return null;
 
+  // @invariant Provider nesting order matters: ImpersonationProvider must wrap LanguageProvider
+  // so that language scoping respects the impersonated user's permissions, and both must wrap
+  // QueryClientProvider's children so queries use the correct context.
   return (
     <QueryClientProvider client={queryClient}>
       <ImpersonationProvider>

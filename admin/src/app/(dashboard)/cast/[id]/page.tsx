@@ -1,19 +1,19 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useAdminActor, useUpdateActor, useDeleteActor } from '@/hooks/useAdminCast';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
-import { useFormChanges } from '@/hooks/useFormChanges';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
 import { DEVICES } from '@shared/constants';
+import type { Actor } from '@/lib/types';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import { ActorDetailPreview } from '@/components/preview/ActorDetailPreview';
 import { ActorFormFields } from '@/components/cast-edit/ActorFormFields';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useEditPageState } from '@/hooks/useEditPageState';
 import type { ActorFormState } from '@/components/cast-edit/ActorFormFields';
 import type { FieldConfig } from '@/hooks/useFormChanges';
 
@@ -39,60 +39,82 @@ const FIELD_CONFIG: FieldConfig[] = [
   { key: 'tmdb_person_id', label: 'TMDB Person ID', type: 'number' },
 ];
 
+const INITIAL_FORM: ActorFormState = {
+  name: '',
+  photo_url: '',
+  person_type: 'actor',
+  birth_date: '',
+  gender: '0',
+  biography: '',
+  place_of_birth: '',
+  height_cm: '',
+  tmdb_person_id: '',
+};
+
+// @contract All string form fields coerced: empty string -> null for DB storage.
+// @edge gender is stored as integer (0=not set, 1=female, 2=male, 3=non-binary) but
+// form state holds it as a string for <select> compatibility.
+function formToPayload(form: ActorFormState, id: string) {
+  return {
+    id,
+    name: form.name,
+    photo_url: form.photo_url || null,
+    person_type: form.person_type,
+    birth_date: form.birth_date || null,
+    gender: Number(form.gender),
+    biography: form.biography || null,
+    place_of_birth: form.place_of_birth || null,
+    height_cm: form.height_cm.trim() ? Number(form.height_cm) : null,
+    tmdb_person_id: form.tmdb_person_id.trim() ? Number(form.tmdb_person_id) : null,
+  };
+}
+
+function dataToForm(data: unknown): ActorFormState {
+  const actor = data as Actor;
+  return {
+    name: actor.name,
+    photo_url: actor.photo_url ?? '',
+    person_type: actor.person_type,
+    birth_date: actor.birth_date ?? '',
+    gender: String(actor.gender ?? 0),
+    biography: actor.biography ?? '',
+    place_of_birth: actor.place_of_birth ?? '',
+    height_cm: actor.height_cm != null ? String(actor.height_cm) : '',
+    tmdb_person_id: actor.tmdb_person_id != null ? String(actor.tmdb_person_id) : '',
+  };
+}
+
 export default function EditActorPage() {
   const { isReadOnly } = usePermissions();
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const { data: actor, isLoading } = useAdminActor(id);
-  const updateActor = useUpdateActor();
-  const deleteActor = useDeleteActor();
+  const dataResult = useAdminActor(id);
+  const updateMutation = useUpdateActor();
+  const deleteMutation = useDeleteActor();
   const [device, setDevice] = useState(DEVICES[1]);
   const { upload, uploading } = useImageUpload('/api/upload/actor-photo');
 
-  const [form, setForm] = useState<ActorFormState>({
-    name: '',
-    photo_url: '',
-    person_type: 'actor',
-    birth_date: '',
-    gender: '0',
-    biography: '',
-    place_of_birth: '',
-    height_cm: '',
-    tmdb_person_id: '',
-  });
-
-  const initialFormRef = useRef<ActorFormState | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
-
-  useEffect(() => {
-    if (actor) {
-      const loaded: ActorFormState = {
-        name: actor.name,
-        photo_url: actor.photo_url ?? '',
-        person_type: actor.person_type,
-        birth_date: actor.birth_date ?? '',
-        gender: String(actor.gender ?? 0),
-        biography: actor.biography ?? '',
-        place_of_birth: actor.place_of_birth ?? '',
-        height_cm: actor.height_cm != null ? String(actor.height_cm) : '',
-        tmdb_person_id: actor.tmdb_person_id != null ? String(actor.tmdb_person_id) : '',
-      };
-      setForm(loaded);
-      initialFormRef.current = loaded;
-    }
-  }, [actor]);
-
-  const { changes, isDirty, changeCount } = useFormChanges(
-    FIELD_CONFIG,
-    initialFormRef.current,
+  const {
     form,
+    updateField,
+    saveStatus,
+    changes,
+    changeCount,
+    isLoading,
+    handleSave,
+    handleDiscard,
+    handleRevertField,
+    handleDelete,
+  } = useEditPageState<ActorFormState>(
+    {
+      id,
+      fieldConfig: FIELD_CONFIG,
+      initialForm: INITIAL_FORM,
+      dataToForm,
+      formToPayload,
+      deleteRoute: '/cast',
+    },
+    { dataResult, updateMutation, deleteMutation },
   );
-
-  useUnsavedChangesWarning(isDirty);
-
-  function updateField(field: string, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
 
   async function handlePhotoUpload(file: File) {
     try {
@@ -100,53 +122,6 @@ export default function EditActorPage() {
       updateField('photo_url', url);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Upload failed');
-    }
-  }
-
-  async function handleSave() {
-    setSaveStatus('saving');
-    try {
-      await updateActor.mutateAsync({
-        id,
-        name: form.name,
-        photo_url: form.photo_url || null,
-        person_type: form.person_type,
-        birth_date: form.birth_date || null,
-        gender: Number(form.gender),
-        biography: form.biography || null,
-        place_of_birth: form.place_of_birth || null,
-        height_cm: form.height_cm.trim() ? Number(form.height_cm) : null,
-        tmdb_person_id: form.tmdb_person_id.trim() ? Number(form.tmdb_person_id) : null,
-      });
-      initialFormRef.current = { ...form };
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (err: unknown) {
-      setSaveStatus('idle');
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
-      alert(`Save failed: ${msg}`);
-    }
-  }
-
-  const handleDiscard = useCallback(() => {
-    if (initialFormRef.current) setForm(initialFormRef.current);
-  }, []);
-
-  const handleRevertField = useCallback((key: string) => {
-    const initial = initialFormRef.current;
-    if (!initial) return;
-    setForm((prev) => ({ ...prev, [key]: initial[key as keyof ActorFormState] }));
-  }, []);
-
-  async function handleDelete() {
-    if (confirm('Are you sure? This cannot be undone.')) {
-      try {
-        await deleteActor.mutateAsync(id);
-        router.push('/cast');
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : JSON.stringify(err);
-        alert(`Delete failed: ${msg}`);
-      }
     }
   }
 
@@ -181,7 +156,7 @@ export default function EditActorPage() {
           <ActorFormFields
             form={form}
             uploading={uploading}
-            onFieldChange={updateField}
+            onFieldChange={(field, value) => updateField(field as keyof ActorFormState, value)}
             onPhotoUpload={handlePhotoUpload}
           />
         </div>

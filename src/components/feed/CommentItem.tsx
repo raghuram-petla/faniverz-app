@@ -6,8 +6,10 @@ import { formatRelativeTime } from '@/utils/formatDate';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import type { FeedComment } from '@shared/types';
 
+/** @coupling formatRelativeTime from formatDate — renders "2m ago" style timestamps */
 export interface CommentItemProps {
   comment: FeedComment;
+  /** @assumes Caller compares comment.user_id against session userId to determine ownership */
   isOwn: boolean;
   onDelete?: (commentId: string) => void;
 }

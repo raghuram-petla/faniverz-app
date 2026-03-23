@@ -280,6 +280,8 @@
     "addActors": "Add Actors",
     "noFollowing": "Not following anyone yet",
     "noFollowingSubtitle": "Follow movies, actors, and studios to see updates.",
+    "noFollowingFiltered": "No results for this filter",
+    "noFollowingFilteredSubtitle": "You haven't followed anything in this category yet.",
     "logOut": "Log Out",
     "logOutConfirm": "Are you sure you want to log out?",
     "deleteAccount": "Delete Account",

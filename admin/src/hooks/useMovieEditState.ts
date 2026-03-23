@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
@@ -93,20 +93,20 @@ export function useMovieEditState(id: string) {
   const pending = useMovieEditPendingState();
 
   const [initialForm, setInitialForm] = useState<MovieForm | null>(null);
+  const isFirstLoadRef = useRef(true); // @edge prevents background refetches from overwriting unsaved edits
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
-  // @sideeffect Resets pending state when the movie id changes (navigation to different movie)
-  // @contract Does NOT reset on background refetches — only on id change to preserve unsaved edits
+  // @sideeffect Resets pending state + first-load flag on id change (navigation to different movie)
   useEffect(() => {
     pending.resetPendingState();
+    isFirstLoadRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // @sideeffect Hydrates form state from server data when movie loads or refetches
-  // @contract Does NOT reset pending state here — that is handled by the [id] effect above
-  // @edge Only updates form + initialForm; pending state is intentionally preserved across refetches
+  // @sideeffect Hydrates form from server data on first load; on refetches updates only initialForm
+  // @edge Preserves unsaved edits: background refetches don't overwrite form after first load
   useEffect(() => {
     if (movie) {
       const loaded: MovieForm = {
@@ -130,7 +130,11 @@ export function useMovieEditState(id: string) {
         poster_focus_x: movie.poster_focus_x ?? null,
         poster_focus_y: movie.poster_focus_y ?? null,
       };
-      setForm(loaded);
+      // Only overwrite form on first load; background refetches update initialForm only
+      if (isFirstLoadRef.current) {
+        setForm(loaded);
+        isFirstLoadRef.current = false;
+      }
       setInitialForm(loaded);
     }
   }, [movie]);

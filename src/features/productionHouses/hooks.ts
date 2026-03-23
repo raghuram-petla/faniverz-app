@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { STALE_5M, STALE_24H } from '@/constants/queryConfig';
 import { supabase } from '@/lib/supabase';
 import type { ProductionHouse } from '@/types';
 import { fetchProductionHouseById, fetchProductionHouseMovies } from './api';
@@ -27,7 +28,7 @@ export function useProductionHouses() {
   return useQuery({
     queryKey: ['production_houses'],
     queryFn: fetchProductionHouses,
-    staleTime: 24 * 60 * 60 * 1000,
+    staleTime: STALE_24H,
   });
 }
 
@@ -36,7 +37,7 @@ export function useMovieIdsByProductionHouse(productionHouseIds: string[]) {
     queryKey: ['movie_ids_by_production_house', productionHouseIds],
     queryFn: () => fetchMovieIdsByProductionHouse(productionHouseIds),
     enabled: productionHouseIds.length > 0,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 

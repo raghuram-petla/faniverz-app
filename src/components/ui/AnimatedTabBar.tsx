@@ -17,6 +17,7 @@ export interface AnimatedTabBarProps<T extends string> {
   onTabPress: (tab: T) => void;
 }
 
+// @assumes window width is captured once at module load — rotation will produce stale value
 const SCREEN_W = Dimensions.get('window').width;
 // @coupling Layout math assumes marginHorizontal:16 + padding:4 from AnimatedTabBar.styles
 const TAB_BAR_INNER_W = SCREEN_W - 32 - 8; // marginHorizontal 16 each side + padding 4 each side
@@ -36,7 +37,8 @@ export function AnimatedTabBar<T extends string>({
   useEffect(() => {
     const target = tabs.indexOf(activeTab) * singleTabWidth;
     tabIndicatorX.value = animationsEnabled ? withTiming(target, { duration: 200 }) : target;
-  }, [activeTab, animationsEnabled, tabs, singleTabWidth]); // tabIndicatorX is a SharedValue (stable ref)
+    // @edge tabIndicatorX intentionally omitted from deps — it's a SharedValue (stable ref across renders)
+  }, [activeTab, animationsEnabled, tabs, singleTabWidth]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: tabIndicatorX.value }],

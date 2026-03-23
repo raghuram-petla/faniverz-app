@@ -12,6 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAllWatchProviders, getWatchRegions } from './tmdb';
 import type { TmdbWatchProvider } from './tmdbTypes';
 import type { AvailabilityType } from '@shared/types';
+import { colors } from '@shared/colors';
 
 const AVAILABILITY_TYPES: AvailabilityType[] = ['flatrate', 'rent', 'buy', 'ads', 'free'];
 
@@ -44,7 +45,7 @@ async function resolvePlatformId(
       name: provider.provider_name,
       logo: provider.provider_name.charAt(0),
       logo_url: provider.logo_path ? `https://image.tmdb.org/t/p/w92${provider.logo_path}` : null,
-      color: '#6B7280',
+      color: colors.gray500,
       tmdb_provider_id: provider.provider_id,
       display_order: 99,
     })

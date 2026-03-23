@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { STALE_5M, STALE_10M } from '@/constants/queryConfig';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import {
@@ -17,7 +18,7 @@ export function useFavoriteActors(userId: string) {
     queryKey: ['actors', 'favorites', userId],
     queryFn: () => fetchFavoriteActors(userId),
     enabled: !!userId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 
@@ -26,7 +27,7 @@ export function useSearchActors(query: string) {
     queryKey: ['actors', 'search', query],
     queryFn: () => searchActors(query),
     enabled: query.length >= 2,
-    staleTime: 5 * 60 * 1000,
+    staleTime: STALE_5M,
   });
 }
 
@@ -36,14 +37,14 @@ export function useActorDetail(id: string) {
   const actorQuery = useQuery({
     queryKey: ['actor', id],
     queryFn: () => fetchActorById(id),
-    staleTime: 10 * 60 * 1000,
+    staleTime: STALE_10M,
     enabled: !!id,
   });
 
   const filmographyQuery = useQuery({
     queryKey: ['actor', id, 'filmography'],
     queryFn: () => fetchActorFilmography(id),
-    staleTime: 10 * 60 * 1000,
+    staleTime: STALE_10M,
     enabled: !!id,
   });
 

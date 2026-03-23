@@ -82,7 +82,8 @@ export function MovieSearchResults({
     });
   };
 
-  /** @sideeffect batch import selected movies — 5 per batch */
+  /** @sideeffect batch import selected movies — 5 per batch to stay under TMDB rate limits
+   *  @edge errors per-movie are tracked individually; batch continues on individual failures */
   const handleImport = async () => {
     if (selected.size === 0) return;
     const toImport = movies.filter((m) => selected.has(m.id));

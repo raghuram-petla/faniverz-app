@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { STALE_15M } from '@/constants/queryConfig';
 import { fetchSurpriseContent } from './api';
 import { SurpriseCategory } from '@/types';
 
@@ -7,6 +8,6 @@ export function useSurpriseContent(category?: SurpriseCategory) {
   return useQuery({
     queryKey: ['surprise', category],
     queryFn: () => fetchSurpriseContent(category),
-    staleTime: 15 * 60 * 1000,
+    staleTime: STALE_15M,
   });
 }

@@ -9,6 +9,9 @@ vi.mock('@/lib/youtube', () => ({
     const match = input.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
     return match ? match[1] : null;
   }),
+  getYouTubeThumbnail: vi.fn(
+    (id: string, quality = 'hqdefault') => `https://img.youtube.com/vi/${id}/${quality}.jpg`,
+  ),
 }));
 
 vi.mock('@shared/constants', () => ({

@@ -18,6 +18,9 @@ import { FeedMobilePreview } from '@/components/feed/FeedMobilePreview';
 import type { FeedType } from '@/lib/types';
 import type { DragEndEvent } from '@dnd-kit/core';
 
+// @contract Feed items support drag-and-drop reordering via @dnd-kit. Reorder sends ALL item
+// display_order values in a single batch mutation (not just the moved item).
+// @coupling FeedMobilePreview renders a live phone-frame preview of the current item list.
 export default function FeedPage() {
   const { isReadOnly } = usePermissions();
   const router = useRouter();

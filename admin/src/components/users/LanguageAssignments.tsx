@@ -85,6 +85,7 @@ export function LanguageAssignments({ userId, roleId }: LanguageAssignmentsProps
     setSelected(next);
   };
 
+  // @contract compare selected set to fetched assignments — shows Save button only on diff
   const hasChanges = (() => {
     const currentIds = new Set(assignments?.map((a) => a.language_id) ?? []);
     if (currentIds.size !== selected.size) return true;

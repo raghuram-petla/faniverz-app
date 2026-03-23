@@ -1,21 +1,22 @@
 import { supabase } from '@/lib/supabase';
 import { Notification } from '@/types';
+import { unwrapList } from '@/utils/supabaseQuery';
 
 // @boundary: nested select joins movie and platform data. If referenced movie/platform is deleted,
 // the join returns null — callers must handle optional movie/platform.
 // @contract: limited to 200 most recent notifications to prevent memory issues on high-activity users.
 export async function fetchNotifications(userId: string): Promise<Notification[]> {
-  const { data, error } = await supabase
-    .from('notifications')
-    .select('*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(200);
-
-  if (error) throw error;
-  return data ?? [];
+  return unwrapList(
+    await supabase
+      .from('notifications')
+      .select('*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(200),
+  );
 }
 
+// @assumes: no RLS policy restricts which user can mark which notification as read. If RLS requires user_id match, and the caller passes a notification owned by a different user, this silently updates 0 rows (no error). The UI still shows it as read due to optimistic update, but the next fetch reverts it.
 export async function markAsRead(notificationId: string): Promise<void> {
   const { error } = await supabase
     .from('notifications')

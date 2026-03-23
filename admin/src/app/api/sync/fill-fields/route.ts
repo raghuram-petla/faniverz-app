@@ -8,7 +8,7 @@ import {
   extractIndiaCertification,
 } from '@/lib/tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
-import { ensureTmdbApiKey, errorResponse, verifyAdminCanMutate } from '@/lib/sync-helpers';
+import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 import { syncAllImages } from '@/lib/sync-images';
 import { syncVideos, syncKeywords, syncProductionCompanies } from '@/lib/sync-extended';
 import { syncWatchProvidersMultiCountry } from '@/lib/sync-watch-providers';
@@ -21,13 +21,9 @@ import { mirrorMainPoster, syncCastCrew } from '@/lib/sync-cast';
 export async function POST(request: NextRequest) {
   try {
     // @boundary: viewer role is read-only
-    const auth = await verifyAdminCanMutate(request.headers.get('authorization'));
-    if (auth === 'viewer_readonly')
-      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-    if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const tmdb = ensureTmdbApiKey();
-    if (!tmdb.ok) return tmdb.response;
+    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
+    if (!guard.ok) return guard.response;
+    const { apiKey } = guard;
 
     const { tmdbId, fields, forceResyncCast } = (await request.json()) as {
       tmdbId: number;
@@ -49,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!existing) return NextResponse.json({ error: 'Movie not found in DB.' }, { status: 404 });
     const movieId = existing.id as string;
 
-    const detail = await getMovieDetails(tmdbId, tmdb.apiKey);
+    const detail = await getMovieDetails(tmdbId, apiKey);
 
     // @contract: extract Telugu translation once (used by title_te / synopsis_te cases below)
     const { titleTe, synopsisTe } = extractTeluguTranslation(detail.translations);
@@ -177,12 +173,7 @@ export async function POST(request: NextRequest) {
 
     // ── Extended sync: images, videos, watch providers, keywords, production companies
     if (fields.includes('images')) {
-      const { posterCount, backdropCount } = await syncAllImages(
-        movieId,
-        tmdbId,
-        tmdb.apiKey,
-        supabase,
-      );
+      const { posterCount, backdropCount } = await syncAllImages(movieId, tmdbId, apiKey, supabase);
       if (posterCount > 0 || backdropCount > 0) updatedFields.push('images');
     }
     if (fields.includes('videos')) {
@@ -190,7 +181,7 @@ export async function POST(request: NextRequest) {
       if (c > 0) updatedFields.push('videos');
     }
     if (fields.includes('watch_providers')) {
-      const c = await syncWatchProvidersMultiCountry(movieId, tmdbId, tmdb.apiKey, supabase);
+      const c = await syncWatchProvidersMultiCountry(movieId, tmdbId, apiKey, supabase);
       if (c > 0) updatedFields.push('watch_providers');
     }
     if (fields.includes('keywords')) {

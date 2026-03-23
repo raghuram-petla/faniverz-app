@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { NextRequest } from 'next/server';
+import { makeRequest, nextResponseMock } from './test-utils';
 
 const mockVerifyAdmin = vi.fn();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,29 +28,9 @@ vi.mock('@/lib/supabase-admin', () => ({
   }),
 }));
 
-vi.mock('next/server', () => ({
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
-      body,
-      status: init?.status ?? 200,
-      async json() {
-        return body;
-      },
-    }),
-  },
-}));
+vi.mock('next/server', () => nextResponseMock);
 
 import { POST } from '@/app/api/manage-user/route';
-
-function makeRequest(body: Record<string, unknown>, authHeader?: string) {
-  return {
-    json: async () => body,
-    headers: {
-      get: (name: string) =>
-        name === 'authorization' ? (authHeader ?? 'Bearer valid-token') : null,
-    },
-  } as unknown as NextRequest;
-}
 
 beforeEach(() => {
   mockVerifyAdmin.mockReset();

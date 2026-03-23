@@ -1,6 +1,7 @@
 'use client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
+import { createSimpleMutation } from './createSimpleMutation';
 
 export interface EndUserProfile {
   id: string;
@@ -89,48 +90,24 @@ async function callManageUser(action: string, userId: string, extra?: Record<str
 }
 
 // @sideeffect Bans user via server-side admin API (not direct DB) to enforce auth checks
-export function useBanUser() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (userId: string) => callManageUser('ban', userId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'end-users'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to ban user');
-    },
-  });
-}
+export const useBanUser = createSimpleMutation<string>({
+  mutationFn: (userId) => callManageUser('ban', userId),
+  invalidateKeys: [['admin', 'end-users']],
+  errorMessage: 'Failed to ban user',
+});
 
-export function useUnbanUser() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (userId: string) => callManageUser('unban', userId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'end-users'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to unban user');
-    },
-  });
-}
+export const useUnbanUser = createSimpleMutation<string>({
+  mutationFn: (userId) => callManageUser('unban', userId),
+  invalidateKeys: [['admin', 'end-users']],
+  errorMessage: 'Failed to unban user',
+});
 
 // @contract Only display_name, bio, location can be updated — other profile fields are read-only
-export function useUpdateEndUserProfile() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      userId,
-      fields,
-    }: {
-      userId: string;
-      fields: { display_name?: string; bio?: string; location?: string };
-    }) => callManageUser('update-profile', userId, { fields }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'end-users'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to update profile');
-    },
-  });
-}
+export const useUpdateEndUserProfile = createSimpleMutation<{
+  userId: string;
+  fields: { display_name?: string; bio?: string; location?: string };
+}>({
+  mutationFn: ({ userId, fields }) => callManageUser('update-profile', userId, { fields }),
+  invalidateKeys: [['admin', 'end-users']],
+  errorMessage: 'Failed to update profile',
+});

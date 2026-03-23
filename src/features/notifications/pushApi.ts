@@ -1,3 +1,4 @@
+// @boundary: Platform.OS is 'ios' | 'android' | 'web' — the ternary maps 'web' to 'android' which is incorrect but harmless since push tokens don't work on web. If Expo adds 'macos' or 'tvos', those also map to 'android'.
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 

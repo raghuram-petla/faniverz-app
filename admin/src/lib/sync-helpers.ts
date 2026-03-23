@@ -176,7 +176,37 @@ export async function verifyAdminWithLanguages(
 }
 
 /**
+ * @contract Validates admin auth for mutation endpoints and returns TMDB API key.
+ * Returns auth object + apiKey on success, or a NextResponse error to return immediately.
+ * Encapsulates the repeated verifyAdminCanMutate + ensureTmdbApiKey boilerplate.
+ */
+export async function ensureAdminMutateAuth(
+  authHeader: string | null,
+): Promise<
+  | { ok: true; auth: { user: User; role: string }; apiKey: string }
+  | { ok: false; response: NextResponse }
+> {
+  const auth = await verifyAdminCanMutate(authHeader);
+  if (auth === 'viewer_readonly') {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 }),
+    };
+  }
+  if (!auth) {
+    return { ok: false, response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+  const tmdb = ensureTmdbApiKey();
+  if (!tmdb.ok) {
+    return { ok: false, response: tmdb.response };
+  }
+  return { ok: true, auth, apiKey: tmdb.apiKey };
+}
+
+/**
  * Build a standard 500 error response from a caught error.
+ * @edge: exposes err.message to the client — if the error contains sensitive info
+ * (e.g. Supabase connection string in a connection error), it leaks to the admin UI.
  */
 export function errorResponse(label: string, err: unknown, status = 500): NextResponse {
   console.error(`${label} failed:`, err);

@@ -3,20 +3,11 @@ jest.mock('../../api', () => ({
 }));
 
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import { useMoviesPaginated } from '../useMoviesPaginated';
 import { fetchMoviesPaginated } from '../../api';
 
 const mockFetch = fetchMoviesPaginated as jest.Mock;
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient }, children);
-}
 
 describe('useMoviesPaginated', () => {
   beforeEach(() => {

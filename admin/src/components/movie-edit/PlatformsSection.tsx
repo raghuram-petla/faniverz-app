@@ -14,6 +14,8 @@ import { CountryAvailabilityPanel } from './CountryAvailabilityPanel';
 import { CountryDropdown } from '@/components/common/CountryDropdown';
 import { SearchableCountryPicker } from '@/components/common/SearchableCountryPicker';
 
+// @contract live CRUD for movie-platform availability — changes save immediately (not via dock)
+// @coupling useMovieAvailability, useAdminPlatforms, useCountries all auto-refetch on mutation
 export interface PlatformsSectionProps {
   movieId: string;
 }

@@ -5,10 +5,12 @@ import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 
+/** @contract Shows text input for authenticated users, login prompt for unauthenticated */
 export interface CommentInputProps {
   isAuthenticated: boolean;
   onSubmit: (body: string) => void;
   onLoginPress?: () => void;
+  /** @coupling Must include safe area bottom inset from useSafeAreaInsets() to avoid keyboard overlap */
   bottomInset?: number;
 }
 

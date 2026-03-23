@@ -17,20 +17,13 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import { useComments, useAddComment, useDeleteComment } from '../commentsHooks';
 import { fetchComments, addComment, deleteComment } from '../commentsApi';
 
 const mockFetchComments = fetchComments as jest.MockedFunction<typeof fetchComments>;
 const mockAddComment = addComment as jest.MockedFunction<typeof addComment>;
 const mockDeleteComment = deleteComment as jest.MockedFunction<typeof deleteComment>;
-
-function createWrapper() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client }, children);
-}
 
 const baseComment = {
   id: 'c1',

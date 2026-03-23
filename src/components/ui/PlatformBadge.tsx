@@ -12,6 +12,7 @@ interface PlatformBadgeProps {
   size?: number;
 }
 
+/** @assumes platform.color is a valid CSS color string — no validation performed */
 export function PlatformBadge({ platform, size = 24 }: PlatformBadgeProps) {
   // @edge Falls back to text initial when logo asset is not registered for this platform ID
   const logo = getPlatformLogo(platform.id);

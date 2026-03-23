@@ -97,18 +97,18 @@ vi.mock('@/hooks/useImpersonation', () => ({
   }),
 }));
 
-const mockMutate = vi.fn();
-const mockDeleteMutate = vi.fn();
+const mockMutateAsync = vi.fn();
+const mockDeleteMutateAsync = vi.fn();
 
 vi.mock('@/hooks/useAdminSurprise', () => ({
   useAdminSurpriseItem: vi.fn(),
   useUpdateSurprise: () => ({
-    mutate: mockMutate,
+    mutateAsync: mockMutateAsync,
     isPending: false,
     isError: false,
     error: null,
   }),
-  useDeleteSurprise: () => ({ mutate: mockDeleteMutate, isPending: false }),
+  useDeleteSurprise: () => ({ mutateAsync: mockDeleteMutateAsync, isPending: false }),
 }));
 
 import { useAdminSurpriseItem } from '@/hooks/useAdminSurprise';
@@ -266,8 +266,9 @@ describe('EditSurpriseContentPage', () => {
     });
   });
 
-  it('calls deleteItem.mutate and navigates on confirmed delete', async () => {
+  it('calls deleteMutation.mutateAsync and navigates on confirmed delete', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockDeleteMutateAsync.mockResolvedValue({});
 
     mockedUseAdminSurpriseItem.mockReturnValue({
       data: mockItem,
@@ -281,19 +282,12 @@ describe('EditSurpriseContentPage', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    expect(mockDeleteMutate).toHaveBeenCalledWith(
-      '1',
-      expect.objectContaining({ onSuccess: expect.any(Function) }),
-    );
-    // Invoke onSuccess to cover the router.push('/surprise') callback
-    const deleteCall = mockDeleteMutate.mock.calls[0];
-    const deleteOptions = deleteCall[1];
-    deleteOptions.onSuccess();
+    expect(mockDeleteMutateAsync).toHaveBeenCalledWith('1');
     expect(mockRouterPush).toHaveBeenCalledWith('/surprise');
     vi.restoreAllMocks();
   });
 
-  it('does NOT call deleteItem.mutate when confirm is cancelled', async () => {
+  it('does NOT call deleteMutation when confirm is cancelled', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     mockedUseAdminSurpriseItem.mockReturnValue({
@@ -305,7 +299,7 @@ describe('EditSurpriseContentPage', () => {
     await waitFor(() => expect(screen.getByText('Delete')).toBeInTheDocument());
 
     fireEvent.click(screen.getByText('Delete'));
-    expect(mockDeleteMutate).not.toHaveBeenCalled();
+    expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
     vi.restoreAllMocks();
   });
 
@@ -447,7 +441,8 @@ describe('EditSurpriseContentPage', () => {
     expect(screen.getByDisplayValue('new desc')).toBeInTheDocument();
   });
 
-  it('handleSave calls updateItem.mutate with current form values', async () => {
+  it('handleSave calls updateMutation.mutateAsync with current form values', async () => {
+    mockMutateAsync.mockResolvedValue({});
     mockedUseAdminSurpriseItem.mockReturnValue({
       data: mockItem,
       isLoading: false,
@@ -460,9 +455,11 @@ describe('EditSurpriseContentPage', () => {
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Updated Title' } });
 
     // Invoke handleSave via FormChangesDock props
-    act(() => capturedDockProps.current.onSave());
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
 
-    expect(mockMutate).toHaveBeenCalledWith(
+    expect(mockMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         id: '1',
         title: 'Updated Title',
@@ -470,14 +467,11 @@ describe('EditSurpriseContentPage', () => {
         category: 'song',
         views: 100,
       }),
-      expect.objectContaining({
-        onSuccess: expect.any(Function),
-        onError: expect.any(Function),
-      }),
     );
   });
 
-  it('handleSave onSuccess resets initialRef and saveStatus', async () => {
+  it('handleSave sets saveStatus to success on resolve', async () => {
+    mockMutateAsync.mockResolvedValue({});
     mockedUseAdminSurpriseItem.mockReturnValue({
       data: mockItem,
       isLoading: false,
@@ -486,18 +480,16 @@ describe('EditSurpriseContentPage', () => {
     renderWithProviders(<EditSurpriseContentPage />);
     await waitFor(() => expect(screen.getByDisplayValue('Test Song')).toBeInTheDocument());
 
-    act(() => capturedDockProps.current.onSave());
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
 
-    // Extract the onSuccess callback and call it
-    const mutateCall = mockMutate.mock.calls[0];
-    const callbacks = mutateCall[1];
-    act(() => callbacks.onSuccess());
-
-    // saveStatus should be 'success' now (dock receives it)
     expect(capturedDockProps.current.saveStatus).toBe('success');
   });
 
-  it('handleSave onError resets saveStatus to idle', async () => {
+  it('handleSave sets saveStatus to idle and alerts on error', async () => {
+    mockMutateAsync.mockRejectedValue(new Error('Save failed'));
+    vi.spyOn(window, 'alert').mockImplementation(() => {});
     mockedUseAdminSurpriseItem.mockReturnValue({
       data: mockItem,
       isLoading: false,
@@ -506,16 +498,17 @@ describe('EditSurpriseContentPage', () => {
     renderWithProviders(<EditSurpriseContentPage />);
     await waitFor(() => expect(screen.getByDisplayValue('Test Song')).toBeInTheDocument());
 
-    act(() => capturedDockProps.current.onSave());
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
 
-    const mutateCall = mockMutate.mock.calls[0];
-    const callbacks = mutateCall[1];
-    act(() => callbacks.onError());
-
+    expect(window.alert).toHaveBeenCalledWith('Save failed: Save failed');
     expect(capturedDockProps.current.saveStatus).toBe('idle');
+    vi.restoreAllMocks();
   });
 
   it('handleSave sends null for empty description', async () => {
+    mockMutateAsync.mockResolvedValue({});
     mockedUseAdminSurpriseItem.mockReturnValue({
       data: { ...mockItem, description: 'some desc' },
       isLoading: false,
@@ -526,12 +519,11 @@ describe('EditSurpriseContentPage', () => {
 
     // Clear description
     fireEvent.change(screen.getByLabelText('Description'), { target: { value: '' } });
-    act(() => capturedDockProps.current.onSave());
+    await act(async () => {
+      capturedDockProps.current.onSave();
+    });
 
-    expect(mockMutate).toHaveBeenCalledWith(
-      expect.objectContaining({ description: null }),
-      expect.any(Object),
-    );
+    expect(mockMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ description: null }));
   });
 
   it('handleDiscard resets all fields to initial values', async () => {

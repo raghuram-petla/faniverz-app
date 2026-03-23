@@ -3,7 +3,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { Plus, X, Calendar, Play } from 'lucide-react';
 import { VIDEO_TYPES } from '@shared/constants';
 import type { VideoType, MovieVideo } from '@/lib/types';
-import { extractYouTubeId } from '@/lib/youtube';
+import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/youtube';
 import { FormInput, FormSelect } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
 
@@ -32,7 +32,7 @@ function YouTubeThumbnail({ youtubeId, title }: { youtubeId: string; title: stri
       aria-label={`Play ${title}`}
     >
       <img
-        src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
+        src={getYouTubeThumbnail(youtubeId, 'hqdefault')}
         alt={title}
         className="w-full h-full object-cover"
       />

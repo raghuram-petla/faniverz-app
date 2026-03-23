@@ -13,6 +13,7 @@ import {
 } from '@/utils/youtubeNavigation';
 import { WEBVIEW_BASE_URL } from '@/constants/webview';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { getYouTubeThumbnail } from '@/constants/feedHelpers';
 import type { MovieVideo } from '@/types';
 import type { SemanticTheme } from '@shared/themes';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
@@ -35,6 +36,7 @@ export interface MediaVideoCardProps {
   theme: SemanticTheme;
 }
 
+/** @sideeffect When isPlaying=true, WebView is mounted and auto-plays — unmounting pauses the video */
 export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCardProps) {
   const { t } = useTranslation();
   const styles = createCardStyles(theme);
@@ -101,9 +103,7 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
         <Image
           /** @nullable youtube_id may be missing for non-YouTube videos; falls back to placeholder */
           source={{
-            uri: video.youtube_id
-              ? `https://img.youtube.com/vi/${video.youtube_id}/hqdefault.jpg`
-              : PLACEHOLDER_POSTER,
+            uri: video.youtube_id ? getYouTubeThumbnail(video.youtube_id) : PLACEHOLDER_POSTER,
           }}
           style={styles.thumbnail}
           contentFit="cover"

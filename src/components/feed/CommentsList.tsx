@@ -8,10 +8,12 @@ import type { FeedComment } from '@shared/types';
 
 export interface CommentsListProps {
   comments: FeedComment[];
+  /** @nullable null when user is not authenticated — all comments show as non-owned */
   userId: string | null;
   isLoading: boolean;
   hasNextPage?: boolean;
   onLoadMore?: () => void;
+  /** @sideeffect Fires delete mutation — caller must handle optimistic update and rollback */
   onDelete?: (commentId: string) => void;
 }
 

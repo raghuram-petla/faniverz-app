@@ -19,6 +19,7 @@ interface MovieDetailHeaderProps {
   movieTitle?: string;
 }
 
+/** @assumes Rendered over hero image with rgba backgrounds — white icons required for contrast */
 export function MovieDetailHeader({
   insetsTop,
   actionType,

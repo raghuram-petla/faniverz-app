@@ -22,7 +22,9 @@ export interface FilmCredit {
   } | null;
 }
 
+/** @contract Renders filmography list with poster, title, year, role, and rating for each movie */
 export interface ActorFilmographyProps {
+  /** @boundary Credits with null movie are silently skipped (deleted movie records) */
   credits: FilmCredit[];
   onMoviePress: (movieId: string) => void;
 }

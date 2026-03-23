@@ -21,7 +21,9 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
-// @contract Inline editing pattern matches CommentsPage — single item editable at a time
+// @contract Inline editing pattern matches CommentsPage — single item editable at a time.
+// @boundary No pagination — all matching reviews loaded in a single query. May need cursor-based
+// pagination if review count grows significantly.
 export default function ReviewsPage() {
   const { isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
