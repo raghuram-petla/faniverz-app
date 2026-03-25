@@ -9,7 +9,7 @@ import { ImportProgressList } from './DiscoverResults';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguageContext } from '@/hooks/useLanguageContext';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
-import { LANGUAGE_OPTIONS } from '@/lib/movie-constants';
+import { useLanguageName } from '@/hooks/useLanguageOptions';
 
 export interface MovieSearchResultsProps {
   movies: TmdbSearchAllResult['movies']['results'];
@@ -26,6 +26,7 @@ export function MovieSearchResults({
   const importMovies = useImportMovies();
   const linkTmdbId = useLinkTmdbId();
   const { languageCodes } = usePermissions();
+  const langName = useLanguageName();
   const { selectedLanguageCode } = useLanguageContext();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [importProgress, setImportProgress] = useState<ImportProgress[]>([]);
@@ -161,8 +162,7 @@ export function MovieSearchResults({
               }`}
             >
               {selectedLanguageCode
-                ? (LANGUAGE_OPTIONS.find((o) => o.value === selectedLanguageCode)?.label ??
-                  selectedLanguageCode)
+                ? (langName(selectedLanguageCode) ?? selectedLanguageCode)
                 : 'My languages'}
             </button>
           </div>
@@ -238,9 +238,7 @@ export function MovieSearchResults({
                     {movie.release_date || 'No date'}
                     {movie.original_language && (
                       <span className="ml-1.5 text-on-surface-muted">
-                        ·{' '}
-                        {LANGUAGE_OPTIONS.find((o) => o.value === movie.original_language)?.label ??
-                          movie.original_language}
+                        · {langName(movie.original_language) ?? movie.original_language}
                       </span>
                     )}
                   </p>

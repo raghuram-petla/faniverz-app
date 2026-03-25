@@ -4,7 +4,7 @@ import { Film, Loader2, Download, CheckCircle, XCircle, AlertTriangle, Link2 } f
 import type { ImportProgress } from './syncHelpers';
 import type { ExistingMovieData, DuplicateSuspect } from '@/hooks/useSync';
 import { ExistingMovieSync } from './ExistingMovieSync';
-import { LANGUAGE_OPTIONS } from '@/lib/movie-constants';
+import { useLanguageName } from '@/hooks/useLanguageOptions';
 
 interface DiscoverMovie {
   id: number;
@@ -71,6 +71,7 @@ export function DiscoverResults({
   onGapCountChange,
   importProgress,
 }: DiscoverResultsProps) {
+  const langName = useLanguageName();
   return (
     <>
       {/* ── Summary bar ── */}
@@ -177,9 +178,7 @@ export function DiscoverResults({
                       {movie.release_date || 'No date'}
                       {movie.original_language && (
                         <span className="ml-1.5 text-on-surface-muted">
-                          ·{' '}
-                          {LANGUAGE_OPTIONS.find((o) => o.value === movie.original_language)
-                            ?.label ?? movie.original_language}
+                          · {langName(movie.original_language) ?? movie.original_language}
                         </span>
                       )}
                     </p>

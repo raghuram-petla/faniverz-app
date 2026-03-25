@@ -2,7 +2,8 @@
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
-import { GENRES, LANGUAGE_OPTIONS, CERTIFICATION_OPTIONS } from '@/lib/movie-constants';
+import { GENRES, CERTIFICATION_OPTIONS } from '@/lib/movie-constants';
+import { useLanguageOptions } from '@/hooks/useLanguageOptions';
 import type { MovieFilters } from '@/hooks/useMovieFilters';
 
 // @contract Props for the advanced filters panel — state owned by useMovieFilters in parent
@@ -61,6 +62,7 @@ export function AdvancedFiltersPanel({
   hasActiveFilters,
 }: AdvancedFiltersPanelProps) {
   const { data: platforms } = useAdminPlatforms();
+  const languageOptions = useLanguageOptions();
   const yearOptions = getYearOptions();
 
   return (
@@ -173,7 +175,7 @@ export function AdvancedFiltersPanel({
             onChange={(e) => setFilter('language', e.target.value)}
             className={selectClasses}
           >
-            {LANGUAGE_OPTIONS.map((o) => (
+            {languageOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.value ? o.label : 'All Languages'}
               </option>

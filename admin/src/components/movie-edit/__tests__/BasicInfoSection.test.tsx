@@ -113,16 +113,25 @@ vi.mock('@/lib/movie-validation', () => ({
 
 vi.mock('@/lib/movie-constants', () => ({
   GENRES: ['Action', 'Drama', 'Comedy'],
-  LANGUAGE_OPTIONS: [
-    { value: '', label: 'Not set' },
-    { value: 'te', label: 'Telugu' },
-    { value: 'en', label: 'English' },
-  ],
   CERTIFICATION_OPTIONS: [
     { value: '', label: 'None' },
     { value: 'U', label: 'U' },
     { value: 'UA', label: 'UA' },
   ],
+}));
+
+vi.mock('@/hooks/useLanguageOptions', () => ({
+  useLanguageOptions: () => [
+    { value: '', label: 'Not set' },
+    { value: 'te', label: 'Telugu' },
+    { value: 'hi', label: 'Hindi' },
+    { value: 'ta', label: 'Tamil' },
+    { value: 'en', label: 'English' },
+  ],
+  useLanguageName: () => {
+    const map: Record<string, string> = { te: 'Telugu', hi: 'Hindi', ta: 'Tamil', en: 'English' };
+    return (code: string) => map[code] ?? code;
+  },
 }));
 
 import { validateMovieForm } from '@/lib/movie-validation';

@@ -5,6 +5,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MovieListToolbar } from '@/components/movies/MovieListToolbar';
 import type { MovieFilters } from '@/hooks/useMovieFilters';
 
+vi.mock('@/hooks/useLanguageOptions', () => ({
+  useLanguageOptions: () => [
+    { value: '', label: 'Not set' },
+    { value: 'te', label: 'Telugu' },
+    { value: 'hi', label: 'Hindi' },
+    { value: 'ta', label: 'Tamil' },
+    { value: 'en', label: 'English' },
+  ],
+  useLanguageName: () => {
+    const map: Record<string, string> = { te: 'Telugu', hi: 'Hindi', ta: 'Tamil', en: 'English' };
+    return (code: string) => map[code] ?? code;
+  },
+}));
+
 vi.mock('@/hooks/useAdminPlatforms', () => ({
   useAdminPlatforms: () => ({ data: [], isLoading: false }),
 }));

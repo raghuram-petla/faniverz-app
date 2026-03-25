@@ -24,7 +24,19 @@ const mockLookupState = vi.hoisted(() => ({
 }));
 
 vi.mock('@/hooks/useLanguageContext', () => ({
-  useLanguageContext: () => ({ selectedLanguageCode: '' }),
+  useLanguageContext: () => ({ selectedLanguageCode: '', languages: [] }),
+}));
+
+vi.mock('@/hooks/useLanguageOptions', () => ({
+  useLanguageOptions: () => [
+    { value: '', label: 'Not set' },
+    { value: 'te', label: 'Telugu' },
+    { value: 'en', label: 'English' },
+  ],
+  useLanguageName: () => {
+    const map: Record<string, string> = { te: 'Telugu', hi: 'Hindi', ta: 'Tamil', en: 'English' };
+    return (code: string | null | undefined) => (code ? (map[code] ?? code) : null);
+  },
 }));
 
 vi.mock('@/hooks/useSync', () => ({

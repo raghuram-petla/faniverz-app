@@ -4,7 +4,8 @@ import type { MovieForm } from '@/hooks/useMovieEditState';
 import { FormInput, FormSelect, FormTextarea, FormField } from '@/components/common/FormField';
 import { Button } from '@/components/common/Button';
 import { validateMovieForm, type ValidationError } from '@/lib/movie-validation';
-import { GENRES, LANGUAGE_OPTIONS, CERTIFICATION_OPTIONS } from '@/lib/movie-constants';
+import { GENRES, CERTIFICATION_OPTIONS } from '@/lib/movie-constants';
+import { useLanguageOptions } from '@/hooks/useLanguageOptions';
 // @contract movie basic info — title, dates, genres, synopsis, certification, language, toggles
 export interface BasicInfoSectionProps {
   form: MovieForm;
@@ -22,6 +23,7 @@ export function BasicInfoSection({
   toggleGenre,
   onSubmit,
 }: BasicInfoSectionProps) {
+  const languageOptions = useLanguageOptions();
   const errors = useMemo(() => validateMovieForm(form), [form]);
   const errorFor = (field: string): ValidationError | undefined =>
     errors.find((e) => e.field === field);
@@ -75,7 +77,7 @@ export function BasicInfoSection({
         <FormSelect
           label="Original Language"
           value={form.original_language}
-          options={LANGUAGE_OPTIONS}
+          options={languageOptions}
           onValueChange={(v) => updateField('original_language', v)}
         />
         <FormField label="Featured Movie">

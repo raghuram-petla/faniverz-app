@@ -14,7 +14,7 @@ import { MOVIE_STATUS_CONFIG } from '@shared/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import type { Movie } from '@/lib/types';
 import { getImageUrl } from '@shared/imageUrl';
-import { LANGUAGE_OPTIONS } from '@/lib/movie-constants';
+import { useLanguageName } from '@/hooks/useLanguageOptions';
 
 // @coupling Must stay in sync with shared MOVIE_STATUS_CONFIG keys
 const STATUS_BADGE_CLASSES: Record<string, string> = {
@@ -42,6 +42,7 @@ export default function MoviesPage() {
   // @coupling usePermissions gates data scoping, delete button, and edit visibility
   const { isPHAdmin, productionHouseIds, canDeleteTopLevel, isReadOnly } = usePermissions();
   const { selectedLanguageCode } = useLanguageContext();
+  const getLangName = useLanguageName();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   const [statusFilter, setStatusFilter] = useState<string>('');
   const {
@@ -129,9 +130,7 @@ export default function MoviesPage() {
                 const isOtherLanguage = selectedLanguageCode
                   ? movie.original_language !== selectedLanguageCode
                   : false;
-                const langName = isOtherLanguage
-                  ? LANGUAGE_OPTIONS.find((o) => o.value === movie.original_language)?.label
-                  : null;
+                const movieLangName = isOtherLanguage ? getLangName(movie.original_language) : null;
                 return (
                   <tr
                     key={movie.id}
@@ -200,8 +199,10 @@ export default function MoviesPage() {
                               {movie.title}
                             </Link>
                           )}
-                          {langName && (
-                            <span className="text-[10px] text-on-surface-muted">{langName}</span>
+                          {movieLangName && (
+                            <span className="text-[10px] text-on-surface-muted">
+                              {movieLangName}
+                            </span>
                           )}
                         </div>
                       </div>

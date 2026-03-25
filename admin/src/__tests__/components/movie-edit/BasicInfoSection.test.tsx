@@ -2,6 +2,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BasicInfoSection } from '@/components/movie-edit/BasicInfoSection';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
 
+vi.mock('@/hooks/useLanguageOptions', () => ({
+  useLanguageOptions: () => [
+    { value: '', label: 'Not set' },
+    { value: 'te', label: 'Telugu' },
+    { value: 'hi', label: 'Hindi' },
+    { value: 'ta', label: 'Tamil' },
+    { value: 'en', label: 'English' },
+  ],
+  useLanguageName: () => {
+    const map: Record<string, string> = { te: 'Telugu', hi: 'Hindi', ta: 'Tamil', en: 'English' };
+    return (code: string | null | undefined) => (code ? (map[code] ?? code) : null);
+  },
+}));
+
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     auth: {

@@ -33,12 +33,18 @@ vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
   useUnsavedChangesWarning: vi.fn(),
 }));
 
-vi.mock('@/lib/movie-constants', () => ({
-  LANGUAGE_OPTIONS: [
+vi.mock('@/hooks/useLanguageOptions', () => ({
+  useLanguageOptions: () => [
+    { value: '', label: 'Not set' },
     { value: 'te', label: 'Telugu' },
+    { value: 'hi', label: 'Hindi' },
     { value: 'ta', label: 'Tamil' },
     { value: 'en', label: 'English' },
   ],
+  useLanguageName: () => {
+    const map: Record<string, string> = { te: 'Telugu', hi: 'Hindi', ta: 'Tamil', en: 'English' };
+    return (code: string) => map[code] ?? code;
+  },
 }));
 
 vi.mock('@/lib/supabase-browser', () => ({

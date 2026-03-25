@@ -20,19 +20,6 @@ export const GENRES = [
   'Historical',
 ] as const;
 
-// @coupling: values are ISO 639-1 codes matching the languages table `code` column.
-// Adding a language here without a corresponding languages table row means the admin can
-// set it but sync-helpers.ts verifyAdminWithLanguages won't scope correctly.
-export const LANGUAGE_OPTIONS = [
-  { value: '', label: 'Not set' },
-  { value: 'te', label: 'Telugu' },
-  { value: 'hi', label: 'Hindi' },
-  { value: 'ta', label: 'Tamil' },
-  { value: 'kn', label: 'Kannada' },
-  { value: 'ml', label: 'Malayalam' },
-  { value: 'en', label: 'English' },
-];
-
 // @coupling: these are CBFC (India) certifications. TMDB sync (extractIndiaCertification)
 // maps TMDB's release_dates cert field to these values. Non-Indian certifications (e.g. MPAA
 // "PG-13") are not supported and will be stored as-is if manually entered.
