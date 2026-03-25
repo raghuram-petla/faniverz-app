@@ -71,6 +71,15 @@ describe('useMovieSearch', () => {
     const { result } = renderHook(() => useMovieSearch('te'), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it('returns empty array from queryFn guard when short query is force-refetched', async () => {
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useMovieSearch('a'), { wrapper: Wrapper });
+    // refetch() bypasses `enabled` and runs the queryFn, hitting the inner guard
+    const { data } = await result.current.refetch();
+    expect(data).toEqual([]);
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
 });
 
 describe('useActorSearch', () => {
@@ -123,5 +132,13 @@ describe('useActorSearch', () => {
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useActorSearch('ja'), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('returns empty array from queryFn guard when short query is force-refetched', async () => {
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useActorSearch('x'), { wrapper: Wrapper });
+    const { data } = await result.current.refetch();
+    expect(data).toEqual([]);
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 });

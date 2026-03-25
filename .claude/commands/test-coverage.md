@@ -33,10 +33,10 @@ All source files must meet these minimum thresholds. Files below these numbers a
 
 | Metric         | Minimum |
 | -------------- | ------- |
-| **Lines**      | 90%     |
-| **Branches**   | 85%     |
-| **Functions**  | 90%     |
-| **Statements** | 90%     |
+| **Lines**      | 100%    |
+| **Branches**   | 100%    |
+| **Functions**  | 100%    |
+| **Statements** | 100%    |
 
 A file that has a test but falls below ANY of these thresholds is a gap that must be fixed.
 
