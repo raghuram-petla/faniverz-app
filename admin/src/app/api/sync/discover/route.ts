@@ -24,25 +24,46 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     // @nullable: month is optional — omitting it discovers all movies for the entire year
-    // @nullable: language defaults to 'te' (Telugu) if not provided
+    // @nullable: language is optional — omitting it discovers movies in all supported languages
     const { year, month, language } = body as { year: number; month?: number; language?: string };
-    const lang = language || 'te';
 
     if (!year || year < 1900 || year > 2100) {
       return NextResponse.json({ error: 'Invalid year.' }, { status: 400 });
     }
 
-    // Discover from TMDB
-    const results = month
-      ? await discoverMoviesByLanguageAndMonth(year, month, lang, tmdb.apiKey)
-      : await discoverMoviesByLanguage(year, lang, tmdb.apiKey);
+    const supabase = getSupabaseAdmin();
+
+    // @contract: when language is null/undefined ("All"), discover for every supported
+    // language in the DB and merge results (deduplicated by TMDB id).
+    let langs: string[];
+    if (language) {
+      langs = [language];
+    } else {
+      const { data: langRows } = await supabase.from('languages').select('code');
+      langs = (langRows ?? []).map((r) => r.code as string);
+      if (langs.length === 0) langs = ['te']; // @edge: fallback if languages table is empty
+    }
+
+    // Discover from TMDB — one call per language, then merge + dedupe by TMDB id
+    const seenIds = new Set<number>();
+    const results: Awaited<ReturnType<typeof discoverMoviesByLanguage>> = [];
+    for (const lang of langs) {
+      const batch = month
+        ? await discoverMoviesByLanguageAndMonth(year, month, lang, tmdb.apiKey)
+        : await discoverMoviesByLanguage(year, lang, tmdb.apiKey);
+      for (const m of batch) {
+        if (!seenIds.has(m.id)) {
+          seenIds.add(m.id);
+          results.push(m);
+        }
+      }
+    }
 
     // Batch-check which tmdb_ids already exist in our DB, fetching all
     // fillable fields so the frontend can show a field-level diff without
     // a separate per-movie query.
     // @sync: read-only DB check — no writes, safe for repeated calls
     const tmdbIds = results.map((m) => m.id);
-    const supabase = getSupabaseAdmin();
     const { data: existingRows } = await supabase
       .from('movies')
       .select(
