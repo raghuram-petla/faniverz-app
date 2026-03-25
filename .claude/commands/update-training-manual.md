@@ -189,9 +189,30 @@ Present as:
 
 **Wait for user confirmation before proceeding to Phase 3.** Ask which updates to apply.
 
-### Phase 3 — Apply Updates
+### Phase 3 — Apply Surgical Updates
 
-For each confirmed update, rewrite the affected section(s) of `docs/ADMIN_TRAINING_MANUAL.md`.
+**CRITICAL — DO NOT REWRITE THE DOCUMENT. DO NOT REWRITE SECTIONS. DO NOT REPHRASE EXISTING TEXT.**
+
+Full refresh does NOT mean "regenerate from scratch." It means "audit everything and fix what's wrong." The existing manual was carefully written. Your job is to make **minimal, targeted edits**:
+
+- **Missing feature?** → Insert a new paragraph or bullet point describing it, in the style of the surrounding text.
+- **Removed feature?** → Delete only the sentences/paragraphs about that feature. Do not touch anything else in the section.
+- **Changed behavior?** → Edit only the specific sentence(s) that describe the old behavior. Change them to describe the new behavior. Leave every other sentence untouched.
+- **New admin page with no section?** → Add a new section in the logical position, following the structure of existing sections.
+
+**What you MUST NOT do:**
+
+- Do NOT rewrite a section "in your own words" — the existing wording is intentional
+- Do NOT reorganize paragraphs or bullet points within a section
+- Do NOT change formatting, heading levels, or markdown style of existing content
+- Do NOT add content that wasn't identified in the Phase 2 report
+- Do NOT rephrase sentences that are already accurate — even if you think your version is "better"
+- Do NOT replace ASCII diagrams that are still correct
+- Do NOT touch sections marked as accurate in the Phase 2 report — not even whitespace
+
+**Think of yourself as a copy editor with a red pen, not an author rewriting a chapter.** You are making corrections and additions to an existing document. If a section is 95% correct, you change only the 5% that's wrong — you do not rewrite the 95%.
+
+For each confirmed update, use the Edit tool to make the smallest possible change that fixes the issue. Prefer multiple small edits over replacing large blocks.
 
 ---
 
@@ -278,6 +299,7 @@ After the markdown file is finalized:
 
 ## Rules
 
+- **NEVER rewrite the document or rewrite sections** — both incremental and full refresh modes make surgical, minimal edits to the existing document. The existing text is intentional. Change only what is wrong or missing. Leave everything else exactly as-is — same wording, same formatting, same order.
 - **Never fabricate behavior** — every UI description must come from reading actual source code
 - **Never remove sections without confirmation** — even if the feature no longer exists, confirm with the user first
 - **Non-technical audience** — avoid code snippets, API details, or developer jargon in the manual itself
@@ -286,3 +308,4 @@ After the markdown file is finalized:
 - **Wait for confirmation** before applying changes (Phase 3/4 gate)
 - **Always update the version number** — increment minor version for incremental updates, major version for full refresh
 - **Always attempt PDF regeneration** after updating the markdown
+- **Full refresh ≠ full rewrite** — "full" refers to the scope of the _audit_ (all sections), not the scope of the _edits_. The edits are always minimal.
