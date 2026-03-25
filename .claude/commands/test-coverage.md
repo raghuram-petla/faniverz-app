@@ -287,9 +287,60 @@ If any test fails:
 
 After Phase 4 completes, loop back to Phase 1 for a new full scan.
 
+## Phase 5 — Final Validation
+
+After 3 consecutive clean cycles, run a **full validation pass** to ensure everything compiles, builds, and passes. This is a hard gate — do NOT produce the final report until all checks pass.
+
+### Step 5A — TypeScript compilation (no errors allowed)
+
+```bash
+# Mobile
+npx tsc --noEmit
+
+# Admin
+cd admin && npx tsc --noEmit
+```
+
+If there are TypeScript errors, fix them (in test files only — do not modify source unless it's a clear bug introduced by the coverage work) and re-run until clean.
+
+### Step 5B — All tests pass
+
+```bash
+# Mobile
+npx jest --silent --forceExit --maxWorkers=2
+
+# Admin
+cd admin && npx vitest run --maxWorkers=2
+```
+
+If any tests fail, fix them and re-run until all pass. Never skip or disable tests to make this step pass.
+
+### Step 5C — ESLint passes
+
+```bash
+# Mobile
+npx eslint .
+
+# Admin
+cd admin && npx eslint . --max-warnings 0
+```
+
+Fix any lint errors in test files and re-run until clean.
+
+### Step 5D — Build succeeds
+
+```bash
+# Admin (Next.js build)
+cd admin && npx next build
+```
+
+If the build fails, diagnose and fix the issue. Common causes: import errors in test utilities leaking into the build, missing type exports, or barrel file issues. Fix and re-run until the build succeeds.
+
+**All 4 checks (tsc, tests, lint, build) must pass before producing the final report.** If any check fails, fix the issue and re-run ALL checks from the top (5A through 5D) to ensure no regressions.
+
 ## Final Report
 
-After 3 consecutive clean cycles, print:
+After Phase 5 passes completely, print:
 
 ```
 ## Test Coverage — Complete
@@ -312,9 +363,13 @@ After 3 consecutive clean cycles, print:
 ### Existing Tests Improved
 - path/to/test.test.tsx — added M tests for [missing coverage areas]
 
-### Quality Gates
-- Mobile: PASS/FAIL (X suites, Y tests)
-- Admin: PASS/FAIL (X suites, Y tests)
+### Final Validation (Phase 5)
+| Check        | Mobile | Admin |
+|--------------|--------|-------|
+| TypeScript   | PASS   | PASS  |
+| Tests        | PASS (X suites, Y tests) | PASS (X suites, Y tests) |
+| ESLint       | PASS   | PASS  |
+| Build        | N/A    | PASS  |
 ```
 
 ## Rules
