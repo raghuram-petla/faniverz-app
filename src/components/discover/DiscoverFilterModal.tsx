@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import type { OTTPlatform, ProductionHouse } from '@/types';
+import { GENRES } from '@shared/movie-genres';
 
 /** @contract Full-screen filter modal with platform, genre, and production house multi-select */
 interface DiscoverFilterModalProps {
@@ -22,23 +23,6 @@ interface DiscoverFilterModalProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   styles: Record<string, any>;
 }
-
-/** @invariant genre list must stay in sync with the genres column values in the movies table */
-/** @coupling admin panel uses the same genre list in admin/src/app/movies — changes must be mirrored */
-export const GENRES = [
-  'Action',
-  'Drama',
-  'Comedy',
-  'Romance',
-  'Thriller',
-  'Horror',
-  'Sci-Fi',
-  'Fantasy',
-  'Crime',
-  'Family',
-  'Adventure',
-  'Historical',
-];
 
 export const SORT_OPTIONS = [
   { value: 'popular' as const, label: 'Popular' },

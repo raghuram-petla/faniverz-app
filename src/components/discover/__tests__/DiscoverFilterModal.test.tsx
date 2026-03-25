@@ -42,7 +42,8 @@ jest.mock('@/components/ui/PlatformBadge', () => {
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { DiscoverFilterModal, GENRES, SORT_OPTIONS, FILTER_TABS } from '../DiscoverFilterModal';
+import { DiscoverFilterModal, SORT_OPTIONS, FILTER_TABS } from '../DiscoverFilterModal';
+import { GENRES } from '@shared/movie-genres';
 
 const mockStyles = new Proxy({}, { get: () => ({}) });
 

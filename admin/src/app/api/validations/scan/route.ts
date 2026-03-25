@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
-import { verifyAdmin } from '@/lib/sync-helpers';
+import { verifyAdmin, unauthorizedResponse } from '@/lib/sync-helpers';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getR2Client } from '@/lib/r2-client';
 import type { ScanResult, ScanEntity } from '@/hooks/useValidationTypes';
@@ -100,7 +100,7 @@ function classifyUrl(url: string): 'local' | 'external' | 'full_r2' {
 export async function POST(request: NextRequest) {
   const user = await verifyAdmin(request.headers.get('authorization'));
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const body = await request.json();

@@ -17,6 +17,13 @@ vi.mock('@/lib/sync-helpers', () => ({
   verifyAdmin: (...args: unknown[]) => mockVerifyAdmin(...args),
   ensureTmdbApiKey: () => mockEnsureTmdbApiKey(),
   errorResponse: (...args: unknown[]) => mockErrorResponse(...args),
+  unauthorizedResponse: () => ({
+    body: { error: 'Unauthorized' },
+    status: 401,
+    async json() {
+      return this.body;
+    },
+  }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({

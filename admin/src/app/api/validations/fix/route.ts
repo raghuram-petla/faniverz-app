@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { verifyAdminCanMutate } from '@/lib/sync-helpers';
+import {
+  verifyAdminCanMutate,
+  unauthorizedResponse,
+  viewerReadonlyResponse,
+} from '@/lib/sync-helpers';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getR2Client } from '@/lib/r2-client';
 import { uploadImageFromUrl } from '@/lib/r2-sync';
@@ -42,12 +46,8 @@ function extractTmdbPath(url: string): string | null {
 // @boundary: mutation endpoint — requires non-viewer admin role
 export async function POST(request: NextRequest) {
   const authResult = await verifyAdminCanMutate(request.headers.get('authorization'));
-  if (authResult === 'viewer_readonly') {
-    return NextResponse.json({ error: 'Read-only access' }, { status: 403 });
-  }
-  if (!authResult) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (authResult === 'viewer_readonly') return viewerReadonlyResponse();
+  if (!authResult) return unauthorizedResponse();
 
   const body = await request.json();
   const items = body.items as FixItem[];

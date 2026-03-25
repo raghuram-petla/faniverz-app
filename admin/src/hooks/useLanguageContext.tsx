@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffectiveUser } from '@/hooks/useImpersonation';
 import type { Language } from '@/lib/types';
 import { supabase } from '@/lib/supabase-browser';
+import { ADMIN_STALE_1H } from '@/lib/query-config';
 
 /**
  * @contract Language context provides the selected content language for movie scoping.
@@ -75,7 +76,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const { data: languages = [] } = useQuery<Language[]>({
     queryKey: ['languages'],
     queryFn: fetchLanguages,
-    staleTime: 60 * 60 * 1000,
+    staleTime: ADMIN_STALE_1H,
     enabled: !!user,
   });
 

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdminCanMutate } from '@/lib/sync-helpers';
+import {
+  verifyAdminCanMutate,
+  unauthorizedResponse,
+  viewerReadonlyResponse,
+} from '@/lib/sync-helpers';
 
 // @contract POST { auditEntryId } → reverts the change via DB function
 // @sideeffect The DB function sets app.admin_user_id so the audit trigger
@@ -8,12 +12,8 @@ import { verifyAdminCanMutate } from '@/lib/sync-helpers';
 export async function POST(req: NextRequest) {
   try {
     const auth = await verifyAdminCanMutate(req.headers.get('authorization'));
-    if (auth === 'viewer_readonly') {
-      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-    }
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (auth === 'viewer_readonly') return viewerReadonlyResponse();
+    if (!auth) return unauthorizedResponse();
 
     const { auditEntryId } = await req.json();
     if (!auditEntryId) {

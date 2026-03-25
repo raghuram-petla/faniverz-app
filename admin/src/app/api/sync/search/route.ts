@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { searchMovies, searchPersons } from '@/lib/tmdb';
-import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
+import {
+  ensureTmdbApiKey,
+  errorResponse,
+  verifyAdmin,
+  unauthorizedResponse,
+} from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/search
@@ -14,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await verifyAdmin(request.headers.get('authorization'));
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const tmdb = ensureTmdbApiKey();

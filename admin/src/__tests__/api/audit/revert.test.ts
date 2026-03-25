@@ -6,6 +6,20 @@ const mockRpc = vi.fn();
 
 vi.mock('@/lib/sync-helpers', () => ({
   verifyAdminCanMutate: (...args: unknown[]) => mockVerifyAdminCanMutate(...args),
+  unauthorizedResponse: () => ({
+    body: { error: 'Unauthorized' },
+    status: 401,
+    async json() {
+      return this.body;
+    },
+  }),
+  viewerReadonlyResponse: () => ({
+    body: { error: 'Viewer role is read-only' },
+    status: 403,
+    async json() {
+      return this.body;
+    },
+  }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({

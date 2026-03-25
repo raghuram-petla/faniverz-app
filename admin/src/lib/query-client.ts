@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { ADMIN_STALE_5M } from '@/lib/query-config';
 
 // @assumes: refetchOnWindowFocus is disabled — admin users who switch tabs and come
 // back will see stale data for up to 5 minutes (staleTime). This is intentional to
@@ -12,8 +13,8 @@ export function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 5 * 60 * 1000,
-        gcTime: 10 * 60 * 1000,
+        staleTime: ADMIN_STALE_5M,
+        gcTime: 2 * ADMIN_STALE_5M,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         retry: 1,

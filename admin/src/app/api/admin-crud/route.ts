@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdminCanMutate, verifyAdminWithLanguages } from '@/lib/sync-helpers';
+import {
+  verifyAdminCanMutate,
+  verifyAdminWithLanguages,
+  unauthorizedResponse,
+  viewerReadonlyResponse,
+} from '@/lib/sync-helpers';
 
 // @boundary Generic CRUD endpoint that delegates to the admin_crud RPC function.
 // The RPC sets app.admin_user_id in the same transaction, ensuring the audit
@@ -28,12 +33,7 @@ const MOVIE_CHILD_TABLES = new Set([
   'movie_theatrical_runs',
 ]);
 
-const viewerReadonlyResponse = () =>
-  NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-
 const forbiddenResponse = (msg: string) => NextResponse.json({ error: msg }, { status: 403 });
-
-const unauthorizedResponse = () => NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
 /**
  * @boundary Validates that an admin user has access to a movie's language.

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdminWithRole, errorResponse } from '@/lib/sync-helpers';
+import { verifyAdminWithRole, errorResponse, unauthorizedResponse } from '@/lib/sync-helpers';
 
 /**
  * GET /api/user-languages?userId=<uuid>
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await verifyAdminWithRole(req.headers.get('authorization'));
     if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const userId = req.nextUrl.searchParams.get('userId');
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await verifyAdminWithRole(req.headers.get('authorization'));
     if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     // @boundary Only root/super_admin can assign languages

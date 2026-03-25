@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyBearer } from '@/lib/sync-helpers';
+import { verifyBearer, unauthorizedResponse } from '@/lib/sync-helpers';
 
 /**
  * POST /api/accept-invitation
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     // @coupling: verifyBearer uses Supabase anon client (not admin) — intentional for self-service flow
     const authUser = await verifyBearer(req.headers.get('authorization'));
     if (!authUser) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const { email, userId } = await req.json();

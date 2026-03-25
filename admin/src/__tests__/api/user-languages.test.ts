@@ -16,6 +16,13 @@ vi.mock('@/lib/sync-helpers', () => ({
       return this.body;
     },
   }),
+  unauthorizedResponse: () => ({
+    body: { error: 'Unauthorized' },
+    status: 401,
+    async json() {
+      return this.body;
+    },
+  }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({

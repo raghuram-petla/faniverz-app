@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdminCanMutate, errorResponse } from '@/lib/sync-helpers';
+import {
+  verifyAdminCanMutate,
+  errorResponse,
+  unauthorizedResponse,
+  viewerReadonlyResponse,
+} from '@/lib/sync-helpers';
 
 /**
  * POST /api/manage-user
@@ -17,12 +22,8 @@ import { verifyAdminCanMutate, errorResponse } from '@/lib/sync-helpers';
 export async function POST(req: NextRequest) {
   try {
     const auth = await verifyAdminCanMutate(req.headers.get('authorization'));
-    if (auth === 'viewer_readonly') {
-      return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-    }
-    if (!auth) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    if (auth === 'viewer_readonly') return viewerReadonlyResponse();
+    if (!auth) return unauthorizedResponse();
 
     const body = await req.json();
     const { action, userId } = body;

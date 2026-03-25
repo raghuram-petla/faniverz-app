@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdmin } from '@/lib/sync-helpers';
+import { verifyAdmin, unauthorizedResponse } from '@/lib/sync-helpers';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import type { SummaryEntry } from '@/hooks/useValidationTypes';
 
@@ -27,7 +27,7 @@ const SCAN_CONFIGS: ScanConfig[] = [
 export async function GET(request: NextRequest) {
   const user = await verifyAdmin(request.headers.get('authorization'));
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const supabase = getSupabaseAdmin();

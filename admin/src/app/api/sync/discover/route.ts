@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { discoverMoviesByLanguage, discoverMoviesByLanguageAndMonth } from '@/lib/tmdb';
-import { ensureTmdbApiKey, errorResponse, verifyAdmin } from '@/lib/sync-helpers';
+import {
+  ensureTmdbApiKey,
+  errorResponse,
+  verifyAdmin,
+  unauthorizedResponse,
+} from '@/lib/sync-helpers';
 
 /**
  * POST /api/sync/discover
- * Discover movies on TMDB by language, year (and optional month).
+ * Discover movies on TMDB by language, year (and optional months).
  * Returns results + which tmdb_ids already exist in our DB.
  * Read-only — no DB writes.
  */
@@ -15,7 +20,7 @@ export async function POST(request: NextRequest) {
     // @boundary: admin-only — prevents unauthenticated TMDB API usage
     const user = await verifyAdmin(request.headers.get('authorization'));
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     // @coupling: ensureTmdbApiKey reads TMDB_API_KEY env var; returns error response if missing
@@ -23,9 +28,13 @@ export async function POST(request: NextRequest) {
     if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
-    // @nullable: month is optional — omitting it discovers all movies for the entire year
+    // @nullable: months is optional — omitting it discovers all movies for the entire year
     // @nullable: language is optional — omitting it discovers movies in all supported languages
-    const { year, month, language } = body as { year: number; month?: number; language?: string };
+    const { year, months, language } = body as {
+      year: number;
+      months?: number[];
+      language?: string;
+    };
 
     if (!year || year < 1900 || year > 2100) {
       return NextResponse.json({ error: 'Invalid year.' }, { status: 400 });
@@ -48,13 +57,24 @@ export async function POST(request: NextRequest) {
     const seenIds = new Set<number>();
     const results: Awaited<ReturnType<typeof discoverMoviesByLanguage>> = [];
     for (const lang of langs) {
-      const batch = month
-        ? await discoverMoviesByLanguageAndMonth(year, month, lang, tmdb.apiKey)
-        : await discoverMoviesByLanguage(year, lang, tmdb.apiKey);
-      for (const m of batch) {
-        if (!seenIds.has(m.id)) {
-          seenIds.add(m.id);
-          results.push(m);
+      if (months && months.length > 0) {
+        // @contract: discover each selected month separately and merge results
+        for (const mo of months) {
+          const batch = await discoverMoviesByLanguageAndMonth(year, mo, lang, tmdb.apiKey);
+          for (const m of batch) {
+            if (!seenIds.has(m.id)) {
+              seenIds.add(m.id);
+              results.push(m);
+            }
+          }
+        }
+      } else {
+        const batch = await discoverMoviesByLanguage(year, lang, tmdb.apiKey);
+        for (const m of batch) {
+          if (!seenIds.has(m.id)) {
+            seenIds.add(m.id);
+            results.push(m);
+          }
         }
       }
     }

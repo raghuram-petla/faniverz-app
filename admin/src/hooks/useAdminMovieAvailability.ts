@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
 import type { MoviePlatformAvailability, Country, AvailabilityType } from '@shared/types';
+import { ADMIN_STALE_24H } from '@/lib/query-config';
 
 /** @contract Fetches all availability rows for a movie, with platform relation */
 // @coupling JOINs movie_platform_availability + platforms via PostgREST foreign-key embed
@@ -35,7 +36,7 @@ export function useCountries() {
       if (error) throw error;
       return data as Country[];
     },
-    staleTime: 24 * 60 * 60 * 1000,
+    staleTime: ADMIN_STALE_24H,
   });
 }
 

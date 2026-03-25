@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { createCrudHooks } from '@/hooks/createCrudHooks';
 import type { Movie } from '@/lib/types';
+import { ADMIN_STALE_30S, ADMIN_STALE_1M } from '@/lib/query-config';
 import {
   type AdvancedFilters,
   applyStatusFilter,
@@ -51,7 +52,7 @@ export function useAdminMovies(
       return [...new Set((pmData ?? []).map((r: { movie_id: string }) => r.movie_id))];
     },
     enabled: needsPlatformIds,
-    staleTime: 60_000,
+    staleTime: ADMIN_STALE_1M,
   });
 
   // @sideeffect Resolves actor name → movie IDs via movie_cast join
@@ -66,7 +67,7 @@ export function useAdminMovies(
       return [...new Set((data ?? []).map((r: { movie_id: string }) => r.movie_id))];
     },
     enabled: hasActorSearch,
-    staleTime: 30_000,
+    staleTime: ADMIN_STALE_30S,
   });
 
   // @sideeffect Resolves platform filter → movie IDs via movie_platforms
@@ -81,7 +82,7 @@ export function useAdminMovies(
       return [...new Set((data ?? []).map((r: { movie_id: string }) => r.movie_id))];
     },
     enabled: hasPlatformFilter,
-    staleTime: 60_000,
+    staleTime: ADMIN_STALE_1M,
   });
 
   const joinFiltersReady =

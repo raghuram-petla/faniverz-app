@@ -7,6 +7,13 @@ const mockOrder = vi.fn();
 
 vi.mock('@/lib/sync-helpers', () => ({
   verifyAdmin: (...args: unknown[]) => mockVerifyAdmin(...args),
+  unauthorizedResponse: () => ({
+    body: { error: 'Unauthorized' },
+    status: 401,
+    async json() {
+      return this.body;
+    },
+  }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdmin } from '@/lib/sync-helpers';
+import { verifyAdmin, unauthorizedResponse } from '@/lib/sync-helpers';
 
 const MAX_URLS = 10;
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdmin } from '@/lib/sync-helpers';
+import { verifyAdmin, unauthorizedResponse } from '@/lib/sync-helpers';
 
 // @invariant: whitelist-only — PATCH accepts only these two fields, all others are silently dropped
 const ALLOWED_FIELDS = ['avatar_url', 'display_name'] as const;
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const user = await verifyAdmin(req.headers.get('authorization'));
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     // @nullable: avatar_url and picture may both be absent depending on OAuth provider
@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest) {
   try {
     const user = await verifyAdmin(req.headers.get('authorization'));
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const body = await req.json();

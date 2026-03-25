@@ -215,3 +215,13 @@ export function errorResponse(label: string, err: unknown, status = 500): NextRe
     { status },
   );
 }
+
+/** @contract Standard 401 response for unauthenticated/blocked admin requests */
+export function unauthorizedResponse(): NextResponse {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
+
+/** @contract Standard 403 response when viewer role attempts a mutation */
+export function viewerReadonlyResponse(): NextResponse {
+  return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
+}

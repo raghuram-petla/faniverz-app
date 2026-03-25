@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import type { DashboardStats } from '@/lib/types';
+import { ADMIN_STALE_5M } from '@/lib/query-config';
 
 /**
  * Fetch dashboard stats, optionally scoped to production house movies.
@@ -95,6 +96,6 @@ export function useDashboardStats(productionHouseIds?: string[]) {
         totalComments: comments.count ?? 0,
       };
     },
-    staleTime: 5 * 60_000,
+    staleTime: ADMIN_STALE_5M,
   });
 }
