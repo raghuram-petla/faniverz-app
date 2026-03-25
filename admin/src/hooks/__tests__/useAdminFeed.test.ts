@@ -92,10 +92,10 @@ describe('useAdminFeed', () => {
       mockSupabaseFromHolder.fn.mockReturnValue(chain);
 
       const qc = makeQueryClient();
-      const { result } = renderHook(() => useAdminFeed('news'), { wrapper: wrapper(qc) });
+      const { result } = renderHook(() => useAdminFeed('video'), { wrapper: wrapper(qc) });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(chain.eq).toHaveBeenCalledWith('feed_type', 'news');
+      expect(chain.eq).toHaveBeenCalledWith('feed_type', 'video');
     });
 
     it('throws on supabase error', async () => {

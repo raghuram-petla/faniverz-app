@@ -38,7 +38,27 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-const mockAuditData = {
+const mockAuditData: {
+  pages: Array<
+    Array<{
+      id: string;
+      action: string;
+      entity_type: string;
+      entity_id: string;
+      entity_display_name: string | null;
+      admin_display_name: string | null;
+      admin_email: string | null;
+      impersonating_role: string | null;
+      impersonating_display_name: string | null;
+      impersonating_email: string | null;
+      details: Record<string, unknown>;
+      created_at: string;
+      reverted_at: string | null;
+      reverted_by_display_name: string | null;
+      reverted_by_email: string | null;
+    }>
+  >;
+} = {
   pages: [
     [
       {

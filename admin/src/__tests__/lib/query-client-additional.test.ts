@@ -19,35 +19,35 @@ describe('makeQueryClient — default options', () => {
   it('configures staleTime to 5 minutes', () => {
     const client = makeQueryClient();
     // Access defaults via the internal options store
-    // @ts-expect-error accessing internal options for testing
+
     const staleTime = client.getDefaultOptions()?.queries?.staleTime;
     expect(staleTime).toBe(5 * 60 * 1000);
   });
 
   it('configures gcTime to 10 minutes', () => {
     const client = makeQueryClient();
-    // @ts-expect-error accessing internal options for testing
+
     const gcTime = client.getDefaultOptions()?.queries?.gcTime;
     expect(gcTime).toBe(10 * 60 * 1000);
   });
 
   it('disables refetchOnWindowFocus', () => {
     const client = makeQueryClient();
-    // @ts-expect-error accessing internal options for testing
+
     const refetchOnWindowFocus = client.getDefaultOptions()?.queries?.refetchOnWindowFocus;
     expect(refetchOnWindowFocus).toBe(false);
   });
 
   it('disables refetchOnReconnect', () => {
     const client = makeQueryClient();
-    // @ts-expect-error accessing internal options for testing
+
     const refetchOnReconnect = client.getDefaultOptions()?.queries?.refetchOnReconnect;
     expect(refetchOnReconnect).toBe(false);
   });
 
   it('sets retry to 1', () => {
     const client = makeQueryClient();
-    // @ts-expect-error accessing internal options for testing
+
     const retry = client.getDefaultOptions()?.queries?.retry;
     expect(retry).toBe(1);
   });

@@ -189,19 +189,26 @@ vi.mock('@/components/movie-edit', () => ({
     capturedProps.TheatricalRunsSection = props;
     return <div data-testid="theatrical-runs-section" />;
   },
+  SyncSection: (props: any) => {
+    capturedProps.SyncSection = props;
+    return <div data-testid="sync-section" />;
+  },
   SectionNav: ({
-    activeSection,
     onSectionChange,
+    hiddenSections,
   }: {
-    activeSection: string;
     onSectionChange: (s: string) => void;
+    hiddenSections?: string[];
   }) => (
-    <div data-testid="section-nav">
+    <div data-testid="section-nav" data-hidden={hiddenSections?.join(',') || ''}>
       <button onClick={() => onSectionChange('basic-info')}>Basic Info</button>
       <button onClick={() => onSectionChange('posters')}>Posters</button>
       <button onClick={() => onSectionChange('videos')}>Videos</button>
       <button onClick={() => onSectionChange('cast-crew')}>Cast &amp; Crew</button>
       <button onClick={() => onSectionChange('releases')}>Releases</button>
+      {!hiddenSections?.includes('tmdb-sync') && (
+        <button onClick={() => onSectionChange('tmdb-sync')}>TMDB Sync</button>
+      )}
     </div>
   ),
   SectionCard: ({
@@ -686,5 +693,39 @@ describe('EditMoviePage', () => {
     renderWithProviders(<EditMoviePage />);
     capturedProps.FormChangesDock.onSave();
     expect(mockEditState.handleSubmit).toHaveBeenCalled();
+  });
+
+  describe('TMDB Sync tab', () => {
+    it('shows TMDB Sync tab when movie has tmdb_id', () => {
+      renderWithProviders(<EditMoviePage />);
+      expect(screen.getByText('TMDB Sync')).toBeInTheDocument();
+    });
+
+    it('hides TMDB Sync tab when movie has no tmdb_id', () => {
+      const originalMovie = mockEditState.movie;
+      mockEditState.movie = { ...originalMovie, tmdb_id: null as unknown as number };
+      renderWithProviders(<EditMoviePage />);
+      expect(screen.queryByText('TMDB Sync')).not.toBeInTheDocument();
+      mockEditState.movie = originalMovie;
+    });
+
+    it('renders SyncSection when TMDB Sync tab is active', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('TMDB Sync'));
+      expect(screen.getByTestId('sync-section')).toBeInTheDocument();
+    });
+
+    it('passes movie to SyncSection', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('TMDB Sync'));
+      expect(capturedProps.SyncSection.movie).toBe(mockEditState.movie);
+    });
+
+    it('hides other sections when TMDB Sync tab is active', () => {
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('TMDB Sync'));
+      expect(screen.queryByTestId('basic-info-section')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('videos-section')).not.toBeInTheDocument();
+    });
   });
 });

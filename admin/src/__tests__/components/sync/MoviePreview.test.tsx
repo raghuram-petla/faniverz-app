@@ -34,6 +34,13 @@ const makeMovieResult = (overrides: Record<string, unknown> = {}) => ({
     certification: null,
     spokenLanguages: [],
     productionCompanyCount: 0,
+    originalLanguage: 'te',
+    dbPosterCount: 0,
+    dbBackdropCount: 0,
+    dbVideoCount: 0,
+    dbKeywordCount: 0,
+    dbProductionHouseCount: 0,
+    dbPlatformNames: [],
   },
   ...overrides,
 });

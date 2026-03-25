@@ -150,11 +150,11 @@ describe('useCreateNotification', () => {
     });
 
     await act(async () => {
-      result.current.mutate({ title: 'New', body: 'Test body' });
+      result.current.mutate({ title: 'New', message: 'Test body' });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockInsert).toHaveBeenCalledWith({ title: 'New', body: 'Test body' });
+    expect(mockInsert).toHaveBeenCalledWith({ title: 'New', message: 'Test body' });
     expect(mockInvoke).toHaveBeenCalledWith('send-push', {
       body: { notification_id: 'n-new' },
     });

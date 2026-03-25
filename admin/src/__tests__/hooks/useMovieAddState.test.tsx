@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useMovieAddState } from '@/hooks/useMovieAddState';
+import type { PendingPosterAdd } from '@/hooks/useMovieEditTypes';
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -201,9 +202,12 @@ describe('useMovieAddState', () => {
         ...prev,
         {
           _id: 'pv1',
-          video_url: 'http://example.com/v.mp4',
+          youtube_id: 'abc123',
+          title: 'Teaser',
           video_type: 'trailer',
-          label: 'Teaser',
+          description: null,
+          video_date: null,
+          display_order: 0,
         },
       ]);
     });
@@ -213,7 +217,7 @@ describe('useMovieAddState', () => {
     });
 
     expect(mockAddVideo).toHaveBeenCalledWith(
-      expect.objectContaining({ movie_id: 'movie-v1', video_url: 'http://example.com/v.mp4' }),
+      expect.objectContaining({ movie_id: 'movie-v1', youtube_id: 'abc123' }),
     );
   });
 
@@ -224,15 +228,30 @@ describe('useMovieAddState', () => {
     const { result } = renderHook(() => useMovieAddState(), { wrapper });
     act(() => result.current.updateField('title', 'Poster Movie'));
     act(() => {
-      result.current.setPendingPosterAdds((prev) => [
+      result.current.setPendingPosterAdds((prev): PendingPosterAdd[] => [
         ...prev,
         {
           _id: 'pp1',
           image_url: 'http://poster1.jpg',
           is_main_poster: false,
+          is_main_backdrop: false,
           image_type: 'poster',
+          title: '',
+          description: null,
+          poster_date: null,
+          display_order: 0,
         },
-        { _id: 'pp2', image_url: 'http://poster2.jpg', is_main_poster: true, image_type: 'poster' },
+        {
+          _id: 'pp2',
+          image_url: 'http://poster2.jpg',
+          is_main_poster: true,
+          is_main_backdrop: false,
+          image_type: 'poster',
+          title: '',
+          description: null,
+          poster_date: null,
+          display_order: 1,
+        },
       ]);
     });
     act(() => result.current.setPendingMainPosterId('pp1'));
@@ -287,7 +306,17 @@ describe('useMovieAddState', () => {
     act(() => {
       result.current.setPendingPHAdds((prev) => [
         ...prev,
-        { production_house_id: 'ph-1', _ph: { id: 'ph-1', name: 'PH' } },
+        {
+          production_house_id: 'ph-1',
+          _ph: {
+            id: 'ph-1',
+            name: 'PH',
+            logo_url: null,
+            description: null,
+            tmdb_company_id: null,
+            created_at: '2024-01-01',
+          },
+        },
       ]);
     });
 
@@ -374,13 +403,18 @@ describe('useMovieAddState', () => {
     const { result } = renderHook(() => useMovieAddState(), { wrapper });
     act(() => result.current.updateField('title', 'Main Poster Movie'));
     act(() => {
-      result.current.setPendingPosterAdds((prev) => [
+      result.current.setPendingPosterAdds((prev): PendingPosterAdd[] => [
         ...prev,
         {
           _id: 'mp1',
           image_url: 'http://main-poster.jpg',
           is_main_poster: true,
+          is_main_backdrop: false,
           image_type: 'poster',
+          title: '',
+          description: null,
+          poster_date: null,
+          display_order: 0,
         },
       ]);
     });
@@ -432,13 +466,18 @@ describe('useMovieAddState', () => {
     const { result } = renderHook(() => useMovieAddState(), { wrapper });
     act(() => result.current.updateField('title', 'Fallback Poster'));
     act(() => {
-      result.current.setPendingPosterAdds((prev) => [
+      result.current.setPendingPosterAdds((prev): PendingPosterAdd[] => [
         ...prev,
         {
           _id: 'pp-fallback',
           image_url: 'http://fallback.jpg',
           is_main_poster: true,
+          is_main_backdrop: false,
           image_type: 'poster',
+          title: '',
+          description: null,
+          poster_date: null,
+          display_order: 0,
         },
       ]);
     });
@@ -529,7 +568,15 @@ describe('useMovieAddState', () => {
     act(() => {
       result.current.setPendingVideoAdds((prev) => [
         ...prev,
-        { _id: 'v1', video_url: 'http://v.mp4', video_type: 'trailer', label: '' },
+        {
+          _id: 'v1',
+          youtube_id: 'vid1',
+          title: '',
+          video_type: 'trailer' as const,
+          description: null,
+          video_date: null,
+          display_order: 0,
+        },
       ]);
     });
     expect(result.current.pendingVideoIds.has('v1')).toBe(true);

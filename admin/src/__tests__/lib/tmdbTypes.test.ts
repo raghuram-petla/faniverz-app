@@ -264,7 +264,7 @@ describe('extractIndiaCertification', () => {
       results: [
         {
           iso_3166_1: country,
-          release_dates: releases,
+          release_dates: releases.map((r) => ({ ...r, release_date: '2024-01-01' })),
         },
       ],
     };
@@ -319,8 +319,8 @@ describe('extractIndiaCertification', () => {
         {
           iso_3166_1: 'IN',
           release_dates: [
-            { type: 4, certification: 'A' },
-            { type: 3, certification: 'U' },
+            { type: 4, certification: 'A', release_date: '2024-01-01' },
+            { type: 3, certification: 'U', release_date: '2024-01-01' },
           ],
         },
       ],
@@ -334,8 +334,8 @@ describe('extractIndiaCertification', () => {
         {
           iso_3166_1: 'IN',
           release_dates: [
-            { type: 1, certification: '' },
-            { type: 4, certification: 'UA' },
+            { type: 1, certification: '', release_date: '2024-01-01' },
+            { type: 4, certification: 'UA', release_date: '2024-01-01' },
           ],
         },
       ],

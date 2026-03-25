@@ -14,6 +14,7 @@ import {
   Calendar,
   Plus,
   Database,
+  RefreshCw,
 } from 'lucide-react';
 import { useMovieEditState } from '@/hooks/useMovieEditState';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -32,8 +33,9 @@ import {
   SectionNav,
   SectionCard,
   PreviewPanel,
+  SyncSection,
 } from '@/components/movie-edit';
-import type { MovieSectionId } from '@/components/movie-edit';
+import type { MovieSectionId, SyncSectionProps } from '@/components/movie-edit';
 
 /** @contract resolve R2 bucket from the selected image's type in the gallery */
 function getBucketForUrl(
@@ -117,8 +119,12 @@ export default function EditMoviePage() {
         )}
       </div>
 
-      {/* ─── Section Nav (5 tabs) ─── */}
-      <SectionNav activeSection={activeSection} onSectionChange={setActiveSection} />
+      {/* ─── Section Nav (6 tabs — TMDB Sync hidden when no tmdb_id) ─── */}
+      <SectionNav
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        hiddenSections={editState.movie?.tmdb_id ? [] : ['tmdb-sync']}
+      />
 
       <div className={`flex gap-8 mt-6${isReadOnly ? ' pointer-events-none opacity-70' : ''}`}>
         {/* Left column — Active tab content */}
@@ -251,6 +257,12 @@ export default function EditMoviePage() {
                 <PlatformsSection movieId={id} />
               </SectionCard>
             </>
+          )}
+
+          {activeSection === 'tmdb-sync' && editState.movie?.tmdb_id && (
+            <SectionCard title="TMDB Sync" icon={RefreshCw}>
+              <SyncSection movie={editState.movie as SyncSectionProps['movie']} />
+            </SectionCard>
           )}
         </div>
 

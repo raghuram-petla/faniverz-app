@@ -115,7 +115,7 @@ describe('buildChildMutationPromises', () => {
           actor_id: 'a1',
           credit_type: 'cast' as const,
           role_name: 'Hero',
-          character_name: null,
+
           role_order: null,
           display_order: 0,
         },
@@ -165,7 +165,7 @@ describe('buildChildMutationPromises', () => {
           actor_id: 'a2',
           credit_type: 'cast' as const,
           role_name: '',
-          character_name: null,
+
           role_order: null,
           display_order: 1,
         },
@@ -502,7 +502,7 @@ describe('buildChildMutationPromises', () => {
           actor_id: 'a1',
           credit_type: 'cast' as const,
           role_name: '',
-          character_name: null,
+
           role_order: null,
           display_order: 0,
         },
@@ -524,7 +524,7 @@ describe('buildChildMutationPromises', () => {
           actor_id: 'a1',
           credit_type: 'cast' as const,
           role_name: '',
-          character_name: null,
+
           role_order: null,
           display_order: 42,
         },
@@ -587,7 +587,9 @@ describe('buildChildMutationPromises', () => {
         poster_focus_x: null,
         poster_focus_y: null,
       } as never,
-      postersData: [{ id: 'bd1', image_url: 'https://backdrop.jpg', is_main_backdrop: true }],
+      postersData: [
+        { id: 'bd1', image_url: 'https://backdrop.jpg', is_main_backdrop: true } as never,
+      ],
     });
 
     const promises = await buildChildMutationPromises(deps);
@@ -606,7 +608,7 @@ describe('buildChildMutationPromises', () => {
           actor_id: 'a1',
           credit_type: 'cast' as const,
           role_name: '',
-          character_name: null,
+
           role_order: null,
           display_order: 5,
         },

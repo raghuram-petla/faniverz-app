@@ -48,7 +48,7 @@ const defaultProps = {
   title: 'Pushpa 2',
   backdropUrl: 'https://cdn/backdrop.jpg',
   posterUrl: 'https://cdn/poster.jpg',
-  movieStatus: 'ott' as const,
+  movieStatus: 'streaming' as const,
   rating: 4.5,
   reviewCount: 1200,
   runtime: 180,

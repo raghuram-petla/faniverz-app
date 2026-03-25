@@ -89,6 +89,7 @@ const MOVIE_SYNC_KEYS = [
   'upcoming-movies',
   'upcoming-rereleases',
   'theater-search',
+  'tmdb-lookup',
 ];
 
 /** Discover movies from TMDB by language, year, and optional month. */
@@ -103,13 +104,33 @@ export function useDiscoverMovies() {
 }
 
 /** Preview a TMDB movie or person before importing. */
+// @contract originalLanguage is optional — when provided, skips the initial TMDB fetch
+// used to detect language (saves ~1-2s for non-English movies)
 export function useTmdbLookup() {
   return useMutation({
-    mutationFn: (params: { tmdbId: number; type: 'movie' | 'person' }) =>
+    mutationFn: (params: { tmdbId: number; type: 'movie' | 'person'; originalLanguage?: string }) =>
       syncApi<LookupResult>('lookup', params),
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
     },
+  });
+}
+
+/**
+ * Auto-fetch TMDB movie lookup via useQuery — for components that need data on mount.
+ * Unlike useTmdbLookup (mutation), this fires automatically and handles React strict mode.
+ * @contract originalLanguage skips the redundant language-detection TMDB call
+ */
+export function useTmdbMovieLookup(tmdbId: number, originalLanguage?: string | null) {
+  return useQuery({
+    queryKey: ['admin', 'tmdb-lookup', tmdbId],
+    queryFn: () =>
+      syncApi<LookupResult>('lookup', {
+        tmdbId,
+        type: 'movie',
+        originalLanguage: originalLanguage ?? undefined,
+      }),
+    staleTime: 5 * 60 * 1000, // 5 min — TMDB data doesn't change frequently
   });
 }
 

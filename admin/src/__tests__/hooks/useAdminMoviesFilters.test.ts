@@ -19,9 +19,8 @@ function createQueryMock() {
       };
     },
   };
-  return new Proxy({}, handler) as unknown as {
+  return new Proxy({}, handler) as unknown as Record<string, (...args: unknown[]) => unknown> & {
     _calls: { method: string; args: unknown[] }[];
-    [k: string]: (...args: unknown[]) => unknown;
   };
 }
 

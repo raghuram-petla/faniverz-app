@@ -4,7 +4,7 @@ import React from 'react';
 
 const mockUseTmdbLookup = vi.fn();
 const mockUseFillFields = vi.fn();
-const mockGetStatus = vi.fn(() => 'different');
+const mockGetStatus = vi.fn((..._args: unknown[]) => 'different');
 
 vi.mock('@/hooks/useSync', () => ({
   useTmdbLookup: () => mockUseTmdbLookup(),
@@ -16,7 +16,7 @@ vi.mock('@/lib/syncUtils', () => ({
 }));
 
 vi.mock('@/components/sync/fieldDiffHelpers', () => ({
-  getStatus: (...args: unknown[]) => mockGetStatus(...args),
+  getStatus: (...args: unknown[]) => mockGetStatus(...(args as [unknown, unknown, unknown])),
 }));
 
 vi.mock('@/components/sync/FieldDiffPanel', () => ({

@@ -83,7 +83,7 @@ describe('useMovieEditData', () => {
     vi.mocked(useAdminMovie).mockReturnValue({
       data: mockMovie as never,
       isLoading: false,
-    } as ReturnType<typeof useAdminMovie>);
+    } as unknown as ReturnType<typeof useAdminMovie>);
 
     const { result } = renderHook(() => useMovieEditData('movie-1'), {
       wrapper: makeWrapper(),
@@ -97,7 +97,7 @@ describe('useMovieEditData', () => {
     vi.mocked(useAdminMovie).mockReturnValue({
       data: undefined,
       isLoading: true,
-    } as ReturnType<typeof useAdminMovie>);
+    } as unknown as ReturnType<typeof useAdminMovie>);
 
     const { result } = renderHook(() => useMovieEditData('movie-1'), {
       wrapper: makeWrapper(),
@@ -112,7 +112,7 @@ describe('useMovieEditData', () => {
       data: {
         pages: [[{ id: 'a-1', name: 'Actor One' }], [{ id: 'a-2', name: 'Actor Two' }]],
       } as never,
-    } as ReturnType<typeof useAdminActors>);
+    } as unknown as ReturnType<typeof useAdminActors>);
 
     const { result } = renderHook(() => useMovieEditData('movie-1'), {
       wrapper: makeWrapper(),
@@ -125,7 +125,7 @@ describe('useMovieEditData', () => {
   it('returns empty actors array when useAdminActors has no data', () => {
     vi.mocked(useAdminActors).mockReturnValue({
       data: undefined,
-    } as ReturnType<typeof useAdminActors>);
+    } as unknown as ReturnType<typeof useAdminActors>);
 
     const { result } = renderHook(() => useMovieEditData('movie-1'), {
       wrapper: makeWrapper(),
@@ -139,7 +139,7 @@ describe('useMovieEditData', () => {
       data: {
         pages: [[{ id: 'ph-1', name: 'Studio A' }]],
       } as never,
-    } as ReturnType<typeof useAdminProductionHouses>);
+    } as unknown as ReturnType<typeof useAdminProductionHouses>);
 
     const { result } = renderHook(() => useMovieEditData('movie-1'), {
       wrapper: makeWrapper(),
@@ -151,7 +151,7 @@ describe('useMovieEditData', () => {
   it('returns empty phSearchResults when no data', () => {
     vi.mocked(useAdminProductionHouses).mockReturnValue({
       data: undefined,
-    } as ReturnType<typeof useAdminProductionHouses>);
+    } as unknown as ReturnType<typeof useAdminProductionHouses>);
 
     const { result } = renderHook(() => useMovieEditData('movie-1'), {
       wrapper: makeWrapper(),

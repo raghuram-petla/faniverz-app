@@ -2,6 +2,7 @@ import { render, screen, act, waitFor } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
+import type { AdminRoleId } from '@/lib/types';
 
 // ─── Mocks before imports ───
 const mockUseAuth = vi.fn();
@@ -501,7 +502,7 @@ describe('ImpersonationProvider — startRoleImpersonation', () => {
       }),
     });
 
-    let startRoleImpersonation!: (role: string) => Promise<void>;
+    let startRoleImpersonation!: (role: AdminRoleId, phIds?: string[]) => Promise<void>;
     function CaptureHook() {
       const ctx = useImpersonation();
       startRoleImpersonation = ctx.startRoleImpersonation;
@@ -542,7 +543,7 @@ describe('ImpersonationProvider — startRoleImpersonation', () => {
       return {};
     });
 
-    let startRoleImpersonation!: (role: string) => Promise<void>;
+    let startRoleImpersonation!: (role: AdminRoleId, phIds?: string[]) => Promise<void>;
     function CaptureHook() {
       const ctx = useImpersonation();
       startRoleImpersonation = ctx.startRoleImpersonation;
@@ -575,7 +576,7 @@ describe('ImpersonationProvider — startRoleImpersonation', () => {
       }),
     });
 
-    let startRoleImpersonation!: (role: string) => Promise<void>;
+    let startRoleImpersonation!: (role: AdminRoleId, phIds?: string[]) => Promise<void>;
     function CaptureHook() {
       const ctx = useImpersonation();
       startRoleImpersonation = ctx.startRoleImpersonation;
@@ -968,7 +969,7 @@ describe('ImpersonationProvider — startRoleImpersonation error handling', () =
       return {};
     });
 
-    let startRoleImpersonation!: (role: string, phIds?: string[]) => Promise<void>;
+    let startRoleImpersonation!: (role: AdminRoleId, phIds?: string[]) => Promise<void>;
     function CaptureHook() {
       const ctx = useImpersonation();
       startRoleImpersonation = ctx.startRoleImpersonation;
@@ -1006,7 +1007,7 @@ describe('ImpersonationProvider — startRoleImpersonation error handling', () =
       return {};
     });
 
-    let startRoleImpersonation!: (role: string) => Promise<void>;
+    let startRoleImpersonation!: (role: AdminRoleId, phIds?: string[]) => Promise<void>;
     function CaptureHook() {
       const ctx = useImpersonation();
       startRoleImpersonation = ctx.startRoleImpersonation;
@@ -1457,7 +1458,7 @@ describe('ImpersonationProvider — startRoleImpersonation with Error instance',
       return {};
     });
 
-    let startRoleImpersonation!: (role: string, phIds?: string[]) => Promise<void>;
+    let startRoleImpersonation!: (role: AdminRoleId, phIds?: string[]) => Promise<void>;
     function CaptureHook() {
       const ctx = useImpersonation();
       startRoleImpersonation = ctx.startRoleImpersonation;

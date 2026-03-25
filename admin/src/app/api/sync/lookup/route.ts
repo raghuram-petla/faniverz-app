@@ -34,7 +34,11 @@ export async function POST(request: NextRequest) {
     if (!tmdb.ok) return tmdb.response;
 
     const body = await request.json();
-    const { tmdbId, type } = body as { tmdbId: number; type: 'movie' | 'person' };
+    const { tmdbId, type, originalLanguage } = body as {
+      tmdbId: number;
+      type: 'movie' | 'person';
+      originalLanguage?: string;
+    };
 
     if (!tmdbId || !type) {
       return NextResponse.json({ error: 'tmdbId and type are required.' }, { status: 400 });
@@ -43,11 +47,16 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabaseAdmin();
 
     if (type === 'movie') {
-      // @edge First fetch without language to get original_language, then re-fetch if needed
-      // to include native-language videos in the count
-      let detail = await getMovieDetails(tmdbId, tmdb.apiKey);
-      if (detail.original_language && detail.original_language !== 'en') {
-        detail = await getMovieDetails(tmdbId, tmdb.apiKey, detail.original_language);
+      // @edge When originalLanguage is provided (e.g. from movie edit page), skip the
+      // initial language-detection fetch — saves one TMDB API round-trip (~1-2s)
+      let detail;
+      if (originalLanguage && originalLanguage !== 'en') {
+        detail = await getMovieDetails(tmdbId, tmdb.apiKey, originalLanguage);
+      } else {
+        detail = await getMovieDetails(tmdbId, tmdb.apiKey);
+        if (!originalLanguage && detail.original_language && detail.original_language !== 'en') {
+          detail = await getMovieDetails(tmdbId, tmdb.apiKey, detail.original_language);
+        }
       }
 
       // Check if already in our DB

@@ -12,7 +12,8 @@ vi.mock('@/hooks/useMovieEditChangesRevert', () => ({
 import { useMovieEditChanges } from '@/hooks/useMovieEditChanges';
 import { useFormChanges } from '@/hooks/useFormChanges';
 import { revertEntity } from '@/hooks/useMovieEditChangesRevert';
-import type { UseMovieEditChangesParams } from '@/hooks/useMovieEditTypes';
+import type { UseMovieEditChangesParams, MovieForm } from '@/hooks/useMovieEditTypes';
+import type { OTTPlatform, ProductionHouse } from '@shared/types';
 
 function makeForm(overrides = {}) {
   return {
@@ -20,14 +21,14 @@ function makeForm(overrides = {}) {
     poster_url: '',
     backdrop_url: '',
     release_date: '2025-01-01',
-    runtime: 120,
+    runtime: '120',
     certification: 'UA',
     synopsis: '',
     in_theaters: false,
     premiere_date: '',
     original_language: 'te',
     is_featured: false,
-    tmdb_id: null,
+    tmdb_id: '',
     tagline: '',
     backdrop_focus_x: null,
     backdrop_focus_y: null,
@@ -44,28 +45,44 @@ function makeParams(overrides: Partial<UseMovieEditChangesParams> = {}): UseMovi
     form,
     initialForm: form,
     setForm: vi.fn(),
+    setInitialForm: vi.fn(),
     pendingCastAdds: [],
     pendingCastRemoveIds: new Set(),
     localCastOrder: null,
     castData: [],
+    setPendingCastAdds: vi.fn(),
+    setPendingCastRemoveIds: vi.fn(),
+    setLocalCastOrder: vi.fn(),
     pendingVideoAdds: [],
     pendingVideoRemoveIds: new Set(),
     videosData: [],
+    setPendingVideoAdds: vi.fn(),
+    setPendingVideoRemoveIds: vi.fn(),
     pendingPosterAdds: [],
     pendingPosterRemoveIds: new Set(),
     postersData: [],
     pendingMainPosterId: null,
     savedMainPosterId: null,
+    setPendingPosterAdds: vi.fn(),
+    setPendingPosterRemoveIds: vi.fn(),
+    setPendingMainPosterId: vi.fn(),
     pendingPlatformAdds: [],
     pendingPlatformRemoveIds: new Set(),
     moviePlatforms: [],
+    setPendingPlatformAdds: vi.fn(),
+    setPendingPlatformRemoveIds: vi.fn(),
     pendingPHAdds: [],
     pendingPHRemoveIds: new Set(),
     movieProductionHouses: [],
+    setPendingPHAdds: vi.fn(),
+    setPendingPHRemoveIds: vi.fn(),
     pendingRunAdds: [],
     pendingRunRemoveIds: new Set(),
     pendingRunEndIds: new Map(),
     theatricalRuns: [],
+    setPendingRunAdds: vi.fn(),
+    setPendingRunRemoveIds: vi.fn(),
+    setPendingRunEndIds: vi.fn(),
     resetPendingState: vi.fn(),
     ...overrides,
   };
@@ -74,7 +91,7 @@ function makeParams(overrides: Partial<UseMovieEditChangesParams> = {}): UseMovi
 describe('useMovieEditChanges', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useFormChanges).mockReturnValue({ changes: [] } as ReturnType<typeof useFormChanges>);
+    vi.mocked(useFormChanges).mockReturnValue({ changes: [], isDirty: false, changeCount: 0 });
   });
 
   it('returns empty changes when no diffs', () => {
@@ -141,9 +158,10 @@ describe('useMovieEditChanges', () => {
       pendingCastAdds: [
         {
           _id: 'uuid-1',
-          movie_id: 'movie-1',
           actor_id: 'actor-1',
+          credit_type: 'cast',
           role_name: 'Hero',
+          role_order: null,
           display_order: 0,
           _actor: { id: 'actor-1', name: 'Prabhas' } as never,
         },
@@ -196,15 +214,13 @@ describe('useMovieEditChanges', () => {
       pendingVideoAdds: [
         {
           _id: 'vid-uuid',
-          movie_id: 'movie-1',
           youtube_id: 'abc123',
           title: 'New Trailer',
-          video_type: 'trailer',
+          video_type: 'trailer' as const,
           display_order: 0,
-          created_at: '',
           description: null,
           video_date: null,
-        } as never,
+        },
       ],
     });
 
@@ -219,8 +235,6 @@ describe('useMovieEditChanges', () => {
       pendingPlatformAdds: [
         {
           platform_id: 'netflix',
-          country_code: 'US',
-          availability_type: 'flatrate',
           available_from: null,
           streaming_url: null,
           _platform: { name: 'Netflix' } as never,
@@ -455,7 +469,7 @@ describe('useMovieEditChanges', () => {
                 platform_id: 'p1',
                 available_from: '2025-06-01',
                 streaming_url: null,
-                _platform: { id: 'p1', name: 'Netflix' },
+                _platform: { id: 'p1', name: 'Netflix' } as OTTPlatform,
               },
             ],
           }),
@@ -476,7 +490,7 @@ describe('useMovieEditChanges', () => {
                 platform_id: 'p1',
                 available_from: null,
                 streaming_url: null,
-                _platform: { id: 'p1', name: 'Netflix' },
+                _platform: { id: 'p1', name: 'Netflix' } as OTTPlatform,
               },
             ],
           }),
@@ -542,7 +556,7 @@ describe('useMovieEditChanges', () => {
             pendingPHAdds: [
               {
                 production_house_id: 'ph1',
-                _ph: { id: 'ph1', name: 'Studio A' },
+                _ph: { id: 'ph1', name: 'Studio A' } as ProductionHouse,
               },
             ],
           }),

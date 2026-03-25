@@ -57,6 +57,7 @@ function makeRow(overrides: Partial<MoviePlatformAvailability> = {}): MoviePlatf
     availability_type: 'flatrate' as AvailabilityType,
     available_from: null,
     streaming_url: null,
+    tmdb_display_priority: null,
     created_at: '2025-01-01T00:00:00Z',
     platform: {
       id: 'netflix',

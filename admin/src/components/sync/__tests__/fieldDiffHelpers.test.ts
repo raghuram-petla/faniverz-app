@@ -581,7 +581,7 @@ describe('getStatus — spoken_languages', () => {
     expect(
       getStatus(
         makeMovie({ spoken_languages: null }),
-        makeTmdb({ spokenLanguages: null }),
+        makeTmdb({ spokenLanguages: [] }),
         'spoken_languages',
       ),
     ).toBe('same');

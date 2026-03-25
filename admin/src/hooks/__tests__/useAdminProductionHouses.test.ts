@@ -67,7 +67,7 @@ describe('useAdminProductionHouses', () => {
 
   it('queries production_houses table with default parameters', async () => {
     const chain = buildResolvingChain({ data: [{ id: 'ph1', name: 'Studio A' }], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses(), { wrapper: Wrapper });
@@ -80,7 +80,7 @@ describe('useAdminProductionHouses', () => {
 
   it('applies search filter when search >= 2 chars', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses('st'), { wrapper: Wrapper });
@@ -93,7 +93,7 @@ describe('useAdminProductionHouses', () => {
 
   it('is disabled when search is 1 character', () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses('s'), { wrapper: Wrapper });
@@ -104,7 +104,7 @@ describe('useAdminProductionHouses', () => {
 
   it('scopes to PH IDs when productionHouseIds is provided', async () => {
     const chain = buildResolvingChain({ data: [{ id: 'ph1' }], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses('', ['ph-1', 'ph-2']), {
@@ -119,7 +119,7 @@ describe('useAdminProductionHouses', () => {
 
   it('is disabled when enabled=false', () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses('', undefined, false), {
@@ -132,7 +132,7 @@ describe('useAdminProductionHouses', () => {
 
   it('filters by originCountry=NOT_SET using is(null)', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses('', undefined, true, 'NOT_SET'), {
@@ -147,7 +147,7 @@ describe('useAdminProductionHouses', () => {
 
   it('filters by exact originCountry', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses('', undefined, true, 'IN'), {
@@ -162,7 +162,7 @@ describe('useAdminProductionHouses', () => {
 
   it('throws error when query fails', async () => {
     const chain = buildResolvingChain({ data: null, error: new Error('DB error') });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses(), { wrapper: Wrapper });
@@ -175,7 +175,7 @@ describe('useAdminProductionHouses', () => {
   it('has next page when full page returned', async () => {
     const fullPage = Array.from({ length: 50 }, (_, i) => ({ id: String(i), name: `PH ${i}` }));
     const chain = buildResolvingChain({ data: fullPage, error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses(), { wrapper: Wrapper });
@@ -188,7 +188,7 @@ describe('useAdminProductionHouses', () => {
 
   it('has no next page when partial page returned', async () => {
     const chain = buildResolvingChain({ data: [{ id: '1', name: 'PH 1' }], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminProductionHouses(), { wrapper: Wrapper });

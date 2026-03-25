@@ -17,3 +17,5 @@ export { SectionNav, MOVIE_SECTIONS } from './SectionNav';
 export type { MovieSectionId, SectionNavProps } from './SectionNav';
 export type { PendingCastAdd } from './CastSection';
 export type { PendingRun } from './TheatricalRunsSection';
+export { SyncSection } from './SyncSection';
+export type { SyncSectionProps } from './SyncSection';

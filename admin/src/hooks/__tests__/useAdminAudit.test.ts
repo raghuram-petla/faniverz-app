@@ -78,7 +78,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: mockEntries, error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminAuditLog(), { wrapper: Wrapper });
@@ -100,7 +100,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: smallPage, error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminAuditLog(), { wrapper: Wrapper });
@@ -124,7 +124,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     renderHook(() => useAdminAuditLog({ adminUserId: 'user-123' }), { wrapper: Wrapper });
@@ -145,7 +145,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     renderHook(() => useAdminAuditLog({ action: 'UPDATE' }), { wrapper: Wrapper });
@@ -166,7 +166,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     renderHook(() => useAdminAuditLog({ dateFrom: '2024-01-01' }), { wrapper: Wrapper });
@@ -187,7 +187,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockResolvedValue({ data: [], error: null }),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     renderHook(() => useAdminAuditLog({ dateTo: '2024-12-31' }), { wrapper: Wrapper });
@@ -208,7 +208,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     renderHook(() => useAdminAuditLog({ search: 'test query' }), { wrapper: Wrapper });
@@ -231,7 +231,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     // O'Brien has an apostrophe which should be stripped → OBrien
@@ -253,7 +253,7 @@ describe('useAdminAuditLog', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     // All special chars — sanitizes to empty
@@ -286,7 +286,7 @@ describe('useRevertAuditEntry', () => {
       }
     });
 
-    expect(caughtError?.message).toBe('Not authenticated');
+    expect((caughtError as Error | null)?.message).toBe('Not authenticated');
   });
 
   it('posts to /api/audit/revert with correct body', async () => {
@@ -296,7 +296,7 @@ describe('useRevertAuditEntry', () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ success: true }),
-    } as Response);
+    } as unknown as Response);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useRevertAuditEntry(), { wrapper: Wrapper });
@@ -322,7 +322,7 @@ describe('useRevertAuditEntry', () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       json: async () => ({ error: 'Not allowed' }),
-    } as Response);
+    } as unknown as Response);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useRevertAuditEntry(), { wrapper: Wrapper });
@@ -336,7 +336,7 @@ describe('useRevertAuditEntry', () => {
       }
     });
 
-    expect(caughtError?.message).toBe('Not allowed');
+    expect((caughtError as Error | null)?.message).toBe('Not allowed');
   });
 
   it('uses fallback "Revert failed" when error json has no error key', async () => {
@@ -346,7 +346,7 @@ describe('useRevertAuditEntry', () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       json: async () => ({}),
-    } as Response);
+    } as unknown as Response);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useRevertAuditEntry(), { wrapper: Wrapper });
@@ -360,7 +360,7 @@ describe('useRevertAuditEntry', () => {
       }
     });
 
-    expect(caughtError?.message).toBe('Revert failed');
+    expect((caughtError as Error | null)?.message).toBe('Revert failed');
   });
 
   it('uses fallback when error response json() throws', async () => {
@@ -372,7 +372,7 @@ describe('useRevertAuditEntry', () => {
       json: async () => {
         throw new Error('Invalid JSON');
       },
-    } as Response);
+    } as unknown as Response);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useRevertAuditEntry(), { wrapper: Wrapper });
@@ -386,7 +386,7 @@ describe('useRevertAuditEntry', () => {
       }
     });
 
-    expect(caughtError?.message).toBe('Revert failed');
+    expect((caughtError as Error | null)?.message).toBe('Revert failed');
   });
 
   it('applies entityType filter when provided', async () => {
@@ -400,7 +400,7 @@ describe('useRevertAuditEntry', () => {
       lte: vi.fn().mockReturnThis(),
       or: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    vi.mocked(supabase.from).mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     renderHook(() => useAdminAuditLog({ entityType: 'movie' }), { wrapper: Wrapper });
@@ -417,7 +417,7 @@ describe('useRevertAuditEntry', () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ success: true }),
-    } as Response);
+    } as unknown as Response);
 
     const { qc, Wrapper } = makeWrapper();
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');

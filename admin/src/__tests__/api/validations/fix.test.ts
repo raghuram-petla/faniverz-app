@@ -394,7 +394,7 @@ describe('POST /api/validations/fix', () => {
 
   it('returns 503 when R2 client is not configured', async () => {
     setupAdminAuth();
-    mockGetR2Client.mockReturnValueOnce(null);
+    mockGetR2Client.mockReturnValueOnce(null as unknown as { send: typeof mockSend });
 
     const res = await POST(
       makeRequest({

@@ -4,6 +4,7 @@ import type { UseMovieEditChangesParams } from '@/hooks/useMovieEditTypes';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
+import type { Actor } from '@shared/types';
 import type {
   PendingVideoAdd,
   PendingPosterAdd,
@@ -208,7 +209,7 @@ describe('useMovieEditChanges', () => {
         role_name: 'Hero',
         role_order: null,
         display_order: 1,
-        _actor: { name: 'Mahesh Babu' },
+        _actor: { name: 'Mahesh Babu' } as Actor,
       };
       const params = makeParams({ pendingCastAdds: [castAdd] });
       const { result } = renderHook(() => useMovieEditChanges(params));
@@ -226,7 +227,7 @@ describe('useMovieEditChanges', () => {
         role_name: null,
         role_order: null,
         display_order: 1,
-        _actor: { name: 'Jr NTR' },
+        _actor: { name: 'Jr NTR' } as Actor,
       };
       const params = makeParams({ pendingCastAdds: [castAdd] });
       const { result } = renderHook(() => useMovieEditChanges(params));
@@ -369,9 +370,11 @@ describe('useMovieEditChanges', () => {
         _platform: {
           id: 'plt-1',
           name: 'Netflix',
+          logo: '',
           logo_url: null,
+          color: '',
+          display_order: 0,
           tmdb_provider_id: null,
-          alias_ids: null,
         },
       };
       const params = makeParams({ pendingPlatformAdds: [platform] });
@@ -391,9 +394,11 @@ describe('useMovieEditChanges', () => {
         _platform: {
           id: 'plt-2',
           name: 'Aha',
+          logo: '',
           logo_url: null,
+          color: '',
+          display_order: 0,
           tmdb_provider_id: null,
-          alias_ids: null,
         },
       };
       const params = makeParams({ pendingPlatformAdds: [platform] });
@@ -418,7 +423,14 @@ describe('useMovieEditChanges', () => {
     it('tracks pending production house adds', () => {
       const ph: PendingPHAdd = {
         production_house_id: 'ph-1',
-        _ph: { id: 'ph-1', name: 'Mythri', logo_url: null },
+        _ph: {
+          id: 'ph-1',
+          name: 'Mythri',
+          logo_url: null,
+          description: null,
+          tmdb_company_id: null,
+          created_at: '2024-01-01',
+        },
       };
       const params = makeParams({ pendingPHAdds: [ph] });
       const { result } = renderHook(() => useMovieEditChanges(params));

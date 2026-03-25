@@ -79,7 +79,7 @@ describe('fetchWithTimeout', () => {
   it('aborts fetch after 10 seconds', async () => {
     let capturedSignal: AbortSignal | undefined;
     const mockFetch = vi.fn().mockImplementation((_url: unknown, init: RequestInit) => {
-      capturedSignal = init.signal;
+      capturedSignal = init.signal ?? undefined;
       return new Promise<Response>(() => {}); // never resolves
     });
     vi.stubGlobal('fetch', mockFetch);
@@ -115,7 +115,7 @@ describe('fetchWithTimeout', () => {
   it('propagates caller abort signal to internal AbortController', async () => {
     let capturedSignal: AbortSignal | undefined;
     const mockFetch = vi.fn().mockImplementation((_url: unknown, init: RequestInit) => {
-      capturedSignal = init.signal;
+      capturedSignal = init.signal ?? undefined;
       return new Promise<Response>(() => {}); // never resolves
     });
     vi.stubGlobal('fetch', mockFetch);
@@ -144,7 +144,7 @@ describe('fetchWithTimeout', () => {
     const callerController = new AbortController();
     let capturedSignal: AbortSignal | undefined;
     const mockFetch = vi.fn().mockImplementation((_url: unknown, init: RequestInit) => {
-      capturedSignal = init.signal;
+      capturedSignal = init.signal ?? undefined;
       return Promise.resolve(new Response('ok'));
     });
     vi.stubGlobal('fetch', mockFetch);

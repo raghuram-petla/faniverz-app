@@ -199,7 +199,7 @@ describe('AddProductionHouseForm', () => {
     vi.mocked(mod.useCreateProductionHouse).mockReturnValue({
       mutateAsync: mockMutateAsync,
       isPending: true,
-    } as ReturnType<typeof mod.useCreateProductionHouse>);
+    } as unknown as ReturnType<typeof mod.useCreateProductionHouse>);
 
     render(<AddProductionHouseForm onClose={onClose} />);
     expect(screen.getByText('Adding...')).toBeInTheDocument();
@@ -305,7 +305,7 @@ describe('AddProductionHouseForm', () => {
     });
 
     // Click the X button to remove
-    const xButton = screen.getByTitle ? screen.queryByRole('button', { name: /x/i }) : null;
+    const xButton = screen.queryByRole('button', { name: /x/i });
     // Find the X button by its position in the logo section
     const logoSection = screen.getByText('Logo uploaded').closest('div');
     const buttons = logoSection?.querySelectorAll('button');

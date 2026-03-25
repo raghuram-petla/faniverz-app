@@ -313,7 +313,7 @@ describe('createCrudHooks – useList', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     // Paginated result has .pages
-    expect(result.current.data?.pages).toBeDefined();
+    expect((result.current.data as { pages?: unknown })?.pages).toBeDefined();
   });
 
   it('returns simple result when paginated=false', async () => {

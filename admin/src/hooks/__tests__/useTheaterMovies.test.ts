@@ -41,7 +41,8 @@ function buildChain(resolveData: unknown, resolveError: unknown = null) {
     chain[m] = vi.fn().mockReturnValue(chain);
   });
   // Make the chain itself a promise
-  (chain as Record<string, unknown>)[Symbol.toStringTag] = 'Promise';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (chain as any)[Symbol.toStringTag] = 'Promise';
   // Attach .then so it can be awaited or returned
   (chain as Record<string, unknown>).then = (terminal as Promise<unknown>).then.bind(terminal);
   return chain;

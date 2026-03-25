@@ -30,8 +30,20 @@ describe('SectionNav', () => {
     expect(onSectionChange).toHaveBeenCalledWith('releases');
   });
 
-  it('renders 5 section pills', () => {
+  it('renders 6 section pills', () => {
     render(<SectionNav {...defaultProps} />);
-    expect(MOVIE_SECTIONS).toHaveLength(5);
+    expect(MOVIE_SECTIONS).toHaveLength(6);
+  });
+
+  it('hides sections listed in hiddenSections', () => {
+    render(<SectionNav {...defaultProps} hiddenSections={['tmdb-sync']} />);
+    expect(screen.queryByText('TMDB Sync')).not.toBeInTheDocument();
+    // Other sections still visible
+    expect(screen.getByText('Basic Info')).toBeInTheDocument();
+  });
+
+  it('shows all sections when hiddenSections is empty', () => {
+    render(<SectionNav {...defaultProps} hiddenSections={[]} />);
+    expect(screen.getByText('TMDB Sync')).toBeInTheDocument();
   });
 });

@@ -106,9 +106,27 @@ import type { DiscoverResult } from '@/hooks/useSync';
 
 const makeDiscoverResult = (overrides: Partial<DiscoverResult> = {}): DiscoverResult => ({
   results: [
-    { id: 1, title: 'Movie A', poster_path: null, release_date: '2024-01-01' },
-    { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
-    { id: 3, title: 'Movie C', poster_path: null, release_date: '2024-03-01' },
+    {
+      id: 1,
+      title: 'Movie A',
+      poster_path: null,
+      release_date: '2024-01-01',
+      original_language: 'te',
+    },
+    {
+      id: 2,
+      title: 'Movie B',
+      poster_path: null,
+      release_date: '2024-02-01',
+      original_language: 'te',
+    },
+    {
+      id: 3,
+      title: 'Movie C',
+      poster_path: null,
+      release_date: '2024-03-01',
+      original_language: 'te',
+    },
   ],
   existingMovies: [],
   duplicateSuspects: {},
@@ -158,6 +176,7 @@ describe('DiscoverByYear', () => {
         revenue: null,
         certification: null,
         spoken_languages: null,
+        release_date: null,
       },
     ];
     render(<DiscoverByYear data={makeDiscoverResult({ existingMovies })} />);
@@ -302,6 +321,7 @@ describe('DiscoverByYear', () => {
         revenue: null,
         certification: null,
         spoken_languages: null,
+        release_date: null,
       },
       {
         id: 'db-2',
@@ -324,6 +344,7 @@ describe('DiscoverByYear', () => {
         revenue: null,
         certification: null,
         spoken_languages: null,
+        release_date: null,
       },
       {
         id: 'db-3',
@@ -346,6 +367,7 @@ describe('DiscoverByYear', () => {
         revenue: null,
         certification: null,
         spoken_languages: null,
+        release_date: null,
       },
     ];
     render(<DiscoverByYear data={makeDiscoverResult({ existingMovies })} />);
@@ -422,6 +444,7 @@ describe('DiscoverByYear', () => {
         revenue: null,
         certification: null,
         spoken_languages: null,
+        release_date: null,
       },
     ];
     render(<DiscoverByYear data={makeDiscoverResult({ existingMovies })} />);
@@ -509,9 +532,27 @@ describe('DiscoverByYear', () => {
 
     const data = makeDiscoverResult({
       results: [
-        { id: 1, title: 'Movie A', poster_path: '/poster.jpg', release_date: '2024-01-01' },
-        { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
-        { id: 3, title: 'Movie C', poster_path: null, release_date: '2024-03-01' },
+        {
+          id: 1,
+          title: 'Movie A',
+          poster_path: '/poster.jpg',
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+        {
+          id: 2,
+          title: 'Movie B',
+          poster_path: null,
+          release_date: '2024-02-01',
+          original_language: 'te',
+        },
+        {
+          id: 3,
+          title: 'Movie C',
+          poster_path: null,
+          release_date: '2024-03-01',
+          original_language: 'te',
+        },
       ],
       duplicateSuspects: { 1: { id: 'db-1', title: 'Existing Movie A' } },
     });
@@ -560,8 +601,20 @@ describe('DiscoverByYear', () => {
 
     const data = makeDiscoverResult({
       results: [
-        { id: 1, title: 'Movie A', poster_path: '/poster.jpg', release_date: '2024-01-01' },
-        { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
+        {
+          id: 1,
+          title: 'Movie A',
+          poster_path: '/poster.jpg',
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+        {
+          id: 2,
+          title: 'Movie B',
+          poster_path: null,
+          release_date: '2024-02-01',
+          original_language: 'te',
+        },
       ],
       existingMovies: [],
     });

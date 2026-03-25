@@ -131,7 +131,7 @@ vi.mock('@/components/movie-edit/SortableCastList', () => ({
     <div data-testid="sortable-list">
       {items.map((item) => (
         <div key={item.id}>
-          <span>{item.actors?.name ?? item.role_name}</span>
+          <span>{item.actor?.name ?? item.role_name}</span>
           <button onClick={() => onRemove(item.id, false)} data-testid={`remove-${item.id}`}>
             Remove
           </button>
@@ -176,7 +176,7 @@ const makeCast = (overrides: Partial<MovieCast> = {}): MovieCast => ({
   role_name: 'Hero',
   role_order: null,
   display_order: 0,
-  actors: { id: 'actor-1', name: 'Actor One', photo_url: null },
+  actor: { id: 'actor-1', name: 'Actor One', photo_url: null } as Actor,
   ...overrides,
 });
 
@@ -214,7 +214,9 @@ describe('CastSection', () => {
   });
 
   it('renders cast items in sortable list', () => {
-    const castItems = [makeCast({ id: 'c1', actors: { id: 'a1', name: 'Star', photo_url: null } })];
+    const castItems = [
+      makeCast({ id: 'c1', actor: { id: 'a1', name: 'Star', photo_url: null } as Actor }),
+    ];
     render(<CastSection {...defaultProps} visibleCast={castItems} />);
     expect(screen.getByText('Star')).toBeInTheDocument();
     expect(screen.queryByText('No cast members added yet.')).not.toBeInTheDocument();
@@ -226,7 +228,7 @@ describe('CastSection', () => {
         id: 'c2',
         credit_type: 'crew',
         role_name: 'Director',
-        actors: { id: 'a2', name: 'Director Name', photo_url: null },
+        actor: { id: 'a2', name: 'Director Name', photo_url: null } as Actor,
       }),
     ];
     render(<CastSection {...defaultProps} visibleCast={crewItems} />);

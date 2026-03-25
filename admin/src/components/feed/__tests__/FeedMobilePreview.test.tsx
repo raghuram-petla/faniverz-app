@@ -189,7 +189,7 @@ describe('FeedMobilePreview', () => {
   });
 
   it('does not show movie name when movie is null', () => {
-    render(<FeedMobilePreview items={[makeItem({ movie: null })]} />);
+    render(<FeedMobilePreview items={[makeItem({ movie: undefined })]} />);
     // Should still render the card without a movie name
     expect(screen.getByText('Test Trailer')).toBeInTheDocument();
   });

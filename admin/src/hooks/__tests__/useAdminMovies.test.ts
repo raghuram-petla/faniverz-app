@@ -115,7 +115,7 @@ describe('useAdminMovies', () => {
   it('queries movies table with default parameters', async () => {
     const movies = [{ id: 'm1', title: 'Movie 1', release_date: '2024-01-01' }];
     const chain = buildResolvingChain({ data: movies, error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     // applyStatusFilter passes the same chain through
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
@@ -136,7 +136,7 @@ describe('useAdminMovies', () => {
 
   it('returns empty pages when query returns no data', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -156,7 +156,7 @@ describe('useAdminMovies', () => {
 
   it('applies ilike search filter when search >= 2 chars', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -176,7 +176,7 @@ describe('useAdminMovies', () => {
 
   it('is disabled when search is exactly 1 character', () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -194,7 +194,7 @@ describe('useAdminMovies', () => {
 
   it('applies language filter when selectedLanguageCode is provided', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -220,7 +220,7 @@ describe('useAdminMovies', () => {
       select: vi.fn().mockReturnThis(),
       in: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    mockFrom.mockReturnValue(phChain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(phChain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminMovies('', '', ['ph-1']), { wrapper: Wrapper });
@@ -234,7 +234,7 @@ describe('useAdminMovies', () => {
 
   it('throws error when query fails', async () => {
     const chain = buildResolvingChain({ data: null, error: new Error('DB error') });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -252,7 +252,7 @@ describe('useAdminMovies', () => {
 
   it('returns empty when applyStatusFilter returns empty=true', async () => {
     const chain = buildResolvingChain({ data: [{ id: 'm1' }], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: true,
@@ -273,7 +273,7 @@ describe('useAdminMovies', () => {
   it('has next page when page is full (50 items)', async () => {
     const fullPage = Array.from({ length: 50 }, (_, i) => ({ id: String(i) }));
     const chain = buildResolvingChain({ data: fullPage, error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -293,7 +293,7 @@ describe('useAdminMovies', () => {
 
   it('applies excludeIds filter when statusResult has excludeIds', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -313,7 +313,7 @@ describe('useAdminMovies', () => {
 
   it('applies mergedIds filter when intersectIdSets returns non-null', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -334,7 +334,7 @@ describe('useAdminMovies', () => {
 
   it('returns empty when mergedIds is empty array', async () => {
     const chain = buildResolvingChain({ data: [], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -361,10 +361,11 @@ describe('useAdminMovies', () => {
     };
     const mainChain = buildResolvingChain({ data: [], error: null });
 
-    mockFrom.mockImplementation((table: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockFrom.mockImplementation(((table: string) => {
       if (table === 'movie_cast') return actorChain;
       return mainChain;
-    });
+    }) as any);
 
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: mainChain,
@@ -375,7 +376,19 @@ describe('useAdminMovies', () => {
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(
-      () => useAdminMovies('', '', undefined, { actorSearch: 'Hero' }),
+      () =>
+        useAdminMovies('', '', undefined, {
+          genres: [],
+          releaseYear: '',
+          releaseMonth: '',
+          certification: '',
+          language: '',
+          platformId: '',
+          isFeatured: false,
+          minRating: '',
+          actorSearch: 'Hero',
+          directorSearch: '',
+        }),
       { wrapper: Wrapper },
     );
 
@@ -394,10 +407,11 @@ describe('useAdminMovies', () => {
     };
     const mainChain = buildResolvingChain({ data: [], error: null });
 
-    mockFrom.mockImplementation((table: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockFrom.mockImplementation(((table: string) => {
       if (table === 'movie_platforms') return platChain;
       return mainChain;
-    });
+    }) as any);
 
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: mainChain,
@@ -408,7 +422,19 @@ describe('useAdminMovies', () => {
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(
-      () => useAdminMovies('', '', undefined, { platformId: 'plat-1' }),
+      () =>
+        useAdminMovies('', '', undefined, {
+          genres: [],
+          releaseYear: '',
+          releaseMonth: '',
+          certification: '',
+          language: '',
+          platformId: 'plat-1',
+          isFeatured: false,
+          minRating: '',
+          actorSearch: '',
+          directorSearch: '',
+        }),
       { wrapper: Wrapper },
     );
 
@@ -426,10 +452,11 @@ describe('useAdminMovies', () => {
     };
     const mainChain = buildResolvingChain({ data: [{ id: 'm1' }], error: null });
 
-    mockFrom.mockImplementation((table: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockFrom.mockImplementation(((table: string) => {
       if (table === 'movie_production_houses') return phChain;
       return mainChain;
-    });
+    }) as any);
 
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: mainChain,
@@ -453,7 +480,7 @@ describe('useAdminMovies', () => {
       select: vi.fn().mockReturnThis(),
       in: vi.fn().mockResolvedValue({ data: null, error: new Error('Junction error') }),
     };
-    mockFrom.mockReturnValue(phChain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(phChain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminMovies('', '', ['ph-1']), { wrapper: Wrapper });
@@ -465,7 +492,7 @@ describe('useAdminMovies', () => {
 
   it('has no next page when page is less than 50 items', async () => {
     const chain = buildResolvingChain({ data: [{ id: '1' }], error: null });
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
       query: chain,
       empty: false,
@@ -504,7 +531,7 @@ describe('useAllMovies', () => {
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: movies, error: null }),
     };
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAllMovies(), { wrapper: Wrapper });
@@ -537,8 +564,8 @@ describe('useAllMovies', () => {
       Promise.resolve(moviesResolve).then(resolve, reject);
 
     mockFrom
-      .mockReturnValueOnce(phChain as ReturnType<typeof supabase.from>)
-      .mockReturnValueOnce(moviesChain as ReturnType<typeof supabase.from>);
+      .mockReturnValueOnce(phChain as unknown as ReturnType<typeof supabase.from>)
+      .mockReturnValueOnce(moviesChain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAllMovies(['ph-1']), { wrapper: Wrapper });
@@ -556,7 +583,7 @@ describe('useAllMovies', () => {
       select: vi.fn().mockReturnThis(),
       in: vi.fn().mockResolvedValue({ data: [], error: null }),
     };
-    mockFrom.mockReturnValue(phChain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(phChain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAllMovies(['ph-empty']), { wrapper: Wrapper });
@@ -573,7 +600,7 @@ describe('useAllMovies', () => {
       select: vi.fn().mockReturnThis(),
       in: vi.fn().mockResolvedValue({ data: null, error: new Error('Junction error') }),
     };
-    mockFrom.mockReturnValue(phChain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(phChain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAllMovies(['ph-1']), { wrapper: Wrapper });
@@ -599,8 +626,8 @@ describe('useAllMovies', () => {
       Promise.resolve(moviesResolve).then(resolve, reject);
 
     mockFrom
-      .mockReturnValueOnce(phChain as ReturnType<typeof supabase.from>)
-      .mockReturnValueOnce(moviesChain as ReturnType<typeof supabase.from>);
+      .mockReturnValueOnce(phChain as unknown as ReturnType<typeof supabase.from>)
+      .mockReturnValueOnce(moviesChain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAllMovies(['ph-1']), { wrapper: Wrapper });
@@ -616,7 +643,7 @@ describe('useAllMovies', () => {
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockResolvedValue({ data: null, error: new Error('Query error') }),
     };
-    mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAllMovies(), { wrapper: Wrapper });

@@ -179,7 +179,8 @@ describe('useImageVariants', () => {
       expect(result.current.variants.length).toBe(4);
     });
 
-    rerender({ url: null });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rerender({ url: null as any });
 
     await waitFor(() => {
       expect(result.current.variants).toEqual([]);
@@ -223,12 +224,13 @@ describe('useImageVariants', () => {
   it('covers cancelled ref after buildVariants (early cancellation)', async () => {
     // Make getImageUrl return http URLs so we don't hit the non-http branch
     const imageUrlMod = await import('@shared/imageUrl');
-    vi.mocked(imageUrlMod.getImageUrl).mockImplementation((url: string, size: string) =>
-      size === 'original' ? url : `${url}_${size}`,
+    vi.mocked(imageUrlMod.getImageUrl).mockImplementation((url: string | null, size?: string) =>
+      !url ? null : size === 'original' ? url : `${url}_${size}`,
     );
 
     // Make getSession resolve asynchronously so we can cancel before it completes
-    let resolveSession: ((value: unknown) => void) | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolveSession: ((value: any) => void) | undefined;
     mockGetSession.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -397,8 +399,8 @@ describe('useImageVariants', () => {
     rerender({ url: 'https://cdn/other.jpg' });
 
     // Restore getImageUrl to return http URLs for the second render
-    vi.mocked(imageUrlMod.getImageUrl).mockImplementation((url: string, size: string) =>
-      size === 'original' ? url : `${url}_${size}`,
+    vi.mocked(imageUrlMod.getImageUrl).mockImplementation((url: string | null, size?: string) =>
+      !url ? null : size === 'original' ? url : `${url}_${size}`,
     );
 
     await waitFor(() => {
@@ -498,7 +500,8 @@ describe('useImageVariants', () => {
 
   it('cancels check when component unmounts during getSession', async () => {
     // Make getSession hang until we resolve it
-    let resolveSession: ((value: unknown) => void) | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolveSession: ((value: any) => void) | undefined;
     mockGetSession.mockImplementation(
       () =>
         new Promise((resolve) => {

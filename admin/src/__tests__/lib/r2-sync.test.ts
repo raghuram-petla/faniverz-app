@@ -23,10 +23,10 @@ vi.mock('../../lib/image-resize', () => ({
 
 vi.mock('@aws-sdk/client-s3', () => ({
   PutObjectCommand: class PutObjectCommand {
-    Bucket: string;
-    Key: string;
+    Bucket!: string;
+    Key!: string;
     Body: unknown;
-    ContentType: string;
+    ContentType!: string;
     constructor(params: Record<string, unknown>) {
       Object.assign(this, params);
     }

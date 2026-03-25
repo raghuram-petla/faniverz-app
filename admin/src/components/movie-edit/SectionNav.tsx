@@ -1,13 +1,14 @@
 'use client';
-import { FileText, Play, Film, Users, Calendar } from 'lucide-react';
+import { FileText, Play, Film, Users, Calendar, RefreshCw } from 'lucide-react';
 
-// @contract 5 tabs — Platforms & Production absorbed into Basic Info; poster/backdrop uploads moved to Posters
+// @contract 6 tabs — Platforms & Production absorbed into Basic Info; poster/backdrop uploads moved to Posters
 export const MOVIE_SECTIONS = [
   { id: 'basic-info', label: 'Basic Info', icon: FileText },
   { id: 'posters', label: 'Posters', icon: Film },
   { id: 'videos', label: 'Videos', icon: Play },
   { id: 'cast-crew', label: 'Cast & Crew', icon: Users },
   { id: 'releases', label: 'Releases', icon: Calendar },
+  { id: 'tmdb-sync', label: 'TMDB Sync', icon: RefreshCw },
 ] as const;
 
 export type MovieSectionId = (typeof MOVIE_SECTIONS)[number]['id'];
@@ -15,14 +16,20 @@ export type MovieSectionId = (typeof MOVIE_SECTIONS)[number]['id'];
 export interface SectionNavProps {
   activeSection: string;
   onSectionChange: (id: MovieSectionId) => void;
+  /** @contract Hide tabs conditionally (e.g. tmdb-sync when movie has no tmdb_id) */
+  hiddenSections?: MovieSectionId[];
 }
 
 // @contract controlled tab bar — parent owns activeSection state; no scroll/IntersectionObserver logic
-export function SectionNav({ activeSection, onSectionChange }: SectionNavProps) {
+export function SectionNav({ activeSection, onSectionChange, hiddenSections }: SectionNavProps) {
+  const visibleSections = hiddenSections?.length
+    ? MOVIE_SECTIONS.filter((s) => !hiddenSections.includes(s.id))
+    : MOVIE_SECTIONS;
+
   return (
     <div className="sticky top-[52px] z-20 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-2">
       <div className="flex gap-1.5 overflow-x-auto">
-        {MOVIE_SECTIONS.map((section) => {
+        {visibleSections.map((section) => {
           const Icon = section.icon;
           const isActive = activeSection === section.id;
           return (

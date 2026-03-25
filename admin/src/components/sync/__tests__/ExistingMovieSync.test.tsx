@@ -83,6 +83,7 @@ const makeMovie = (tmdbId: number, title = `Movie ${tmdbId}`): ExistingMovieData
   revenue: null,
   certification: null,
   spoken_languages: null,
+  release_date: null,
 });
 
 describe('ExistingMovieSync', () => {
@@ -170,6 +171,7 @@ describe('ExistingMovieSync', () => {
     const { useBulkFillMissing } = await import('@/hooks/useBulkFillMissing');
     vi.mocked(useBulkFillMissing).mockReturnValue({
       run: mockBulkRun,
+      reset: vi.fn(),
       state: { total: 5, done: 2, failed: 0, isRunning: true, error: null },
     });
 
@@ -181,6 +183,7 @@ describe('ExistingMovieSync', () => {
     const { useBulkFillMissing } = await import('@/hooks/useBulkFillMissing');
     vi.mocked(useBulkFillMissing).mockReturnValue({
       run: mockBulkRun,
+      reset: vi.fn(),
       state: { total: 3, done: 3, failed: 1, isRunning: false, error: 'Some error' },
     });
 
@@ -192,6 +195,7 @@ describe('ExistingMovieSync', () => {
     const { useBulkFillMissing } = await import('@/hooks/useBulkFillMissing');
     vi.mocked(useBulkFillMissing).mockReturnValue({
       run: mockBulkRun,
+      reset: vi.fn(),
       state: { total: 3, done: 3, failed: 0, isRunning: false, error: null },
     });
 
@@ -203,6 +207,7 @@ describe('ExistingMovieSync', () => {
     const { useBulkFillMissing } = await import('@/hooks/useBulkFillMissing');
     vi.mocked(useBulkFillMissing).mockReturnValue({
       run: mockBulkRun,
+      reset: vi.fn(),
       state: { total: 3, done: 3, failed: 1, isRunning: false, error: null },
     });
 
@@ -251,7 +256,7 @@ describe('ExistingMovieSync', () => {
   it('handleBulkFill calls bulk.run with movies and tmdbMap', async () => {
     // Set up getStatus to return 'different' so gapCount > 0
     const { getStatus } = await import('@/components/sync/fieldDiffHelpers');
-    vi.mocked(getStatus).mockReturnValue('different');
+    vi.mocked(getStatus).mockReturnValue('changed');
 
     // Set up successful TMDB fetch so tmdbMap is populated
     global.fetch = vi.fn().mockResolvedValue({

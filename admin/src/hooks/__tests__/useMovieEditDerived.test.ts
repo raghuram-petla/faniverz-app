@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useMovieEditDerived } from '@/hooks/useMovieEditDerived';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
+import type { Actor, MovieImage } from '@shared/types';
+import type { MovieCast } from '@/lib/types';
 
 // Build a minimal default params object
 function makeParams(overrides: Partial<Parameters<typeof useMovieEditDerived>[0]> = {}) {
@@ -69,7 +71,7 @@ describe('useMovieEditDerived', () => {
           id: 'c1',
           movie_id: 'movie-1',
           actor_id: 'a1',
-          credit_type: 'lead',
+          credit_type: 'cast' as const,
           role_name: null,
           role_order: null,
           display_order: 0,
@@ -80,7 +82,7 @@ describe('useMovieEditDerived', () => {
           id: 'c2',
           movie_id: 'movie-1',
           actor_id: 'a2',
-          credit_type: 'lead',
+          credit_type: 'cast' as const,
           role_name: null,
           role_order: null,
           display_order: 1,
@@ -91,7 +93,7 @@ describe('useMovieEditDerived', () => {
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
-            castData: cast,
+            castData: cast as unknown as MovieCast[],
             pendingCastRemoveIds: new Set(['c1']),
           }),
         ),
@@ -109,7 +111,7 @@ describe('useMovieEditDerived', () => {
         tmdb_id: null,
         created_at: '',
         updated_at: '',
-      };
+      } as unknown as Actor;
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
@@ -117,7 +119,7 @@ describe('useMovieEditDerived', () => {
               {
                 _id: 'pending-c1',
                 actor_id: 'a1',
-                credit_type: 'lead',
+                credit_type: 'cast' as const,
                 role_name: null,
                 role_order: null,
                 display_order: 0,
@@ -137,7 +139,7 @@ describe('useMovieEditDerived', () => {
           id: 'c1',
           movie_id: 'movie-1',
           actor_id: 'a1',
-          credit_type: 'lead',
+          credit_type: 'cast' as const,
           role_name: null,
           role_order: null,
           display_order: 0,
@@ -148,7 +150,7 @@ describe('useMovieEditDerived', () => {
           id: 'c2',
           movie_id: 'movie-1',
           actor_id: 'a2',
-          credit_type: 'lead',
+          credit_type: 'cast' as const,
           role_name: null,
           role_order: null,
           display_order: 1,
@@ -159,7 +161,7 @@ describe('useMovieEditDerived', () => {
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
-            castData: cast,
+            castData: cast as unknown as MovieCast[],
             localCastOrder: ['c2', 'c1'],
           }),
         ),
@@ -193,7 +195,7 @@ describe('useMovieEditDerived', () => {
           movie_id: 'movie-1',
           youtube_id: 'def',
           title: 'Clip',
-          video_type: 'clip' as const,
+          video_type: 'other' as const,
           description: null,
           video_date: null,
           display_order: 1,
@@ -267,7 +269,7 @@ describe('useMovieEditDerived', () => {
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
-            postersData: posters,
+            postersData: posters as MovieImage[],
             pendingPosterRemoveIds: new Set(['p1']),
           }),
         ),
@@ -301,7 +303,7 @@ describe('useMovieEditDerived', () => {
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
-            postersData: posters,
+            postersData: posters as MovieImage[],
             pendingMainPosterId: 'p2',
           }),
         ),
@@ -326,7 +328,7 @@ describe('useMovieEditDerived', () => {
         },
       ];
       const { result } = renderHook(() =>
-        useMovieEditDerived(makeParams({ postersData: posters })),
+        useMovieEditDerived(makeParams({ postersData: posters as MovieImage[] })),
       );
       expect(result.current.savedMainPosterId).toBe('p1');
     });
@@ -487,7 +489,7 @@ describe('useMovieEditDerived', () => {
         tmdb_id: null,
         created_at: '',
         updated_at: '',
-      };
+      } as unknown as Actor;
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
@@ -495,7 +497,7 @@ describe('useMovieEditDerived', () => {
               {
                 _id: 'pc1',
                 actor_id: 'a1',
-                credit_type: 'lead',
+                credit_type: 'cast' as const,
                 role_name: null,
                 role_order: null,
                 display_order: 0,
@@ -617,7 +619,7 @@ describe('useMovieEditDerived', () => {
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
-            postersData: posters,
+            postersData: posters as MovieImage[],
             pendingMainPosterId: 'p1', // same as server main
           }),
         ),
@@ -651,7 +653,7 @@ describe('useMovieEditDerived', () => {
       const { result } = renderHook(() =>
         useMovieEditDerived(
           makeParams({
-            postersData: posters,
+            postersData: posters as MovieImage[],
             pendingMainPosterId: 'p2', // different from server main p1
           }),
         ),

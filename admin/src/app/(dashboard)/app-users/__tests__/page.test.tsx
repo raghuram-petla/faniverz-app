@@ -448,7 +448,7 @@ describe('AppUsersPage', () => {
     vi.mocked(usePermissions).mockReturnValue({
       isReadOnly: true,
       languageCodes: [],
-    } as ReturnType<typeof usePermissions>);
+    } as unknown as ReturnType<typeof usePermissions>);
 
     mockUseAdminEndUsers.mockReturnValue({
       data: { users: [makeUser()], totalCount: 1 },

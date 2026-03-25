@@ -96,7 +96,7 @@ describe('ImpersonateModal', () => {
     const userWithPH = {
       ...mockUser,
       ph_assignments: [{ production_house_id: 'ph-fallback-id', production_house: null }],
-    } as AdminUserWithDetails;
+    } as unknown as AdminUserWithDetails;
     render(<ImpersonateModal targetUser={userWithPH} onClose={mockOnClose} />);
     expect(screen.getByText(/ph-fallback-id/i)).toBeInTheDocument();
   });

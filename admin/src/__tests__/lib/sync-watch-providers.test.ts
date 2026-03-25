@@ -184,6 +184,7 @@ describe('syncWatchProvidersMultiCountry', () => {
               single: vi.fn().mockResolvedValue({ data: { regions: [] }, error: null }),
             }),
           }),
+          upsert: vi.fn().mockResolvedValue({ error: null }),
           insert: vi.fn().mockReturnValue({
             select: vi.fn().mockReturnValue({
               single: vi
@@ -204,6 +205,14 @@ describe('syncWatchProvidersMultiCountry', () => {
           }),
         }),
         upsert: vi.fn().mockResolvedValue({ error: null }),
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: { id: 'auto-plat' }, error: null }),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
       };
     });
 
@@ -235,6 +244,11 @@ describe('syncWatchProvidersMultiCountry', () => {
         }),
       }),
       upsert: vi.fn().mockResolvedValue({ error: null }),
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: 'auto-plat' }, error: null }),
+        }),
+      }),
       update: vi.fn().mockReturnValue({
         eq: vi.fn().mockResolvedValue({ error: null }),
       }),
