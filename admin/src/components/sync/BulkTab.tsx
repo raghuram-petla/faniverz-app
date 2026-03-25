@@ -35,23 +35,19 @@ export function BulkTab() {
     setBulkProgress({ type: 'movies', total: items.length, completed: 0, current: '', errors: [] });
 
     for (const item of items) {
-      setBulkProgress((prev) => (prev ? { ...prev, current: item.title ?? 'Unknown' } : prev));
+      setBulkProgress((prev) => ({ ...prev!, current: item.title ?? 'Unknown' }));
       try {
         await refreshMovie.mutateAsync(item.id);
       } catch (err) {
-        setBulkProgress((prev) =>
-          prev
-            ? {
-                ...prev,
-                errors: [
-                  ...prev.errors,
-                  `${item.title}: ${err instanceof Error ? err.message : 'Failed'}`,
-                ],
-              }
-            : prev,
-        );
+        setBulkProgress((prev) => ({
+          ...prev!,
+          errors: [
+            ...prev!.errors,
+            `${item.title}: ${err instanceof Error ? err.message : 'Failed'}`,
+          ],
+        }));
       }
-      setBulkProgress((prev) => (prev ? { ...prev, completed: prev.completed + 1 } : prev));
+      setBulkProgress((prev) => ({ ...prev!, completed: prev!.completed + 1 }));
     }
   };
 
@@ -64,23 +60,19 @@ export function BulkTab() {
     setBulkProgress({ type: 'actors', total: items.length, completed: 0, current: '', errors: [] });
 
     for (const item of items) {
-      setBulkProgress((prev) => (prev ? { ...prev, current: item.name ?? 'Unknown' } : prev));
+      setBulkProgress((prev) => ({ ...prev!, current: item.name ?? 'Unknown' }));
       try {
         await refreshActor.mutateAsync(item.id);
       } catch (err) {
-        setBulkProgress((prev) =>
-          prev
-            ? {
-                ...prev,
-                errors: [
-                  ...prev.errors,
-                  `${item.name}: ${err instanceof Error ? err.message : 'Failed'}`,
-                ],
-              }
-            : prev,
-        );
+        setBulkProgress((prev) => ({
+          ...prev!,
+          errors: [
+            ...prev!.errors,
+            `${item.name}: ${err instanceof Error ? err.message : 'Failed'}`,
+          ],
+        }));
       }
-      setBulkProgress((prev) => (prev ? { ...prev, completed: prev.completed + 1 } : prev));
+      setBulkProgress((prev) => ({ ...prev!, completed: prev!.completed + 1 }));
     }
   };
 

@@ -23,7 +23,7 @@ export function useProfile() {
 
   return useQuery({
     queryKey: ['profile', user?.id],
-    queryFn: () => fetchProfile(user?.id ?? ''),
+    queryFn: () => fetchProfile(user!.id),
     enabled: !!user?.id,
     staleTime: STALE_5M, // 5 minutes — balances freshness with avoiding excessive refetches
   });

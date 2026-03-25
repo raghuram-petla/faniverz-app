@@ -86,10 +86,10 @@ describe('useUserActivity', () => {
     mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
     mockFetch.mockResolvedValue([{ id: 'a1', action_type: 'review' }]);
 
-    const { result } = renderHook(() => useUserActivity('reviews'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUserActivity('votes'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(mockFetch).toHaveBeenCalledWith('u1', 'reviews', 0);
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'votes', 0);
   });
 
   it('uses userId fallback when user object has no id property', async () => {
