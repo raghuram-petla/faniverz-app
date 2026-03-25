@@ -66,13 +66,9 @@ export default function EditMoviePage() {
     editState.changesParams,
   );
 
-  {
-    /* v8 ignore start */
-  }
+  /* v8 ignore start */
   const dockSaveStatus = editState.isSaving ? ('saving' as const) : editState.saveStatus;
-  {
-    /* v8 ignore stop */
-  }
+  /* v8 ignore stop */
   // @contract renders a "+ Add" button for SectionCard action slot; controls which form is open
   function addButton(key: string, label: string) {
     if (addFormOpen === key || isReadOnly) return undefined;

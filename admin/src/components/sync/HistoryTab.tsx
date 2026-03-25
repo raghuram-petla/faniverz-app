@@ -170,9 +170,10 @@ export function HistoryTab() {
                                   Items Processed
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                  /* v8 ignore start */
+                                  {/* v8 ignore start */}
                                   {(log.details ?? []).map((name, i) => (
                                     /* v8 ignore stop */
+
                                     <span
                                       key={`${name}-${i}`}
                                       className="inline-flex items-center px-2.5 py-1 rounded-md bg-surface-elevated text-sm text-on-surface"

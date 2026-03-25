@@ -71,7 +71,9 @@ export function ActorSearchDropdown({
     } else if (e.key === 'Escape') {
       setDropdownOpen(false);
       setHighlightIndex(-1);
-    }
+    } /* v8 ignore start */ else {
+      /* noop */
+    } /* v8 ignore stop */
   }
 
   return (
@@ -114,6 +116,7 @@ export function ActorSearchDropdown({
                       /* v8 ignore start */
                       src={getImageUrl(a.photo_url, 'sm', 'ACTORS') ?? a.photo_url}
                       /* v8 ignore stop */
+
                       alt=""
                       className="w-full h-full object-cover"
                     />

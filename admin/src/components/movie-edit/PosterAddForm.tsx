@@ -57,6 +57,7 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
     /* v8 ignore start */
     if (!uploadedUrl) return;
     /* v8 ignore stop */
+
     const pendingId = `pending-poster-${crypto.randomUUID()}`;
     onConfirm(
       {
@@ -67,6 +68,7 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
         /* v8 ignore start */
         poster_date: posterForm.poster_date || null,
         /* v8 ignore stop */
+
         is_main_poster: false,
         is_main_backdrop: false,
         image_type: detectedType,

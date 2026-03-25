@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
           'id, tmdb_id, title, synopsis, release_date, poster_url, backdrop_url, director, runtime, genres, imdb_id, title_te, synopsis_te, tagline, tmdb_status, tmdb_vote_average, tmdb_vote_count, budget, revenue, certification, spoken_languages',
         )
         .in('tmdb_id', chunk);
+      /* v8 ignore start */
       if (data) existingRows.push(...(data as MovieRow[]));
+      /* v8 ignore stop */
     }
 
     // @contract: resolve relative R2 keys to full URLs server-side

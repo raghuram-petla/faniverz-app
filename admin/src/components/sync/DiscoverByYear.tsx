@@ -50,6 +50,7 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
       /* v8 ignore start */
       const tmdbMovie = (data.results ?? []).find((m) => m.id === tmdbId);
       /* v8 ignore stop */
+
       const newExisting: ExistingMovieData = {
         id: suspect.id,
         tmdb_id: tmdbId,
@@ -132,6 +133,7 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
             /* v8 ignore start */
             const tmdbResults = data.results ?? [];
             /* v8 ignore stop */
+
             const newExisting: ExistingMovieData[] = successResults.map((r) => {
               const tmdb = tmdbResults.find((m) => m.id === r.tmdbId);
               return {
@@ -189,14 +191,14 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
           setImportProgress((prev) =>
             prev.map(
               (p) =>
+                /* v8 ignore start */
                 p.tmdbId === movie.id
                   ? {
                       ...p,
                       status: 'failed',
                       error: err instanceof Error ? err.message : 'Import failed',
                     }
-                  : /* v8 ignore start */
-                    p,
+                  : p,
               /* v8 ignore stop */
             ),
           );
@@ -233,6 +235,7 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
     /* v8 ignore start */
     const moviesList = (data.results ?? []).filter((m) => selected.has(m.id));
     /* v8 ignore stop */
+
     await runBatchImport(moviesList);
   };
 

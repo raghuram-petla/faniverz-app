@@ -40,13 +40,9 @@ export default function CommentsPage() {
 
   // @sideeffect Persists edited comment body and exits edit mode on success
   const saveEdit = () => {
-    {
-      /* v8 ignore start */
-    }
+    /* v8 ignore start */
     if (!editingId) return;
-    {
-      /* v8 ignore stop */
-    }
+    /* v8 ignore stop */
     updateComment.mutate(
       { id: editingId, body: editBody },
       { onSuccess: () => setEditingId(null) },

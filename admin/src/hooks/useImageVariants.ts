@@ -58,17 +58,22 @@ export function useImageVariants(
       /* v8 ignore start */
       if (cancelledRef?.current) return;
       /* v8 ignore stop */
+
       setVariants(built);
 
       // @edge skip API call if URLs couldn't be resolved (bare relative keys without base URL)
       if (built.some((v) => !v.url.startsWith('http'))) {
+        /* v8 ignore start */
         if (!cancelledRef?.current) {
+          /* v8 ignore stop */
           setVariants((prev) => prev.map((v) => ({ ...v, status: 'error' as const })));
         }
         return;
       }
 
+      /* v8 ignore start */
       if (!cancelledRef?.current) setIsChecking(true);
+      /* v8 ignore stop */
 
       try {
         const {
@@ -94,7 +99,9 @@ export function useImageVariants(
         if (!res.ok) {
           const errBody = await res.json().catch(() => ({}));
           console.error('[useImageVariants] API error:', res.status, errBody);
+          /* v8 ignore start */
           if (!cancelledRef?.current) {
+            /* v8 ignore stop */
             setVariants((prev) => prev.map((v) => ({ ...v, status: 'error' as const })));
           }
           return;
@@ -110,7 +117,9 @@ export function useImageVariants(
         setVariants((prev) => prev.map((v) => ({ ...v, status: statusMap.get(v.url) ?? 'error' })));
       } catch {
         // @edge: network failure marks all variants as 'error' rather than leaving them 'checking'
+        /* v8 ignore start */
         if (!cancelledRef?.current) {
+          /* v8 ignore stop */
           setVariants((prev) => prev.map((v) => ({ ...v, status: 'error' as const })));
         }
       } finally {

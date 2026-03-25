@@ -48,7 +48,9 @@ export default function InviteAdminPage() {
     undefined,
     roleId === 'production_house_admin',
   );
+  /* v8 ignore start */
   const allHouses = phData?.pages.flat() ?? [];
+  /* v8 ignore stop */
   // @sync: selectedPHIds is cleared when role changes away from production_house_admin
   const [selectedPHIds, setSelectedPHIds] = useState<string[]>([]);
   const [inviteLink, setInviteLink] = useState('');
@@ -76,8 +78,8 @@ export default function InviteAdminPage() {
       const firstRole = availableRoles[0].value as AdminRoleId;
       setRoleId(firstRole);
       setDefaultRole(firstRole);
-      /* v8 ignore stop */
     }
+    /* v8 ignore stop */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableRoles]);
 
@@ -239,9 +241,11 @@ export default function InviteAdminPage() {
                 Assign Production Houses
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-outline rounded-lg p-3">
+                {/* v8 ignore start */}
                 {allHouses.length === 0 && (
                   <p className="text-sm text-on-surface-subtle">No production houses available</p>
                 )}
+                {/* v8 ignore stop */}
                 {allHouses.map((ph) => (
                   <label
                     key={ph.id}

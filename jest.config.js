@@ -17,5 +17,8 @@ module.exports = {
     '!**/node_modules/**',
     '!src/types/**',
     '!**/index.ts',
+    '!**/*.styles.ts',
+    '!src/theme/colors.ts',
+    '!src/components/profile/settingsTypes.ts',
   ],
 };

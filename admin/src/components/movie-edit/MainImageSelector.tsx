@@ -148,6 +148,7 @@ export function MainImageSelector({
               <div className="absolute top-full left-0 mt-1 z-50 bg-surface border border-outline rounded-lg shadow-xl p-3 max-h-80 overflow-y-auto min-w-[280px]">
                 {/* v8 ignore start */}
                 {images.length === 0 ? (
+                  /* v8 ignore stop */
                   <p className="text-xs text-on-surface-subtle p-2">No images in gallery</p>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
@@ -178,7 +179,7 @@ export function MainImageSelector({
                     })}
                   </div>
                 )}
-                {/* v8 ignore stop */}
+                {}
               </div>
             )}
           </div>

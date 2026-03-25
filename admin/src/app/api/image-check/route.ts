@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
       /* v8 ignore start */
       { error: 'Invalid request body', detail: e instanceof Error ? e.message : String(e) },
       /* v8 ignore stop */
+
       { status: 400 },
     );
   }

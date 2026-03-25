@@ -74,7 +74,11 @@ export default function MoviesPage() {
       statusFilter,
       /* v8 ignore start */
       isPHAdmin ? productionHouseIds : undefined,
+      /* v8 ignore stop */
+      /* v8 ignore start */
       hasActiveFilters ? resolvedFilters : undefined,
+      /* v8 ignore stop */
+      /* v8 ignore start */
       debouncedSearch ? undefined : selectedLanguageCode,
       /* v8 ignore stop */
     );

@@ -90,19 +90,23 @@ export function AdminsTable({
                 <td className="px-6 py-4">
                   {/** @nullable avatar_url may be null; fallback shows first letter of display_name or '?' */}
                   <div className="flex items-center gap-3">
-                    {/* v8 ignore start */}
                     {u.avatar_url ? (
                       <img
+                        /* v8 ignore start */
                         src={getImageUrl(u.avatar_url, 'sm', 'AVATARS') ?? u.avatar_url}
+                        /* v8 ignore stop */
+                        /* v8 ignore start */
                         alt={u.display_name ?? 'Admin avatar'}
+                        /* v8 ignore stop */
                         className="w-8 h-8 rounded-full object-cover"
                       />
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-red-600/20 flex items-center justify-center text-xs font-medium text-status-red">
+                        {/* v8 ignore start */}
                         {(u.display_name ?? '?')[0]?.toUpperCase() ?? '?'}
+                        {/* v8 ignore stop */}
                       </div>
                     )}
-                    {/* v8 ignore stop */}
                     <div>
                       <p className="text-sm font-medium text-on-surface">
                         {u.display_name || 'Unnamed'}

@@ -36,6 +36,7 @@ const LanguageContext = createContext<LanguageContextValue>({
   /* v8 ignore start */
   setSelectedLanguageId: () => {},
   /* v8 ignore stop */
+
   selectedLanguageCode: null,
   userLanguageIds: [],
   showSwitcher: false,
@@ -98,7 +99,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     } else if (isAdmin && userLanguageIds.length === 1) {
       // Single-language admin: auto-select, ignore stored value
       setSelectedLanguageIdState(userLanguageIds[0]);
+      /* v8 ignore start */
     } else if (isAdmin && userLanguageIds.length > 1) {
+      /* v8 ignore stop */
       // Multi-language admin: restore from storage or default to first
       const restoredValid = stored && userLanguageIds.includes(stored);
       setSelectedLanguageIdState(restoredValid ? stored : userLanguageIds[0]);

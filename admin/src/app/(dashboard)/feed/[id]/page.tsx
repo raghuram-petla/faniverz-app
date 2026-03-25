@@ -39,6 +39,7 @@ function dataToForm(data: unknown): FeedForm {
     /* v8 ignore start */
     description: item.description ?? '',
     /* v8 ignore stop */
+
     isPinned: item.is_pinned,
     isFeatured: item.is_featured,
   };

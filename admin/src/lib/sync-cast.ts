@@ -56,6 +56,7 @@ export async function syncCastCrew(
   /* v8 ignore start */
   if (forceResync && (count ?? 0) > 0) {
     /* v8 ignore stop */
+
     const { error: delErr } = await supabase.from('movie_cast').delete().eq('movie_id', movieId);
     if (delErr) console.warn('syncCastCrew: cast delete failed', delErr.message);
   }
@@ -63,6 +64,7 @@ export async function syncCastCrew(
   /* v8 ignore start */
   if ((count ?? 0) === 0 || forceResync) {
     /* v8 ignore stop */
+
     for (const cm of detail.credits.cast) {
       const photoUrl = await maybeUploadImage(
         cm.profile_path,
@@ -193,6 +195,7 @@ export async function syncCastCrewAdditive(
           /* v8 ignore start */
           role_name: cm.character || null,
           /* v8 ignore stop */
+
           display_order: cm.order,
           credit_type: 'cast',
           role_order: null,

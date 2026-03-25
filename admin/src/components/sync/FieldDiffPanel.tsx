@@ -85,13 +85,9 @@ export function FieldDiffPanel({
 
   const handleApply = () => {
     const fields = Array.from(selected);
-    {
-      /* v8 ignore start */
-    }
+    /* v8 ignore start */
     if (fields.length === 0 && !forceResyncCast) return;
-    {
-      /* v8 ignore stop */
-    }
+    /* v8 ignore stop */
     // @sideeffect: onApply returns Promise<void>; void-cast intentional — isSaving driven
     // by fillFields.isPending from TanStack Query, not by awaiting this call directly
     void onApply(fields, forceResyncCast);

@@ -150,8 +150,8 @@ export default function EditProductionHousePage() {
                   <span>{countryFlag(house.origin_country)}</span>
                   {/* v8 ignore start */}
                   {countries.find((c) => c.code === house.origin_country)?.name ??
+                    /* v8 ignore stop */
                     house.origin_country}
-                  {/* v8 ignore stop */}
                 </span>
               )}
             </div>

@@ -170,14 +170,15 @@ export async function processActorRefresh(
     /* v8 ignore start */
     const currentAka = (current?.also_known_as as string[] | null) ?? [];
     /* v8 ignore stop */
+
     const sortedNew = [...person.also_known_as].sort();
     const sortedCurrent = [...currentAka].sort();
     /* v8 ignore start */
     if (JSON.stringify(sortedNew) !== JSON.stringify(sortedCurrent)) {
       updates.also_known_as = person.also_known_as;
       fields.push('also_known_as');
-      /* v8 ignore stop */
     }
+    /* v8 ignore stop */
   }
   if (person.deathday && person.deathday !== current?.death_date) {
     updates.death_date = person.deathday;

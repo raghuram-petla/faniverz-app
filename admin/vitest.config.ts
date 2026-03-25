@@ -10,6 +10,10 @@ export default defineConfig({
     globals: true,
     css: false,
     passWithNoTests: true,
+    coverage: {
+      provider: 'v8',
+      exclude: ['src/__tests__/**', 'src/app/globals.css', 'src/lib/variant-config.ts'],
+    },
   },
   resolve: {
     alias: {

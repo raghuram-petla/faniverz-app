@@ -60,6 +60,7 @@ export function useBulkFillMissing() {
       /* v8 ignore start */
       const fields = tmdb ? getGappedFields(movie, tmdb) : [];
       /* v8 ignore stop */
+
       if (fields.length === 0) {
         setState((s) => ({ ...s, done: s.done + 1 }));
         continue;

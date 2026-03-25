@@ -63,13 +63,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   // @contract Block viewers from create/compose/invite pages
-  {
-    /* v8 ignore start */
-  }
+  /* v8 ignore start */
   const lastSegment = pathname.split('/').pop() ?? '';
-  {
-    /* v8 ignore stop */
-  }
+  /* v8 ignore stop */
   if (isReadOnly && CREATE_SEGMENTS.has(lastSegment)) {
     return (
       <div className="text-center py-20">

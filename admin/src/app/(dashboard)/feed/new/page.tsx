@@ -62,13 +62,9 @@ export default function NewFeedItemPage() {
   // @sync: switching feed type resets content type to the first option for the new type
   const handleFeedTypeChange = (type: FeedType) => {
     setFeedType(type);
-    {
-      /* v8 ignore start */
-    }
+    /* v8 ignore start */
     setContentType(CONTENT_TYPES[type]?.[0]?.value ?? type);
-    {
-      /* v8 ignore stop */
-    }
+    /* v8 ignore stop */
   };
 
   // @sideeffect: inserts into feed_items table, navigates to /feed on success
@@ -94,13 +90,9 @@ export default function NewFeedItemPage() {
     }
   };
 
-  {
-    /* v8 ignore start */
-  }
+  /* v8 ignore start */
   const contentTypes = CONTENT_TYPES[feedType] ?? [];
-  {
-    /* v8 ignore stop */
-  }
+  /* v8 ignore stop */
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-3">

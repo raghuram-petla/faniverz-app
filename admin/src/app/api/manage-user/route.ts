@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     /* v8 ignore start */
     if (auth === 'viewer_readonly') return viewerReadonlyResponse();
     /* v8 ignore stop */
+
     if (!auth) return unauthorizedResponse();
 
     const body = await req.json();

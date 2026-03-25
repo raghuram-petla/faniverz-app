@@ -24,6 +24,7 @@ export function PersonPreview({
     <div className="bg-surface-card border border-outline rounded-xl p-5 relative">
       {/* v8 ignore start */}
       {onClose && (
+        /* v8 ignore stop */
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-on-surface-muted hover:text-on-surface transition-colors"
@@ -32,7 +33,6 @@ export function PersonPreview({
           <X className="w-5 h-5" />
         </button>
       )}
-      {/* v8 ignore stop */}
       <div className="flex gap-5">
         {result.data.photoUrl ? (
           <img

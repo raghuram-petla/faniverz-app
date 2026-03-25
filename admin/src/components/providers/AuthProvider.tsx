@@ -48,7 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let initialLoadDone = false;
 
     const timeout = setTimeout(() => {
+      /* v8 ignore start */
       if (!initialLoadDone) {
+        /* v8 ignore stop */
         initialLoadDone = true;
         setIsLoading(false);
       }

@@ -39,6 +39,7 @@ export async function syncVideos(
   /* v8 ignore start */
   const existingKeys = new Set((existingRows ?? []).map((r) => r.tmdb_video_key as string));
   /* v8 ignore stop */
+
   const missing = youtubeVideos.filter((v) => !existingKeys.has(v.key));
 
   let count = youtubeVideos.length - missing.length;

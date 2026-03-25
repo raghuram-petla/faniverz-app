@@ -110,6 +110,7 @@ export async function syncPosters(
         /* v8 ignore start */
         const sortIdx = indexMap.get(poster.file_path) ?? 0;
         /* v8 ignore stop */
+
         const isMain = sortIdx === 0;
 
         if (isMain) {
@@ -202,6 +203,7 @@ export async function syncBackdrops(
         /* v8 ignore start */
         const sortIdx = indexMap.get(backdrop.file_path) ?? 0;
         /* v8 ignore stop */
+
         const isMain = sortIdx === 0;
 
         if (isMain) {

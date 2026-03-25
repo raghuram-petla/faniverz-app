@@ -55,13 +55,9 @@ export function ExistingMovieSync({
 
       // @edge sequential fetches to avoid TMDB rate limits (40 req/10s); no parallelism
       for (const m of moviesToFetch) {
-        {
-          /* v8 ignore start */
-        }
+        /* v8 ignore start */
         if (cancelled) break;
-        {
-          /* v8 ignore stop */
-        }
+        /* v8 ignore stop */
         try {
           const res = await fetch('/api/sync/lookup', {
             method: 'POST',
@@ -93,13 +89,9 @@ export function ExistingMovieSync({
     let total = 0;
     for (const m of movies) {
       const tmdb = tmdbMap.get(m.tmdb_id);
-      {
-        /* v8 ignore start */
-      }
+      /* v8 ignore start */
       if (!tmdb) continue;
-      {
-        /* v8 ignore stop */
-      }
+      /* v8 ignore stop */
       total += FILLABLE_DATA_FIELDS.filter((f) => getStatus(m, tmdb, f) !== 'same').length;
     }
     return total;
@@ -114,13 +106,9 @@ export function ExistingMovieSync({
   // @sideeffect called by ExistingMovieRow after per-movie apply — update both movie + tmdb data
   const handleMovieUpdated = useCallback(
     (updated: ExistingMovieData, updatedTmdb?: LookupMovieData) => {
-      {
-        /* v8 ignore start */
-      }
+      /* v8 ignore start */
       setLocalMovies((prev) => prev.map((m) => (m.tmdb_id === updated.tmdb_id ? updated : m)));
-      {
-        /* v8 ignore stop */
-      }
+      /* v8 ignore stop */
       if (updatedTmdb) {
         setTmdbMap((prev) => new Map(prev).set(updated.tmdb_id, updatedTmdb));
       }
@@ -136,15 +124,13 @@ export function ExistingMovieSync({
     setLocalMovies((prev) =>
       prev.map((m) => {
         const tmdb = tmdbMap.get(m.tmdb_id);
-        {
-          /* v8 ignore start */
-        }
+        /* v8 ignore start */
         if (!tmdb) return m;
+        /* v8 ignore stop */
         const gappedFields = FILLABLE_DATA_FIELDS.filter((f) => getStatus(m, tmdb, f) !== 'same');
+        /* v8 ignore start */
         if (gappedFields.length === 0) return m;
-        {
-          /* v8 ignore stop */
-        }
+        /* v8 ignore stop */
         const { movie: updatedMovie, tmdb: updatedTmdb } = applyTmdbFields(m, tmdb, gappedFields);
         newTmdbMap.set(m.tmdb_id, updatedTmdb);
         return updatedMovie;

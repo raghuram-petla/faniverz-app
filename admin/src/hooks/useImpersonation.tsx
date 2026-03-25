@@ -62,13 +62,9 @@ async function buildTargetUser(targetUserId: string): Promise<AdminUser | null> 
 
   if (!profileRes.data || !roleRes.data) return null;
   const role = roleRes.data.role_id as AdminRoleId;
-  {
-    /* v8 ignore start */
-  }
+  /* v8 ignore start */
   const langIds = role === 'admin' ? (langRes.data ?? []).map((r) => r.language_id) : [];
-  {
-    /* v8 ignore stop */
-  }
+  /* v8 ignore stop */
   // @boundary Resolve language UUIDs to codes via a second query (only for admin role)
   let langCodes: string[] = [];
   if (langIds.length > 0) {
@@ -177,13 +173,9 @@ export function ImpersonationProvider({ children }: ImpersonationProviderProps) 
       if (insErr) throw insErr;
       setEffectiveUser(target);
     } catch (err) {
-      {
-        /* v8 ignore start */
-      }
+      /* v8 ignore start */
       window.alert(err instanceof Error ? err.message : 'Failed to start impersonation');
-      {
-        /* v8 ignore stop */
-      }
+      /* v8 ignore stop */
     }
   }, []);
 

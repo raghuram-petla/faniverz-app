@@ -97,6 +97,7 @@ export function MovieSearchResults({
     /* v8 ignore start */
     if (selected.size === 0) return;
     /* v8 ignore stop */
+
     const toImport = movies.filter((m) => selected.has(m.id));
     const ids = toImport.map((m) => m.id);
     setImportProgress(
@@ -130,10 +131,10 @@ export function MovieSearchResults({
         setImportProgress((prev) =>
           prev.map(
             (p) =>
+              /* v8 ignore start */
               batch.includes(p.tmdbId)
                 ? { ...p, status: 'failed', error: err instanceof Error ? err.message : 'Failed' }
-                : /* v8 ignore start */
-                  p,
+                : p,
             /* v8 ignore stop */
           ),
         );
@@ -160,11 +161,12 @@ export function MovieSearchResults({
                   : 'text-on-surface-muted hover:text-on-surface hover:bg-input'
               }`}
             >
-              {/* v8 ignore start */}
               {selectedLanguageCode
-                ? (langName(selectedLanguageCode) ?? selectedLanguageCode)
-                : 'My languages'}
-              {/* v8 ignore stop */} ({filteredCount})
+                ? /* v8 ignore start */
+                  (langName(selectedLanguageCode) ?? selectedLanguageCode)
+                : /* v8 ignore stop */
+                  'My languages'}{' '}
+              ({filteredCount})
             </button>
             <button
               onClick={() => setFilterByLanguage(false)}

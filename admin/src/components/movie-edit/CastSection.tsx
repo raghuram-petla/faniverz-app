@@ -115,13 +115,9 @@ export function CastSection({
     const newIndex = castItems.findIndex((c) => c.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
     const reordered = arrayMove(castItems, oldIndex, newIndex);
-    {
-      /* v8 ignore start */
-    }
+    /* v8 ignore start */
     onReorder([...reordered.map((c) => c.id), ...crewItems.map((c) => c.id)]);
-    {
-      /* v8 ignore stop */
-    }
+    /* v8 ignore stop */
   }
 
   function handleCrewDragEnd(event: DragEndEvent) {
@@ -131,13 +127,9 @@ export function CastSection({
     const newIndex = crewItems.findIndex((c) => c.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
     const reordered = arrayMove(crewItems, oldIndex, newIndex);
-    {
-      /* v8 ignore start */
-    }
+    /* v8 ignore start */
     onReorder([...castItems.map((c) => c.id), ...reordered.map((c) => c.id)]);
-    {
-      /* v8 ignore stop */
-    }
+    /* v8 ignore stop */
   }
 
   // @edge actor_id empty + searchQuery present: user typed but didn't select from dropdown

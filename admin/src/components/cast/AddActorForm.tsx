@@ -108,11 +108,11 @@ export function AddActorForm({ onSubmit, isPending, onCancel }: AddActorFormProp
             >
               {/* v8 ignore start */}
               {uploading ? (
+                /* v8 ignore stop */
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Upload className="w-4 h-4" />
               )}
-              {/* v8 ignore stop */}
               {/* v8 ignore start */}
               {uploading ? 'Uploading...' : 'Photo (optional)'}
               {/* v8 ignore stop */}

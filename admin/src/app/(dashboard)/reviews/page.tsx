@@ -55,15 +55,11 @@ export default function ReviewsPage() {
   const cancelEdit = () => setEditingId(null);
 
   // @sideeffect Persists edited review body and exits edit mode on success
+  /* v8 ignore start */
   const saveEdit = () => {
-    {
-      /* v8 ignore start */
-    }
     if (!editingId) return;
     updateReview.mutate({ id: editingId, body: editBody }, { onSuccess: () => setEditingId(null) });
-    {
-      /* v8 ignore stop */
-    }
+    /* v8 ignore stop */
   };
 
   return (

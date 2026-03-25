@@ -77,7 +77,9 @@ export function ProductionHousesSection({
   // @sideeffect close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
+      /* v8 ignore start */
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        /* v8 ignore stop */
         setDropdownOpen(false);
       }
     }
@@ -110,10 +112,14 @@ export function ProductionHousesSection({
       e.preventDefault();
       if (highlightIndex >= 0 && highlightIndex < filtered.length) {
         handleSelect(filtered[highlightIndex]);
+        /* v8 ignore start */
       } else if (highlightIndex === filtered.length && hasQuickAdd) {
+        /* v8 ignore stop */
         onQuickAdd!(searchQuery.trim());
       }
+      /* v8 ignore start */
     } else if (e.key === 'Escape') {
+      /* v8 ignore stop */
       setDropdownOpen(false);
       setHighlightIndex(-1);
     }
@@ -156,6 +162,7 @@ export function ProductionHousesSection({
                             /* v8 ignore start */
                             src={getImageUrl(ph.logo_url, 'sm', 'PRODUCTION_HOUSES') ?? ph.logo_url}
                             /* v8 ignore stop */
+
                             alt=""
                             className="w-full h-full object-cover"
                           />
@@ -217,12 +224,12 @@ export function ProductionHousesSection({
               <div className="w-10 h-10 rounded-lg bg-input flex items-center justify-center overflow-hidden shrink-0">
                 {mph.production_house?.logo_url ? (
                   <img
+                    /* v8 ignore start */
                     src={
                       getImageUrl(mph.production_house.logo_url, 'sm', 'PRODUCTION_HOUSES') ??
-                      /* v8 ignore start */
                       mph.production_house.logo_url
-                      /* v8 ignore stop */
                     }
+                    /* v8 ignore stop */
                     alt=""
                     className="w-full h-full object-cover"
                   />

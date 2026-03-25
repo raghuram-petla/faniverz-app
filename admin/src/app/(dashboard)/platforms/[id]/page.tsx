@@ -65,6 +65,7 @@ function formToPayload(form: PlatformForm, id: string) {
     /* v8 ignore start */
     logo_url: form.logo_url || null,
     /* v8 ignore stop */
+
     tmdb_provider_id: tmdbId !== null && isNaN(tmdbId) ? null : tmdbId,
     regions: form.regions ? form.regions.split(',').filter(Boolean) : [],
   };
@@ -204,6 +205,7 @@ export default function EditPlatformPage() {
                     /* v8 ignore start */
                     const cName = countries.find((c) => c.code === code)?.name ?? code;
                     /* v8 ignore stop */
+
                     return (
                       <span
                         key={code}

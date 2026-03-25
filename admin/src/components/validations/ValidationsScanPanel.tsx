@@ -112,11 +112,11 @@ export function ValidationsScanPanel({
                 >
                   {/* v8 ignore start */}
                   {fixProgress?.isFixing ? (
+                    /* v8 ignore stop */
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
                     <Wrench className="w-3 h-3" />
                   )}
-                  {/* v8 ignore stop */}
                   Fix Selected ({selectedItems.size})
                 </button>
               )}

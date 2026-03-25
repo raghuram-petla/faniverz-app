@@ -56,8 +56,8 @@ export function useUnsavedChangesWarning(isDirty: boolean, message?: string) {
       if (suppressPopRef.current) {
         suppressPopRef.current = false;
         return;
-        /* v8 ignore stop */
       }
+      /* v8 ignore stop */
 
       if (isDirtyRef.current && hasGuardRef.current) {
         hasGuardRef.current = false;

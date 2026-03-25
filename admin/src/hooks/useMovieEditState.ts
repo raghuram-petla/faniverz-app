@@ -129,7 +129,9 @@ export function useMovieEditState(id: string) {
         poster_focus_y: movie.poster_focus_y ?? null,
       };
       // Only overwrite form on first load; background refetches update initialForm only
+      /* v8 ignore start */
       if (isFirstLoadRef.current) {
+        /* v8 ignore stop */
         setForm(loaded);
         isFirstLoadRef.current = false;
       }

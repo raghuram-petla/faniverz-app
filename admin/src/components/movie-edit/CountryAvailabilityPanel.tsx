@@ -97,11 +97,11 @@ export function CountryAvailabilityPanel({
                 ))}
                 {/* v8 ignore start */}
                 {items.length === 0 && (
+                  /* v8 ignore stop */
                   <p className="text-xs text-on-surface-disabled pl-6">
                     No {AVAIL_LABELS[type].toLowerCase()} providers
                   </p>
                 )}
-                {/* v8 ignore stop */}
               </div>
             )}
           </div>

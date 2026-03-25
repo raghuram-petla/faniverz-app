@@ -180,7 +180,7 @@ export function DiscoverResults({
                       {movie.release_date || 'No date'}
                       {movie.original_language && (
                         <span className="ml-1.5 text-on-surface-muted">
-                          {/* v8 ignore start */}·{' '}
+                          · {/* v8 ignore start */}
                           {langName(movie.original_language) ?? movie.original_language}
                           {/* v8 ignore stop */}
                         </span>
@@ -278,9 +278,9 @@ export function ImportProgressList({ items }: ImportProgressListProps) {
           </span>
           {/* v8 ignore start */}
           {p.status === 'importing' && p.iteration && p.iteration > 1 && (
+            /* v8 ignore stop */
             <span className="text-xs text-status-blue">iteration {p.iteration}</span>
           )}
-          {/* v8 ignore stop */}
           {p.result && (
             <span className="text-xs text-on-surface-subtle">
               ({p.result.castCount} cast, {p.result.crewCount} crew, {p.result.posterCount} posters,{' '}

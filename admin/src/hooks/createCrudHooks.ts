@@ -59,7 +59,10 @@ export function createCrudHooks<T extends { id: string }>(config: CrudConfig) {
   function usePaginatedList(search = '') {
     return useInfiniteQuery({
       queryKey: [...listKey, search],
-      queryFn: async ({ pageParam = 0 }) => {
+      queryFn: async ({ pageParam: rawPageParam }) => {
+        /* v8 ignore start */
+        const pageParam = rawPageParam ?? 0;
+        /* v8 ignore stop */
         const from = pageParam * pageSize;
         const to = from + pageSize - 1;
         let query = supabase

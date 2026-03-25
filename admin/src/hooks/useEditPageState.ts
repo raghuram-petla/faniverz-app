@@ -124,6 +124,7 @@ export function useEditPageState<TForm extends object>(
       /* v8 ignore start */
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       /* v8 ignore stop */
+
       saveTimerRef.current = setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (err: unknown) {
       setSaveStatus('idle');

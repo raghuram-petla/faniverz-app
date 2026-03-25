@@ -60,6 +60,7 @@ export function ComposeForm({ movies, createNotification, onSuccess }: ComposeFo
     /* v8 ignore start */
     if (!email.includes('@')) return;
     /* v8 ignore stop */
+
     const { data, error } = await supabase
       .from('profiles')
       .select('id, email')
@@ -84,6 +85,7 @@ export function ComposeForm({ movies, createNotification, onSuccess }: ComposeFo
     /* v8 ignore start */
     if (debounceRef.current) clearTimeout(debounceRef.current);
     /* v8 ignore stop */
+
     if (!email.includes('@')) return;
     debounceRef.current = setTimeout(() => doLookup(email), 400);
   };
@@ -238,6 +240,7 @@ export function ComposeForm({ movies, createNotification, onSuccess }: ComposeFo
               /* v8 ignore start */
               onChange={() => setScheduleMode('immediate')}
               /* v8 ignore stop */
+
               className="accent-red-600"
             />
             <span className="text-sm text-on-surface">Send immediately</span>

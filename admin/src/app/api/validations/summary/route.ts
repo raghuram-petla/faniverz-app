@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
     /* v8 ignore start */
     for (const row of (data as unknown as Record<string, unknown>[]) ?? []) {
       /* v8 ignore stop */
+
       total++;
       const url = row[config.field] as string | null;
       if (!url) {

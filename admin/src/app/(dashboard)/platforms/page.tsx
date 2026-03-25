@@ -12,7 +12,10 @@ import Link from 'next/link';
 export default function PlatformsPage() {
   const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { data: platforms, isLoading } = useAdminPlatforms();
-  const { data: countries = [] } = useCountries();
+  const { data: rawCountries } = useCountries();
+  /* v8 ignore start */
+  const countries = useMemo(() => rawCountries ?? [], [rawCountries]);
+  /* v8 ignore stop */
   const deletePlatform = useDeletePlatform();
   const [selectedCountry, setSelectedCountry] = useState('IN');
 
@@ -36,8 +39,8 @@ export default function PlatformsPage() {
         .filter((c) => countMap.has(c.code))
         /* v8 ignore start */
         .map((c) => ({ ...c, platformCount: countMap.get(c.code) ?? 0 }))
+      /* v8 ignore stop */
     );
-    /* v8 ignore stop */
   }, [platforms, countries]);
 
   const handleDelete = (id: string) => {

@@ -52,13 +52,13 @@ export function PosterGalleryCard({ poster, onRemove }: PosterGalleryCardProps) 
     <div className="bg-surface-elevated rounded-xl overflow-hidden flex flex-col">
       {/* Image */}
       <div className="relative">
-        {/* v8 ignore start */}
         <img
+          /* v8 ignore start */
           src={getImageUrl(poster.image_url, 'md', bucket) ?? poster.image_url}
+          /* v8 ignore stop */
           alt={poster.title || 'Image'}
           className={`w-full ${aspectClass} object-cover`}
         />
-        {/* v8 ignore stop */}
         {/* @contract remove button overlaid on image top-right */}
         <button
           onClick={() => onRemove(poster.id, poster.id.startsWith('pending-poster'))}

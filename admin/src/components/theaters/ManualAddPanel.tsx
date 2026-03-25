@@ -39,13 +39,9 @@ export function ManualAddPanel({
   const [label, setLabel] = useState('');
 
   function handleAdd() {
-    {
-      /* v8 ignore start */
-    }
+    /* v8 ignore start */
     if (!selectedMovie || !startDate) return;
-    {
-      /* v8 ignore stop */
-    }
+    /* v8 ignore stop */
     onAdd(
       selectedMovie.id,
       selectedMovie.title,

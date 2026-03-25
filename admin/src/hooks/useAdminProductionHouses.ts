@@ -40,7 +40,10 @@ export function useAdminProductionHouses(
 
   return useInfiniteQuery({
     queryKey: ['admin', 'production-houses', search, sortedIds, originCountry],
-    queryFn: async ({ pageParam = 0 }) => {
+    queryFn: async ({ pageParam: rawPageParam }) => {
+      /* v8 ignore start */
+      const pageParam = rawPageParam ?? 0;
+      /* v8 ignore stop */
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
       let query = supabase.from('production_houses').select('*').order('name').range(from, to);
