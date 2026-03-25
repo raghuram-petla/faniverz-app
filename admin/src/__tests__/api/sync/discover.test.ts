@@ -21,6 +21,20 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 const mockIsNull = vi.fn().mockResolvedValue({ data: [] });
+// @edge: helper to make mock results chainable with .eq()/.limit() for aggregate queries
+const emptyResult = () => Promise.resolve({ data: [] });
+const chainable = (result: unknown) => {
+  const obj = typeof result === 'object' && result !== null ? { ...result } : {};
+  const withLimit = (o: Record<string, unknown>) => ({
+    ...o,
+    limit: () => emptyResult(),
+  });
+  return {
+    ...obj,
+    eq: () => withLimit({}),
+    limit: () => emptyResult(),
+  };
+};
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
     from: () => ({
@@ -29,16 +43,11 @@ vi.mock('@/lib/supabase-admin', () => ({
           // @contract: the first .in() call is for movies lookup (returns mockSelectIn result)
           // subsequent .in() calls are for aggregate counts (return empty data)
           const result = mockSelectIn(...args);
-          // Make result chainable for .eq() in aggregate count queries
+          // Make result chainable for .eq()/.limit() in aggregate count queries
           if (result && typeof result.then === 'function') {
-            return Object.assign(result, {
-              eq: () => Promise.resolve({ data: [] }),
-            });
+            return Object.assign(result, chainable({}));
           }
-          return {
-            ...result,
-            eq: () => Promise.resolve({ data: [] }),
-          };
+          return chainable(result);
         },
         is: () => ({ in: mockIsNull }),
         eq: () => ({

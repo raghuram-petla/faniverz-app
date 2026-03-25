@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
     const existingIds = rows.map((r) => r.id);
 
     // @sideeffect: fetch aggregate counts for gap detection — parallel queries for efficiency
+    // @edge: Supabase default row limit is 1000; with 150+ movies the junction tables
+    // easily exceed that, silently truncating rows and producing wrong counts.
+    // Explicit .limit(10000) prevents false-positive gaps.
+    const ROW_CAP = 10000;
     const [posterRows, backdropRows, videoRows, keywordRows, phRows, platformRows] =
       existingIds.length > 0
         ? await Promise.all([
@@ -66,19 +70,34 @@ export async function POST(request: NextRequest) {
               .from('movie_images')
               .select('movie_id')
               .in('movie_id', existingIds)
-              .eq('image_type', 'poster'),
+              .eq('image_type', 'poster')
+              .limit(ROW_CAP),
             supabase
               .from('movie_images')
               .select('movie_id')
               .in('movie_id', existingIds)
-              .eq('image_type', 'backdrop'),
-            supabase.from('movie_videos').select('movie_id').in('movie_id', existingIds),
-            supabase.from('movie_keywords').select('movie_id').in('movie_id', existingIds),
-            supabase.from('movie_production_houses').select('movie_id').in('movie_id', existingIds),
+              .eq('image_type', 'backdrop')
+              .limit(ROW_CAP),
+            supabase
+              .from('movie_videos')
+              .select('movie_id')
+              .in('movie_id', existingIds)
+              .limit(ROW_CAP),
+            supabase
+              .from('movie_keywords')
+              .select('movie_id')
+              .in('movie_id', existingIds)
+              .limit(ROW_CAP),
+            supabase
+              .from('movie_production_houses')
+              .select('movie_id')
+              .in('movie_id', existingIds)
+              .limit(ROW_CAP),
             supabase
               .from('movie_platforms')
               .select('movie_id, platform_id')
-              .in('movie_id', existingIds),
+              .in('movie_id', existingIds)
+              .limit(ROW_CAP),
           ])
         : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
