@@ -52,6 +52,7 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
         id: suspect.id,
         tmdb_id: tmdbId,
         title: suspect.title,
+        release_date: tmdbMovie?.release_date ?? null,
         synopsis: null,
         poster_url: tmdbMovie?.poster_path
           ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}`
