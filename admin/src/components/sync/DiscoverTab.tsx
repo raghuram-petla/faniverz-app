@@ -28,7 +28,7 @@ export interface DiscoverTabProps {
 
 /** @contract Unified TMDB sync — search bar + discover by year, one results area */
 export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
-  const { selectedLanguageCode } = useLanguageContext();
+  const { selectedLanguageCode, languages } = useLanguageContext();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState(CURRENT_YEAR);
   const [months, setMonths] = useState<number[]>([]);
@@ -182,9 +182,18 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
 
       {/* ── Results area ── */}
       {resultMode && resultLabel && (
-        <p className="text-sm text-on-surface-muted">
+        <p className="text-sm text-on-surface-muted flex items-center gap-2">
           Results for{' '}
           <span className="text-on-surface font-medium">&ldquo;{resultLabel}&rdquo;</span>
+          <span className="text-xs bg-red-600/15 text-red-400 px-2 py-0.5 rounded-full font-medium">
+            {selectedLanguageCode
+              ? (languages.find((l) => l.code === selectedLanguageCode)?.name ??
+                selectedLanguageCode)
+              : 'All languages'}
+          </span>
+          {(search.isPending || lookup.isPending || discover.isPending) && (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-on-surface-muted" />
+          )}
         </p>
       )}
 

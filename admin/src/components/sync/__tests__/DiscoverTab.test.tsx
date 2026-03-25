@@ -18,8 +18,15 @@ vi.mock('@/hooks/useSync', () => ({
   useRefreshActor: () => mockRefreshActor(),
 }));
 
+let mockSelectedLanguageCode: string | null = 'te';
 vi.mock('@/hooks/useLanguageContext', () => ({
-  useLanguageContext: () => ({ selectedLanguageCode: 'te' }),
+  useLanguageContext: () => ({
+    selectedLanguageCode: mockSelectedLanguageCode,
+    languages: [
+      { id: 'lang-1', code: 'te', name: 'Telugu' },
+      { id: 'lang-2', code: 'hi', name: 'Hindi' },
+    ],
+  }),
 }));
 
 vi.mock('@/components/sync/SearchResultsPanel', () => ({
@@ -157,6 +164,7 @@ function setup(
 describe('DiscoverTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSelectedLanguageCode = 'te';
     setup();
   });
 
@@ -440,6 +448,68 @@ describe('DiscoverTab', () => {
       fireEvent.click(screen.getByText('Discover'));
       // The span contains just the year as the resultLabel
       expect(screen.getByText((content) => content === String(CURRENT_YEAR))).toBeInTheDocument();
+    });
+  });
+
+  describe('results loading spinner', () => {
+    it('shows spinner next to results label when search is pending', () => {
+      setup();
+      const { rerender } = render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'Baahubali' } });
+      fireEvent.click(screen.getByText('Search'));
+      // Switch to pending state and re-render
+      setup({ searchOverrides: { isPending: true } });
+      rerender(<DiscoverTab />);
+      const resultsLine = screen.getByText(
+        (_, el) => (el?.tagName === 'P' && el?.textContent?.includes('Results for')) || false,
+      );
+      expect(resultsLine.querySelector('.animate-spin')).toBeInTheDocument();
+    });
+
+    it('shows spinner next to results label when discover is pending', () => {
+      // Start with idle so the Discover button is not disabled
+      setup();
+      const { rerender } = render(<DiscoverTab />);
+      fireEvent.click(screen.getByText('Discover'));
+      // Now switch to pending state and re-render
+      setup({ discoverOverrides: { isPending: true } });
+      rerender(<DiscoverTab />);
+      const resultsLine = screen.getByText(
+        (_, el) => (el?.tagName === 'P' && el?.textContent?.includes('Results for')) || false,
+      );
+      expect(resultsLine.querySelector('.animate-spin')).toBeInTheDocument();
+    });
+
+    it('shows language name badge next to results label', () => {
+      setup({ searchOverrides: { data: { movies: [], people: [] } } });
+      render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'Baahubali' } });
+      fireEvent.click(screen.getByText('Search'));
+      expect(screen.getByText('Telugu')).toBeInTheDocument();
+    });
+
+    it('shows "All languages" badge when no language is selected', () => {
+      mockSelectedLanguageCode = null;
+      setup({ searchOverrides: { data: { movies: [], people: [] } } });
+      render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'Baahubali' } });
+      fireEvent.click(screen.getByText('Search'));
+      expect(screen.getByText('All languages')).toBeInTheDocument();
+    });
+
+    it('does not show spinner when results have loaded', () => {
+      setup({ searchOverrides: { isPending: false, data: { movies: [], people: [] } } });
+      render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'Baahubali' } });
+      fireEvent.click(screen.getByText('Search'));
+      const resultsLine = screen.getByText(
+        (_, el) => (el?.tagName === 'P' && el?.textContent?.includes('Results for')) || false,
+      );
+      expect(resultsLine.querySelector('.animate-spin')).not.toBeInTheDocument();
     });
   });
 
