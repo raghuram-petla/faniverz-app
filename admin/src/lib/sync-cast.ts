@@ -44,7 +44,7 @@ export async function syncCastCrew(
   movieId: string,
   detail: Awaited<ReturnType<typeof getMovieDetails>>,
   forceResync: boolean,
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  supabase: ReturnType<typeof getSupabaseAdmin> | SupabaseClient,
   updatedFields: string[],
 ) {
   const { count } = await supabase

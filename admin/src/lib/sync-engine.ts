@@ -13,8 +13,7 @@ import { maybeUploadImage, R2_BUCKETS } from './r2-sync';
 import { syncAllImages } from './sync-images';
 import { syncVideos, syncKeywords, syncProductionCompanies } from './sync-extended';
 import { syncWatchProvidersMultiCountry } from './sync-watch-providers';
-import { upsertActorPreserveType } from './sync-actor';
-import { syncCastCrewAdditive } from './sync-cast';
+import { syncCastCrewAdditive, syncCastCrew } from './sync-cast';
 
 // ── Result types ──────────────────────────────────────────────────────────────
 
@@ -224,70 +223,11 @@ async function fullReplaceSync(
     console.warn(`Extended sync partial failure for ${detail.title}:`, extErr);
   }
 
-  // @sideeffect: delete-then-reinsert cast (original behavior)
-  const { error: castDeleteErr } = await supabase
-    .from('movie_cast')
-    .delete()
-    .eq('movie_id', movieId);
-  if (castDeleteErr) throw new Error(`Cast delete failed: ${castDeleteErr.message}`);
-
-  const allCast = detail.credits.cast;
-  let castCount = 0;
-
-  for (const castMember of allCast) {
-    const photoUrl = await maybeUploadImage(
-      castMember.profile_path,
-      R2_BUCKETS.actorPhotos,
-      `${randomUUID()}.jpg`,
-      TMDB_IMAGE.profile,
-    );
-    const actorId = await upsertActorPreserveType(supabase, {
-      tmdb_person_id: castMember.id,
-      name: castMember.name,
-      photo_url: photoUrl,
-      default_person_type: 'actor',
-      gender: castMember.gender ?? null,
-    });
-    if (!actorId) continue;
-    const { error: castInsertErr } = await supabase.from('movie_cast').insert({
-      movie_id: movieId,
-      actor_id: actorId,
-      role_name: castMember.character || null,
-      display_order: castMember.order,
-      credit_type: 'cast',
-      role_order: null,
-    });
-    if (!castInsertErr) castCount++;
-  }
-
-  const keyCrew = extractKeyCrewMembers(detail.credits.crew);
-  let crewCount = 0;
-
-  for (const crewMember of keyCrew) {
-    const photoUrl = await maybeUploadImage(
-      crewMember.profile_path,
-      R2_BUCKETS.actorPhotos,
-      `${randomUUID()}.jpg`,
-      TMDB_IMAGE.profile,
-    );
-    const actorId = await upsertActorPreserveType(supabase, {
-      tmdb_person_id: crewMember.id,
-      name: crewMember.name,
-      photo_url: photoUrl,
-      default_person_type: 'technician',
-      gender: crewMember.gender ?? null,
-    });
-    if (!actorId) continue;
-    const { error: crewInsertErr } = await supabase.from('movie_cast').insert({
-      movie_id: movieId,
-      actor_id: actorId,
-      role_name: crewMember.roleName,
-      display_order: 0,
-      credit_type: 'crew',
-      role_order: crewMember.roleOrder,
-    });
-    if (!crewInsertErr) crewCount++;
-  }
+  // @sideeffect: delegate to syncCastCrew with forceResync=true (delete-then-reinsert)
+  const castFields: string[] = [];
+  await syncCastCrew(movieId, detail, true, supabase, castFields);
+  const castCount = detail.credits.cast.length;
+  const crewCount = extractKeyCrewMembers(detail.credits.crew).length;
 
   return {
     movieId,

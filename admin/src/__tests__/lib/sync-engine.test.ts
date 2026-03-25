@@ -50,6 +50,7 @@ vi.mock('../../lib/sync-actor', () => ({
 
 vi.mock('../../lib/sync-cast', () => ({
   syncCastCrewAdditive: vi.fn().mockResolvedValue({ castCount: 3, crewCount: 1 }),
+  syncCastCrew: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../lib/sync-log', () => ({
@@ -68,7 +69,6 @@ vi.mock('crypto', async (importOriginal) => {
 
 import { processMovieFromTmdb } from '../../lib/sync-engine';
 import { getMovieDetails } from '../../lib/tmdb';
-import { upsertActorPreserveType } from '../../lib/sync-actor';
 import { syncAllImages } from '../../lib/sync-images';
 import { syncVideos, syncKeywords, syncProductionCompanies } from '../../lib/sync-extended';
 import { syncWatchProvidersMultiCountry } from '../../lib/sync-watch-providers';
@@ -172,22 +172,8 @@ describe('processMovieFromTmdb', () => {
     ).rejects.toThrow('Movie upsert failed: upsert failed');
   });
 
-  it('throws when cast delete fails (fullReplaceSync)', async () => {
-    // upsert succeeds, delete fails
-    supabase.single.mockResolvedValueOnce({
-      data: { id: 'movie-id' },
-      error: null,
-    });
-    // The delete chain needs to resolve with error
-    const deleteEq = vi.fn().mockResolvedValue({ error: { message: 'delete error' } });
-    supabase.delete.mockReturnValue({ eq: deleteEq } as never);
-
-    await expect(
-      processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient),
-    ).rejects.toThrow('Cast delete failed: delete error');
-  });
-
-  it('syncs cast and returns cast count (fullReplaceSync)', async () => {
+  it('delegates cast/crew sync to syncCastCrew (fullReplaceSync)', async () => {
+    const { syncCastCrew } = await import('../../lib/sync-cast');
     const detail = makeTmdbDetail({
       credits: {
         cast: [
@@ -219,29 +205,14 @@ describe('processMovieFromTmdb', () => {
       supabase as unknown as SupabaseClient,
     );
 
-    expect(upsertActorPreserveType).toHaveBeenCalledTimes(2);
-    expect(result.castCount).toBe(2);
-  });
-
-  it('skips cast member when upsertActorPreserveType returns null', async () => {
-    const detail = makeTmdbDetail({
-      credits: {
-        cast: [
-          { id: 1, name: 'Actor', character: 'Role', order: 0, profile_path: null, gender: null },
-        ],
-        crew: [],
-      },
-    });
-    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
-    vi.mocked(upsertActorPreserveType).mockResolvedValueOnce(null);
-
-    const result = await processMovieFromTmdb(
-      12345,
-      'api-key',
-      supabase as unknown as SupabaseClient,
+    expect(syncCastCrew).toHaveBeenCalledWith(
+      'movie-uuid-123',
+      expect.anything(),
+      true,
+      expect.anything(),
+      expect.any(Array),
     );
-
-    expect(result.castCount).toBe(0);
+    expect(result.castCount).toBe(2);
   });
 
   it('runs extended sync (images, videos, providers, keywords, production companies)', async () => {
@@ -328,7 +299,7 @@ describe('processMovieFromTmdb — additional branch coverage', () => {
     vi.mocked(getMovieDetails).mockResolvedValue(makeTmdbDetail() as never);
   });
 
-  it('syncs crew members via extractKeyCrewMembers', async () => {
+  it('returns crewCount from extractKeyCrewMembers length', async () => {
     const { extractKeyCrewMembers } = await import('../../lib/tmdbTypes');
     vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
       {
@@ -349,36 +320,7 @@ describe('processMovieFromTmdb — additional branch coverage', () => {
       supabase as unknown as SupabaseClient,
     );
 
-    expect(upsertActorPreserveType).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ default_person_type: 'technician' }),
-    );
     expect(result.crewCount).toBe(1);
-  });
-
-  it('skips crew member when upsertActorPreserveType returns null', async () => {
-    const { extractKeyCrewMembers } = await import('../../lib/tmdbTypes');
-    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
-      {
-        id: 20,
-        name: 'Director',
-        job: 'Director',
-        department: 'Directing',
-        roleName: 'Director',
-        roleOrder: 0,
-        profile_path: null,
-        gender: 0,
-      },
-    ]);
-    vi.mocked(upsertActorPreserveType).mockResolvedValueOnce(null);
-
-    const result = await processMovieFromTmdb(
-      12345,
-      'api-key',
-      supabase as unknown as SupabaseClient,
-    );
-
-    expect(result.crewCount).toBe(0);
   });
 
   it('sets budget and revenue to null when 0 from TMDB', async () => {
@@ -506,12 +448,19 @@ describe('processMovieFromTmdb — resumable option', () => {
   });
 
   it('uses fullReplaceSync when resumable=false (default)', async () => {
+    const { syncCastCrew } = await import('../../lib/sync-cast');
     await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
 
     // fullReplaceSync does NOT call syncCastCrewAdditive
     expect(syncCastCrewAdditive).not.toHaveBeenCalled();
-    // fullReplaceSync deletes cast first
-    expect(supabase.delete).toHaveBeenCalled();
+    // fullReplaceSync delegates to syncCastCrew with forceResync=true
+    expect(syncCastCrew).toHaveBeenCalledWith(
+      'movie-uuid-123',
+      expect.anything(),
+      true,
+      expect.anything(),
+      expect.any(Array),
+    );
   });
 
   it('uses fullReplaceSync when resumable option is not provided', async () => {
@@ -628,7 +577,7 @@ describe('processMovieFromTmdb — fullReplaceSync additional branches', () => {
     vi.mocked(getMovieDetails).mockResolvedValue(makeTmdbDetail() as never);
   });
 
-  it('counts only successful cast inserts (not errors)', async () => {
+  it('returns castCount from detail.credits.cast.length', async () => {
     const detail = makeTmdbDetail({
       credits: {
         cast: [
@@ -654,22 +603,16 @@ describe('processMovieFromTmdb — fullReplaceSync additional branches', () => {
     });
     vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
 
-    // First cast insert succeeds, second fails
-    supabase.insert
-      .mockResolvedValueOnce({ error: null })
-      .mockResolvedValueOnce({ error: { message: 'insert failed' } });
-
     const result = await processMovieFromTmdb(
       12345,
       'api-key',
       supabase as unknown as SupabaseClient,
     );
 
-    // Only 1 of 2 cast inserts succeeded
-    expect(result.castCount).toBe(1);
+    expect(result.castCount).toBe(2);
   });
 
-  it('counts only successful crew inserts (not errors)', async () => {
+  it('returns crewCount from extractKeyCrewMembers length', async () => {
     const { extractKeyCrewMembers } = await import('../../lib/tmdbTypes');
     vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
       {
@@ -694,18 +637,13 @@ describe('processMovieFromTmdb — fullReplaceSync additional branches', () => {
       },
     ]);
 
-    // Cast delete succeeds, first crew insert succeeds, second fails
-    supabase.insert
-      .mockResolvedValueOnce({ error: null })
-      .mockResolvedValueOnce({ error: { message: 'crew insert failed' } });
-
     const result = await processMovieFromTmdb(
       12345,
       'api-key',
       supabase as unknown as SupabaseClient,
     );
 
-    expect(result.crewCount).toBe(1);
+    expect(result.crewCount).toBe(2);
   });
 
   it('handles extended sync failure in fullReplaceSync (catch branch)', async () => {
