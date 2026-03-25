@@ -52,6 +52,7 @@ Search for repeated inline logic across components and pages:
 
 Find configuration values or constant arrays maintained in multiple places:
 
+- **DB-vs-code duplication** (HIGHEST PRIORITY): Hardcoded arrays/maps that duplicate data already stored in a Supabase reference table. The DB table is the single source of truth — code should fetch from it at runtime, not maintain a parallel copy. Cross-reference every exported constant array against the schema (`supabase/migrations/`) to check if a matching table exists. Known DB reference tables: `languages`, `platforms`, `countries`, `admin_roles`, `production_houses`. If a constant mirrors a DB table, it MUST be replaced with a hook/query that reads from the table.
 - **Variant/dimension specs**: Image dimensions, quality settings, or resize configs that appear in both client-side and server-side code.
 - **Enum-like arrays**: Genre lists, status options, certification values, or category arrays duplicated across files.
 - **API endpoints**: Hardcoded endpoint strings repeated in multiple files instead of being centralized.
@@ -134,8 +135,8 @@ Apply consolidations in safest-first order:
 
 ### 3.1 Config & Constants (Category 3)
 
-- Create or update shared config files
-- Replace all duplicated definitions with imports from the single source
+- **DB-mirrored constants**: Delete the hardcoded constant entirely. Create a hook (e.g., `useXxxOptions()`) that fetches from the DB table via existing context/query. Update all consumers to use the hook. The constant must NOT exist in code — only in the DB.
+- **Code-only constants**: Create or update shared config files. Replace all duplicated definitions with imports from the single source.
 
 ### 3.2 Utility Functions (Category 2 — non-hook logic)
 
