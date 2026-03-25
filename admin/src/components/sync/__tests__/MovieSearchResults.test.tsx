@@ -84,7 +84,7 @@ describe('MovieSearchResults', () => {
     vi.mocked(permsMod.usePermissions).mockReturnValue({
       isReadOnly: false,
       languageCodes: [],
-    } as ReturnType<typeof permsMod.usePermissions>);
+    } as unknown as ReturnType<typeof permsMod.usePermissions>);
     const langMod = await import('@/hooks/useLanguageContext');
     vi.mocked(langMod.useLanguageContext).mockReturnValue({
       selectedLanguageCode: null,
@@ -237,7 +237,7 @@ describe('MovieSearchResults', () => {
     vi.mocked(permsMod.usePermissions).mockReturnValue({
       isReadOnly: false,
       languageCodes: ['te'],
-    } as ReturnType<typeof permsMod.usePermissions>);
+    } as unknown as ReturnType<typeof permsMod.usePermissions>);
 
     const movies = [makeMovie()];
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
