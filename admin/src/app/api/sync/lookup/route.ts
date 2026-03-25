@@ -60,11 +60,40 @@ export async function POST(request: NextRequest) {
       // @nullable: director may be null if TMDB has no crew data or no Director job entry
       const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
 
-      // @boundary: fetch images + providers in parallel (2 extra API calls)
-      const [images, providers] = await Promise.all([
+      // @boundary: fetch images + providers + DB counts in parallel
+      const movieId = existing?.id as string | undefined;
+      const [images, providers, ...dbCounts] = await Promise.all([
         getMovieImages(tmdbId, tmdb.apiKey),
         getWatchProviders(tmdbId, tmdb.apiKey),
+        // @contract: per-movie DB counts — self-contained gap analysis
+        movieId
+          ? supabase
+              .from('movie_images')
+              .select('movie_id')
+              .eq('movie_id', movieId)
+              .eq('image_type', 'poster')
+          : Promise.resolve({ data: [] }),
+        movieId
+          ? supabase
+              .from('movie_images')
+              .select('movie_id')
+              .eq('movie_id', movieId)
+              .eq('image_type', 'backdrop')
+          : Promise.resolve({ data: [] }),
+        movieId
+          ? supabase.from('movie_videos').select('movie_id').eq('movie_id', movieId)
+          : Promise.resolve({ data: [] }),
+        movieId
+          ? supabase.from('movie_keywords').select('movie_id').eq('movie_id', movieId)
+          : Promise.resolve({ data: [] }),
+        movieId
+          ? supabase.from('movie_production_houses').select('movie_id').eq('movie_id', movieId)
+          : Promise.resolve({ data: [] }),
+        movieId
+          ? supabase.from('movie_platforms').select('platform_id').eq('movie_id', movieId)
+          : Promise.resolve({ data: [] }),
       ]);
+      const [posterRows, backdropRows, videoRows, keywordRows, phRows, platformRows] = dbCounts;
 
       // @contract: extract Telugu translation
       const teTrans = detail.translations?.translations.find((t) => t.iso_639_1 === 'te');
@@ -105,6 +134,15 @@ export async function POST(request: NextRequest) {
           spokenLanguages: detail.spoken_languages?.map((l) => l.iso_639_1) ?? [],
           productionCompanyCount: detail.production_companies?.length ?? 0,
           originalLanguage: detail.original_language,
+          // @contract: per-movie DB counts for self-contained gap analysis
+          dbPosterCount: posterRows.data?.length ?? 0,
+          dbBackdropCount: backdropRows.data?.length ?? 0,
+          dbVideoCount: videoRows.data?.length ?? 0,
+          dbKeywordCount: keywordRows.data?.length ?? 0,
+          dbProductionHouseCount: phRows.data?.length ?? 0,
+          dbPlatformNames: (platformRows.data ?? []).map(
+            (r: { platform_id: string }) => r.platform_id,
+          ),
         },
       });
     } else {

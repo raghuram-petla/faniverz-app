@@ -55,22 +55,25 @@ export function getStatus(
     }
     case 'genres':
       return genreStatus(movie.genres, tmdb.genres);
+    case 'release_date':
+      if (!movie.release_date && !tmdb.releaseDate) return 'same';
+      if (!movie.release_date) return 'missing';
+      return movie.release_date === tmdb.releaseDate ? 'same' : 'changed';
     case 'images':
-      // @contract compare DB counts against TMDB counts — only show gap if TMDB has more
+      // @contract compare DB counts (from lookup) against TMDB counts
       if (tmdb.posterCount === 0 && tmdb.backdropCount === 0) return 'same';
-      return (movie.poster_count ?? 0) >= tmdb.posterCount &&
-        (movie.backdrop_count ?? 0) >= tmdb.backdropCount
+      return tmdb.dbPosterCount >= tmdb.posterCount && tmdb.dbBackdropCount >= tmdb.backdropCount
         ? 'same'
         : 'missing';
     case 'videos':
       if (tmdb.videoCount === 0) return 'same';
-      return (movie.video_count ?? 0) >= tmdb.videoCount ? 'same' : 'missing';
+      return tmdb.dbVideoCount >= tmdb.videoCount ? 'same' : 'missing';
     case 'watch_providers':
       if (tmdb.providerNames.length === 0) return 'same';
-      return (movie.platform_names?.length ?? 0) >= tmdb.providerNames.length ? 'same' : 'missing';
+      return tmdb.dbPlatformNames.length >= tmdb.providerNames.length ? 'same' : 'missing';
     case 'keywords':
       if (tmdb.keywordCount === 0) return 'same';
-      return (movie.keyword_count ?? 0) >= tmdb.keywordCount ? 'same' : 'missing';
+      return tmdb.dbKeywordCount >= tmdb.keywordCount ? 'same' : 'missing';
     case 'imdb_id':
       if (!movie.imdb_id && !tmdb.imdbId) return 'same';
       if (!movie.imdb_id) return 'missing';
@@ -107,9 +110,7 @@ export function getStatus(
       return movie.certification === tmdb.certification ? 'same' : 'changed';
     case 'production_companies':
       if (!tmdb.productionCompanyCount) return 'same';
-      return (movie.production_house_count ?? 0) >= tmdb.productionCompanyCount
-        ? 'same'
-        : 'missing';
+      return tmdb.dbProductionHouseCount >= tmdb.productionCompanyCount ? 'same' : 'missing';
     case 'spoken_languages': {
       const dbLangs = movie.spoken_languages ?? [];
       const tmdbLangs = tmdb.spokenLanguages ?? [];
@@ -140,6 +141,12 @@ export function buildFieldDefs(movie: ExistingMovieData, tmdb: LookupMovieData):
       label: 'Synopsis',
       dbDisplay: movie.synopsis ?? '',
       tmdbDisplay: tmdb.overview ?? '',
+    },
+    {
+      key: 'release_date',
+      label: 'Release Date',
+      dbDisplay: fmt(movie.release_date),
+      tmdbDisplay: fmt(tmdb.releaseDate),
     },
     {
       key: 'poster_url',
@@ -174,25 +181,25 @@ export function buildFieldDefs(movie: ExistingMovieData, tmdb: LookupMovieData):
     {
       key: 'images',
       label: 'All Images',
-      dbDisplay: `${movie.poster_count ?? 1} poster(s), ${movie.backdrop_count ?? 0} backdrop(s)`,
+      dbDisplay: `${tmdb.dbPosterCount} poster(s), ${tmdb.dbBackdropCount} backdrop(s)`,
       tmdbDisplay: `${tmdb.posterCount} poster(s), ${tmdb.backdropCount} backdrop(s)`,
     },
     {
       key: 'videos',
       label: 'Videos',
-      dbDisplay: `${movie.video_count ?? 0}`,
+      dbDisplay: `${tmdb.dbVideoCount}`,
       tmdbDisplay: `${tmdb.videoCount}`,
     },
     {
       key: 'watch_providers',
       label: 'OTT Platforms',
-      dbDisplay: movie.platform_names?.join(', ') || 'none',
+      dbDisplay: tmdb.dbPlatformNames.length > 0 ? tmdb.dbPlatformNames.join(', ') : 'none',
       tmdbDisplay: tmdb.providerNames.length > 0 ? tmdb.providerNames.join(', ') : 'none',
     },
     {
       key: 'keywords',
       label: 'Keywords',
-      dbDisplay: `${movie.keyword_count ?? 0}`,
+      dbDisplay: `${tmdb.dbKeywordCount}`,
       tmdbDisplay: `${tmdb.keywordCount}`,
     },
     {
@@ -258,7 +265,7 @@ export function buildFieldDefs(movie: ExistingMovieData, tmdb: LookupMovieData):
     {
       key: 'production_companies',
       label: 'Production Cos.',
-      dbDisplay: `${movie.production_house_count ?? 0}`,
+      dbDisplay: `${tmdb.dbProductionHouseCount}`,
       tmdbDisplay: `${tmdb.productionCompanyCount}`,
     },
     {

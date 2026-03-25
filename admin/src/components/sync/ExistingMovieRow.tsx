@@ -17,8 +17,8 @@ export interface ExistingMovieRowProps {
   movie: ExistingMovieData;
   justImported: boolean;
   prefetchedTmdb: LookupMovieData | null;
-  /** @sideeffect called after per-movie apply so parent can update gap counts */
-  onMovieUpdated?: (updated: ExistingMovieData) => void;
+  /** @sideeffect called after per-movie apply so parent can update gap counts + tmdb data */
+  onMovieUpdated?: (updated: ExistingMovieData, updatedTmdb?: LookupMovieData) => void;
 }
 
 export function ExistingMovieRow({
@@ -60,9 +60,13 @@ export function ExistingMovieRow({
     const res = await fillFields.mutateAsync(payload);
     setAppliedFields((prev) => [...new Set([...prev, ...res.updatedFields])]);
     if (tmdbData && res.updatedFields.length > 0) {
-      const updated = applyTmdbFields(movie, tmdbData, res.updatedFields);
-      setMovie(updated);
-      onMovieUpdated?.(updated);
+      const { movie: updatedMovie, tmdb: updatedTmdb } = applyTmdbFields(
+        movie,
+        tmdbData,
+        res.updatedFields,
+      );
+      setMovie(updatedMovie);
+      onMovieUpdated?.(updatedMovie, updatedTmdb);
     }
   };
 

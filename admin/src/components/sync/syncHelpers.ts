@@ -62,82 +62,88 @@ export const MONTHS = [
   'December',
 ];
 
-/** @contract merges applied TMDB field values into a local movie snapshot */
+/** @contract merges applied TMDB field values into local movie + lookup snapshots.
+ * Returns both updated objects for optimistic UI updates after fill-fields. */
 export function applyTmdbFields(
   movie: ExistingMovieData,
   tmdb: LookupMovieData,
   fields: string[],
-): ExistingMovieData {
-  const updated = { ...movie };
+): { movie: ExistingMovieData; tmdb: LookupMovieData } {
+  const updatedMovie = { ...movie };
+  const updatedTmdb = { ...tmdb };
   for (const f of fields) {
     switch (f) {
       case 'title':
-        updated.title = tmdb.title;
+        updatedMovie.title = tmdb.title;
         break;
       case 'synopsis':
-        updated.synopsis = tmdb.overview;
+        updatedMovie.synopsis = tmdb.overview;
+        break;
+      case 'release_date':
+        updatedMovie.release_date = tmdb.releaseDate;
         break;
       case 'poster_url':
-        updated.poster_url = tmdb.posterUrl;
+        updatedMovie.poster_url = tmdb.posterUrl;
         break;
       case 'backdrop_url':
-        updated.backdrop_url = tmdb.backdropUrl;
+        updatedMovie.backdrop_url = tmdb.backdropUrl;
         break;
       case 'director':
-        updated.director = tmdb.director;
+        updatedMovie.director = tmdb.director;
         break;
       case 'runtime':
-        updated.runtime = tmdb.runtime;
+        updatedMovie.runtime = tmdb.runtime;
         break;
       case 'genres':
-        updated.genres = tmdb.genres;
+        updatedMovie.genres = tmdb.genres;
         break;
+      // @contract: for junction table fields, set DB counts = TMDB counts (fill synced them)
       case 'videos':
-        updated.video_count = tmdb.videoCount;
+        updatedTmdb.dbVideoCount = tmdb.videoCount;
         break;
       case 'images':
-        updated.poster_count = tmdb.posterCount;
-        updated.backdrop_count = tmdb.backdropCount;
+        updatedTmdb.dbPosterCount = tmdb.posterCount;
+        updatedTmdb.dbBackdropCount = tmdb.backdropCount;
         break;
       case 'keywords':
-        updated.keyword_count = tmdb.keywordCount;
+        updatedTmdb.dbKeywordCount = tmdb.keywordCount;
         break;
       case 'watch_providers':
-        updated.platform_names = tmdb.providerNames;
+        updatedTmdb.dbPlatformNames = tmdb.providerNames;
         break;
       case 'production_companies':
-        updated.production_house_count = tmdb.productionCompanyCount;
+        updatedTmdb.dbProductionHouseCount = tmdb.productionCompanyCount;
         break;
       case 'imdb_id':
-        updated.imdb_id = tmdb.imdbId;
+        updatedMovie.imdb_id = tmdb.imdbId;
         break;
       case 'title_te':
-        updated.title_te = tmdb.titleTe;
+        updatedMovie.title_te = tmdb.titleTe;
         break;
       case 'synopsis_te':
-        updated.synopsis_te = tmdb.synopsisTe;
+        updatedMovie.synopsis_te = tmdb.synopsisTe;
         break;
       case 'tagline':
-        updated.tagline = tmdb.tagline;
+        updatedMovie.tagline = tmdb.tagline;
         break;
       case 'tmdb_status':
-        updated.tmdb_status = tmdb.tmdbStatus;
+        updatedMovie.tmdb_status = tmdb.tmdbStatus;
         break;
       case 'tmdb_ratings':
-        updated.tmdb_vote_average = tmdb.tmdbVoteAverage;
-        updated.tmdb_vote_count = tmdb.tmdbVoteCount;
+        updatedMovie.tmdb_vote_average = tmdb.tmdbVoteAverage;
+        updatedMovie.tmdb_vote_count = tmdb.tmdbVoteCount;
         break;
       case 'budget_revenue':
-        updated.budget = tmdb.budget;
-        updated.revenue = tmdb.revenue;
+        updatedMovie.budget = tmdb.budget;
+        updatedMovie.revenue = tmdb.revenue;
         break;
       case 'certification_auto':
-        updated.certification = tmdb.certification;
+        updatedMovie.certification = tmdb.certification;
         break;
       case 'spoken_languages':
-        updated.spoken_languages = tmdb.spokenLanguages;
+        updatedMovie.spoken_languages = tmdb.spokenLanguages;
         break;
     }
   }
-  return updated;
+  return { movie: updatedMovie, tmdb: updatedTmdb };
 }

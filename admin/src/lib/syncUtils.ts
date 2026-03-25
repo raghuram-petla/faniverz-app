@@ -16,6 +16,7 @@ import type { ExistingMovieData } from '@/hooks/useSync';
 export const FILLABLE_DATA_FIELDS = [
   'title',
   'synopsis',
+  'release_date',
   'poster_url',
   'backdrop_url',
   'director',

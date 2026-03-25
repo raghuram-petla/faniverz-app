@@ -99,23 +99,34 @@ export function ExistingMovieSync({
     onGapCountChange?.(isLoading ? null : gapCount);
   }, [gapCount, isLoading, onGapCountChange]);
 
-  // @sideeffect called by ExistingMovieRow after per-movie apply — update localMovies so gap count recalculates
-  const handleMovieUpdated = useCallback((updated: ExistingMovieData) => {
-    setLocalMovies((prev) => prev.map((m) => (m.tmdb_id === updated.tmdb_id ? updated : m)));
-  }, []);
+  // @sideeffect called by ExistingMovieRow after per-movie apply — update both movie + tmdb data
+  const handleMovieUpdated = useCallback(
+    (updated: ExistingMovieData, updatedTmdb?: LookupMovieData) => {
+      setLocalMovies((prev) => prev.map((m) => (m.tmdb_id === updated.tmdb_id ? updated : m)));
+      if (updatedTmdb) {
+        setTmdbMap((prev) => new Map(prev).set(updated.tmdb_id, updatedTmdb));
+      }
+    },
+    [],
+  );
 
   const handleBulkFill = async (e: React.MouseEvent) => {
     e.stopPropagation();
     await bulk.run(movies, tmdbMap);
-    // @sideeffect optimistically update all movies with TMDB values for gapped fields
+    // @sideeffect optimistically update both movie + tmdb data for gapped fields
+    const newTmdbMap = new Map(tmdbMap);
     setLocalMovies((prev) =>
       prev.map((m) => {
         const tmdb = tmdbMap.get(m.tmdb_id);
         if (!tmdb) return m;
         const gappedFields = FILLABLE_DATA_FIELDS.filter((f) => getStatus(m, tmdb, f) !== 'same');
-        return gappedFields.length > 0 ? applyTmdbFields(m, tmdb, gappedFields) : m;
+        if (gappedFields.length === 0) return m;
+        const { movie: updatedMovie, tmdb: updatedTmdb } = applyTmdbFields(m, tmdb, gappedFields);
+        newTmdbMap.set(m.tmdb_id, updatedTmdb);
+        return updatedMovie;
       }),
     );
+    setTmdbMap(newTmdbMap);
   };
 
   return (

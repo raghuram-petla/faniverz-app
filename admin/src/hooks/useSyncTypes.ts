@@ -2,12 +2,15 @@ import type { TmdbDiscoverMovie, TmdbSearchPerson } from '@/lib/tmdb';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-/** Full DB snapshot of a movie that already exists — used for field-level diff. */
+/** Full DB snapshot of a movie that already exists — used for field-level diff.
+ * @contract: scalar fields only. Aggregate counts (images, videos, keywords, etc.)
+ * are fetched per-movie by the lookup route for self-contained gap analysis. */
 export interface ExistingMovieData {
   id: string;
   tmdb_id: number;
   title: string | null;
   synopsis: string | null;
+  release_date: string | null;
   poster_url: string | null;
   backdrop_url: string | null;
   director: string | null;
@@ -25,12 +28,6 @@ export interface ExistingMovieData {
   revenue: number | null;
   certification: string | null;
   spoken_languages: string[] | null;
-  poster_count?: number;
-  backdrop_count?: number;
-  video_count?: number;
-  platform_names?: string[];
-  keyword_count?: number;
-  production_house_count?: number;
 }
 
 /** @contract Potential duplicate — a local movie with matching title but no tmdb_id */
@@ -85,6 +82,14 @@ export interface LookupMovieData {
   spokenLanguages: string[];
   productionCompanyCount: number;
   originalLanguage: string;
+  // @contract: DB-side counts — fetched per-movie by the lookup route for self-contained gap analysis.
+  // These live alongside TMDB counts so getStatus() has both sides in one object.
+  dbPosterCount: number;
+  dbBackdropCount: number;
+  dbVideoCount: number;
+  dbKeywordCount: number;
+  dbProductionHouseCount: number;
+  dbPlatformNames: string[];
 }
 
 export interface LookupPersonData {

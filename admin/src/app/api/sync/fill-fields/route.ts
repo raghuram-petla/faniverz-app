@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (fieldSet.has('title')) movieUpdate.title = detail.title;
     if (fieldSet.has('synopsis')) movieUpdate.synopsis = detail.overview || null;
+    if (fieldSet.has('release_date')) movieUpdate.release_date = detail.release_date || null;
     if (fieldSet.has('director')) {
       movieUpdate.director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
     }

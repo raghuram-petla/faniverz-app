@@ -79,103 +79,51 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Batch-check which tmdb_ids already exist in our DB, fetching all
-    // fillable fields so the frontend can show a field-level diff without
-    // a separate per-movie query.
-    // @sync: read-only DB check — no writes, safe for repeated calls
-    // @edge: batch tmdb_ids too — "All languages" year discover can return 300+ results
+    // Batch-check which tmdb_ids already exist in our DB, fetching scalar fields.
+    // @contract: aggregate counts (images, videos, keywords, etc.) are NOT fetched here —
+    // they are fetched per-movie by the lookup route for self-contained gap analysis.
+    // This eliminates the Supabase row-limit truncation bug that caused false gaps.
+    // @edge: batch tmdb_ids — "All languages" year discover can return 300+ results
     const tmdbIds = results.map((m) => m.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existingRows: any[] = [];
+    interface MovieRow {
+      id: string;
+      tmdb_id: number;
+      title: string | null;
+      synopsis: string | null;
+      release_date: string | null;
+      poster_url: string | null;
+      backdrop_url: string | null;
+      director: string | null;
+      runtime: number | null;
+      genres: string[] | null;
+      imdb_id: string | null;
+      title_te: string | null;
+      synopsis_te: string | null;
+      tagline: string | null;
+      tmdb_status: string | null;
+      tmdb_vote_average: number | null;
+      tmdb_vote_count: number | null;
+      budget: number | null;
+      revenue: number | null;
+      certification: string | null;
+      spoken_languages: string[] | null;
+    }
+    const existingRows: MovieRow[] = [];
     const TMDB_BATCH = 50;
     for (let i = 0; i < tmdbIds.length; i += TMDB_BATCH) {
       const chunk = tmdbIds.slice(i, i + TMDB_BATCH);
       const { data } = await supabase
         .from('movies')
         .select(
-          'id, tmdb_id, title, synopsis, poster_url, backdrop_url, director, runtime, genres, imdb_id, title_te, synopsis_te, tagline, tmdb_status, tmdb_vote_average, tmdb_vote_count, budget, revenue, certification, spoken_languages',
+          'id, tmdb_id, title, synopsis, release_date, poster_url, backdrop_url, director, runtime, genres, imdb_id, title_te, synopsis_te, tagline, tmdb_status, tmdb_vote_average, tmdb_vote_count, budget, revenue, certification, spoken_languages',
         )
         .in('tmdb_id', chunk);
-      if (data) existingRows.push(...data);
+      if (data) existingRows.push(...(data as MovieRow[]));
     }
 
-    // @contract: resolve relative R2 keys to full URLs server-side so client components
-    // can use poster_url directly without needing env vars (Turbopack doesn't substitute
-    // process.env in client bundles for non-NEXT_PUBLIC_ vars)
+    // @contract: resolve relative R2 keys to full URLs server-side
     const postersBase = process.env.R2_PUBLIC_BASE_URL_POSTERS?.replace(/\/$/, '');
     const backdropsBase = process.env.R2_PUBLIC_BASE_URL_BACKDROPS?.replace(/\/$/, '');
-    const existingIds = existingRows.map((r: { id: string }) => r.id);
-
-    // @sideeffect: fetch aggregate counts for gap detection
-    // @edge: Supabase/PostgREST silently truncates results at max-rows (default 1000).
-    // With 177+ movies, junction table rows (e.g. 177 * 5 posters = 885+) can exceed
-    // the limit. Movies whose rows fall past the cutoff get count=0, creating false gaps.
-    // Batching into chunks of 50 keeps each query well under any row limit.
-    const BATCH_SIZE = 50;
-
-    // @contract: batch a Supabase .in() query across chunks, merging all results
-    async function batchedIn<T>(
-      queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null }>,
-    ): Promise<T[]> {
-      if (existingIds.length === 0) return [];
-      const results: T[] = [];
-      for (let i = 0; i < existingIds.length; i += BATCH_SIZE) {
-        const chunk = existingIds.slice(i, i + BATCH_SIZE);
-        const { data } = await queryFn(chunk);
-        if (data) results.push(...data);
-      }
-      return results;
-    }
-
-    const [posterData, backdropData, videoData, keywordData, phData, platformData] =
-      await Promise.all([
-        batchedIn<{ movie_id: string }>((ids) =>
-          supabase
-            .from('movie_images')
-            .select('movie_id')
-            .in('movie_id', ids)
-            .eq('image_type', 'poster'),
-        ),
-        batchedIn<{ movie_id: string }>((ids) =>
-          supabase
-            .from('movie_images')
-            .select('movie_id')
-            .in('movie_id', ids)
-            .eq('image_type', 'backdrop'),
-        ),
-        batchedIn<{ movie_id: string }>((ids) =>
-          supabase.from('movie_videos').select('movie_id').in('movie_id', ids),
-        ),
-        batchedIn<{ movie_id: string }>((ids) =>
-          supabase.from('movie_keywords').select('movie_id').in('movie_id', ids),
-        ),
-        batchedIn<{ movie_id: string }>((ids) =>
-          supabase.from('movie_production_houses').select('movie_id').in('movie_id', ids),
-        ),
-        batchedIn<{ movie_id: string; platform_id: string }>((ids) =>
-          supabase.from('movie_platforms').select('movie_id, platform_id').in('movie_id', ids),
-        ),
-      ]);
-
-    // @contract: count existingRows per movie_id for each aggregate type
-    function countByMovie(data: { movie_id: string }[]): Map<string, number> {
-      const map = new Map<string, number>();
-      for (const r of data) map.set(r.movie_id, (map.get(r.movie_id) ?? 0) + 1);
-      return map;
-    }
-    const posterCounts = countByMovie(posterData);
-    const backdropCounts = countByMovie(backdropData);
-    const videoCounts = countByMovie(videoData);
-    const keywordCounts = countByMovie(keywordData);
-    const phCounts = countByMovie(phData);
-
-    // @contract: collect platform IDs per movie for display names
-    const platformsByMovie = new Map<string, string[]>();
-    for (const r of platformData) {
-      const list = platformsByMovie.get(r.movie_id) ?? [];
-      list.push(r.platform_id);
-      platformsByMovie.set(r.movie_id, list);
-    }
 
     const existingMovies = existingRows.map((row) => ({
       ...row,
@@ -187,12 +135,6 @@ export async function POST(request: NextRequest) {
         row.backdrop_url && !row.backdrop_url.startsWith('http') && backdropsBase
           ? `${backdropsBase}/${row.backdrop_url}`
           : row.backdrop_url,
-      poster_count: posterCounts.get(row.id) ?? 0,
-      backdrop_count: backdropCounts.get(row.id) ?? 0,
-      video_count: videoCounts.get(row.id) ?? 0,
-      keyword_count: keywordCounts.get(row.id) ?? 0,
-      production_house_count: phCounts.get(row.id) ?? 0,
-      platform_names: platformsByMovie.get(row.id) ?? [],
     }));
 
     // @sideeffect check for title-based duplicates — movies in DB with matching titles but no tmdb_id
