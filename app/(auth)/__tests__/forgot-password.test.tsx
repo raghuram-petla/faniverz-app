@@ -243,4 +243,30 @@ describe('ForgotPasswordScreen', () => {
 
     expect(screen.getByText('hello@example.com')).toBeTruthy();
   });
+
+  it('sets KeyboardAvoidingView behavior to undefined on Android', () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'android';
+
+    const { UNSAFE_getByType } = render(<ForgotPasswordScreen />);
+    const { KeyboardAvoidingView } = require('react-native');
+    const kav = UNSAFE_getByType(KeyboardAvoidingView);
+    expect(kav.props.behavior).toBeUndefined();
+
+    Platform.OS = originalOS;
+  });
+
+  it('sets KeyboardAvoidingView behavior to padding on iOS', () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'ios';
+
+    const { UNSAFE_getByType } = render(<ForgotPasswordScreen />);
+    const { KeyboardAvoidingView } = require('react-native');
+    const kav = UNSAFE_getByType(KeyboardAvoidingView);
+    expect(kav.props.behavior).toBe('padding');
+
+    Platform.OS = originalOS;
+  });
 });

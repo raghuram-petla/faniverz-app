@@ -770,3 +770,29 @@ describe('ActorDetailScreen', () => {
     expect(screen.queryByTestId('avatar-tap')).toBeNull();
   });
 });
+
+describe('Android LayoutAnimation setup', () => {
+  it('enables LayoutAnimation on Android when setLayoutAnimationEnabledExperimental exists', () => {
+    jest.resetModules();
+    const mockSetLayoutAnimation = jest.fn();
+    const RN = require('react-native');
+    RN.Platform.OS = 'android';
+    RN.UIManager.setLayoutAnimationEnabledExperimental = mockSetLayoutAnimation;
+
+    require('../[id]');
+
+    expect(mockSetLayoutAnimation).toHaveBeenCalledWith(true);
+  });
+
+  it('does not call setLayoutAnimationEnabledExperimental on iOS', () => {
+    jest.resetModules();
+    const mockSetLayoutAnimation = jest.fn();
+    const RN = require('react-native');
+    RN.Platform.OS = 'ios';
+    RN.UIManager.setLayoutAnimationEnabledExperimental = mockSetLayoutAnimation;
+
+    require('../[id]');
+
+    expect(mockSetLayoutAnimation).not.toHaveBeenCalled();
+  });
+});

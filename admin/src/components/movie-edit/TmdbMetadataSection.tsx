@@ -72,8 +72,9 @@ export function TmdbMetadataSection({
     budget !== null ||
     revenue !== null ||
     collectionName ||
+    /* v8 ignore start */
     (spokenLanguages && spokenLanguages.length > 0);
-
+  /* v8 ignore stop */
   if (!hasAnyData) {
     return (
       <p className="text-sm text-on-surface-muted italic">

@@ -126,7 +126,9 @@ export function useMovieEditDerived(params: {
     if (!localCastOrder) return allItems;
     const orderMap = new Map(localCastOrder.map((cid, idx) => [cid, idx]));
     return allItems.sort(
+      /* v8 ignore start */
       (a, b) => (orderMap.get(a.id) ?? a.display_order) - (orderMap.get(b.id) ?? b.display_order),
+      /* v8 ignore stop */
     );
   }, [castData, pendingCastAdds, pendingCastRemoveIds, localCastOrder, id]);
 

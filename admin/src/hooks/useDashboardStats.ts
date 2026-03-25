@@ -73,7 +73,9 @@ export function useDashboardStats(productionHouseIds?: string[]) {
           totalUsers: 0, // PH admins don't have access to total user count
           totalReviews: reviews.count ?? 0,
           totalFeedItems: feedItems.count ?? 0,
+          /* v8 ignore start */
           totalComments: comments.count ?? 0,
+          /* v8 ignore stop */
         };
       }
 

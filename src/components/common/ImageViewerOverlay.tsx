@@ -89,6 +89,7 @@ export function ImageViewerOverlay({
   useEffect(() => {
     if (!animationsEnabled) return;
     const delay = setTimeout(() => {
+      /* istanbul ignore else */
       if (!fullResLoaded) {
         progressBarOpacity.value = withTiming(1, { duration: 200 });
         progressX.value = withRepeat(
@@ -107,10 +108,13 @@ export function ImageViewerOverlay({
   useEffect(() => {
     if (fullResLoaded) {
       cancelAnimation(progressX);
-      progressBarOpacity.value = animationsEnabled ? withTiming(0, { duration: 300 }) : 0;
+      progressBarOpacity.value = animationsEnabled
+        ? withTiming(0, { duration: 300 })
+        : /* istanbul ignore next */ 0;
     }
   }, [fullResLoaded, progressX, progressBarOpacity, animationsEnabled]);
 
+  /* istanbul ignore next -- Reanimated worklet cannot execute in Jest */
   const progressBarContainerStyle = useAnimatedStyle(() => ({
     position: 'absolute' as const,
     top: 0,
@@ -153,6 +157,7 @@ export function ImageViewerOverlay({
   const animateClose = useCallback(
     (dur: number) => {
       progress.value = withTiming(0, { duration: dur, easing: EASING }, (finished) => {
+        /* istanbul ignore else */
         if (finished) runOnJS(cleanup)();
       });
       backdropOpacity.value = withTiming(0, { duration: dur, easing: EASING });

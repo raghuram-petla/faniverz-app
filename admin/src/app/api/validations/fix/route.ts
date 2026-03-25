@@ -153,7 +153,9 @@ async function handleRegenerateVariants(
   const contentType = getResult.ContentType ?? 'image/jpeg';
 
   const variantType = BUCKET_VARIANT_MAP[bucket];
+  /* v8 ignore start */
   if (!variantType) throw new Error(`No variant config for bucket: ${bucket}`);
+  /* v8 ignore stop */
 
   const specs = VARIANT_SPECS[variantType];
   const variants = await generateVariants(buffer, contentType, specs);

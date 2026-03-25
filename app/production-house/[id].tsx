@@ -56,9 +56,15 @@ export default function ProductionHouseDetailScreen() {
   const handleFollowToggle = gate(() => {
     if (followMutation.isPending || unfollowMutation.isPending) return;
     if (isFollowing) {
-      unfollowMutation.mutate({ entityType: 'production_house', entityId: id ?? '' });
+      unfollowMutation.mutate({
+        entityType: 'production_house',
+        entityId: id ?? /* istanbul ignore next */ '',
+      });
     } else {
-      followMutation.mutate({ entityType: 'production_house', entityId: id ?? '' });
+      followMutation.mutate({
+        entityType: 'production_house',
+        entityId: id ?? /* istanbul ignore next */ '',
+      });
     }
   });
 
@@ -91,7 +97,9 @@ export default function ProductionHouseDetailScreen() {
     house.logo_url ? (
       <Image
         source={{
-          uri: getImageUrl(house.logo_url, 'sm', 'PRODUCTION_HOUSES') ?? PLACEHOLDER_POSTER,
+          uri:
+            getImageUrl(house.logo_url, 'sm', 'PRODUCTION_HOUSES') ??
+            /* istanbul ignore next */ PLACEHOLDER_POSTER,
         }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"

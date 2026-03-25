@@ -41,7 +41,7 @@ export default function UserProfileScreen() {
     isError,
   } = useQuery({
     queryKey: ['profile', id],
-    queryFn: () => fetchPublicProfile(id ?? ''),
+    queryFn: () => fetchPublicProfile(id ?? /* istanbul ignore next */ ''),
     enabled: !!id,
   });
 

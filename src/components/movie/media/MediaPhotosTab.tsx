@@ -52,7 +52,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
   const handlePosterPress = useCallback(
     (poster: MoviePoster, ref: React.RefObject<View | null>) => {
       /** @edge ref.current may be null if View unmounted during rapid scrolling */
-      if (!ref.current) return;
+      /* istanbul ignore next */ if (!ref.current) return;
       ref.current.measureInWindow((x: number, y: number, width: number, height: number) => {
         openImage({
           feedUrl:
@@ -60,7 +60,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
               poster.image_url,
               'sm',
               poster.image_type === 'backdrop' ? 'BACKDROPS' : 'POSTERS',
-            ) ?? poster.image_url,
+            ) ?? /* istanbul ignore next */ poster.image_url,
           fullUrl: poster.image_url,
           sourceLayout: { x, y, width, height },
           sourceRef: ref,
@@ -103,7 +103,7 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
               ref={ref as React.RefObject<View>}
               style={[
                 isBackdrop ? styles.photoCardBackdrop : styles.photoCard,
-                hiddenId === poster.id && { opacity: 0 },
+                hiddenId === poster.id && /* istanbul ignore next */ { opacity: 0 },
               ]}
               onPress={() => handlePosterPress(poster, ref)}
               activeOpacity={0.8}

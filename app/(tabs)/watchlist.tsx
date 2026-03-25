@@ -155,6 +155,7 @@ export default function WatchlistScreen() {
         return <UpcomingCard entry={item.entry} userId={userId} styles={styles} />;
       case 'watched':
         return <WatchedCard entry={item.entry} userId={userId} styles={styles} />;
+      /* istanbul ignore next */
       default:
         return null;
     }

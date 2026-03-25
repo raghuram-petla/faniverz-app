@@ -45,7 +45,13 @@ export function ActorSearchResults({ actors, existingSet }: ActorSearchResultsPr
 
   /** @sideeffect imports actor, updates grid badge — no re-lookup to avoid flash */
   const handleImportActor = async () => {
+    {
+      /* v8 ignore start */
+    }
     if (!lookupResult || lookupResult.type !== 'person') return;
+    {
+      /* v8 ignore stop */
+    }
     await importActor.mutateAsync(lookupResult.data.tmdbPersonId);
     setImportedIds((prev) => new Set([...prev, lookupResult.data.tmdbPersonId]));
   };

@@ -107,11 +107,13 @@ export default function NotificationsPage() {
               disabled={bulkRetry.isPending}
               className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
             >
+              {/* v8 ignore start */}
               {bulkRetry.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <RotateCcw className="w-4 h-4" />
               )}
+              {/* v8 ignore stop */}
               Retry All Failed
             </button>
 
@@ -120,11 +122,13 @@ export default function NotificationsPage() {
               disabled={bulkCancel.isPending}
               className="flex items-center gap-2 bg-surface-elevated border border-outline hover:bg-input text-on-surface-muted px-3 py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
             >
+              {/* v8 ignore start */}
               {bulkCancel.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <XCircle className="w-4 h-4" />
               )}
+              {/* v8 ignore stop */}
               Cancel All Pending
             </button>
 

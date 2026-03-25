@@ -81,6 +81,7 @@ export default function PostDetailScreen() {
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
 
   // @edge: intentional no-op — FeedCard requires onPress but we're already on post detail
+  /* istanbul ignore next -- no-op handler body is intentionally empty */
   const handleNoOp = (_item: NewsFeedItem) => {};
 
   // @contract: toggling the same vote direction removes it; switching directions replaces it

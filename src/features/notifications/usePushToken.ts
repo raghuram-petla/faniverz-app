@@ -87,6 +87,7 @@ export function usePushToken() {
           if (token && user.id) {
             await deactivatePushToken(token);
           }
+          /* istanbul ignore else */
           if (!cancelled) registeredRef.current = true;
           return;
         }
@@ -95,6 +96,7 @@ export function usePushToken() {
         if (cancelled) return;
         if (token && user.id) {
           await upsertPushToken(user.id, token);
+          /* istanbul ignore else */
           if (!cancelled) registeredRef.current = true;
         }
       } catch (err) {

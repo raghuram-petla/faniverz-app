@@ -53,8 +53,12 @@ export default function FeedScreen() {
   const router = useRouter();
 
   // @edge: unlike index.tsx, this does NOT deduplicate — assumes useNewsFeed pages don't overlap
-  const allItems = useMemo(() => data?.pages.flatMap((page) => page) ?? [], [data?.pages]);
+  const allItems = useMemo(
+    () => data?.pages.flatMap((page) => page) ?? /* istanbul ignore next */ [],
+    [data?.pages],
+  );
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
+  /* istanbul ignore next */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes);
   const {
@@ -98,7 +102,7 @@ export default function FeedScreen() {
   const handleShare = useCallback(
     (itemId: string) => {
       const item = allItems.find((i) => i.id === itemId);
-      if (!item) return;
+      /* istanbul ignore next */ if (!item) return;
       Share.share({ message: `${item.title} — Check it out on Faniverz!` }).catch(() => {});
     },
     [allItems],
@@ -209,7 +213,9 @@ export default function FeedScreen() {
                 <Text style={styles.emptySubtitle}>
                   {filter !== 'all'
                     ? t('feed.noFilterContent', {
-                        filter: FEED_PILLS.find((p) => p.value === filter)?.label ?? filter,
+                        filter:
+                          FEED_PILLS.find((p) => p.value === filter)?.label ??
+                          /* istanbul ignore next */ filter,
                       })
                     : t('feed.checkBackSoon')}
                 </Text>

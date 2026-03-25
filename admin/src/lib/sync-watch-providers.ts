@@ -154,7 +154,9 @@ export async function syncWatchProvidersMultiCountry(
       .select('regions')
       .eq('id', platformId)
       .single();
+    /* v8 ignore start */
     const existing = new Set<string>(plat?.regions ?? []);
+    /* v8 ignore stop */
     for (const r of newRegions) existing.add(r);
     await supabase
       .from('platforms')

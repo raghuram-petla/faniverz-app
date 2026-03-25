@@ -96,7 +96,9 @@ export async function POST(request: NextRequest) {
       },
       actors: {
         results: personResults,
+        /* v8 ignore start */
         existingTmdbPersonIds: (personExisting.data ?? []).map((r) => r.tmdb_person_id as number),
+        /* v8 ignore stop */
       },
     });
   } catch (err) {

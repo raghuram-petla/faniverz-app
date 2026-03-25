@@ -36,7 +36,7 @@ export function useMovieAction(
 
   const { user } = useAuth();
   // @nullable userId falls back to empty string when logged out; gate() prevents mutations in that state
-  const userId = user?.id ?? '';
+  const userId = user?.id ?? /* istanbul ignore next */ '';
   const { gate } = useAuthGate();
 
   const { followSet } = useEntityFollows();

@@ -550,4 +550,30 @@ describe('RegisterScreen', () => {
     fireEvent.press(screen.getByTestId('phone-modal-success'));
     expect(mockRouter.replace).toHaveBeenCalledWith('/(tabs)');
   });
+
+  it('sets KeyboardAvoidingView behavior to undefined on Android', () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'android';
+
+    const { UNSAFE_getByType } = render(<RegisterScreen />);
+    const { KeyboardAvoidingView } = require('react-native');
+    const kav = UNSAFE_getByType(KeyboardAvoidingView);
+    expect(kav.props.behavior).toBeUndefined();
+
+    Platform.OS = originalOS;
+  });
+
+  it('sets KeyboardAvoidingView behavior to padding on iOS', () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'ios';
+
+    const { UNSAFE_getByType } = render(<RegisterScreen />);
+    const { KeyboardAvoidingView } = require('react-native');
+    const kav = UNSAFE_getByType(KeyboardAvoidingView);
+    expect(kav.props.behavior).toBe('padding');
+
+    Platform.OS = originalOS;
+  });
 });

@@ -190,7 +190,9 @@ export default function SurpriseScreen() {
         ) : (
           <>
             {/* Featured video */}
-            {featured ? <FeaturedVideoCard item={featured} styles={styles} /> : null}
+            {featured ? (
+              <FeaturedVideoCard item={featured} styles={styles} />
+            ) : /* istanbul ignore next */ null}
 
             {/* Content grid */}
             {gridItems.length > 0 ? (

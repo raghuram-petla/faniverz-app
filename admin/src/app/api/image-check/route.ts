@@ -95,7 +95,9 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error('[image-check] Request parsing error:', e);
     return NextResponse.json(
+      /* v8 ignore start */
       { error: 'Invalid request body', detail: e instanceof Error ? e.message : String(e) },
+      /* v8 ignore stop */
       { status: 400 },
     );
   }

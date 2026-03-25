@@ -175,6 +175,7 @@ export function ImageViewerGestures({
   // @contract Pinch runs simultaneously with pan/double-tap; double-tap and pan race (first recognized wins)
   const gesture = Gesture.Simultaneous(pinch, Gesture.Race(doubleTap, pan));
 
+  /* istanbul ignore next -- Reanimated worklet cannot execute in Jest */
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: translateX.value },

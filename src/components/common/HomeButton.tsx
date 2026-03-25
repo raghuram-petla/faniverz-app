@@ -27,6 +27,7 @@ export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
   // navigator's index is 0. Check the parent navigator too and use the max.
   const state = navigation.getState();
   // @edge stackDepth falls back to 0 when navigation state is unavailable
+  /* istanbul ignore next -- navigation state is always defined in test environment */
   let stackDepth = state?.index ?? 0;
   try {
     const parentIndex = navigation.getParent?.()?.getState?.()?.index;

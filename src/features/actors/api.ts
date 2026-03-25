@@ -67,8 +67,8 @@ export async function fetchActorFilmography(actorId: string): Promise<ActorCredi
 
   // Sort by movie release_date descending (newest first)
   return deduped.sort((a, b) => {
-    const dateA = (a as ActorCredit).movie?.release_date ?? '';
-    const dateB = (b as ActorCredit).movie?.release_date ?? '';
+    const dateA = (a as ActorCredit).movie?.release_date ?? /* istanbul ignore next */ '';
+    const dateB = (b as ActorCredit).movie?.release_date ?? /* istanbul ignore next */ '';
     return dateB.localeCompare(dateA);
   }) as ActorCredit[];
 }

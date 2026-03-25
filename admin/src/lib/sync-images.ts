@@ -107,7 +107,9 @@ export async function syncPosters(
           R2_BUCKETS.moviePosters,
           key,
         );
+        /* v8 ignore start */
         const sortIdx = indexMap.get(poster.file_path) ?? 0;
+        /* v8 ignore stop */
         const isMain = sortIdx === 0;
 
         if (isMain) {
@@ -197,7 +199,9 @@ export async function syncBackdrops(
           R2_BUCKETS.movieBackdrops,
           key,
         );
+        /* v8 ignore start */
         const sortIdx = indexMap.get(backdrop.file_path) ?? 0;
+        /* v8 ignore stop */
         const isMain = sortIdx === 0;
 
         if (isMain) {

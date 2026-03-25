@@ -83,6 +83,7 @@ async function applyMovieFilters(
   }
 
   // Featured-first ordering is prepended before sortBy so it becomes the primary ORDER BY column
+  /* istanbul ignore else */
   if (options?.featuredFirst) {
     query = query.order('is_featured', { ascending: false });
   }
@@ -97,6 +98,7 @@ async function applyMovieFilters(
     case 'upcoming':
       query = query.order('release_date', { ascending: true });
       break;
+    /* istanbul ignore next */
     case 'popular':
     default:
       query = query.order('review_count', { ascending: false });

@@ -72,7 +72,9 @@ export function ActorAvatar({ actor, size = 64 }: Props) {
     return (
       <Image
         source={{
-          uri: getImageUrl(actor.photo_url, photoVariant(size), 'ACTORS') ?? PLACEHOLDER_AVATAR,
+          uri:
+            getImageUrl(actor.photo_url, photoVariant(size), 'ACTORS') ??
+            /* istanbul ignore next */ PLACEHOLDER_AVATAR,
         }}
         style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"

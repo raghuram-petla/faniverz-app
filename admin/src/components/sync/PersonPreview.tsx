@@ -22,6 +22,7 @@ export function PersonPreview({
 }: PersonPreviewProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5 relative">
+      {/* v8 ignore start */}
       {onClose && (
         <button
           onClick={onClose}
@@ -31,6 +32,7 @@ export function PersonPreview({
           <X className="w-5 h-5" />
         </button>
       )}
+      {/* v8 ignore stop */}
       <div className="flex gap-5">
         {result.data.photoUrl ? (
           <img

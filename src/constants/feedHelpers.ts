@@ -180,6 +180,7 @@ export function getEntityRoute(item: NewsFeedItem): string | null {
       return `/actor/${entityId}`;
     case 'production_house':
       return `/production-house/${entityId}`;
+    /* istanbul ignore next -- default unreachable; deriveEntityType only returns movie|actor|production_house */
     default:
       return null;
   }

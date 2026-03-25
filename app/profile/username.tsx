@@ -42,6 +42,7 @@ export default function UsernameScreen() {
   const setUsernameMutation = useSetUsername();
 
   const handleSave = async () => {
+    /* istanbul ignore next -- save button is disabled when !isAvailable */
     if (!isAvailable) return;
     try {
       await setUsernameMutation.mutateAsync(username);

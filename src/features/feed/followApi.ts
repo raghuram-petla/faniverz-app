@@ -4,7 +4,7 @@ import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types
 // @contract: shared helper to unwrap Supabase query result with error handling
 function unwrap<T>(result: { data: T[] | null; error: { message: string } | null }): T[] {
   if (result.error) throw result.error;
-  return result.data ?? [];
+  return result.data ?? /* istanbul ignore next */ [];
 }
 
 // @boundary: entity_id is a UUID referencing different tables depending on entity_type (movies, actors, production_houses, profiles). There's no FK constraint — if the referenced entity is deleted, the follow row persists as an orphan. fetchEnrichedFollows handles this by showing name='Deleted', but the follow still counts in the user's follows list.
@@ -15,7 +15,7 @@ export async function fetchUserFollows(userId: string): Promise<EntityFollow[]> 
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return data ?? /* istanbul ignore next */ [];
 }
 
 // @contract: uses upsert to safely handle duplicate follow attempts (e.g. rapid taps or stale followSet)

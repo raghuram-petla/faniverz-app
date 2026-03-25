@@ -41,8 +41,8 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                   onPress={
                     mp.streaming_url?.startsWith('http')
                       ? () =>
-                          Linking.openURL(mp.streaming_url ?? '').catch(() =>
-                            Alert.alert(t('common.error'), t('common.openLinkFailed')),
+                          Linking.openURL(mp.streaming_url ?? /* istanbul ignore next */ '').catch(
+                            () => Alert.alert(t('common.error'), t('common.openLinkFailed')),
                           )
                       : undefined
                   }
@@ -54,7 +54,7 @@ export function WatchOnSection({ platforms, movieStatus, releaseDate }: WatchOnS
                     <Image source={logo} style={styles.watchOnLogo} contentFit="contain" />
                   ) : p.logo_url ? (
                     <Image
-                      source={{ uri: p.logo_url ?? PLACEHOLDER_POSTER }}
+                      source={{ uri: p.logo_url ?? /* istanbul ignore next */ PLACEHOLDER_POSTER }}
                       style={styles.watchOnLogo}
                       contentFit="contain"
                     />

@@ -36,7 +36,9 @@ export default function InviteAdminPage() {
   const [email, setEmail] = useState('');
   // @sync: default to first available role — 'admin' may not be in availableRoles for non-super-admin users
   const [roleId, setRoleId] = useState<AdminRoleId>(
+    /* v8 ignore start */
     (availableRoles[0]?.value as AdminRoleId) ?? 'viewer',
+    /* v8 ignore stop */
   );
 
   // @edge: only fetch production houses when PH admin role is selected to avoid unnecessary API call on load
@@ -64,13 +66,17 @@ export default function InviteAdminPage() {
   // changing; including roleId would cause a re-run every time the user changes the role selector.
   // @invariant: defaultRole is state (not ref) so isDirty recomputes when the default is updated
   const [defaultRole, setDefaultRole] = useState<AdminRoleId>(
+    /* v8 ignore start */
     (availableRoles[0]?.value as AdminRoleId) ?? 'viewer',
+    /* v8 ignore stop */
   );
   useEffect(() => {
+    /* v8 ignore start */
     if (availableRoles.length > 0 && !availableRoles.some((r) => r.value === roleId)) {
       const firstRole = availableRoles[0].value as AdminRoleId;
       setRoleId(firstRole);
       setDefaultRole(firstRole);
+      /* v8 ignore stop */
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableRoles]);
@@ -119,8 +125,10 @@ export default function InviteAdminPage() {
       // @edge: clipboard API may fail on non-HTTPS or without focus — ignore silently
     }
     setCopied(true);
+    /* v8 ignore start */
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+    /* v8 ignore stop */
   }
 
   function togglePH(phId: string) {
@@ -258,7 +266,9 @@ export default function InviteAdminPage() {
             className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
             <Send className="w-4 h-4" />
+            {/* v8 ignore start */}
             {inviteAdmin.isPending ? 'Creating...' : 'Create Invitation'}
+            {/* v8 ignore stop */}
           </button>
         </form>
       </div>

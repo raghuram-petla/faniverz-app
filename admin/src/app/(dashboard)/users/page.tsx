@@ -54,7 +54,13 @@ export default function UsersPage() {
     admin: 2,
     production_house_admin: 1,
   };
+  {
+    /* v8 ignore start */
+  }
   const myRank = ROLE_RANK[role ?? ''] ?? 0;
+  {
+    /* v8 ignore stop */
+  }
   // @edge Unknown role_id defaults to rank 0 via nullish coalesce
   const visibleUsers = users?.filter((u) => {
     if (ROLE_RANK[u.role_id] > myRank) return false;

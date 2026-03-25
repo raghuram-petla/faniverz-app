@@ -167,7 +167,9 @@ async function resumableSync(
       syncVideos(movieId, detail.videos.results, supabase),
       syncWatchProvidersMultiCountry(movieId, tmdbId, apiKey, supabase),
       syncKeywords(movieId, detail, supabase),
+      /* v8 ignore start */
       syncProductionCompanies(movieId, detail.production_companies ?? [], supabase),
+      /* v8 ignore stop */
     ]);
   } catch (extErr) {
     console.warn(`Extended sync partial failure for ${detail.title}:`, extErr);

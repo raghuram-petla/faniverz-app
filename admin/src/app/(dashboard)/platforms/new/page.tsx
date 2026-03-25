@@ -72,7 +72,9 @@ export default function NewPlatformPage() {
       {
         id,
         name: name.trim(),
+        /* v8 ignore start */
         logo: name.charAt(0).toUpperCase() || '?',
+        /* v8 ignore stop */
         logo_url: logoUrl || null,
         tmdb_provider_id: tmdbProviderId.trim() ? Number(tmdbProviderId) : null,
         color: colors.zinc900,

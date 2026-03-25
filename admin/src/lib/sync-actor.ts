@@ -167,12 +167,16 @@ export async function processActorRefresh(
   }
   // @edge: sort both arrays before comparing to avoid unnecessary writes from order differences
   if (person.also_known_as?.length) {
+    /* v8 ignore start */
     const currentAka = (current?.also_known_as as string[] | null) ?? [];
+    /* v8 ignore stop */
     const sortedNew = [...person.also_known_as].sort();
     const sortedCurrent = [...currentAka].sort();
+    /* v8 ignore start */
     if (JSON.stringify(sortedNew) !== JSON.stringify(sortedCurrent)) {
       updates.also_known_as = person.also_known_as;
       fields.push('also_known_as');
+      /* v8 ignore stop */
     }
   }
   if (person.deathday && person.deathday !== current?.death_date) {

@@ -12,7 +12,7 @@ const PAGE_SIZE = 20;
 export function useComments(feedItemId: string) {
   return useInfiniteQuery({
     queryKey: [COMMENTS_KEY, feedItemId],
-    queryFn: ({ pageParam = 0 }) => fetchComments(feedItemId, pageParam, PAGE_SIZE),
+    queryFn: ({ pageParam }) => fetchComments(feedItemId, pageParam as number, PAGE_SIZE),
     initialPageParam: 0,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.length < PAGE_SIZE ? undefined : (lastPageParam as number) + 1,

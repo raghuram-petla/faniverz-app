@@ -91,6 +91,7 @@ export default function MovieDetailScreen() {
   // @edge: rating === 0 guard prevents submitting empty reviews
   // @sideeffect: resets all review form state after submit; closes modal immediately (optimistic)
   const handleSubmitReview = gate(() => {
+    /* istanbul ignore next -- submit button is disabled when rating is 0 */
     if (reviewRating === 0) return;
     createReview.mutate({
       user_id: userId,

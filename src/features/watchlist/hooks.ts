@@ -211,6 +211,7 @@ export function useWatchlistMutations() {
 // @invariant: shares query key ['watchlist', userId] with useWatchlist — they read from the same cache.
 export function useWatchlistSet() {
   const { user } = useAuth();
+  /* istanbul ignore next -- userId defaults to '' but query is disabled when empty */
   const userId = user?.id ?? '';
 
   const query = useQuery({

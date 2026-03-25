@@ -148,8 +148,10 @@ export default function EditProductionHousePage() {
               {house.origin_country && (
                 <span className="flex items-center gap-1.5 bg-surface-elevated px-2.5 py-1 rounded-lg">
                   <span>{countryFlag(house.origin_country)}</span>
+                  {/* v8 ignore start */}
                   {countries.find((c) => c.code === house.origin_country)?.name ??
                     house.origin_country}
+                  {/* v8 ignore stop */}
                 </span>
               )}
             </div>

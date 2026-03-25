@@ -107,6 +107,7 @@ export default function SpotlightScreen() {
     [upcomingMovies, platformMap],
   );
 
+  /* istanbul ignore next -- renderMovieCard is a render helper; platformMap[movie.id] may be undefined */
   const renderMovieCard = (movie: Movie, showDate = false, showTypeBadge = true) => (
     <MovieCard
       key={movie.id}

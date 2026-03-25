@@ -4,7 +4,7 @@ Find and fix test coverage gaps in a loop across mobile (`app/`, `src/`) and adm
 
 ## Loop Mode
 
-Each "cycle" consists of: scan → report → write tests → verify. Keep looping until **3 consecutive cycles find zero coverage gaps**.
+Each "cycle" consists of: scan → report → write tests → add ignore comments for unreachable branches → verify. Keep looping until **3 consecutive cycles find zero coverage gaps**.
 
 ```
 Cycle 1 → 12 missing tests → write them → Cycle 2 → 3 gaps → fix → Cycle 3 → 0 gaps → Cycle 4 → 0 gaps → Cycle 5 → 0 gaps → DONE
@@ -13,7 +13,7 @@ Cycle 1 → 12 missing tests → write them → Cycle 2 → 3 gaps → fix → C
 **Rules for loop mode:**
 
 - Each cycle is a full Phase 1–4 pass (scan, report, write, verify)
-- A "clean cycle" means Phase 1 found exactly 0 missing test files AND 0 files below coverage thresholds
+- A "clean cycle" means Phase 1 found exactly 0 missing test files AND 0 files below coverage thresholds (after accounting for coverage ignore comments on genuinely unreachable branches)
 - The 3-clean-cycle counter resets to 0 if any gaps are found
 - Between cycles, print: `### Cycle N complete — {X gaps found | clean} (consecutive clean: M/3)`
 - After 3 consecutive clean cycles, print: `### Test Coverage complete — 3 consecutive clean cycles achieved`
@@ -372,9 +372,106 @@ After Phase 5 passes completely, print:
 | Build        | N/A    | PASS  |
 ```
 
+## Phase 3B — Coverage Ignore Comments for Unreachable Branches
+
+After writing all possible tests, some branches remain genuinely unreachable in the test environment. Add coverage ignore comments to these — this is the ONLY acceptable source file modification besides bug fixes.
+
+### When to use ignore comments
+
+Only for branches that are **genuinely impossible to test**, not just hard to test:
+
+| Category                         | Example                              | Ignore?                                      |
+| -------------------------------- | ------------------------------------ | -------------------------------------------- |
+| `Platform.OS === 'android'`      | KeyboardAvoidingView behavior        | **NO** — test with `Platform.OS = 'android'` |
+| `Platform.OS` at module scope    | LayoutAnimation enablement           | **NO** — test with `jest.isolateModules()`   |
+| Reanimated `useAnimatedStyle`    | Worklet callback                     | **YES** — cannot execute in Jest             |
+| `??` inside `enabled: !!x` query | `userId ?? ''` when enabled is false | **YES** — queryFn never runs                 |
+| `?.` on always-defined value     | `data?.id` after null check          | **YES** — defensive guard                    |
+| `??` where LHS always truthy     | `arr.pop() ?? 'default'`             | **YES** — pop() never returns undefined      |
+| Context throw guard              | `if (!ctx) throw` with default value | **YES** — context always has default         |
+| Phantom `else` in V8             | `if` without `else` block            | **YES** — V8/Istanbul artifact               |
+
+### Mobile (Jest/Istanbul) — `/* istanbul ignore next */`
+
+**Critical: placement must be INLINE with the branch operator, not on a separate line.**
+
+```typescript
+// ✅ CORRECT — inline with ??
+const x = value ?? /* istanbul ignore next */ fallback;
+
+// ✅ CORRECT — inline ternary false branch
+const x = condition ? trueVal : /* istanbul ignore next */ falseVal;
+
+// ✅ CORRECT — inline with && in JSX
+{condition && /* istanbul ignore next */ <Component />}
+
+// ✅ CORRECT — before a whole function (ignores the function body)
+/* istanbul ignore next */
+const style = useAnimatedStyle(() => { ... });
+
+// ✅ CORRECT — implicit else branch
+/* istanbul ignore else */
+if (condition) { ... }
+
+// ❌ WRONG — separate line before ?? (doesn't cover the ?? branch)
+/* istanbul ignore next */
+const x = value ?? fallback;
+
+// ❌ WRONG — JSX comment syntax (Istanbul can't read it)
+{/* istanbul ignore next */}
+{condition && <Component />}
+```
+
+### Admin (Vitest/V8) — `/* v8 ignore start/stop */`
+
+**V8 coverage ignores are line-based, not AST-based.** `/* v8 ignore next */` does NOT reliably work with TypeScript compilation + source maps. Use start/stop ranges instead.
+
+```typescript
+// ✅ CORRECT — start/stop range
+/* v8 ignore start -- reason */
+const x = value ?? fallback;
+/* v8 ignore stop */
+
+// ✅ CORRECT — in JSX (.tsx files, use JSX comment syntax)
+{/* v8 ignore start -- reason */}
+{condition && <Component />}
+{/* v8 ignore stop */}
+
+// ❌ WRONG — v8 ignore next (unreliable with TS compilation)
+/* v8 ignore next */
+const x = value ?? fallback;
+```
+
+### Testing Platform.OS branches (ALWAYS test, never ignore)
+
+```typescript
+// For module-scope code (LayoutAnimation):
+describe('Android platform', () => {
+  it('enables LayoutAnimation on Android', () => {
+    jest.resetModules();
+    const { Platform, UIManager } = require('react-native');
+    Platform.OS = 'android';
+    UIManager.setLayoutAnimationEnabledExperimental = jest.fn();
+    jest.isolateModules(() => {
+      require('../SourceFile');
+    });
+    expect(UIManager.setLayoutAnimationEnabledExperimental).toHaveBeenCalledWith(true);
+    Platform.OS = 'ios';
+  });
+});
+
+// For in-function code (KeyboardAvoidingView, etc.):
+it('uses undefined behavior on Android', () => {
+  Platform.OS = 'android';
+  const { getByTestId } = render(<Component />);
+  // assert android-specific behavior
+  Platform.OS = 'ios'; // restore
+});
+```
+
 ## Rules
 
-- **Never modify source code** — only create or edit test files. If a test cannot be written because of a bug in the source code, report the bug in the cycle report but do NOT fix it. The only exception is if the source code has a clear, unambiguous bug that prevents tests from being written — in that case, report the bug, fix it minimally, and note it in the report.
+- **Never modify source code** — only create or edit test files, EXCEPT for adding coverage ignore comments (`/* istanbul ignore next */` or `/* v8 ignore start/stop */`) to genuinely unreachable branches. If a test cannot be written because of a bug in the source code, report the bug in the cycle report but do NOT fix it. The only exception is if the source code has a clear, unambiguous bug that prevents tests from being written — in that case, report the bug, fix it minimally, and note it in the report.
 - **No user confirmation needed** — scan, write, verify, loop automatically
 - **No commits** — all changes must remain uncommitted. The user will review and commit manually.
 - Never skip exempt files (styles, types, configs, barrels, migrations)

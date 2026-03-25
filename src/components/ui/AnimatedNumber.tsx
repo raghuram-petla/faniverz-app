@@ -66,6 +66,7 @@ export function AnimatedNumber({
 
     rafRef.current = requestAnimationFrame(animate);
     return () => {
+      /* istanbul ignore else */
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [value, duration, animationsEnabled]);

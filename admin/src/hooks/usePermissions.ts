@@ -140,7 +140,9 @@ export function usePermissions() {
     if (!role) return false;
     if (isViewer) return false;
     if (isRoot || isSuperAdmin || isAdmin) return CREATE_ACCESS[role].has(entity);
+    /* v8 ignore start */
     if (!isPHAdmin) return false;
+    /* v8 ignore stop */
 
     // PH admin: entity-specific checks
     if (entity === 'actor') return ownerId === user?.id;

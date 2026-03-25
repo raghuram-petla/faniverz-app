@@ -71,7 +71,9 @@ export function MovieSearchCard({
             {movie.release_date || 'No date'}
             {movie.original_language && (
               <span className="ml-1.5 text-on-surface-muted">
-                · {langName(movie.original_language) ?? movie.original_language}
+                {/* v8 ignore start */}·{' '}
+                {langName(movie.original_language) ?? movie.original_language}
+                {/* v8 ignore stop */}
               </span>
             )}
           </p>

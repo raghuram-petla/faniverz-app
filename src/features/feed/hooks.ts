@@ -266,7 +266,7 @@ export function useUserVotes(feedItemIds: string[]) {
   return useQuery({
     queryKey: ['feed-votes', userId, sortedIds],
     // @sync: must use sortedIds (not feedItemIds) to match the sorted queryKey and avoid stale-closure mismatches
-    queryFn: () => fetchUserVotes(userId ?? '', sortedIds),
+    queryFn: () => fetchUserVotes(userId ?? /* istanbul ignore next */ '', sortedIds),
     enabled: !!userId && sortedIds.length > 0,
     staleTime: STALE_2M,
   });

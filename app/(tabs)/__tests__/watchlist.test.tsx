@@ -590,3 +590,29 @@ describe('WatchlistScreen', () => {
     expect(screen.getByText(/movies saved/)).toBeTruthy();
   });
 });
+
+describe('Android LayoutAnimation setup', () => {
+  it('enables LayoutAnimation on Android when setLayoutAnimationEnabledExperimental exists', () => {
+    jest.resetModules();
+    const mockSetLayoutAnimation = jest.fn();
+    const RN = require('react-native');
+    RN.Platform.OS = 'android';
+    RN.UIManager.setLayoutAnimationEnabledExperimental = mockSetLayoutAnimation;
+
+    require('../watchlist');
+
+    expect(mockSetLayoutAnimation).toHaveBeenCalledWith(true);
+  });
+
+  it('does not call setLayoutAnimationEnabledExperimental on iOS', () => {
+    jest.resetModules();
+    const mockSetLayoutAnimation = jest.fn();
+    const RN = require('react-native');
+    RN.Platform.OS = 'ios';
+    RN.UIManager.setLayoutAnimationEnabledExperimental = mockSetLayoutAnimation;
+
+    require('../watchlist');
+
+    expect(mockSetLayoutAnimation).not.toHaveBeenCalled();
+  });
+});

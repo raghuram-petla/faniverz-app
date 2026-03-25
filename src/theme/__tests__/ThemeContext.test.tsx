@@ -209,3 +209,45 @@ describe('useTheme', () => {
     expect(result.current.mode).toBe(first.mode);
   });
 });
+
+describe('Android LayoutAnimation setup', () => {
+  afterEach(() => {
+    const { Platform } = require('react-native');
+    Platform.OS = 'ios';
+  });
+
+  it('enables LayoutAnimation on Android when setLayoutAnimationEnabledExperimental exists', () => {
+    jest.resetModules();
+    const mockSetLayoutAnimation = jest.fn();
+    const RN = require('react-native');
+    RN.Platform.OS = 'android';
+    RN.UIManager.setLayoutAnimationEnabledExperimental = mockSetLayoutAnimation;
+
+    require('../ThemeContext');
+
+    expect(mockSetLayoutAnimation).toHaveBeenCalledWith(true);
+  });
+
+  it('does not call setLayoutAnimationEnabledExperimental on iOS', () => {
+    jest.resetModules();
+    const mockSetLayoutAnimation = jest.fn();
+    const RN = require('react-native');
+    RN.Platform.OS = 'ios';
+    RN.UIManager.setLayoutAnimationEnabledExperimental = mockSetLayoutAnimation;
+
+    require('../ThemeContext');
+
+    expect(mockSetLayoutAnimation).not.toHaveBeenCalled();
+  });
+
+  it('does not throw when setLayoutAnimationEnabledExperimental is undefined on Android', () => {
+    jest.resetModules();
+    const RN = require('react-native');
+    RN.Platform.OS = 'android';
+    RN.UIManager.setLayoutAnimationEnabledExperimental = undefined;
+
+    expect(() => {
+      require('../ThemeContext');
+    }).not.toThrow();
+  });
+});

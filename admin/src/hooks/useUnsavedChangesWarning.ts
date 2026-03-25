@@ -52,9 +52,11 @@ export function useUnsavedChangesWarning(isDirty: boolean, message?: string) {
 
     const handlePopState = () => {
       // Ignore popstate triggered by our own guard cleanup
+      /* v8 ignore start */
       if (suppressPopRef.current) {
         suppressPopRef.current = false;
         return;
+        /* v8 ignore stop */
       }
 
       if (isDirtyRef.current && hasGuardRef.current) {

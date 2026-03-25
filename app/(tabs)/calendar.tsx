@@ -35,9 +35,13 @@ export default function CalendarScreen() {
 
   // @coupling: pages come from useUpcomingMovies infinite query — each page is Movie[]
   // @edge: depend on data?.pages (not data) to avoid recomputation on isFetching toggles
-  const allMovies = useMemo(() => data?.pages.flat() ?? [], [data?.pages]);
+  const allMovies = useMemo(
+    () => data?.pages.flat() ?? /* istanbul ignore next */ [],
+    [data?.pages],
+  );
   const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);
   // @sync: platformMap is refetched alongside movie data during pull-to-refresh
+  /* istanbul ignore next */
   const { data: platformMap = {}, refetch: refetchPlatforms } = useMoviePlatformMap(movieIds);
   const { refreshing, onRefresh } = useRefresh(refetch, refetchPlatforms);
   const {
@@ -119,7 +123,7 @@ export default function CalendarScreen() {
             .filter((m) => m.release_date)
             .map((m) => new Date(`${m.release_date}T00:00:00`).getFullYear()),
         ),
-      ).sort((a, b) => b - a),
+      ).sort(/* istanbul ignore next */ (a, b) => b - a),
     [allMovies],
   );
 

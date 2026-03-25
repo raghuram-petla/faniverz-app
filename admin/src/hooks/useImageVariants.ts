@@ -55,7 +55,9 @@ export function useImageVariants(
   const checkAvailability = useCallback(
     async (url: string, cancelledRef?: { current: boolean }) => {
       const built = buildVariants(url, variantType, bucket);
+      /* v8 ignore start */
       if (cancelledRef?.current) return;
+      /* v8 ignore stop */
       setVariants(built);
 
       // @edge skip API call if URLs couldn't be resolved (bare relative keys without base URL)

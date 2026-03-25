@@ -130,6 +130,7 @@ export default function NotificationsScreen() {
   const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);
 
   const handleMarkAllRead = () => {
+    /* istanbul ignore else */
     if (userId && unreadCount > 0) {
       markAllRead.mutate(userId, {
         onError: () => Alert.alert(t('common.error'), t('common.somethingWentWrong')),

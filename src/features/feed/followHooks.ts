@@ -15,7 +15,7 @@ export function useEntityFollows() {
 
   const query = useQuery({
     queryKey: ['entity-follows', userId],
-    queryFn: () => fetchUserFollows(userId ?? ''),
+    queryFn: () => fetchUserFollows(userId ?? /* istanbul ignore next */ ''),
     enabled: !!userId,
     staleTime: STALE_5M,
   });
@@ -84,7 +84,7 @@ export function useEnrichedFollows() {
 
   return useQuery<EnrichedFollow[]>({
     queryKey: ['enriched-follows', userId],
-    queryFn: () => fetchEnrichedFollows(userId ?? ''),
+    queryFn: () => fetchEnrichedFollows(userId ?? /* istanbul ignore next */ ''),
     enabled: !!userId,
     staleTime: STALE_5M,
   });

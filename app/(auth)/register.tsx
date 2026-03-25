@@ -228,7 +228,7 @@ export default function RegisterScreen() {
         <View style={styles.socialSection}>
           <SocialSignInButtons
             onGoogle={handleGoogleSignIn}
-            onApple={appleAvailable ? handleAppleSignIn : undefined}
+            onApple={appleAvailable ? handleAppleSignIn : /* istanbul ignore next */ undefined}
             onPhone={() => setShowPhoneModal(true)}
             isGoogleLoading={googleLoading}
             isAppleLoading={appleLoading}

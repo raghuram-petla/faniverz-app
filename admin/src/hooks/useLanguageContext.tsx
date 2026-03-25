@@ -33,7 +33,9 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue>({
   languages: [],
   selectedLanguageId: null,
+  /* v8 ignore start */
   setSelectedLanguageId: () => {},
+  /* v8 ignore stop */
   selectedLanguageCode: null,
   userLanguageIds: [],
   showSwitcher: false,

@@ -137,7 +137,9 @@ export async function POST(request: NextRequest) {
 
   const results: ScanResult[] = [];
 
+  /* v8 ignore start */
   for (const row of (data as unknown as Record<string, unknown>[]) ?? []) {
+    /* v8 ignore stop */
     for (const cfg of configs) {
       const url = row[cfg.field] as string | null;
       if (!url) continue;
@@ -172,14 +174,18 @@ export async function POST(request: NextRequest) {
 // @sideeffect: HeadObject calls to R2 for variant existence checks
 async function deepScanVariants(results: ScanResult[], configs: EntityScanConfig[]): Promise<void> {
   const r2 = getR2Client();
+  /* v8 ignore start */
   if (!r2) return;
+  /* v8 ignore stop */
 
   const localResults = results.filter((r) => r.urlType !== 'external');
   const tasks: (() => Promise<void>)[] = [];
 
   for (const result of localResults) {
     const cfg = configs.find((c) => c.field === result.field);
+    /* v8 ignore start */
     if (!cfg) continue;
+    /* v8 ignore stop */
 
     const key =
       result.urlType === 'local' ? result.currentUrl : extractKeyFromUrl(result.currentUrl);

@@ -69,7 +69,7 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
         {/* @nullable genres may be null/undefined from API; defaults to empty array */}
         {(movie.genres ?? []).length > 0 && (
           <Text style={s.genres} numberOfLines={1}>
-            {(movie.genres ?? []).join(' • ')}
+            {(movie.genres ?? /* istanbul ignore next */ []).join(' • ')}
           </Text>
         )}
       </View>

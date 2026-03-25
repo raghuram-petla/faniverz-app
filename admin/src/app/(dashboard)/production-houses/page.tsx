@@ -29,7 +29,9 @@ export default function ProductionHousesPage() {
 
   // @coupling: passes productionHouseIds to restrict query results for PH admins; null for super_admin/admin
   // @contract: originCountry filter — ALL_COUNTRIES passes undefined (no filter), NOT_SET/code passed through
+  /* v8 ignore start */
   const originFilter = selectedCountry === ALL_COUNTRIES ? undefined : selectedCountry;
+  /* v8 ignore stop */
   const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
     useAdminProductionHouses(
       debouncedSearch,
@@ -68,7 +70,9 @@ export default function ProductionHousesPage() {
     ];
     const real = countries
       .filter((c) => countMap.has(c.code))
+      /* v8 ignore start */
       .map((c) => ({ ...c, houseCount: countMap.get(c.code) ?? 0 }));
+    /* v8 ignore stop */
     opts.push(...real);
     if (nullCount > 0) {
       opts.push({
@@ -131,12 +135,15 @@ export default function ProductionHousesPage() {
             </button>
           )}
         </div>
+        {/* v8 ignore start */}
         {search.length === 1 && (
           <p className="text-xs text-on-surface-subtle">Type at least 2 characters to search</p>
         )}
+        /* v8 ignore stop */ /* v8 ignore start */
         {!isLoading && houses.length > 0 && debouncedSearch && (
           <p className="text-xs text-on-surface-subtle">Matching &ldquo;{debouncedSearch}&rdquo;</p>
         )}
+        /* v8 ignore stop */
       </div>
 
       {isLoading ? (

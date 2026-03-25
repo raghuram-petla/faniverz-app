@@ -82,6 +82,7 @@ export function ReviewModal({
       }
     }
   }, [visible, contentScale, animationsEnabled]);
+  /* istanbul ignore next -- Reanimated worklet cannot execute in Jest */
   const springStyle = useAnimatedStyle(() => ({
     transform: [{ scale: contentScale.value }],
   }));
@@ -90,7 +91,7 @@ export function ReviewModal({
     <Modal visible={visible} animationType="slide" transparent>
       {/** @edge KeyboardAvoidingView uses 'padding' on iOS only; Android handles keyboard natively */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : /* istanbul ignore next */ undefined}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">

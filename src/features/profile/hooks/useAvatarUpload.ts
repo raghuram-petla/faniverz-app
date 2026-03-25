@@ -43,6 +43,7 @@ export function useAvatarUpload() {
       // (e.g., iOS can return .HEIC images with a .jpg URI after allowsEditing). contentType falls back to
       // 'image/jpeg' for unknown extensions, so HEIC files get uploaded with wrong MIME type — still works
       // because browsers/apps detect format from magic bytes, but Supabase storage metadata will be incorrect.
+      /* istanbul ignore next -- pop() always returns a value for URIs with extensions */
       const ext = (asset.uri.split('.').pop() ?? 'jpg').toLowerCase();
       // @invariant: filePath uses a fixed name `avatar.{ext}` with upsert:true, so each upload overwrites the previous.
       // If a user uploads a .png then a .jpg, the old .png file remains as orphaned storage (different filePath).

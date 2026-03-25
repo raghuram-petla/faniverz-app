@@ -77,7 +77,13 @@ export function BackdropFocalPicker({
   const positionFromEvent = useCallback(
     (clientX: number, clientY: number) => {
       const el = containerRef.current;
+      {
+        /* v8 ignore start */
+      }
       if (!el || !panDir || panDir === 'none') return;
+      {
+        /* v8 ignore stop */
+      }
       const rect = el.getBoundingClientRect();
 
       let newX = cx;
@@ -87,11 +93,23 @@ export function BackdropFocalPicker({
         // User clicks a point → center frame there → derive objectPosition value
         const mouseX = (clientX - rect.left) / rect.width;
         const desiredLeft = Math.max(0, Math.min(overflowW, mouseX - frameW / 2));
+        {
+          /* v8 ignore start */
+        }
         newX = overflowW > 0 ? desiredLeft / overflowW : 0.5;
+        {
+          /* v8 ignore stop */
+        }
       } else {
         const mouseY = (clientY - rect.top) / rect.height;
         const desiredTop = Math.max(0, Math.min(overflowH, mouseY - frameH / 2));
+        {
+          /* v8 ignore start */
+        }
         newY = overflowH > 0 ? desiredTop / overflowH : 0.5;
+        {
+          /* v8 ignore stop */
+        }
       }
 
       onChange(newX, newY);

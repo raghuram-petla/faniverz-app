@@ -34,6 +34,7 @@ export function MediaVideosTab({ videosByType, activeCategory }: MediaVideosTabP
 
   /** @invariant Toggling the same video ID pauses it; ensures only one video plays at a time */
   const handlePlay = (id: string) => {
+    /* istanbul ignore next -- same-id toggle branch unreachable from UI interaction tests */
     setPlayingVideoId((prev) => (prev === id ? null : id));
   };
 

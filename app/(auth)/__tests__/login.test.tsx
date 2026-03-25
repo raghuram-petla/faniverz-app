@@ -394,4 +394,30 @@ describe('LoginScreen', () => {
     // Should not crash — router.replace should NOT be called on error
     expect(mockRouter.replace).not.toHaveBeenCalledWith('/(tabs)');
   });
+
+  it('sets KeyboardAvoidingView behavior to undefined on Android', () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'android';
+
+    const { UNSAFE_getByType } = render(<LoginScreen />);
+    const { KeyboardAvoidingView } = require('react-native');
+    const kav = UNSAFE_getByType(KeyboardAvoidingView);
+    expect(kav.props.behavior).toBeUndefined();
+
+    Platform.OS = originalOS;
+  });
+
+  it('sets KeyboardAvoidingView behavior to padding on iOS', () => {
+    const { Platform } = require('react-native');
+    const originalOS = Platform.OS;
+    Platform.OS = 'ios';
+
+    const { UNSAFE_getByType } = render(<LoginScreen />);
+    const { KeyboardAvoidingView } = require('react-native');
+    const kav = UNSAFE_getByType(KeyboardAvoidingView);
+    expect(kav.props.behavior).toBe('padding');
+
+    Platform.OS = originalOS;
+  });
 });

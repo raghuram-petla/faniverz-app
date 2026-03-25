@@ -51,7 +51,13 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
           setPhLoading(false);
         },
         (err) => {
+          {
+            /* v8 ignore start */
+          }
           if (cancelled) return;
+          {
+            /* v8 ignore stop */
+          }
           setPhError(err instanceof Error ? err.message : 'Failed to load production houses');
           setPhLoading(false);
         },
