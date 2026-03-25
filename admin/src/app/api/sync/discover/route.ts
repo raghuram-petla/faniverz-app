@@ -107,11 +107,11 @@ export async function POST(request: NextRequest) {
     const existingIds = existingRows.map((r: { id: string }) => r.id);
 
     // @sideeffect: fetch aggregate counts for gap detection
-    // @edge: PostgREST has a URL length limit (~8KB). With 150+ movie UUIDs (36 chars each)
-    // in a single .in() clause, the URL overflows and the query silently fails (returns null).
-    // Batch IDs into chunks of 50 to keep URLs safely under the limit.
+    // @edge: Supabase/PostgREST silently truncates results at max-rows (default 1000).
+    // With 177+ movies, junction table rows (e.g. 177 * 5 posters = 885+) can exceed
+    // the limit. Movies whose rows fall past the cutoff get count=0, creating false gaps.
+    // Batching into chunks of 50 keeps each query well under any row limit.
     const BATCH_SIZE = 50;
-    const ROW_CAP = 10000;
 
     // @contract: batch a Supabase .in() query across chunks, merging all results
     async function batchedIn<T>(
@@ -134,36 +134,26 @@ export async function POST(request: NextRequest) {
             .from('movie_images')
             .select('movie_id')
             .in('movie_id', ids)
-            .eq('image_type', 'poster')
-            .limit(ROW_CAP),
+            .eq('image_type', 'poster'),
         ),
         batchedIn<{ movie_id: string }>((ids) =>
           supabase
             .from('movie_images')
             .select('movie_id')
             .in('movie_id', ids)
-            .eq('image_type', 'backdrop')
-            .limit(ROW_CAP),
+            .eq('image_type', 'backdrop'),
         ),
         batchedIn<{ movie_id: string }>((ids) =>
-          supabase.from('movie_videos').select('movie_id').in('movie_id', ids).limit(ROW_CAP),
+          supabase.from('movie_videos').select('movie_id').in('movie_id', ids),
         ),
         batchedIn<{ movie_id: string }>((ids) =>
-          supabase.from('movie_keywords').select('movie_id').in('movie_id', ids).limit(ROW_CAP),
+          supabase.from('movie_keywords').select('movie_id').in('movie_id', ids),
         ),
         batchedIn<{ movie_id: string }>((ids) =>
-          supabase
-            .from('movie_production_houses')
-            .select('movie_id')
-            .in('movie_id', ids)
-            .limit(ROW_CAP),
+          supabase.from('movie_production_houses').select('movie_id').in('movie_id', ids),
         ),
         batchedIn<{ movie_id: string; platform_id: string }>((ids) =>
-          supabase
-            .from('movie_platforms')
-            .select('movie_id, platform_id')
-            .in('movie_id', ids)
-            .limit(ROW_CAP),
+          supabase.from('movie_platforms').select('movie_id, platform_id').in('movie_id', ids),
         ),
       ]);
 
