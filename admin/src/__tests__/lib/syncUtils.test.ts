@@ -10,6 +10,7 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
     tmdb_id: 101,
     title: 'Baahubali',
     synopsis: null,
+    release_date: null,
     poster_url: null,
     backdrop_url: null,
     director: null,
@@ -31,14 +32,15 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
 }
 
 describe('FILLABLE_DATA_FIELDS', () => {
-  it('contains exactly 21 field keys', () => {
-    expect(FILLABLE_DATA_FIELDS).toHaveLength(21);
+  it('contains exactly 22 field keys', () => {
+    expect(FILLABLE_DATA_FIELDS).toHaveLength(22);
   });
 
   it('includes all expected data fields', () => {
     const expected = [
       'title',
       'synopsis',
+      'release_date',
       'poster_url',
       'backdrop_url',
       'director',

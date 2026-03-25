@@ -11,6 +11,7 @@ const makeMovie = (overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
   tmdb_id: 101,
   title: 'Baahubali',
   synopsis: null,
+  release_date: null,
   poster_url: null,
   backdrop_url: null,
   director: null,
@@ -59,6 +60,13 @@ const makeTmdb = (overrides = {}) => ({
   certification: null,
   spokenLanguages: [],
   productionCompanyCount: 0,
+  originalLanguage: 'te',
+  dbPosterCount: 0,
+  dbBackdropCount: 0,
+  dbVideoCount: 0,
+  dbKeywordCount: 0,
+  dbProductionHouseCount: 0,
+  dbPlatformNames: [],
   ...overrides,
 });
 
@@ -189,6 +197,7 @@ describe('FieldDiffPanel', () => {
     const full = makeMovie({
       title: 'Baahubali: The Beginning',
       synopsis: 'An epic tale',
+      release_date: '2015-07-10',
       poster_url: '/r2/poster.jpg',
       backdrop_url: '/r2/backdrop.jpg',
       director: 'S. S. Rajamouli',
@@ -199,6 +208,7 @@ describe('FieldDiffPanel', () => {
     const tmdb = makeTmdb({
       title: 'Baahubali: The Beginning',
       overview: 'An epic tale',
+      releaseDate: '2015-07-10',
       runtime: 159,
       genres: ['Action', 'Drama'],
       director: 'S. S. Rajamouli',
@@ -306,6 +316,7 @@ describe('FieldDiffPanel', () => {
     const full = makeMovie({
       title: 'Baahubali: The Beginning',
       synopsis: 'An epic tale',
+      release_date: '2015-07-10',
       poster_url: '/r2/poster.jpg',
       backdrop_url: '/r2/backdrop.jpg',
       director: 'S. S. Rajamouli',
@@ -315,6 +326,7 @@ describe('FieldDiffPanel', () => {
     const tmdb = makeTmdb({
       title: 'Baahubali: The Beginning',
       overview: 'An epic tale',
+      releaseDate: '2015-07-10',
       runtime: 159,
       genres: ['Action', 'Drama'],
       director: 'S. S. Rajamouli',

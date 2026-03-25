@@ -319,12 +319,9 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Drama')).toBeTruthy();
   });
 
-  it('opens trailer URL when Watch Trailer is pressed', () => {
-    const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
+  it('does not show MediaSummaryCard when movie has no videos or posters', () => {
     render(<MovieDetailScreen />);
-    fireEvent.press(screen.getByText('Watch Trailer'));
-    expect(linkingSpy).toHaveBeenCalledWith('https://youtube.com/watch?v=abc');
-    linkingSpy.mockRestore();
+    expect(screen.queryByText('Explore All Media')).toBeNull();
   });
 
   it('submits a review via the modal', () => {

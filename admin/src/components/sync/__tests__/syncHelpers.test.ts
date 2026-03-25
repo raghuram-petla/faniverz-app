@@ -84,6 +84,7 @@ describe('applyTmdbFields', () => {
     tmdb_id: 123,
     title: 'Old Title',
     synopsis: null,
+    release_date: null,
     poster_url: null,
     backdrop_url: null,
     director: null,
@@ -103,71 +104,99 @@ describe('applyTmdbFields', () => {
   };
 
   const tmdb: LookupMovieData = {
+    tmdbId: 123,
     title: 'New Title',
     overview: 'Great movie',
+    releaseDate: '2024-01-15',
     posterUrl: 'https://img.tmdb.org/poster.jpg',
     backdropUrl: 'https://img.tmdb.org/backdrop.jpg',
     director: 'Director Name',
     runtime: 120,
     genres: ['Action', 'Drama'],
-  } as LookupMovieData;
+    castCount: 10,
+    crewCount: 5,
+    posterCount: 3,
+    backdropCount: 2,
+    videoCount: 5,
+    providerNames: ['Netflix'],
+    keywordCount: 10,
+    imdbId: null,
+    titleTe: null,
+    synopsisTe: null,
+    tagline: null,
+    tmdbStatus: null,
+    tmdbVoteAverage: null,
+    tmdbVoteCount: null,
+    budget: null,
+    revenue: null,
+    certification: null,
+    spokenLanguages: [],
+    productionCompanyCount: 2,
+    originalLanguage: 'te',
+    dbPosterCount: 0,
+    dbBackdropCount: 0,
+    dbVideoCount: 0,
+    dbKeywordCount: 0,
+    dbProductionHouseCount: 0,
+    dbPlatformNames: [],
+  };
 
   it('does not mutate original movie', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['title']);
-    expect(result).not.toBe(baseMovie);
+    expect(result.movie).not.toBe(baseMovie);
     expect(baseMovie.title).toBe('Old Title');
   });
 
   it('applies title field', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['title']);
-    expect(result.title).toBe('New Title');
+    expect(result.movie.title).toBe('New Title');
   });
 
   it('applies synopsis field from overview', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['synopsis']);
-    expect(result.synopsis).toBe('Great movie');
+    expect(result.movie.synopsis).toBe('Great movie');
   });
 
   it('applies poster_url field', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['poster_url']);
-    expect(result.poster_url).toBe('https://img.tmdb.org/poster.jpg');
+    expect(result.movie.poster_url).toBe('https://img.tmdb.org/poster.jpg');
   });
 
   it('applies backdrop_url field', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['backdrop_url']);
-    expect(result.backdrop_url).toBe('https://img.tmdb.org/backdrop.jpg');
+    expect(result.movie.backdrop_url).toBe('https://img.tmdb.org/backdrop.jpg');
   });
 
   it('applies director field', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['director']);
-    expect(result.director).toBe('Director Name');
+    expect(result.movie.director).toBe('Director Name');
   });
 
   it('applies runtime field', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['runtime']);
-    expect(result.runtime).toBe(120);
+    expect(result.movie.runtime).toBe(120);
   });
 
   it('applies genres field', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['genres']);
-    expect(result.genres).toEqual(['Action', 'Drama']);
+    expect(result.movie.genres).toEqual(['Action', 'Drama']);
   });
 
   it('applies multiple fields at once', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['title', 'synopsis', 'poster_url']);
-    expect(result.title).toBe('New Title');
-    expect(result.synopsis).toBe('Great movie');
-    expect(result.poster_url).toBe('https://img.tmdb.org/poster.jpg');
+    expect(result.movie.title).toBe('New Title');
+    expect(result.movie.synopsis).toBe('Great movie');
+    expect(result.movie.poster_url).toBe('https://img.tmdb.org/poster.jpg');
   });
 
   it('ignores unknown fields without error', () => {
     const result = applyTmdbFields(baseMovie, tmdb, ['unknown_field']);
-    expect(result).toEqual(baseMovie);
+    expect(result.movie).toEqual(baseMovie);
   });
 
   it('returns movie unchanged for empty fields array', () => {
     const result = applyTmdbFields(baseMovie, tmdb, []);
-    expect(result).toEqual(baseMovie);
+    expect(result.movie).toEqual(baseMovie);
   });
 });
 

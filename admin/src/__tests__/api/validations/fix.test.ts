@@ -415,6 +415,136 @@ describe('POST /api/validations/fix', () => {
     expect(data.error).toContain('R2 storage is not configured');
   });
 
+  it('returns failed when regenerate_variants original has no Body', async () => {
+    setupAdminAuth();
+    mockSend.mockResolvedValueOnce({
+      Body: { transformToByteArray: () => Promise.resolve(null) },
+      ContentType: 'image/jpeg',
+    });
+
+    const res = await POST(
+      makeRequest({
+        items: [
+          {
+            id: 'mov-nobody',
+            entity: 'movies',
+            field: 'poster_url',
+            currentUrl: 'test.jpg',
+            fixType: 'regenerate_variants',
+          },
+        ],
+      }),
+    );
+
+    const data = await res.json();
+    expect(data.results[0].status).toBe('failed');
+    expect(data.results[0].error).toContain('Original image not found');
+  });
+
+  it('handles regenerate_variants for backdrop entity', async () => {
+    setupAdminAuth();
+    mockSend.mockResolvedValueOnce({
+      Body: { transformToByteArray: () => Promise.resolve(new Uint8Array([1, 2, 3])) },
+      ContentType: 'image/jpeg',
+    });
+    mockSend.mockResolvedValue({});
+
+    const res = await POST(
+      makeRequest({
+        items: [
+          {
+            id: 'mov-bd',
+            entity: 'movies',
+            field: 'backdrop_url',
+            currentUrl: 'backdrop.jpg',
+            fixType: 'regenerate_variants',
+          },
+        ],
+      }),
+    );
+
+    const data = await res.json();
+    // backdrop bucket is 'faniverz-movie-backdrops' which maps to 'backdrop' variant type
+    expect(data.results[0].status).toBe('fixed');
+  });
+
+  it('handles key without extension in regenerate_variants', async () => {
+    setupAdminAuth();
+    mockSend.mockResolvedValueOnce({
+      Body: { transformToByteArray: () => Promise.resolve(new Uint8Array([1, 2, 3])) },
+      ContentType: 'image/jpeg',
+    });
+    mockSend.mockResolvedValue({});
+
+    const res = await POST(
+      makeRequest({
+        items: [
+          {
+            id: 'mov-noext',
+            entity: 'movies',
+            field: 'poster_url',
+            currentUrl: 'keynoextension',
+            fixType: 'regenerate_variants',
+          },
+        ],
+      }),
+    );
+
+    const data = await res.json();
+    expect(data.results[0].status).toBe('fixed');
+  });
+
+  it('handles ContentType fallback when R2 returns null ContentType', async () => {
+    setupAdminAuth();
+    mockSend.mockResolvedValueOnce({
+      Body: { transformToByteArray: () => Promise.resolve(new Uint8Array([1, 2, 3])) },
+      ContentType: null,
+    });
+    mockSend.mockResolvedValue({});
+
+    const res = await POST(
+      makeRequest({
+        items: [
+          {
+            id: 'mov-notype',
+            entity: 'movies',
+            field: 'poster_url',
+            currentUrl: 'test.jpg',
+            fixType: 'regenerate_variants',
+          },
+        ],
+      }),
+    );
+
+    const data = await res.json();
+    expect(data.results[0].status).toBe('fixed');
+  });
+
+  it('handles non-Error exception in item processing', async () => {
+    setupAdminAuth();
+    mockUploadImageFromUrl.mockRejectedValue('string error');
+
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await POST(
+      makeRequest({
+        items: [
+          {
+            id: 'mov-str',
+            entity: 'movies',
+            field: 'poster_url',
+            currentUrl: 'https://image.tmdb.org/t/p/w500/fail.jpg',
+            fixType: 'migrate_external',
+          },
+        ],
+      }),
+    );
+
+    const data = await res.json();
+    expect(data.results[0].status).toBe('failed');
+    expect(data.results[0].error).toBe('Unknown error');
+    consoleError.mockRestore();
+  });
+
   it('processes multiple items in a single request', async () => {
     setupAdminAuth();
     mockUploadImageFromUrl.mockResolvedValue('migrated.jpg');

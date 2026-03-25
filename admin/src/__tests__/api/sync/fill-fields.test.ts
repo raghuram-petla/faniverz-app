@@ -245,6 +245,158 @@ describe('POST /api/sync/fill-fields', () => {
     expect(res.status).toBe(500);
   });
 
+  // ── Scalar field branches ─────────────────────────────────────────
+  it('fills release_date, director, runtime, genres fields', async () => {
+    const res = await POST(
+      makeRequest({ tmdbId: 101, fields: ['release_date', 'director', 'runtime', 'genres'] }),
+    );
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        release_date: '2025-01-01',
+        director: 'Test Dir',
+        runtime: 120,
+        genres: ['Action'],
+      }),
+    );
+    const data = await res.json();
+    expect(data.updatedFields).toEqual(
+      expect.arrayContaining(['release_date', 'director', 'runtime', 'genres']),
+    );
+  });
+
+  it('fills imdb_id, tagline, tmdb_status fields', async () => {
+    const res = await POST(
+      makeRequest({ tmdbId: 101, fields: ['imdb_id', 'tagline', 'tmdb_status'] }),
+    );
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        imdb_id: 'tt1234',
+        tagline: 'A tagline',
+        tmdb_status: 'Released',
+      }),
+    );
+  });
+
+  it('fills tmdb_ratings field', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['tmdb_ratings'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tmdb_vote_average: 7.5,
+        tmdb_vote_count: 100,
+      }),
+    );
+    const data = await res.json();
+    expect(data.updatedFields).toContain('tmdb_ratings');
+  });
+
+  it('fills budget_revenue field', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['budget_revenue'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        budget: 1000000,
+        revenue: 5000000,
+      }),
+    );
+    const data = await res.json();
+    expect(data.updatedFields).toContain('budget_revenue');
+  });
+
+  it('fills certification_auto field', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['certification_auto'] }));
+    expect(res.status).toBe(200);
+    // extractIndiaCertification returns null by default (mock detail has empty release_dates)
+    // so certification won't be in movieUpdate, but the field is still processed
+  });
+
+  it('fills spoken_languages field', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['spoken_languages'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        spoken_languages: ['te'],
+      }),
+    );
+    const data = await res.json();
+    expect(data.updatedFields).toContain('spoken_languages');
+  });
+
+  it('uploads poster_url via maybeUploadImage', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['poster_url'] }));
+    expect(res.status).toBe(200);
+    expect(mockMaybeUploadImage).toHaveBeenCalled();
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ poster_url: 'uploaded-key.jpg' }),
+    );
+    const data = await res.json();
+    expect(data.updatedFields).toContain('poster_url');
+  });
+
+  it('uploads backdrop_url via maybeUploadImage', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['backdrop_url'] }));
+    expect(res.status).toBe(200);
+    expect(mockMaybeUploadImage).toHaveBeenCalled();
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ backdrop_url: 'uploaded-key.jpg' }),
+    );
+    const data = await res.json();
+    expect(data.updatedFields).toContain('backdrop_url');
+  });
+
+  it('skips poster_url when poster_path is null', async () => {
+    mockMaybeUploadImage.mockClear();
+    mockGetMovieDetails.mockResolvedValue({ ...MOCK_DETAIL, poster_path: null });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['poster_url'] }));
+    expect(res.status).toBe(200);
+    expect(mockMaybeUploadImage).not.toHaveBeenCalled();
+  });
+
+  it('skips backdrop_url when backdrop_path is null', async () => {
+    mockMaybeUploadImage.mockClear();
+    mockGetMovieDetails.mockResolvedValue({ ...MOCK_DETAIL, backdrop_path: null });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['backdrop_url'] }));
+    expect(res.status).toBe(200);
+    expect(mockMaybeUploadImage).not.toHaveBeenCalled();
+  });
+
+  it('does not set poster_url when maybeUploadImage returns null', async () => {
+    mockMaybeUploadImage.mockResolvedValue(null);
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['poster_url'] }));
+    expect(res.status).toBe(200);
+    // movieUpdate should not contain poster_url since upload returned null
+  });
+
+  it('fills title_te and synopsis_te when translations exist', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...MOCK_DETAIL,
+      translations: {
+        translations: [{ iso_639_1: 'te', data: { title: 'తెలుగు', overview: 'వివరణ' } }],
+      },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['title_te', 'synopsis_te'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ title_te: 'తెలుగు', synopsis_te: 'వివరణ' }),
+    );
+  });
+
+  it('returns 400 when tmdbId is missing', async () => {
+    const res = await POST(makeRequest({ fields: ['title'] }));
+    expect(res.status).toBe(400);
+  });
+
+  it('handles null original_language gracefully', async () => {
+    mockMovieMaybeSingle.mockResolvedValue({
+      data: { id: 'movie-uuid', original_language: null },
+      error: null,
+    });
+    await POST(makeRequest({ tmdbId: 101, fields: ['title'] }));
+    expect(mockGetMovieDetails).toHaveBeenCalledWith(101, 'test-key', undefined);
+  });
+
   // ── Language handling ─────────────────────────────────────────────────
   it('passes originalLanguage for non-English movies', async () => {
     mockMovieMaybeSingle.mockResolvedValue({

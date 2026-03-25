@@ -865,3 +865,234 @@ describe('useRemoveFeedVote — previousVote=null branch', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 });
+
+describe('useVoteFeedItem — feed-votes cache with undefined entries', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+  });
+
+  it('skips feed-votes cache entries with undefined data in forEach and handles !old in setQueriesData', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Create a feed-votes query cache entry WITHOUT data (only metadata)
+    const cache = client.getQueryCache();
+    cache.build(client, { queryKey: ['feed-votes', 'no-data'] });
+
+    // Also set news-feed data so mutation can proceed
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useRemoveFeedVote — feed-votes cache with undefined entries', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRemoveFeedVote.mockResolvedValue(undefined);
+  });
+
+  it('skips feed-votes cache entries with undefined data in forEach and handles !old in setQueriesData', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Create a feed-votes query cache entry WITHOUT data
+    const cache = client.getQueryCache();
+    cache.build(client, { queryKey: ['feed-votes', 'no-data'] });
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useVoteFeedItem — feed-votes cache optimistic update', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+  });
+
+  it('optimistically updates feed-votes cache with new vote type', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Pre-populate feed-votes cache so the forEach captures data and setQueriesData updates it
+    client.setQueryData(['feed-votes', 'user-123', ['item-1']], {
+      'item-1': 'down',
+    });
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: 'down' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Verify feed-votes cache was optimistically updated
+    const votesCache = client.getQueryData<Record<string, 'up' | 'down'>>([
+      'feed-votes',
+      'user-123',
+      ['item-1'],
+    ]);
+    expect(votesCache?.['item-1']).toBe('up');
+  });
+
+  it('rolls back feed-votes cache on error', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+
+    mockVoteFeedItem.mockRejectedValue(new Error('Network error'));
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['feed-votes', 'user-123', ['item-1']], {
+      'item-1': 'down',
+    });
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: 'down' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    // Verify feed-votes cache was rolled back to original value
+    const votesCache = client.getQueryData<Record<string, 'up' | 'down'>>([
+      'feed-votes',
+      'user-123',
+      ['item-1'],
+    ]);
+    expect(votesCache?.['item-1']).toBe('down');
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useRemoveFeedVote — feed-votes cache optimistic update', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRemoveFeedVote.mockResolvedValue(undefined);
+  });
+
+  it('optimistically removes vote from feed-votes cache', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // Pre-populate feed-votes cache
+    client.setQueryData(['feed-votes', 'user-123', ['item-1']], {
+      'item-1': 'up',
+    });
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Verify feed-votes cache had the vote removed
+    const votesCache = client.getQueryData<Record<string, 'up' | 'down'>>([
+      'feed-votes',
+      'user-123',
+      ['item-1'],
+    ]);
+    expect(votesCache?.['item-1']).toBeUndefined();
+  });
+
+  it('rolls back feed-votes cache on error', async () => {
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+
+    mockRemoveFeedVote.mockRejectedValue(new Error('Network error'));
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['feed-votes', 'user-123', ['item-1']], {
+      'item-1': 'up',
+    });
+
+    client.setQueryData(['news-feed', undefined], {
+      pages: [[{ ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 }]],
+      pageParams: [0],
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    // Verify feed-votes cache was rolled back
+    const votesCache = client.getQueryData<Record<string, 'up' | 'down'>>([
+      'feed-votes',
+      'user-123',
+      ['item-1'],
+    ]);
+    expect(votesCache?.['item-1']).toBe('up');
+    alertSpy.mockRestore();
+  });
+});

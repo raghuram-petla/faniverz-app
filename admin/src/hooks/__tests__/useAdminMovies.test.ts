@@ -4,14 +4,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 // Mocks must be defined before imports
-vi.mock('@/hooks/createCrudHooks', () => ({
-  createCrudHooks: vi.fn(() => ({
-    useSingle: vi.fn(),
-    useCreate: vi.fn(),
-    useUpdate: vi.fn(),
-    useDelete: vi.fn(),
-  })),
-}));
+vi.mock('@/hooks/createCrudHooks', () => {
+  return {
+    createCrudHooks: vi.fn((config: { enabledFn?: (s: string) => boolean }) => {
+      if (config.enabledFn) {
+        (globalThis as Record<string, unknown>).__moviesEnabledFn = config.enabledFn;
+      }
+      return {
+        useSingle: vi.fn(),
+        useCreate: vi.fn(),
+        useUpdate: vi.fn(),
+        useDelete: vi.fn(),
+      };
+    }),
+  };
+});
 
 vi.mock('@/hooks/useAdminMoviesFilters', () => ({
   applyStatusFilter: vi.fn(() => ({
@@ -31,7 +38,14 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-import { useAdminMovies, useAllMovies } from '@/hooks/useAdminMovies';
+import {
+  useAdminMovies,
+  useAllMovies,
+  useAdminMovie,
+  useCreateMovie,
+  useUpdateMovie,
+  useDeleteMovie,
+} from '@/hooks/useAdminMovies';
 import {
   applyStatusFilter,
   applyColumnFilters,
@@ -405,6 +419,50 @@ describe('useAdminMovies', () => {
     expect(mockFrom).toHaveBeenCalledWith('movie_platforms');
   });
 
+  it('scopes movies by PH IDs and joins results', async () => {
+    const phChain = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockResolvedValue({ data: [{ movie_id: 'm1' }], error: null }),
+    };
+    const mainChain = buildResolvingChain({ data: [{ id: 'm1' }], error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_production_houses') return phChain;
+      return mainChain;
+    });
+
+    vi.mocked(applyStatusFilter).mockReturnValue({
+      query: mainChain,
+      empty: false,
+      includeIds: null,
+      excludeIds: [],
+    });
+    vi.mocked(intersectIdSets).mockReturnValue(['m1']);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminMovies('', '', ['ph-1']), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+    expect(mockFrom).toHaveBeenCalledWith('movie_production_houses');
+  });
+
+  it('throws when PH junction query errors in queryFn', async () => {
+    const phChain = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockResolvedValue({ data: null, error: new Error('Junction error') }),
+    };
+    mockFrom.mockReturnValue(phChain as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminMovies('', '', ['ph-1']), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+  });
+
   it('has no next page when page is less than 50 items', async () => {
     const chain = buildResolvingChain({ data: [{ id: '1' }], error: null });
     mockFrom.mockReturnValue(chain as ReturnType<typeof supabase.from>);
@@ -525,6 +583,33 @@ describe('useAllMovies', () => {
     });
   });
 
+  it('throws error when movies query fails with PH scope', async () => {
+    const phMovieIds = [{ movie_id: 'm1' }];
+    const phChain = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockResolvedValue({ data: phMovieIds, error: null }),
+    };
+    const moviesResolve = { data: null, error: new Error('Movie fetch error') };
+    const moviesChain: Record<string, unknown> = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+    };
+    moviesChain.then = (resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
+      Promise.resolve(moviesResolve).then(resolve, reject);
+
+    mockFrom
+      .mockReturnValueOnce(phChain as ReturnType<typeof supabase.from>)
+      .mockReturnValueOnce(moviesChain as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAllMovies(['ph-1']), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+  });
+
   it('throws error when movies query fails without PH scope', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
@@ -539,5 +624,36 @@ describe('useAllMovies', () => {
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
+  });
+});
+
+describe('createCrudHooks enabledFn', () => {
+  it('returns true for empty string and strings >= 2 chars, false for 1 char', () => {
+    const enabledFn = (globalThis as Record<string, unknown>).__moviesEnabledFn as (
+      s: string,
+    ) => boolean;
+    expect(enabledFn).toBeDefined();
+    expect(enabledFn('')).toBe(true);
+    expect(enabledFn('ab')).toBe(true);
+    expect(enabledFn('abc')).toBe(true);
+    expect(enabledFn('a')).toBe(false);
+  });
+});
+
+describe('CRUD hook re-exports', () => {
+  it('exports useAdminMovie', () => {
+    expect(useAdminMovie).toBeDefined();
+  });
+
+  it('exports useCreateMovie', () => {
+    expect(useCreateMovie).toBeDefined();
+  });
+
+  it('exports useUpdateMovie', () => {
+    expect(useUpdateMovie).toBeDefined();
+  });
+
+  it('exports useDeleteMovie', () => {
+    expect(useDeleteMovie).toBeDefined();
   });
 });

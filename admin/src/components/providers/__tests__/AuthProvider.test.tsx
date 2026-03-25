@@ -86,6 +86,70 @@ function renderProvider() {
   );
 }
 
+describe('useAuth — default context (no Provider)', () => {
+  it('returns default no-op functions when used outside Provider', async () => {
+    function Bare() {
+      const ctx = useAuth();
+      return (
+        <div>
+          <button data-testid="bare-sign-in" onClick={() => void ctx.signInWithGoogle()} />
+          <button data-testid="bare-sign-out" onClick={() => void ctx.signOut()} />
+          <button data-testid="bare-refresh" onClick={() => void ctx.refreshUser()} />
+          <span data-testid="bare-user">{ctx.user ? 'set' : 'null'}</span>
+        </div>
+      );
+    }
+    render(<Bare />);
+
+    expect(screen.getByTestId('bare-user').textContent).toBe('null');
+
+    // Call all three default no-op functions — should not throw
+    await act(async () => {
+      screen.getByTestId('bare-sign-in').click();
+      screen.getByTestId('bare-sign-out').click();
+      screen.getByTestId('bare-refresh').click();
+    });
+
+    expect(screen.getByTestId('bare-user').textContent).toBe('null');
+  });
+});
+
+describe('AuthProvider — signOut failure logs error', () => {
+  it('logs error when supabase.auth.signOut rejects', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockSignOut.mockRejectedValueOnce(new Error('Sign out network error'));
+
+    // First sign in
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'user-1' }] })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ role_id: 'super_admin', status: 'active' }],
+      });
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_IN', {
+        user: { id: 'user-1', email: 'a@b.com' },
+        access_token: 'tok',
+      });
+    });
+
+    await act(async () => {
+      screen.getByTestId('sign-out').click();
+    });
+
+    // The error is caught and logged, not thrown
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+
+    expect(console.error).toHaveBeenCalledWith('Sign out failed:', expect.any(Error));
+  });
+});
+
 describe('AuthProvider — default context values', () => {
   it('starts with isLoading=true and user=null', async () => {
     renderProvider();
@@ -604,6 +668,236 @@ describe('AuthProvider — restoreSession with localStorage token', () => {
     });
 
     // restoreSession returned false, loading stays true until timeout or onAuthStateChange
+    expect(screen.getByTestId('user').textContent).toBe('null');
+  });
+});
+
+describe('AuthProvider — signInWithGoogle no error', () => {
+  it('completes signInWithOAuth without errors', async () => {
+    mockSignInWithOAuth.mockResolvedValue({ error: null });
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_OUT', null);
+    });
+
+    await act(async () => {
+      screen.getByTestId('sign-in').click();
+    });
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'google' }),
+    );
+  });
+});
+
+describe('AuthProvider — blocked without explicit reason', () => {
+  it('uses default blocked reason when blocked_reason is null', async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [] }) // invite
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'p1' }] }) // profiles
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ role_id: 'admin', status: 'blocked', blocked_reason: null }],
+      });
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_IN', {
+        user: { id: 'user-1', email: 'blocked@test.com' },
+        access_token: 'tok123',
+      });
+    });
+
+    expect(screen.getByTestId('denied').textContent).toBe('true');
+    expect(screen.getByTestId('blocked').textContent).toBe('Your access has been blocked.');
+  });
+});
+
+describe('AuthProvider — PH assignments fetch failure', () => {
+  it('handles PH assignment fetch failure gracefully (sets empty phIds)', async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [] }) // invite
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'u1' }] }) // profiles
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ role_id: 'production_house_admin', status: 'active' }],
+      })
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) }); // PH fetch fails
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_IN', {
+        user: { id: 'u1', email: 'ph@test.com' },
+        access_token: 'tok123',
+      });
+    });
+
+    expect(screen.getByTestId('user').textContent).toBe('u1');
+  });
+});
+
+describe('AuthProvider — language fetch failure', () => {
+  it('handles language fetch failure gracefully (sets empty lang arrays)', async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [] }) // invite
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'u1' }] }) // profiles
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ role_id: 'admin', status: 'active' }],
+      })
+      .mockResolvedValueOnce({ ok: false, json: async () => ({}) }); // lang fetch fails
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_IN', {
+        user: { id: 'u1', email: 'admin@test.com' },
+        access_token: 'tok123',
+      });
+    });
+
+    expect(screen.getByTestId('user').textContent).toBe('u1');
+  });
+});
+
+describe('AuthProvider — fetchAdminUser with no email', () => {
+  it('skips invitation check when email is undefined', async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'u1' }] }) // profiles
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ role_id: 'super_admin', status: 'active' }],
+      });
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_IN', {
+        user: { id: 'u1', email: undefined },
+        access_token: 'tok123',
+      });
+    });
+
+    expect(screen.getByTestId('user').textContent).toBe('u1');
+  });
+});
+
+describe('AuthProvider — signInWithGoogle throws on OAuth error', () => {
+  it('throws when signInWithOAuth returns an error', async () => {
+    mockSignInWithOAuth.mockResolvedValue({ error: new Error('OAuth failed') });
+
+    let capturedSignIn: (() => Promise<void>) | undefined;
+    function CaptureConsumer() {
+      const { signInWithGoogle } = useAuth();
+      capturedSignIn = signInWithGoogle;
+      return null;
+    }
+
+    render(
+      <AuthProvider>
+        <CaptureConsumer />
+      </AuthProvider>,
+    );
+
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_OUT', null);
+    });
+
+    await expect(capturedSignIn!()).rejects.toThrow('OAuth failed');
+  });
+});
+
+describe('AuthProvider — refreshUser when user is null', () => {
+  it('does not update user when prev is null (no-op branch)', async () => {
+    const tokenKey = 'sb-abcdefgh-auth-token';
+    mockLocalStorage[tokenKey] = JSON.stringify({
+      user: { id: 'u1', email: 'u@test.com' },
+      access_token: 'tok',
+    });
+
+    // User is NOT signed in — refreshUser's setUser callback has prev=null
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [{ id: 'u1', display_name: 'Alice' }],
+    });
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_OUT', null);
+    });
+
+    // User is null now — refreshUser should not update
+    await act(async () => {
+      screen.getByTestId('refresh').click();
+    });
+
+    expect(screen.getByTestId('user').textContent).toBe('null');
+  });
+});
+
+describe('AuthProvider — 3s timeout when initialLoadDone is already true', () => {
+  it('timeout no-ops when auth has already finished loading', async () => {
+    // Set up so onAuthStateChange fires BEFORE the timeout
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => ({}) });
+
+    renderProvider();
+
+    // Fire auth state change to finish loading
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_OUT', null);
+    });
+
+    expect(screen.getByTestId('loading').textContent).toBe('false');
+
+    // Now advance past the timeout — should not crash or change state
+    await act(async () => {
+      vi.advanceTimersByTime(3100);
+    });
+
+    expect(screen.getByTestId('loading').textContent).toBe('false');
+  });
+});
+
+describe('AuthProvider — signOut localStorage error', () => {
+  it('handles localStorage removal error gracefully', async () => {
+    // First sign in
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => [] })
+      .mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'user-1' }] })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ role_id: 'super_admin', status: 'active' }],
+      });
+
+    renderProvider();
+    await act(async () => {
+      onAuthStateChangeCallback?.('SIGNED_IN', {
+        user: { id: 'user-1', email: 'a@b.com' },
+        access_token: 'tok',
+      });
+    });
+
+    // Make localStorage.removeItem throw
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {
+          throw new Error('storage error');
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
+
+    await act(async () => {
+      screen.getByTestId('sign-out').click();
+    });
+
     expect(screen.getByTestId('user').textContent).toBe('null');
   });
 });

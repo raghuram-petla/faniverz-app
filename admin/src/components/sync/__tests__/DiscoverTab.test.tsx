@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 
@@ -75,6 +75,26 @@ vi.mock('@/components/sync/PersonPreview', () => ({
       </button>
     </div>
   ),
+}));
+
+let mockMonthSelected: number[] = [];
+let mockMonthOnChange: (months: number[]) => void = () => {};
+vi.mock('@/components/sync/MonthMultiSelect', () => ({
+  MonthMultiSelect: ({
+    selected,
+    onChange,
+  }: {
+    selected: number[];
+    onChange: (m: number[]) => void;
+  }) => {
+    mockMonthSelected = selected;
+    mockMonthOnChange = onChange;
+    return (
+      <div data-testid="month-multi-select">
+        <span>{selected.length === 0 ? 'All months' : selected.map(String).join(',')}</span>
+      </div>
+    );
+  },
 }));
 
 vi.mock('@/components/sync/syncHelpers', () => {
@@ -156,10 +176,10 @@ describe('DiscoverTab', () => {
       expect(screen.getByText('Discover')).toBeInTheDocument();
     });
 
-    it('renders year and month selects', () => {
+    it('renders year select and month multi-select', () => {
       render(<DiscoverTab />);
-      const selects = screen.getAllByRole('combobox');
-      expect(selects.length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByTestId('month-multi-select')).toBeInTheDocument();
     });
   });
 
@@ -369,25 +389,25 @@ describe('DiscoverTab', () => {
       );
     });
 
-    it('passes month when month is selected', () => {
+    it('passes months when months are selected', () => {
       const discoverHook = makeIdleHook();
       mockDiscover.mockReturnValue(discoverHook);
       render(<DiscoverTab />);
-      // Month select is second combobox, change to March (value 3)
-      const selects = screen.getAllByRole('combobox');
-      const monthSelect = selects[selects.length - 1];
-      fireEvent.change(monthSelect, { target: { value: '3' } });
+      // Simulate selecting March via MonthMultiSelect onChange
+      act(() => {
+        mockMonthOnChange([3]);
+      });
       fireEvent.click(screen.getByText('Discover'));
-      expect(discoverHook.mutate).toHaveBeenCalledWith(expect.objectContaining({ month: 3 }));
+      expect(discoverHook.mutate).toHaveBeenCalledWith(expect.objectContaining({ months: [3] }));
     });
 
-    it('does not pass month when "All months" is selected', () => {
+    it('does not pass months when "All months" is selected', () => {
       const discoverHook = makeIdleHook();
       mockDiscover.mockReturnValue(discoverHook);
       render(<DiscoverTab />);
       fireEvent.click(screen.getByText('Discover'));
       const call = discoverHook.mutate.mock.calls[0][0];
-      expect(call.month).toBeUndefined();
+      expect(call.months).toBeUndefined();
     });
 
     it('shows DiscoverByYear panel when discover data is present', () => {
@@ -398,15 +418,15 @@ describe('DiscoverTab', () => {
       expect(screen.getByTestId('discover-results')).toBeInTheDocument();
     });
 
-    it('shows result label after discover with month', () => {
+    it('shows result label after discover with months', () => {
       setup({ discoverOverrides: { data: { movies: [] } } });
       render(<DiscoverTab />);
-      const selects = screen.getAllByRole('combobox');
-      const monthSelect = selects[selects.length - 1];
-      fireEvent.change(monthSelect, { target: { value: '3' } });
+      // Simulate selecting March via MonthMultiSelect onChange
+      act(() => {
+        mockMonthOnChange([3]);
+      });
       fireEvent.click(screen.getByText('Discover'));
       // The label span contains the resultLabel e.g. "March 2026"
-      // Searches by text content within the span element
       expect(
         screen.getByText(
           (content) => content.includes('March') && content.includes(String(CURRENT_YEAR)),

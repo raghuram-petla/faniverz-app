@@ -266,6 +266,32 @@ describe('AddProductionHouseForm', () => {
     expect(logoButton).toBeInTheDocument();
   });
 
+  it('does nothing when file input change has no files', async () => {
+    render(<AddProductionHouseForm onClose={onClose} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: [] } });
+    // No upload should be called
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when file input change has null files', async () => {
+    render(<AddProductionHouseForm onClose={onClose} />);
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(fileInput, { target: { files: null } });
+    expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it('shows uploading state text', async () => {
+    const mod = await import('@/hooks/useImageUpload');
+    vi.mocked(mod.useImageUpload).mockReturnValueOnce({
+      upload: mockUpload,
+      uploading: true,
+    });
+
+    render(<AddProductionHouseForm onClose={onClose} />);
+    expect(screen.getByText('Uploading...')).toBeInTheDocument();
+  });
+
   it('clears logo when X button is clicked', async () => {
     mockUpload.mockResolvedValue('https://cdn.example.com/logo.png');
     render(<AddProductionHouseForm onClose={onClose} />);

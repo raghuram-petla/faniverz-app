@@ -209,4 +209,54 @@ describe('AuthProvider', () => {
     expect(result.current.session).toBeNull();
     expect(result.current.user).toBeNull();
   });
+
+  it('handles getSession rejection by clearing session and setting isLoading to false', async () => {
+    mockAuth.getSession.mockRejectedValue(new Error('Network error'));
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.session).toBeNull();
+    expect(result.current.user).toBeNull();
+  });
+
+  it('does not set isGuest to false when auth state change has no session', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.setIsGuest(true);
+    });
+    expect(result.current.isGuest).toBe(true);
+
+    // Fire auth state change with null session (e.g., TOKEN_REFRESHED with null)
+    act(() => {
+      __fireAuthStateChange('TOKEN_REFRESHED', null);
+    });
+
+    // isGuest should remain true since newSession is null (the if (newSession) branch is false)
+    expect(result.current.isGuest).toBe(true);
+  });
+
+  it('default context setIsGuest is a no-op function', () => {
+    // When useAuth is called outside AuthProvider, it gets the default context value.
+    // The default setIsGuest is () => {} (a no-op). We render without the AuthProvider wrapper
+    // to exercise this default context function.
+    const { result } = renderHook(() => useAuth());
+
+    // Default context values
+    expect(result.current.session).toBeNull();
+    expect(result.current.user).toBeNull();
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isGuest).toBe(false);
+
+    // Call the default no-op setIsGuest — should not throw
+    act(() => {
+      result.current.setIsGuest(true);
+    });
+
+    // Since it's a no-op (default context), isGuest should remain false
+    expect(result.current.isGuest).toBe(false);
+  });
 });

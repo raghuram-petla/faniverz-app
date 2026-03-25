@@ -622,6 +622,63 @@ describe('buildChildMutationPromises', () => {
     expect(deps.updateCastOrder.mutateAsync).not.toHaveBeenCalled();
   });
 
+  it('handles crudFetch error gracefully when unsetting main poster fails', async () => {
+    const { crudFetch } = await import('@/lib/admin-crud-client');
+    vi.mocked(crudFetch).mockRejectedValue(new Error('No main poster'));
+    const deps = createMockDeps({
+      pendingMainPosterId: 'pp1',
+      pendingPosterAdds: [
+        {
+          _id: 'pp1',
+          image_url: 'https://newmain.jpg',
+          title: 'New Main',
+          description: null,
+          poster_date: null,
+          is_main_poster: false,
+          is_main_backdrop: false,
+          image_type: 'poster' as const,
+          display_order: 0,
+        },
+      ],
+    });
+
+    // Should not throw even if crudFetch fails
+    const promises = await buildChildMutationPromises(deps);
+    expect(promises.length).toBeGreaterThan(0);
+  });
+
+  it('unsets existing main poster before inserting a new main poster (willInsertMain)', async () => {
+    const { crudFetch } = await import('@/lib/admin-crud-client');
+    const deps = createMockDeps({
+      pendingMainPosterId: 'pp1',
+      pendingPosterAdds: [
+        {
+          _id: 'pp1',
+          image_url: 'https://newmain.jpg',
+          title: 'New Main',
+          description: null,
+          poster_date: null,
+          is_main_poster: false,
+          is_main_backdrop: false,
+          image_type: 'poster' as const,
+          display_order: 0,
+        },
+      ],
+    });
+
+    await buildChildMutationPromises(deps);
+
+    // crudFetch should be called to unset existing main poster
+    expect(crudFetch).toHaveBeenCalledWith(
+      'PATCH',
+      expect.objectContaining({
+        table: 'movie_images',
+        filters: { movie_id: 'movie-1', is_main_poster: true },
+        data: { is_main_poster: false },
+      }),
+    );
+  });
+
   it('combines multiple entity types into a single promise array', async () => {
     const deps = createMockDeps({
       pendingCastRemoveIds: new Set(['c1']),

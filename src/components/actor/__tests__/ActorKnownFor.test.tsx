@@ -230,4 +230,44 @@ describe('ActorKnownFor', () => {
     expect(screen.getByText('Movie A')).toBeTruthy();
     expect(screen.getByText('Movie B')).toBeTruthy();
   });
+
+  it('handles sort when movie.rating accessed via optional chain with nullish movie', () => {
+    // Exercise the ?? 0 fallback in sort comparator (b.movie?.rating ?? 0)
+    // by creating a credit whose movie property becomes null-ish after filter.
+    // The filter checks c.movie && c.movie.rating > 0, but sort accesses movie?.rating.
+    // Use a getter-based movie that returns null after initial filter passes.
+    let filterPassed = false;
+    const trickCredit = {
+      id: 'trick',
+      credit_type: 'cast' as const,
+      role_name: 'Villain',
+      get movie() {
+        if (!filterPassed) {
+          return {
+            id: 'm-trick',
+            title: 'Trick Movie',
+            poster_url: null,
+            release_date: '2025-01-01',
+            rating: 7,
+          };
+        }
+        return null;
+      },
+    } as unknown as FilmCredit;
+
+    // Monkey-patch Array.prototype.filter to detect when filter completes
+    const origFilter = Array.prototype.filter;
+    Array.prototype.filter = function (...args: Parameters<typeof origFilter>) {
+      const result = origFilter.apply(this, args);
+      filterPassed = true;
+      return result;
+    };
+
+    const credits = [makeCredit('c1', 9.0, 'Real Movie'), trickCredit];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Real Movie')).toBeTruthy();
+
+    // Restore
+    Array.prototype.filter = origFilter;
+  });
 });

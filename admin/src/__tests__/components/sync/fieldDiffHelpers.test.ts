@@ -13,6 +13,7 @@ const makeMovie = (overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
   tmdb_id: 101,
   title: 'Test Movie',
   synopsis: 'A test synopsis',
+  release_date: '2024-01-15',
   poster_url: 'poster.jpg',
   backdrop_url: 'backdrop.jpg',
   director: 'Director Name',
@@ -29,12 +30,6 @@ const makeMovie = (overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
   revenue: 100000000,
   certification: 'U/A',
   spoken_languages: ['en', 'te'],
-  poster_count: 3,
-  backdrop_count: 2,
-  video_count: 5,
-  platform_names: ['Netflix'],
-  keyword_count: 10,
-  production_house_count: 2,
   ...overrides,
 });
 
@@ -67,6 +62,13 @@ const makeTmdb = (overrides: Partial<LookupMovieData> = {}): LookupMovieData => 
   certification: 'U/A',
   spokenLanguages: ['en', 'te'],
   productionCompanyCount: 2,
+  originalLanguage: 'te',
+  dbPosterCount: 3,
+  dbBackdropCount: 2,
+  dbVideoCount: 5,
+  dbKeywordCount: 10,
+  dbProductionHouseCount: 2,
+  dbPlatformNames: ['Netflix'],
   ...overrides,
 });
 
@@ -210,8 +212,8 @@ describe('getStatus', () => {
     it('returns missing when DB has fewer images', () => {
       expect(
         getStatus(
-          makeMovie({ poster_count: 1, backdrop_count: 0 }),
-          makeTmdb({ posterCount: 5, backdropCount: 3 }),
+          makeMovie(),
+          makeTmdb({ dbPosterCount: 1, dbBackdropCount: 0, posterCount: 5, backdropCount: 3 }),
           'images',
         ),
       ).toBe('missing');

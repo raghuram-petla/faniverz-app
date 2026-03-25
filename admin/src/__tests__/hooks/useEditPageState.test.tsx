@@ -226,4 +226,175 @@ describe('useEditPageState', () => {
     expect(deleteMutateAsync).toHaveBeenCalledWith('test-id');
     expect(mockPush).toHaveBeenCalledWith('/items');
   });
+
+  it('handleDelete does nothing when confirm returns false', async () => {
+    const deleteMutateAsync = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Test', description: 'Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+      deleteMutation: { mutateAsync: deleteMutateAsync },
+    };
+
+    const { result } = renderHook(() => useEditPageState(defaultConfig, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.handleDelete();
+    });
+
+    expect(deleteMutateAsync).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('handleDelete shows alert when deleteMutation throws', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const deleteMutateAsync = vi.fn().mockRejectedValue(new Error('Delete failed'));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Test', description: 'Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+      deleteMutation: { mutateAsync: deleteMutateAsync },
+    };
+
+    const { result } = renderHook(() => useEditPageState(defaultConfig, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.handleDelete();
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith('Delete failed: Delete failed');
+    alertSpy.mockRestore();
+  });
+
+  it('handleDelete shows JSON error message for non-Error exceptions', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const deleteMutateAsync = vi.fn().mockRejectedValue({ code: 42 });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Test', description: 'Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+      deleteMutation: { mutateAsync: deleteMutateAsync },
+    };
+
+    const { result } = renderHook(() => useEditPageState(defaultConfig, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.handleDelete();
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('42'));
+    alertSpy.mockRestore();
+  });
+
+  it('handleSave shows JSON error message for non-Error exceptions', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const mutateAsync = vi.fn().mockRejectedValue('string error');
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Test', description: 'Desc' }, isLoading: false },
+      updateMutation: { mutateAsync },
+    };
+
+    const { result } = renderHook(() => useEditPageState(defaultConfig, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('string error'));
+    alertSpy.mockRestore();
+  });
+
+  it('handleRevertField does nothing when initialFormRef is null', () => {
+    const hooks: EditPageHooks = {
+      dataResult: { data: undefined, isLoading: true },
+      updateMutation: { mutateAsync: vi.fn() },
+    };
+
+    const { result } = renderHook(() => useEditPageState(defaultConfig, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.handleRevertField('name');
+    });
+    // Should not throw — just no-op
+    expect(result.current.form.name).toBe('');
+  });
+
+  it('handleDiscard does nothing when initialFormRef is null', () => {
+    const hooks: EditPageHooks = {
+      dataResult: { data: undefined, isLoading: true },
+      updateMutation: { mutateAsync: vi.fn() },
+    };
+
+    const { result } = renderHook(() => useEditPageState(defaultConfig, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.handleDiscard();
+    });
+    expect(result.current.form).toEqual(INITIAL_FORM);
+  });
+
+  it('uses custom deleteMessage when provided', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const config = { ...defaultConfig, deleteMessage: 'Custom delete message?' };
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Test', description: 'Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+      deleteMutation: { mutateAsync: vi.fn().mockResolvedValue(undefined) },
+    };
+
+    const { result } = renderHook(() => useEditPageState(config, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.handleDelete();
+    });
+
+    expect(confirmSpy).toHaveBeenCalledWith('Custom delete message?');
+    confirmSpy.mockRestore();
+  });
+
+  it('does not overwrite form on background refetch (isFirstLoadRef guard)', () => {
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Initial', description: 'Initial Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+    };
+
+    const { result, rerender } = renderHook(
+      (props: { hooks: EditPageHooks }) => useEditPageState(defaultConfig, props.hooks),
+      { wrapper: createWrapper(), initialProps: { hooks } },
+    );
+
+    // First load hydrates
+    expect(result.current.form.name).toBe('Initial');
+
+    // User edits
+    act(() => {
+      result.current.updateField('name', 'User Edit');
+    });
+    expect(result.current.form.name).toBe('User Edit');
+
+    // Background refetch with new data — should NOT overwrite user edit
+    const refreshedHooks: EditPageHooks = {
+      dataResult: { data: { name: 'Refreshed', description: 'Refreshed Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+    };
+    rerender({ hooks: refreshedHooks });
+    expect(result.current.form.name).toBe('User Edit');
+  });
 });

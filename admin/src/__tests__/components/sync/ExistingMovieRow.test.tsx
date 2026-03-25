@@ -70,6 +70,7 @@ const makeMovie = (overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
   tmdb_id: 101,
   title: 'Pushpa 2',
   synopsis: 'Action film',
+  release_date: null,
   poster_url: 'https://example.com/poster.jpg',
   backdrop_url: null,
   director: null,

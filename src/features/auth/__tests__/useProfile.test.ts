@@ -107,4 +107,51 @@ describe('useProfile', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toBeDefined();
   });
+
+  it('is disabled when user exists but id is empty string', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: '' },
+      session: {},
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+
+    const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
+
+    expect(result.current.isFetching).toBe(false);
+  });
+
+  it('returns null when profile does not exist', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-1' },
+      session: {},
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+    mockSingle.mockResolvedValue({ data: null, error: null });
+
+    const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBeNull();
+  });
+
+  it('passes correct user id to fetchProfile via the queryFn', async () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'user-2' },
+      session: {},
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+    mockSingle.mockResolvedValue({ data: { ...mockProfile, id: 'user-2' }, error: null });
+
+    const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const { mockEq } = __mocks;
+    expect(mockEq).toHaveBeenCalledWith('id', 'user-2');
+  });
 });

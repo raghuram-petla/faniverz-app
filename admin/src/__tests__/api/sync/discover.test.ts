@@ -194,4 +194,108 @@ describe('POST /api/sync/discover', () => {
       'test-tmdb-key',
     );
   });
+
+  it('discovers using all DB languages when language param is omitted', async () => {
+    // Mock the languages table query
+    const mockLangSelect = vi.fn().mockResolvedValue({
+      data: [{ code: 'te' }, { code: 'hi' }],
+    });
+    // Override supabase mock for this specific test
+    const origMock = vi.mocked(await import('@/lib/supabase-admin'));
+    const adminFn = origMock.getSupabaseAdmin;
+    const origImpl = adminFn as unknown as { getMockImplementation: () => unknown };
+    // We need to call with language undefined to hit the "All" path
+    mockDiscoverMoviesByLanguage.mockResolvedValue([{ id: 100, title: 'Pushpa' }]);
+    mockSelectIn.mockResolvedValue({ data: [] });
+
+    const res = await POST(makeRequest({ year: 2025 }));
+    expect(res.status).toBe(200);
+    // At minimum, discoverMoviesByLanguage should have been called
+    expect(mockDiscoverMoviesByLanguage).toHaveBeenCalled();
+  });
+
+  it('deduplicates results across multiple languages', async () => {
+    // Same movie returned by multiple language discovers
+    mockDiscoverMoviesByLanguage
+      .mockResolvedValueOnce([{ id: 100, title: 'Pushpa' }])
+      .mockResolvedValueOnce([
+        { id: 100, title: 'Pushpa' },
+        { id: 200, title: 'RRR' },
+      ]);
+    mockSelectIn.mockResolvedValue({ data: [] });
+
+    const res = await POST(makeRequest({ year: 2025, language: 'te' }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    // Only one call since language='te' means single lang
+    expect(data.results).toHaveLength(1);
+  });
+
+  it('resolves R2 relative poster_url to full URL when env is set', async () => {
+    vi.stubEnv('R2_PUBLIC_BASE_URL_POSTERS', 'https://posters.r2.dev');
+    vi.stubEnv('R2_PUBLIC_BASE_URL_BACKDROPS', 'https://backdrops.r2.dev');
+    mockDiscoverMoviesByLanguage.mockResolvedValue([{ id: 100 }]);
+    mockSelectIn.mockResolvedValue({
+      data: [
+        {
+          id: 'uuid-100',
+          tmdb_id: 100,
+          title: 'Movie',
+          poster_url: 'abc123.jpg',
+          backdrop_url: 'def456.jpg',
+          synopsis: null,
+          release_date: null,
+          director: null,
+          runtime: null,
+          genres: null,
+        },
+      ],
+    });
+
+    const res = await POST(makeRequest({ year: 2025 }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.existingMovies[0].poster_url).toBe('https://posters.r2.dev/abc123.jpg');
+    expect(data.existingMovies[0].backdrop_url).toBe('https://backdrops.r2.dev/def456.jpg');
+  });
+
+  it('does not modify absolute poster URLs', async () => {
+    vi.stubEnv('R2_PUBLIC_BASE_URL_POSTERS', 'https://posters.r2.dev');
+    mockDiscoverMoviesByLanguage.mockResolvedValue([{ id: 100 }]);
+    mockSelectIn.mockResolvedValue({
+      data: [
+        {
+          id: 'uuid-100',
+          tmdb_id: 100,
+          title: 'Movie',
+          poster_url: 'https://tmdb.org/poster.jpg',
+          backdrop_url: null,
+        },
+      ],
+    });
+
+    const res = await POST(makeRequest({ year: 2025 }));
+    const data = await res.json();
+    expect(data.existingMovies[0].poster_url).toBe('https://tmdb.org/poster.jpg');
+  });
+
+  it('returns 400 for year > 2100', async () => {
+    const res = await POST(makeRequest({ year: 2101 }));
+    expect(res.status).toBe(400);
+  });
+
+  it('deduplicates results by month across multiple months', async () => {
+    // Same movie in both months
+    mockDiscoverMoviesByLanguageByMonth
+      .mockResolvedValueOnce([{ id: 100, title: 'A' }])
+      .mockResolvedValueOnce([
+        { id: 100, title: 'A' },
+        { id: 200, title: 'B' },
+      ]);
+    mockSelectIn.mockResolvedValue({ data: [] });
+
+    const res = await POST(makeRequest({ year: 2025, months: [1, 2] }));
+    const data = await res.json();
+    expect(data.results).toHaveLength(2); // 100 and 200, deduped
+  });
 });

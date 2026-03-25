@@ -74,6 +74,30 @@ function Consumer() {
   );
 }
 
+describe('useImpersonation — default context (no Provider)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({ user: null });
+  });
+
+  it('returns default values and no-op functions when used outside Provider', async () => {
+    const { result } = renderHook(() => useImpersonation());
+    expect(result.current.isImpersonating).toBe(false);
+    expect(result.current.effectiveUser).toBeNull();
+    expect(result.current.realUser).toBeNull();
+
+    // Call all three default no-op functions
+    await act(async () => {
+      await result.current.startImpersonation('some-id');
+      await result.current.startRoleImpersonation('admin');
+      await result.current.stopImpersonation();
+    });
+
+    // Still default values
+    expect(result.current.isImpersonating).toBe(false);
+  });
+});
+
 describe('useEffectiveUser', () => {
   it('returns auth user when not impersonating', () => {
     mockUseAuth.mockReturnValue({ user: rootUser });
@@ -1285,5 +1309,168 @@ describe('ImpersonationProvider — stopImpersonation', () => {
       await stopImpersonation();
     });
     expect(updateMock).toHaveBeenCalled();
+  });
+});
+
+describe('ImpersonationProvider — stopImpersonation with Error instance', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.alert = vi.fn();
+    mockUseAuth.mockReturnValue({ user: rootUser });
+  });
+
+  it('shows Error message when stop fails with Error instance', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_impersonation_sessions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockRejectedValue(new Error('DB connection lost')),
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    let stopImpersonation!: () => Promise<void>;
+    function CaptureHook() {
+      const ctx = useImpersonation();
+      stopImpersonation = ctx.stopImpersonation;
+      return null;
+    }
+    render(
+      <Wrapper>
+        <CaptureHook />
+      </Wrapper>,
+    );
+    await act(async () => {
+      await stopImpersonation();
+    });
+    expect(window.alert).toHaveBeenCalledWith('DB connection lost');
+  });
+});
+
+describe('ImpersonationProvider — startImpersonation with Error instance', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.alert = vi.fn();
+    mockUseAuth.mockReturnValue({ user: rootUser });
+  });
+
+  it('shows Error message when start fails with Error instance', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: 't', display_name: 'T' } }),
+            }),
+          }),
+        };
+      }
+      if (table === 'admin_user_roles') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { role_id: 'admin' } }),
+            }),
+          }),
+        };
+      }
+      if (table === 'admin_ph_assignments') {
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [] }) }) };
+      }
+      if (table === 'user_languages') {
+        return { select: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ data: [] }) }) };
+      }
+      if (table === 'admin_impersonation_sessions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: null }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: { message: 'Constraint violation' } }),
+        };
+      }
+      return {};
+    });
+
+    let startImpersonation!: (id: string) => Promise<void>;
+    function CaptureHook() {
+      const ctx = useImpersonation();
+      startImpersonation = ctx.startImpersonation;
+      return null;
+    }
+    render(
+      <Wrapper>
+        <CaptureHook />
+      </Wrapper>,
+    );
+    await act(async () => {
+      await startImpersonation('target');
+    });
+    expect(window.alert).toHaveBeenCalled();
+  });
+});
+
+describe('ImpersonationProvider — startRoleImpersonation with Error instance', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.alert = vi.fn();
+    mockUseAuth.mockReturnValue({ user: rootUser });
+  });
+
+  it('shows Error message when role impersonation fails with Error', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_impersonation_sessions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockRejectedValue(new Error('Role insert failed')),
+            }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    let startRoleImpersonation!: (role: string, phIds?: string[]) => Promise<void>;
+    function CaptureHook() {
+      const ctx = useImpersonation();
+      startRoleImpersonation = ctx.startRoleImpersonation;
+      return null;
+    }
+    render(
+      <Wrapper>
+        <CaptureHook />
+      </Wrapper>,
+    );
+    await act(async () => {
+      await startRoleImpersonation('admin');
+    });
+    expect(window.alert).toHaveBeenCalledWith('Role insert failed');
   });
 });

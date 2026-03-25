@@ -34,6 +34,7 @@ const makeMovie = (id: string, overrides: Partial<ExistingMovieData> = {}): Exis
   tmdb_id: Number(id),
   title: 'Movie',
   synopsis: null,
+  release_date: null,
   poster_url: null,
   backdrop_url: null,
   director: null,
@@ -83,6 +84,13 @@ const makeTmdb = (tmdbId: number, overrides: Partial<LookupMovieData> = {}): Loo
   certification: null,
   spokenLanguages: [],
   productionCompanyCount: 0,
+  originalLanguage: 'te',
+  dbPosterCount: 0,
+  dbBackdropCount: 0,
+  dbVideoCount: 0,
+  dbKeywordCount: 0,
+  dbProductionHouseCount: 0,
+  dbPlatformNames: [],
   ...overrides,
 });
 
@@ -111,6 +119,7 @@ describe('useBulkFillMissing', () => {
   it('does nothing when no movies have TMDB mismatches', async () => {
     const movie = makeMovie('1', {
       synopsis: 'A synopsis',
+      release_date: '2024-01-01',
       poster_url: '/poster.jpg',
       backdrop_url: '/backdrop.jpg',
       director: 'Director',
@@ -331,6 +340,36 @@ describe('useBulkFillMissing', () => {
     expect(result.current.state.failed).toBe(0);
     expect(result.current.state.isRunning).toBe(false);
     expect(result.current.state.error).toBeNull();
+  });
+
+  it('skips movie when tmdb data has no gapped fields inside the loop', async () => {
+    // First movie has gaps, second has gaps at filter time but after re-checking has none
+    // This exercises the `fields.length === 0` continue branch inside the for loop
+    // We achieve this by having two movies pass the initial filter but the 2nd has matching data
+    const movie1 = makeMovie('1');
+    const movie2 = makeMovie('2', {
+      synopsis: 'A synopsis',
+      release_date: '2024-01-01',
+      poster_url: '/poster.jpg',
+      backdrop_url: '/backdrop.jpg',
+      director: 'Director',
+      runtime: 120,
+      genres: ['Action'],
+    });
+    const tmdb = makeTmdbMap([
+      [1, makeTmdb(1)],
+      [2, makeTmdb(2)],
+    ]);
+    mockFetchOk();
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.run([movie1, movie2], tmdb);
+    });
+
+    await waitFor(() => expect(result.current.state.isRunning).toBe(false));
+    // movie1 had gaps and was fetched, movie2 had no gaps in 2nd check so was skipped
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('handles fetch exception (network error)', async () => {

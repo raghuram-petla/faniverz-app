@@ -24,15 +24,33 @@ vi.mock('@supabase/supabase-js', () => ({
 
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
+    from: (table: string) => {
+      // @contract: movie_images, movie_videos, movie_keywords, movie_production_houses, movie_platforms
+      // are queried for DB-side counts — chain must be thenable (returns { data: [] })
+      const isCountTable = [
+        'movie_images',
+        'movie_videos',
+        'movie_keywords',
+        'movie_production_houses',
+        'movie_platforms',
+      ].includes(table);
+
+      const makeChain = (): Record<string, unknown> => {
+        const chain: Record<string, unknown> = {
+          eq: () => makeChain(),
           maybeSingle: mockMaybeSingle,
           single: () =>
             Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
-        }),
-      }),
-    }),
+        };
+        if (isCountTable) {
+          chain.then = (resolve: (v: { data: never[]; error: null }) => void, _reject?: unknown) =>
+            Promise.resolve({ data: [], error: null }).then(resolve);
+        }
+        return chain;
+      };
+
+      return { select: () => makeChain() };
+    },
   }),
 }));
 
@@ -287,8 +305,20 @@ describe('POST /api/sync/lookup', () => {
     expect(data.data.photoUrl).toBeNull();
   });
 
+  it('returns 503 when TMDB_API_KEY is not configured', async () => {
+    vi.stubEnv('TMDB_API_KEY', '');
+    const res = await POST(makeRequest({ tmdbId: 100, type: 'movie' }));
+    expect(res.status).toBe(503);
+  });
+
+  it('handles person lookup error', async () => {
+    mockGetPersonDetails.mockRejectedValue(new Error('TMDB unreachable'));
+    const res = await POST(makeRequest({ tmdbId: 999, type: 'person' }));
+    expect(res.status).toBe(500);
+  });
+
   it('returns movie image and provider counts', async () => {
-    mockGetMovieDetails.mockResolvedValue({
+    const movieDetail = {
       id: 104,
       title: 'Count Movie',
       overview: '',
@@ -317,7 +347,9 @@ describe('POST /api/sync/lookup', () => {
       vote_count: 1000,
       budget: 50000000,
       revenue: 200000000,
-    });
+    };
+    // Route calls getMovieDetails twice (original_language='te' !== 'en' triggers re-fetch)
+    mockGetMovieDetails.mockResolvedValue(movieDetail);
     mockGetMovieImages.mockResolvedValue({ posters: [{}, {}], backdrops: [{}], logos: [] });
     mockGetWatchProviders.mockResolvedValue([{ provider_name: 'Netflix' }]);
     mockMaybeSingle.mockResolvedValue({ data: { id: 'existing-1' }, error: null });

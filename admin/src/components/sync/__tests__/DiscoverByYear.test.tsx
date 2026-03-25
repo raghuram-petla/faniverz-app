@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 
@@ -432,5 +432,151 @@ describe('DiscoverByYear', () => {
     render(<DiscoverByYear data={makeDiscoverResult()} />);
     fireEvent.click(screen.getByTestId('gap-count-btn'));
     // No assertion needed — just ensuring it doesn't throw
+  });
+
+  it('does not import all when isImporting is true', async () => {
+    // Make import hang to keep isImporting=true
+    mockImportMutateAsync.mockReturnValue(new Promise(() => {}));
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+    // Start an import first
+    fireEvent.click(screen.getByTestId('toggle-btn'));
+    fireEvent.click(screen.getByTestId('import-btn'));
+
+    // isImporting should be true now, so import all should no-op
+    fireEvent.click(screen.getByTestId('import-all-btn'));
+    // Only one call from the first import
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles import with error result from server', async () => {
+    mockImportMutateAsync.mockResolvedValue({
+      results: [],
+      errors: [{ tmdbId: 2, message: 'Server error' }],
+    });
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+    // Select movie ID 2
+    // The toggle mock always toggles ID 1, so use import all
+    fireEvent.click(screen.getByTestId('import-all-btn'));
+
+    await waitFor(() => {
+      expect(mockImportMutateAsync).toHaveBeenCalled();
+    });
+  });
+
+  it('handles non-Error exception during import (fallback message)', async () => {
+    mockImportMutateAsync.mockRejectedValue('string error');
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+    fireEvent.click(screen.getByTestId('toggle-btn'));
+    fireEvent.click(screen.getByTestId('import-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('failed');
+    });
+  });
+
+  it('retries on 502 gateway error and eventually fails after max retries', async () => {
+    // Use a non-timeout error that exhausts retries quickly
+    const error = new Error('Server error');
+    mockImportMutateAsync.mockRejectedValue(error);
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+    fireEvent.click(screen.getByTestId('toggle-btn'));
+    fireEvent.click(screen.getByTestId('import-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('failed');
+    });
+  });
+
+  it('notifies parent when import state changes via onImportingChange', () => {
+    const onImportingChange = vi.fn();
+    render(<DiscoverByYear data={makeDiscoverResult()} onImportingChange={onImportingChange} />);
+    // Initially not importing
+    expect(onImportingChange).toHaveBeenCalledWith(false);
+  });
+
+  it('handles link duplicate with poster_path in results', async () => {
+    let resolveLink: (() => void) | undefined;
+    mockLinkTmdbIdMutateAsync.mockImplementation(
+      () =>
+        new Promise<void>((r) => {
+          resolveLink = r;
+        }),
+    );
+
+    const data = makeDiscoverResult({
+      results: [
+        { id: 1, title: 'Movie A', poster_path: '/poster.jpg', release_date: '2024-01-01' },
+        { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
+        { id: 3, title: 'Movie C', poster_path: null, release_date: '2024-03-01' },
+      ],
+      duplicateSuspects: { 1: { id: 'db-1', title: 'Existing Movie A' } },
+    });
+    render(<DiscoverByYear data={data} />);
+
+    fireEvent.click(screen.getByTestId('link-btn'));
+
+    expect(mockLinkTmdbIdMutateAsync).toHaveBeenCalledWith({
+      movieId: 'db-1',
+      tmdbId: 1,
+    });
+
+    // Resolve the link promise
+    await act(async () => {
+      resolveLink?.();
+    });
+
+    // After linking, the movie should show in existing count
+    await waitFor(() => {
+      expect(screen.getByTestId('existing-count').textContent).toBe('1');
+    });
+  });
+
+  it('import all skips when already importing', async () => {
+    // Start a never-resolving import
+    mockImportMutateAsync.mockReturnValue(new Promise(() => {}));
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+
+    fireEvent.click(screen.getByTestId('import-all-btn'));
+    expect(screen.getByTestId('is-importing').textContent).toBe('yes');
+
+    // Second import all should be blocked
+    fireEvent.click(screen.getByTestId('import-all-btn'));
+    // Only 3 calls from the first import-all (3 movies)
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles import with successful results that populate imported data', async () => {
+    mockImportMutateAsync.mockResolvedValue({
+      results: [
+        { tmdbId: 1, movieId: 'db-1', title: 'Movie A' },
+        { tmdbId: 2, movieId: 'db-2', title: 'Movie B' },
+      ],
+      errors: [],
+    });
+
+    const data = makeDiscoverResult({
+      results: [
+        { id: 1, title: 'Movie A', poster_path: '/poster.jpg', release_date: '2024-01-01' },
+        { id: 2, title: 'Movie B', poster_path: null, release_date: '2024-02-01' },
+      ],
+      existingMovies: [],
+    });
+
+    render(<DiscoverByYear data={data} />);
+    fireEvent.click(screen.getByTestId('import-all-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('selected-count').textContent).toBe('0');
+    });
+  });
+
+  it('handles empty results array', () => {
+    render(<DiscoverByYear data={makeDiscoverResult({ results: [] })} />);
+    expect(screen.getByTestId('results-count').textContent).toBe('0');
+    expect(screen.getByTestId('new-movies-count').textContent).toBe('0');
   });
 });

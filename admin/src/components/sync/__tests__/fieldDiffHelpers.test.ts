@@ -9,16 +9,12 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
     id: 'movie-1',
     title: 'Test Movie',
     synopsis: null,
+    release_date: null,
     poster_url: null,
     backdrop_url: null,
     director: null,
     runtime: null,
     genres: null,
-    poster_count: 0,
-    backdrop_count: 0,
-    video_count: 0,
-    platform_names: [],
-    keyword_count: 0,
     imdb_id: null,
     title_te: null,
     synopsis_te: null,
@@ -30,7 +26,6 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
     budget: null,
     revenue: null,
     certification: null,
-    production_house_count: 0,
     spoken_languages: null,
     ...overrides,
   };
@@ -38,8 +33,9 @@ function makeMovie(overrides: Partial<ExistingMovieData> = {}): ExistingMovieDat
 
 function makeTmdb(overrides: Partial<LookupMovieData> = {}): LookupMovieData {
   return {
+    tmdbId: 12345,
     title: 'Test Movie',
-    overview: null,
+    overview: null as unknown as string,
     posterUrl: null,
     backdropUrl: null,
     director: null,
@@ -61,9 +57,17 @@ function makeTmdb(overrides: Partial<LookupMovieData> = {}): LookupMovieData {
     revenue: null,
     certification: null,
     productionCompanyCount: 0,
-    spokenLanguages: null,
+    spokenLanguages: [],
     castCount: 5,
     crewCount: 3,
+    originalLanguage: 'te',
+    releaseDate: '' as unknown as string,
+    dbPosterCount: 0,
+    dbBackdropCount: 0,
+    dbVideoCount: 0,
+    dbKeywordCount: 0,
+    dbProductionHouseCount: 0,
+    dbPlatformNames: [],
     ...overrides,
   };
 }
@@ -315,8 +319,8 @@ describe('getStatus — images', () => {
   it('returns missing when db counts are lower', () => {
     expect(
       getStatus(
-        makeMovie({ poster_count: 0 }),
-        makeTmdb({ posterCount: 5, backdropCount: 3 }),
+        makeMovie(),
+        makeTmdb({ dbPosterCount: 0, dbBackdropCount: 0, posterCount: 5, backdropCount: 3 }),
         'images',
       ),
     ).toBe('missing');
@@ -324,8 +328,8 @@ describe('getStatus — images', () => {
   it('returns same when db counts meet tmdb counts', () => {
     expect(
       getStatus(
-        makeMovie({ poster_count: 5, backdrop_count: 3 }),
-        makeTmdb({ posterCount: 5, backdropCount: 3 }),
+        makeMovie(),
+        makeTmdb({ dbPosterCount: 5, dbBackdropCount: 3, posterCount: 5, backdropCount: 3 }),
         'images',
       ),
     ).toBe('same');
@@ -339,12 +343,12 @@ describe('getStatus — videos', () => {
     expect(getStatus(makeMovie(), makeTmdb({ videoCount: 0 }), 'videos')).toBe('same');
   });
   it('returns missing when db has fewer', () => {
-    expect(getStatus(makeMovie({ video_count: 0 }), makeTmdb({ videoCount: 3 }), 'videos')).toBe(
+    expect(getStatus(makeMovie(), makeTmdb({ dbVideoCount: 0, videoCount: 3 }), 'videos')).toBe(
       'missing',
     );
   });
   it('returns same when db count meets tmdb', () => {
-    expect(getStatus(makeMovie({ video_count: 3 }), makeTmdb({ videoCount: 3 }), 'videos')).toBe(
+    expect(getStatus(makeMovie(), makeTmdb({ dbVideoCount: 3, videoCount: 3 }), 'videos')).toBe(
       'same',
     );
   });
@@ -357,8 +361,8 @@ describe('getStatus — watch_providers', () => {
   it('returns missing when db has fewer', () => {
     expect(
       getStatus(
-        makeMovie({ platform_names: [] }),
-        makeTmdb({ providerNames: ['Netflix', 'Hulu'] }),
+        makeMovie(),
+        makeTmdb({ dbPlatformNames: [], providerNames: ['Netflix', 'Hulu'] }),
         'watch_providers',
       ),
     ).toBe('missing');
@@ -371,7 +375,7 @@ describe('getStatus — keywords', () => {
   });
   it('returns missing when db has fewer', () => {
     expect(
-      getStatus(makeMovie({ keyword_count: 0 }), makeTmdb({ keywordCount: 10 }), 'keywords'),
+      getStatus(makeMovie(), makeTmdb({ dbKeywordCount: 0, keywordCount: 10 }), 'keywords'),
     ).toBe('missing');
   });
 });
@@ -553,8 +557,8 @@ describe('getStatus — production_companies', () => {
   it('returns missing when db has fewer', () => {
     expect(
       getStatus(
-        makeMovie({ production_house_count: 0 }),
-        makeTmdb({ productionCompanyCount: 2 }),
+        makeMovie(),
+        makeTmdb({ dbProductionHouseCount: 0, productionCompanyCount: 2 }),
         'production_companies',
       ),
     ).toBe('missing');
@@ -562,8 +566,8 @@ describe('getStatus — production_companies', () => {
   it('returns same when db meets tmdb count', () => {
     expect(
       getStatus(
-        makeMovie({ production_house_count: 2 }),
-        makeTmdb({ productionCompanyCount: 2 }),
+        makeMovie(),
+        makeTmdb({ dbProductionHouseCount: 2, productionCompanyCount: 2 }),
         'production_companies',
       ),
     ).toBe('same');

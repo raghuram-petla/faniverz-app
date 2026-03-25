@@ -71,4 +71,38 @@ describe('useUserActivity', () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(mockFetch).toHaveBeenCalledWith('u1', 'follows', 0);
   });
+
+  it('uses default filter of all when no filter argument provided', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    mockFetch.mockResolvedValue([{ id: 'a1', action_type: 'vote' }]);
+
+    const { result } = renderHook(() => useUserActivity(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'all', 0);
+  });
+
+  it('fetches with different filter values to exercise query key differentiation', async () => {
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    mockFetch.mockResolvedValue([{ id: 'a1', action_type: 'review' }]);
+
+    const { result } = renderHook(() => useUserActivity('reviews'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'reviews', 0);
+  });
+
+  it('uses userId fallback when user object has no id property', async () => {
+    // user?.id evaluates to undefined, making userId=undefined.
+    // enabled: !!undefined = false, so queryFn should NOT run.
+    // This tests the falsy userId path more explicitly.
+    mockUseAuth.mockReturnValue({ user: {} });
+    mockFetch.mockResolvedValue([]);
+
+    const { result } = renderHook(() => useUserActivity(), { wrapper: createWrapper() });
+
+    // Query should be disabled since !!undefined is false
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });

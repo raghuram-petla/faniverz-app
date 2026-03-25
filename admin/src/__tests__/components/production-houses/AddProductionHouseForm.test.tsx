@@ -153,4 +153,37 @@ describe('AddProductionHouseForm', () => {
       });
     });
   });
+
+  it('shows error alert when create mutation fails with Error', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockMutateAsync.mockRejectedValue(new Error('DB constraint'));
+    renderWithProviders(<AddProductionHouseForm onClose={onClose} />);
+    fireEvent.change(screen.getByPlaceholderText('Name *'), {
+      target: { value: 'Failing House' },
+    });
+    fireEvent.click(screen.getByText('Add'));
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('DB constraint'));
+    });
+    alertSpy.mockRestore();
+  });
+
+  it('shows error alert with JSON-stringified error when not Error instance', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    mockMutateAsync.mockRejectedValue({ code: 'DUPLICATE' });
+    renderWithProviders(<AddProductionHouseForm onClose={onClose} />);
+    fireEvent.change(screen.getByPlaceholderText('Name *'), {
+      target: { value: 'Dupe House' },
+    });
+    fireEvent.click(screen.getByText('Add'));
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('DUPLICATE'));
+    });
+    alertSpy.mockRestore();
+  });
+
+  it('renders country dropdown', () => {
+    renderWithProviders(<AddProductionHouseForm onClose={onClose} />);
+    expect(screen.getByText('Country (optional)')).toBeInTheDocument();
+  });
 });

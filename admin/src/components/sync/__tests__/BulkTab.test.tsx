@@ -274,6 +274,33 @@ describe('BulkTab', () => {
     expect(screen.getByTestId('progress-completed').textContent).toBe('2');
   });
 
+  it('handleBulkRefreshActors: accumulates Error instance messages', async () => {
+    mockRefreshActorMutateAsync
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(new Error('TMDB actor error'));
+
+    mockUseStaleItems
+      .mockReturnValueOnce({ data: { items: [] }, isLoading: false })
+      .mockReturnValueOnce({
+        data: {
+          items: [
+            { id: 'a1', name: 'Actor 1' },
+            { id: 'a2', name: 'Actor 2' },
+          ],
+        },
+        isLoading: false,
+      });
+
+    render(<BulkTab />);
+    fireEvent.click(screen.getByTestId('fetch-all-btn'));
+
+    await waitFor(() => {
+      expect(mockRefreshActorMutateAsync).toHaveBeenCalledTimes(2);
+    });
+
+    expect(screen.getByTestId('progress-completed').textContent).toBe('2');
+  });
+
   it('handleBulkRefreshActors: handles non-Error throws gracefully', async () => {
     mockRefreshActorMutateAsync.mockRejectedValue('string error');
 
