@@ -175,15 +175,21 @@ describe('POST /api/sync/discover', () => {
     expect(data.error).toBeDefined();
   });
 
-  it('discovers movies by year and month when month is provided', async () => {
+  it('discovers movies by year and months when months are provided', async () => {
     mockDiscoverMoviesByLanguageByMonth.mockResolvedValue([{ id: 300 }]);
     mockSelectIn.mockResolvedValue({ data: [] });
 
-    const res = await POST(makeRequest({ year: 2025, month: 3 }));
+    const res = await POST(makeRequest({ year: 2025, months: [3, 6] }));
     expect(res.status).toBe(200);
     expect(mockDiscoverMoviesByLanguageByMonth).toHaveBeenCalledWith(
       2025,
       3,
+      'te',
+      'test-tmdb-key',
+    );
+    expect(mockDiscoverMoviesByLanguageByMonth).toHaveBeenCalledWith(
+      2025,
+      6,
       'te',
       'test-tmdb-key',
     );

@@ -94,7 +94,7 @@ const MOVIE_SYNC_KEYS = [
 /** Discover movies from TMDB by language, year, and optional month. */
 export function useDiscoverMovies() {
   return useMutation({
-    mutationFn: (params: { year: number; month?: number; language?: string }) =>
+    mutationFn: (params: { year: number; months?: number[]; language?: string }) =>
       syncApi<DiscoverResult>('discover', params),
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');

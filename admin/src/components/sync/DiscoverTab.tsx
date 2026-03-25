@@ -14,6 +14,7 @@ import { Search, Globe, Loader2 } from 'lucide-react';
 import { CURRENT_YEAR, YEARS, MONTHS } from './syncHelpers';
 import { SearchResultsPanel } from './SearchResultsPanel';
 import { DiscoverByYear } from './DiscoverByYear';
+import { MonthMultiSelect } from './MonthMultiSelect';
 import { MoviePreview } from './MoviePreview';
 import { PersonPreview } from './PersonPreview';
 import { useLanguageContext } from '@/hooks/useLanguageContext';
@@ -30,7 +31,7 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
   const { selectedLanguageCode } = useLanguageContext();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState(CURRENT_YEAR);
-  const [month, setMonth] = useState(0);
+  const [months, setMonths] = useState<number[]>([]);
   const [resultMode, setResultMode] = useState<ResultMode | null>(null);
   /** @edge stores the label shown above results — set at trigger time, not from live input */
   const [resultLabel, setResultLabel] = useState('');
@@ -59,11 +60,16 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
   };
 
   const handleDiscover = () => {
-    const monthName = month ? MONTHS[month - 1] : '';
-    setResultLabel(monthName ? `${monthName} ${year}` : `${year}`);
+    const label =
+      months.length === 0
+        ? `${year}`
+        : months.length <= 3
+          ? months.map((m) => MONTHS[m - 1]).join(', ') + ` ${year}`
+          : `${months.length} months in ${year}`;
+    setResultLabel(label);
     discover.mutate({
       year,
-      month: month || undefined,
+      months: months.length > 0 ? months : undefined,
       language: selectedLanguageCode || undefined,
     });
     setResultMode('discover');
@@ -149,18 +155,7 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
               </option>
             ))}
           </select>
-          <select
-            value={month}
-            onChange={(e) => setMonth(Number(e.target.value))}
-            className="bg-input rounded-lg px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-red-600"
-          >
-            <option value={0}>All months</option>
-            {MONTHS.map((m, i) => (
-              <option key={i} value={i + 1}>
-                {m}
-              </option>
-            ))}
-          </select>
+          <MonthMultiSelect selected={months} onChange={setMonths} />
           <button
             onClick={handleDiscover}
             disabled={discover.isPending}

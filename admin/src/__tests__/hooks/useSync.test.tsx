@@ -70,14 +70,14 @@ beforeEach(() => {
 // ── Discover ──────────────────────────────────────────────────────────────────
 
 describe('useDiscoverMovies', () => {
-  it('calls POST /api/sync/discover with year and month', async () => {
+  it('calls POST /api/sync/discover with year and months', async () => {
     const response = { results: [{ id: 1, title: 'Movie' }], existingMovies: [] };
     mockFetchOk(response);
 
     const { result } = renderHook(() => useDiscoverMovies(), { wrapper: createWrapper() });
 
     await act(async () => {
-      result.current.mutate({ year: 2025, month: 3 });
+      result.current.mutate({ year: 2025, months: [3, 6] });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -85,7 +85,7 @@ describe('useDiscoverMovies', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/sync/discover', {
       method: 'POST',
       headers: { ...AUTH_HEADER, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ year: 2025, month: 3 }),
+      body: JSON.stringify({ year: 2025, months: [3, 6] }),
     });
     expect(result.current.data).toEqual(response);
   });

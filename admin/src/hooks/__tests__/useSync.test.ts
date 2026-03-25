@@ -117,13 +117,13 @@ describe('useSync', () => {
       const { Wrapper } = makeWrapper();
       const { result } = renderHook(() => useDiscoverMovies(), { wrapper: Wrapper });
       await act(async () => {
-        await result.current.mutateAsync({ year: 2024, month: 3, language: 'te' });
+        await result.current.mutateAsync({ year: 2024, months: [3], language: 'te' });
       });
       expect(mockFetch).toHaveBeenCalledWith(
         '/api/sync/discover',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ year: 2024, month: 3, language: 'te' }),
+          body: JSON.stringify({ year: 2024, months: [3], language: 'te' }),
           headers: expect.objectContaining({
             Authorization: `Bearer ${validSession.access_token}`,
           }),

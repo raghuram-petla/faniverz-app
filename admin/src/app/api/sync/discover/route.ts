@@ -83,86 +83,111 @@ export async function POST(request: NextRequest) {
     // fillable fields so the frontend can show a field-level diff without
     // a separate per-movie query.
     // @sync: read-only DB check — no writes, safe for repeated calls
+    // @edge: batch tmdb_ids too — "All languages" year discover can return 300+ results
     const tmdbIds = results.map((m) => m.id);
-    const { data: existingRows } = await supabase
-      .from('movies')
-      .select(
-        'id, tmdb_id, title, synopsis, poster_url, backdrop_url, director, runtime, genres, imdb_id, title_te, synopsis_te, tagline, tmdb_status, tmdb_vote_average, tmdb_vote_count, budget, revenue, certification, spoken_languages',
-      )
-      .in('tmdb_id', tmdbIds);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existingRows: any[] = [];
+    const TMDB_BATCH = 50;
+    for (let i = 0; i < tmdbIds.length; i += TMDB_BATCH) {
+      const chunk = tmdbIds.slice(i, i + TMDB_BATCH);
+      const { data } = await supabase
+        .from('movies')
+        .select(
+          'id, tmdb_id, title, synopsis, poster_url, backdrop_url, director, runtime, genres, imdb_id, title_te, synopsis_te, tagline, tmdb_status, tmdb_vote_average, tmdb_vote_count, budget, revenue, certification, spoken_languages',
+        )
+        .in('tmdb_id', chunk);
+      if (data) existingRows.push(...data);
+    }
 
     // @contract: resolve relative R2 keys to full URLs server-side so client components
     // can use poster_url directly without needing env vars (Turbopack doesn't substitute
     // process.env in client bundles for non-NEXT_PUBLIC_ vars)
     const postersBase = process.env.R2_PUBLIC_BASE_URL_POSTERS?.replace(/\/$/, '');
     const backdropsBase = process.env.R2_PUBLIC_BASE_URL_BACKDROPS?.replace(/\/$/, '');
-    const rows = existingRows ?? [];
-    const existingIds = rows.map((r) => r.id);
+    const existingIds = existingRows.map((r: { id: string }) => r.id);
 
-    // @sideeffect: fetch aggregate counts for gap detection — parallel queries for efficiency
-    // @edge: Supabase default row limit is 1000; with 150+ movies the junction tables
-    // easily exceed that, silently truncating rows and producing wrong counts.
-    // Explicit .limit(10000) prevents false-positive gaps.
+    // @sideeffect: fetch aggregate counts for gap detection
+    // @edge: PostgREST has a URL length limit (~8KB). With 150+ movie UUIDs (36 chars each)
+    // in a single .in() clause, the URL overflows and the query silently fails (returns null).
+    // Batch IDs into chunks of 50 to keep URLs safely under the limit.
+    const BATCH_SIZE = 50;
     const ROW_CAP = 10000;
-    const [posterRows, backdropRows, videoRows, keywordRows, phRows, platformRows] =
-      existingIds.length > 0
-        ? await Promise.all([
-            supabase
-              .from('movie_images')
-              .select('movie_id')
-              .in('movie_id', existingIds)
-              .eq('image_type', 'poster')
-              .limit(ROW_CAP),
-            supabase
-              .from('movie_images')
-              .select('movie_id')
-              .in('movie_id', existingIds)
-              .eq('image_type', 'backdrop')
-              .limit(ROW_CAP),
-            supabase
-              .from('movie_videos')
-              .select('movie_id')
-              .in('movie_id', existingIds)
-              .limit(ROW_CAP),
-            supabase
-              .from('movie_keywords')
-              .select('movie_id')
-              .in('movie_id', existingIds)
-              .limit(ROW_CAP),
-            supabase
-              .from('movie_production_houses')
-              .select('movie_id')
-              .in('movie_id', existingIds)
-              .limit(ROW_CAP),
-            supabase
-              .from('movie_platforms')
-              .select('movie_id, platform_id')
-              .in('movie_id', existingIds)
-              .limit(ROW_CAP),
-          ])
-        : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
 
-    // @contract: count rows per movie_id for each aggregate type
-    function countByMovie(data: { movie_id: string }[] | null): Map<string, number> {
+    // @contract: batch a Supabase .in() query across chunks, merging all results
+    async function batchedIn<T>(
+      queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null }>,
+    ): Promise<T[]> {
+      if (existingIds.length === 0) return [];
+      const results: T[] = [];
+      for (let i = 0; i < existingIds.length; i += BATCH_SIZE) {
+        const chunk = existingIds.slice(i, i + BATCH_SIZE);
+        const { data } = await queryFn(chunk);
+        if (data) results.push(...data);
+      }
+      return results;
+    }
+
+    const [posterData, backdropData, videoData, keywordData, phData, platformData] =
+      await Promise.all([
+        batchedIn<{ movie_id: string }>((ids) =>
+          supabase
+            .from('movie_images')
+            .select('movie_id')
+            .in('movie_id', ids)
+            .eq('image_type', 'poster')
+            .limit(ROW_CAP),
+        ),
+        batchedIn<{ movie_id: string }>((ids) =>
+          supabase
+            .from('movie_images')
+            .select('movie_id')
+            .in('movie_id', ids)
+            .eq('image_type', 'backdrop')
+            .limit(ROW_CAP),
+        ),
+        batchedIn<{ movie_id: string }>((ids) =>
+          supabase.from('movie_videos').select('movie_id').in('movie_id', ids).limit(ROW_CAP),
+        ),
+        batchedIn<{ movie_id: string }>((ids) =>
+          supabase.from('movie_keywords').select('movie_id').in('movie_id', ids).limit(ROW_CAP),
+        ),
+        batchedIn<{ movie_id: string }>((ids) =>
+          supabase
+            .from('movie_production_houses')
+            .select('movie_id')
+            .in('movie_id', ids)
+            .limit(ROW_CAP),
+        ),
+        batchedIn<{ movie_id: string; platform_id: string }>((ids) =>
+          supabase
+            .from('movie_platforms')
+            .select('movie_id, platform_id')
+            .in('movie_id', ids)
+            .limit(ROW_CAP),
+        ),
+      ]);
+
+    // @contract: count existingRows per movie_id for each aggregate type
+    function countByMovie(data: { movie_id: string }[]): Map<string, number> {
       const map = new Map<string, number>();
-      for (const r of data ?? []) map.set(r.movie_id, (map.get(r.movie_id) ?? 0) + 1);
+      for (const r of data) map.set(r.movie_id, (map.get(r.movie_id) ?? 0) + 1);
       return map;
     }
-    const posterCounts = countByMovie(posterRows.data);
-    const backdropCounts = countByMovie(backdropRows.data);
-    const videoCounts = countByMovie(videoRows.data);
-    const keywordCounts = countByMovie(keywordRows.data);
-    const phCounts = countByMovie(phRows.data);
+    const posterCounts = countByMovie(posterData);
+    const backdropCounts = countByMovie(backdropData);
+    const videoCounts = countByMovie(videoData);
+    const keywordCounts = countByMovie(keywordData);
+    const phCounts = countByMovie(phData);
 
     // @contract: collect platform IDs per movie for display names
     const platformsByMovie = new Map<string, string[]>();
-    for (const r of platformRows.data ?? []) {
+    for (const r of platformData) {
       const list = platformsByMovie.get(r.movie_id) ?? [];
       list.push(r.platform_id);
       platformsByMovie.set(r.movie_id, list);
     }
 
-    const existingMovies = rows.map((row) => ({
+    const existingMovies = existingRows.map((row) => ({
       ...row,
       poster_url:
         row.poster_url && !row.poster_url.startsWith('http') && postersBase
