@@ -140,8 +140,8 @@ describe('FollowingScreen', () => {
   });
 
   it('calls unfollow mutation when unfollow button is pressed', () => {
-    const mockMutate = jest.fn();
-    const { useUnfollowEntity } = require('@/features/feed');
+    const _mockMutate = jest.fn();
+    const { useUnfollowEntity: _useUnfollowEntity } = require('@/features/feed');
     // Override the mock for this specific test is not possible via jest.mock at top,
     // but we can still test the button fires
     render(<FollowingScreen />);
@@ -163,7 +163,7 @@ describe('FollowingScreen', () => {
   it('does not call unfollow when user is not logged in', () => {
     const mockMutate = jest.fn();
     const { useUnfollowEntity } = require('@/features/feed');
-    mockUseAuth.mockReturnValueOnce({ user: null });
+    mockUseAuth.mockReturnValueOnce({ user: null as unknown as { id: string } });
     useUnfollowEntity.mockReturnValueOnce({ mutate: mockMutate, isPending: false });
     render(<FollowingScreen />);
     const unfollowButtons = screen.getAllByLabelText('common.unfollowName');

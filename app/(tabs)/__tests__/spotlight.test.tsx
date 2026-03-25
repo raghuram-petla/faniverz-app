@@ -37,7 +37,7 @@ jest.mock('@/components/spotlight/SpotlightSkeleton', () => {
 jest.mock('@/components/home/HeroCarousel', () => {
   const { View } = require('react-native');
   return {
-    HeroCarousel: (props: any) => <View testID="hero-carousel" {...props} />,
+    HeroCarousel: (props: Record<string, unknown>) => <View testID="hero-carousel" {...props} />,
   };
 });
 

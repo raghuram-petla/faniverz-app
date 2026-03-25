@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
-import type { AvailabilityType } from '@shared/types';
+
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
 import {
   useMovieAvailability,

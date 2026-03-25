@@ -38,7 +38,7 @@ jest.mock('@/features/auth/hooks/usePhoneAuth', () => ({
 }));
 
 jest.mock('@/components/auth/SocialSignInButtons', () => ({
-  SocialSignInButtons: ({ onGoogle, onApple, onPhone }: any) => {
+  SocialSignInButtons: ({ onGoogle, onApple, onPhone }: Record<string, unknown>) => {
     const { TouchableOpacity, Text } = require('react-native');
     return (
       <>
@@ -63,7 +63,7 @@ jest.mock('@/components/auth/SocialSignInButtons', () => ({
 }));
 
 jest.mock('@/components/auth/PhoneOtpModal', () => ({
-  PhoneOtpModal: ({ onSuccess, onClose, visible }: any) => {
+  PhoneOtpModal: ({ onSuccess, onClose, visible }: Record<string, unknown>) => {
     if (!visible) return null;
     const { TouchableOpacity, Text } = require('react-native');
     return (

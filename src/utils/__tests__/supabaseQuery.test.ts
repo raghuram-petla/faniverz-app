@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { unwrapList, unwrapOne } from '../supabaseQuery';
 import type { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js';
 
@@ -59,7 +60,7 @@ describe('unwrapOne', () => {
       count: null,
       status: 200,
       statusText: 'OK',
-    } as PostgrestSingleResponse<{ id: string }>;
+    } as any as PostgrestSingleResponse<{ id: string }>;
 
     expect(unwrapOne(result)).toBeNull();
   });

@@ -248,7 +248,7 @@ describe('AdvancedFiltersPanel', () => {
 
   it('renders platforms when useAdminPlatforms returns undefined data', () => {
     // Override the mock to return undefined platforms
-    const origMock = vi.fn();
+    const _origMock = vi.fn();
     vi.doMock('@/hooks/useAdminPlatforms', () => ({
       useAdminPlatforms: () => ({ data: undefined, isLoading: false }),
     }));

@@ -10,7 +10,9 @@ jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
 jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' } as never);
 
 function makeRequest(url: string) {
-  return { url } as any;
+  return {
+    url,
+  } as unknown as import('react-native-webview/lib/WebViewTypes').ShouldStartLoadRequest;
 }
 
 describe('handleYouTubeNavigation', () => {

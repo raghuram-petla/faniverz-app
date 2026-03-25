@@ -361,10 +361,10 @@ describe('useAdminMovies', () => {
     };
     const mainChain = buildResolvingChain({ data: [], error: null });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFrom.mockImplementation(((table: string) => {
       if (table === 'movie_cast') return actorChain;
       return mainChain;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any);
 
     vi.mocked(applyStatusFilter).mockReturnValue({
@@ -407,10 +407,10 @@ describe('useAdminMovies', () => {
     };
     const mainChain = buildResolvingChain({ data: [], error: null });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFrom.mockImplementation(((table: string) => {
       if (table === 'movie_platforms') return platChain;
       return mainChain;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any);
 
     vi.mocked(applyStatusFilter).mockReturnValue({
@@ -452,10 +452,10 @@ describe('useAdminMovies', () => {
     };
     const mainChain = buildResolvingChain({ data: [{ id: 'm1' }], error: null });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockFrom.mockImplementation(((table: string) => {
       if (table === 'movie_production_houses') return phChain;
       return mainChain;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any);
 
     vi.mocked(applyStatusFilter).mockReturnValue({

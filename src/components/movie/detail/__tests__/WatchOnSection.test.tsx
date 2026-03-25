@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('@/styles/movieDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));

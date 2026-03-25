@@ -85,7 +85,7 @@ vi.mock('@/components/movie-edit', () => ({
   CastSection: () => <div data-testid="cast-section">Cast</div>,
   TheatricalRunsSection: () => <div data-testid="runs-section">Runs</div>,
   SectionNav: ({
-    activeSection,
+    activeSection: _activeSection,
     onSectionChange,
   }: {
     activeSection: string;

@@ -188,7 +188,9 @@ describe('VideosSection', () => {
   });
 
   it('shows YouTube preview when valid URL is entered in form', () => {
-    const { container } = render(<VideosSection {...defaultProps} showAddForm={true} />);
+    const { container: _container } = render(
+      <VideosSection {...defaultProps} showAddForm={true} />,
+    );
 
     const urlInput = screen.getByPlaceholderText(/youtube\.com/);
     fireEvent.change(urlInput, { target: { value: 'dQw4w9WgXcQ' } });

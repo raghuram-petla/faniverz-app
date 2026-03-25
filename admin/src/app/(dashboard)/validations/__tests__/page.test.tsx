@@ -186,7 +186,7 @@ describe('ValidationsPage', () => {
   });
 
   it('handleFixSingle skips items with no issue', async () => {
-    const { useValidations } = await import('@/hooks/useValidations');
+    const { useValidations: _useValidations } = await import('@/hooks/useValidations');
     const { hasIssue } = await import('@/hooks/useValidations');
     vi.mocked(hasIssue).mockReturnValue(false);
 

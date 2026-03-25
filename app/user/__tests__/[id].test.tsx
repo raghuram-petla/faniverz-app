@@ -214,11 +214,12 @@ describe('UserProfileScreen', () => {
     render(<UserProfileScreen />);
 
     // Now call the captured queryFn directly to cover fetchPublicProfile
-    if (capturedQueryFn) {
-      const result = await capturedQueryFn({ queryKey: ['profile', 'user-1'] });
-      expect(result).toEqual(fullProfile);
-      expect(mockFrom).toHaveBeenCalledWith('profiles');
-    }
+    const queryFn1 = capturedQueryFn as unknown as (opts: {
+      queryKey: string[];
+    }) => Promise<unknown>;
+    const result = await queryFn1({ queryKey: ['profile', 'user-1'] });
+    expect(result).toEqual(fullProfile);
+    expect(mockFrom).toHaveBeenCalledWith('profiles');
   });
 
   it('fetchPublicProfile returns null on supabase error', async () => {
@@ -238,11 +239,12 @@ describe('UserProfileScreen', () => {
 
     render(<UserProfileScreen />);
 
-    if (capturedQueryFn) {
-      const result = await capturedQueryFn({ queryKey: ['profile', 'user-1'] });
-      // On error, fetchPublicProfile returns null
-      expect(result).toBeNull();
-    }
+    const queryFn2 = capturedQueryFn as unknown as (opts: {
+      queryKey: string[];
+    }) => Promise<unknown>;
+    const result = await queryFn2({ queryKey: ['profile', 'user-1'] });
+    // On error, fetchPublicProfile returns null
+    expect(result).toBeNull();
   });
 
   it('useQuery is disabled when id is undefined', () => {

@@ -22,7 +22,9 @@ describe('MovieRating', () => {
     expect(getByText('4.5')).toBeTruthy();
     // Verify Ionicons star is rendered
     const tree = toJSON();
-    const ionicon = tree?.children?.find((child: any) => child.type === 'Ionicons');
+    const ionicon = tree?.children?.find(
+      (child: unknown) => (child as Record<string, unknown>).type === 'Ionicons',
+    );
     expect(ionicon).toBeTruthy();
     expect(ionicon?.props.name).toBe('star');
   });
@@ -56,7 +58,9 @@ describe('MovieRating', () => {
     const { toJSON, getByText } = render(<MovieRating rating={4.2} />);
     const tree = toJSON();
     // Check that Ionicons receives size=12
-    const ionicon = tree?.children?.find((child: any) => child.type === 'Ionicons');
+    const ionicon = tree?.children?.find(
+      (child: unknown) => (child as Record<string, unknown>).type === 'Ionicons',
+    );
     expect(ionicon?.props.size).toBe(12);
     // Check that text has fontSize 12
     const ratingText = getByText('4.2');

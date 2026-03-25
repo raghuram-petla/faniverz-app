@@ -3,8 +3,8 @@ jest.mock('../commentsApi');
 jest.mock('@/i18n', () => ({ t: (key: string) => key }));
 
 const mockUseAuth = jest.fn(() => ({
-  user: { id: 'user-123' },
-  session: {},
+  user: { id: 'user-123' } as { id: string } | null,
+  session: {} as Record<string, unknown> | null,
   isLoading: false,
   isGuest: false,
   setIsGuest: jest.fn(),

@@ -88,11 +88,11 @@ describe('ActorKnownFor', () => {
 
   it('does not show star rating row for credits with movie rating 0', () => {
     // Credits with rating=0 are excluded entirely by the topCredits filter
-    const credits = [
+    const credits: FilmCredit[] = [
       makeCredit('c1', 8.0, 'Good Movie'),
       {
         ...makeCredit('c2', 0, 'Zero Movie'),
-        movie: { ...makeCredit('c2', 0, 'Zero Movie').movie },
+        movie: { ...makeCredit('c2', 0, 'Zero Movie').movie! },
       },
     ];
     render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);

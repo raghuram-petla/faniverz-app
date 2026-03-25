@@ -44,13 +44,6 @@ function makeProfilesChain(resolvedValue: unknown) {
 }
 
 // Build a chain with .or() after select (search path)
-function makeProfilesSearchChain(resolvedValue: unknown) {
-  const range = vi.fn().mockResolvedValue(resolvedValue);
-  const order = vi.fn().mockReturnValue({ range });
-  const or = vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ range }) });
-  const select = vi.fn().mockReturnValue({ order, or });
-  return { select };
-}
 
 describe('useAdminEndUsers', () => {
   beforeEach(() => {

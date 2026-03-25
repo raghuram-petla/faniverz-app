@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -12,7 +13,7 @@ jest.mock('react-native-webview', () => {
     WebView: (props: {
       onShouldStartLoadWithRequest?: (req: object) => boolean;
       onOpenWindow?: (e: object) => void;
-      [key: string]: unknown;
+      [key: string]: any;
     }) => <View testID="webview" {...props} />,
   };
 });

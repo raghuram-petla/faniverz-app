@@ -4,7 +4,7 @@ import { HomeButton } from '../HomeButton';
 
 const mockDismissAll = jest.fn();
 const mockState = { index: 1 };
-let mockParent: (() => any) | undefined;
+let mockParent: (() => unknown) | undefined;
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ dismissAll: mockDismissAll }),

@@ -239,7 +239,7 @@ describe('NewPlatformPage', () => {
   it('removes country when X button is clicked', () => {
     render(<NewPlatformPage />);
     // Find and click the X button for IN
-    const removeButtons = screen.getAllByRole('button').filter((btn) => btn.querySelector('svg'));
+    const _removeButtons = screen.getAllByRole('button').filter((btn) => btn.querySelector('svg'));
     // The X button for country removal
     const xBtn = screen.getAllByRole('button').find((b) => {
       const parent = b.closest('span');

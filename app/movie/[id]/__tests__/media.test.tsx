@@ -1,6 +1,6 @@
 jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
-  return { WebView: (props: any) => <View testID="webview" {...props} /> };
+  return { WebView: (props: Record<string, unknown>) => <View testID="webview" {...props} /> };
 });
 
 jest.mock('react-native-safe-area-context', () => ({

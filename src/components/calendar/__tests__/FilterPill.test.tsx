@@ -38,7 +38,7 @@ describe('FilterPill', () => {
     const pill = screen.getByText('Jan');
     const parent = pill.parent?.parent;
     if (parent?.children[1]) {
-      fireEvent.press(parent.children[1] as any);
+      fireEvent.press(parent.children[1] as unknown as Element);
     }
     expect(onRemove).toHaveBeenCalledTimes(1);
   });

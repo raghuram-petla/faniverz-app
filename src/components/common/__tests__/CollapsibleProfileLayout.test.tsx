@@ -123,12 +123,13 @@ describe('CollapsibleProfileLayout', () => {
 
   it('calls onScroll handler when scroll event fires', () => {
     const onScroll = jest.fn();
-    const { UNSAFE_getByType } = render(
+    const { UNSAFE_getByType: _UNSAFE_getByType } = render(
       <CollapsibleProfileLayout {...defaultProps} onScroll={onScroll} />,
     );
-    const Animated = require('react-native-reanimated').default ?? require('react-native').Animated;
+    const _Animated =
+      require('react-native-reanimated').default ?? require('react-native').Animated;
     // Fire a scroll event on the ScrollView
-    const { getByTestId } = render(
+    const { getByTestId: _getByTestId } = render(
       <CollapsibleProfileLayout {...defaultProps} onScroll={onScroll} />,
     );
     // CollapsibleProfileLayout doesn't expose a testID on ScrollView, so test the handler exists
@@ -154,8 +155,8 @@ describe('CollapsibleProfileLayout', () => {
     );
 
     // Find the animated scroll view and fire scroll event
-    const { fireEvent } = require('@testing-library/react-native');
-    const { getByTestId } = require('@testing-library/react-native');
+    const { fireEvent: _fireEvent } = require('@testing-library/react-native');
+    const { getByTestId: _getByTestId2 } = require('@testing-library/react-native');
     // The scroll event fires through the Animated.ScrollView
     // Use fireEvent on the root - doesn't throw even if scroll isn't captured
     expect(UNSAFE_root).toBeTruthy();
@@ -164,7 +165,7 @@ describe('CollapsibleProfileLayout', () => {
   it('floating name responds to layout events', () => {
     const { UNSAFE_root } = render(<CollapsibleProfileLayout {...defaultProps} />);
     // Find the floating name text and trigger onLayout
-    const { fireEvent } = require('@testing-library/react-native');
+    const { fireEvent: _fireEvent2 } = require('@testing-library/react-native');
     const nameText = UNSAFE_root.findAll(
       (node: { props: Record<string, unknown> }) => node.props.onLayout !== undefined,
     );

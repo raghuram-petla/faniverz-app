@@ -2,7 +2,7 @@ jest.mock('@/theme/colors', () => ({
   colors: { green500: '#22c55e', gray500: '#6b7280' },
 }));
 
-import React, { useState } from 'react';
+import React from 'react';
 import { render, fireEvent, screen, act } from '@testing-library/react-native';
 import { FollowButton } from '../FollowButton';
 

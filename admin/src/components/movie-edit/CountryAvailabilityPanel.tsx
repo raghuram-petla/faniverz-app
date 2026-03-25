@@ -34,7 +34,7 @@ export interface CountryAvailabilityPanelProps {
 export function CountryAvailabilityPanel({
   countryCode,
   rows,
-  movieId,
+  movieId: _movieId,
   allPlatforms,
   isReadOnly,
   onAdd,

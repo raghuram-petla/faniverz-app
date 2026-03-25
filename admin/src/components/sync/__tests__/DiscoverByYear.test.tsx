@@ -25,11 +25,12 @@ vi.mock('@/components/sync/DiscoverResults', () => ({
     onDeselectAll,
     onImport,
     onImportAllNew,
+    onCancelImport,
     duplicateSuspects,
     onLinkDuplicate,
     onGapCountChange,
     existingMovies,
-    existingSet,
+    existingSet: _existingSet,
     importProgress,
   }: {
     results: Array<{ id: number; title: string }>;
@@ -43,6 +44,7 @@ vi.mock('@/components/sync/DiscoverResults', () => ({
     onDeselectAll: () => void;
     onImport: () => void;
     onImportAllNew: () => void;
+    onCancelImport: () => void;
     duplicateSuspects?: Record<number, { id: string; title: string }>;
     onLinkDuplicate: (tmdbId: number, suspect: { id: string; title: string }) => void;
     linkingTmdbId: number | null;
@@ -61,7 +63,7 @@ vi.mock('@/components/sync/DiscoverResults', () => ({
           ))}
         </div>
       )}
-      <span data-testid="results-count">{results.length}</span>
+      <span data-testid="results-count">{(results ?? []).length}</span>
       <span data-testid="new-movies-count">{newMovies.length}</span>
       <span data-testid="selected-count">{selected.size}</span>
       <span data-testid="is-importing">{isImporting ? 'yes' : 'no'}</span>
@@ -94,6 +96,9 @@ vi.mock('@/components/sync/DiscoverResults', () => ({
           Link
         </button>
       )}
+      <button onClick={onCancelImport} data-testid="cancel-btn">
+        Cancel
+      </button>
       <button onClick={() => onGapCountChange(5)} data-testid="gap-count-btn">
         Set Gap
       </button>
@@ -631,5 +636,177 @@ describe('DiscoverByYear', () => {
     render(<DiscoverByYear data={makeDiscoverResult({ results: [] })} />);
     expect(screen.getByTestId('results-count').textContent).toBe('0');
     expect(screen.getByTestId('new-movies-count').textContent).toBe('0');
+  });
+
+  it('handles undefined results and existingMovies via null coalescing', () => {
+    const data: DiscoverResult = {
+      results: undefined as unknown as DiscoverResult['results'],
+      existingMovies: undefined as unknown as DiscoverResult['existingMovies'],
+      duplicateSuspects: {},
+    };
+    render(<DiscoverByYear data={data} />);
+    expect(screen.getByTestId('results-count').textContent).toBe('0');
+    expect(screen.getByTestId('new-movies-count').textContent).toBe('0');
+    expect(screen.getByTestId('existing-count').textContent).toBe('0');
+  });
+
+  it('cancels remaining imports when cancel is clicked mid-batch', async () => {
+    let resolveFirst: ((v: unknown) => void) | undefined;
+    let callCount = 0;
+    mockImportMutateAsync.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          callCount++;
+          if (callCount === 1) {
+            resolveFirst = resolve;
+          }
+        }),
+    );
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+
+    // Start import all (3 movies)
+    fireEvent.click(screen.getByTestId('import-all-btn'));
+
+    // Wait for first movie to start importing
+    await waitFor(() => {
+      expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
+    });
+
+    // Click cancel to set cancelledRef
+    fireEvent.click(screen.getByTestId('cancel-btn'));
+
+    // Resolve first import — triggers processing of remaining movies
+    await act(async () => {
+      resolveFirst?.({
+        results: [{ tmdbId: 1, movieId: 'db-1', title: 'Movie A' }],
+        errors: [],
+      });
+    });
+
+    // After cancel, remaining movies should be marked as failed/cancelled
+    // and no additional imports should be called
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-2')).toHaveTextContent('failed');
+    });
+    // Only 1 import call was made (first movie), rest were cancelled
+    expect(mockImportMutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries on 504 gateway timeout and succeeds on retry', async () => {
+    const timeoutError = Object.assign(new Error('Gateway Timeout'), { status: 504 });
+    let callCount = 0;
+    mockImportMutateAsync.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return Promise.reject(timeoutError);
+      }
+      return Promise.resolve({
+        results: [{ tmdbId: 1, movieId: 'db-1', title: 'Movie A' }],
+        errors: [],
+      });
+    });
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+    fireEvent.click(screen.getByTestId('toggle-btn'));
+    fireEvent.click(screen.getByTestId('import-btn'));
+
+    await waitFor(
+      () => {
+        expect(mockImportMutateAsync).toHaveBeenCalledTimes(2);
+      },
+      { timeout: 5000 },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('done');
+    });
+  });
+
+  it('retries on 502 gateway error and eventually succeeds', async () => {
+    const gatewayError = Object.assign(new Error('Bad Gateway'), { status: 502 });
+    let callCount = 0;
+    mockImportMutateAsync.mockImplementation(() => {
+      callCount++;
+      if (callCount <= 2) {
+        return Promise.reject(gatewayError);
+      }
+      return Promise.resolve({
+        results: [{ tmdbId: 1, movieId: 'db-1', title: 'Movie A' }],
+        errors: [],
+      });
+    });
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+    fireEvent.click(screen.getByTestId('toggle-btn'));
+    fireEvent.click(screen.getByTestId('import-btn'));
+
+    await waitFor(
+      () => {
+        expect(mockImportMutateAsync).toHaveBeenCalledTimes(3);
+      },
+      { timeout: 10000 },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('done');
+    });
+  });
+
+  it('handles link duplicate when tmdbMovie not found in results', async () => {
+    mockLinkTmdbIdMutateAsync.mockResolvedValue({});
+
+    // tmdbId 99 is in duplicateSuspects but NOT in results
+    const data = makeDiscoverResult({
+      duplicateSuspects: { 99: { id: 'db-99', title: 'Ghost Movie' } },
+    });
+
+    // Add tmdbId 99 to mock render trigger
+    render(<DiscoverByYear data={data} />);
+
+    // We need to manually trigger onLinkDuplicate with tmdbId 99
+    // The mock button uses Object.keys(duplicateSuspects)[0] which is '99'
+    fireEvent.click(screen.getByTestId('link-btn'));
+
+    await waitFor(() => {
+      expect(mockLinkTmdbIdMutateAsync).toHaveBeenCalledWith({
+        movieId: 'db-99',
+        tmdbId: 99,
+      });
+    });
+
+    // After link, existing count should increase (poster_url will be null since tmdbMovie not found)
+    await waitFor(() => {
+      expect(screen.getByTestId('existing-count').textContent).toBe('1');
+    });
+  });
+
+  it('handles import with undefined results array in data', async () => {
+    mockImportMutateAsync.mockResolvedValue({
+      results: [{ tmdbId: 1, movieId: 'db-1', title: 'Movie A' }],
+      errors: [],
+    });
+
+    const data: DiscoverResult = {
+      results: [
+        {
+          id: 1,
+          title: 'Movie A',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ],
+      existingMovies: undefined as unknown as DiscoverResult['existingMovies'],
+      duplicateSuspects: {},
+    };
+
+    render(<DiscoverByYear data={data} />);
+    fireEvent.click(screen.getByTestId('toggle-btn'));
+    fireEvent.click(screen.getByTestId('import-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('done');
+    });
   });
 });

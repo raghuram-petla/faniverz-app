@@ -47,17 +47,6 @@ function wrapper(qc: QueryClient) {
     React.createElement(QueryClientProvider, { client: qc }, children);
 }
 
-function buildSelectChain(resolveData: unknown) {
-  const chain: Record<string, unknown> = {};
-  const methods = ['select', 'order', 'limit', 'eq'];
-  for (const m of methods) {
-    chain[m] = vi.fn(() => chain);
-  }
-  // The terminal await resolves from the chain itself
-  Object.assign(chain, resolveData);
-  return chain;
-}
-
 describe('useAdminFeed', () => {
   beforeEach(() => {
     vi.clearAllMocks();

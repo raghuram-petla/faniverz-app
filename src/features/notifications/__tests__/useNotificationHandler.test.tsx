@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderHook } from '@testing-library/react-native';
 import * as Notifications from 'expo-notifications';
 

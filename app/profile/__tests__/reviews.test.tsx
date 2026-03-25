@@ -267,7 +267,7 @@ describe('MyReviewsScreen', () => {
     fireEvent.press(editButtons[0]);
     // capturedOnSubmit is now set by the ReviewModal mock
     expect(capturedOnSubmit).not.toBeNull();
-    capturedOnSubmit?.();
+    (capturedOnSubmit as (() => void) | null)?.();
     expect(mockUpdateMutate).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'review-1', movieId: 'movie-1' }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
@@ -282,7 +282,7 @@ describe('MyReviewsScreen', () => {
     capturedOnSubmit = null;
     render(<MyReviewsScreen />);
     // Call the captured onSubmit without pressing Edit (editingReview = null)
-    capturedOnSubmit?.();
+    (capturedOnSubmit as (() => void) | null)?.();
     // update.mutate should NOT be called since editingReview is null
     expect(mockUpdateMutate).not.toHaveBeenCalled();
   });

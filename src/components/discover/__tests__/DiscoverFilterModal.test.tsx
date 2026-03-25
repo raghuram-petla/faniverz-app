@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
@@ -14,7 +15,7 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
+    t: (key: string, params?: Record<string, any>) => {
       const map: Record<string, string> = {
         'discover.filters': 'Filters',
         'discover.streamingPlatforms': 'Streaming Platforms',

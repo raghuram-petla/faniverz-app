@@ -186,7 +186,6 @@ export default function FeedScreen() {
           <FlashList
             data={allItems}
             keyExtractor={(item) => item.id}
-            estimatedItemSize={350}
             drawDistance={500}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}

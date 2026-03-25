@@ -194,7 +194,6 @@ export default function CalendarScreen() {
         ref={listRef}
         data={groupedMovies}
         keyExtractor={(item) => item.date}
-        estimatedItemSize={200}
         drawDistance={500}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}

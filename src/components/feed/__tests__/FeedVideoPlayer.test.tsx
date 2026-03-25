@@ -31,7 +31,7 @@ jest.mock('@/constants/webview', () => ({
 }));
 
 jest.mock('react-native-webview', () => {
-  const { View, TouchableOpacity } = require('react-native');
+  const { View, TouchableOpacity: _TouchableOpacity } = require('react-native');
   return {
     WebView: (props: Record<string, unknown>) => {
       return <View testID="webview" {...props} />;
@@ -128,7 +128,7 @@ describe('FeedVideoPlayer', () => {
 
   it('calls shareYouTubeVideo when share button is pressed', () => {
     render(<FeedVideoPlayer {...defaultProps} isActive={true} />);
-    const webview = screen.getByTestId('webview');
+    const _webview = screen.getByTestId('webview');
     // The share functionality is accessible via the share overlay, we test through onShare
     // which is exposed as the onPress handler on a TouchableOpacity
     // Access via the accessibilityLabel on the TouchableOpacity share button

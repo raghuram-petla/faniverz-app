@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('react-native-webview', () => {
   const { View } = require('react-native');
-  return { WebView: (props: any) => <View testID="webview" {...props} /> };
+  return { WebView: (props: Record<string, any>) => <View testID="webview" {...props} /> };
 });
 
 jest.mock('@/theme/colors', () => ({

@@ -305,6 +305,7 @@ describe('extractIndiaCertification', () => {
   });
 
   it('returns null when results is missing', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(extractIndiaCertification({} as any)).toBeNull();
   });
 

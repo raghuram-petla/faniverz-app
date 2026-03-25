@@ -12,7 +12,7 @@ vi.mock('@/hooks/useMovieEditChangesRevert', () => ({
 import { useMovieEditChanges } from '@/hooks/useMovieEditChanges';
 import { useFormChanges } from '@/hooks/useFormChanges';
 import { revertEntity } from '@/hooks/useMovieEditChangesRevert';
-import type { UseMovieEditChangesParams, MovieForm } from '@/hooks/useMovieEditTypes';
+import type { UseMovieEditChangesParams } from '@/hooks/useMovieEditTypes';
 import type { OTTPlatform, ProductionHouse } from '@shared/types';
 
 function makeForm(overrides = {}) {

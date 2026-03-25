@@ -141,7 +141,7 @@ vi.mock('@/hooks/useMovieEditChanges', () => ({
 }));
 
 vi.mock('@/components/common/FormChangesDock', () => ({
-  FormChangesDock: (props: any) => {
+  FormChangesDock: (props: Record<string, unknown>) => {
     capturedProps.FormChangesDock = props;
     return <div data-testid="changes-dock" />;
   },

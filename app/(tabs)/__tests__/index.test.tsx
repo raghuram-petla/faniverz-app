@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
@@ -80,7 +81,7 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onEntityPress,
     onFollow,
     onUnfollow,
-  }: any) => {
+  }: Record<string, any>) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
@@ -218,7 +219,7 @@ function makeItem(overrides: Partial<NewsFeedItem> = {}): NewsFeedItem {
 function setupMocks(
   overrides: {
     store?: Partial<ReturnType<typeof useFeedStore>>;
-    feed?: Record<string, unknown>;
+    feed?: Record<string, any>;
     votes?: Record<string, 'up' | 'down'>;
   } = {},
 ) {
@@ -529,7 +530,7 @@ describe('FeedScreen', () => {
     const originalFeedCard = FeedCard;
 
     jest.doMock('@/components/feed/FeedCard', () => ({
-      FeedCard: ({ item, onEntityPress }: any) => {
+      FeedCard: ({ item, onEntityPress }: Record<string, any>) => {
         const { View, Text, TouchableOpacity } = require('react-native');
         return (
           <View>
@@ -562,7 +563,7 @@ describe('FeedScreen', () => {
     let capturedOnEntityPress: ((type: string, id: string) => void) | undefined;
     const FeedCardModule = require('@/components/feed/FeedCard');
     const OriginalFeedCard = FeedCardModule.FeedCard;
-    FeedCardModule.FeedCard = (props: any) => {
+    FeedCardModule.FeedCard = (props: Record<string, any>) => {
       capturedOnEntityPress = props.onEntityPress;
       return OriginalFeedCard(props);
     };

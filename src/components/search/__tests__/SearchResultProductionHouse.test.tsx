@@ -3,9 +3,14 @@ jest.mock('@shared/imageUrl', () => ({
 }));
 
 jest.mock('expo-image', () => ({
-  Image: (props: any) => {
+  Image: (props: Record<string, unknown>) => {
     const { View } = require('react-native');
-    return <View testID="house-image" accessibilityLabel={props.source?.uri} />;
+    return (
+      <View
+        testID="house-image"
+        accessibilityLabel={(props.source as Record<string, unknown>)?.uri as string}
+      />
+    );
   },
 }));
 

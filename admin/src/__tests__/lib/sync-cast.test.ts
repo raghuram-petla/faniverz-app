@@ -74,7 +74,6 @@ function createAdditiveMockSupabase() {
   const readResults: Array<{ data: unknown; error: unknown }> = [];
   const defaultResult = { data: [], error: null };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mock: MockSupabase = {};
 
   /** Build a chainable + thenable object that resolves to `result`. */

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -33,7 +34,7 @@ jest.mock('@/components/common/CollapsibleProfileLayout', () => ({
     rightContent,
     heroContent,
     children,
-  }: any) => {
+  }: Record<string, any>) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>

@@ -5,7 +5,7 @@ import React from 'react';
 
 const mockSupabaseQuery = vi.fn();
 const mockGetSession = vi.fn();
-const mockInvalidateQueries = vi.fn();
+const _mockInvalidateQueries = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -27,7 +27,7 @@ vi.mock('@/lib/supabase-browser', () => ({
 }));
 
 // Override the from chain to resolve via mockSupabaseQuery
-const buildChain = () => {
+const _buildChain = () => {
   const chain: Record<string, unknown> = {};
   const methods = ['select', 'order', 'range', 'eq', 'gte', 'lte', 'or', 'not'];
   for (const m of methods) {

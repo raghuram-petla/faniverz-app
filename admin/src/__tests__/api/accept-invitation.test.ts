@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { makeRequest } from './test-utils';
-import type { NextRequest } from 'next/server';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockFrom: any = vi.fn();

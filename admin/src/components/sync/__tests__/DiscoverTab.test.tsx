@@ -84,7 +84,7 @@ vi.mock('@/components/sync/PersonPreview', () => ({
   ),
 }));
 
-let mockMonthSelected: number[] = [];
+let _mockMonthSelected: number[] = [];
 let mockMonthOnChange: (months: number[]) => void = () => {};
 vi.mock('@/components/sync/MonthMultiSelect', () => ({
   MonthMultiSelect: ({
@@ -94,7 +94,7 @@ vi.mock('@/components/sync/MonthMultiSelect', () => ({
     selected: number[];
     onChange: (m: number[]) => void;
   }) => {
-    mockMonthSelected = selected;
+    _mockMonthSelected = selected;
     mockMonthOnChange = onChange;
     return (
       <div data-testid="month-multi-select">

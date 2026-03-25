@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockGetAllWatchProviders = vi.fn();
@@ -29,7 +30,7 @@ function makeSupabaseMock(overrides: Record<string, unknown> = {}) {
   });
 
   return {
-    from: vi.fn((table: string) => ({
+    from: vi.fn((_table: string) => ({
       select: selectFn,
       upsert: upsertFn,
       insert: insertFn,
@@ -236,7 +237,7 @@ describe('syncWatchProvidersMultiCountry', () => {
     const supabase = makeSupabaseMock();
 
     // Simulate existing platform
-    supabase.from.mockImplementation((table: string) => ({
+    supabase.from.mockImplementation((_table: string) => ({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'netflix-8' } }),

@@ -19,9 +19,9 @@ jest.mock('@/components/common/ScreenHeader', () => {
   return { __esModule: true, default: ({ title }: { title: string }) => <Text>{title}</Text> };
 });
 
-const mockUseProfile = jest.fn(() => ({ data: { username: null } }));
+const mockUseProfile = jest.fn(() => ({ data: { username: null as string | null } }));
 jest.mock('@/features/auth/hooks/useProfile', () => ({
-  useProfile: (...args: unknown[]) => mockUseProfile(...args),
+  useProfile: () => mockUseProfile(),
 }));
 
 const mockMutateAsync = jest.fn();

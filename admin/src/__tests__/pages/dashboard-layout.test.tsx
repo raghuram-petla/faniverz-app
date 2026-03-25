@@ -133,7 +133,7 @@ describe('DashboardLayout', () => {
 
   it('renders null when no user (before redirect)', () => {
     mockUseAuth.mockReturnValue({ user: null, isLoading: false, isAccessDenied: false });
-    const { container } = render(
+    const { container: _container } = render(
       <DashboardLayout>
         <div>child</div>
       </DashboardLayout>,

@@ -79,9 +79,9 @@ vi.mock('next/link', () => ({
 }));
 
 // Mock ImageUploadField to expose handlers for testing
-let capturedOnUpload: ((file: File) => void) | undefined;
-let capturedOnRemove: (() => void) | undefined;
-let capturedOnReset: (() => void) | undefined;
+let _capturedOnUpload: ((file: File) => void) | undefined;
+let _capturedOnRemove: (() => void) | undefined;
+let _capturedOnReset: (() => void) | undefined;
 
 vi.mock('@/components/movie-edit/ImageUploadField', () => ({
   ImageUploadField: ({
@@ -102,9 +102,9 @@ vi.mock('@/components/movie-edit/ImageUploadField', () => ({
     onReset?: () => void;
     [key: string]: unknown;
   }) => {
-    capturedOnUpload = onUpload;
-    capturedOnRemove = onRemove;
-    capturedOnReset = onReset;
+    _capturedOnUpload = onUpload;
+    _capturedOnRemove = onRemove;
+    _capturedOnReset = onReset;
     return (
       <div data-testid="image-upload-field">
         <span>{label}</span>
@@ -156,9 +156,9 @@ describe('ProfilePage', () => {
       role: 'super_admin',
     };
     mockUploading = false;
-    capturedOnUpload = undefined;
-    capturedOnRemove = undefined;
-    capturedOnReset = undefined;
+    _capturedOnUpload = undefined;
+    _capturedOnRemove = undefined;
+    _capturedOnReset = undefined;
   });
 
   // --- Rendering ---

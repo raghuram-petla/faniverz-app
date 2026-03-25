@@ -29,7 +29,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
   const [mode, setModeState] = useState<ThemeMode>('system');
-  const [loaded, setLoaded] = useState(false);
+  const [_loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEYS.THEME_MODE)

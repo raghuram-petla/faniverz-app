@@ -473,7 +473,7 @@ describe('ProfileScreen', () => {
     const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
     // Find camera button — it's the 2nd touchable in the profile card area
     // Press it and verify push was called with /profile/edit
-    const cameraButton = touchables.find(
+    const _cameraButton = touchables.find(
       (t: { props: { onPress?: () => void } }) =>
         String(t.props.onPress).includes('edit') || touchables.indexOf(t) > 0,
     );

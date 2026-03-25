@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -30,7 +31,7 @@ jest.mock('@/styles/productionHouseDetail.styles', () => ({
 
 const mockUseProductionHouseDetail = jest.fn();
 jest.mock('@/features/productionHouses/hooks', () => ({
-  useProductionHouseDetail: (...args: unknown[]) => mockUseProductionHouseDetail(...args),
+  useProductionHouseDetail: (...args: any[]) => mockUseProductionHouseDetail(...args),
 }));
 
 const mockFollowMutate = jest.fn();
@@ -62,7 +63,7 @@ jest.mock('@/components/common/CollapsibleProfileLayout', () => ({
     heroContent,
     children,
     renderImage,
-  }: any) => {
+  }: Record<string, any>) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
@@ -99,7 +100,7 @@ jest.mock('@/components/common/PullToRefreshIndicator', () => ({
 }));
 
 jest.mock('@/hooks/useRefresh', () => ({
-  useRefresh: (...fns: Array<() => Promise<unknown>>) => {
+  useRefresh: (...fns: Array<() => Promise<any>>) => {
     // Invoke all refresh callbacks to cover them
     fns.forEach((fn) => {
       if (typeof fn === 'function') fn();
@@ -270,7 +271,7 @@ describe('ProductionHouseDetailScreen', () => {
     render(<ProductionHouseDetailScreen />);
     const { root } = render(<ProductionHouseDetailScreen />);
     const icons = root.findAll(
-      (node: { props: Record<string, unknown> }) => node.props.name === 'business',
+      (node: { props: Record<string, any> }) => node.props.name === 'business',
     );
     expect(icons.length).toBeGreaterThan(0);
   });
@@ -279,7 +280,7 @@ describe('ProductionHouseDetailScreen', () => {
     render(<ProductionHouseDetailScreen />);
     const { root } = render(<ProductionHouseDetailScreen />);
     const starIcons = root.findAll(
-      (node: { props: Record<string, unknown> }) => node.props.name === 'star',
+      (node: { props: Record<string, any> }) => node.props.name === 'star',
     );
     expect(starIcons.length).toBeGreaterThan(0);
   });

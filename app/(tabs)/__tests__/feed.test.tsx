@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
@@ -50,7 +51,7 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onEntityPress,
     onFollow,
     onUnfollow,
-  }: any) => {
+  }: Record<string, any>) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
@@ -188,7 +189,7 @@ const mockItem = {
   created_at: '2024-01-01T00:00:00Z',
 };
 
-function setupMocks(overrides: any = {}) {
+function setupMocks(overrides: Record<string, any> = {}) {
   mockUseFeedStore.mockReturnValue({
     filter: 'all',
     setFilter: mockSetFilter,

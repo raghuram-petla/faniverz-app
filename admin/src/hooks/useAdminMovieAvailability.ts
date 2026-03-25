@@ -73,7 +73,7 @@ export function useUpdateMovieAvailability() {
   return useMutation({
     mutationFn: async ({
       id,
-      movie_id,
+      movie_id: _movie_id,
       ...updates
     }: {
       id: string;

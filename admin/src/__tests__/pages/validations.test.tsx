@@ -419,7 +419,7 @@ describe('ValidationsPage', () => {
 
     it('uses regenerate_variants fixType for non-external URLs', async () => {
       // Override scan results with non-external item
-      const { useValidations } = await import('@/hooks/useValidations');
+      const { useValidations: _useValidations } = await import('@/hooks/useValidations');
       const originalMockResults = [...mockScanResults];
       mockScanResults.length = 0;
       mockScanResults.push({

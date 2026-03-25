@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const mockCrudFetch = vi.fn();
-const mockFrom = vi.fn();
+const _mockFrom = vi.fn();
 
 vi.mock('@/lib/admin-crud-client', () => ({
   crudFetch: (...args: unknown[]) => mockCrudFetch(...args),

@@ -239,7 +239,7 @@ describe('ExistingMovieSync', () => {
   });
 
   it('shows chevron-right icon when collapsed', () => {
-    const { container } = render(<ExistingMovieSync movies={[makeMovie(1)]} />);
+    const { container: _container } = render(<ExistingMovieSync movies={[makeMovie(1)]} />);
     // Collapsed state shows ChevronRight (not ChevronDown)
     const buttons = screen.getAllByRole('button');
     expect(buttons[0]).toBeInTheDocument(); // section header is a role=button

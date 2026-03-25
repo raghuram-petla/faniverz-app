@@ -121,12 +121,10 @@ describe('ImageViewerOverlay', () => {
     const BackHandler = require('react-native').BackHandler;
     const listeners: Array<() => boolean> = [];
     const removeSpy = jest.fn();
-    jest
-      .spyOn(BackHandler, 'addEventListener')
-      .mockImplementation((_event: string, handler: () => boolean) => {
-        listeners.push(handler);
-        return { remove: removeSpy };
-      });
+    jest.spyOn(BackHandler, 'addEventListener').mockImplementation((...args: unknown[]) => {
+      listeners.push(args[1] as () => boolean);
+      return { remove: removeSpy };
+    });
 
     const onClose = jest.fn();
     render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
@@ -184,8 +182,15 @@ describe('ImageViewerOverlay', () => {
   });
 
   it('does not crash when onSourceShow is not provided', () => {
-    const { feedUrl, fullUrl, sourceLayout, sourceRef, borderRadius, onClose, onSourceHide } =
-      defaultProps;
+    const {
+      feedUrl,
+      fullUrl,
+      sourceLayout,
+      sourceRef,
+      borderRadius,
+      onClose: _onClose,
+      onSourceHide,
+    } = defaultProps;
     const onClose2 = jest.fn();
     render(
       <ImageViewerOverlay
@@ -308,7 +313,8 @@ describe('ImageViewerOverlay', () => {
     );
     // ImageViewerGestures mock exposes onDismiss via the gesture wrapper
     // We need to trigger the onDismiss callback
-    const { ImageViewerGestures } = jest.requireMock('../ImageViewerGestures');
+    const { ImageViewerGestures: _ImageViewerGestures } =
+      jest.requireMock('../ImageViewerGestures');
     // The mock renders children directly. We need to access onDismiss from the component
     // Since ImageViewerGestures is mocked, trigger onDismiss through the component's callback
     // The ImageViewerGestures component receives onDismiss prop - let's call it
@@ -331,7 +337,7 @@ describe('ImageViewerOverlay', () => {
 
   it('close button with gestureScale > 1.05 triggers zoom-out animation before fly-back', () => {
     // Set the gestureScale to > 1.05 via the shared value mock
-    const useSharedValue = require('react-native-reanimated').useSharedValue;
+    const _useSharedValue = require('react-native-reanimated').useSharedValue;
     // The mock returns { value: v } - we need scale to be > 1.05
     // We can test by rendering with default (scale=1) which takes the else branch
     const onClose = jest.fn();

@@ -47,7 +47,7 @@ vi.mock('@/hooks/useAdminNotifications', () => ({
 vi.mock('@/components/notifications/ComposeForm', () => ({
   ComposeForm: ({
     movies,
-    createNotification,
+    createNotification: _createNotification,
     onSuccess,
   }: {
     movies: Array<{ id: string; title: string }> | undefined;

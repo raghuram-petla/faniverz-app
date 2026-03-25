@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const mockSelect = jest.fn();
 const mockEq = jest.fn();
 const mockOrder = jest.fn();
@@ -69,7 +70,7 @@ describe('watchlist api', () => {
       mockOrder.mockResolvedValue({ data: [entryWithPlatform], error: null });
 
       const result = await fetchWatchlist('user-1');
-      expect(result[0]._platformCount).toBe(3);
+      expect((result[0] as any)._platformCount).toBe(3);
     });
 
     it('sets _platformCount to 0 when movie_platforms is empty', async () => {
@@ -83,7 +84,7 @@ describe('watchlist api', () => {
       mockOrder.mockResolvedValue({ data: [entryNoPlatform], error: null });
 
       const result = await fetchWatchlist('user-1');
-      expect(result[0]._platformCount).toBe(0);
+      expect((result[0] as any)._platformCount).toBe(0);
     });
 
     it('returns entry unchanged when movie is null', async () => {
@@ -94,7 +95,7 @@ describe('watchlist api', () => {
 
       const result = await fetchWatchlist('user-1');
       expect(result[0]).toEqual(entryNoMovie);
-      expect(result[0]._platformCount).toBeUndefined();
+      expect((result[0] as any)._platformCount).toBeUndefined();
     });
 
     it('returns empty array when data is null', async () => {
@@ -298,7 +299,7 @@ describe('watchlist api', () => {
       mockRange.mockResolvedValue({ data: [entryWithPlatform], error: null });
 
       const result = await fetchWatchlistPaginated('user-1', 0);
-      expect(result[0]._platformCount).toBe(5);
+      expect((result[0] as any)._platformCount).toBe(5);
     });
 
     it('returns entry unchanged when movie is null (paginated)', async () => {

@@ -19,10 +19,10 @@ vi.mock('@/components/sync/BulkSections', () => ({
     onToggleList,
     onRefreshAll,
     isBulkRunning,
-    staleDays,
-    onStaleDaysChange,
-    sinceYear,
-    onSinceYearChange,
+    staleDays: _staleDays,
+    onStaleDaysChange: _onStaleDaysChange,
+    sinceYear: _sinceYear,
+    onSinceYearChange: _onSinceYearChange,
   }: {
     staleMovies: { data?: { items: { id: string; title?: string }[] }; isLoading: boolean };
     showList: boolean;

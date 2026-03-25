@@ -277,7 +277,7 @@ describe('verifyAdminWithLanguages', () => {
     const fakeUser = { id: 'u8' };
     mockGetUser.mockResolvedValue({ data: { user: fakeUser }, error: null });
 
-    let callCount = 0;
+    let _callCount = 0;
     mockFrom.mockImplementation((table: string) => {
       if (table === 'admin_user_roles') {
         return {

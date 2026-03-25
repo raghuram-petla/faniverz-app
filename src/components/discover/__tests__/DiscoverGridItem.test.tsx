@@ -43,12 +43,12 @@ jest.mock('@shared/imageUrl', () => ({
 
 const mockActionPress = jest.fn();
 const mockUseMovieAction = jest.fn(() => ({
-  actionType: 'follow' as const,
+  actionType: 'follow' as string,
   isActive: false,
   onPress: mockActionPress,
 }));
 jest.mock('@/hooks/useMovieAction', () => ({
-  useMovieAction: (...args: unknown[]) => mockUseMovieAction(...args),
+  useMovieAction: (...args: unknown[]) => mockUseMovieAction.apply(null, args),
 }));
 
 jest.mock('@/constants/placeholders', () => ({

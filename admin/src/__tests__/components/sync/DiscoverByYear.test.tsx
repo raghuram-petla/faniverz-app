@@ -563,7 +563,7 @@ describe('DiscoverByYear', () => {
         original_language: 'te',
       },
     ]);
-    const { act } = await import('@testing-library/react');
+    const { act: _act } = await import('@testing-library/react');
     renderWithProvider(<DiscoverByYear data={data} />);
     // Don't select anything, try to import
     const importBtn = screen.queryByText('Import 0 selected');
@@ -588,7 +588,7 @@ describe('DiscoverByYear', () => {
     );
     renderWithProvider(<DiscoverByYear data={data} />);
     // No new movies, so Import all new button should be disabled or absent
-    const btn = screen.queryByText(/Import all new/);
+    const _btn = screen.queryByText(/Import all new/);
     // Since newMovies.length === 0, the handler returns early
     expect(mockImportMutateAsync).not.toHaveBeenCalled();
   });

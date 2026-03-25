@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
 import React from 'react';
-import { Linking } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { OverviewTab } from '../OverviewTab';
 

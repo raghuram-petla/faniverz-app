@@ -15,6 +15,7 @@ vi.mock('@/components/common/FormField', () => ({
 }));
 
 vi.mock('@/components/common/Button', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   Button: ({ children, onClick, disabled, ...props }: any) => (
     <button onClick={onClick} disabled={disabled} {...props}>
       {children}

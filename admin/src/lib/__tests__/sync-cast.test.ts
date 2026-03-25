@@ -144,7 +144,7 @@ describe('syncCastCrew', () => {
   });
 
   it('deletes and re-inserts when forceResync=true and cast exists', async () => {
-    const deleteFn = vi.fn().mockReturnValue({
+    const _deleteFn = vi.fn().mockReturnValue({
       eq: vi.fn().mockResolvedValue({ error: null }),
     });
     const insertFn = vi.fn().mockResolvedValue({ error: null });

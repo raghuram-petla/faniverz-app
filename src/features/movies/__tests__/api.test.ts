@@ -597,7 +597,7 @@ describe('movies api', () => {
   describe('fetchMovies — streaming and released filters', () => {
     it('filters by streaming status when matching movie_platform ids exist', async () => {
       const mockPlatformSelect = jest.fn();
-      const mockPlatformResolved = jest.fn();
+      const _mockPlatformResolved = jest.fn();
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'movie_platforms') {
           return { select: mockPlatformSelect };

@@ -8,8 +8,7 @@ import { useFormChanges, type FieldConfig, type FieldChange } from './useFormCha
  * save/discard/delete handlers, and unsaved changes warning.
  * @assumes dataHook returns { data, isLoading } matching TanStack Query shape.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface EditPageConfig<TForm extends {}> {
+export interface EditPageConfig<TForm extends object> {
   /** The entity ID from route params */
   id: string;
   /** Field configuration for change tracking */
@@ -31,14 +30,13 @@ export interface EditPageHooks {
   dataResult: { data: unknown; isLoading: boolean };
   /** The update mutation result */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updateMutation: { mutateAsync: (payload: any) => Promise<unknown> };
+  updateMutation: { mutateAsync: (payload: any) => Promise<any> };
   /** The delete mutation result (optional) */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deleteMutation?: { mutateAsync: (id: any) => Promise<unknown> };
+  deleteMutation?: { mutateAsync: (id: any) => Promise<any> };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface EditPageStateReturn<TForm extends {}> {
+export interface EditPageStateReturn<TForm extends object> {
   form: TForm;
   setForm: React.Dispatch<React.SetStateAction<TForm>>;
   updateField: (key: keyof TForm, value: TForm[keyof TForm]) => void;
@@ -59,8 +57,7 @@ export interface EditPageStateReturn<TForm extends {}> {
  * @sideeffect Hydrates form from server data on first load; on refetches updates only initialFormRef.
  * @edge isFirstLoadRef prevents background refetches from overwriting unsaved edits.
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export function useEditPageState<TForm extends {}>(
+export function useEditPageState<TForm extends object>(
   config: EditPageConfig<TForm>,
   hooks: EditPageHooks,
 ): EditPageStateReturn<TForm> {
