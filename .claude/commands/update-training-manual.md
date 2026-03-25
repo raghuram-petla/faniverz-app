@@ -267,20 +267,15 @@ After updating:
 
 ## Phase 6 — Regenerate PDF
 
-After the markdown file is finalized:
+After the markdown file is finalized, regenerate the PDF using `md-to-pdf` (via npx) with the config file:
 
-1. Check if `pandoc` is available:
-   ```bash
-   which pandoc
-   ```
-2. If available, regenerate the PDF:
-   ```bash
-   pandoc docs/ADMIN_TRAINING_MANUAL.md -o docs/ADMIN_TRAINING_MANUAL.pdf --pdf-engine=pdflatex -V geometry:margin=1in -V fontsize=11pt --toc
-   ```
-3. If `pandoc` is not available, check for any other markdown-to-PDF tool. If none available, print:
-   ```
-   > **Note:** PDF regeneration skipped — `pandoc` not installed. Install with `brew install pandoc` and re-run, or manually export the updated markdown to PDF.
-   ```
+```bash
+npx md-to-pdf docs/ADMIN_TRAINING_MANUAL.md --config-file docs/.md-to-pdf-config.json 2>&1
+```
+
+This uses Chromium under the hood and produces a styled A4 PDF at `docs/ADMIN_TRAINING_MANUAL.pdf` with a header ("Faniverz Admin Panel — Employee Training Manual"), page numbers, and "Confidential" footer. The config file at `docs/.md-to-pdf-config.json` controls margins, format, and header/footer templates.
+
+> **Important:** Make sure the PDF file is not open in Preview or any other viewer before running this command — macOS locks open PDF files and the write will silently fail.
 
 ## Final Report
 

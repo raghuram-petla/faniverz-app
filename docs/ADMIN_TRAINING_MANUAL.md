@@ -1,7 +1,7 @@
 # Faniverz Admin Panel — Employee Training Manual
 
-> **Version:** 1.0
-> **Last Updated:** March 2026
+> **Version:** 2.0
+> **Last Updated:** March 25, 2026
 > **Audience:** All admin panel employees (content editors, moderators, super admins)
 
 ---
@@ -137,6 +137,7 @@ The sidebar is your primary navigation. It's organized into four sections:
 - OTT Platforms
 - Surprise Content
 - News Feed
+- Notifications
 
 **Moderation:**
 
@@ -328,22 +329,29 @@ This is your primary tool for finding and importing movies from TMDB.
 
 1. **Enter a search term** in the search box (minimum 2 characters).
 2. Results appear in two sections: **Actors** first, then **Movies**.
-3. Each result shows: poster thumbnail, title, release year.
+3. Each result shows: poster thumbnail, title, release year, and language code.
 
 #### Status Badges on Results
 
-- **Green checkmark ("In DB"):** This movie/actor already exists in our system.
+- **Green checkmark ("In DB"):** This movie/actor already exists in our system. These items cannot be selected for import.
 - **Yellow alert ("Not in DB"):** This movie/actor hasn't been imported yet.
+- **Red ("Selected"):** You've checked this movie for import.
+- **Gray ban ("Not your language"):** Your admin role doesn't cover this movie's language — you cannot import it.
+
+> **Note:** If you're an Admin with assigned languages, a language toggle appears above search results (e.g., "Telugu (3) | All (5)"). This lets you switch between showing only movies in your assigned languages or all results. Movies outside your languages appear grayed out with a "Not your language" badge.
 
 #### Discovering by Year/Month
 
 Instead of searching by name, you can discover all movies in a language for a specific time period:
 
 1. Select a **Year** (e.g., 2025).
-2. Optionally select a **Month** (e.g., March) — if omitted, discovers the entire year.
-3. Select a **Language** (defaults to Telugu).
+2. Optionally select one or more **Months** using the multi-select checkboxes (e.g., March and April) — if omitted, discovers the entire year.
+3. Select a **Language** (defaults to your active language).
 4. Click **Discover**.
-5. Results show all TMDB movies matching those criteria, with indicators showing which ones you already have.
+5. Results are organized into three sections:
+   - **New Movies** — movies not yet in our system, available for import.
+   - **Existing Movies** — movies already imported, with field-level gap detection (see "Checking for Gaps in Existing Movies" below).
+   - **Duplicate Suspects** — TMDB movies whose titles match movies in our system that don't have a TMDB ID linked yet.
 
 #### Previewing Before Import
 
@@ -357,9 +365,9 @@ For actors, the preview shows: name, birthday, place of birth, biography, and ph
 
 #### Importing a Movie
 
-1. Select one or more movies (up to 5 per batch) by clicking the import button on each result.
-2. Click **Import Selected**.
-3. The import process begins — you'll see progress indicators:
+1. Select one or more movies by clicking the checkbox on each result.
+2. Click **Import Selected** (or use "Select all new" / "Deselect all" buttons).
+3. The import process begins — movies are imported in batches of up to 5 at a time. You'll see progress indicators:
    - "Importing movie 1 of 3..."
    - "Syncing posters... (5 of 12)"
    - "Syncing backdrops... (2 of 4)"
@@ -396,21 +404,56 @@ Sometimes a movie was manually created (without TMDB) and you later find it on T
 2. If a "Duplicate Suspect" badge appears, it means our system found a movie with a matching title.
 3. Use the **Link** action to connect the TMDB ID to the existing movie — this enables future syncs without creating a duplicate.
 
+#### Checking for Gaps in Existing Movies
+
+When you use Discover by Year, the **Existing Movies** section automatically checks each imported movie against TMDB for missing or outdated data.
+
+1. As each movie is checked, you'll see "Checking..." next to it.
+2. Once checked, each movie shows either **"No gaps"** (green) or **"N gap(s)"** (yellow).
+3. Click the **expand arrow** on any movie to see a field-by-field comparison table:
+   - **Missing** fields (green highlight, pre-checked) — our database is empty but TMDB has data.
+   - **Changed** fields (amber highlight, unchecked by default) — both have data but they differ. Check these manually if you want to overwrite.
+   - **Same** fields (gray, disabled) — already up to date.
+4. Check the fields you want to update, then click **"Apply N selected fields"**.
+5. Optionally check **"Re-sync cast & crew"** below the fields table — this performs a full cast refresh.
+
+**Bulk gap fill:** If multiple movies have gaps, a **"Fill all missing (N)"** button appears at the top of the Existing Movies section. Clicking it applies all missing fields across all movies sequentially.
+
+> **Tip:** Gap checking compares 21 fields including title, synopsis, posters, backdrops, videos, cast, keywords, watch providers, certifications, and more.
+
+#### Import Behavior for Discover Results
+
+When importing movies from Discover by Year results (as opposed to search results), movies are imported **one at a time** rather than in batches. If a movie import times out (504 error), the system **automatically retries** up to 15 times with a 1-second delay between attempts. You'll see the retry iteration count during this process.
+
 ---
 
 ### Tab 2: Bulk
 
-For batch operations when you need to import or refresh many movies at once.
+For batch maintenance operations — refreshing stale movies and fetching missing actor biographies.
 
-1. **Enter TMDB IDs** — paste a list or upload a CSV of TMDB movie IDs.
-2. Click **Bulk Import** — the system processes them sequentially.
-3. Progress shows success/fail counts as each movie completes.
+The Bulk tab has two panels side by side:
 
-**Use cases:**
+#### Left Panel: Stale Movies
 
-- Importing an entire year's filmography for a language
-- Refreshing stale movies that haven't been synced in 30+ days
-- Importing a production house's complete catalog
+Movies that haven't been synced with TMDB recently may have outdated information.
+
+1. Filter by **Year** (e.g., "From 2023+") to scope which movies to check.
+2. Filter by **Staleness** — movies not synced in 7, 14, 30, 60, or 90 days.
+3. The count updates: "Found X movies".
+4. Click **"Preview"** to see the list of stale movies with their last sync timestamps.
+5. Click **"Refresh All"** to re-sync all stale movies from TMDB sequentially.
+6. A progress bar shows completion. Errors are accumulated and displayed at the end.
+
+#### Right Panel: Missing Actor Bios
+
+Actors imported from TMDB sometimes lack biographies (e.g., if the bio wasn't available at import time).
+
+1. The panel shows a count: "X actors with TMDB ID but no biography".
+2. Click **"Preview"** to see the list of affected actors.
+3. Click **"Fetch All Bios"** to retrieve biographies from TMDB sequentially.
+4. Progress bar and error tracking work the same as the stale movies panel.
+
+> **Note:** Only one bulk operation can run at a time. Both buttons are disabled while a bulk operation is in progress.
 
 ---
 
@@ -418,21 +461,24 @@ For batch operations when you need to import or refresh many movies at once.
 
 A log of all past sync operations.
 
-| Column             | Description                                      |
-| ------------------ | ------------------------------------------------ |
-| **Timestamp**      | When the sync was performed                      |
-| **Function**       | What type of sync (import, refresh, fill-fields) |
-| **Status**         | Success, Failed, or Running                      |
-| **Movies Added**   | Count of new movies created                      |
-| **Movies Updated** | Count of existing movies updated                 |
-| **Errors**         | Count of failures (click to see details)         |
-| **Admin**          | Who performed the sync                           |
+| Column       | Description                                              |
+| ------------ | -------------------------------------------------------- |
+| **Function** | What type of sync (import, refresh, fill-fields)         |
+| **Status**   | Running, Success, or Failed (with color-coded badge)     |
+| **Added**    | Count of new movies created                              |
+| **Updated**  | Count of existing movies updated                         |
+| **Started**  | When the sync was started                                |
+| **Duration** | How long the sync took (calculated from start to finish) |
+
+Click on any row to **expand** it and see detailed information — items processed and error details (if any).
+
+When any sync operation has a "Running" status, the table **auto-refreshes** every few seconds so you can monitor progress in real time.
 
 Use History to:
 
 - Verify your imports completed successfully
 - Debug failed imports (expand error details)
-- Track who synced what and when
+- Track sync operations and their durations
 
 ---
 
@@ -469,14 +515,7 @@ Over time, TMDB updates their data — new posters appear, ratings change, strea
 
 ### Finding Stale Items
 
-The system can identify movies and actors that haven't been synced recently:
-
-1. Go to **Sync → Discover**.
-2. Look for the **Stale Items** section.
-3. Filter by:
-   - **Movies not synced in X days** (default: 30 days)
-   - **Actors missing biographies** — actors imported without bios
-4. Click on any stale item to refresh it.
+The system can identify movies and actors that haven't been synced recently. Go to **Sync → Bulk** to find the stale movies panel and missing actor bios panel (see Tab 2: Bulk above for details).
 
 ---
 
@@ -525,12 +564,13 @@ Movie status is **computed automatically** — you don't set it manually. It's d
 - Actor search — find movies featuring a specific actor
 - Director search — find movies by a specific director
 - Genre toggle — filter by one or more genres
-- Year range — e.g., 2020 to 2025
-- Month range — e.g., January to March
-- Rating threshold — minimum TMDB rating
+- Release Year — select a specific year (e.g., 2025)
+- Release Month — select a specific month (requires a year to be selected first)
+- Min Rating — minimum TMDB rating threshold (1+ through 5+ stars)
 - Language — override the language switcher for this search
 - Certification — U, UA, or A (CBFC India ratings)
 - Platform — movies available on a specific OTT platform
+- Featured only — show only movies marked as featured
 
 #### Language Behavior on the List
 
@@ -566,10 +606,14 @@ Click any movie title in the list to open the edit page.
 
 The edit page has a **split layout**:
 
-- **Left column:** The form with 5 section tabs
+- **Left column:** The form with section tabs
 - **Right column:** A live preview showing how the movie will look in the mobile app
 
-#### The 5 Section Tabs
+#### The Section Tabs
+
+The edit page has **6 tabs**: Basic Info, Posters, Videos, Cast & Crew, Releases, and TMDB Sync. The TMDB Sync tab only appears if the movie has a TMDB ID linked.
+
+The create page has **5 tabs** (no TMDB Sync tab since the movie hasn't been linked to TMDB yet).
 
 Tabs are displayed as a horizontal navigation bar. Clicking a tab shows that section's fields. **Unsaved changes are preserved when switching tabs** — you won't lose work by looking at a different section.
 
@@ -812,6 +856,26 @@ This is where you manage which streaming services have the movie, in which count
 - Click the **X** button next to any platform entry.
 
 > **Important:** OTT changes save immediately (not via the dock). Each add/remove is committed as you do it.
+
+---
+
+#### Tab 6: TMDB Sync (Edit Page Only)
+
+This tab only appears on the edit page when the movie has a TMDB ID linked. It lets you compare your movie's data against the latest TMDB data and selectively update specific fields.
+
+**How it works:**
+
+1. When you open this tab, the system fetches the latest data from TMDB for this movie.
+2. A **field-by-field comparison table** appears showing your current data alongside TMDB's data.
+3. Each field is color-coded:
+   - **Missing** (green) — your database is empty but TMDB has a value. These are pre-checked for you.
+   - **Changed** (amber) — both have values but they differ. These are unchecked by default — review before overwriting.
+   - **Same** (gray) — already up to date. Cannot be selected.
+4. Check the fields you want to update from TMDB.
+5. Optionally check **"Re-sync cast & crew"** to perform a full cast refresh.
+6. Click **"Apply N selected fields"** to update only the selected fields.
+
+> **Tip:** This is the same field-diff interface used in the Discover tab's existing movies section (see §6), but scoped to a single movie.
 
 ---
 
@@ -1077,7 +1141,7 @@ Navigate to **Content → In Theaters** in the sidebar.
 
 ```
 ┌─────────────────────┬─────────────────────┐
-│    IN THEATERS       │      UPCOMING        │
+│    IN THEATERS      │      UPCOMING       │
 │                     │                     │
 │  [Movie A] ⬤ ON    │  [Movie D] ○ OFF    │
 │  [Movie B] ⬤ ON    │  [Movie E] ○ OFF    │
@@ -1155,8 +1219,8 @@ A flat table showing all surprise content items:
    - **Title** (required)
    - **Category** (select): Song, Short Film, BTS, Interview, Trailer
    - **Description** (optional)
-   - **Video URL** (YouTube link)
-   - **Thumbnail** (upload or auto-generated from YouTube)
+   - **YouTube ID** (required — the video identifier from a YouTube URL)
+   - **Views** (number, defaults to 0 — can be set for imported content with existing view counts)
 3. Click **"Create"**.
 
 ### Editing Surprise Content
@@ -1211,7 +1275,18 @@ Navigate to **Content → News Feed** in the sidebar.
 
 ### Editing a Feed Post
 
-Click the edit button on any feed item. Same form fields as creation, with the changes dock for save/discard.
+Click the edit button on any feed item to open the edit page. The edit page shows the feed type, content type, movie association, and YouTube video or thumbnail as **read-only** information at the top.
+
+**Editable fields on the edit page:**
+
+- **Title** (required)
+- **Description** (optional)
+- **Pin to Top** (checkbox)
+- **Featured** (checkbox)
+
+> **Note:** Feed type, content type, YouTube ID, and thumbnail cannot be changed after creation. If a post was auto-generated from a movie or other source, a banner at the top indicates this.
+
+Changes are tracked by the dock for save/discard.
 
 ---
 
@@ -1346,11 +1421,11 @@ Navigate to **System → App Users** in the sidebar.
 
 Click the pencil icon:
 
-1. The username field becomes editable.
-2. Modify the username.
+1. The **display name** field becomes editable.
+2. Modify the display name.
 3. Click **Save** or **Cancel**.
 
-> **Note:** Only one user can be in edit mode at a time. Only the username/display name can be edited — email and other profile data are not exposed.
+> **Note:** Only one user can be in edit mode at a time. Only the display name can be edited — username, email, and other profile data are not exposed.
 
 ### Banning a User
 
