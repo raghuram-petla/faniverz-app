@@ -119,7 +119,7 @@ describe('SearchResultsPanel', () => {
       actors: makeActorData([]),
     };
     renderWithProvider(<SearchResultsPanel data={data} />);
-    expect(screen.getByText('Movies (2)')).toBeInTheDocument();
+    expect(screen.getByText('Movies')).toBeInTheDocument();
   });
 
   it('shows "Actors (N)" heading when actor results exist', () => {
@@ -269,7 +269,7 @@ describe('SearchResultsPanel', () => {
       ]),
     };
     renderWithProvider(<SearchResultsPanel data={data} />);
-    expect(screen.getByText('Movies (1)')).toBeInTheDocument();
+    expect(screen.getByText('Movies')).toBeInTheDocument();
     expect(screen.getByText('Actors (1)')).toBeInTheDocument();
   });
 

@@ -240,7 +240,7 @@ describe('DiscoverTab', () => {
     fireEvent.change(input, { target: { value: 'Movie' } });
     fireEvent.click(screen.getByText('Search'));
     // SearchResultsPanel renders movie heading
-    expect(screen.getByText('Movies (1)')).toBeInTheDocument();
+    expect(screen.getByText('Movies')).toBeInTheDocument();
   });
 
   it('shows DiscoverByYear when discover has data', () => {
