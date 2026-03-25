@@ -322,4 +322,18 @@ describe('SurpriseScreen', () => {
     );
     mockOpenURL.mockRestore();
   });
+
+  it('renders featured video but no grid when only one item exists', () => {
+    const singleContent = [mockContent[0]];
+    mockUseSurpriseContent.mockReturnValue({ data: singleContent, isLoading: false });
+
+    render(<SurpriseScreen />);
+
+    // Featured video should render
+    expect(screen.getByText('Pushpa Theme Song')).toBeTruthy();
+    // No grid cards (gridItems.length === 0 branch → null)
+    expect(screen.queryAllByLabelText('common.playTitle')).toHaveLength(0);
+    // Fun fact should still show
+    expect(screen.getByText('surprise.didYouKnow')).toBeTruthy();
+  });
 });

@@ -505,6 +505,49 @@ describe('FeedScreen', () => {
     expect(mockFetchNextPage).not.toHaveBeenCalled();
   });
 
+  it('upvote triggers vote mutation when existing vote is down (switch)', () => {
+    setupMocks({ votes: { '1': 'down' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Upvote Test Trailer'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: '1',
+      voteType: 'up',
+      previousVote: 'down',
+    });
+  });
+
+  it('downvote triggers vote mutation when existing vote is up (switch)', () => {
+    setupMocks({ votes: { '1': 'up' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Downvote Test Trailer'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: '1',
+      voteType: 'down',
+      previousVote: 'up',
+    });
+  });
+
+  it('shows empty state with checkBackSoon when filter is all and no items', () => {
+    setupMocks({
+      store: { filter: 'all', setFilter: mockSetFilter },
+      feed: { data: { pages: [[]], pageParams: [0] }, isLoading: false },
+    });
+    const { getByText } = render(<FeedScreen />);
+    expect(getByText(/Check back soon/)).toBeTruthy();
+  });
+
+  it('share handles rejection gracefully', async () => {
+    const { Share } = require('react-native');
+    jest.spyOn(Share, 'share').mockRejectedValue(new Error('share failed'));
+    setupMocks();
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Share Test Trailer'));
+    // .catch(() => {}) swallows the error — no crash
+    await new Promise((r) => setTimeout(r, 10));
+    expect(Share.share).toHaveBeenCalled();
+    jest.restoreAllMocks();
+  });
+
   it('shows isFetchingNextPage loading indicator', () => {
     setupMocks({
       feed: {

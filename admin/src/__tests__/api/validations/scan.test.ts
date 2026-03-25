@@ -364,6 +364,98 @@ describe('POST /api/validations/scan', () => {
     expect(data.results[0].originalExists).toBe(true);
   });
 
+  it('returns null total when count is null', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          not: () => ({
+            order: () => Promise.resolve({ data: [], error: null, count: null }),
+          }),
+        }),
+      };
+    });
+
+    const res = await POST(makeRequest({ entity: 'movies' }));
+    const data = await res.json();
+    expect(data.total).toBe(0);
+  });
+
+  it('handles deep scan with variantType=null (e.g. platforms)', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') {
+        return {
+          select: () => ({
+            eq: () => ({
+              single: () =>
+                Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          not: () => ({
+            order: () =>
+              Promise.resolve({
+                data: [{ id: 'p1', logo_url: 'logo.png', name: 'Netflix' }],
+                error: null,
+                count: 1,
+              }),
+          }),
+        }),
+      };
+    });
+
+    // For platforms, variantType is null — no variant checks should happen
+    mockSend.mockResolvedValue({});
+
+    const res = await POST(makeRequest({ entity: 'platforms', deep: true }));
+    const data = await res.json();
+    expect(data.results[0].originalExists).toBe(true);
+    // No sm/md/lg variant checks for platforms (variantType is null)
+    expect(data.results[0].variants.sm).toBeNull();
+  });
+
+  it('handles deep scan with both poster and backdrop for movies entity', async () => {
+    mockMoviesTable([
+      {
+        id: 'mov-11',
+        poster_url: 'poster.jpg',
+        backdrop_url: 'backdrop.jpg',
+        title: 'Both Images',
+        tmdb_id: 1100,
+      },
+    ]);
+
+    // 4 checks per image (original + sm/md/lg) * 2 images = 8 calls
+    mockSend.mockResolvedValue({});
+
+    const res = await POST(makeRequest({ entity: 'movies', deep: true }));
+    const data = await res.json();
+    expect(data.results.length).toBe(2); // poster_url + backdrop_url
+    expect(data.results[0].originalExists).toBe(true);
+    expect(data.results[1].originalExists).toBe(true);
+  });
+
+  it('handles empty data array gracefully', async () => {
+    mockMoviesTable([]);
+
+    const res = await POST(makeRequest({ entity: 'movies' }));
+    const data = await res.json();
+    expect(data.results).toEqual([]);
+    expect(data.total).toBe(0);
+  });
+
   it('scans actors entity correctly', async () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'admin_user_roles') {

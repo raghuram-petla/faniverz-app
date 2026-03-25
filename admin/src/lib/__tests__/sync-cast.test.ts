@@ -582,6 +582,103 @@ describe('syncCastCrewAdditive', () => {
     expect(console.warn).toHaveBeenCalledWith('getExistingCastKeys: query failed', 'query failed');
   });
 
+  it('handles unique constraint duplicates for crew', async () => {
+    const sb = buildSupabase();
+    sb.from.mockImplementation((table: string) => {
+      if (table === 'movie_cast') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: { message: 'violates unique constraint' } }),
+          delete: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    vi.mocked(extractKeyCrewMembers).mockReturnValue([
+      {
+        id: 10,
+        name: 'Dir',
+        profile_path: null,
+        gender: 1,
+        roleName: 'Director',
+        roleOrder: 1,
+      },
+    ] as never);
+    const detail = { credits: { cast: [], crew: [] } };
+    const result = await syncCastCrewAdditive('movie-1', detail as never, sb as never);
+    // Duplicate should count as success
+    expect(result.crewCount).toBe(1);
+  });
+
+  it('skips crew when upsertActorPreserveType returns null in additive mode', async () => {
+    vi.mocked(upsertActorPreserveType).mockResolvedValue(null);
+    const sb = buildSupabase();
+    sb.from.mockImplementation((table: string) => {
+      if (table === 'movie_cast') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+          insert: vi.fn(),
+          delete: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }
+      return {};
+    });
+
+    vi.mocked(extractKeyCrewMembers).mockReturnValue([
+      {
+        id: 10,
+        name: 'Dir',
+        profile_path: null,
+        gender: 1,
+        roleName: 'Director',
+        roleOrder: 1,
+      },
+    ] as never);
+    const detail = { credits: { cast: [], crew: [] } };
+    const result = await syncCastCrewAdditive('movie-1', detail as never, sb as never);
+    expect(result.crewCount).toBe(0);
+  });
+
+  it('skips stale cleanup when no stale entries exist', async () => {
+    const deleteFn = vi.fn().mockReturnValue({
+      in: vi.fn().mockResolvedValue({ error: null }),
+    });
+    const sb = buildSupabase();
+    sb.from.mockImplementation((table: string) => {
+      if (table === 'movie_cast') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+          insert: vi.fn().mockResolvedValue({ error: null }),
+          delete: deleteFn,
+        };
+      }
+      return {};
+    });
+
+    vi.mocked(extractKeyCrewMembers).mockReturnValue([]);
+    const detail = { credits: { cast: [], crew: [] } };
+    await syncCastCrewAdditive('movie-1', detail as never, sb as never);
+    // No stale entries means delete should not have been called
+    expect(deleteFn).not.toHaveBeenCalled();
+  });
+
   it('handles non-unique constraint cast insert errors', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const sb = buildSupabase();

@@ -265,6 +265,93 @@ describe('GET /api/sync/stale-items', () => {
     expect(data.items).toHaveLength(1);
   });
 
+  it('returns 500 with fallback message for non-Error exceptions', async () => {
+    mockGetSupabaseAdmin.mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: () =>
+                  Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+              }),
+            }),
+          };
+        }
+        return {
+          select: () => ({
+            not: () => ({
+              or: () => ({
+                order: () => ({
+                  limit: () => {
+                    throw 'string error';
+                  },
+                }),
+              }),
+            }),
+          }),
+        };
+      },
+    });
+
+    const res = await GET(makeRequest('?type=movies'));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Query failed');
+  });
+
+  it('returns empty items array when data is null for movies', async () => {
+    mockLimit.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
+    const res = await GET(makeRequest('?type=movies'));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.items).toEqual([]);
+  });
+
+  it('returns empty items array when data is null for actors-missing-bios', async () => {
+    mockLimit.mockResolvedValue({
+      data: null,
+      error: null,
+    });
+
+    const res = await GET(makeRequest('?type=actors-missing-bios'));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.items).toEqual([]);
+  });
+
+  it('returns empty items array when RPC data is null for actors with sinceYear', async () => {
+    mockGetSupabaseAdmin.mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') {
+          return {
+            select: () => ({
+              eq: () => ({
+                single: () =>
+                  Promise.resolve({ data: { role_id: 'admin', status: 'active' }, error: null }),
+              }),
+            }),
+          };
+        }
+        return {};
+      },
+      rpc: () =>
+        Promise.resolve({
+          data: null,
+          error: null,
+        }),
+    });
+
+    const res = await GET(makeRequest('?type=actors-missing-bios&sinceYear=2024'));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.items).toEqual([]);
+  });
+
   it('returns 500 when actors-missing-bios RPC fails with sinceYear', async () => {
     mockGetSupabaseAdmin.mockReturnValue({
       from: (table: string) => {

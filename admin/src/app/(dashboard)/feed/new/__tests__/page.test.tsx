@@ -220,6 +220,86 @@ describe('NewFeedItemPage', () => {
     expect(screen.getAllByRole('combobox')).toHaveLength(1);
   });
 
+  it('shows "Operation failed" alert when error has no message', async () => {
+    mockMutateAsync.mockRejectedValue({ message: '' });
+    render(<NewFeedItemPage />);
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), { target: { value: 'Test' } });
+    fireEvent.submit(screen.getByRole('button', { name: /Create/i }).closest('form')!);
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith('Operation failed');
+    });
+  });
+
+  it('disables Create button when isPending is true', () => {
+    mockIsPending.value = true;
+    render(<NewFeedItemPage />);
+    const btn = screen.getByRole('button', { name: /Create/i });
+    expect(btn).toBeDisabled();
+    // Also the Loader2 spinner should appear
+    expect(screen.getByTestId('loader')).toBeInTheDocument();
+  });
+
+  it('shows poster content type correctly (single option, no Content Type selector)', () => {
+    render(<NewFeedItemPage />);
+    const feedTypeSelect = screen.getAllByRole('combobox')[0];
+    fireEvent.change(feedTypeSelect, { target: { value: 'poster' } });
+    // Poster has only 1 content type → selector hidden
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+  });
+
+  it('submits thumbnailUrl for non-video type when provided', async () => {
+    mockMutateAsync.mockResolvedValue({});
+    render(<NewFeedItemPage />);
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), { target: { value: 'Test' } });
+    fireEvent.change(screen.getByPlaceholderText('Image URL'), {
+      target: { value: 'https://example.com/thumb.jpg' },
+    });
+    fireEvent.submit(screen.getByRole('button', { name: /Create/i }).closest('form')!);
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          thumbnail_url: 'https://example.com/thumb.jpg',
+        }),
+      );
+    });
+  });
+
+  it('submits with selected content type for video type', async () => {
+    mockMutateAsync.mockResolvedValue({});
+    render(<NewFeedItemPage />);
+    // Switch to video
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'video' } });
+    // Change content type to 'teaser'
+    const contentTypeSelect = screen.getAllByRole('combobox')[1];
+    fireEvent.change(contentTypeSelect, { target: { value: 'teaser' } });
+
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), { target: { value: 'Test' } });
+    fireEvent.submit(screen.getByRole('button', { name: /Create/i }).closest('form')!);
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          feed_type: 'video',
+          content_type: 'teaser',
+        }),
+      );
+    });
+  });
+
+  it('submits description when provided', async () => {
+    mockMutateAsync.mockResolvedValue({});
+    render(<NewFeedItemPage />);
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), { target: { value: 'Test' } });
+    fireEvent.change(screen.getByPlaceholderText('Optional description'), {
+      target: { value: 'A description' },
+    });
+    fireEvent.submit(screen.getByRole('button', { name: /Create/i }).closest('form')!);
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ description: 'A description' }),
+      );
+    });
+  });
+
   it('passes isPinned=true when pinned checkbox checked', async () => {
     mockMutateAsync.mockResolvedValue({});
     render(<NewFeedItemPage />);

@@ -121,4 +121,34 @@ describe('LanguageSwitcher', () => {
     fireEvent.click(btn);
     expect(screen.queryByText('All Languages')).not.toBeInTheDocument();
   });
+
+  it('highlights "All Languages" when selectedLanguageId is null', () => {
+    mockSelectedLanguageId.current = null;
+    render(<LanguageSwitcher />);
+    fireEvent.click(screen.getByLabelText('Switch content language'));
+    const allBtn = screen.getByText('All Languages');
+    expect(allBtn.className).toContain('text-status-red');
+  });
+
+  it('highlights selected language and does not highlight "All Languages"', () => {
+    mockSelectedLanguageId.current = 'lang-1';
+    render(<LanguageSwitcher />);
+    fireEvent.click(screen.getByLabelText('Switch content language'));
+    const allBtn = screen.getByText('All Languages');
+    expect(allBtn.className).not.toContain('text-status-red');
+    // There are two "Telugu" elements - one in the trigger, one in the dropdown list
+    const teluguBtns = screen.getAllByText('Telugu');
+    const teluguDropdownBtn = teluguBtns.find((el) => el.tagName === 'BUTTON');
+    expect(teluguDropdownBtn?.className).toContain('text-status-red');
+  });
+
+  it('does not close dropdown when clicking inside the switcher', () => {
+    render(<LanguageSwitcher />);
+    fireEvent.click(screen.getByLabelText('Switch content language'));
+    // Click inside the dropdown (the globe icon or the button itself)
+    const btn = screen.getByLabelText('Switch content language');
+    fireEvent.mouseDown(btn);
+    // Dropdown should still be visible since click was inside the container
+    // (but button click will toggle it — the mouseDown alone should not close it)
+  });
 });

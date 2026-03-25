@@ -54,4 +54,9 @@ describe('SpotlightPreview', () => {
     const img = container.querySelector('img');
     expect(img?.style.objectPosition).toBe('30% 70%');
   });
+
+  it('does not render year when releaseDate is null', () => {
+    render(<SpotlightPreview {...defaultProps} releaseDate={null as unknown as string} />);
+    expect(screen.queryByText('2024')).not.toBeInTheDocument();
+  });
 });

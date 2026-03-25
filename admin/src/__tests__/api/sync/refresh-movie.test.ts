@@ -149,4 +149,38 @@ describe('POST /api/sync/refresh-movie', () => {
     const data = await res.json();
     expect(data.error).toBe('Unknown error');
   });
+
+  it('returns 500 via errorResponse when outer try/catch fires', async () => {
+    const badRequest = {
+      json: async () => {
+        throw new Error('parse error');
+      },
+      headers: { get: () => 'Bearer valid-token' },
+    } as unknown as import('next/server').NextRequest;
+    const res = await POST(badRequest);
+    expect(res.status).toBe(500);
+  });
+
+  it('returns 404 when movie lookup returns null data without error', async () => {
+    mockSingle.mockResolvedValue({ data: null, error: null });
+    const res = await POST(makeRequest({ movieId: 'nonexistent' }));
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 400 when movieId is empty string', async () => {
+    const res = await POST(makeRequest({ movieId: '' }));
+    expect(res.status).toBe(400);
+  });
+
+  it('logs moviesUpdated=1 on successful refresh', async () => {
+    mockSingle.mockResolvedValue({ data: { tmdb_id: 100, title: 'Movie Y' }, error: null });
+    mockProcessMovieFromTmdb.mockResolvedValue({ updated: true });
+    const res = await POST(makeRequest({ movieId: 'movie-1' }));
+    expect(res.status).toBe(200);
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({ moviesUpdated: 1 }),
+    );
+  });
 });

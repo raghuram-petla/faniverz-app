@@ -269,4 +269,27 @@ describe('UserProfileScreen', () => {
     // With id='user-1' from original mock, enabled should be truthy
     expect(capturedEnabled).toBe(true);
   });
+
+  it('shows username fallback when display_name is null but username exists', () => {
+    const usernameOnly = { ...fullProfile, display_name: null, username: 'mahesh_babu' };
+    mockUseQuery.mockReturnValue({ data: usernameOnly, isLoading: false });
+    render(<UserProfileScreen />);
+    // display_name ?? username ?? 'Anonymous' → should show username
+    expect(screen.getByText('mahesh_babu')).toBeTruthy();
+    expect(screen.getByText('@mahesh_babu')).toBeTruthy();
+  });
+
+  it('renders avatar with null avatar_url (covers getImageUrl null → PLACEHOLDER_AVATAR)', () => {
+    const noAvatar = { ...fullProfile, avatar_url: null };
+    mockUseQuery.mockReturnValue({ data: noAvatar, isLoading: false });
+    render(<UserProfileScreen />);
+    expect(screen.getByText('Mahesh Babu')).toBeTruthy();
+  });
+
+  it('does not render error state when isError is false and profile exists', () => {
+    mockUseQuery.mockReturnValue({ data: fullProfile, isLoading: false, isError: false });
+    render(<UserProfileScreen />);
+    expect(screen.queryByText('Something went wrong')).toBeNull();
+    expect(screen.getByText('Mahesh Babu')).toBeTruthy();
+  });
 });

@@ -104,11 +104,13 @@ jest.mock('@/features/feed', () => ({
 jest.mock('@/components/feed/FeedCard', () => ({
   FeedCard: ({
     item,
+    onPress,
     onEntityPress,
     onUpvote,
     onDownvote,
   }: {
     item: { id: string; title: string };
+    onPress?: (item: { id: string; title: string }) => void;
     onEntityPress?: (type: string, id: string) => void;
     onUpvote?: (id: string) => void;
     onDownvote?: (id: string) => void;
@@ -117,6 +119,7 @@ jest.mock('@/components/feed/FeedCard', () => ({
     return (
       <>
         <Text testID="feed-card">{item.title}</Text>
+        {onPress && <TouchableOpacity testID="press-btn" onPress={() => onPress(item)} />}
         {onEntityPress && (
           <>
             <TouchableOpacity
@@ -438,7 +441,9 @@ describe('PostDetailScreen', () => {
 
   it('handleNoOp does not crash when called', () => {
     render(<PostDetailScreen />);
-    // The FeedCard receives onPress=handleNoOp which is a no-op
+    // The FeedCard receives onPress=handleNoOp — pressing it invokes the no-op callback
+    fireEvent.press(screen.getByTestId('press-btn'));
+    // No crash means the no-op was executed successfully
     expect(screen.getByTestId('feed-card')).toBeTruthy();
   });
 
@@ -505,5 +510,65 @@ describe('PostDetailScreen', () => {
     expect(screen.getByText('postDetail.notFound')).toBeTruthy();
 
     mockFeedModule.useFeedItem = origUseFeedItem;
+  });
+
+  it('handles undefined userVotes data (defaults to empty object)', () => {
+    const mockFeedModule = jest.requireMock('@/features/feed');
+    const origUseUserVotes = mockFeedModule.useUserVotes;
+    mockFeedModule.useUserVotes = () => ({ data: undefined, refetch: jest.fn() });
+
+    render(<PostDetailScreen />);
+    // Should render without crash; upvote sends previousVote: null
+    fireEvent.press(screen.getByTestId('upvote-btn'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'post-1',
+      voteType: 'up',
+      previousVote: null,
+    });
+
+    mockFeedModule.useUserVotes = origUseUserVotes;
+  });
+
+  it('handles undefined id from search params (covers id ?? empty string)', () => {
+    const routerModule = jest.requireMock('expo-router');
+    const origUseLocalSearchParams = routerModule.useLocalSearchParams;
+    routerModule.useLocalSearchParams = () => ({ id: undefined });
+
+    render(<PostDetailScreen />);
+    expect(screen.getByText('postDetail.title')).toBeTruthy();
+
+    routerModule.useLocalSearchParams = origUseLocalSearchParams;
+  });
+
+  it('navigates to production_house entity correctly', () => {
+    const mockFeedModule = jest.requireMock('@/components/feed/FeedCard');
+    const origFeedCard = mockFeedModule.FeedCard;
+
+    mockFeedModule.FeedCard = ({
+      onEntityPress,
+    }: {
+      onEntityPress: (type: string, id: string) => void;
+    }) => {
+      const { TouchableOpacity, Text } = require('react-native');
+      return (
+        <TouchableOpacity
+          testID="ph-entity-press"
+          onPress={() => onEntityPress('production_house', 'ph1')}
+        >
+          <Text>PH Entity</Text>
+        </TouchableOpacity>
+      );
+    };
+
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('ph-entity-press'));
+    expect(mockPush).toHaveBeenCalledWith('/production-house/ph1');
+
+    mockFeedModule.FeedCard = origFeedCard;
+  });
+
+  it('renders with post.comment_count displayed', () => {
+    render(<PostDetailScreen />);
+    expect(screen.getByText('postDetail.comments (3)')).toBeTruthy();
   });
 });

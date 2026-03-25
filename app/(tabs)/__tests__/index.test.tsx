@@ -558,6 +558,64 @@ describe('FeedScreen', () => {
     expect(originalFeedCard).toBeDefined();
   });
 
+  it('upvote switches from down to up vote', () => {
+    setupMocks({ votes: { 'item-1': 'down' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Upvote Test Item'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'item-1',
+      voteType: 'up',
+      previousVote: 'down',
+    });
+  });
+
+  it('downvote switches from up to down vote', () => {
+    setupMocks({ votes: { 'item-1': 'up' } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Downvote Test Item'));
+    expect(mockVoteMutate).toHaveBeenCalledWith({
+      feedItemId: 'item-1',
+      voteType: 'down',
+      previousVote: 'up',
+    });
+  });
+
+  it('does not call unfollowMutation when follow is pending', () => {
+    const item = makeItem({ id: 'item-1', title: 'Guarded Unfollow', movie_id: 'movie-1' });
+    setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
+    // Override AFTER setupMocks so they aren't reset
+    mockUseFollowEntity.mockReturnValue({ mutate: mockFollowMutate, isPending: true } as any);
+    mockUseUnfollowEntity.mockReturnValue({ mutate: mockUnfollowMutate, isPending: false } as any);
+    render(<FeedScreen />);
+
+    fireEvent.press(screen.getByLabelText('Unfollow Guarded Unfollow'));
+    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+  });
+
+  it('shows filter-specific empty message when filter is not all and no items', () => {
+    setupMocks({
+      store: { filter: 'trailers' },
+      feed: { data: { pages: [[]], pageParams: [0] }, isLoading: false },
+    });
+    render(<FeedScreen />);
+    expect(screen.getByText(/Trailers/i)).toBeTruthy();
+  });
+
+  it('does not scroll-trigger fetchNextPage when far from bottom', () => {
+    setupMocks({ feed: { hasNextPage: true, isFetchingNextPage: false } });
+    render(<FeedScreen />);
+    const { ScrollView } = require('react-native');
+    const scrollView = screen.UNSAFE_getByType(ScrollView);
+    fireEvent.scroll(scrollView, {
+      nativeEvent: {
+        layoutMeasurement: { height: 800 },
+        contentOffset: { y: 0 },
+        contentSize: { height: 5000 },
+      },
+    });
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
   it('navigates to another user profile when entity press is for different user', () => {
     // Capture the onEntityPress prop from FeedCard to call it directly
     let capturedOnEntityPress: ((type: string, id: string) => void) | undefined;
@@ -581,5 +639,74 @@ describe('FeedScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/profile');
 
     FeedCardModule.FeedCard = OriginalFeedCard;
+  });
+
+  it('renders item without youtube_id (onVideoLayout=undefined branch)', () => {
+    const item = makeItem({ id: 'no-yt', title: 'No YouTube', youtube_id: null });
+    setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
+    render(<FeedScreen />);
+    expect(screen.getByText('No YouTube')).toBeTruthy();
+  });
+
+  it('does not call unfollowMutation when unfollow mutation is pending', () => {
+    const item = makeItem({ id: 'item-1', title: 'Unfollow Guarded2', movie_id: 'movie-1' });
+    setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
+    mockUseFollowEntity.mockReturnValue({ mutate: mockFollowMutate, isPending: false } as any);
+    mockUseUnfollowEntity.mockReturnValue({ mutate: mockUnfollowMutate, isPending: true } as any);
+    render(<FeedScreen />);
+
+    fireEvent.press(screen.getByLabelText('Unfollow Unfollow Guarded2'));
+    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+  });
+
+  it('handles data=null gracefully (allItems ?? [] fallback)', () => {
+    setupMocks({ feed: { data: null, isLoading: false } });
+    render(<FeedScreen />);
+    expect(screen.getByText('No updates yet')).toBeTruthy();
+  });
+
+  it('navigates to actor entity on entity press', () => {
+    let capturedOnEntityPress: ((type: string, id: string) => void) | undefined;
+    const FeedCardModule = require('@/components/feed/FeedCard');
+    const OriginalFeedCard = FeedCardModule.FeedCard;
+    FeedCardModule.FeedCard = (props: Record<string, any>) => {
+      capturedOnEntityPress = props.onEntityPress;
+      return OriginalFeedCard(props);
+    };
+
+    const item = makeItem({ id: 'item-1', title: 'Actor Entity' });
+    setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
+    render(<FeedScreen />);
+
+    capturedOnEntityPress?.('actor', 'actor-123');
+    expect(mockPush).toHaveBeenCalledWith('/actor/actor-123');
+
+    capturedOnEntityPress?.('production_house', 'ph-1');
+    expect(mockPush).toHaveBeenCalledWith('/production-house/ph-1');
+
+    FeedCardModule.FeedCard = OriginalFeedCard;
+  });
+
+  it('handles Share.share rejection without crashing', () => {
+    const { Share } = require('react-native');
+    const shareSpy = jest.spyOn(Share, 'share').mockRejectedValue(new Error('share failed'));
+
+    const item = makeItem({ id: 'item-1', title: 'Share Fail' });
+    setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
+    render(<FeedScreen />);
+
+    fireEvent.press(screen.getByLabelText('Share Share Fail'));
+    expect(shareSpy).toHaveBeenCalled();
+    shareSpy.mockRestore();
+  });
+
+  it('renders empty pill label fallback when filter does not match FEED_PILLS', () => {
+    setupMocks({
+      store: { filter: 'nonexistent_filter' as any },
+      feed: { data: { pages: [[]], pageParams: [0] }, isLoading: false },
+    });
+    render(<FeedScreen />);
+    // The ?? filter fallback should render the filter key itself
+    expect(screen.getByText('No updates yet')).toBeTruthy();
   });
 });

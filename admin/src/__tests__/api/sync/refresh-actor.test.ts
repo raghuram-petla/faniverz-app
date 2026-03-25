@@ -161,4 +161,42 @@ describe('POST /api/sync/refresh-actor', () => {
     const data = await res.json();
     expect(data.error).toBe('Unknown error');
   });
+
+  it('returns 500 via errorResponse when outer try/catch fires', async () => {
+    const badRequest = {
+      json: async () => {
+        throw new Error('parse error');
+      },
+      headers: { get: () => 'Bearer valid-token' },
+    } as unknown as import('next/server').NextRequest;
+    const res = await POST(badRequest);
+    expect(res.status).toBe(500);
+  });
+
+  it('returns 404 when actor lookup has error (no data)', async () => {
+    mockSingle.mockResolvedValue({ data: null, error: null });
+    const res = await POST(makeRequest({ actorId: 'nonexistent' }));
+    expect(res.status).toBe(404);
+  });
+
+  it('logs moviesUpdated=0 when result.updated is false', async () => {
+    mockSingle.mockResolvedValue({
+      data: { tmdb_person_id: 500, name: 'Actor Not Updated' },
+      error: null,
+    });
+    mockProcessActorRefresh.mockResolvedValue({ updated: false });
+
+    const res = await POST(makeRequest({ actorId: 'actor-1' }));
+    expect(res.status).toBe(200);
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({ moviesUpdated: 0 }),
+    );
+  });
+
+  it('returns 400 when actorId is empty string', async () => {
+    const res = await POST(makeRequest({ actorId: '' }));
+    expect(res.status).toBe(400);
+  });
 });

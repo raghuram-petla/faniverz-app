@@ -183,4 +183,47 @@ describe('POST /api/sync/import-actor', () => {
     const json = await res.json();
     expect(json.error).toBe('TMDB down');
   });
+
+  it('handles non-Error thrown in inner catch (fallback to Unknown error)', async () => {
+    mockGetPersonDetails.mockRejectedValue('string-error');
+    const res = await POST(makeRequest({ tmdbPersonId: 999 }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toBe('Unknown error');
+  });
+
+  it('returns 500 via errorResponse when outer try/catch fires', async () => {
+    // Force request.json() to throw to trigger the outer catch
+    const badRequest = {
+      json: async () => {
+        throw new Error('Invalid JSON');
+      },
+      headers: { get: () => 'Bearer valid-token' },
+    } as unknown as import('next/server').NextRequest;
+    const res = await POST(badRequest);
+    expect(res.status).toBe(500);
+  });
+
+  it('handles person with undefined gender (nullish coalescing to null)', async () => {
+    mockGetPersonDetails.mockResolvedValue({
+      name: 'No Gender Actor',
+      biography: 'Bio',
+      place_of_birth: 'Unknown',
+      birthday: '1985-06-15',
+      profile_path: '/photo.jpg',
+      gender: undefined,
+    });
+    mockMaybeUploadImage.mockResolvedValue('https://r2.example.com/photo.jpg');
+    mockUpsertSelect.mockResolvedValue({ data: { id: 'actor-2' }, error: null });
+
+    const res = await POST(makeRequest({ tmdbPersonId: 111 }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.result.actorId).toBe('actor-2');
+  });
+
+  it('returns 400 when tmdbPersonId is falsy (zero)', async () => {
+    const res = await POST(makeRequest({ tmdbPersonId: 0 }));
+    expect(res.status).toBe(400);
+  });
 });

@@ -217,4 +217,36 @@ describe('MediaScreen', () => {
     useAnimatedStyle.mockImplementation(() => ({}));
     interpolate.mockImplementation(() => undefined);
   });
+
+  it('hides filter pills when videos tab has no videosByType groups', () => {
+    const movieNoVideos = { ...mockMovie, videos: [] };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieNoVideos, isLoading: false });
+    render(<MediaScreen />);
+    // Filter pills (All, Trailer, Song) should not appear
+    expect(screen.queryByText('All')).toBeNull();
+    expect(screen.queryByText('Trailer (1)')).toBeNull();
+  });
+
+  it('strips count suffix from active category label', () => {
+    render(<MediaScreen />);
+    // Press a category filter pill with count suffix
+    fireEvent.press(screen.getByText('Trailer (1)'));
+    // The activeCategoryLabel should be 'Trailer' (stripped count)
+    // Verify the Trailer video is visible
+    expect(screen.getByText('Official Trailer')).toBeTruthy();
+  });
+
+  it('renders correctly when id param is undefined (covers id ?? empty string)', () => {
+    // The default mock always returns data, but the ?? '' branch for id is covered
+    // when useLocalSearchParams returns undefined id
+    const routerModule = jest.requireMock('expo-router');
+    const origUseLocalSearchParams = routerModule.useLocalSearchParams;
+    routerModule.useLocalSearchParams = () => ({ id: undefined });
+
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined, isLoading: false });
+    render(<MediaScreen />);
+    expect(screen.getByText('No results found')).toBeTruthy();
+
+    routerModule.useLocalSearchParams = origUseLocalSearchParams;
+  });
 });

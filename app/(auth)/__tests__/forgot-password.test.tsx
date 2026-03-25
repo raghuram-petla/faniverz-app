@@ -187,6 +187,44 @@ describe('ForgotPasswordScreen', () => {
     expect(mockRouter.back).toHaveBeenCalled();
   });
 
+  it('trims whitespace from email before sending', async () => {
+    const mockResetPassword = jest.fn().mockResolvedValue(undefined);
+    mockUseEmailAuth.mockReturnValue({
+      resetPassword: mockResetPassword,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ForgotPasswordScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('auth.emailAddress'), '  test@test.com  ');
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.sendResetLink'));
+    });
+
+    expect(mockResetPassword).toHaveBeenCalledWith('test@test.com');
+  });
+
+  it('does not send when email is only whitespace', async () => {
+    const mockResetPassword = jest.fn();
+    mockUseEmailAuth.mockReturnValue({
+      resetPassword: mockResetPassword,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<ForgotPasswordScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('auth.emailAddress'), '   ');
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.sendResetLink'));
+    });
+
+    expect(mockResetPassword).not.toHaveBeenCalled();
+  });
+
   it('displays the submitted email in success view', async () => {
     const mockResetPassword = jest.fn().mockResolvedValue(undefined);
     mockUseEmailAuth.mockReturnValue({

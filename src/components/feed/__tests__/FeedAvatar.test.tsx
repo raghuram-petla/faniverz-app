@@ -118,4 +118,14 @@ describe('FeedAvatar', () => {
     render(<FeedAvatar imageUrl={null} entityType="movie" label="Test" />);
     expect(screen.queryByRole('button')).toBeNull();
   });
+
+  it('uses "entity" as fallback accessibility label when label is undefined and onPress is provided', () => {
+    render(<FeedAvatar imageUrl={null} entityType="movie" onPress={jest.fn()} />);
+    expect(screen.getByLabelText('Navigate to entity')).toBeTruthy();
+  });
+
+  it('renders user fallback icon when no image', () => {
+    render(<FeedAvatar imageUrl={null} entityType="user" label="User fallback" />);
+    expect(screen.getByLabelText('User fallback')).toBeTruthy();
+  });
 });

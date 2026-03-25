@@ -314,6 +314,62 @@ describe('SpotlightScreen', () => {
     expect(screen.getByText('In Theaters')).toBeTruthy();
   });
 
+  it('shows empty state when all movie lists are empty', () => {
+    mockUseMovies.mockReturnValue({ data: [], isLoading: false });
+    mockUsePlatforms.mockReturnValue({ data: [] });
+    mockUseMoviePlatformMap.mockReturnValue({ data: {} });
+    render(<SpotlightScreen />);
+    expect(screen.getByText('No movies yet')).toBeTruthy();
+    expect(screen.getByText('Check back soon!')).toBeTruthy();
+  });
+
+  it('does not show "To Theaters" subsection when no upcoming theatrical movies', () => {
+    // Only OTT upcoming
+    mockUseMoviePlatformMap.mockReturnValue({
+      data: {
+        '2': [{ id: 'netflix', name: 'Netflix', logo: 'N', color: '#E50914', display_order: 1 }],
+        '3': [{ id: 'aha', name: 'Aha', logo: 'A', color: '#FF6B00', display_order: 2 }],
+      },
+    });
+    render(<SpotlightScreen />);
+    // Upcoming movie id=3 has platforms so it goes to "To Streaming"
+    expect(screen.getByText('To Streaming')).toBeTruthy();
+  });
+
+  it('sorts featured movies with is_featured true first', () => {
+    const movies = [
+      { ...mockMovies[0], id: '10', title: 'Not Featured', is_featured: false, in_theaters: true },
+      { ...mockMovies[0], id: '11', title: 'Featured One', is_featured: true, in_theaters: true },
+    ];
+    mockUseMovies.mockReturnValue({ data: movies, isLoading: false });
+    mockUseMoviePlatformMap.mockReturnValue({ data: {} });
+    render(<SpotlightScreen />);
+    expect(screen.getByTestId('hero-carousel')).toBeTruthy();
+  });
+
+  it('does not show "To Streaming" subsection when all upcoming movies have no platforms', () => {
+    mockUseMoviePlatformMap.mockReturnValue({ data: {} });
+    render(<SpotlightScreen />);
+    expect(screen.queryByText('To Streaming')).toBeNull();
+    expect(screen.getByText('To Theaters')).toBeTruthy();
+  });
+
+  it('shows empty state even when platforms exist but no movies', () => {
+    mockUseMovies.mockReturnValue({ data: [], isLoading: false });
+    // Platforms exist but no movies
+    render(<SpotlightScreen />);
+    expect(screen.getByText('No movies yet')).toBeTruthy();
+  });
+
+  it('handles undefined data from useMovies, usePlatforms, and useMoviePlatformMap', () => {
+    mockUseMovies.mockReturnValue({ data: undefined, isLoading: false, refetch: jest.fn() });
+    mockUsePlatforms.mockReturnValue({ data: undefined, refetch: jest.fn() });
+    mockUseMoviePlatformMap.mockReturnValue({ data: undefined });
+    render(<SpotlightScreen />);
+    // Defaults via = [] and = {} cover undefined data
+    expect(screen.getByText('No movies yet')).toBeTruthy();
+  });
+
   it('renders both To Theaters and To Streaming when both types of upcoming exist', () => {
     const upcomingOTTMovie = {
       id: '4',

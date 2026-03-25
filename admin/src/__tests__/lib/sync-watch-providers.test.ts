@@ -259,6 +259,74 @@ describe('syncWatchProvidersMultiCountry', () => {
     expect(count).toBe(3);
   });
 
+  it('uses country code as fallback name when regionNames has no entry', async () => {
+    mockGetAllWatchProviders.mockResolvedValue({
+      results: {
+        XX: {
+          flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/n.png' }],
+        },
+      },
+    });
+    mockGetWatchRegions.mockResolvedValue({}); // XX not in regionNames
+
+    const { syncWatchProvidersMultiCountry } = await import('@/lib/sync-watch-providers');
+    const supabase = makeSupabaseMock();
+    await syncWatchProvidersMultiCountry('m1', 12345, 'api-key', supabase as any);
+    // Should call from('countries') with code as fallback name
+    expect(supabase.from).toHaveBeenCalledWith('countries');
+  });
+
+  it('handles display_priority being null in provider', async () => {
+    mockGetAllWatchProviders.mockResolvedValue({
+      results: {
+        IN: {
+          flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/n.png' }],
+        },
+      },
+    });
+    mockGetWatchRegions.mockResolvedValue({ IN: 'India' });
+
+    const { syncWatchProvidersMultiCountry } = await import('@/lib/sync-watch-providers');
+    const supabase = makeSupabaseMock();
+    const count = await syncWatchProvidersMultiCountry('m1', 12345, 'api-key', supabase as any);
+    expect(count).toBe(1);
+  });
+
+  it('handles upsert error for availability row', async () => {
+    mockGetAllWatchProviders.mockResolvedValue({
+      results: {
+        IN: {
+          flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/n.png' }],
+        },
+      },
+    });
+    mockGetWatchRegions.mockResolvedValue({ IN: 'India' });
+
+    const { syncWatchProvidersMultiCountry } = await import('@/lib/sync-watch-providers');
+    const supabase = makeSupabaseMock();
+    supabase._upsertFn.mockResolvedValue({ error: { message: 'upsert failed' } });
+
+    const count = await syncWatchProvidersMultiCountry('m1', 12345, 'api-key', supabase as any);
+    // Error means count should NOT increment
+    expect(count).toBe(0);
+  });
+
+  it('creates platform with null logo_url when logo_path is null', async () => {
+    mockGetAllWatchProviders.mockResolvedValue({
+      results: {
+        IN: {
+          flatrate: [{ provider_id: 999, provider_name: 'NoPic', logo_path: null }],
+        },
+      },
+    });
+    mockGetWatchRegions.mockResolvedValue({ IN: 'India' });
+
+    const { syncWatchProvidersMultiCountry } = await import('@/lib/sync-watch-providers');
+    const supabase = makeSupabaseMock();
+    await syncWatchProvidersMultiCountry('m1', 12345, 'api-key', supabase as any);
+    expect(supabase.from).toHaveBeenCalledWith('platforms');
+  });
+
   it('caches platform IDs to avoid repeated lookups', async () => {
     mockGetAllWatchProviders.mockResolvedValue({
       results: {

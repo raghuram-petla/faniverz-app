@@ -126,4 +126,30 @@ describe('useGoogleAuth', () => {
     });
     expect(result.current.error).toBe('Google sign-in failed');
   });
+
+  it('skips configure on second call (configured.current = true)', async () => {
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValue({
+      data: { idToken: 'token-1' },
+    });
+    (supabase.auth.signInWithIdToken as jest.Mock).mockResolvedValue({ error: null });
+
+    const { result } = renderHook(() => useGoogleAuth());
+
+    // First call — configures
+    await act(async () => {
+      await result.current.signInWithGoogle();
+    });
+    expect(GoogleSignin.configure).toHaveBeenCalledTimes(1);
+
+    // Second call — should skip configure
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValue({
+      data: { idToken: 'token-2' },
+    });
+    (supabase.auth.signInWithIdToken as jest.Mock).mockResolvedValue({ error: null });
+
+    await act(async () => {
+      await result.current.signInWithGoogle();
+    });
+    expect(GoogleSignin.configure).toHaveBeenCalledTimes(1);
+  });
 });

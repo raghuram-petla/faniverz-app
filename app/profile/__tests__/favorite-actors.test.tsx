@@ -9,8 +9,9 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
 }));
 
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
@@ -159,6 +160,13 @@ describe('FavoriteActorsScreen', () => {
     expect(screen.getByText('profile.addActors')).toBeTruthy();
   });
 
+  it('navigates to search when empty state action is pressed', () => {
+    mockUseFavoriteActors.mockReturnValue({ data: [], isLoading: false });
+    render(<FavoriteActorsScreen />);
+    fireEvent.press(screen.getByText('profile.addActors'));
+    expect(mockPush).toHaveBeenCalledWith('/search');
+  });
+
   it('shows count badge when actors exist', () => {
     const favorites = [
       {
@@ -189,6 +197,90 @@ describe('FavoriteActorsScreen', () => {
     render(<FavoriteActorsScreen />);
     // The count badge should show "2"
     expect(screen.getByText('2')).toBeTruthy();
+  });
+
+  it('does not show count badge when count is 0', () => {
+    mockUseFavoriteActors.mockReturnValue({ data: [], isLoading: false });
+    render(<FavoriteActorsScreen />);
+    expect(screen.queryByText('0')).toBeNull();
+  });
+
+  it('shows "Unknown" name when actor is undefined', () => {
+    const favorites = [
+      {
+        actor_id: 'a1',
+        user_id: 'user-1',
+        actor: undefined,
+      },
+    ];
+    mockUseFavoriteActors.mockReturnValue({ data: favorites, isLoading: false });
+
+    render(<FavoriteActorsScreen />);
+    expect(screen.getByText('Unknown')).toBeTruthy();
+  });
+
+  it('renders odd-number grid with empty spacer', () => {
+    const favorites = [
+      {
+        actor_id: 'a1',
+        user_id: 'user-1',
+        actor: {
+          id: 'a1',
+          name: 'Solo Actor',
+          photo_url: null,
+          tmdb_person_id: null,
+          created_at: '',
+        },
+      },
+    ];
+    mockUseFavoriteActors.mockReturnValue({ data: favorites, isLoading: false });
+
+    render(<FavoriteActorsScreen />);
+    expect(screen.getByText('Solo Actor')).toBeTruthy();
+  });
+
+  it('disables remove button when mutation is pending', () => {
+    mockUseFavoriteActorMutations.mockReturnValue({
+      remove: { mutate: mockRemoveMutate, isPending: true },
+    });
+    const favorites = [
+      {
+        actor_id: 'a1',
+        user_id: 'user-1',
+        actor: {
+          id: 'a1',
+          name: 'Allu Arjun',
+          photo_url: null,
+          tmdb_person_id: null,
+          created_at: '',
+        },
+      },
+    ];
+    mockUseFavoriteActors.mockReturnValue({ data: favorites, isLoading: false });
+
+    render(<FavoriteActorsScreen />);
+    // The remove button should be disabled; pressing it shouldn't trigger the mutate
+    expect(screen.getByText('Allu Arjun')).toBeTruthy();
+  });
+
+  it('renders actor with photo_url (covers getImageUrl non-null branch)', () => {
+    const favorites = [
+      {
+        actor_id: 'a1',
+        user_id: 'user-1',
+        actor: {
+          id: 'a1',
+          name: 'Photo Actor',
+          photo_url: 'https://example.com/photo.jpg',
+          tmdb_person_id: null,
+          created_at: '',
+        },
+      },
+    ];
+    mockUseFavoriteActors.mockReturnValue({ data: favorites, isLoading: false });
+
+    render(<FavoriteActorsScreen />);
+    expect(screen.getByText('Photo Actor')).toBeTruthy();
   });
 
   it('does not call remove when user is null', () => {

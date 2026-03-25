@@ -568,6 +568,87 @@ describe('DELETE /api/admin-crud — viewer role', () => {
   });
 });
 
+describe('PATCH /api/admin-crud — RPC error on non-movie table', () => {
+  it('returns 500 when RPC fails for non-movie update', async () => {
+    vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') return chainable({ role_id: 'admin', status: 'active' });
+        if (table === 'user_languages') return chainable([]);
+        if (table === 'languages') return chainable([]);
+        return chainable(null);
+      },
+      rpc: () => Promise.resolve({ data: null, error: { message: 'RPC update failed' } }),
+    }) as never;
+
+    const res = await PATCH(
+      makeRequest('PATCH', { table: 'platforms', id: 'plat-1', data: { name: 'X' } }),
+    );
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('PATCH /api/admin-crud — viewer role on non-movie table', () => {
+  it('returns 403 for viewer role on PATCH non-movie table', async () => {
+    vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') return chainable({ role_id: 'viewer', status: 'active' });
+        if (table === 'user_languages') return chainable([]);
+        if (table === 'languages') return chainable([]);
+        return chainable(null);
+      },
+      rpc: (...args: unknown[]) => {
+        mockRpc(...args);
+        return Promise.resolve({ data: null, error: null });
+      },
+    }) as never;
+
+    const res = await PATCH(
+      makeRequest('PATCH', { table: 'platforms', id: 'plat-1', data: { name: 'X' } }),
+    );
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.error).toContain('Viewer role is read-only');
+  });
+});
+
+describe('PATCH /api/admin-crud — RPC error on movie table update', () => {
+  it('returns 500 when RPC fails for movie update', async () => {
+    vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') return chainable({ role_id: 'admin', status: 'active' });
+        if (table === 'user_languages') return chainable([{ language_id: 'lang-te' }]);
+        if (table === 'languages') return chainable([{ code: 'te' }]);
+        return chainable({ movie_id: 'm1', original_language: 'te' });
+      },
+      rpc: () => Promise.resolve({ data: null, error: { message: 'Movie RPC failed' } }),
+    }) as never;
+
+    const res = await PATCH(
+      makeRequest('PATCH', { table: 'movies', id: 'movie-1', data: { title: 'X' } }),
+    );
+    expect(res.status).toBe(500);
+  });
+});
+
+describe('DELETE /api/admin-crud — null result returns success', () => {
+  it('returns { success: true } when RPC returns null data', async () => {
+    vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') return chainable({ role_id: 'root', status: 'active' });
+        if (table === 'user_languages') return chainable([]);
+        if (table === 'languages') return chainable([]);
+        return chainable(null);
+      },
+      rpc: () => Promise.resolve({ data: null, error: null }),
+    }) as never;
+
+    const res = await DELETE(makeRequest('DELETE', { table: 'movies', id: 'x' }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+  });
+});
+
 describe('DELETE /api/admin-crud — language scope rejection on delete', () => {
   it('returns 403 when admin deletes movie child with wrong language', async () => {
     vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
@@ -593,5 +674,92 @@ describe('DELETE /api/admin-crud — language scope rejection on delete', () => 
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error).toContain('language');
+  });
+});
+
+describe('PATCH /api/admin-crud — unauthenticated non-movie table', () => {
+  it('returns 401 when auth fails for non-movie PATCH', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'bad' } });
+    const res = await PATCH(
+      makeUnauthRequest({ table: 'platforms', id: 'plat-1', data: { name: 'X' } }),
+    );
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/admin-crud — unauthenticated non-movie table', () => {
+  it('returns 401 when auth fails for non-movie POST', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null }, error: { message: 'bad' } });
+    const res = await POST(makeUnauthRequest({ table: 'platforms', data: { name: 'X' } }));
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/admin-crud — language scope for movie insert with restricted admin', () => {
+  it('allows insert when admin has matching language', async () => {
+    vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') return chainable({ role_id: 'admin', status: 'active' });
+        if (table === 'user_languages') return chainable([{ language_id: 'lang-te' }]);
+        if (table === 'languages') return chainable([{ code: 'te' }]);
+        return chainable({ movie_id: 'm1', original_language: 'te' });
+      },
+      rpc: (...args: unknown[]) => {
+        mockRpc(...args);
+        return Promise.resolve({ data: { id: 'new-id' }, error: null });
+      },
+    }) as never;
+
+    const res = await POST(
+      makeRequest('POST', {
+        table: 'movies',
+        data: { title: 'New Telugu Movie', original_language: 'te' },
+      }),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects movie insert when admin lacks access to the language', async () => {
+    vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles') return chainable({ role_id: 'admin', status: 'active' });
+        if (table === 'user_languages') return chainable([{ language_id: 'lang-hi' }]);
+        if (table === 'languages') return chainable([{ code: 'hi' }]);
+        return chainable({ movie_id: 'm1', original_language: 'te' });
+      },
+      rpc: (...args: unknown[]) => {
+        mockRpc(...args);
+        return Promise.resolve({ data: null, error: null });
+      },
+    }) as never;
+
+    const res = await POST(
+      makeRequest('POST', {
+        table: 'movies',
+        data: { title: 'Movie', original_language: 'te' },
+      }),
+    );
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('DELETE /api/admin-crud — super_admin can delete top-level', () => {
+  it('allows super_admin to delete top-level entity', async () => {
+    vi.mocked(await import('@/lib/supabase-admin')).getSupabaseAdmin = vi.fn().mockReturnValue({
+      from: (table: string) => {
+        if (table === 'admin_user_roles')
+          return chainable({ role_id: 'super_admin', status: 'active' });
+        if (table === 'user_languages') return chainable([]);
+        if (table === 'languages') return chainable([]);
+        return chainable(null);
+      },
+      rpc: (...args: unknown[]) => {
+        mockRpc(...args);
+        return Promise.resolve({ data: { id: 'del-1' }, error: null });
+      },
+    }) as never;
+
+    const res = await DELETE(makeRequest('DELETE', { table: 'movies', id: 'del-1' }));
+    expect(res.status).toBe(200);
   });
 });

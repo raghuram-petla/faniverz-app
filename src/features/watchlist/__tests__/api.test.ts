@@ -87,6 +87,20 @@ describe('watchlist api', () => {
       expect((result[0] as any)._platformCount).toBe(0);
     });
 
+    it('sets _platformCount to 0 when movie_platforms is undefined', async () => {
+      const entryNoMoviePlatforms = {
+        id: '1',
+        movie_id: 'm1',
+        movie: { id: 'm1', title: 'Movie' },
+      };
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: [entryNoMoviePlatforms], error: null });
+
+      const result = await fetchWatchlist('user-1');
+      expect((result[0] as any)._platformCount).toBe(0);
+    });
+
     it('returns entry unchanged when movie is null', async () => {
       const entryNoMovie = { id: '1', movie_id: 'm1', movie: null };
       mockSelect.mockReturnValue({ eq: mockEq });
@@ -266,6 +280,16 @@ describe('watchlist api', () => {
       expect(mockRange).toHaveBeenCalledWith(0, 9);
     });
 
+    it('calls range with custom pageSize', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: [], error: null });
+
+      await fetchWatchlistPaginated('user-1', 0, 5);
+      expect(mockRange).toHaveBeenCalledWith(0, 4);
+    });
+
     it('calls range(10, 19) for page 1', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
@@ -300,6 +324,21 @@ describe('watchlist api', () => {
 
       const result = await fetchWatchlistPaginated('user-1', 0);
       expect((result[0] as any)._platformCount).toBe(5);
+    });
+
+    it('sets _platformCount to 0 when movie_platforms is undefined (paginated)', async () => {
+      const entryNoMoviePlatforms = {
+        id: '1',
+        movie_id: 'm1',
+        movie: { id: 'm1', title: 'Movie' },
+      };
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: [entryNoMoviePlatforms], error: null });
+
+      const result = await fetchWatchlistPaginated('user-1', 0);
+      expect((result[0] as any)._platformCount).toBe(0);
     });
 
     it('returns entry unchanged when movie is null (paginated)', async () => {

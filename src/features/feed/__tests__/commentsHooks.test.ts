@@ -297,6 +297,62 @@ describe('useAddComment — empty pages branch', () => {
   });
 });
 
+describe('useDeleteComment — mutationFn throws for unauthenticated user', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('throws directly from mutationFn when user is null', async () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useDeleteComment('f1'), { wrapper });
+
+    await act(async () => {
+      result.current.mutate('c1');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useAddComment — mutationFn throws for unauthenticated user directly', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('mutationFn throws directly when user is null (not authenticated check)', async () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+    const wrapper = createWrapper();
+    const { result } = renderHook(() => useAddComment('f1'), { wrapper });
+
+    await act(async () => {
+      result.current.mutate('Nice!');
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    // addComment API should NOT be called since mutationFn throws before it
+    expect(mockAddComment).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+});
+
 describe('useComments — getNextPageParam', () => {
   beforeEach(() => jest.clearAllMocks());
 

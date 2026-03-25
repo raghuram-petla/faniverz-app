@@ -126,4 +126,52 @@ describe('ValidationRow', () => {
     fireEvent.click(screen.getByText('Fix'));
     expect(onFixSingle).toHaveBeenCalledWith(item);
   });
+
+  it('renders Full R2 badge for full_r2 URLs', () => {
+    renderRow({ urlType: 'full_r2' });
+    expect(screen.getByText('Full R2')).toBeInTheDocument();
+  });
+
+  it('renders gray dot for null variant value (N/A)', () => {
+    renderRow({
+      originalExists: null as unknown as boolean,
+      variants: { sm: true, md: true, lg: true },
+    });
+    // originalExists=null means isDeepScanned is false, so dashes are rendered
+    // But let's test a deep-scanned row with a null variant
+    const { container: c2 } = renderRow({
+      originalExists: true,
+      variants: { sm: null as unknown as boolean, md: true, lg: false },
+    });
+    const grayDots = c2.querySelectorAll('.bg-zinc-600');
+    expect(grayDots.length).toBe(1); // sm is null
+  });
+
+  it('shows checkbox with correct aria-label', () => {
+    renderRow({ urlType: 'external' });
+    expect(screen.getByLabelText('Select Test Movie')).toBeInTheDocument();
+  });
+
+  it('renders currentUrl in truncated cell', () => {
+    renderRow({ currentUrl: 'https://example.com/long-path/image.jpg' });
+    expect(screen.getByText('https://example.com/long-path/image.jpg')).toBeInTheDocument();
+  });
+
+  it('applies red background row when item has issue', () => {
+    const { container } = renderRow({ urlType: 'external' });
+    const row = container.querySelector('tr');
+    expect(row?.className).toContain('bg-red-950/10');
+  });
+
+  it('does not apply red background when no issue', () => {
+    const { container } = renderRow();
+    const row = container.querySelector('tr');
+    expect(row?.className).not.toContain('bg-red-950/10');
+  });
+
+  it('renders checked checkbox when isSelected=true', () => {
+    renderRow({ urlType: 'external' }, { isSelected: true });
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeChecked();
+  });
 });

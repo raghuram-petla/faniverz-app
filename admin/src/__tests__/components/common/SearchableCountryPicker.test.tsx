@@ -161,4 +161,72 @@ describe('SearchableCountryPicker', () => {
     expect(screen.getByPlaceholderText('Search country...')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /India/ })).not.toBeInTheDocument();
   });
+
+  it('updates highlight on mouseEnter', () => {
+    render(
+      <SearchableCountryPicker countries={mockCountries} onSelect={onSelect} onCancel={onCancel} />,
+    );
+    // Hover over the third item (United Kingdom at index 2)
+    const buttons = screen
+      .getAllByRole('button')
+      .filter((b) => b.textContent?.includes('United Kingdom'));
+    fireEvent.mouseEnter(buttons[0]);
+    // Now press Enter - should select United Kingdom
+    const input = screen.getByPlaceholderText('Search country...');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith('GB');
+  });
+
+  it('does not call onSelect when Enter is pressed with empty filtered list', () => {
+    render(
+      <SearchableCountryPicker countries={mockCountries} onSelect={onSelect} onCancel={onCancel} />,
+    );
+    const input = screen.getByPlaceholderText('Search country...');
+    fireEvent.change(input, { target: { value: 'zzzzz' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('ignores unrecognized keys', () => {
+    render(
+      <SearchableCountryPicker countries={mockCountries} onSelect={onSelect} onCancel={onCancel} />,
+    );
+    const input = screen.getByPlaceholderText('Search country...');
+    fireEvent.keyDown(input, { key: 'Tab' });
+    // No action taken
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it('focuses the input on mount', () => {
+    render(
+      <SearchableCountryPicker countries={mockCountries} onSelect={onSelect} onCancel={onCancel} />,
+    );
+    const input = screen.getByPlaceholderText('Search country...');
+    expect(document.activeElement).toBe(input);
+  });
+
+  it('resets highlight index when search query changes', () => {
+    render(
+      <SearchableCountryPicker countries={mockCountries} onSelect={onSelect} onCancel={onCancel} />,
+    );
+    const input = screen.getByPlaceholderText('Search country...');
+    // Move highlight to 2nd item
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    // Change query - should reset highlight to 0
+    fireEvent.change(input, { target: { value: 'Uni' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    // Should select the first filtered item
+    expect(onSelect).toHaveBeenCalledWith('US'); // 'United States' matches first
+  });
+
+  it('calls scrollIntoView on highlighted item', () => {
+    render(
+      <SearchableCountryPicker countries={mockCountries} onSelect={onSelect} onCancel={onCancel} />,
+    );
+    const input = screen.getByPlaceholderText('Search country...');
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  });
 });

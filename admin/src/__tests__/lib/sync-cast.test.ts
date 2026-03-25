@@ -344,6 +344,138 @@ describe('syncCastCrew', () => {
 
     expect(updatedFields).toContain('cast');
   });
+
+  it('warns when cast insert fails in syncCastCrew', async () => {
+    supabase.select.mockReturnValueOnce({
+      ...supabase,
+      eq: vi.fn().mockResolvedValue({ count: 0 }),
+    });
+
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'cast insert error' } });
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const detail = {
+      credits: {
+        cast: [
+          { id: 1, name: 'Actor', character: 'Hero', order: 0, profile_path: null, gender: 2 },
+        ],
+        crew: [],
+      },
+    };
+    const updatedFields: string[] = [];
+
+    await syncCastCrew(MOVIE_ID, detail as never, false, supabase as never, updatedFields);
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('cast insert failed'),
+      'cast insert error',
+    );
+    consoleWarn.mockRestore();
+  });
+
+  it('warns when mirrorMainPoster update fails', async () => {
+    const mockSub = createBasicMockSupabase();
+    mockSub.maybeSingle.mockResolvedValueOnce({
+      data: { id: 'existing-poster-id' },
+      error: null,
+    });
+    // After update().eq('id', ...) must resolve with error
+    const mockUpdateEq = vi.fn().mockResolvedValue({ error: { message: 'update failed' } });
+    mockSub.update = vi.fn().mockReturnValue({ eq: mockUpdateEq });
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await mirrorMainPoster(MOVIE_ID, 'poster.jpg', mockSub as never);
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('mirrorMainPoster: update failed'),
+      'update failed',
+    );
+    consoleWarn.mockRestore();
+  });
+
+  it('warns when mirrorMainPoster insert fails', async () => {
+    const mockSub = createBasicMockSupabase();
+    mockSub.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    mockSub.insert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await mirrorMainPoster(MOVIE_ID, 'poster.jpg', mockSub as never);
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('mirrorMainPoster: insert failed'),
+      'insert failed',
+    );
+    consoleWarn.mockRestore();
+  });
+
+  it('skips crew member when upsertActorPreserveType returns null in syncCastCrew', async () => {
+    supabase.select.mockReturnValueOnce({
+      ...supabase,
+      eq: vi.fn().mockResolvedValue({ count: 0 }),
+    });
+
+    vi.mocked(extractKeyCrewMembers).mockReturnValueOnce([
+      {
+        id: 10,
+        name: 'Director',
+        profile_path: null,
+        roleName: 'Director',
+        roleOrder: 0,
+        gender: null,
+      },
+    ] as never);
+
+    vi.mocked(upsertActorPreserveType).mockResolvedValueOnce(null);
+
+    const detail = {
+      credits: { cast: [], crew: [{ id: 10, name: 'Director', job: 'Director' }] },
+    };
+    const updatedFields: string[] = [];
+
+    await syncCastCrew(MOVIE_ID, detail as never, false, supabase as never, updatedFields);
+
+    expect(updatedFields).toContain('cast');
+  });
+
+  it('warns when delete fails on force resync in syncCastCrew', async () => {
+    supabase.select.mockReturnValueOnce({
+      ...supabase,
+      eq: vi.fn().mockResolvedValue({ count: 5 }),
+    });
+
+    // Make delete return with error
+    supabase.delete = vi.fn().mockReturnThis();
+    supabase.eq.mockResolvedValueOnce({ error: { message: 'delete failed' } });
+
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const detail = { credits: { cast: [], crew: [] } };
+    const updatedFields: string[] = [];
+
+    await syncCastCrew(MOVIE_ID, detail as never, true, supabase as never, updatedFields);
+
+    expect(consoleWarn).toHaveBeenCalledWith(
+      expect.stringContaining('cast delete failed'),
+      'delete failed',
+    );
+    consoleWarn.mockRestore();
+  });
+
+  it('handles empty character in cast using null fallback', async () => {
+    supabase.select.mockReturnValueOnce({
+      ...supabase,
+      eq: vi.fn().mockResolvedValue({ count: 0 }),
+    });
+
+    const detail = {
+      credits: {
+        cast: [{ id: 1, name: 'Actor', character: '', order: 0, profile_path: null, gender: null }],
+        crew: [],
+      },
+    };
+    const updatedFields: string[] = [];
+
+    await syncCastCrew(MOVIE_ID, detail as never, false, supabase as never, updatedFields);
+
+    expect(supabase.insert).toHaveBeenCalledWith(expect.objectContaining({ role_name: null }));
+  });
 });
 
 describe('syncCastCrewAdditive', () => {

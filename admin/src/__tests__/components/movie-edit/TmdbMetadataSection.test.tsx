@@ -101,4 +101,32 @@ describe('TmdbMetadataSection', () => {
     render(<TmdbMetadataSection {...defaultProps} tmdbVoteAverage={null} />);
     expect(screen.queryByText('/10')).not.toBeInTheDocument();
   });
+
+  it('renders dash for null tmdbStatus in StatusBadge', () => {
+    render(<TmdbMetadataSection {...defaultProps} tmdbStatus={null} />);
+    // Status row renders but StatusBadge returns a dash span
+    expect(screen.getByText('TMDB Status')).toBeInTheDocument();
+  });
+
+  it('shows content when only tmdbVoteAverage is non-null', () => {
+    render(
+      <TmdbMetadataSection
+        tmdbStatus={null}
+        tmdbVoteAverage={8.0}
+        tmdbVoteCount={null}
+        budget={null}
+        revenue={null}
+        collectionName={null}
+        spokenLanguages={null}
+        tmdbLastSyncedAt={null}
+      />,
+    );
+    expect(screen.getByText('8.0')).toBeInTheDocument();
+    expect(screen.queryByText(/No TMDB metadata available/)).not.toBeInTheDocument();
+  });
+
+  it('hides vote count when tmdbVoteCount is null', () => {
+    render(<TmdbMetadataSection {...defaultProps} tmdbVoteCount={null} />);
+    expect(screen.queryByText(/votes/)).not.toBeInTheDocument();
+  });
 });

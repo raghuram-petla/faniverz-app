@@ -214,6 +214,48 @@ describe('WatchOnSection', () => {
     expect(screen.queryByText('A')).toBeNull();
   });
 
+  it('renders non-interactive button when streaming_url does not start with http', () => {
+    const platform = makePlatform({ streaming_url: 'app://deeplink/123' });
+    render(
+      <WatchOnSection
+        platforms={[platform] as any}
+        movieStatus="streaming"
+        releaseDate="2024-12-05"
+      />,
+    );
+    // streaming_url exists but doesn't start with http, so button is rendered but non-interactive
+    expect(screen.getByText('Stream Now')).toBeTruthy();
+    expect(screen.getByLabelText('Watch on Aha')).toBeTruthy();
+  });
+
+  it('opens URL successfully when Linking.openURL succeeds', async () => {
+    jest.spyOn(Linking, 'openURL').mockResolvedValueOnce(true);
+    const platform = makePlatform({ streaming_url: 'https://aha.video/movie/123' });
+    render(
+      <WatchOnSection
+        platforms={[platform] as any}
+        movieStatus="streaming"
+        releaseDate="2024-12-05"
+      />,
+    );
+    fireEvent.press(screen.getByLabelText('Watch on Aha'));
+    expect(Linking.openURL).toHaveBeenCalledWith('https://aha.video/movie/123');
+  });
+
+  it('handles platform with null streaming_url (onPress=undefined branch)', () => {
+    const platform = makePlatform({ streaming_url: null });
+    render(
+      <WatchOnSection
+        platforms={[platform] as any}
+        movieStatus="streaming"
+        releaseDate="2024-12-05"
+      />,
+    );
+    // Button should exist but onPress is undefined
+    expect(screen.getByLabelText('Watch on Aha')).toBeTruthy();
+    expect(screen.getByText('Available')).toBeTruthy();
+  });
+
   it('renders remote logo Image when platform has logo_url but no local asset', () => {
     const { getPlatformLogo } = require('@/constants/platformLogos');
     (getPlatformLogo as jest.Mock).mockReturnValueOnce(null);

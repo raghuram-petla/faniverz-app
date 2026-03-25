@@ -3,8 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MainImageSelector } from '@/components/movie-edit/MainImageSelector';
 import type { MovieImage } from '@/lib/types';
 
+const mockGetImageUrl = vi.fn((url: string) => `https://cdn.test/${url}`);
 vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: (url: string) => `https://cdn.test/${url}`,
+  getImageUrl: (url: string) => mockGetImageUrl(url),
 }));
 
 function makeImage(overrides: Partial<MovieImage> = {}): MovieImage {
@@ -219,5 +220,30 @@ describe('MainImageSelector', () => {
     render(<MainImageSelector {...defaultProps} images={images} />);
     fireEvent.click(screen.getByText('Change'));
     expect(screen.getByAltText('Image')).toBeInTheDocument();
+  });
+
+  it('falls back to raw currentImageUrl when getImageUrl returns null', () => {
+    mockGetImageUrl.mockReturnValue(null as unknown as string);
+    render(<MainImageSelector {...defaultProps} currentImageUrl="raw-poster.jpg" />);
+    const img = screen.getByAltText('Main Poster');
+    expect(img).toHaveAttribute('src', 'raw-poster.jpg');
+  });
+
+  it('falls back to raw image_url in gallery dropdown when getImageUrl returns null', () => {
+    mockGetImageUrl.mockReturnValue(null as unknown as string);
+    const images = [makeImage({ id: 'img-1', image_url: 'raw-gallery.jpg', title: 'Gallery' })];
+    render(<MainImageSelector {...defaultProps} images={images} />);
+    fireEvent.click(screen.getByText('Change'));
+    const galleryImg = screen.getByAltText('Gallery');
+    expect(galleryImg).toHaveAttribute('src', 'raw-gallery.jpg');
+  });
+
+  it('does not close dropdown when clicking inside the dropdown', () => {
+    render(<MainImageSelector {...defaultProps} />);
+    fireEvent.click(screen.getByText('Change'));
+    const img = screen.getByAltText('First Look');
+    fireEvent.mouseDown(img);
+    // The mouseDown inside should not close the dropdown
+    expect(screen.getByAltText('First Look')).toBeInTheDocument();
   });
 });

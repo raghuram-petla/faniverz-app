@@ -787,6 +787,269 @@ describe('useAdminMovies — query error', () => {
   });
 });
 
+describe('useAdminMovies — releaseYear + releaseMonth filter', () => {
+  it('applies releaseYear with releaseMonth via gte/lte', async () => {
+    const mockLte = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockGte = vi.fn().mockReturnValue({ lte: mockLte });
+    const mockRange = vi.fn().mockReturnValue({ gte: mockGte });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({ range: mockRange }),
+      }),
+    });
+
+    const filters = {
+      genres: [],
+      releaseYear: '2024',
+      releaseMonth: '06',
+      certification: '',
+      language: '',
+      platformId: '',
+      isFeatured: false,
+      minRating: '',
+      actorSearch: '',
+      directorSearch: '',
+    };
+
+    const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockGte).toHaveBeenCalledWith('release_date', '2024-06-01');
+    expect(mockLte).toHaveBeenCalledWith('release_date', '2024-06-30');
+  });
+
+  it('applies releaseYear without releaseMonth (full year range)', async () => {
+    const mockLte = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockGte = vi.fn().mockReturnValue({ lte: mockLte });
+    const mockRange = vi.fn().mockReturnValue({ gte: mockGte });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({ range: mockRange }),
+      }),
+    });
+
+    const filters = {
+      genres: [],
+      releaseYear: '2024',
+      releaseMonth: '',
+      certification: '',
+      language: '',
+      platformId: '',
+      isFeatured: false,
+      minRating: '',
+      actorSearch: '',
+      directorSearch: '',
+    };
+
+    const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockGte).toHaveBeenCalledWith('release_date', '2024-01-01');
+    expect(mockLte).toHaveBeenCalledWith('release_date', '2024-12-31');
+  });
+});
+
+describe('useAdminMovies — language filter via advanced filters', () => {
+  it('applies language filter from advancedFilters', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({ range: mockRange }),
+      }),
+    });
+
+    const filters = {
+      genres: [],
+      releaseYear: '',
+      releaseMonth: '',
+      certification: '',
+      language: 'te',
+      platformId: '',
+      isFeatured: false,
+      minRating: '',
+      actorSearch: '',
+      directorSearch: '',
+    };
+
+    const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockEq).toHaveBeenCalledWith('original_language', 'te');
+  });
+});
+
+describe('useAdminMovies — isFeatured filter', () => {
+  it('applies isFeatured filter via eq', async () => {
+    const mockEq = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({ range: mockRange }),
+      }),
+    });
+
+    const filters = {
+      genres: [],
+      releaseYear: '',
+      releaseMonth: '',
+      certification: '',
+      language: '',
+      platformId: '',
+      isFeatured: true,
+      minRating: '',
+      actorSearch: '',
+      directorSearch: '',
+    };
+
+    const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockEq).toHaveBeenCalledWith('is_featured', true);
+  });
+});
+
+describe('useAdminMovies — minRating filter', () => {
+  it('applies minRating filter via gte', async () => {
+    const mockGte = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ gte: mockGte });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({ range: mockRange }),
+      }),
+    });
+
+    const filters = {
+      genres: [],
+      releaseYear: '',
+      releaseMonth: '',
+      certification: '',
+      language: '',
+      platformId: '',
+      isFeatured: false,
+      minRating: '7',
+      actorSearch: '',
+      directorSearch: '',
+    };
+
+    const { result } = renderHook(() => useAdminMovies('', '', undefined, filters), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockGte).toHaveBeenCalledWith('rating', 7);
+  });
+});
+
+describe('useAdminMovies — excludeIds (released filter)', () => {
+  it('applies excludeIds via .not for released status filter', async () => {
+    const platformIds = [{ movie_id: 'm1' }];
+    const mockNot = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockEq = vi.fn().mockReturnValue({ not: mockNot });
+    const mockLte = vi.fn().mockReturnValue({ eq: mockEq });
+    const mockNotRD = vi.fn().mockReturnValue({ lte: mockLte });
+    const mockRange = vi.fn().mockReturnValue({ not: mockNotRD });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_platforms') {
+        return {
+          select: vi.fn().mockResolvedValue({ data: platformIds, error: null }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({ range: mockRange }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', 'released'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+  });
+});
+
+describe('useAdminMovies — announced status filter', () => {
+  it('applies announced filter via is(release_date, null)', async () => {
+    const mockIs = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ is: mockIs });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({ range: mockRange }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', 'announced'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockIs).toHaveBeenCalledWith('release_date', null);
+  });
+});
+
+describe('useAdminMovies — upcoming status filter', () => {
+  it('applies upcoming filter via gt(release_date, today)', async () => {
+    const mockGt = vi.fn().mockResolvedValue({ data: [], error: null });
+    const mockRange = vi.fn().mockReturnValue({ gt: mockGt });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({ range: mockRange }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', 'upcoming'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(mockGt).toHaveBeenCalled();
+  });
+});
+
+describe('useAdminMovies — streaming with empty pmIds returns empty', () => {
+  it('returns empty when streaming filter has no platform IDs', async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_platforms') {
+        return {
+          select: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockReturnValue({
+            range: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAdminMovies('', 'streaming'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.pages.flat()).toEqual([]);
+  });
+});
+
 describe('useDeleteMovie', () => {
   it('calls /api/admin-crud with DELETE method and movie id', async () => {
     const fetchSpy = mockCrudApi({ success: true });

@@ -167,4 +167,60 @@ describe('CountryDropdown', () => {
     );
     expect(screen.getByTestId('icon-IN')).toBeInTheDocument();
   });
+
+  it('does not call onChange on Enter when no item is highlighted', () => {
+    render(<CountryDropdown countries={mockCountries} value="IN" onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button'));
+    const searchInput = screen.getByPlaceholderText('Search country...');
+    // Filter to empty list
+    fireEvent.change(searchInput, { target: { value: 'zzzzz' } });
+    // Press Enter with no valid highlight
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('uses formatLabel in dropdown list items', () => {
+    render(
+      <CountryDropdown
+        countries={mockCountries}
+        value="IN"
+        onChange={onChange}
+        formatLabel={(c) => `${c.name} (${c.code})`}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('United States (US)')).toBeInTheDocument();
+    expect(screen.getByText('United Kingdom (GB)')).toBeInTheDocument();
+  });
+
+  it('does not crash when outside click handler fires and dropdown is open', () => {
+    render(
+      <div>
+        <span data-testid="outside">Outside</span>
+        <CountryDropdown countries={mockCountries} value="IN" onChange={onChange} />
+      </div>,
+    );
+    // Open dropdown then click outside
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByPlaceholderText('Search country...')).not.toBeInTheDocument();
+  });
+
+  it('does not close dropdown when clicking inside the container', () => {
+    render(<CountryDropdown countries={mockCountries} value="IN" onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button'));
+    const searchInput = screen.getByPlaceholderText('Search country...');
+    // Click inside the search input (inside the container) — should NOT close
+    fireEvent.mouseDown(searchInput);
+    expect(screen.getByPlaceholderText('Search country...')).toBeInTheDocument();
+  });
+
+  it('handles non-matching keyboard keys without error', () => {
+    render(<CountryDropdown countries={mockCountries} value="IN" onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button'));
+    const searchInput = screen.getByPlaceholderText('Search country...');
+    // A random key should not throw or trigger selection
+    fireEvent.keyDown(searchInput, { key: 'Tab' });
+    expect(onChange).not.toHaveBeenCalled();
+  });
 });

@@ -241,6 +241,12 @@ describe('FeedPage', () => {
       renderWithProviders(<FeedPage />);
       expect(screen.getByTestId('selected-filter').textContent).toBe('all');
     });
+
+    it('passes non-all filter to useAdminFeed', () => {
+      renderWithProviders(<FeedPage />);
+      fireEvent.click(screen.getByText('Filter Movie'));
+      expect(screen.getByTestId('selected-filter').textContent).toBe('movie');
+    });
   });
 
   describe('handleDelete', () => {
@@ -299,6 +305,16 @@ describe('FeedPage', () => {
     it('does not call reorder mutation when over is null', () => {
       renderWithProviders(<FeedPage />);
       fireEvent.click(screen.getByTestId('trigger-drag-no-over'));
+      expect(mockReorderMutate).not.toHaveBeenCalled();
+    });
+
+    it('does not call reorder mutation when item IDs are not found in list', () => {
+      // Need to add a button that triggers drag with unknown IDs
+      // This is already implicitly covered if items are empty, but let's ensure the branch
+      mockData = [];
+      renderWithProviders(<FeedPage />);
+      // The trigger-drag button tries to drag feed-1 to feed-2, but items list is empty
+      fireEvent.click(screen.getByTestId('trigger-drag'));
       expect(mockReorderMutate).not.toHaveBeenCalled();
     });
   });

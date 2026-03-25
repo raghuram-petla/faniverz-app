@@ -130,6 +130,24 @@ describe('useFollowEntity', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it('handles onError without previous follows in context (no cache)', async () => {
+    mockFollowEntity.mockRejectedValue(new Error('Follow failed'));
+
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    // Use fresh client with no cached data, so context.previousFollows is undefined
+    const { result } = renderHook(() => useFollowEntity(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
 });
 
 describe('useEnrichedFollows', () => {
@@ -222,5 +240,61 @@ describe('useUnfollowEntity', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('handles onError without previous follows in context (no cache)', async () => {
+    mockUnfollowEntity.mockRejectedValue(new Error('Unfollow failed'));
+
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useUnfollowEntity(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('optimistic update handles old=undefined (null coalescing fallback)', async () => {
+    mockUnfollowEntity.mockResolvedValue(undefined);
+
+    // Use a fresh client with NO cached entity-follows data at all
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Do NOT seed any cache — old will be undefined in setQueryData callback
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useUnfollowEntity(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useFollowEntity — optimistic old=undefined', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('optimistic update handles old=undefined via ?? fallback', async () => {
+    mockFollowEntity.mockResolvedValue(undefined);
+
+    // Use a fresh client with NO cached entity-follows data at all
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useFollowEntity(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 });

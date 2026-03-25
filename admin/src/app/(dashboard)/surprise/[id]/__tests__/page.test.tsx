@@ -13,14 +13,10 @@ const mockUpdateMutateAsync = vi.fn().mockResolvedValue(undefined);
 const mockDeleteMutateAsync = vi.fn().mockResolvedValue(undefined);
 const mockUseAdminSurpriseItem = vi.fn();
 
+const mockUseUpdateSurprise = vi.fn();
 vi.mock('@/hooks/useAdminSurprise', () => ({
   useAdminSurpriseItem: () => mockUseAdminSurpriseItem(),
-  useUpdateSurprise: () => ({
-    mutateAsync: mockUpdateMutateAsync,
-    isError: false,
-    error: null,
-    isPending: false,
-  }),
+  useUpdateSurprise: () => mockUseUpdateSurprise(),
   useDeleteSurprise: () => ({ mutateAsync: mockDeleteMutateAsync, isPending: false }),
 }));
 
@@ -83,6 +79,12 @@ describe('EditSurpriseContentPage', () => {
     window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
     mockUsePermissions.mockReturnValue({ isReadOnly: false });
+    mockUseUpdateSurprise.mockReturnValue({
+      mutateAsync: mockUpdateMutateAsync,
+      isError: false,
+      error: null,
+      isPending: false,
+    });
     mockUseAdminSurpriseItem.mockReturnValue({ data: makeItem(), isLoading: false });
   });
 
@@ -244,5 +246,58 @@ describe('EditSurpriseContentPage', () => {
     const input = screen.getByLabelText('Views');
     fireEvent.change(input, { target: { value: 'abc' } });
     expect(input).toHaveValue('0');
+  });
+
+  it('shows error message when updateMutation.isError is true', () => {
+    mockUseUpdateSurprise.mockReturnValue({
+      mutateAsync: mockUpdateMutateAsync,
+      isError: true,
+      error: new Error('Validation failed'),
+      isPending: false,
+    });
+    render(<EditSurpriseContentPage />);
+    expect(screen.getByText('Validation failed')).toBeInTheDocument();
+  });
+
+  it('shows fallback error text when update error is not an Error instance', () => {
+    mockUseUpdateSurprise.mockReturnValue({
+      mutateAsync: mockUpdateMutateAsync,
+      isError: true,
+      error: 'string error',
+      isPending: false,
+    });
+    render(<EditSurpriseContentPage />);
+    expect(screen.getByText('Failed to update content')).toBeInTheDocument();
+  });
+
+  it('renders null description as empty string in form', () => {
+    mockUseAdminSurpriseItem.mockReturnValue({
+      data: makeItem({ description: null }),
+      isLoading: false,
+    });
+    render(<EditSurpriseContentPage />);
+    const textarea = screen.getByLabelText('Description');
+    expect(textarea).toHaveValue('');
+  });
+
+  it('updates description field when user types', () => {
+    render(<EditSurpriseContentPage />);
+    const textarea = screen.getByLabelText('Description');
+    fireEvent.change(textarea, { target: { value: 'New desc' } });
+    expect(textarea).toHaveValue('New desc');
+  });
+
+  it('updates category field when user selects', () => {
+    render(<EditSurpriseContentPage />);
+    const select = screen.getByLabelText('Category');
+    fireEvent.change(select, { target: { value: 'bts' } });
+    expect(select).toHaveValue('bts');
+  });
+
+  it('updates YouTube ID field when user types', () => {
+    render(<EditSurpriseContentPage />);
+    const input = screen.getByLabelText('YouTube ID');
+    fireEvent.change(input, { target: { value: 'newVid' } });
+    expect(input).toHaveValue('newVid');
   });
 });

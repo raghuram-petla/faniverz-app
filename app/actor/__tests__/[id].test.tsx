@@ -703,4 +703,70 @@ describe('ActorDetailScreen', () => {
     expect(screen.queryByText('Female')).toBeNull();
     expect(screen.queryByText('Non-binary')).toBeNull();
   });
+
+  it('does not call follow/unfollow while unfollow mutation is pending', () => {
+    const mockUnfollowMutate = jest.fn();
+    jest.spyOn(require('@/features/feed'), 'useFollowEntity').mockReturnValue({
+      mutate: jest.fn(),
+      isPending: false,
+    });
+    jest.spyOn(require('@/features/feed'), 'useUnfollowEntity').mockReturnValue({
+      mutate: mockUnfollowMutate,
+      isPending: true,
+    });
+
+    render(<ActorDetailScreen />);
+    const followBtn = screen.getByLabelText('Follow Nagarjuna Akkineni');
+    fireEvent.press(followBtn);
+    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+
+    jest.restoreAllMocks();
+  });
+
+  it('toggles bio without LayoutAnimation when animations are disabled', () => {
+    jest
+      .spyOn(require('@/hooks/useAnimationsEnabled'), 'useAnimationsEnabled')
+      .mockReturnValue(false);
+    render(<ActorDetailScreen />);
+    const toggle = screen.getByTestId('bio-toggle');
+    fireEvent.press(toggle);
+    expect(screen.getByText('Show less')).toBeTruthy();
+    jest.restoreAllMocks();
+  });
+
+  it('does not show birth_date row when birth_date is null', () => {
+    const noBirthDate = { ...mockActor, birth_date: null };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: noBirthDate,
+      filmography: [],
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.queryByText('Born')).toBeNull();
+  });
+
+  it('technician with no crew credits falls back to generic Technician label', () => {
+    const technician = { ...mockActor, person_type: 'technician' as const };
+    // Filmography has only cast credits, no crew — so find() returns undefined, fallback to t('Technician')
+    const castOnly = [mockFilmography[0]]; // first one is cast
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: technician,
+      filmography: castOnly,
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    expect(screen.getByText('Technician')).toBeTruthy();
+  });
+
+  it('renders photo modal with null photo_url fallback to PLACEHOLDER_PHOTO', () => {
+    const noPhotoActor = { ...mockActor, photo_url: null };
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: noPhotoActor,
+      filmography: [],
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    // avatar-tap should not be rendered since photo_url is null
+    expect(screen.queryByTestId('avatar-tap')).toBeNull();
+  });
 });

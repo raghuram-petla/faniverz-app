@@ -247,6 +247,16 @@ describe('FeedMobilePreview', () => {
     expect(screen.getByText('▼ 0')).toBeInTheDocument();
   });
 
+  it('shows 0 for null view_count and comment_count', () => {
+    render(
+      <FeedMobilePreview
+        items={[makeItem({ view_count: null as never, comment_count: null as never })]}
+      />,
+    );
+    expect(screen.getByText('👁 0')).toBeInTheDocument();
+    expect(screen.getByText('💬 0')).toBeInTheDocument();
+  });
+
   it('allows switching device via device selector', () => {
     render(<FeedMobilePreview items={[]} />);
     expect(screen.getByText('iPhone 14')).toBeInTheDocument();

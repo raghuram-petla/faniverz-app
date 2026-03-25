@@ -239,6 +239,44 @@ describe('BackdropFocalPicker', () => {
     });
   });
 
+  describe('hideGradient prop', () => {
+    it('hides gradient overlay when hideGradient is true', () => {
+      const { container } = render(
+        <BackdropFocalPicker {...defaultProps} focusX={0.5} focusY={0.5} hideGradient />,
+      );
+      simulateImageLoad(container, 1920, 1080);
+      // Frame border should still exist
+      expect(container.querySelector('.border-white\\/80')).toBeTruthy();
+      // Gradient should NOT exist
+      expect(container.querySelector('[style*="linear-gradient"]')).toBeNull();
+    });
+  });
+
+  describe('targetAspect prop', () => {
+    it('uses custom targetAspect for frame calculations', () => {
+      const onChange = vi.fn();
+      const { container } = render(
+        <BackdropFocalPicker {...defaultProps} onChange={onChange} targetAspect={2 / 3} />,
+      );
+      // 1080x1920 image with 2/3 target → portrait target on portrait image
+      // imageAspect = 1080/1920 = 0.5625, targetAspect = 0.667 → vertical panning
+      simulateImageLoad(container, 1080, 1920);
+      expect(screen.getByText(/drag up \/ down/)).toBeInTheDocument();
+    });
+  });
+
+  describe('image load with 0 dimensions', () => {
+    it('does not set aspect ratio when naturalWidth is 0', () => {
+      const { container } = render(<BackdropFocalPicker {...defaultProps} />);
+      const img = container.querySelector('img')!;
+      Object.defineProperty(img, 'naturalWidth', { value: 0, configurable: true });
+      Object.defineProperty(img, 'naturalHeight', { value: 0, configurable: true });
+      fireEvent.load(img);
+      // Should still show loading hint since imageAspect wasn't set
+      expect(screen.getByText(/loading…/)).toBeInTheDocument();
+    });
+  });
+
   describe('matching aspect ratio (no panning)', () => {
     it('shows "image fits perfectly" hint', () => {
       const { container } = render(<BackdropFocalPicker {...defaultProps} />);

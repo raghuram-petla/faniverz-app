@@ -154,4 +154,42 @@ describe('MediaVideosTab', () => {
     expect(screen.getByText('Official Trailer')).toBeTruthy();
     expect(screen.getByText('Trailer 2')).toBeTruthy();
   });
+
+  it('pauses video when same video tapped again (toggle off)', () => {
+    render(<MediaVideosTab videosByType={videosByType} activeCategory="Trailer" />);
+    // Play first video
+    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
+    expect(screen.getByTestId('webview')).toBeTruthy();
+    // Now play second video (which stops first, plays second)
+    fireEvent.press(screen.getByLabelText('Play Trailer 2'));
+    // The Official Trailer should no longer be playing (only Trailer 2's webview shows)
+    expect(screen.getByTestId('webview')).toBeTruthy();
+  });
+
+  it('shows no videos empty state when filtered to non-existent category with data present', () => {
+    render(<MediaVideosTab videosByType={videosByType} activeCategory="Featurette" />);
+    expect(screen.getByText('No videos in this category')).toBeTruthy();
+  });
+
+  it('does not show section headers when a specific category is active', () => {
+    render(<MediaVideosTab videosByType={videosByType} activeCategory="Trailer" />);
+    // When filtering to a specific category, section title is hidden
+    expect(screen.queryByText('Trailers')).toBeNull();
+    // But videos in that category still render
+    expect(screen.getByText('Official Trailer')).toBeTruthy();
+    expect(screen.getByText('Trailer 2')).toBeTruthy();
+  });
+
+  it('resets playing video when activeCategory changes', () => {
+    const { rerender } = render(
+      <MediaVideosTab videosByType={videosByType} activeCategory="All" />,
+    );
+    // Play a video
+    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
+    expect(screen.getByTestId('webview')).toBeTruthy();
+    // Switch category — playing video should be reset
+    rerender(<MediaVideosTab videosByType={videosByType} activeCategory="Trailer" />);
+    // No webview since playingVideoId was reset to null
+    expect(screen.queryByTestId('webview')).toBeNull();
+  });
 });

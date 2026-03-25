@@ -4,11 +4,13 @@ import type { AdminUserWithDetails } from '@/lib/types';
 
 const mockStartImpersonation = vi.fn();
 const mockStartRoleImpersonation = vi.fn();
+const mockRealUser = vi.fn();
 
 vi.mock('@/hooks/useImpersonation', () => ({
   useImpersonation: () => ({
     startImpersonation: mockStartImpersonation,
     startRoleImpersonation: mockStartRoleImpersonation,
+    realUser: mockRealUser(),
   }),
 }));
 
@@ -44,6 +46,7 @@ const mockUser: AdminUserWithDetails = {
 describe('ImpersonateModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRealUser.mockReturnValue({ role: 'admin' });
     // Default: PH fetch returns empty (no-op for non-PH role)
     const noop = vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue({ then: vi.fn() }) });
     mockFrom.mockReturnValue({ select: noop });
@@ -206,6 +209,111 @@ describe('ImpersonateModal', () => {
       order: vi.fn().mockReturnValue({
         then: (resolve: Function) => {
           resolve({ data: [] });
+        },
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('No production houses found')).toBeInTheDocument();
+    });
+  });
+
+  it('shows super_admin option when realUser is root', () => {
+    mockRealUser.mockReturnValue({ role: 'root' });
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    const select = screen.getByRole('combobox');
+    const options = Array.from(select.querySelectorAll('option'));
+    const values = options.map((o) => o.getAttribute('value'));
+    expect(values).toContain('super_admin');
+  });
+
+  it('does not show super_admin option when realUser is not root', () => {
+    mockRealUser.mockReturnValue({ role: 'super_admin' });
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    const select = screen.getByRole('combobox');
+    const options = Array.from(select.querySelectorAll('option'));
+    const values = options.map((o) => o.getAttribute('value'));
+    expect(values).not.toContain('super_admin');
+  });
+
+  it('enables button when super_admin role is selected', () => {
+    mockRealUser.mockReturnValue({ role: 'root' });
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'super_admin' } });
+    const btn = screen.getByText('Start Impersonating').closest('button')!;
+    expect(btn).not.toBeDisabled();
+  });
+
+  it('calls startRoleImpersonation with PH admin and selected PHs', async () => {
+    mockStartRoleImpersonation.mockResolvedValue(undefined);
+    const mockSelect = vi.fn().mockReturnValue({
+      order: vi.fn().mockReturnValue({
+        then: (resolve: Function) => {
+          resolve({ data: [{ id: 'ph1', name: 'Studio One' }] });
+        },
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+
+    await waitFor(() => screen.getByText('Studio One'));
+
+    const checkbox = screen.getByRole('checkbox');
+    fireEvent.click(checkbox);
+    fireEvent.click(screen.getByText('Start Impersonating'));
+
+    await waitFor(() => {
+      expect(mockStartRoleImpersonation).toHaveBeenCalledWith('production_house_admin', ['ph1']);
+    });
+  });
+
+  it('handles fetch error with non-Error value in rejection handler', async () => {
+    const mockSelect = vi.fn().mockReturnValue({
+      order: vi.fn().mockReturnValue({
+        then: (_resolve: Function, reject?: Function) => {
+          if (reject) reject('string-error');
+        },
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load production houses')).toBeInTheDocument();
+    });
+  });
+
+  it('handles fetch error when data contains an error', async () => {
+    const mockSelect = vi.fn().mockReturnValue({
+      order: vi.fn().mockReturnValue({
+        then: (resolve: Function) => {
+          resolve({ data: null, error: { message: 'DB error' } });
+        },
+      }),
+    });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'production_house_admin' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('DB error')).toBeInTheDocument();
+    });
+  });
+
+  it('handles data: null response (uses empty array)', async () => {
+    const mockSelect = vi.fn().mockReturnValue({
+      order: vi.fn().mockReturnValue({
+        then: (resolve: Function) => {
+          resolve({ data: null, error: null });
         },
       }),
     });

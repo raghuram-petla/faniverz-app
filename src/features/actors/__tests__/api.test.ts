@@ -236,5 +236,139 @@ describe('actors api', () => {
 
       await expect(fetchActorFilmography('a1')).rejects.toThrow('DB error');
     });
+
+    it('deduplicates credits with the same movie_id', async () => {
+      const credits = [
+        {
+          id: 'c1',
+          actor_id: 'a1',
+          movie_id: 'm1',
+          credit_type: 'cast',
+          role_name: 'Hero',
+          display_order: 0,
+          movie: { id: 'm1', title: 'Movie A', release_date: '2024-01-01' },
+        },
+        {
+          id: 'c2',
+          actor_id: 'a1',
+          movie_id: 'm1',
+          credit_type: 'crew',
+          role_name: 'Director',
+          display_order: 1,
+          movie: { id: 'm1', title: 'Movie A', release_date: '2024-01-01' },
+        },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockResolvedValue({ data: credits, error: null });
+
+      const result = await fetchActorFilmography('a1');
+      expect(result).toHaveLength(1);
+      expect(result[0].role_name).toBe('Hero');
+    });
+
+    it('filters out credits with null movie_id', async () => {
+      const credits = [
+        {
+          id: 'c1',
+          actor_id: 'a1',
+          movie_id: null,
+          credit_type: 'cast',
+          role_name: 'Hero',
+          display_order: 0,
+          movie: null,
+        },
+        {
+          id: 'c2',
+          actor_id: 'a1',
+          movie_id: 'm1',
+          credit_type: 'cast',
+          role_name: 'Villain',
+          display_order: 1,
+          movie: { id: 'm1', title: 'Movie A', release_date: '2024-01-01' },
+        },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockResolvedValue({ data: credits, error: null });
+
+      const result = await fetchActorFilmography('a1');
+      expect(result).toHaveLength(1);
+      expect(result[0].movie_id).toBe('m1');
+    });
+
+    it('sorts credits where movie is undefined (no movie join)', async () => {
+      const credits = [
+        {
+          id: 'c1',
+          actor_id: 'a1',
+          movie_id: 'm1',
+          credit_type: 'cast',
+          role_name: 'Hero',
+          display_order: 0,
+          movie: undefined,
+        },
+        {
+          id: 'c2',
+          actor_id: 'a1',
+          movie_id: 'm2',
+          credit_type: 'cast',
+          role_name: 'Villain',
+          display_order: 1,
+          movie: { id: 'm2', title: 'With Date', release_date: '2024-01-01' },
+        },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockResolvedValue({ data: credits, error: null });
+
+      const result = await fetchActorFilmography('a1');
+      expect(result).toHaveLength(2);
+      // Movie with date should come first
+      expect(result[0].movie_id).toBe('m2');
+    });
+
+    it('sorts with null release_date using empty string fallback', async () => {
+      const credits = [
+        {
+          id: 'c1',
+          actor_id: 'a1',
+          movie_id: 'm1',
+          credit_type: 'cast',
+          role_name: 'Hero',
+          display_order: 0,
+          movie: { id: 'm1', title: 'No Date', release_date: null },
+        },
+        {
+          id: 'c2',
+          actor_id: 'a1',
+          movie_id: 'm2',
+          credit_type: 'cast',
+          role_name: 'Villain',
+          display_order: 1,
+          movie: { id: 'm2', title: 'With Date', release_date: '2024-01-01' },
+        },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockResolvedValue({ data: credits, error: null });
+
+      const result = await fetchActorFilmography('a1');
+      expect(result).toHaveLength(2);
+      // Movie with date should come first (descending sort)
+      expect(result[0].movie?.title).toBe('With Date');
+    });
+  });
+
+  describe('fetchFavoriteActors — filters null actors', () => {
+    it('filters out favorites where actor is null (orphaned favorites)', async () => {
+      const favorites = [
+        { id: 'f1', actor: { name: 'Mahesh Babu' } },
+        { id: 'f2', actor: null },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockResolvedValue({ data: favorites, error: null });
+
+      const result = await fetchFavoriteActors('user-1');
+      expect(result).toHaveLength(1);
+      expect(result[0].actor).not.toBeNull();
+    });
   });
 });

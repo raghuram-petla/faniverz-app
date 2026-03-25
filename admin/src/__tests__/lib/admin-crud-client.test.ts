@@ -114,4 +114,17 @@ describe('crudFetch', () => {
       expect.objectContaining({ method: 'PATCH' }),
     );
   });
+
+  it('falls back to status code message when error key is missing from response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: vi.fn().mockResolvedValue({}),
+      }),
+    );
+
+    await expect(crudFetch('POST', { table: 'movies' })).rejects.toThrow('Request failed (403)');
+  });
 });

@@ -72,4 +72,13 @@ describe('MonthMultiSelect', () => {
     fireEvent.mouseDown(screen.getByTestId('outside'));
     expect(screen.queryByText('January')).not.toBeInTheDocument();
   });
+
+  it('does not close dropdown when clicking inside the component', () => {
+    render(<MonthMultiSelect selected={[]} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /all months/i }));
+    expect(screen.getByText('January')).toBeInTheDocument();
+    // Click inside the dropdown (on a month checkbox)
+    fireEvent.mouseDown(screen.getByText('January'));
+    expect(screen.getByText('January')).toBeInTheDocument();
+  });
 });

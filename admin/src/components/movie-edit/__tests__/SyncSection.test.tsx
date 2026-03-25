@@ -297,6 +297,34 @@ describe('SyncSection', () => {
     });
   });
 
+  it('does not call applyTmdbFields when updatedFields is empty', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: [],
+    });
+
+    renderWithProviders(<SyncSection movie={mockMovie} />);
+    await capturedDiffPanelProps.onApply(['title'], false);
+
+    expect(mockApplyTmdbFields).not.toHaveBeenCalled();
+  });
+
+  it('shows fallback error text when lookup error is not an Error instance', () => {
+    mockLookupState.isError = true;
+    mockLookupState.error = 'string error' as unknown as Error;
+    renderWithProviders(<SyncSection movie={mockMovie} />);
+    expect(screen.getByText('TMDB fetch failed')).toBeInTheDocument();
+  });
+
+  it('shows fallback error text when fillFields error is not an Error instance', () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    mockFillFieldsState.isError = true;
+    mockFillFieldsState.error = 'string error' as unknown as Error;
+    renderWithProviders(<SyncSection movie={mockMovie} />);
+    expect(screen.getByText('Apply failed')).toBeInTheDocument();
+  });
+
   it('passes isSaving=true to FieldDiffPanel when fill is pending', () => {
     mockLookupState.data = { type: 'movie', data: mockTmdbData };
     mockFillFieldsState.isPending = true;

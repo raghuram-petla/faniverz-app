@@ -333,6 +333,46 @@ describe('LoginScreen', () => {
     expect(screen.queryByLabelText('Phone OTP success')).toBeNull();
   });
 
+  it('does not call signIn when email is filled but password is empty', async () => {
+    const mockSignIn = jest.fn();
+    mockUseEmailAuth.mockReturnValue({
+      signIn: mockSignIn,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), 'user@test.com');
+    // Leave password empty
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.signIn'));
+    });
+
+    expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
+  it('does not call signIn when password is filled but email is only whitespace', async () => {
+    const mockSignIn = jest.fn();
+    mockUseEmailAuth.mockReturnValue({
+      signIn: mockSignIn,
+      isLoading: false,
+      error: null,
+    });
+
+    render(<LoginScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText('auth.email'), '   ');
+    fireEvent.changeText(screen.getByPlaceholderText('auth.password'), 'password123');
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.signIn'));
+    });
+
+    expect(mockSignIn).not.toHaveBeenCalled();
+  });
+
   it('handles signIn rejection without crashing', async () => {
     const mockSignIn = jest.fn().mockRejectedValue(new Error('Network error'));
     mockUseEmailAuth.mockReturnValue({

@@ -45,8 +45,9 @@ vi.mock('@/components/common/CountryDropdown', () => ({
   ),
 }));
 
+const mockGetImageUrl = vi.fn((url: string) => url);
 vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: vi.fn((url: string) => url),
+  getImageUrl: (url: string) => mockGetImageUrl(url),
 }));
 
 import { AddProductionHouseForm } from '@/components/production-houses/AddProductionHouseForm';
@@ -290,6 +291,23 @@ describe('AddProductionHouseForm', () => {
 
     render(<AddProductionHouseForm onClose={onClose} />);
     expect(screen.getByText('Uploading...')).toBeInTheDocument();
+  });
+
+  it('falls back to raw logo_url when getImageUrl returns null', async () => {
+    mockGetImageUrl.mockReturnValue(null as unknown as string);
+    mockUpload.mockResolvedValue('https://cdn.example.com/raw-logo.png');
+    render(<AddProductionHouseForm onClose={onClose} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['logo'], 'logo.png', { type: 'image/png' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      const img = document.querySelector('img');
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', 'https://cdn.example.com/raw-logo.png');
+    });
+    mockGetImageUrl.mockImplementation((url: string) => url);
   });
 
   it('clears logo when X button is clicked', async () => {

@@ -424,6 +424,73 @@ describe('WatchlistScreen', () => {
     expect(mockFetchNextPage).not.toHaveBeenCalled();
   });
 
+  it('collapses Upcoming section when section header is toggled', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      upcoming: [
+        mockEntry('2', 'watchlist', {
+          title: 'Kalki 2898 AD',
+          in_theaters: false,
+          premiere_date: null,
+          release_date: '2099-01-01',
+        }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+
+    expect(screen.getByText('Kalki 2898 AD')).toBeTruthy();
+    fireEvent.press(screen.getByText('Upcoming Releases'));
+    expect(screen.queryByText('Kalki 2898 AD')).toBeNull();
+  });
+
+  it('collapses Watched section when section header is toggled', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      watched: [
+        mockEntry('3', 'watched', { title: 'RRR', in_theaters: false, premiere_date: null }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+
+    expect(screen.getByText('RRR')).toBeTruthy();
+    fireEvent.press(screen.getByText('Watched Movies'));
+    expect(screen.queryByText('RRR')).toBeNull();
+  });
+
+  it('does not call fetchNextPage when isFetchingNextPage is true', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+      hasNextPage: true,
+      isFetchingNextPage: true,
+    });
+
+    render(<WatchlistScreen />);
+
+    const { FlatList } = require('react-native');
+    const flatList = screen.UNSAFE_getByType(FlatList);
+    fireEvent(flatList, 'endReached');
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('shows singular "1 movie saved" text', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+
+    // totalSaved = 1 → singular
+    expect(screen.getByText(/movie saved/)).toBeTruthy();
+  });
+
   it('collapses Available section when section header is toggled', () => {
     setupLoggedIn();
     setupWatchlistMock({
@@ -442,5 +509,84 @@ describe('WatchlistScreen', () => {
 
     // Entry should now be hidden (section collapsed)
     expect(screen.queryByText('Pushpa 2')).toBeNull();
+  });
+
+  it('expands collapsed section when toggled again', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+
+    // Collapse
+    fireEvent.press(screen.getByText('Available to Watch'));
+    expect(screen.queryByText('Pushpa 2')).toBeNull();
+
+    // Expand
+    fireEvent.press(screen.getByText('Available to Watch'));
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders all three sections when all have data', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+      upcoming: [
+        mockEntry('2', 'watchlist', {
+          title: 'Kalki 2898 AD',
+          in_theaters: false,
+          premiere_date: null,
+          release_date: '2099-01-01',
+        }),
+      ],
+      watched: [
+        mockEntry('3', 'watched', { title: 'RRR', in_theaters: false, premiere_date: null }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+
+    expect(screen.getByText('Available to Watch')).toBeTruthy();
+    expect(screen.getByText('Upcoming Releases')).toBeTruthy();
+    expect(screen.getByText('Watched Movies')).toBeTruthy();
+  });
+
+  it('toggles section without LayoutAnimation when animations are disabled', () => {
+    const animMock = jest.requireMock('@/hooks/useAnimationsEnabled');
+    const origUseAnimationsEnabled = animMock.useAnimationsEnabled;
+    animMock.useAnimationsEnabled = () => false;
+
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Pushpa 2', in_theaters: true, premiere_date: null }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    fireEvent.press(screen.getByText('Available to Watch'));
+    expect(screen.queryByText('Pushpa 2')).toBeNull();
+
+    animMock.useAnimationsEnabled = origUseAnimationsEnabled;
+  });
+
+  it('shows plural movie count for 2+ saved movies', () => {
+    setupLoggedIn();
+    setupWatchlistMock({
+      available: [
+        mockEntry('1', 'watchlist', { title: 'Movie A', in_theaters: true, premiere_date: null }),
+        mockEntry('2', 'watchlist', { title: 'Movie B', in_theaters: true, premiere_date: null }),
+      ],
+    });
+
+    render(<WatchlistScreen />);
+    // totalSaved = 2 → plural
+    expect(screen.getByText(/movies saved/)).toBeTruthy();
   });
 });

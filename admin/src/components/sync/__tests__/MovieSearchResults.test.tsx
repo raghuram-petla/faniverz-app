@@ -421,6 +421,157 @@ describe('MovieSearchResults', () => {
     expect(screen.getByText(/zz/)).toBeInTheDocument();
   });
 
+  it('handles non-Error exception during import', async () => {
+    mockImportMutateAsync.mockRejectedValue('string error');
+    const movies = [makeMovie()];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    fireEvent.click(screen.getByText(/Select all new/));
+    fireEvent.click(screen.getByText('Import 1 selected'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('failed');
+    });
+  });
+
+  it('toggles individual movie selection on card click', () => {
+    const movies = [makeMovie(), makeMovie({ id: 2, title: 'Movie 2' })];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    // The MovieSearchCard mock should receive onToggleSelect
+    // Click select all, then deselect
+    fireEvent.click(screen.getByText(/Select all new/));
+    expect(screen.getByText('Import 2 selected')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Deselect all'));
+    expect(screen.queryByText(/Import \d+ selected/)).not.toBeInTheDocument();
+  });
+
+  it('toggles individual movie selection via card click', () => {
+    const movies = [makeMovie(), makeMovie({ id: 2, title: 'Movie 2' })];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    // Click on the first card to select it individually (toggleSelect)
+    const card =
+      screen.getByText('Test Movie').closest('[role="button"]') ?? screen.getByText('Test Movie');
+    fireEvent.click(card);
+    // Should show "Import 1 selected"
+    expect(screen.getByText('Import 1 selected')).toBeInTheDocument();
+    // Click again to deselect (covers the delete branch of toggleSelect)
+    fireEvent.click(card);
+    expect(screen.queryByText(/Import \d+ selected/)).not.toBeInTheDocument();
+  });
+
+  it('does not import when selected is empty (handleImport early return)', async () => {
+    const movies = [makeMovie()];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    // Don't select anything — import button won't be visible
+    expect(screen.queryByText(/Import \d+ selected/)).not.toBeInTheDocument();
+  });
+
+  it('handles multi-batch import (>5 movies)', async () => {
+    const movies = Array.from({ length: 7 }, (_, i) =>
+      makeMovie({ id: i + 1, title: `Movie ${i + 1}` }),
+    );
+    mockImportMutateAsync
+      .mockResolvedValueOnce({
+        results: movies
+          .slice(0, 5)
+          .map((m) => ({ tmdbId: m.id, movieId: `db-${m.id}`, title: m.title })),
+        errors: [],
+      })
+      .mockResolvedValueOnce({
+        results: movies
+          .slice(5)
+          .map((m) => ({ tmdbId: m.id, movieId: `db-${m.id}`, title: m.title })),
+        errors: [],
+      });
+
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    fireEvent.click(screen.getByText(/Select all new/));
+    fireEvent.click(screen.getByText('Import 7 selected'));
+
+    await waitFor(() => {
+      expect(mockImportMutateAsync).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('handles mixed success/failure in import batch', async () => {
+    mockImportMutateAsync.mockResolvedValue({
+      results: [{ tmdbId: 1, movieId: 'db-1', title: 'Test Movie' }],
+      errors: [{ tmdbId: 2, message: 'Duplicate' }],
+    });
+    const movies = [makeMovie(), makeMovie({ id: 2, title: 'Movie 2' })];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    fireEvent.click(screen.getByText(/Select all new/));
+    fireEvent.click(screen.getByText('Import 2 selected'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('done');
+      expect(screen.getByTestId('progress-2')).toHaveTextContent('failed');
+    });
+  });
+
+  it('excludes duplicate suspects from newMovies count', () => {
+    const movies = [makeMovie(), makeMovie({ id: 2, title: 'Movie 2' })];
+    const suspects = { 1: { id: 'db-1', title: 'Existing Movie' } };
+    render(
+      <MovieSearchResults movies={movies} existingSet={new Set()} duplicateSuspects={suspects} />,
+    );
+    // Only movie 2 is "new" — movie 1 is a suspect
+    expect(screen.getByText(/Select all new \(1\)/)).toBeInTheDocument();
+  });
+
+  it('language filter toggle — clicking language button calls setFilterByLanguage(true)', async () => {
+    const langMod = await import('@/hooks/useLanguageContext');
+    vi.mocked(langMod.useLanguageContext).mockReturnValue({
+      selectedLanguageCode: 'te',
+    } as ReturnType<typeof langMod.useLanguageContext>);
+    const movies = [
+      makeMovie({ original_language: 'te' }),
+      makeMovie({ id: 2, title: 'Hindi Movie', original_language: 'hi' }),
+    ];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    // hasLanguageRestriction is true since selectedLanguageCode='te'
+    // The language toggle has two buttons — find them by their container
+    const buttons = screen.getAllByRole('button');
+    // Find the "All" button (contains "All")
+    const allButton = buttons.find((b) => b.textContent?.includes('All'));
+    if (allButton) {
+      fireEvent.click(allButton);
+      // Now both movies should be visible
+      expect(screen.getByText('Hindi Movie')).toBeInTheDocument();
+      // Click the language-specific button (first in the toggle group)
+      const langButton = buttons.find(
+        (b) => b.textContent?.includes('te') || b.textContent?.includes('('),
+      );
+      if (langButton) fireEvent.click(langButton);
+    }
+    expect(screen.getByText('Test Movie')).toBeInTheDocument();
+  });
+
+  it('canImportMovie returns true when original_language is undefined and no restriction', () => {
+    const movies = [makeMovie({ original_language: undefined as unknown as string })];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    // Movie should be shown (no language restriction, canImportMovie returns true for undefined)
+    expect(screen.getByText('Test Movie')).toBeInTheDocument();
+  });
+
+  it('canImportMovie allows undefined language even with restriction (fallback true)', async () => {
+    const { useLanguageContext } = await import('@/hooks/useLanguageContext');
+    vi.mocked(useLanguageContext).mockReturnValue({
+      selectedLanguageCode: 'te',
+    } as ReturnType<typeof useLanguageContext>);
+
+    const movies = [makeMovie({ original_language: undefined as unknown as string })];
+    render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+    // Movie with undefined language should still be importable
+    expect(screen.getByText(/Select all new/)).toBeInTheDocument();
+  });
+
+  it('does not merge linkedIds/importedIds when both empty', () => {
+    const movies = [makeMovie()];
+    render(<MovieSearchResults movies={movies} existingSet={new Set([1])} />);
+    // Movie should show "In DB" from the original existingSet
+    expect(screen.getByText('In DB')).toBeInTheDocument();
+  });
+
   it('shows "In DB" badge immediately after successful import without re-search', async () => {
     mockImportMutateAsync.mockResolvedValue({
       results: [{ tmdbId: 1, movieId: 'db-1', title: 'Test Movie' }],

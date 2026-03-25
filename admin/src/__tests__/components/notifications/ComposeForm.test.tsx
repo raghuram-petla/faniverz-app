@@ -418,6 +418,50 @@ describe('ComposeForm', () => {
     });
   });
 
+  it('submits with movieId when movie is selected via MovieSearchField', () => {
+    render(<ComposeForm {...defaultProps} />);
+
+    // Select a movie via the captured MovieSearchField callback
+    act(() => capturedProps.MovieSearchField.onMovieSelect('movie-42', 'Selected Movie'));
+
+    // Fill required fields
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'release' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'T' } });
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'M' } });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        movie_id: 'movie-42',
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it('uses current ISO time for scheduled_for when scheduleMode is scheduled but scheduledFor is empty', () => {
+    render(<ComposeForm {...defaultProps} />);
+
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'release' } });
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'T' } });
+    fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'M' } });
+
+    // Switch to scheduled mode but don't set a date
+    fireEvent.click(screen.getByText('Schedule for later'));
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    // Since scheduledFor is empty, it falls back to `now`
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scheduled_for: expect.any(String),
+      }),
+      expect.any(Object),
+    );
+  });
+
   it('submits with resolvedUserId when user mode and user found', async () => {
     mockMaybeSingle.mockResolvedValue({
       data: { id: 'user-abc', email: 'u@test.com' },

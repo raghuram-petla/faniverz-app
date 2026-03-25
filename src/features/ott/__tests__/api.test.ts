@@ -241,5 +241,36 @@ describe('ott api', () => {
 
       await expect(fetchMoviePlatformMap(['m1'])).rejects.toThrow('Map error');
     });
+
+    it('deduplicates platforms per movie', async () => {
+      const mockData = [
+        { movie_id: 'm1', platform: { id: 'netflix', name: 'Netflix' } },
+        { movie_id: 'm1', platform: { id: 'netflix', name: 'Netflix' } },
+      ];
+      const mockEq2 = jest.fn();
+      mockSelect.mockReturnValue({ in: mockIn });
+      mockIn.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockResolvedValue({ data: mockData, error: null });
+
+      const result = await fetchMoviePlatformMap(['m1']);
+      expect(result['m1']).toHaveLength(1);
+    });
+
+    it('skips items with null platform', async () => {
+      const mockData = [
+        { movie_id: 'm1', platform: null },
+        { movie_id: 'm1', platform: { id: 'netflix', name: 'Netflix' } },
+      ];
+      const mockEq2 = jest.fn();
+      mockSelect.mockReturnValue({ in: mockIn });
+      mockIn.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockResolvedValue({ data: mockData, error: null });
+
+      const result = await fetchMoviePlatformMap(['m1']);
+      expect(result['m1']).toHaveLength(1);
+      expect(result['m1'][0].id).toBe('netflix');
+    });
   });
 });

@@ -215,6 +215,26 @@ describe('reviews api', () => {
       expect(result).toBe(true);
     });
 
+    it('throws when upsert fails after successful delete with empty result', async () => {
+      // Delete finds nothing — fall through to upsert
+      (supabase.from as jest.Mock).mockImplementationOnce(() => ({
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              select: jest.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        }),
+      }));
+
+      // Upsert fails
+      (supabase.from as jest.Mock).mockImplementationOnce(() => ({
+        upsert: jest.fn().mockResolvedValue({ error: new Error('Upsert constraint error') }),
+      }));
+
+      await expect(toggleHelpful('u1', 'r1')).rejects.toThrow('Upsert constraint error');
+    });
+
     it('throws when delete operation fails — does NOT fall through to upsert', async () => {
       // Regression: previously the delete error was not checked, so a failed delete
       // would fall through to upsert and create a duplicate helpful vote instead.

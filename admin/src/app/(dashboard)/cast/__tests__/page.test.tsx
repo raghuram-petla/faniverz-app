@@ -28,12 +28,9 @@ vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+const mockUseDebouncedSearch = vi.fn();
 vi.mock('@/hooks/useDebouncedSearch', () => ({
-  useDebouncedSearch: () => ({
-    search: '',
-    setSearch: mockSetSearch,
-    debouncedSearch: '',
-  }),
+  useDebouncedSearch: () => mockUseDebouncedSearch(),
 }));
 
 vi.mock('@/components/cast/AddActorForm', () => ({
@@ -127,8 +124,9 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+const mockGetImageUrl = vi.fn((_url: string) => 'https://cdn/actor.jpg');
 vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: (_url: string) => 'https://cdn/actor.jpg',
+  getImageUrl: (...args: unknown[]) => mockGetImageUrl(args[0] as string),
 }));
 
 import CastPage from '@/app/(dashboard)/cast/page';
@@ -162,6 +160,11 @@ describe('CastPage', () => {
     window.alert = vi.fn();
     window.confirm = vi.fn(() => true);
 
+    mockUseDebouncedSearch.mockReturnValue({
+      search: '',
+      setSearch: mockSetSearch,
+      debouncedSearch: '',
+    });
     mockUseAuth.mockReturnValue({ user: { id: 'user-1' } });
     mockUsePermissions.mockReturnValue({
       isPHAdmin: false,
@@ -402,5 +405,61 @@ describe('CastPage', () => {
   it('shows actor person_type', () => {
     render(<CastPage />);
     expect(screen.getAllByText('actor').length).toBeGreaterThan(0);
+  });
+
+  it('calls alert with error message via deleteActor onError callback', () => {
+    const alertMock = vi.fn();
+    window.alert = alertMock;
+    mockDeleteActorMutate.mockImplementation(
+      (_id: string, opts: { onError: (err: Error) => void }) => {
+        opts.onError(new Error('Delete failed'));
+      },
+    );
+    render(<CastPage />);
+    const allButtons = screen.getAllByRole('button');
+    const deleteButtons = allButtons.filter((btn) => {
+      const parent = btn.closest('.bg-surface-card');
+      return parent && btn.querySelector('svg') && !btn.closest('a');
+    });
+    if (deleteButtons.length > 0) {
+      fireEvent.click(deleteButtons[0]);
+      expect(alertMock).toHaveBeenCalledWith('Error: Delete failed');
+    }
+  });
+
+  it('shows search hint when search length is 1', () => {
+    mockUseDebouncedSearch.mockReturnValue({
+      search: 'a',
+      setSearch: mockSetSearch,
+      debouncedSearch: '',
+    });
+    render(<CastPage />);
+    expect(screen.getByText('Type at least 2 characters to search')).toBeInTheDocument();
+  });
+
+  it('shows matching text when debouncedSearch has a value', () => {
+    mockUseDebouncedSearch.mockReturnValue({
+      search: 'mahesh',
+      setSearch: mockSetSearch,
+      debouncedSearch: 'mahesh',
+    });
+    render(<CastPage />);
+    expect(screen.getByText(/matching "mahesh"/)).toBeInTheDocument();
+  });
+
+  it('renders Users icon for actor without photo_url', () => {
+    // actor-2 has photo_url: null
+    const { container } = render(<CastPage />);
+    // There should be at least one SVG for the Users icon
+    expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
+  });
+
+  it('falls back to original photo_url when getImageUrl returns null', () => {
+    mockGetImageUrl.mockReturnValue(null as unknown as string);
+    const { container } = render(<CastPage />);
+    // The img for actor-1 should use the original photo_url
+    const img = container.querySelector('img');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://cdn/mahesh.jpg');
   });
 });

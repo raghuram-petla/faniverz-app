@@ -369,6 +369,65 @@ describe('useEditPageState', () => {
     confirmSpy.mockRestore();
   });
 
+  it('resets isFirstLoadRef when id changes', () => {
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Initial', description: 'Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+    };
+
+    const { result, rerender } = renderHook(
+      (props: { config: EditPageConfig<TestForm>; hooks: EditPageHooks }) =>
+        useEditPageState(props.config, props.hooks),
+      {
+        wrapper: createWrapper(),
+        initialProps: { config: defaultConfig, hooks },
+      },
+    );
+
+    expect(result.current.form.name).toBe('Initial');
+
+    // User edits
+    act(() => {
+      result.current.updateField('name', 'User Edit');
+    });
+
+    // Change ID — simulates navigating to a different entity
+    const newConfig = { ...defaultConfig, id: 'new-id' };
+    const newHooks: EditPageHooks = {
+      dataResult: { data: { name: 'New Entity', description: 'New Desc' }, isLoading: false },
+      updateMutation: { mutateAsync: vi.fn() },
+    };
+    rerender({ config: newConfig, hooks: newHooks });
+
+    // Form should be re-hydrated since id changed (isFirstLoad reset)
+    expect(result.current.form.name).toBe('New Entity');
+  });
+
+  it('saveStatus resets to idle after 3 seconds on success', async () => {
+    vi.useFakeTimers();
+    const mutateAsync = vi.fn().mockResolvedValue(undefined);
+    const hooks: EditPageHooks = {
+      dataResult: { data: { name: 'Test', description: 'Desc' }, isLoading: false },
+      updateMutation: { mutateAsync },
+    };
+
+    const { result } = renderHook(() => useEditPageState(defaultConfig, hooks), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+    expect(result.current.saveStatus).toBe('success');
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(result.current.saveStatus).toBe('idle');
+
+    vi.useRealTimers();
+  });
+
   it('does not overwrite form on background refetch (isFirstLoadRef guard)', () => {
     const hooks: EditPageHooks = {
       dataResult: { data: { name: 'Initial', description: 'Initial Desc' }, isLoading: false },

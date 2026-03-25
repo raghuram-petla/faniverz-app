@@ -22,26 +22,30 @@ vi.mock('@/hooks/useLanguageOptions', () => ({
   },
 }));
 
+const mockPlatformsData = vi.hoisted(() => ({
+  current: [
+    {
+      id: 'netflix',
+      name: 'Netflix',
+      logo: '',
+      logo_url: null,
+      color: '#E50914',
+      display_order: 0,
+    },
+    {
+      id: 'prime',
+      name: 'Prime Video',
+      logo: '',
+      logo_url: null,
+      color: '#00A8E1',
+      display_order: 1,
+    },
+  ] as unknown[] | undefined,
+}));
+
 vi.mock('@/hooks/useAdminPlatforms', () => ({
   useAdminPlatforms: () => ({
-    data: [
-      {
-        id: 'netflix',
-        name: 'Netflix',
-        logo: '',
-        logo_url: null,
-        color: '#E50914',
-        display_order: 0,
-      },
-      {
-        id: 'prime',
-        name: 'Prime Video',
-        logo: '',
-        logo_url: null,
-        color: '#00A8E1',
-        display_order: 1,
-      },
-    ],
+    data: mockPlatformsData.current,
     isLoading: false,
   }),
 }));
@@ -246,15 +250,32 @@ describe('AdvancedFiltersPanel', () => {
     expect(screen.getByText('Drama')).toBeInTheDocument();
   });
 
-  it('renders platforms when useAdminPlatforms returns undefined data', () => {
-    // Override the mock to return undefined platforms
-    const _origMock = vi.fn();
-    vi.doMock('@/hooks/useAdminPlatforms', () => ({
-      useAdminPlatforms: () => ({ data: undefined, isLoading: false }),
-    }));
-    // Since vi.doMock doesn't affect already-imported modules, we test the ?? fallback
-    // by checking the "All Platforms" option still renders
+  it('renders empty platform list when useAdminPlatforms returns undefined data', () => {
+    mockPlatformsData.current = undefined;
     renderPanel();
-    expect(screen.getByText('All Platforms')).toBeInTheDocument();
+    const platformSelect = screen.getByLabelText('OTT Platform');
+    const options = platformSelect.querySelectorAll('option');
+    // Only "All Platforms" option, no platform entries
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toBe('All Platforms');
+    // Restore for other tests
+    mockPlatformsData.current = [
+      {
+        id: 'netflix',
+        name: 'Netflix',
+        logo: '',
+        logo_url: null,
+        color: '#E50914',
+        display_order: 0,
+      },
+      {
+        id: 'prime',
+        name: 'Prime Video',
+        logo: '',
+        logo_url: null,
+        color: '#00A8E1',
+        display_order: 1,
+      },
+    ];
   });
 });

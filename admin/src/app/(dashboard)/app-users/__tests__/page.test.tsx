@@ -393,6 +393,29 @@ describe('AppUsersPage', () => {
     expect(screen.getByTestId('pagination')).toBeInTheDocument();
   });
 
+  it('navigates pages via pagination controls', () => {
+    mockUseAdminEndUsers.mockReturnValue({
+      data: {
+        users: [makeUser()],
+        totalCount: 101, // 3 pages at PAGE_SIZE=50
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    // Click next
+    fireEvent.click(screen.getByTestId('next-btn'));
+    expect(screen.getByTestId('page-info').textContent).toBe('2/3');
+    // Click prev
+    fireEvent.click(screen.getByTestId('prev-btn'));
+    expect(screen.getByTestId('page-info').textContent).toBe('1/3');
+    // Click prev again (should clamp to page 0)
+    fireEvent.click(screen.getByTestId('prev-btn'));
+    expect(screen.getByTestId('page-info').textContent).toBe('1/3');
+  });
+
   it('does not show pagination when totalPages <= 1', () => {
     mockUseAdminEndUsers.mockReturnValue({
       data: { users: [makeUser()], totalCount: 1 },
@@ -441,6 +464,109 @@ describe('AppUsersPage', () => {
     });
     render(<AppUsersPage />);
     expect(screen.getByText('?')).toBeInTheDocument();
+  });
+
+  it('resets page to 0 when search changes', () => {
+    const setSearchMock = vi.fn();
+    mockUseDebouncedSearch.mockReturnValue({
+      search: '',
+      setSearch: setSearchMock,
+      debouncedSearch: '',
+    });
+    mockUseAdminEndUsers.mockReturnValue({
+      data: { users: [makeUser()], totalCount: 51 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    // Navigate to page 2 first
+    fireEvent.click(screen.getByTestId('next-btn'));
+    // Then search — page should reset
+    fireEvent.change(screen.getByTestId('search-input'), { target: { value: 'test' } });
+    expect(setSearchMock).toHaveBeenCalledWith('test');
+  });
+
+  it('exits edit mode on successful save via onSuccess callback', () => {
+    mockUseAdminEndUsers.mockReturnValue({
+      data: { users: [makeUser()], totalCount: 1 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    // Make mutate call onSuccess immediately
+    mockUpdateProfileMutate.mockImplementation(
+      (_payload: unknown, opts: { onSuccess: () => void }) => {
+        opts.onSuccess();
+      },
+    );
+    render(<AppUsersPage />);
+    fireEvent.click(screen.getByTitle('Edit profile'));
+    expect(screen.getByTitle('Save')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Save'));
+    // After onSuccess, edit mode should be exited
+    expect(screen.queryByTitle('Save')).not.toBeInTheDocument();
+    expect(screen.getByTitle('Edit profile')).toBeInTheDocument();
+  });
+
+  it('does not call updateProfile.mutate if saveEdit is called with no editingUser', () => {
+    // This tests the early return in saveEdit when editingUser is null
+    mockUseAdminEndUsers.mockReturnValue({
+      data: { users: [makeUser()], totalCount: 1 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    // Not entering edit mode, so editingUser is null — saveEdit is a no-op
+    expect(mockUpdateProfileMutate).not.toHaveBeenCalled();
+  });
+
+  it('enters edit mode with empty name for user with null display_name', () => {
+    mockUseAdminEndUsers.mockReturnValue({
+      data: { users: [makeUser({ display_name: null })], totalCount: 1 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    fireEvent.click(screen.getByTitle('Edit profile'));
+    const allInputs = screen.getAllByRole('textbox');
+    const editInput = allInputs.find((el) => (el as HTMLInputElement).className.includes('w-40'));
+    expect(editInput).toBeDefined();
+    expect((editInput as HTMLInputElement).value).toBe('');
+  });
+
+  it('shows "?" for empty string display_name (no first char)', () => {
+    mockUseAdminEndUsers.mockReturnValue({
+      data: { users: [makeUser({ avatar_url: null, display_name: '' })], totalCount: 1 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    expect(screen.getByText('?')).toBeInTheDocument();
+  });
+
+  it('renders "User avatar" alt text when display_name is null but avatar_url is set', () => {
+    mockUseAdminEndUsers.mockReturnValue({
+      data: {
+        users: [makeUser({ display_name: null, avatar_url: 'https://example.com/avatar.jpg' })],
+        totalCount: 1,
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    const img = screen.getByAltText('User avatar');
+    expect(img).toBeInTheDocument();
   });
 
   it('hides action buttons in read-only mode', async () => {

@@ -462,6 +462,42 @@ describe('EditPlatformPage', () => {
     });
   });
 
+  it('saves with NaN tmdb_provider_id as null', async () => {
+    mockUseAdminPlatform.mockReturnValue({
+      data: { ...mockPlatform, tmdb_provider_id: null },
+      isLoading: false,
+    });
+    mockUpdateMutateAsync.mockResolvedValue({});
+    render(<EditPlatformPage />);
+
+    // Type invalid number
+    const tmdbInput = screen.getByPlaceholderText('e.g. 119');
+    fireEvent.change(tmdbInput, { target: { value: 'abc' } });
+
+    fireEvent.click(screen.getByTestId('save-btn'));
+
+    await waitFor(() => {
+      expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ tmdb_provider_id: null }),
+      );
+    });
+  });
+
+  it('shows PosterVariantStatus when logo_url is set', () => {
+    render(<EditPlatformPage />);
+    // mockPlatform has logo_url set
+    expect(screen.getByTestId('poster-variant-status')).toBeInTheDocument();
+  });
+
+  it('does not show PosterVariantStatus when logo_url is empty', () => {
+    mockUseAdminPlatform.mockReturnValue({
+      data: { ...mockPlatform, logo_url: '' },
+      isLoading: false,
+    });
+    render(<EditPlatformPage />);
+    expect(screen.queryByTestId('poster-variant-status')).not.toBeInTheDocument();
+  });
+
   it('saves with empty regions when no regions set', async () => {
     mockUseAdminPlatform.mockReturnValue({
       data: { ...mockPlatform, regions: null },

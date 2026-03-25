@@ -204,4 +204,16 @@ describe('MediaSummaryCard', () => {
     render(<MediaSummaryCard videos={videos} posters={[]} onExploreMedia={onExploreMedia} />);
     expect(screen.getByLabelText('1 Video — Explore all media')).toBeTruthy();
   });
+
+  it('uses PLACEHOLDER_POSTER when featured video has null youtube_id', () => {
+    const videos = [makeVideo({ youtube_id: null as unknown as string })];
+    render(<MediaSummaryCard videos={videos} posters={[]} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByLabelText('1 Video — Explore all media')).toBeTruthy();
+  });
+
+  it('uses singular "Backdrop" for single backdrop', () => {
+    const posters = [makePoster({ id: 'b1', image_type: 'backdrop' })];
+    render(<MediaSummaryCard videos={[]} posters={posters} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('1 Backdrop')).toBeTruthy();
+  });
 });

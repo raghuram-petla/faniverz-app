@@ -224,11 +224,39 @@ describe('ActorKnownFor', () => {
     mockGetImageUrl.mockImplementation((url: string | null) => url);
   });
 
+  it('handles sort when one movie has undefined rating via optional chain (a.movie?.rating ?? 0)', () => {
+    // Exercise the ?? 0 fallback by having a credit where movie.rating is undefined
+    const credits = [
+      makeCredit('c1', 8.0, 'Rated Movie'),
+      {
+        ...makeCredit('c2', 5.0, 'Weird Movie'),
+        movie: {
+          id: 'm-c2',
+          title: 'Weird Movie',
+          poster_url: null,
+          release_date: null,
+          rating: undefined as unknown as number,
+        },
+      } as unknown as FilmCredit,
+    ];
+    render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Rated Movie')).toBeTruthy();
+  });
+
   it('handles sort when movies have equal ratings', () => {
     const credits = [makeCredit('c1', 8.0, 'Movie A'), makeCredit('c2', 8.0, 'Movie B')];
     render(<ActorKnownFor credits={credits} onMoviePress={onMoviePress} />);
     expect(screen.getByText('Movie A')).toBeTruthy();
     expect(screen.getByText('Movie B')).toBeTruthy();
+  });
+
+  it('uses placeholder poster for movie with null poster_url via getImageUrl', () => {
+    const credit = makeCredit('c-null', 8.0, 'Null Poster');
+    credit.movie!.poster_url = null;
+    mockGetImageUrl.mockReturnValueOnce(null);
+    render(<ActorKnownFor credits={[credit]} onMoviePress={onMoviePress} />);
+    expect(screen.getByText('Null Poster')).toBeTruthy();
+    mockGetImageUrl.mockImplementation((url: string | null) => url);
   });
 
   it('handles sort when movie.rating accessed via optional chain with nullish movie', () => {

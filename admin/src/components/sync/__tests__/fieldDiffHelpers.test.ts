@@ -171,6 +171,15 @@ describe('getStatus — title', () => {
 // ── getStatus — synopsis ──────────────────────────────────────────────────────
 
 describe('getStatus — synopsis', () => {
+  it('returns same when both null', () => {
+    expect(
+      getStatus(
+        makeMovie({ synopsis: null }),
+        makeTmdb({ overview: null as unknown as string }),
+        'synopsis',
+      ),
+    ).toBe('same');
+  });
   it('returns missing when db synopsis null but tmdb has overview', () => {
     expect(
       getStatus(makeMovie({ synopsis: null }), makeTmdb({ overview: 'text' }), 'synopsis'),
@@ -673,5 +682,206 @@ describe('buildFieldDefs', () => {
     );
     const budgetDef = defs.find((d) => d.key === 'budget_revenue')!;
     expect(budgetDef.dbDisplay).toContain('50,000,000');
+  });
+
+  it('shows empty string for budget/revenue when both zero', () => {
+    const defs = buildFieldDefs(makeMovie(), makeTmdb());
+    const budgetDef = defs.find((d) => d.key === 'budget_revenue')!;
+    expect(budgetDef.dbDisplay).toBe('');
+    expect(budgetDef.tmdbDisplay).toBe('');
+  });
+
+  it('shows empty string for tmdb_ratings when null', () => {
+    const defs = buildFieldDefs(makeMovie(), makeTmdb());
+    const ratingDef = defs.find((d) => d.key === 'tmdb_ratings')!;
+    expect(ratingDef.dbDisplay).toBe('');
+    expect(ratingDef.tmdbDisplay).toBe('');
+  });
+
+  it('shows runtime display with "min" suffix', () => {
+    const defs = buildFieldDefs(makeMovie({ runtime: 150 }), makeTmdb({ runtime: 120 }));
+    const runtimeDef = defs.find((d) => d.key === 'runtime')!;
+    expect(runtimeDef.dbDisplay).toBe('150 min');
+    expect(runtimeDef.tmdbDisplay).toBe('120 min');
+  });
+
+  it('shows empty runtime when null', () => {
+    const defs = buildFieldDefs(makeMovie(), makeTmdb());
+    const runtimeDef = defs.find((d) => d.key === 'runtime')!;
+    expect(runtimeDef.dbDisplay).toBe('');
+    expect(runtimeDef.tmdbDisplay).toBe('');
+  });
+
+  it('shows backdrop display correctly', () => {
+    const defs = buildFieldDefs(
+      makeMovie({ backdrop_url: '/back.jpg' }),
+      makeTmdb({ backdropUrl: '/tmdb-back.jpg' }),
+    );
+    const backdropDef = defs.find((d) => d.key === 'backdrop_url')!;
+    expect(backdropDef.dbDisplay).toBe('✓ set');
+    expect(backdropDef.tmdbDisplay).toBe('✓ available');
+  });
+
+  it('shows "none" for OTT platforms when empty', () => {
+    const defs = buildFieldDefs(makeMovie(), makeTmdb());
+    const watchDef = defs.find((d) => d.key === 'watch_providers')!;
+    expect(watchDef.dbDisplay).toBe('none');
+    expect(watchDef.tmdbDisplay).toBe('none');
+  });
+
+  it('shows dbPlatformNames when they exist', () => {
+    const defs = buildFieldDefs(makeMovie(), makeTmdb({ dbPlatformNames: ['netflix', 'prime'] }));
+    const watchDef = defs.find((d) => d.key === 'watch_providers')!;
+    expect(watchDef.dbDisplay).toBe('netflix, prime');
+  });
+
+  it('handles tmdb_ratings with vote_count 0', () => {
+    const defs = buildFieldDefs(
+      makeMovie({ tmdb_vote_average: 5.0, tmdb_vote_count: null }),
+      makeTmdb({ tmdbVoteAverage: 6.0, tmdbVoteCount: null }),
+    );
+    const ratingDef = defs.find((d) => d.key === 'tmdb_ratings')!;
+    expect(ratingDef.dbDisplay).toContain('5/10 (0)');
+    expect(ratingDef.tmdbDisplay).toContain('6/10 (0)');
+  });
+
+  it('shows spoken_languages display from tmdb', () => {
+    const defs = buildFieldDefs(
+      makeMovie({ spoken_languages: ['te', 'en'] }),
+      makeTmdb({ spokenLanguages: ['te', 'en'] }),
+    );
+    const langDef = defs.find((d) => d.key === 'spoken_languages')!;
+    expect(langDef.dbDisplay).toBe('te, en');
+    expect(langDef.tmdbDisplay).toBe('te, en');
+  });
+
+  it('shows empty string for spoken_languages when tmdb spokenLanguages is null', () => {
+    const defs = buildFieldDefs(
+      makeMovie(),
+      makeTmdb({ spokenLanguages: undefined as unknown as string[] }),
+    );
+    const langDef = defs.find((d) => d.key === 'spoken_languages')!;
+    expect(langDef.tmdbDisplay).toBe('');
+  });
+});
+
+// ── getStatus — release_date ─────────────────────────────────────────────────
+
+describe('getStatus — release_date', () => {
+  it('returns same when both null', () => {
+    expect(getStatus(makeMovie(), makeTmdb(), 'release_date')).toBe('same');
+  });
+  it('returns missing when db null', () => {
+    expect(
+      getStatus(
+        makeMovie(),
+        makeTmdb({ releaseDate: '2025-01-01' as unknown as string }),
+        'release_date',
+      ),
+    ).toBe('missing');
+  });
+  it('returns changed when dates differ', () => {
+    expect(
+      getStatus(
+        makeMovie({ release_date: '2024-01-01' }),
+        makeTmdb({ releaseDate: '2025-01-01' as unknown as string }),
+        'release_date',
+      ),
+    ).toBe('changed');
+  });
+  it('returns same when dates match', () => {
+    expect(
+      getStatus(
+        makeMovie({ release_date: '2025-01-01' }),
+        makeTmdb({ releaseDate: '2025-01-01' as unknown as string }),
+        'release_date',
+      ),
+    ).toBe('same');
+  });
+});
+
+// ── getStatus — synopsis_te changed ──────────────────────────────────────────
+
+describe('getStatus — synopsis_te changed/same', () => {
+  it('returns changed when synopsis_te values differ', () => {
+    expect(
+      getStatus(makeMovie({ synopsis_te: 'old' }), makeTmdb({ synopsisTe: 'new' }), 'synopsis_te'),
+    ).toBe('changed');
+  });
+  it('returns same when synopsis_te values match', () => {
+    expect(
+      getStatus(
+        makeMovie({ synopsis_te: 'same' }),
+        makeTmdb({ synopsisTe: 'same' }),
+        'synopsis_te',
+      ),
+    ).toBe('same');
+  });
+});
+
+// ── getStatus — title_te same ────────────────────────────────────────────────
+
+describe('getStatus — title_te same', () => {
+  it('returns same when title_te values match', () => {
+    expect(
+      getStatus(makeMovie({ title_te: 'తెలుగు' }), makeTmdb({ titleTe: 'తెలుగు' }), 'title_te'),
+    ).toBe('same');
+  });
+});
+
+// ── getStatus — tmdb_status same/changed ─────────────────────────────────────
+
+describe('getStatus — tmdb_status same/changed', () => {
+  it('returns same when tmdb_status values match', () => {
+    expect(
+      getStatus(
+        makeMovie({ tmdb_status: 'Released' }),
+        makeTmdb({ tmdbStatus: 'Released' }),
+        'tmdb_status',
+      ),
+    ).toBe('same');
+  });
+  it('returns changed when tmdb_status values differ', () => {
+    expect(
+      getStatus(
+        makeMovie({ tmdb_status: 'Released' }),
+        makeTmdb({ tmdbStatus: 'Post Production' }),
+        'tmdb_status',
+      ),
+    ).toBe('changed');
+  });
+});
+
+// ── getStatus — tagline same ─────────────────────────────────────────────────
+
+describe('getStatus — tagline same', () => {
+  it('returns same when tagline values match', () => {
+    expect(
+      getStatus(makeMovie({ tagline: 'Same' }), makeTmdb({ tagline: 'Same' }), 'tagline'),
+    ).toBe('same');
+  });
+});
+
+// ── getStatus — watch_providers same ─────────────────────────────────────────
+
+describe('getStatus — watch_providers same when counts match', () => {
+  it('returns same when db platform count meets tmdb', () => {
+    expect(
+      getStatus(
+        makeMovie(),
+        makeTmdb({ dbPlatformNames: ['a', 'b'], providerNames: ['x', 'y'] }),
+        'watch_providers',
+      ),
+    ).toBe('same');
+  });
+});
+
+// ── getStatus — keywords same ────────────────────────────────────────────────
+
+describe('getStatus — keywords same when counts match', () => {
+  it('returns same when db keyword count meets tmdb', () => {
+    expect(
+      getStatus(makeMovie(), makeTmdb({ dbKeywordCount: 5, keywordCount: 5 }), 'keywords'),
+    ).toBe('same');
   });
 });

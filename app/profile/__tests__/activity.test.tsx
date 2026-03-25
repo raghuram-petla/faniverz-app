@@ -19,6 +19,14 @@ jest.mock('@/components/common/ScreenHeader', () => {
   return { __esModule: true, default: ({ title }: { title: string }) => <Text>{title}</Text> };
 });
 
+let capturedRefreshCallback: (() => Promise<void>) | null = null;
+jest.mock('@/hooks/useRefresh', () => ({
+  useRefresh: (callback: () => Promise<void>) => {
+    capturedRefreshCallback = callback;
+    return { refreshing: false, onRefresh: jest.fn() };
+  },
+}));
+
 const mockUseUserActivity = jest.fn();
 jest.mock('@/features/profile', () => ({
   useUserActivity: (...args: unknown[]) => mockUseUserActivity(...args),
@@ -187,6 +195,106 @@ describe('ActivityScreen', () => {
     const list = screen.UNSAFE_getByType(require('react-native').FlatList);
     list.props.onEndReached();
     expect(mockFetchNextPage).toHaveBeenCalled();
+  });
+
+  it('shows skeleton when loading', () => {
+    mockUseUserActivity.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+    });
+    render(<ActivityScreen />);
+    expect(screen.getByTestId('activity-skeleton')).toBeTruthy();
+  });
+
+  it('handles undefined data gracefully', () => {
+    mockUseUserActivity.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+    });
+    render(<ActivityScreen />);
+    expect(screen.getByText('profile.noActivity')).toBeTruthy();
+  });
+
+  it('does not call fetchNextPage when hasNextPage is false', () => {
+    const mockFetchNextPage = jest.fn();
+    mockUseUserActivity.mockReturnValue({
+      data: {
+        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+      },
+      isLoading: false,
+      fetchNextPage: mockFetchNextPage,
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    });
+
+    render(<ActivityScreen />);
+    const list = screen.UNSAFE_getByType(require('react-native').FlatList);
+    list.props.onEndReached();
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('switches to follows filter', () => {
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByText('profile.filterFollows'));
+    expect(mockUseUserActivity).toHaveBeenCalledWith('follows');
+  });
+
+  it('switches to comments filter', () => {
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByText('profile.filterComments'));
+    expect(mockUseUserActivity).toHaveBeenCalledWith('comments');
+  });
+
+  it('switches back to all filter', () => {
+    render(<ActivityScreen />);
+    fireEvent.press(screen.getByText('profile.filterVotes'));
+    fireEvent.press(screen.getByText('common.all'));
+    expect(mockUseUserActivity).toHaveBeenLastCalledWith('all');
+  });
+
+  it('uses emptyList style when activities list is empty', () => {
+    mockUseUserActivity.mockReturnValue({
+      data: { pages: [] },
+      isLoading: false,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    });
+    render(<ActivityScreen />);
+    expect(screen.getByText('profile.noActivity')).toBeTruthy();
+  });
+
+  it('does not apply emptyList style when activities exist', () => {
+    mockUseUserActivity.mockReturnValue({
+      data: {
+        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+      },
+      isLoading: false,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    });
+    render(<ActivityScreen />);
+    expect(screen.getByText('vote')).toBeTruthy();
+  });
+
+  it('refresh callback calls refetch', async () => {
+    const mockRefetch = jest.fn().mockResolvedValue(undefined);
+    mockUseUserActivity.mockReturnValue({
+      data: { pages: [] },
+      isLoading: false,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+      refetch: mockRefetch,
+    });
+    render(<ActivityScreen />);
+    expect(capturedRefreshCallback).not.toBeNull();
+    await capturedRefreshCallback!();
+    expect(mockRefetch).toHaveBeenCalled();
   });
 
   it('does not call fetchNextPage when already fetching', () => {

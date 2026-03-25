@@ -220,4 +220,74 @@ describe('PrivacySettingsScreen', () => {
 
     expect(mockMutate).not.toHaveBeenCalled();
   });
+
+  it('defaults profile_public to true when profile has null is_profile_public', () => {
+    mockUseProfile.mockReturnValue({
+      data: { is_profile_public: null, is_watchlist_public: false },
+      isLoading: false,
+    });
+
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[0]);
+
+    // null ?? true = true, toggling should set to false
+    expect(mockMutate).toHaveBeenCalledWith(
+      { is_profile_public: false },
+      { onError: expect.any(Function) },
+    );
+  });
+
+  it('defaults watchlist_public to true when profile has null is_watchlist_public', () => {
+    mockUseProfile.mockReturnValue({
+      data: { is_profile_public: false, is_watchlist_public: null },
+      isLoading: false,
+    });
+
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[1]);
+
+    // null ?? true = true, toggling should set to false
+    expect(mockMutate).toHaveBeenCalledWith(
+      { is_watchlist_public: false },
+      { onError: expect.any(Function) },
+    );
+  });
+
+  it('shows Alert with Error instance message for watchlist toggle error', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[1]);
+
+    const onErrorCallback = mockMutate.mock.calls[0][1].onError;
+    onErrorCallback(new Error('Watchlist update failed'));
+
+    expect(alertSpy).toHaveBeenCalledWith('Error', 'Watchlist update failed');
+    alertSpy.mockRestore();
+  });
+
+  it('shows Alert with fallback for watchlist toggle non-Error', () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    render(<PrivacySettingsScreen />);
+
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    fireEvent.press(touchables[0]);
+
+    const onErrorCallback = mockMutate.mock.calls[0][1].onError;
+    onErrorCallback(42); // not an Error instance
+
+    expect(alertSpy).toHaveBeenCalledWith('Error', 'Update failed');
+    alertSpy.mockRestore();
+  });
 });

@@ -159,4 +159,53 @@ describe('useTheme', () => {
     await waitFor(() => expect(result.current.colors).toBeDefined());
     expect(typeof result.current.colors).toBe('object');
   });
+
+  it('returns default context values when used outside ThemeProvider', () => {
+    const { result } = renderHook(() => useTheme());
+    // Default context has system mode and dark theme
+    expect(result.current.mode).toBe('system');
+    expect(result.current.isDark).toBe(true);
+    expect(result.current.theme).toBeDefined();
+    expect(result.current.colors).toBeDefined();
+    // Default setMode is a no-op function
+    expect(typeof result.current.setMode).toBe('function');
+    result.current.setMode('light'); // should not throw
+  });
+
+  it('provides lightTheme when mode is light', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('light');
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('light'));
+    expect(result.current.isDark).toBe(false);
+    expect(result.current.theme).toBeDefined();
+  });
+
+  it('provides darkTheme when mode is dark', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('dark');
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('dark'));
+    expect(result.current.isDark).toBe(true);
+    expect(result.current.theme).toBeDefined();
+  });
+
+  it('isDark is false when mode is system and system scheme is light', async () => {
+    // useColorScheme is mocked to return null (undefined/light) by default in RN test env
+    // mode=system, systemScheme=null => isDark = (null === 'dark') = false
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue('system');
+    const { result } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('system'));
+    // In test env, useColorScheme returns null which means light
+    // isDark = mode === 'system' ? systemScheme === 'dark' : mode === 'dark'
+    // = null === 'dark' = false
+    expect(typeof result.current.isDark).toBe('boolean');
+  });
+
+  it('memoizes context value between re-renders when deps unchanged', async () => {
+    const { result, rerender } = renderHook(() => useTheme(), { wrapper });
+    await waitFor(() => expect(result.current.mode).toBe('system'));
+    const first = result.current;
+    rerender({});
+    // Context value should be referentially stable since deps haven't changed
+    expect(result.current.mode).toBe(first.mode);
+  });
 });

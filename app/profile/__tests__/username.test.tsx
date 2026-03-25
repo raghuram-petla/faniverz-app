@@ -232,4 +232,47 @@ describe('UsernameScreen', () => {
     render(<UsernameScreen />);
     expect(screen.UNSAFE_queryByProps({ name: 'close-circle' })).toBeTruthy();
   });
+
+  it('renders on android platform without crashing (covers Platform.OS branch)', () => {
+    const Platform = require('react-native').Platform;
+    const origOS = Platform.OS;
+    Platform.OS = 'android';
+
+    render(<UsernameScreen />);
+    expect(screen.getByText('profile.chooseUsername')).toBeTruthy();
+
+    Platform.OS = origOS;
+  });
+
+  it('strips non-alphanumeric characters from username input', () => {
+    render(<UsernameScreen />);
+    const input = screen.getByPlaceholderText('username');
+    fireEvent.changeText(input, 'My-User!@#name$%');
+    expect(input.props.value).toBe('myusername');
+  });
+
+  it('does not show status icon when isChecking is true (null status icon branch)', () => {
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: null,
+      isChecking: true,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    // No checkmark or close icon should be shown
+    expect(screen.UNSAFE_queryByProps({ name: 'checkmark-circle' })).toBeNull();
+    expect(screen.UNSAFE_queryByProps({ name: 'close-circle' })).toBeNull();
+  });
+
+  it('does not show status icon when isAvailable is null and not checking', () => {
+    mockUseCheckUsername.mockReturnValue({
+      isAvailable: null,
+      isChecking: false,
+      error: null,
+    });
+
+    render(<UsernameScreen />);
+    expect(screen.UNSAFE_queryByProps({ name: 'checkmark-circle' })).toBeNull();
+    expect(screen.UNSAFE_queryByProps({ name: 'close-circle' })).toBeNull();
+  });
 });

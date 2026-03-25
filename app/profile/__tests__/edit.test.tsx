@@ -264,4 +264,47 @@ describe('EditProfileScreen', () => {
     // Save button should still be present
     expect(screen.getByText('profile.saveChanges')).toBeTruthy();
   });
+
+  it('renders on android platform without crashing', () => {
+    const Platform = require('react-native').Platform;
+    const origOS = Platform.OS;
+    Platform.OS = 'android';
+
+    render(<EditProfileScreen />);
+    expect(screen.getByText('profile.editProfile')).toBeTruthy();
+
+    Platform.OS = origOS;
+  });
+
+  it('shows uploading text when isUploading is true', () => {
+    const mockModule = jest.requireMock('@/features/profile/hooks/useAvatarUpload');
+    const origImpl = mockModule.useAvatarUpload;
+    mockModule.useAvatarUpload = () => ({
+      pickAndUpload: mockPickAndUpload,
+      isUploading: true,
+    });
+
+    render(<EditProfileScreen />);
+    expect(screen.getByText('profile.uploading')).toBeTruthy();
+
+    mockModule.useAvatarUpload = origImpl;
+  });
+
+  it('shows empty email when user is null (email defaults to empty string)', () => {
+    const authModule = jest.requireMock('@/features/auth/providers/AuthProvider');
+    const origUseAuth = authModule.useAuth;
+    authModule.useAuth = () => ({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+
+    render(<EditProfileScreen />);
+    // Email field should be empty (user?.email ?? '' branch)
+    expect(screen.getByText('profile.email')).toBeTruthy();
+
+    authModule.useAuth = origUseAuth;
+  });
 });

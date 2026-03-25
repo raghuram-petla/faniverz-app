@@ -173,4 +173,26 @@ describe('SearchResultMovie', () => {
     );
     expect(screen.queryByText('Action • Drama')).toBeNull();
   });
+
+  it('hides director when director is empty string', () => {
+    render(
+      <SearchResultMovie
+        movie={{ ...mockMovie, director: '' }}
+        platforms={[]}
+        onPress={jest.fn()}
+      />,
+    );
+    expect(screen.queryByText('Sukumar')).toBeNull();
+  });
+
+  it('renders with genres undefined (covers ?? [] fallback)', () => {
+    render(
+      <SearchResultMovie
+        movie={{ ...mockMovie, genres: undefined as unknown as string[] }}
+        platforms={[]}
+        onPress={jest.fn()}
+      />,
+    );
+    expect(screen.queryByText('Action • Drama')).toBeNull();
+  });
 });

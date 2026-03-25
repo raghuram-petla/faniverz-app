@@ -479,6 +479,19 @@ describe('RegisterScreen', () => {
     expect(mockSignUp).toHaveBeenCalledWith('user@test.com', 'pass123', 'user1');
   });
 
+  it('shows no displayError when both validationError and hook error are null', () => {
+    mockUseEmailAuth.mockReturnValue({
+      signUp: jest.fn(),
+      isLoading: false,
+      error: null,
+    });
+    render(<RegisterScreen />);
+    // No error text should be visible
+    expect(screen.queryByText('auth.allFieldsRequired')).toBeNull();
+    expect(screen.queryByText('auth.passwordMinLength')).toBeNull();
+    expect(screen.queryByText('auth.passwordsMismatch')).toBeNull();
+  });
+
   it('renders OR divider text', () => {
     render(<RegisterScreen />);
     expect(screen.getByText('auth.or')).toBeTruthy();

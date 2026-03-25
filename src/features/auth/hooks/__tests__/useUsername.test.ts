@@ -82,6 +82,66 @@ describe('useCheckUsername', () => {
     expect(result.current.isChecking).toBe(false);
   });
 
+  it('resets state when username becomes empty after being non-empty', async () => {
+    (validateUsername as jest.Mock).mockReturnValue(null);
+    (checkUsernameAvailable as jest.Mock).mockResolvedValue(true);
+
+    const { result, rerender } = renderHook(
+      ({ username }: { username: string }) => useCheckUsername(username),
+      { initialProps: { username: 'valid_user' } },
+    );
+
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    await waitFor(() => expect(result.current.isAvailable).toBe(true));
+
+    // Now set to empty — validateUsername returns null but username is falsy
+    (validateUsername as jest.Mock).mockReturnValue(null);
+    rerender({ username: '' });
+
+    expect(result.current.isAvailable).toBeNull();
+    expect(result.current.isChecking).toBe(false);
+  });
+
+  it('ignores stale error when username changes before check fails', async () => {
+    (validateUsername as jest.Mock).mockReturnValue(null);
+    let rejectFirst: (err: Error) => void;
+    const firstPromise = new Promise<boolean>((_, reject) => {
+      rejectFirst = reject;
+    });
+    (checkUsernameAvailable as jest.Mock)
+      .mockReturnValueOnce(firstPromise)
+      .mockResolvedValueOnce(true);
+
+    const { result, rerender } = renderHook(
+      ({ username }: { username: string }) => useCheckUsername(username),
+      { initialProps: { username: 'first_user' } },
+    );
+
+    // Advance to trigger first debounced request
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+
+    // Change username — invalidates the pending request
+    rerender({ username: 'second_user' });
+
+    // Advance to trigger second debounced request
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+
+    // Now reject the first (stale) request — should be ignored
+    await act(async () => {
+      rejectFirst!(new Error('network fail'));
+    });
+
+    // State should reflect second request result
+    await waitFor(() => expect(result.current.isAvailable).toBe(true));
+    expect(result.current.error).toBeNull();
+  });
+
   it('ignores stale response when username changes before check completes', async () => {
     (validateUsername as jest.Mock).mockReturnValue(null);
     // First call resolves slowly, second call resolves before first advances

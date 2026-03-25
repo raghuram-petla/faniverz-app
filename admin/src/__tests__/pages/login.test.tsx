@@ -4,10 +4,15 @@ import LoginPage from '@/app/login/page';
 const mockSignInWithGoogle = vi.fn();
 const mockReplace = vi.fn();
 
+const mockAuthState = {
+  user: null as unknown,
+  isLoading: false,
+};
+
 vi.mock('@/components/providers/AuthProvider', () => ({
   useAuth: () => ({
-    user: null,
-    isLoading: false,
+    user: mockAuthState.user,
+    isLoading: mockAuthState.isLoading,
     signInWithGoogle: mockSignInWithGoogle,
     signOut: vi.fn(),
   }),
@@ -27,6 +32,8 @@ describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockSignInWithGoogle.mockResolvedValue(undefined);
+    mockAuthState.user = null;
+    mockAuthState.isLoading = false;
   });
 
   it('has Faniverz logo', () => {
@@ -81,6 +88,30 @@ describe('LoginPage - layout', () => {
   it('does not redirect when user is not authenticated', () => {
     render(<LoginPage />);
     // mockReplace should NOT be called when user is null
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+});
+
+describe('LoginPage - redirect when authenticated', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthState.user = null;
+    mockAuthState.isLoading = false;
+  });
+
+  it('redirects to / when user is authenticated and auth is not loading', () => {
+    mockAuthState.user = { id: 'user-1', email: 'admin@test.com' };
+    mockAuthState.isLoading = false;
+
+    render(<LoginPage />);
+    expect(mockReplace).toHaveBeenCalledWith('/');
+  });
+
+  it('does not redirect when auth is still loading', () => {
+    mockAuthState.user = { id: 'user-1' };
+    mockAuthState.isLoading = true;
+
+    render(<LoginPage />);
     expect(mockReplace).not.toHaveBeenCalled();
   });
 });

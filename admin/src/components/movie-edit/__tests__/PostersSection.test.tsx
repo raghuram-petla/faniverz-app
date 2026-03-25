@@ -342,6 +342,19 @@ describe('PostersSection', () => {
     expect(cards[0].getAttribute('data-testid')).toBe('poster-card-img-a');
   });
 
+  it('sorts non-main poster after savedMainPosterId poster', () => {
+    const posters = [
+      { ...makePoster('img-new'), created_at: '2024-12-01T00:00:00Z' },
+      { ...makePoster('img-main'), created_at: '2024-01-01T00:00:00Z' },
+    ];
+    const { container } = render(
+      <PostersSection {...defaultProps} visiblePosters={posters} savedMainPosterId="img-main" />,
+    );
+    const cards = container.querySelectorAll('[data-testid^="poster-card-"]');
+    expect(cards[0].getAttribute('data-testid')).toBe('poster-card-img-main');
+    expect(cards[1].getAttribute('data-testid')).toBe('poster-card-img-new');
+  });
+
   it('confirming add with is_main_poster=true calls onSelectMainPoster with pendingId', () => {
     render(<PostersSection {...defaultProps} />);
     fireEvent.click(screen.getByTestId('add-btn'));

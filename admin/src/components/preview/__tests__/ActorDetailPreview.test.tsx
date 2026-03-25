@@ -20,8 +20,11 @@ vi.mock('@shared/colors', () => ({
   },
 }));
 
+const mockGetImageUrl = vi.fn(
+  (_url: string, _size: string, _bucket: string) => 'https://cdn/actor.jpg',
+);
 vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: (_url: string, _size: string, _bucket: string) => 'https://cdn/actor.jpg',
+  getImageUrl: (url: string, size: string, bucket: string) => mockGetImageUrl(url, size, bucket),
 }));
 
 import { ActorDetailPreview } from '@/components/preview/ActorDetailPreview';
@@ -155,5 +158,16 @@ describe('ActorDetailPreview', () => {
     // The bio info card won't render at all
     render(<ActorDetailPreview {...defaultProps} heightCm={0} />);
     expect(screen.queryByText('Height')).not.toBeInTheDocument();
+  });
+
+  it('falls back to raw photoUrl when getImageUrl returns null', () => {
+    mockGetImageUrl.mockReturnValue(null as unknown as string);
+    const { container } = render(
+      <ActorDetailPreview {...defaultProps} photoUrl="https://raw.example.com/photo.jpg" />,
+    );
+    const img = container.querySelector('img');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://raw.example.com/photo.jpg');
+    mockGetImageUrl.mockImplementation(() => 'https://cdn/actor.jpg');
   });
 });

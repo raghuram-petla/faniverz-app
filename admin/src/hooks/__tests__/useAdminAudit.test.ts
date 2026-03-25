@@ -410,6 +410,83 @@ describe('useRevertAuditEntry', () => {
     });
   });
 
+  it('throws when query errors in useAdminAuditLog', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: null, error: new Error('Query failed') }),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockResolvedValue({ data: null, error: new Error('Query failed') }),
+    };
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminAuditLog(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('has next page when audit log returns 50 items', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    const fullPage = Array.from({ length: 50 }, (_, i) => ({ id: String(i) }));
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: fullPage, error: null }),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockResolvedValue({ data: fullPage, error: null }),
+    };
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminAuditLog(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.hasNextPage).toBe(true);
+  });
+
+  it('applies all filters simultaneously', async () => {
+    const { supabase } = await import('@/lib/supabase-browser');
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockReturnThis(),
+      lte: vi.fn().mockReturnThis(),
+      or: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    vi.mocked(supabase.from).mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    renderHook(
+      () =>
+        useAdminAuditLog({
+          adminUserId: 'u1',
+          action: 'UPDATE',
+          entityType: 'movie',
+          dateFrom: '2024-01-01',
+          dateTo: '2024-12-31',
+          search: 'test',
+        }),
+      { wrapper: Wrapper },
+    );
+
+    await waitFor(() => {
+      expect(chain.eq).toHaveBeenCalledWith('admin_user_id', 'u1');
+      expect(chain.eq).toHaveBeenCalledWith('action', 'UPDATE');
+      expect(chain.eq).toHaveBeenCalledWith('entity_type', 'movie');
+      expect(chain.gte).toHaveBeenCalledWith('created_at', '2024-01-01T00:00:00');
+      expect(chain.lte).toHaveBeenCalledWith('created_at', '2024-12-31T23:59:59');
+      expect(chain.or).toHaveBeenCalled();
+    });
+  });
+
   it('invalidates all admin queries on success', async () => {
     mockGetSession.mockResolvedValue({
       data: { session: { access_token: 'tok123' } },

@@ -109,4 +109,65 @@ describe('useFormChanges', () => {
     );
     expect(result.current.changes[0].oldDisplay).toBe('(empty)');
   });
+
+  it('formats boolean string "true" as Yes', () => {
+    const fields: FieldConfig[] = [{ key: 'active', label: 'Active', type: 'boolean' }];
+    const initial = { active: 'true' };
+    const current = { active: 'false' };
+    const { result } = renderHook(() => useFormChanges(fields, initial, current));
+    expect(result.current.changes[0].oldDisplay).toBe('Yes');
+    expect(result.current.changes[0].newDisplay).toBe('No');
+  });
+
+  it('truncates long image filenames to 30 chars', () => {
+    const fields: FieldConfig[] = [{ key: 'photo', label: 'Photo', type: 'image' }];
+    const longName = 'a-very-long-filename-that-exceeds-thirty-characters.jpg';
+    const initial = { photo: `https://cdn.example.com/${longName}` };
+    const current = { photo: 'https://cdn.example.com/short.jpg' };
+    const { result } = renderHook(() => useFormChanges(fields, initial, current));
+    expect(result.current.changes[0].oldDisplay).toBe(`${longName.slice(0, 27)}...`);
+    expect(result.current.changes[0].newDisplay).toBe('short.jpg');
+  });
+
+  it('handles invalid date value by returning the raw string', () => {
+    const fields: FieldConfig[] = [{ key: 'dob', label: 'Date', type: 'date' }];
+    const initial = { dob: 'not-a-date' };
+    const current = { dob: '2024-01-01' };
+    const { result } = renderHook(() => useFormChanges(fields, initial, current));
+    expect(result.current.changes[0].oldDisplay).toBe('not-a-date');
+  });
+
+  it('formats select field without matching option as raw value', () => {
+    const fields: FieldConfig[] = [
+      { key: 'status', label: 'Status', type: 'select', options: { active: 'Active' } },
+    ];
+    const initial = { status: 'unknown' };
+    const current = { status: 'active' };
+    const { result } = renderHook(() => useFormChanges(fields, initial, current));
+    expect(result.current.changes[0].oldDisplay).toBe('unknown');
+    expect(result.current.changes[0].newDisplay).toBe('Active');
+  });
+
+  it('treats null and undefined as equal (both become empty string)', () => {
+    const fields: FieldConfig[] = [{ key: 'name', label: 'Name', type: 'text' }];
+    const initial = { name: null };
+    const current = { name: undefined };
+    const { result } = renderHook(() =>
+      useFormChanges(
+        fields,
+        initial as Record<string, unknown>,
+        current as Record<string, unknown>,
+      ),
+    );
+    expect(result.current.isDirty).toBe(false);
+  });
+
+  it('formats select without options prop as raw value', () => {
+    const fields: FieldConfig[] = [{ key: 'x', label: 'X', type: 'select' }];
+    const initial = { x: 'a' };
+    const current = { x: 'b' };
+    const { result } = renderHook(() => useFormChanges(fields, initial, current));
+    expect(result.current.changes[0].oldDisplay).toBe('a');
+    expect(result.current.changes[0].newDisplay).toBe('b');
+  });
 });

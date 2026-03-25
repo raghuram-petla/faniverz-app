@@ -138,4 +138,24 @@ describe('MovieListToolbar', () => {
     });
     expect(setStatusFilter).toHaveBeenCalledWith('upcoming');
   });
+
+  it('shows singular "movie" when movieCount is 1', () => {
+    renderToolbar({ movieCount: 1 });
+    expect(screen.getByText(/Showing 1 movie(?!s)/)).toBeInTheDocument();
+  });
+
+  it('shows status filter in count text', () => {
+    renderToolbar({ movieCount: 5, statusFilter: 'upcoming' });
+    expect(screen.getByText(/\(upcoming\)/)).toBeInTheDocument();
+  });
+
+  it('shows singular "filter" when activeFilterCount is 1', () => {
+    renderToolbar({ movieCount: 5, activeFilterCount: 1, hasActiveFilters: true });
+    expect(screen.getByText(/with 1 filter(?!s)/)).toBeInTheDocument();
+  });
+
+  it('does not show debouncedSearch text when empty', () => {
+    renderToolbar({ movieCount: 5, debouncedSearch: '' });
+    expect(screen.queryByText(/matching/)).not.toBeInTheDocument();
+  });
 });

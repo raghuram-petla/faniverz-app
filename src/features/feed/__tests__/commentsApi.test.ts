@@ -50,6 +50,26 @@ describe('fetchComments', () => {
 
     await expect(fetchComments('f1', 0)).rejects.toThrow('DB error');
   });
+
+  it('uses default pageSize of 20 when not provided', async () => {
+    const mockRange = jest.fn().mockResolvedValue({ data: [], error: null });
+    const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
+    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    mockSelect.mockReturnValue({ eq: mockEq });
+
+    await fetchComments('f1', 0);
+    expect(mockRange).toHaveBeenCalledWith(0, 19);
+  });
+
+  it('returns empty array when data is null', async () => {
+    const mockRange = jest.fn().mockResolvedValue({ data: null, error: null });
+    const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
+    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    mockSelect.mockReturnValue({ eq: mockEq });
+
+    const result = await fetchComments('f1', 0);
+    expect(result).toEqual([]);
+  });
 });
 
 describe('addComment', () => {

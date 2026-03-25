@@ -180,4 +180,39 @@ describe('GET /api/profile', () => {
     const data = await res.json();
     expect(data.google_avatar_url).toBeNull();
   });
+
+  it('returns 500 when GET throws an unexpected error', async () => {
+    mockGetUser.mockRejectedValueOnce(new Error('Unexpected'));
+
+    const res = await GET(makeGetRequest());
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Internal server error');
+  });
+});
+
+describe('PATCH /api/profile - catch block', () => {
+  it('returns 500 when PATCH throws an unexpected error', async () => {
+    mockGetUser.mockRejectedValueOnce(new Error('Crash'));
+
+    const res = await PATCH(makeRequest({ avatar_url: 'url' }));
+    expect(res.status).toBe(500);
+    const data = await res.json();
+    expect(data.error).toBe('Internal server error');
+  });
+
+  it('updates display_name successfully', async () => {
+    const res = await PATCH(makeRequest({ display_name: 'New Name' }));
+    expect(res.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ display_name: 'New Name' }));
+  });
+
+  it('updates both allowed fields at once', async () => {
+    const res = await PATCH(makeRequest({ avatar_url: 'url', display_name: 'Name' }));
+    expect(res.status).toBe(200);
+    const updateArg = mockUpdate.mock.calls[0][0];
+    expect(updateArg).toHaveProperty('avatar_url', 'url');
+    expect(updateArg).toHaveProperty('display_name', 'Name');
+    expect(updateArg).toHaveProperty('updated_at');
+  });
 });

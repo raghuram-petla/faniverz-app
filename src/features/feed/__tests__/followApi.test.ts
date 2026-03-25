@@ -213,6 +213,80 @@ describe('fetchEnrichedFollows', () => {
     });
   });
 
+  it('enriches production_house follows with name and logo_url', async () => {
+    const follows = [
+      {
+        id: '1',
+        user_id: 'u1',
+        entity_type: 'production_house',
+        entity_id: 'ph1',
+        created_at: '2026-01-01',
+      },
+    ];
+
+    const mockOrder = jest.fn().mockResolvedValue({ data: follows, error: null });
+    const mockEqLocal = jest.fn(() => ({ order: mockOrder }));
+    const mockSelectLocal = jest.fn(() => ({ eq: mockEqLocal }));
+
+    const mockHouseIn = jest.fn().mockResolvedValue({
+      data: [{ id: 'ph1', name: 'My House', logo_url: 'logo.jpg' }],
+      error: null,
+    });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'entity_follows') return { select: mockSelectLocal };
+      if (table === 'production_houses') {
+        return { select: jest.fn(() => ({ in: mockHouseIn })) };
+      }
+      return {
+        select: jest.fn(() => ({ in: jest.fn().mockResolvedValue({ data: [], error: null }) })),
+      };
+    });
+
+    const result = await fetchEnrichedFollows('u1');
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      entity_type: 'production_house',
+      entity_id: 'ph1',
+      name: 'My House',
+      image_url: 'logo.jpg',
+      created_at: '2026-01-01',
+    });
+  });
+
+  it('handles enrichment query errors via unwrap', async () => {
+    const follows = [
+      {
+        id: '1',
+        user_id: 'u1',
+        entity_type: 'movie',
+        entity_id: 'm1',
+        created_at: '2026-01-01',
+      },
+    ];
+
+    const mockOrder = jest.fn().mockResolvedValue({ data: follows, error: null });
+    const mockEqLocal = jest.fn(() => ({ order: mockOrder }));
+    const mockSelectLocal = jest.fn(() => ({ eq: mockEqLocal }));
+
+    const mockMovieIn = jest.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'Movie query failed' },
+    });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'entity_follows') return { select: mockSelectLocal };
+      if (table === 'movies') {
+        return { select: jest.fn(() => ({ in: mockMovieIn })) };
+      }
+      return {
+        select: jest.fn(() => ({ in: jest.fn().mockResolvedValue({ data: [], error: null }) })),
+      };
+    });
+
+    await expect(fetchEnrichedFollows('u1')).rejects.toEqual({ message: 'Movie query failed' });
+  });
+
   it('filters out follows for deleted entities', async () => {
     const follows = [
       { id: '1', user_id: 'u1', entity_type: 'movie', entity_id: 'm1', created_at: '2026-01-01' },

@@ -305,11 +305,29 @@ describe('POST /api/sync/fill-fields', () => {
     expect(data.updatedFields).toContain('budget_revenue');
   });
 
-  it('fills certification_auto field', async () => {
+  it('fills certification_auto field when release_dates has India cert', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...MOCK_DETAIL,
+      release_dates: {
+        results: [
+          {
+            iso_3166_1: 'IN',
+            release_dates: [{ type: 3, certification: 'UA' }],
+          },
+        ],
+      },
+    });
     const res = await POST(makeRequest({ tmdbId: 101, fields: ['certification_auto'] }));
     expect(res.status).toBe(200);
-    // extractIndiaCertification returns null by default (mock detail has empty release_dates)
-    // so certification won't be in movieUpdate, but the field is still processed
+    expect(mockMovieUpdate).toHaveBeenCalledWith(expect.objectContaining({ certification: 'UA' }));
+    const data = await res.json();
+    expect(data.updatedFields).toContain('certification_auto');
+  });
+
+  it('skips certification_auto when no India cert found', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['certification_auto'] }));
+    expect(res.status).toBe(200);
+    // extractIndiaCertification returns null (empty release_dates) — certification not in update
   });
 
   it('fills spoken_languages field', async () => {
@@ -383,6 +401,36 @@ describe('POST /api/sync/fill-fields', () => {
     );
   });
 
+  it('skips title_te/synopsis_te when translations are empty', async () => {
+    // Default MOCK_DETAIL has empty translations — titleTe/synopsisTe will be undefined
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['title_te', 'synopsis_te'] }));
+    expect(res.status).toBe(200);
+    // movieUpdate should NOT be called since no scalar fields end up in the update
+    // (title_te is only added when titleTe is truthy)
+  });
+
+  it('handles null external_ids.imdb_id via nullish coalesce', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...MOCK_DETAIL,
+      external_ids: { imdb_id: null },
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['imdb_id'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(expect.objectContaining({ imdb_id: null }));
+  });
+
+  it('handles null spoken_languages via nullish coalesce', async () => {
+    mockGetMovieDetails.mockResolvedValue({
+      ...MOCK_DETAIL,
+      spoken_languages: null,
+    });
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['spoken_languages'] }));
+    expect(res.status).toBe(200);
+    expect(mockMovieUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ spoken_languages: null }),
+    );
+  });
+
   it('returns 400 when tmdbId is missing', async () => {
     const res = await POST(makeRequest({ fields: ['title'] }));
     expect(res.status).toBe(400);
@@ -395,6 +443,52 @@ describe('POST /api/sync/fill-fields', () => {
     });
     await POST(makeRequest({ tmdbId: 101, fields: ['title'] }));
     expect(mockGetMovieDetails).toHaveBeenCalledWith(101, 'test-key', undefined);
+  });
+
+  it('does not include junction fields in updatedFields from scalar update', async () => {
+    // When requesting both scalar and junction fields, the scalar loop
+    // skips junction field names (images, videos, etc.) from the movieUpdate check
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['title', 'images', 'videos'] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    // title should be in updatedFields from scalar path
+    expect(data.updatedFields).toContain('title');
+    // images and videos should be added by junction sync path, not scalar loop
+    expect(data.updatedFields).toContain('images');
+    expect(data.updatedFields).toContain('videos');
+  });
+
+  it('does not duplicate cast in updatedFields when both cast field and forceResyncCast', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['cast'], forceResyncCast: true }));
+    expect(res.status).toBe(200);
+    expect(mockMovieDeleteCast).toHaveBeenCalled();
+    expect(mockSyncCastCrewAdditive).toHaveBeenCalled();
+    const data = await res.json();
+    // cast should appear exactly once even though both fieldSet.has('cast') and forceResyncCast are true
+    const castCount = data.updatedFields.filter((f: string) => f === 'cast').length;
+    expect(castCount).toBe(1);
+  });
+
+  it('returns 400 when fields is not an array', async () => {
+    const res = await POST(makeRequest({ tmdbId: 101, fields: 'title' }));
+    expect(res.status).toBe(400);
+  });
+
+  it('handles backdrop_url when maybeUploadImage returns null', async () => {
+    mockMaybeUploadImage.mockResolvedValue(null);
+    const res = await POST(makeRequest({ tmdbId: 101, fields: ['backdrop_url'] }));
+    expect(res.status).toBe(200);
+    // backdrop_url should not be in movieUpdate when upload returns null
+  });
+
+  it('tracks compound field tmdb_ratings in updatedFields via COMPOUND_FIELDS map', async () => {
+    const res = await POST(
+      makeRequest({ tmdbId: 101, fields: ['tmdb_ratings', 'budget_revenue'] }),
+    );
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.updatedFields).toContain('tmdb_ratings');
+    expect(data.updatedFields).toContain('budget_revenue');
   });
 
   // ── Language handling ─────────────────────────────────────────────────

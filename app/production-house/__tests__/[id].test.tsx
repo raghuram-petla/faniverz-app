@@ -332,4 +332,119 @@ describe('ProductionHouseDetailScreen', () => {
     // The renderImage function is called with size 120 and renders an Image when logo_url exists
     expect(screen.getByText('Mythri Entertainments')).toBeTruthy();
   });
+
+  it('does not call unfollow/follow when unfollowMutation is pending', () => {
+    jest.spyOn(require('@/features/feed'), 'useUnfollowEntity').mockReturnValue({
+      mutate: mockUnfollowMutate,
+      isPending: true,
+    });
+
+    render(<ProductionHouseDetailScreen />);
+    fireEvent.press(screen.getByTestId('follow-btn'));
+    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+
+    jest.restoreAllMocks();
+  });
+
+  it('handles undefined id param (covers id ?? empty string)', () => {
+    const routerModule = jest.requireMock('expo-router');
+    const origUseLocalSearchParams = routerModule.useLocalSearchParams;
+    routerModule.useLocalSearchParams = () => ({ id: undefined });
+
+    mockUseProductionHouseDetail.mockReturnValue({
+      house: null,
+      movies: [],
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByText('common.noResults')).toBeTruthy();
+
+    routerModule.useLocalSearchParams = origUseLocalSearchParams;
+  });
+
+  it('renders movie card with null poster_url (covers getImageUrl null branch)', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      movies: [{ id: 'm3', title: 'No Poster', poster_url: null, release_date: null, rating: 3.0 }],
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByText('No Poster')).toBeTruthy();
+  });
+
+  it('renders movie with valid year and rating > 0', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      movies: [
+        {
+          id: 'm6',
+          title: 'Rated Movie',
+          poster_url: 'poster.jpg',
+          release_date: '2024-06-01',
+          rating: 4.2,
+        },
+      ],
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByText('Rated Movie')).toBeTruthy();
+    expect(screen.getByText('2024')).toBeTruthy();
+    expect(screen.getByText('4.2')).toBeTruthy();
+  });
+
+  it('does not render year when release_date is null for movie card', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      movies: [{ id: 'm7', title: 'No Year', poster_url: null, release_date: null, rating: 5.0 }],
+    });
+    render(<ProductionHouseDetailScreen />);
+    expect(screen.getByText('No Year')).toBeTruthy();
+    // Year should not appear
+    expect(screen.queryByText('null')).toBeNull();
+  });
+
+  it('does not follow/unfollow when mutation is pending (isPending guard)', () => {
+    const feed = require('@/features/feed');
+    const origFollow = feed.useFollowEntity;
+    const origUnfollow = feed.useUnfollowEntity;
+    feed.useFollowEntity = () => ({ mutate: mockFollowMutate, isPending: true });
+    feed.useUnfollowEntity = () => ({ mutate: mockUnfollowMutate, isPending: true });
+    mockFollowSet = new Set<string>();
+    mockUseProductionHouseDetail.mockReturnValue(defaultHookReturn);
+
+    render(<ProductionHouseDetailScreen />);
+    fireEvent.press(screen.getByTestId('follow-btn'));
+    // Should NOT call mutate because isPending is true
+    expect(mockFollowMutate).not.toHaveBeenCalled();
+    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+
+    feed.useFollowEntity = origFollow;
+    feed.useUnfollowEntity = origUnfollow;
+  });
+
+  it('renders placeholder icon when house.logo_url is null', () => {
+    mockUseProductionHouseDetail.mockReturnValue({
+      ...defaultHookReturn,
+      house: { ...defaultHookReturn.house, logo_url: null },
+    });
+    render(<ProductionHouseDetailScreen />);
+    // Should render without crashing — placeholder icon instead of Image
+    expect(screen.getByText('Mythri Entertainments')).toBeTruthy();
+  });
+
+  it('handles undefined id from URL params (id ?? "" branch)', () => {
+    const expoRouter = require('expo-router');
+    const origParams = expoRouter.useLocalSearchParams;
+    expoRouter.useLocalSearchParams = () => ({ id: undefined });
+
+    mockFollowSet = new Set<string>();
+    mockUseProductionHouseDetail.mockReturnValue(defaultHookReturn);
+
+    render(<ProductionHouseDetailScreen />);
+    // Follow with empty id
+    fireEvent.press(screen.getByTestId('follow-btn'));
+    expect(mockFollowMutate).toHaveBeenCalledWith(expect.objectContaining({ entityId: '' }));
+
+    expoRouter.useLocalSearchParams = origParams;
+  });
 });

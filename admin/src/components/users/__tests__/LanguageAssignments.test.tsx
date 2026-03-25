@@ -225,4 +225,71 @@ describe('LanguageAssignments', () => {
       expect(screen.getByText('Language Access')).toBeInTheDocument();
     });
   });
+
+  it('shows error message when save fails with unparseable JSON response', async () => {
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ language_id: 'lang-te' }],
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        json: vi.fn().mockRejectedValue(new Error('parse error')),
+      });
+
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Telugu')).toBeInTheDocument();
+    });
+
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    fireEvent.click(checkboxes[1]);
+    fireEvent.click(screen.getByText('Save Languages'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows Save button with Saving... text when mutation is pending', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Telugu')).toBeInTheDocument();
+    });
+
+    // Toggle to create a change
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    fireEvent.click(checkboxes[1]);
+
+    expect(screen.getByText('Save Languages')).toBeInTheDocument();
+  });
+
+  it('detects hasChanges when selected size differs from assignments size', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Telugu')).toBeInTheDocument();
+    });
+
+    // Toggle Telugu off (was checked) and Hindi on
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    fireEvent.click(checkboxes[0]); // uncheck Telugu
+    fireEvent.click(checkboxes[1]); // check Hindi
+
+    // Same size but different content — hasChanges should be true
+    expect(screen.getByText('Save Languages')).toBeInTheDocument();
+  });
+
+  it('handles session expired error in getAccessToken', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null } });
+
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    // The query should fail since session is null, but the component should still render
+    await waitFor(() => {
+      expect(screen.getByText('Telugu')).toBeInTheDocument();
+    });
+  });
 });

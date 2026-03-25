@@ -201,4 +201,67 @@ describe('POST /api/sync/import-movies', () => {
     const res = await POST(makeRequest({}));
     expect(res.status).toBe(400);
   });
+
+  it('returns 503 when TMDB_API_KEY is not configured', async () => {
+    vi.stubEnv('TMDB_API_KEY', '');
+    delete process.env.TMDB_API_KEY;
+    const res = await POST(makeRequest({ tmdbIds: [100] }));
+    expect(res.status).toBe(503);
+  });
+
+  it('returns 500 via errorResponse when outer try/catch fires', async () => {
+    const badRequest = {
+      json: async () => {
+        throw new Error('parse error');
+      },
+      headers: { get: () => 'Bearer valid-token' },
+    } as unknown as import('next/server').NextRequest;
+    const res = await POST(badRequest);
+    expect(res.status).toBe(500);
+  });
+
+  it('passes originalLanguage to processMovieFromTmdb', async () => {
+    mockProcessMovieFromTmdb.mockResolvedValue({ isNew: true, movieId: 'm1', title: 'Movie' });
+    const res = await POST(makeRequest({ tmdbIds: [100], originalLanguage: 'te' }));
+    expect(res.status).toBe(200);
+    expect(mockProcessMovieFromTmdb).toHaveBeenCalledWith(
+      100,
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ originalLanguage: 'te' }),
+    );
+  });
+
+  it('passes undefined originalLanguage when not provided', async () => {
+    mockProcessMovieFromTmdb.mockResolvedValue({ isNew: true, movieId: 'm1', title: 'Movie' });
+    const res = await POST(makeRequest({ tmdbIds: [100] }));
+    expect(res.status).toBe(200);
+    expect(mockProcessMovieFromTmdb).toHaveBeenCalledWith(
+      100,
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ resumable: true, originalLanguage: undefined }),
+    );
+  });
+
+  it('correctly handles mix of new and updated movies', async () => {
+    mockProcessMovieFromTmdb
+      .mockResolvedValueOnce({ isNew: true, movieId: 'm1', title: 'New Movie' })
+      .mockResolvedValueOnce({ isNew: false, movieId: 'm2', title: 'Existing Movie' });
+
+    const res = await POST(makeRequest({ tmdbIds: [100, 200] }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.results).toHaveLength(2);
+    expect(mockCompleteSyncLog).toHaveBeenCalledWith(
+      expect.anything(),
+      'sync-log-1',
+      expect.objectContaining({
+        status: 'success',
+        moviesAdded: 1,
+        moviesUpdated: 1,
+        details: ['New Movie', 'Existing Movie'],
+      }),
+    );
+  });
 });

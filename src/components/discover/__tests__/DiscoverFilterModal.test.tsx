@@ -175,4 +175,26 @@ describe('DiscoverFilterModal', () => {
     render(<DiscoverFilterModal {...defaultProps} filteredCount={0} />);
     expect(screen.getByText('Show 0 Movies')).toBeTruthy();
   });
+
+  it('shows checkmark and selected background when platform is selected', () => {
+    render(<DiscoverFilterModal {...defaultProps} selectedPlatforms={['aha']} />);
+    // Platform 'aha' should have the checkmark icon rendered
+    expect(screen.getByText('Aha')).toBeTruthy();
+  });
+
+  it('shows active style when genre is selected', () => {
+    render(<DiscoverFilterModal {...defaultProps} selectedGenres={['Action']} />);
+    expect(screen.getByText('Action')).toBeTruthy();
+  });
+
+  it('shows active style when production house is selected', () => {
+    render(<DiscoverFilterModal {...defaultProps} selectedProductionHouses={['ph1']} />);
+    expect(screen.getByText('Mythri Movie Makers')).toBeTruthy();
+  });
+
+  it('renders multiple selected platforms with checkmarks', () => {
+    render(<DiscoverFilterModal {...defaultProps} selectedPlatforms={['aha', 'netflix']} />);
+    expect(screen.getByText('Aha')).toBeTruthy();
+    expect(screen.getByText('Netflix')).toBeTruthy();
+  });
 });

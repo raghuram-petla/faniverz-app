@@ -553,6 +553,15 @@ describe('processMovieFromTmdb — resumable option', () => {
     expect(result.isNew).toBe(false);
   });
 
+  it('passes originalLanguage option to getMovieDetails', async () => {
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient, {
+      resumable: true,
+      originalLanguage: 'te',
+    });
+
+    expect(getMovieDetails).toHaveBeenCalledWith(12345, 'api-key', 'te');
+  });
+
   it('handles image sync returning actual counts in resumable mode', async () => {
     vi.mocked(syncAllImages).mockResolvedValueOnce({ posterCount: 5, backdropCount: 3 });
 
@@ -769,6 +778,30 @@ describe('processMovieFromTmdb — fullReplaceSync additional branches', () => {
       expect.anything(),
     );
     warnSpy.mockRestore();
+  });
+
+  it('sets synopsis to null when overview is empty string', async () => {
+    const detail = makeTmdbDetail({ overview: '' });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ synopsis: null }),
+      expect.anything(),
+    );
+  });
+
+  it('sets runtime to null when runtime is 0', async () => {
+    const detail = makeTmdbDetail({ runtime: 0 });
+    vi.mocked(getMovieDetails).mockResolvedValue(detail as never);
+
+    await processMovieFromTmdb(12345, 'api-key', supabase as unknown as SupabaseClient);
+
+    expect(supabase.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ runtime: null }),
+      expect.anything(),
+    );
   });
 
   it('handles zero budget/revenue/tagline/status (falsy values)', async () => {

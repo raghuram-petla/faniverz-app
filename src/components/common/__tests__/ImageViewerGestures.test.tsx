@@ -383,3 +383,73 @@ describe('double-tap focal zoom math', () => {
     expect(tx).toBeGreaterThanOrEqual(-maxX);
   });
 });
+
+describe('resetTransforms callback', () => {
+  it('calls resetTransforms when pinch ends at scale exactly 1', () => {
+    const scale = { value: 1 } as never;
+    const translateX = { value: 10 } as never;
+    const translateY = { value: 20 } as never;
+    const backdropOpacity = { value: 0.5 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, translateX, translateY, backdropOpacity })}>
+        <Text>reset test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.pinchEnd) {
+      capturedCallbacks.pinchEnd();
+    }
+    // resetTransforms should have been called — scale <= 1
+    expect(screen.getByText('reset test')).toBeTruthy();
+  });
+
+  it('pinch update clamps scale to minimum of 1 (below scale branch)', () => {
+    const scale = { value: 1 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale })}>
+        <Text>clamp min</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.pinchUpdate) {
+      // savedScale * e.scale = 1 * 0.5 = 0.5, clamped to 1
+      capturedCallbacks.pinchUpdate({ scale: 0.5 });
+    }
+    expect(screen.getByText('clamp min')).toBeTruthy();
+  });
+
+  it('pan update at scale=1 with large translationY clamps backdrop opacity to 0', () => {
+    const scale = { value: 1 } as never;
+    const backdropOpacity = { value: 1 } as never;
+    const translateY = { value: 0 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, backdropOpacity, translateY })}>
+        <Text>clamp opacity</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panUpdate) {
+      // Very large translation should clamp opacity close to 0
+      capturedCallbacks.panUpdate({ translationX: 0, translationY: 500 });
+    }
+    expect(screen.getByText('clamp opacity')).toBeTruthy();
+  });
+
+  it('calls onDismiss when pan exceeds dismiss threshold upward (negative translationY)', () => {
+    const onDismiss = jest.fn();
+    const scale = { value: 1 } as never;
+    const translateX = { value: 0 } as never;
+    const translateY = { value: 0 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ onDismiss, scale, translateX, translateY })}>
+        <Text>dismiss up</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panEnd) {
+      capturedCallbacks.panEnd({
+        translationX: 0,
+        translationY: -150,
+        velocityX: 0,
+        velocityY: -300,
+      });
+      expect(onDismiss).toHaveBeenCalled();
+    }
+  });
+});

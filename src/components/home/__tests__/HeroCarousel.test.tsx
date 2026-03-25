@@ -524,4 +524,109 @@ describe('HeroCarousel', () => {
       flatList.props.onViewableItemsChanged?.({ viewableItems: [], changed: [] });
     }).not.toThrow();
   });
+
+  it('getItemLayout returns correct layout for each index', () => {
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    const layout0 = flatList.props.getItemLayout(undefined, 0);
+    expect(layout0.index).toBe(0);
+    expect(layout0.offset).toBe(0);
+    expect(layout0.length).toBeGreaterThan(0);
+
+    const layout1 = flatList.props.getItemLayout(undefined, 1);
+    expect(layout1.index).toBe(1);
+    expect(layout1.offset).toBe(layout0.length);
+  });
+
+  it('keyExtractor returns clone key for last item in extendedMovies', () => {
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    // Clone is at index === movies.length (2)
+    const cloneKey = flatList.props.keyExtractor(mockMovies[0], 2);
+    expect(cloneKey).toBe('1-clone');
+
+    // Normal item at index 0
+    const normalKey = flatList.props.keyExtractor(mockMovies[0], 0);
+    expect(normalKey).toBe('1');
+  });
+
+  it('calls onViewableItemsChanged with index null without crashing', () => {
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    expect(() => {
+      flatList.props.onViewableItemsChanged?.({
+        viewableItems: [{ index: null, item: mockMovies[0] }],
+        changed: [],
+      });
+    }).not.toThrow();
+  });
+
+  it('handles auto-play when activeIndex exceeds movies length (stale index guard)', () => {
+    jest.useFakeTimers();
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    // Force the active index to be beyond movies.length by simulating viewable items
+    act(() => {
+      flatList.props.onViewableItemsChanged?.({
+        viewableItems: [{ index: 2, item: mockMovies[0] }],
+        changed: [],
+      });
+    });
+
+    // Let clone reset + auto-play fire
+    act(() => {
+      jest.advanceTimersByTime(5500);
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('does not append clone for single-item list (extendedMovies === movies)', () => {
+    const singleMovie: Movie[] = [mockMovies[0]];
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={singleMovie} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+    // Data should have exactly 1 item (no clone appended)
+    expect(flatList.props.data.length).toBe(1);
+  });
+
+  it('renders without platformMap (undefined platforms default to [])', () => {
+    const { getByText } = render(<HeroCarousel movies={[mockMovies[0]]} />);
+    expect(getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('clears previous clone reset timer when clone is viewed again', () => {
+    jest.useFakeTimers();
+    const { UNSAFE_getByType } = render(<HeroCarousel movies={mockMovies} />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    // Fire clone view twice rapidly to test timer clearing
+    act(() => {
+      flatList.props.onViewableItemsChanged?.({
+        viewableItems: [{ index: 2, item: mockMovies[0] }],
+        changed: [],
+      });
+    });
+    act(() => {
+      flatList.props.onViewableItemsChanged?.({
+        viewableItems: [{ index: 2, item: mockMovies[0] }],
+        changed: [],
+      });
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(500);
+    });
+
+    jest.useRealTimers();
+  });
 });

@@ -68,4 +68,10 @@ describe('setUsername', () => {
     expect(mockUpdate).toHaveBeenCalledWith({ username: 'valid_user' });
     expect(mockUpdateEqFn).toHaveBeenCalledWith('id', 'u1');
   });
+
+  it('throws when supabase update returns an error', async () => {
+    mockUpdateEqFn.mockResolvedValue({ error: new Error('duplicate key') });
+
+    await expect(setUsername('u1', 'valid_user')).rejects.toThrow('duplicate key');
+  });
 });

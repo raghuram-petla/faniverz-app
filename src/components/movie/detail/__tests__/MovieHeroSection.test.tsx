@@ -145,4 +145,97 @@ describe('MovieHeroSection', () => {
     render(<MovieHeroSection {...baseProps} movie={movieNoFocus} />);
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
   });
+
+  it('renders runtime separator correctly when releaseYear is null', () => {
+    render(
+      <MovieHeroSection {...baseProps} movie={{ ...mockMovie, runtime: 120 }} releaseYear={null} />,
+    );
+    expect(screen.getByText(/120.*m/)).toBeTruthy();
+  });
+
+  it('renders certification separator when no runtime but releaseYear exists', () => {
+    render(<MovieHeroSection {...baseProps} movie={{ ...mockMovie, runtime: null }} />);
+    expect(screen.getByText('UA')).toBeTruthy();
+    expect(screen.getByText('2024')).toBeTruthy();
+  });
+
+  it('renders certification when both runtime is null and releaseYear is null', () => {
+    render(
+      <MovieHeroSection
+        {...baseProps}
+        movie={{ ...mockMovie, runtime: null }}
+        releaseYear={null}
+      />,
+    );
+    expect(screen.getByText('UA')).toBeTruthy();
+  });
+
+  it('renders nothing extra when runtime null, certification null, and releaseYear null', () => {
+    render(
+      <MovieHeroSection
+        {...baseProps}
+        movie={{ ...mockMovie, runtime: null, certification: null }}
+        releaseYear={null}
+      />,
+    );
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders with detail_focus_x set but detail_focus_y null (mixed null branch)', () => {
+    const movieMixed = {
+      ...mockMovie,
+      detail_focus_x: 0.5,
+      detail_focus_y: null,
+      backdrop_focus_x: null,
+      backdrop_focus_y: null,
+    };
+    render(<MovieHeroSection {...baseProps} movie={movieMixed} />);
+    // (detail_focus_x ?? backdrop_focus_x) = 0.5, (detail_focus_y ?? backdrop_focus_y) = null
+    // Since y is null, contentPosition = undefined (no position set)
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders with detail_focus_y set but detail_focus_x null, backdrop_focus_x null (x null branch)', () => {
+    const movieYOnly = {
+      ...mockMovie,
+      detail_focus_x: null,
+      detail_focus_y: 0.3,
+      backdrop_focus_x: null,
+      backdrop_focus_y: 0.7,
+    };
+    render(<MovieHeroSection {...baseProps} movie={movieYOnly} />);
+    // (detail_focus_x ?? backdrop_focus_x) = null, so first condition fails => no contentPosition
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('renders runtime separator pipe when releaseYear is present', () => {
+    render(
+      <MovieHeroSection {...baseProps} movie={{ ...mockMovie, runtime: 148 }} releaseYear={2024} />,
+    );
+    // Both year and runtime present — pipe separator between them
+    expect(screen.getByText('2024')).toBeTruthy();
+    expect(screen.getByText(/148.*m/)).toBeTruthy();
+  });
+
+  it('does not render runtime pipe separator when releaseYear is null', () => {
+    render(
+      <MovieHeroSection {...baseProps} movie={{ ...mockMovie, runtime: 100 }} releaseYear={null} />,
+    );
+    // Runtime rendered without year separator
+    expect(screen.getByText(/100.*m/)).toBeTruthy();
+  });
+
+  it('falls back to poster_url when backdrop_url is null (hero image fallback chain)', () => {
+    const movieNoBackdrop = { ...mockMovie, backdrop_url: null };
+    render(<MovieHeroSection {...baseProps} movie={movieNoBackdrop} />);
+    // Should still render — falls back to poster_url for hero image
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('falls back to PLACEHOLDER_POSTER when both backdrop_url and poster_url are null', () => {
+    const movieNoImages = { ...mockMovie, backdrop_url: null, poster_url: null };
+    render(<MovieHeroSection {...baseProps} movie={movieNoImages} />);
+    // Should still render — falls back to PLACEHOLDER_POSTER
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
 });

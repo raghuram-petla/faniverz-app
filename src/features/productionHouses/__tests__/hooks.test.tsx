@@ -274,4 +274,39 @@ describe('useProductionHouseDetail', () => {
     expect(mockFetchHouseById).toHaveBeenCalledWith('ph-42');
     expect(mockFetchHouseMovies).toHaveBeenCalledWith('ph-42');
   });
+
+  it('handles house fetch failure gracefully', async () => {
+    mockFetchHouseById.mockRejectedValue(new Error('House fetch error'));
+
+    const { result } = renderHook(() => useProductionHouseDetail('ph1'), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // House should fall back to null when query errors
+    expect(result.current.house).toBeNull();
+  });
+
+  it('handles movies fetch failure gracefully', async () => {
+    mockFetchHouseMovies.mockRejectedValue(new Error('Movies fetch error'));
+
+    const { result } = renderHook(() => useProductionHouseDetail('ph1'), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // Movies should fall back to empty array when query errors
+    expect(result.current.movies).toEqual([]);
+  });
+
+  it('refetch resolves even if one query fails', async () => {
+    const { result } = renderHook(() => useProductionHouseDetail('ph1'), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Make one query fail on refetch
+    mockFetchHouseById.mockRejectedValueOnce(new Error('Refetch fail'));
+
+    // refetch uses Promise.allSettled, so should not throw
+    await expect(result.current.refetch()).resolves.not.toThrow();
+  });
 });

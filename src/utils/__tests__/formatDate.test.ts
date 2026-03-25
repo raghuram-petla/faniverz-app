@@ -170,4 +170,28 @@ describe('extractReleaseYear', () => {
   it('returns null for empty string', () => {
     expect(extractReleaseYear('')).toBeNull();
   });
+
+  it('returns null for invalid date string', () => {
+    expect(extractReleaseYear('not-a-date')).toBeNull();
+  });
+
+  it('extracts year from short date string', () => {
+    expect(extractReleaseYear('2024-12-25')).toBe(2024);
+  });
+});
+
+describe('formatRelativeTime — future dates', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2025-06-15T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('returns "Just now" for future dates (negative diff)', () => {
+    const futureDate = new Date('2025-06-15T13:00:00Z').toISOString();
+    expect(formatRelativeTime(futureDate)).toBe('Just now');
+  });
 });

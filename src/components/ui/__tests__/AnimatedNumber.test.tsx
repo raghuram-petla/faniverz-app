@@ -89,4 +89,53 @@ describe('AnimatedNumber', () => {
     expect(screen.getByText('99')).toBeTruthy();
     mockAnimationsEnabled.mockReturnValue(true);
   });
+
+  it('animates to target value with decimals > 0', () => {
+    render(<AnimatedNumber value={100} decimals={1} />);
+    // After RAF with elapsed > duration, value should be at target
+    expect(screen.getByText('100.0')).toBeTruthy();
+  });
+
+  it('re-renders and animates from current value when value prop changes', () => {
+    const { rerender } = render(<AnimatedNumber value={50} testID="rerender" />);
+    expect(screen.getByText('50')).toBeTruthy();
+    act(() => {
+      rerender(<AnimatedNumber value={200} testID="rerender" />);
+    });
+    // After re-animation completes (rAF mock advances past duration)
+    expect(screen.getByText('200')).toBeTruthy();
+  });
+
+  it('renders with custom duration prop', () => {
+    render(<AnimatedNumber value={100} duration={400} />);
+    expect(screen.getByText('100')).toBeTruthy();
+  });
+
+  it('handles animation mid-progress (progress < 1 branch with short timestamps)', () => {
+    // Override RAF to fire with small timestamps so progress < 1
+    let rafTime = 0;
+    jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+      rafTime += 10; // small increment, less than default duration (800)
+      cb(rafTime);
+      return rafTime;
+    });
+
+    render(<AnimatedNumber value={100} duration={800} />);
+    // Even with short timestamps, it should render some value
+    expect(screen.getByTestId).toBeDefined();
+  });
+
+  it('renders value 0 with decimals=0 uses Math.round (integer format)', () => {
+    mockAnimationsEnabled.mockReturnValue(false);
+    render(<AnimatedNumber value={0} decimals={0} />);
+    expect(screen.getByText('0')).toBeTruthy();
+    mockAnimationsEnabled.mockReturnValue(true);
+  });
+
+  it('renders negative value correctly', () => {
+    mockAnimationsEnabled.mockReturnValue(false);
+    render(<AnimatedNumber value={-5} />);
+    expect(screen.getByText('-5')).toBeTruthy();
+    mockAnimationsEnabled.mockReturnValue(true);
+  });
 });

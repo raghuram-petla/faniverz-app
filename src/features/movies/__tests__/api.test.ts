@@ -216,6 +216,15 @@ describe('movies api', () => {
       expect(result!.crew[1].id).toBe('unknown');
     });
 
+    it('sorts crew where both items have null role_order', async () => {
+      mockFromForById([
+        { id: 'crew-a', credit_type: 'crew', role_order: null, actor: null },
+        { id: 'crew-b', credit_type: 'crew', role_order: null, actor: null },
+      ]);
+      const result = await fetchMovieById('123');
+      expect(result!.crew).toHaveLength(2);
+    });
+
     it('filters out null production_house entries from productionHouses junction table', async () => {
       // One entry has production_house: null (join failed or orphaned row) — should be filtered out
       mockFromForById(
@@ -935,6 +944,38 @@ describe('movies api', () => {
       await fetchMoviesPaginated(0, 10);
       // Default sort is 'popular' → order by review_count
       expect(mockOrder).toHaveBeenCalledWith('review_count', { ascending: false });
+    });
+  });
+
+  describe('fetchMovies — streaming filter with null streamingIds data', () => {
+    it('returns empty array when streaming query returns null data (no error)', async () => {
+      const mockPlatformSelect = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchMovies({ movieStatus: 'streaming' });
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('fetchMoviesPaginated — streaming filter returns null', () => {
+    it('returns empty array when streaming filter yields null', async () => {
+      const mockPlatformSelect = jest.fn();
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'movie_platforms') {
+          return { select: mockPlatformSelect };
+        }
+        return { select: mockSelect };
+      });
+      mockPlatformSelect.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchMoviesPaginated(0, 10, { movieStatus: 'streaming' });
+      expect(result).toEqual([]);
     });
   });
 

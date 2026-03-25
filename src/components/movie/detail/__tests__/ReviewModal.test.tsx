@@ -272,4 +272,16 @@ describe('ReviewModal', () => {
     render(<ReviewModal {...baseProps} posterUrl={null} />);
     expect(screen.getByText('Pushpa 2')).toBeTruthy();
   });
+
+  it('renders "Write Review" and "Submit" when isEditing is explicitly false', () => {
+    render(<ReviewModal {...baseProps} isEditing={false} />);
+    expect(screen.getByText('movie.writeReview')).toBeTruthy();
+    expect(screen.getByText('movie.submit')).toBeTruthy();
+  });
+
+  it('does not show meta line when releaseYear is 0 and director is empty string', () => {
+    render(<ReviewModal {...baseProps} releaseYear={0 as unknown as number} director="" />);
+    // releaseYear=0 is falsy, director="" is falsy => no meta rendered
+    expect(screen.queryByText('0')).toBeNull();
+  });
 });

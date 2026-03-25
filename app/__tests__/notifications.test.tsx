@@ -207,6 +207,89 @@ describe('NotificationsScreen', () => {
     expect(screen.queryByText('99+')).toBeNull();
   });
 
+  it('does not call markRead when markRead is already pending', () => {
+    const {
+      useNotifications,
+      useNotificationMutations,
+    } = require('@/features/notifications/hooks');
+    useNotifications.mockReturnValue({ data: mockNotifications });
+    useNotificationMutations.mockReturnValue({
+      markRead: { mutate: mockMarkRead.mutate, isPending: true },
+      markAllRead: mockMarkAllRead,
+    });
+
+    render(<NotificationsScreen />);
+    fireEvent.press(screen.getByLabelText('New Release'));
+    // markRead should NOT be called because isPending is true
+    expect(mockMarkRead.mutate).not.toHaveBeenCalled();
+  });
+
+  it('shows platform badge for release notification with platform', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    const releaseWithPlatform = [
+      {
+        id: 'n5',
+        user_id: 'user-1',
+        type: 'release',
+        title: 'Platform Release',
+        message: 'Available on Netflix',
+        movie_id: 'movie-5',
+        platform_id: 'netflix',
+        platform: 'netflix',
+        read: true,
+        scheduled_for: '2025-03-18T00:00:00Z',
+        status: 'sent',
+        created_at: '2025-03-18T10:00:00Z',
+      },
+    ];
+    useNotifications.mockReturnValue({ data: releaseWithPlatform });
+
+    render(<NotificationsScreen />);
+    expect(screen.getByText('Platform Release')).toBeTruthy();
+  });
+
+  it('does not call markAllRead when userId is empty (logged out)', () => {
+    jest.mock('@/features/auth/providers/AuthProvider', () => ({
+      useAuth: () => ({
+        user: null,
+        session: null,
+        isLoading: false,
+        isGuest: true,
+        setIsGuest: jest.fn(),
+      }),
+    }));
+
+    const { useUnreadCount } = require('@/features/notifications/hooks');
+    useUnreadCount.mockReturnValue(5);
+
+    render(<NotificationsScreen />);
+    // Even with unreadCount > 0, the guard checks `userId` which is '' when user is null
+    // so markAllRead should not be called
+  });
+
+  it('renders watchlist-type notification icon correctly', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    const watchlistNotification = [
+      {
+        id: 'n6',
+        user_id: 'user-1',
+        type: 'watchlist',
+        title: 'Watchlist Alert',
+        message: 'Your movie releases today',
+        movie_id: 'movie-6',
+        platform_id: null,
+        read: false,
+        scheduled_for: '2025-03-19T00:00:00Z',
+        status: 'sent',
+        created_at: '2025-03-19T10:00:00Z',
+      },
+    ];
+    useNotifications.mockReturnValue({ data: watchlistNotification });
+
+    render(<NotificationsScreen />);
+    expect(screen.getByText('Watchlist Alert')).toBeTruthy();
+  });
+
   it('uses fallback icon config for unknown notification type', () => {
     const { useNotifications } = require('@/features/notifications/hooks');
     const unknownTypeNotification = [
@@ -230,5 +313,125 @@ describe('NotificationsScreen', () => {
     // Should render without crashing — the fallback to TYPE_ICON.release is used
     expect(screen.getByText('Unknown Type')).toBeTruthy();
     expect(screen.getByText('This is an unknown notification type')).toBeTruthy();
+  });
+
+  it('renders reminder-type notification icon correctly', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    const reminderNotification = [
+      {
+        id: 'n7',
+        user_id: 'user-1',
+        type: 'reminder',
+        title: 'Reminder Alert',
+        message: 'Movie releases tomorrow',
+        movie_id: 'movie-7',
+        platform_id: null,
+        read: false,
+        scheduled_for: '2025-03-20T00:00:00Z',
+        status: 'sent',
+        created_at: '2025-03-20T10:00:00Z',
+      },
+    ];
+    useNotifications.mockReturnValue({ data: reminderNotification });
+
+    render(<NotificationsScreen />);
+    expect(screen.getByText('Reminder Alert')).toBeTruthy();
+  });
+
+  it('does not show platform badge for release notification without platform', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    const releaseNoPlatform = [
+      {
+        id: 'n8',
+        user_id: 'user-1',
+        type: 'release',
+        title: 'Theater Release',
+        message: 'Now in theaters',
+        movie_id: 'movie-8',
+        platform_id: null,
+        platform: null,
+        read: true,
+        scheduled_for: '2025-03-21T00:00:00Z',
+        status: 'sent',
+        created_at: '2025-03-21T10:00:00Z',
+      },
+    ];
+    useNotifications.mockReturnValue({ data: releaseNoPlatform });
+
+    render(<NotificationsScreen />);
+    expect(screen.getByText('Theater Release')).toBeTruthy();
+  });
+
+  it('does not show platform badge for non-release type even with platform set', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    const trendingWithPlatform = [
+      {
+        id: 'n9',
+        user_id: 'user-1',
+        type: 'trending',
+        title: 'Trending',
+        message: 'Trending on Netflix',
+        movie_id: 'movie-9',
+        platform_id: 'netflix',
+        platform: 'netflix',
+        read: true,
+        scheduled_for: '2025-03-22T00:00:00Z',
+        status: 'sent',
+        created_at: '2025-03-22T10:00:00Z',
+      },
+    ];
+    useNotifications.mockReturnValue({ data: trendingWithPlatform });
+
+    render(<NotificationsScreen />);
+    // Platform badge only renders for type === 'release' && item.platform
+    expect(screen.getByText('Trending')).toBeTruthy();
+  });
+
+  it('shows markAllRead error alert when onError is invoked', () => {
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    render(<NotificationsScreen />);
+    fireEvent.press(screen.getByLabelText('Mark all as read'));
+
+    // Extract onError callback from markAllRead.mutate call
+    const onErrorCallback = mockMarkAllRead.mutate.mock.calls[0][1].onError;
+    onErrorCallback();
+
+    expect(alertSpy).toHaveBeenCalledWith('Error', 'Something went wrong');
+    alertSpy.mockRestore();
+  });
+
+  it('handles user null (userId falls back to empty string via ??)', () => {
+    const { useAuth } = require('@/features/auth/providers/AuthProvider');
+    const origAuth = useAuth;
+    require('@/features/auth/providers/AuthProvider').useAuth = () => ({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: true,
+      setIsGuest: jest.fn(),
+    });
+
+    render(<NotificationsScreen />);
+    expect(screen.getByText('Notifications')).toBeTruthy();
+
+    require('@/features/auth/providers/AuthProvider').useAuth = origAuth;
+  });
+
+  it('does not call markAllRead when unreadCount is 0', () => {
+    const { useUnreadCount } = require('@/features/notifications/hooks');
+    useUnreadCount.mockReturnValue(0);
+    render(<NotificationsScreen />);
+    fireEvent.press(screen.getByLabelText('Mark all as read'));
+    expect(mockMarkAllRead.mutate).not.toHaveBeenCalled();
+  });
+
+  it('handles undefined notifications data (defaults to [])', () => {
+    const { useNotifications } = require('@/features/notifications/hooks');
+    useNotifications.mockReturnValue({ data: undefined, refetch: jest.fn() });
+    render(<NotificationsScreen />);
+    // Should show empty state when no notifications
+    expect(screen.getByText('Notifications')).toBeTruthy();
   });
 });

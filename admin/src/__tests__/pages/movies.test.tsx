@@ -63,8 +63,9 @@ vi.mock('@/hooks/usePermissions', () => ({
   }),
 }));
 
+const mockUseLanguageContext = vi.fn();
 vi.mock('@/hooks/useLanguageContext', () => ({
-  useLanguageContext: () => ({ selectedLanguageCode: 'te' }),
+  useLanguageContext: () => mockUseLanguageContext(),
 }));
 
 vi.mock('@/hooks/useLanguageOptions', () => ({
@@ -189,6 +190,7 @@ beforeEach(() => {
   mockCanDelete = true;
   mockIsReadOnly = false;
 
+  mockUseLanguageContext.mockReturnValue({ selectedLanguageCode: 'te' });
   mockUseAdminMovies.mockReturnValue({
     data: { pages: [] },
     isLoading: false,
@@ -599,6 +601,164 @@ describe('MoviesPage', () => {
       renderWithProviders(<MoviesPage />);
       fireEvent.click(screen.getByRole('button'));
       expect(mockDeleteMutate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('language name display', () => {
+    it('shows language name badge for other-language movies', () => {
+      mockUseLanguageContext.mockReturnValue({ selectedLanguageCode: 'te' });
+      mockUseAdminMovies.mockReturnValue({
+        data: { pages: [[makeMockMovie('m1', { original_language: 'hi' })]] },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      renderWithProviders(<MoviesPage />);
+      expect(screen.getByText('Hindi')).toBeInTheDocument();
+    });
+
+    it('does not show language name for same-language movies', () => {
+      mockUseLanguageContext.mockReturnValue({ selectedLanguageCode: 'te' });
+      mockUseAdminMovies.mockReturnValue({
+        data: { pages: [[makeMockMovie('m1', { original_language: 'te' })]] },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      renderWithProviders(<MoviesPage />);
+      expect(screen.queryByText('Telugu')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('selectedLanguageCode null', () => {
+    it('does not show language name when selectedLanguageCode is null', () => {
+      mockUseLanguageContext.mockReturnValue({ selectedLanguageCode: null });
+      mockUseAdminMovies.mockReturnValue({
+        data: { pages: [[makeMockMovie('m1', { original_language: 'hi' })]] },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      renderWithProviders(<MoviesPage />);
+      const row = screen.getByText('Movie m1').closest('tr');
+      expect(row?.classList.contains('opacity-40')).toBe(false);
+    });
+  });
+
+  describe('movie count in toolbar', () => {
+    it('passes 0 as movieCount when isLoading', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isFetching: true,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      renderWithProviders(<MoviesPage />);
+      expect(screen.getByTestId('movie-count').textContent).toBe('0');
+    });
+
+    it('passes movie count when loaded', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: { pages: [[makeMockMovie('m1'), makeMockMovie('m2')]] },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      renderWithProviders(<MoviesPage />);
+      expect(screen.getByTestId('movie-count').textContent).toBe('2');
+    });
+  });
+
+  describe('no language selected', () => {
+    it('does not gray out any movies when selectedLanguageCode is empty', () => {
+      mockUseLanguageContext.mockReturnValue({ selectedLanguageCode: '' });
+
+      mockUseAdminMovies.mockReturnValue({
+        data: { pages: [[makeMockMovie('m1', { original_language: 'hi' })]] },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      renderWithProviders(<MoviesPage />);
+      const row = screen.getByText('Movie m1').closest('tr');
+      // isOtherLanguage should be false when no selectedLanguageCode
+      expect(row?.classList.contains('opacity-40')).toBe(false);
+      // Title should be a link
+      expect(screen.getByText('Movie m1').closest('a')).toBeInTheDocument();
+    });
+  });
+
+  describe('getImageUrl null fallback', () => {
+    it('falls back to raw poster_url when getImageUrl returns null (relative key, no env)', () => {
+      // Use a relative key (no http prefix) — getImageUrl returns null without base URL env var
+      mockUseAdminMovies.mockReturnValue({
+        data: {
+          pages: [
+            [
+              makeMockMovie('m-relative', {
+                poster_url: 'relative-key.jpg',
+                poster_image_type: 'poster',
+                original_language: 'te',
+              }),
+            ],
+          ],
+        },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      const { container } = renderWithProviders(<MoviesPage />);
+      const img = container.querySelector('img');
+      expect(img).toBeInTheDocument();
+      // Falls back to raw poster_url since getImageUrl returns null
+      expect(img!.getAttribute('src')).toBe('relative-key.jpg');
+    });
+
+    it('falls back to raw poster_url for other-language movie with relative key', () => {
+      mockUseAdminMovies.mockReturnValue({
+        data: {
+          pages: [
+            [
+              makeMockMovie('m-relative-hi', {
+                poster_url: 'relative-hi.jpg',
+                poster_image_type: 'poster',
+                original_language: 'hi',
+              }),
+            ],
+          ],
+        },
+        isLoading: false,
+        isFetching: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+      } as unknown as ReturnType<typeof useAdminMovies>);
+
+      const { container } = renderWithProviders(<MoviesPage />);
+      const img = container.querySelector('img');
+      expect(img).toBeInTheDocument();
+      expect(img!.getAttribute('src')).toBe('relative-hi.jpg');
     });
   });
 

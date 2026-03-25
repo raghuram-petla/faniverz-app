@@ -528,6 +528,87 @@ describe('useInviteAdmin - with production_house_ids', () => {
   });
 });
 
+describe('useAdminInvitations - error handling', () => {
+  it('throws when invitations query errors', async () => {
+    const mockOrder = vi
+      .fn()
+      .mockResolvedValue({ data: null, error: new Error('Invite query failed') });
+    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+    mockFrom.mockReturnValue({ select: mockSelect });
+
+    const { result } = renderHook(() => useAdminInvitations(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useInviteAdmin - error handling', () => {
+  it('throws when insert errors', async () => {
+    const mockSingle = vi
+      .fn()
+      .mockResolvedValue({ data: null, error: new Error('Invite insert failed') });
+    const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockInsert = vi.fn().mockReturnValue({ select: mockSelect });
+    mockFrom.mockReturnValue({ insert: mockInsert });
+
+    const { result } = renderHook(() => useInviteAdmin(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      try {
+        await result.current.mutateAsync({
+          email: 'test@test.com',
+          role_id: 'admin' as const,
+          invited_by: 'admin-1',
+        });
+      } catch {
+        // expected
+      }
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+});
+
+describe('useAdminUserList - null phData handling', () => {
+  it('handles null phData from admin_ph_assignments', async () => {
+    const mockRoleData = [
+      {
+        id: 'role-1',
+        user_id: 'user-1',
+        role_id: 'admin',
+        assigned_by: null,
+        created_at: '2026-01-01',
+        status: 'active',
+        blocked_by: null,
+        blocked_at: null,
+        blocked_reason: null,
+        profile: { id: 'user-1', display_name: 'Admin', email: 'a@b.com', avatar_url: null },
+      },
+    ];
+
+    const mockOrder = vi.fn().mockResolvedValue({ data: mockRoleData, error: null });
+    const mockSelectRoles = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockSelectPh = vi.fn().mockResolvedValue({ data: null, error: null });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_user_roles') return { select: mockSelectRoles };
+      if (table === 'admin_ph_assignments') return { select: mockSelectPh };
+      return {};
+    });
+
+    const { result } = renderHook(() => useAdminUserList(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data![0].ph_assignments).toEqual([]);
+  });
+});
+
 describe('useUnblockAdmin', () => {
   it('calls update with status=active (DB trigger clears block fields)', async () => {
     const mockEq = vi.fn().mockResolvedValue({ error: null });

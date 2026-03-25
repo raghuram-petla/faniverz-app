@@ -197,6 +197,64 @@ describe('DashboardLayout', () => {
     expect(screen.getByText('Read-Only Access')).toBeInTheDocument();
   });
 
+  it('blocks viewer from /notifications/compose page', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'viewer' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: () => true,
+      isReadOnly: true,
+    });
+    mockPathname = '/notifications/compose';
+    render(
+      <DashboardLayout>
+        <div>compose content</div>
+      </DashboardLayout>,
+    );
+    expect(screen.getByText('Read-Only Access')).toBeInTheDocument();
+  });
+
+  it('blocks viewer from /users/invite page', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'viewer' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: () => true,
+      isReadOnly: true,
+    });
+    mockPathname = '/users/invite';
+    render(
+      <DashboardLayout>
+        <div>invite content</div>
+      </DashboardLayout>,
+    );
+    expect(screen.getByText('Read-Only Access')).toBeInTheDocument();
+  });
+
+  it('renders children for unmapped routes without permission check', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'admin' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: () => false,
+      isReadOnly: false,
+    });
+    mockPathname = '/';
+    render(
+      <DashboardLayout>
+        <div>home content</div>
+      </DashboardLayout>,
+    );
+    // '/' is not in ROUTE_PAGE_MAP, so requiredPage is null -> renders children
+    expect(screen.getByText('home content')).toBeInTheDocument();
+  });
+
   it('allows viewer to access non-create pages', () => {
     mockUseAuth.mockReturnValue({
       user: { id: 'u1', role: 'viewer' },

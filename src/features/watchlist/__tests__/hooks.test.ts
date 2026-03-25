@@ -421,6 +421,59 @@ describe('useWatchlistMutations', () => {
   });
 });
 
+describe('useWatchlist — categorizeEntries edge cases', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('excludes entries with null movie from available and upcoming', async () => {
+    const entriesWithNullMovie = [
+      { id: 'w1', user_id: 'u1', movie_id: 'm1', status: 'watchlist', movie: null },
+      {
+        id: 'w2',
+        user_id: 'u1',
+        movie_id: 'm2',
+        status: 'watchlist',
+        movie: { id: 'm2', title: 'Movie 2', in_theaters: true, premiere_date: null },
+      },
+    ];
+    (api.fetchWatchlist as jest.Mock).mockResolvedValue(entriesWithNullMovie);
+
+    const { result } = renderHook(() => useWatchlist('u1'), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.available).toHaveLength(1);
+    expect(result.current.upcoming).toHaveLength(0);
+  });
+});
+
+describe('useWatchlistMutations — remove with no existing paginated pages', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('handles remove.onMutate gracefully when paginated cache has no pages', async () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.removeFromWatchlist as jest.Mock).mockRejectedValue(new Error('Remove failed'));
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+
+    // Set paginated cache without pages key
+    queryClient.setQueryData(['watchlist-paginated', 'u1'], undefined);
+
+    function Wrapper({ children }: { children: React.ReactNode }) {
+      return React.createElement(QueryClientProvider, { client: queryClient }, children);
+    }
+
+    const { result } = renderHook(() => useWatchlistMutations(), { wrapper: Wrapper });
+
+    await act(async () => {
+      result.current.remove.mutate({ userId: 'u1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.remove.isError).toBe(true));
+  });
+});
+
 describe('useWatchlistSet', () => {
   beforeEach(() => {
     jest.clearAllMocks();

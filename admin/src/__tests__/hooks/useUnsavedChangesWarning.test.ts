@@ -203,4 +203,42 @@ describe('useUnsavedChangesWarning', () => {
 
     document.body.removeChild(anchor);
   });
+
+  describe('click handler edge cases', () => {
+    it('does not show confirm for anchor without href', () => {
+      renderHook(() => useUnsavedChangesWarning(true));
+      confirmSpy.mockClear();
+
+      const anchor = document.createElement('a');
+      // no href attribute
+      document.body.appendChild(anchor);
+
+      anchor.click();
+      expect(confirmSpy).not.toHaveBeenCalled();
+
+      document.body.removeChild(anchor);
+    });
+  });
+
+  describe('popstate handler edge cases', () => {
+    it('calls history.back when user confirms back navigation', () => {
+      renderHook(() => useUnsavedChangesWarning(true));
+      confirmSpy.mockClear();
+      backSpy.mockClear();
+      confirmSpy.mockReturnValueOnce(true);
+
+      window.dispatchEvent(new PopStateEvent('popstate'));
+
+      expect(confirmSpy).toHaveBeenCalled();
+      expect(backSpy).toHaveBeenCalled();
+    });
+
+    it('does not show confirm on popstate when not dirty', () => {
+      renderHook(() => useUnsavedChangesWarning(false));
+      confirmSpy.mockClear();
+
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+  });
 });

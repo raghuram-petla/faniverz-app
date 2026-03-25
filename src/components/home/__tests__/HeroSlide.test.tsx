@@ -253,4 +253,56 @@ describe('HeroSlide', () => {
     const { getByText } = render(<HeroSlide {...defaultProps} />);
     expect(getByText('2025')).toBeTruthy();
   });
+
+  it('renders runtime without dot separator when releaseYear is null', () => {
+    const movie: Movie = {
+      ...baseMock,
+      release_date: null,
+      runtime: 120,
+    };
+    const { getByText, queryByText } = render(<HeroSlide {...defaultProps} movie={movie} />);
+    expect(getByText('120m')).toBeTruthy();
+    // No dot separator since releaseYear is null
+    expect(queryByText('2025')).toBeNull();
+  });
+
+  it('renders certification with dot separator even when no releaseYear but runtime present', () => {
+    const movie: Movie = {
+      ...baseMock,
+      release_date: null,
+      runtime: 120,
+      certification: 'A',
+    };
+    const { getByText } = render(<HeroSlide {...defaultProps} movie={movie} />);
+    expect(getByText('120m')).toBeTruthy();
+    expect(getByText('A')).toBeTruthy();
+  });
+
+  it('renders certification with dot separator when no runtime but releaseYear present', () => {
+    const movie: Movie = {
+      ...baseMock,
+      runtime: null,
+      certification: 'UA',
+    };
+    const { getByText } = render(<HeroSlide {...defaultProps} movie={movie} />);
+    expect(getByText('UA')).toBeTruthy();
+    expect(getByText('2025')).toBeTruthy();
+  });
+
+  it('does not render contentPosition when both focus values are null', () => {
+    const movie: Movie = {
+      ...baseMock,
+      spotlight_focus_x: null,
+      spotlight_focus_y: null,
+      backdrop_focus_x: null,
+      backdrop_focus_y: null,
+    };
+    const { UNSAFE_getAllByType } = render(<HeroSlide {...defaultProps} movie={movie} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    const heroImg = images.find(
+      (i: { props: { contentPosition?: unknown } }) => i.props.contentPosition !== undefined,
+    );
+    expect(heroImg).toBeUndefined();
+  });
 });

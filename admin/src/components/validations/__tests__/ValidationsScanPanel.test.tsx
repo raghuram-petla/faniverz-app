@@ -278,6 +278,24 @@ describe('ValidationsScanPanel — progress bars', () => {
   });
 });
 
+describe('ValidationsScanPanel — toggle item selection', () => {
+  it('calls onToggle when a result row checkbox is clicked', () => {
+    const onToggle = vi.fn();
+    const result = makeResult();
+    render(
+      <ValidationsScanPanel
+        {...defaultProps}
+        results={[result]}
+        totalResultCount={1}
+        onToggle={onToggle}
+      />,
+    );
+    const checkbox = screen.getByTestId('check-result-1');
+    fireEvent.click(checkbox);
+    expect(onToggle).toHaveBeenCalled();
+  });
+});
+
 describe('ValidationsScanPanel — progress bar edge case', () => {
   it('shows 0% when total is 0', () => {
     render(

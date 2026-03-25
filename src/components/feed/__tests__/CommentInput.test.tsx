@@ -104,4 +104,54 @@ describe('CommentInput', () => {
     const input = screen.getByLabelText('Comment input');
     expect(input.props.maxLength).toBe(500);
   });
+
+  it('does not crash when onLoginPress is not provided and login prompt is tapped', () => {
+    render(<CommentInput isAuthenticated={false} onSubmit={jest.fn()} />);
+    // onLoginPress is undefined — pressing login prompt should not crash
+    fireEvent.press(screen.getByText('auth.signInToComment'));
+    expect(screen.getByText('auth.signInToComment')).toBeTruthy();
+  });
+
+  it('send button enabled state when text has content', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const input = screen.getByLabelText('Comment input');
+    fireEvent.changeText(input, 'Hello');
+    const sendBtn = screen.getByLabelText('Send comment');
+    expect(sendBtn.props.accessibilityState?.disabled).not.toBe(true);
+  });
+
+  it('applies sendButtonDisabled style when trimmed text is empty', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const sendBtn = screen.getByLabelText('Send comment');
+    // Button should be disabled when text is empty (trimmed is falsy)
+    expect(sendBtn.props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('send button is not disabled after entering non-whitespace text', () => {
+    const onSubmit = jest.fn();
+    render(<CommentInput isAuthenticated={true} onSubmit={onSubmit} />);
+    const input = screen.getByLabelText('Comment input');
+    fireEvent.changeText(input, 'test');
+    const sendBtn = screen.getByLabelText('Send comment');
+    // Not disabled when there's actual text
+    expect(sendBtn.props.accessibilityState?.disabled).toBeFalsy();
+  });
+
+  it('handleSend returns early when trimmed text is empty (direct call bypass)', () => {
+    const onSubmit = jest.fn();
+    render(<CommentInput isAuthenticated={true} onSubmit={onSubmit} />);
+    // The send button has disabled=true when text is empty, blocking fireEvent.press.
+    // Use UNSAFE access to call the underlying onPress handler directly.
+    const { TouchableOpacity } = require('react-native');
+    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
+    const sendBtn = touchables.find(
+      (t: { props: { accessibilityLabel?: string } }) =>
+        t.props.accessibilityLabel === 'Send comment',
+    );
+    // Directly call the raw onPress prop (bypasses RN disabled guard)
+    if (sendBtn?.props.onPress) {
+      sendBtn.props.onPress();
+    }
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });

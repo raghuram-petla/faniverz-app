@@ -490,4 +490,66 @@ describe('HistoryTab', () => {
     fireEvent.click(rows[0]);
     expect(screen.getByText('Error Details')).toBeInTheDocument();
   });
+
+  it('uses fallback status style for unknown status values', () => {
+    mockLogsData.current = [
+      {
+        id: 'log-1',
+        function_name: 'test-fn',
+        status: 'unknown_status' as 'failed',
+        movies_added: 0,
+        movies_updated: 0,
+        errors: null,
+        details: null,
+        started_at: '2024-01-15T10:00:00Z',
+        completed_at: '2024-01-15T10:00:05Z',
+      },
+    ];
+    renderWithProvider(<HistoryTab />);
+    // Should render without error, using the fallback style
+    expect(screen.getByText('unknown_status')).toBeInTheDocument();
+  });
+
+  it('handles null details when expanding a row — does not show Items Processed section', () => {
+    mockLogsData.current = [
+      {
+        id: 'log-1',
+        function_name: 'test-fn',
+        status: 'success',
+        movies_added: 5,
+        movies_updated: 0,
+        errors: null,
+        details: null,
+        started_at: '2024-01-15T10:00:00Z',
+        completed_at: '2024-01-15T10:00:05Z',
+      },
+    ];
+    renderWithProvider(<HistoryTab />);
+    const rows = getTableRows();
+    fireEvent.click(rows[0]);
+    // With null details and null errors, the row is not expandable, so no expanded content
+    expect(screen.queryByText('Items Processed')).not.toBeInTheDocument();
+  });
+
+  it('renders details list when details is a non-empty array', () => {
+    mockLogsData.current = [
+      {
+        id: 'log-1',
+        function_name: 'test-fn',
+        status: 'success',
+        movies_added: 5,
+        movies_updated: 0,
+        errors: null,
+        details: ['Movie A', 'Movie B'],
+        started_at: '2024-01-15T10:00:00Z',
+        completed_at: '2024-01-15T10:00:05Z',
+      },
+    ];
+    renderWithProvider(<HistoryTab />);
+    const rows = getTableRows();
+    fireEvent.click(rows[0]);
+    expect(screen.getByText('Items Processed')).toBeInTheDocument();
+    expect(screen.getByText('Movie A')).toBeInTheDocument();
+    expect(screen.getByText('Movie B')).toBeInTheDocument();
+  });
 });

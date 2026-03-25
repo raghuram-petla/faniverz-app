@@ -98,4 +98,28 @@ describe('MovieSearchCard', () => {
     render(<MovieSearchCard {...defaultProps} movie={{ ...baseMovie, release_date: '' }} />);
     expect(screen.getByText(/No date/)).toBeInTheDocument();
   });
+
+  it('falls back to raw language code when langName returns null', () => {
+    render(
+      <MovieSearchCard
+        {...defaultProps}
+        movie={{ ...baseMovie, original_language: 'unknown_lang' }}
+      />,
+    );
+    expect(screen.getByText(/unknown_lang/)).toBeInTheDocument();
+  });
+
+  it('shows spinner when linkingTmdbId matches movie id', () => {
+    const suspect = { id: 'db-1', title: 'Test Film' };
+    render(
+      <MovieSearchCard
+        {...defaultProps}
+        suspect={suspect}
+        linkingTmdbId={101}
+        onLinkDuplicate={vi.fn()}
+      />,
+    );
+    const linkBtn = screen.getByText('Link to TMDB').closest('button');
+    expect(linkBtn).toBeDisabled();
+  });
 });

@@ -129,6 +129,31 @@ describe('useAdminUserList', () => {
     expect(result.current.data![0].status).toBe('active');
   });
 
+  it('throws when PH assignments query fails', async () => {
+    const roleData = [
+      {
+        id: 'row-1',
+        user_id: 'user-1',
+        role_id: 'admin',
+        assigned_by: null,
+        created_at: '2025-01-01',
+        status: 'active',
+        blocked_by: null,
+        blocked_at: null,
+        blocked_reason: null,
+        profile: { id: 'user-1', display_name: 'Alice', email: 'alice@test.com', avatar_url: null },
+      },
+    ];
+    mockFrom
+      .mockReturnValueOnce(makeRolesChain({ data: roleData, error: null }))
+      .mockReturnValueOnce(makePhChain({ data: null, error: { message: 'PH error' } }));
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAdminUserList(), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
   it('assigns empty ph_assignments when user has no PH links', async () => {
     const roleData = [
       {

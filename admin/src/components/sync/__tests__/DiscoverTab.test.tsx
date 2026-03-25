@@ -189,6 +189,13 @@ describe('DiscoverTab', () => {
       expect(screen.getByRole('combobox')).toBeInTheDocument();
       expect(screen.getByTestId('month-multi-select')).toBeInTheDocument();
     });
+
+    it('changes year when year select is changed', () => {
+      render(<DiscoverTab />);
+      const select = screen.getByRole('combobox');
+      fireEvent.change(select, { target: { value: String(CURRENT_YEAR - 1) } });
+      expect((select as HTMLSelectElement).value).toBe(String(CURRENT_YEAR - 1));
+    });
   });
 
   describe('search button label', () => {
@@ -648,6 +655,50 @@ describe('DiscoverTab', () => {
     });
   });
 
+  describe('movie import with originalLanguage', () => {
+    it('passes originalLanguage from lookup data to importMovies', async () => {
+      const importMutateAsync = vi.fn().mockResolvedValue(undefined);
+      const lookupData = {
+        type: 'movie',
+        existsInDb: false,
+        existingId: null,
+        data: { tmdbId: 999, title: 'Lang Movie', originalLanguage: 'te' },
+      };
+      setup({
+        lookupOverrides: { data: lookupData },
+        importMoviesOverrides: {
+          mutateAsync: importMutateAsync,
+          isPending: false,
+          isSuccess: false,
+        },
+      });
+      render(<DiscoverTab />);
+      fireEvent.change(screen.getByPlaceholderText(/Search movies/i), {
+        target: { value: '999' },
+      });
+      fireEvent.click(screen.getByText('Lookup'));
+      fireEvent.click(screen.getByText('Import'));
+      expect(importMutateAsync).toHaveBeenCalledWith({
+        tmdbIds: [999],
+        originalLanguage: 'te',
+      });
+    });
+  });
+
+  describe('discover result label with 2-3 months', () => {
+    it('shows comma-separated month names when 2-3 months selected', () => {
+      setup({ discoverOverrides: { data: { movies: [] } } });
+      render(<DiscoverTab />);
+      act(() => {
+        mockMonthOnChange([1, 2]);
+      });
+      fireEvent.click(screen.getByText('Discover'));
+      expect(
+        screen.getByText((content) => content.includes('January') && content.includes('February')),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe('keyboard shortcuts', () => {
     it('does not search on Enter when query length < 2', () => {
       const searchHook = makeIdleHook();
@@ -667,6 +718,61 @@ describe('DiscoverTab', () => {
       fireEvent.change(input, { target: { value: 'Baahubali' } });
       fireEvent.keyDown(input, { key: 'a' });
       expect(searchHook.mutate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('discover result label with >3 months', () => {
+    it('shows "N months in YEAR" label when >3 months selected', () => {
+      setup({ discoverOverrides: { data: { movies: [] } } });
+      render(<DiscoverTab />);
+      // Select 4 months
+      act(() => {
+        mockMonthOnChange([1, 2, 3, 4]);
+      });
+      fireEvent.click(screen.getByText('Discover'));
+      expect(
+        screen.getByText(
+          (content) => content.includes('4 months in') && content.includes(String(CURRENT_YEAR)),
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('search with null selectedLanguageCode', () => {
+    it('passes language=undefined when selectedLanguageCode is null', () => {
+      mockSelectedLanguageCode = null;
+      const searchHook = makeIdleHook();
+      mockSearch.mockReturnValue(searchHook);
+      render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'Baahubali' } });
+      fireEvent.click(screen.getByText('Search'));
+      expect(searchHook.mutate).toHaveBeenCalledWith(
+        expect.objectContaining({ language: undefined }),
+      );
+    });
+
+    it('passes language=undefined for discover when selectedLanguageCode is null', () => {
+      mockSelectedLanguageCode = null;
+      const discoverHook = makeIdleHook();
+      mockDiscover.mockReturnValue(discoverHook);
+      render(<DiscoverTab />);
+      fireEvent.click(screen.getByText('Discover'));
+      expect(discoverHook.mutate).toHaveBeenCalledWith(
+        expect.objectContaining({ language: undefined }),
+      );
+    });
+  });
+
+  describe('language badge edge cases', () => {
+    it('falls back to selectedLanguageCode when language name not found', () => {
+      mockSelectedLanguageCode = 'zz';
+      setup({ searchOverrides: { data: { movies: [], people: [] } } });
+      render(<DiscoverTab />);
+      const input = screen.getByPlaceholderText(/Search movies/i);
+      fireEvent.change(input, { target: { value: 'Baahubali' } });
+      fireEvent.click(screen.getByText('Search'));
+      expect(screen.getByText('zz')).toBeInTheDocument();
     });
   });
 

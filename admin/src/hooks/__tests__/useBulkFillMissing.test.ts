@@ -220,6 +220,32 @@ describe('useBulkFillMissing', () => {
     expect(result.current.state.total).toBe(0);
   });
 
+  it('skips movie when tmdb entry is missing from tmdbMap during loop', async () => {
+    // First pass filter: getGappedFields called with tmdb from tmdbMap — movie is gapped
+    // Second pass loop: tmdbMap.get returns undefined — fields = [] via fallback
+    mockGetStatus.mockReturnValue('missing');
+    const { result } = renderHook(() => useBulkFillMissing(), { wrapper: makeWrapper() });
+    const movie = makeMovie(1);
+    // tmdbMap has entry for filter pass (getGappedFields is called during filter)
+    // but we clear it between filter and loop — not possible in real code
+    // Instead: movie has tmdb_id=1, tmdbMap has key=1 for filtering
+    // but we make the tmdb data such that getGappedFields returns fields in filter
+    // but no fields in loop — already covered by "skips movie with 0 gapped fields"
+    // For the `tmdb ? ... : []` branch, we need tmdb to be undefined in the loop
+    // This happens when the movie was gapped (filter used a different check)
+    // Actually the same tmdbMap is used for both. Let me use tmdbMap without the key.
+    const tmdbMap = new Map<number, LookupMovieData>([[1, makeTmdb()]]);
+    // Movie 2 is gapped (passes filter) but not in tmdbMap
+    const movie2 = makeMovie(2);
+
+    await act(async () => {
+      await result.current.run([movie, movie2], tmdbMap);
+    });
+
+    // movie2 should be skipped (done incremented) since tmdb is undefined
+    expect(result.current.state.done).toBeGreaterThanOrEqual(1);
+  });
+
   it('reset restores initial state', async () => {
     mockGetStatus.mockReturnValue('missing');
     vi.mocked(global.fetch).mockResolvedValue({

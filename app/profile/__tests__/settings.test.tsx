@@ -335,4 +335,43 @@ describe('SettingsScreen', () => {
     fireEvent.press(screen.getByText('System'));
     expect(screen.getByText('System')).toBeTruthy();
   });
+
+  it('shows Telugu when i18n language is te', () => {
+    // Override useTranslation to return language 'te'
+    const rtModule = jest.requireMock('react-i18next');
+    const origUseTranslation = rtModule.useTranslation;
+    const en = require('../../../src/i18n/en.json') as Record<string, Record<string, string>>;
+    const t = (key: string) => {
+      const [ns, k] = key.split('.');
+      return en[ns]?.[k] ?? key;
+    };
+    rtModule.useTranslation = () => ({ t, i18n: { language: 'te' } });
+
+    render(<SettingsScreen />);
+    expect(screen.getByText('Telugu')).toBeTruthy();
+
+    rtModule.useTranslation = origUseTranslation;
+  });
+
+  it('renders fallback version when expoConfig is null', () => {
+    const Constants = jest.requireMock('expo-constants').default;
+    const origConfig = Constants.expoConfig;
+    Constants.expoConfig = null;
+
+    render(<SettingsScreen />);
+    expect(screen.getByText('Faniverz v1.0.0')).toBeTruthy();
+
+    Constants.expoConfig = origConfig;
+  });
+
+  it('renders fallback buildDate when expoConfig.extra is null', () => {
+    const Constants = jest.requireMock('expo-constants').default;
+    const origConfig = Constants.expoConfig;
+    Constants.expoConfig = { version: '2.3.1', extra: null };
+
+    render(<SettingsScreen />);
+    expect(screen.getByText('2026.03.11')).toBeTruthy();
+
+    Constants.expoConfig = origConfig;
+  });
 });

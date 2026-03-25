@@ -51,6 +51,22 @@ describe('extractYouTubeId', () => {
   it('handles youtu.be with query params', () => {
     expect(extractYouTubeId('https://youtu.be/dQw4w9WgXcQ?t=30')).toBe('dQw4w9WgXcQ');
   });
+
+  it('extracts ID from youtube.com without www prefix', () => {
+    expect(extractYouTubeId('https://youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+  });
+
+  it('returns null for youtu.be with empty path', () => {
+    expect(extractYouTubeId('https://youtu.be/')).toBeNull();
+  });
+
+  it('returns null for youtube.com without v param or embed/shorts path', () => {
+    expect(extractYouTubeId('https://www.youtube.com/channel/UCtest')).toBeNull();
+  });
+
+  it('returns null for whitespace only', () => {
+    expect(extractYouTubeId('   ')).toBeNull();
+  });
 });
 
 describe('getYouTubeThumbnail', () => {
@@ -69,6 +85,12 @@ describe('getYouTubeThumbnail', () => {
   it('returns maxresdefault thumbnail when specified', () => {
     expect(getYouTubeThumbnail('dQw4w9WgXcQ', 'maxresdefault')).toBe(
       'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+    );
+  });
+
+  it('returns default quality thumbnail when specified', () => {
+    expect(getYouTubeThumbnail('dQw4w9WgXcQ', 'default')).toBe(
+      'https://img.youtube.com/vi/dQw4w9WgXcQ/default.jpg',
     );
   });
 });

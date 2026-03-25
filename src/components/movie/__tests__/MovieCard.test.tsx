@@ -167,8 +167,6 @@ describe('MovieCard', () => {
   });
 
   it('renders streaming badge when showReleaseDate is true and status is streaming', () => {
-    // premiere_date in past + no in_theaters + no platforms = 'released' status
-    // But with platforms provided + showReleaseDate, streaming badge branch is exercised
     const streamingMovie = { ...mockMovie, in_theaters: false };
     const platforms = [
       {
@@ -184,5 +182,34 @@ describe('MovieCard', () => {
       <MovieCard movie={streamingMovie} platforms={platforms} showReleaseDate />,
     );
     expect(UNSAFE_queryAllByType).toBeTruthy();
+  });
+
+  it('hides in_theaters badge when showTypeBadge is false', () => {
+    const { queryByText } = render(<MovieCard movie={mockMovie} showTypeBadge={false} />);
+    // in_theaters badge should NOT render since showTypeBadge is false
+    expect(queryByText('In Theaters')).toBeNull();
+  });
+
+  it('renders without crash when release_date is null (TBA movie)', () => {
+    const tbaMovie = {
+      ...mockMovie,
+      in_theaters: false,
+      premiere_date: null,
+      release_date: null,
+      rating: 0,
+    };
+    const { getByText } = render(<MovieCard movie={tbaMovie} showReleaseDate />);
+    expect(getByText('Pushpa 2: The Rule')).toBeTruthy();
+  });
+
+  it('hides rating when showReleaseDate is true even if rating > 0', () => {
+    const { queryByText } = render(<MovieCard movie={mockMovie} showReleaseDate />);
+    // rating row is hidden when showReleaseDate is true
+    expect(queryByText('4.5')).toBeNull();
+  });
+
+  it('accepts testID prop', () => {
+    const { getByTestId } = render(<MovieCard movie={mockMovie} testID="test-card" />);
+    expect(getByTestId('test-card')).toBeTruthy();
   });
 });

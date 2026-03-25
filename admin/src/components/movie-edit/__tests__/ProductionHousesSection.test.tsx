@@ -290,6 +290,46 @@ describe('ProductionHousesSection', () => {
     expect(img).toBeTruthy();
   });
 
+  it('shows PH logo in dropdown search results when logo_url is set', () => {
+    const phWithLogo = makePH({
+      id: 'ph-1',
+      name: 'Arka Media Works',
+      logo_url: 'https://cdn/arka-logo.png',
+    });
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        searchQuery="Ar"
+        productionHouses={[phWithLogo]}
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    const imgs = document.querySelectorAll('img');
+    const dropdownImg = Array.from(imgs).find(
+      (i) => i.getAttribute('src') === 'https://cdn/arka-logo.png',
+    );
+    expect(dropdownImg).toBeTruthy();
+  });
+
+  it('shows Building2 icon in dropdown when PH has no logo_url', () => {
+    const phNoLogo = makePH({ id: 'ph-1', name: 'Arka Media Works', logo_url: null });
+    render(
+      <ProductionHousesSection
+        {...defaultProps}
+        showAddForm={true}
+        searchQuery="Ar"
+        productionHouses={[phNoLogo]}
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    // Building2 icon should be rendered (no img tag for logo)
+    const imgs = document.querySelectorAll('[data-dropdown-item] img');
+    expect(imgs).toHaveLength(0);
+  });
+
   describe('keyboard navigation', () => {
     it('ArrowDown moves highlight down', () => {
       render(<ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="Ar" />);
@@ -367,6 +407,33 @@ describe('ProductionHousesSection', () => {
       fireEvent.keyDown(input, { key: 'ArrowDown' }); // highlight index 0 = quick-add
       fireEvent.keyDown(input, { key: 'Enter' });
       expect(onQuickAdd).toHaveBeenCalledWith('New Studio');
+    });
+
+    it('Enter does nothing when highlightIndex is -1', () => {
+      const onAdd = vi.fn();
+      render(
+        <ProductionHousesSection
+          {...defaultProps}
+          showAddForm={true}
+          searchQuery="Ar"
+          onAdd={onAdd}
+        />,
+      );
+      const input = screen.getByPlaceholderText('Type to search…');
+      fireEvent.focus(input);
+      // Press Enter without ArrowDown — highlightIndex is -1
+      fireEvent.keyDown(input, { key: 'Enter' });
+      expect(onAdd).not.toHaveBeenCalled();
+    });
+
+    it('ArrowUp from index 0 wraps to last item', () => {
+      render(<ProductionHousesSection {...defaultProps} showAddForm={true} searchQuery="Ar" />);
+      const input = screen.getByPlaceholderText('Type to search…');
+      fireEvent.focus(input);
+      fireEvent.keyDown(input, { key: 'ArrowDown' }); // 0
+      fireEvent.keyDown(input, { key: 'ArrowUp' }); // wraps to -1? No, prev > 0 check: prev=0, so goes to totalItems-1
+      const items = document.querySelectorAll('[data-dropdown-item]');
+      expect(items[1]?.className).toContain('bg-input');
     });
 
     it('does nothing on keyDown when dropdown is not visible', () => {

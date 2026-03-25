@@ -2,8 +2,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AvailabilityRow } from '@/components/movie-edit/AvailabilityRow';
 import type { MoviePlatformAvailability } from '@shared/types';
 
+const mockGetImageUrl = vi.fn((url: string) => url);
 vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: (url: string) => url,
+  getImageUrl: (url: string) => mockGetImageUrl(url),
 }));
 
 vi.mock('@shared/colors', () => ({
@@ -127,5 +128,23 @@ describe('AvailabilityRow', () => {
   it('does not render img tag when no logo_url', () => {
     render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} />);
     expect(document.querySelector('img')).not.toBeInTheDocument();
+  });
+
+  it('falls back to raw logo_url when getImageUrl returns null', () => {
+    mockGetImageUrl.mockReturnValue(null as unknown as string);
+    const row = makeRow({
+      platform: {
+        id: 'plat-1',
+        name: 'Netflix',
+        logo: 'N',
+        logo_url: 'https://raw.example.com/logo.png',
+        color: '#E50914',
+        display_order: 1,
+      },
+    });
+    render(<AvailabilityRow row={row} onRemove={onRemove} isReadOnly={false} />);
+    const img = document.querySelector('img');
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://raw.example.com/logo.png');
   });
 });

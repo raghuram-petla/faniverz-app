@@ -110,4 +110,12 @@ describe('MoviePreview', () => {
     const dashes = screen.getAllByText('\u2014');
     expect(dashes.length).toBeGreaterThanOrEqual(3);
   });
+
+  it('shows dash for null genres (uses ?? [] fallback)', () => {
+    const result = makeMovieResult();
+    result.data.genres = null as unknown as string[];
+    render(<MoviePreview result={result} isPending={false} onImport={vi.fn()} />);
+    const dashes = screen.getAllByText('\u2014');
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
 });

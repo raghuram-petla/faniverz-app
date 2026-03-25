@@ -291,6 +291,68 @@ describe('NotificationsPage', () => {
     });
   });
 
+  describe('unknown status/type fallback', () => {
+    it('falls back to cancelled style for unknown status', () => {
+      mockData = [
+        {
+          id: 'notif-unknown-status',
+          type: 'release',
+          title: 'Unknown Status Notif',
+          status: 'custom_status',
+          scheduled_for: '2025-03-20T10:00:00Z',
+        },
+      ];
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('custom_status')).toBeInTheDocument();
+    });
+
+    it('falls back to release style for unknown type', () => {
+      mockData = [
+        {
+          id: 'notif-unknown-type',
+          type: 'custom_type',
+          title: 'Unknown Type Notif',
+          status: 'sent',
+          scheduled_for: '2025-03-20T10:00:00Z',
+        },
+      ];
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.getByText('custom_type')).toBeInTheDocument();
+    });
+  });
+
+  describe('no actions for sent/cancelled status', () => {
+    it('shows no action buttons for sent notifications', () => {
+      mockData = [
+        {
+          id: 'notif-sent',
+          type: 'release',
+          title: 'Sent Notif',
+          status: 'sent',
+          scheduled_for: '2025-03-20T10:00:00Z',
+        },
+      ];
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Retry')).not.toBeInTheDocument();
+    });
+
+    it('shows no action buttons for cancelled notifications', () => {
+      mockData = [
+        {
+          id: 'notif-cancelled',
+          type: 'release',
+          title: 'Cancelled Notif',
+          status: 'cancelled',
+          scheduled_for: '2025-03-20T10:00:00Z',
+        },
+      ];
+      renderWithProviders(<NotificationsPage />);
+      expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Retry')).not.toBeInTheDocument();
+    });
+  });
+
   describe('status filter interaction', () => {
     it('updates statusFilter when dropdown changes', () => {
       renderWithProviders(<NotificationsPage />);

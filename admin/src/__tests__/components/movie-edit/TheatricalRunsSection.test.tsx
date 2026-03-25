@@ -126,8 +126,9 @@ describe('TheatricalRunsSection', () => {
   it('does not call onAdd when release_date is empty', () => {
     const onAdd = vi.fn();
     render(<TheatricalRunsSection {...defaultProps} showAddForm={true} onAdd={onAdd} />);
-    // Click the submit Add Run button
-    fireEvent.click(screen.getByText('Add Run'));
+    // Submit the form directly (button is disabled, so we submit the form element)
+    const form = document.querySelector('form') as HTMLFormElement;
+    fireEvent.submit(form);
     expect(onAdd).not.toHaveBeenCalled();
   });
 

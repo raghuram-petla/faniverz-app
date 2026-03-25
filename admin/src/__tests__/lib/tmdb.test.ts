@@ -6,6 +6,8 @@ import {
   getPersonDetails,
   getMovieImages,
   getWatchProviders,
+  getAllWatchProviders,
+  getWatchRegions,
   searchMovies,
   searchPersons,
   TMDB_IMAGE,
@@ -307,6 +309,60 @@ describe('searchPersons', () => {
     mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: [], total_pages: 1 }));
 
     await searchPersons('Test', 'key');
+
+    const url = mockFetch.mock.calls[0][0];
+    expect(url).not.toContain('with_original_language');
+  });
+});
+
+// ── getWatchRegions ────────────────────────────────────────────────────────
+
+describe('getWatchRegions', () => {
+  it('returns a map of region codes to names', async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockJsonResponse({
+        results: [
+          { iso_3166_1: 'IN', english_name: 'India' },
+          { iso_3166_1: 'US', english_name: 'United States' },
+        ],
+      }),
+    );
+
+    const result = await getWatchRegions('key');
+    expect(result).toEqual({ IN: 'India', US: 'United States' });
+    const url = mockFetch.mock.calls[0][0];
+    expect(url).toContain('/watch/providers/regions');
+  });
+
+  it('returns empty map for empty results', async () => {
+    mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: [] }));
+
+    const result = await getWatchRegions('key');
+    expect(result).toEqual({});
+  });
+});
+
+// ── getAllWatchProviders ────────────────────────────────────────────────────
+
+describe('getAllWatchProviders', () => {
+  it('returns full provider response', async () => {
+    const response = { results: { US: { flatrate: [{ provider_id: 1 }] } } };
+    mockFetch.mockResolvedValueOnce(mockJsonResponse(response));
+
+    const result = await getAllWatchProviders(100, 'key');
+    expect(result).toEqual(response);
+    const url = mockFetch.mock.calls[0][0];
+    expect(url).toContain('/movie/100/watch/providers');
+  });
+});
+
+// ── searchMovies without language ──────────────────────────────────────────
+
+describe('searchMovies - no language filter', () => {
+  it('does not include language param when language is not provided', async () => {
+    mockFetch.mockResolvedValueOnce(mockJsonResponse({ results: [{ id: 1 }], total_pages: 1 }));
+
+    await searchMovies('test', 'key');
 
     const url = mockFetch.mock.calls[0][0];
     expect(url).not.toContain('with_original_language');

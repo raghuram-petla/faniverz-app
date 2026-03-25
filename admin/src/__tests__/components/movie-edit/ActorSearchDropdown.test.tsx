@@ -250,6 +250,63 @@ describe('ActorSearchDropdown', () => {
     expect(onQuickAdd).toHaveBeenCalledWith('New Actor');
   });
 
+  it('wraps around with ArrowDown from bottom', () => {
+    const onSelect = vi.fn();
+    render(
+      <ActorSearchDropdown
+        actors={mockActors}
+        searchQuery="Ma"
+        onSearchChange={vi.fn()}
+        onSelect={onSelect}
+        selectedActorId=""
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    // Navigate past last item — should wrap to 0
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // 0
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // 1
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // wraps to 0
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith(mockActors[0]);
+  });
+
+  it('does not call onSelect on Enter when highlightIndex is -1', () => {
+    const onSelect = vi.fn();
+    render(
+      <ActorSearchDropdown
+        actors={mockActors}
+        searchQuery="Ma"
+        onSearchChange={vi.fn()}
+        onSelect={onSelect}
+        selectedActorId=""
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    fireEvent.focus(input);
+    // Press Enter without navigating — highlightIndex is -1
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('does not handle keyboard when dropdown is closed', () => {
+    const onSelect = vi.fn();
+    render(
+      <ActorSearchDropdown
+        actors={mockActors}
+        searchQuery="M"
+        onSearchChange={vi.fn()}
+        onSelect={onSelect}
+        selectedActorId=""
+      />,
+    );
+    const input = screen.getByPlaceholderText('Type to search…');
+    // query < 2, dropdown shouldn't open
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it('does not show dropdown when selectedActorId is set', () => {
     render(
       <ActorSearchDropdown

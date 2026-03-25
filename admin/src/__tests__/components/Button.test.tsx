@@ -68,4 +68,31 @@ describe('Button', () => {
     expect(btn.className).toContain('py-1');
     expect(btn.className).toContain('text-xs');
   });
+
+  it('uses ICON_SIZE_CLASSES when variant is icon', () => {
+    render(<Button variant="icon" icon={<span data-testid="icon">X</span>} />);
+    const btn = screen.getByRole('button');
+    // icon variant md size uses p-1.5
+    expect(btn.className).toContain('p-1.5');
+    expect(btn.className).toContain('rounded');
+  });
+
+  it('uses justify-center layout when no children provided', () => {
+    render(<Button icon={<span>+</span>} />);
+    const btn = screen.getByRole('button');
+    expect(btn.className).toContain('justify-center');
+    expect(btn.className).not.toContain('gap-2');
+  });
+
+  it('uses gap layout when children are provided with icon', () => {
+    render(<Button icon={<span>+</span>}>Label</Button>);
+    const btn = screen.getByRole('button');
+    expect(btn.className).toContain('gap-2');
+  });
+
+  it('applies custom className', () => {
+    render(<Button className="my-custom">Test</Button>);
+    const btn = screen.getByRole('button');
+    expect(btn.className).toContain('my-custom');
+  });
 });

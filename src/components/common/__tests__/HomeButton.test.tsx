@@ -89,4 +89,50 @@ describe('HomeButton', () => {
     const { queryByTestId } = render(<HomeButton />);
     expect(queryByTestId('home-button')).toBeNull();
   });
+
+  it('handles getParent throwing an error gracefully', () => {
+    mockState.index = 0;
+    mockParent = () => {
+      throw new Error('No parent');
+    };
+    const { queryByTestId } = render(<HomeButton />);
+    // Falls back to stackDepth=0, so button is hidden
+    expect(queryByTestId('home-button')).toBeNull();
+  });
+
+  it('handles parent returning null getState', () => {
+    mockState.index = 0;
+    mockParent = () => ({ getState: () => null });
+    const { queryByTestId } = render(<HomeButton />);
+    // parentIndex is null, so stackDepth stays 0
+    expect(queryByTestId('home-button')).toBeNull();
+  });
+
+  it('does not show when forceShow is explicitly false and depth < 2', () => {
+    mockState.index = 0;
+    const { queryByTestId } = render(<HomeButton forceShow={false} />);
+    expect(queryByTestId('home-button')).toBeNull();
+  });
+
+  it('handles getState returning undefined (nullish coalescing on state?.index)', () => {
+    // Override the mock to return undefined state
+    jest.doMock('expo-router', () => ({
+      useRouter: () => ({ dismissAll: mockDismissAll }),
+      useNavigation: () => ({
+        getState: () => undefined,
+        getParent: () => undefined,
+      }),
+    }));
+    // Using forceShow to ensure button renders
+    const { getByTestId } = render(<HomeButton forceShow />);
+    expect(getByTestId('home-button')).toBeTruthy();
+  });
+
+  it('uses parent index when parent index equals stackDepth (not greater)', () => {
+    mockState.index = 1;
+    mockParent = () => ({ getState: () => ({ index: 1 }) });
+    const { queryByTestId } = render(<HomeButton />);
+    // parentIndex (1) is not > stackDepth (1), so stackDepth stays 1, which is < 2
+    expect(queryByTestId('home-button')).toBeNull();
+  });
 });

@@ -2,15 +2,17 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 
+const mockUseSortable = vi.fn().mockReturnValue({
+  attributes: {},
+  listeners: {},
+  setNodeRef: vi.fn(),
+  transform: null,
+  transition: undefined,
+  isDragging: false,
+});
+
 vi.mock('@dnd-kit/sortable', () => ({
-  useSortable: () => ({
-    attributes: {},
-    listeners: {},
-    setNodeRef: vi.fn(),
-    transform: null,
-    transition: undefined,
-    isDragging: false,
-  }),
+  useSortable: (...args: unknown[]) => mockUseSortable(...args),
 }));
 
 vi.mock('@dnd-kit/utilities', () => ({
@@ -208,5 +210,21 @@ describe('AdminFeedCard', () => {
     );
     const featBtn = container.querySelector('[title="Unfeature"]');
     expect(featBtn?.className).toContain('text-status-yellow');
+  });
+
+  it('applies dragging styles (opacity and z-index) when isDragging is true', () => {
+    mockUseSortable.mockReturnValue({
+      attributes: {},
+      listeners: {},
+      setNodeRef: vi.fn(),
+      transform: null,
+      transition: undefined,
+      isDragging: true,
+    });
+
+    const { container } = render(<AdminFeedCard item={makeItem()} {...defaultHandlers} />);
+    const card = container.firstElementChild as HTMLElement;
+    expect(card.style.opacity).toBe('0.5');
+    expect(card.style.zIndex).toBe('10');
   });
 });

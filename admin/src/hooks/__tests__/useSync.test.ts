@@ -24,6 +24,7 @@ global.fetch = mockFetch;
 import {
   useDiscoverMovies,
   useTmdbLookup,
+  useTmdbMovieLookup,
   useImportMovies,
   useRefreshMovie,
   useImportActor,
@@ -379,6 +380,20 @@ describe('useSync', () => {
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'actors'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'sync'] });
     });
+
+    it('passes forceResyncCast when provided', async () => {
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useFillFields(), { wrapper: Wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ tmdbId: 101, fields: ['cast'], forceResyncCast: true });
+      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/sync/fill-fields',
+        expect.objectContaining({
+          body: JSON.stringify({ tmdbId: 101, fields: ['cast'], forceResyncCast: true }),
+        }),
+      );
+    });
   });
 
   describe('useLinkTmdbId', () => {
@@ -629,6 +644,81 @@ describe('useSync', () => {
         await result.current.mutateAsync({ movieId: 'm', tmdbId: 1 }).catch(() => {});
       });
       expect(window.alert).toHaveBeenCalledWith('Failed to link TMDB ID');
+    });
+  });
+
+  describe('useTmdbMovieLookup', () => {
+    it('fetches TMDB movie lookup data automatically via useQuery', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ type: 'movie', data: { title: 'Test' } }),
+      });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useTmdbMovieLookup(12345), { wrapper: Wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/sync/lookup',
+        expect.objectContaining({
+          body: JSON.stringify({ tmdbId: 12345, type: 'movie' }),
+        }),
+      );
+    });
+
+    it('passes originalLanguage when provided', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ type: 'movie', data: {} }),
+      });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useTmdbMovieLookup(99, 'te'), { wrapper: Wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/sync/lookup',
+        expect.objectContaining({
+          body: JSON.stringify({ tmdbId: 99, type: 'movie', originalLanguage: 'te' }),
+        }),
+      );
+    });
+
+    it('omits originalLanguage when null', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ type: 'movie', data: {} }),
+      });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useTmdbMovieLookup(99, null), { wrapper: Wrapper });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/sync/lookup',
+        expect.objectContaining({
+          body: JSON.stringify({ tmdbId: 99, type: 'movie' }),
+        }),
+      );
+    });
+  });
+
+  describe('syncApi — error with status attached', () => {
+    it('attaches HTTP status to error for non-ok response', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 504,
+        json: async () => ({ error: 'Gateway timeout' }),
+      });
+      const { Wrapper } = makeWrapper();
+      const { result } = renderHook(() => useDiscoverMovies(), { wrapper: Wrapper });
+      let caughtError: Error & { status?: number } = new Error();
+      await act(async () => {
+        try {
+          await result.current.mutateAsync({ year: 2024 });
+        } catch (e) {
+          caughtError = e as Error & { status?: number };
+        }
+      });
+      expect(caughtError.status).toBe(504);
+      expect(caughtError.message).toBe('Gateway timeout');
     });
   });
 

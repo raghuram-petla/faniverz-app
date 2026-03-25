@@ -160,6 +160,113 @@ describe('POST /api/sync/search', () => {
     expect(data.movies.results.map((m: { id: number }) => m.id)).toEqual([100, 300]);
   });
 
+  it('returns error when TMDB API key is missing', async () => {
+    mockEnsureTmdbApiKey.mockReturnValue({
+      ok: false,
+      response: {
+        body: { error: 'TMDB_API_KEY not set' },
+        status: 500,
+        async json() {
+          return this.body;
+        },
+      },
+    });
+    const res = await POST(makeRequest({ query: 'test' }));
+    expect(res.status).toBe(500);
+  });
+
+  it('returns 500 when an unexpected error is thrown', async () => {
+    mockSearchMovies.mockRejectedValue(new Error('Unexpected TMDB error'));
+    const res = await POST(makeRequest({ query: 'test' }));
+    expect(res.status).toBe(500);
+  });
+
+  it('returns 400 when query is empty', async () => {
+    const res = await POST(makeRequest({ query: '' }));
+    expect(res.status).toBe(400);
+  });
+
+  it('passes language parameter to searchMovies when provided', async () => {
+    mockSearchMovies.mockResolvedValue([]);
+    mockSearchPersons.mockResolvedValue([]);
+    const res = await POST(makeRequest({ query: 'test movie', language: 'hi' }));
+    expect(res.status).toBe(200);
+    expect(mockSearchMovies).toHaveBeenCalledWith('test movie', 'test-tmdb-key', 'hi');
+  });
+
+  it('finds duplicate suspects by matching titles', async () => {
+    mockSearchMovies.mockResolvedValue([
+      { id: 100, title: 'Duplicate Movie', original_language: 'te' },
+      { id: 200, title: 'Unique Movie', original_language: 'te' },
+    ]);
+    mockSearchPersons.mockResolvedValue([]);
+    mockSelectIn
+      .mockResolvedValueOnce({ data: [] }) // no existing movies by tmdb_id
+      .mockResolvedValueOnce({ data: [] }); // no existing actors
+    // Mock the suspects query — returns a movie with matching title but no tmdb_id
+    mockIsNull.mockResolvedValue({
+      data: [{ id: 'db-dup', title: 'Duplicate Movie', tmdb_id: null }],
+    });
+
+    const res = await POST(makeRequest({ query: 'Duplicate' }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.movies.duplicateSuspects).toHaveProperty('100');
+    expect(data.movies.duplicateSuspects[100].id).toBe('db-dup');
+  });
+
+  it('keeps movies with null original_language when filtering by supported langs', async () => {
+    mockLanguagesSelect.mockResolvedValue({ data: [{ code: 'te' }] });
+    mockSearchMovies.mockResolvedValue([
+      { id: 100, title: 'No Lang', original_language: null },
+      { id: 200, title: 'French', original_language: 'fr' },
+    ]);
+    mockSearchPersons.mockResolvedValue([]);
+    mockSelectIn.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: [] });
+
+    const res = await POST(makeRequest({ query: 'test' }));
+    const data = await res.json();
+    // null original_language passes the filter (!m.original_language evaluates to true)
+    expect(data.movies.results).toHaveLength(1);
+    expect(data.movies.results[0].id).toBe(100);
+  });
+
+  it('handles null supportedLangs via nullish coalesce', async () => {
+    mockLanguagesSelect.mockResolvedValue({ data: null });
+    mockSearchMovies.mockResolvedValue([{ id: 100, title: 'Movie', original_language: 'te' }]);
+    mockSearchPersons.mockResolvedValue([]);
+    mockSelectIn.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: [] });
+
+    const res = await POST(makeRequest({ query: 'test' }));
+    const data = await res.json();
+    // With supportedCodes.size === 0, all movies pass
+    expect(data.movies.results).toHaveLength(1);
+  });
+
+  it('handles null movieExisting data via nullish coalesce', async () => {
+    mockSearchMovies.mockResolvedValue([{ id: 100, title: 'Movie', original_language: 'te' }]);
+    mockSearchPersons.mockResolvedValue([]);
+    mockSelectIn
+      .mockResolvedValueOnce({ data: null }) // null movie existing
+      .mockResolvedValueOnce({ data: null }); // null person existing
+
+    const res = await POST(makeRequest({ query: 'test' }));
+    const data = await res.json();
+    expect(data.movies.existingTmdbIds).toEqual([]);
+    expect(data.actors.existingTmdbPersonIds).toEqual([]);
+  });
+
+  it('handles null suspects data in duplicate check', async () => {
+    mockSearchMovies.mockResolvedValue([{ id: 100, title: 'Movie', original_language: 'te' }]);
+    mockSearchPersons.mockResolvedValue([]);
+    mockSelectIn.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: [] });
+    mockIsNull.mockResolvedValue({ data: null });
+
+    const res = await POST(makeRequest({ query: 'test' }));
+    const data = await res.json();
+    expect(data.movies.duplicateSuspects).toEqual({});
+  });
+
   it('returns all movies when no supported languages in DB', async () => {
     mockLanguagesSelect.mockResolvedValue({ data: [] });
     mockSearchMovies.mockResolvedValue([

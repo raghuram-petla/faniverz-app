@@ -23,6 +23,16 @@ vi.mock('@/lib/utils', () => ({
   formatDateTime: (d: string) => d,
 }));
 
+const mockGetImageUrl = vi.fn((url: string, size: string) => {
+  // Mimic the real getImageUrl by inserting size suffix before extension
+  const dot = url.lastIndexOf('.');
+  if (dot === -1) return `${url}_${size}`;
+  return `${url.slice(0, dot)}_${size}${url.slice(dot)}`;
+});
+vi.mock('@shared/imageUrl', () => ({
+  getImageUrl: (url: string, size: string) => mockGetImageUrl(url, size),
+}));
+
 function makeUser(overrides: Partial<AdminUserWithDetails> = {}): AdminUserWithDetails {
   return {
     id: 'user-1',
@@ -528,6 +538,31 @@ describe('AdminsTable', () => {
       expect(screen.getByText('Languages')).toBeInTheDocument();
       expect(screen.getByText('Since')).toBeInTheDocument();
       expect(screen.getByText('Actions')).toBeInTheDocument();
+    });
+  });
+
+  describe('avatar and PH fallback branches', () => {
+    it('falls back to raw avatar_url when getImageUrl returns null', () => {
+      mockGetImageUrl.mockReturnValueOnce(null as unknown as string);
+      renderTable({
+        users: [makeUser({ avatar_url: 'https://raw.example.com/avatar.jpg' })],
+      });
+      const img = document.querySelector('img');
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', 'https://raw.example.com/avatar.jpg');
+    });
+
+    it('shows production_house_id when production_house name is missing', () => {
+      renderTable({
+        users: [
+          makeUser({
+            ph_assignments: [
+              { production_house_id: 'orphan-ph-id', production_house: undefined } as never,
+            ],
+          }),
+        ],
+      });
+      expect(screen.getByText('orphan-ph-id')).toBeInTheDocument();
     });
   });
 });

@@ -87,4 +87,36 @@ describe('ValidationsSummary', () => {
     expect(screen.queryByText(/External/)).toBeNull();
     expect(screen.queryByText(/Null/)).toBeNull();
   });
+
+  it('falls back to raw entity:field key when ENTITY_LABELS has no match', () => {
+    const summary: SummaryEntry[] = [
+      {
+        entity: 'unknown_entity',
+        field: 'unknown_field',
+        total: 5,
+        external: 0,
+        local: 5,
+        nullCount: 0,
+      },
+    ];
+    render(<ValidationsSummary {...defaultProps} summary={summary} />);
+    // Should show the raw key as label
+    expect(screen.getByText('unknown_entity:unknown_field')).toBeInTheDocument();
+  });
+
+  it('does not show scan button when entity has no ENTITY_MAP entry', () => {
+    const summary: SummaryEntry[] = [
+      {
+        entity: 'unknown_entity',
+        field: 'unknown_field',
+        total: 5,
+        external: 0,
+        local: 5,
+        nullCount: 0,
+      },
+    ];
+    render(<ValidationsSummary {...defaultProps} summary={summary} />);
+    // No Scan button should be shown for unmapped entities
+    expect(screen.queryByText('Scan')).not.toBeInTheDocument();
+  });
 });

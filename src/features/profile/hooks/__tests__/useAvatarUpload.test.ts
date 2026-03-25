@@ -72,6 +72,21 @@ describe('useAvatarUpload', () => {
     expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled();
   });
 
+  it('does nothing when assets array is empty (not canceled but no asset)', async () => {
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [],
+    });
+
+    const { result } = renderHook(() => useAvatarUpload());
+
+    await act(async () => {
+      await result.current.pickAndUpload();
+    });
+
+    expect(supabase.storage.from).not.toHaveBeenCalled();
+  });
+
   it('does nothing when image picker is canceled', async () => {
     (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
       canceled: true,
@@ -229,6 +244,42 @@ describe('useAvatarUpload', () => {
     expect(mockUpload).toHaveBeenCalledWith('u1/avatar.xyz', mockBlob, {
       upsert: true,
       contentType: 'image/jpeg',
+    });
+  });
+
+  it('handles webp extension with correct MIME type', async () => {
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///tmp/photo.webp' }],
+    });
+
+    const { result } = renderHook(() => useAvatarUpload());
+
+    await act(async () => {
+      await result.current.pickAndUpload();
+    });
+
+    expect(mockUpload).toHaveBeenCalledWith('u1/avatar.webp', mockBlob, {
+      upsert: true,
+      contentType: 'image/webp',
+    });
+  });
+
+  it('handles gif extension with correct MIME type', async () => {
+    (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ uri: 'file:///tmp/photo.GIF' }],
+    });
+
+    const { result } = renderHook(() => useAvatarUpload());
+
+    await act(async () => {
+      await result.current.pickAndUpload();
+    });
+
+    expect(mockUpload).toHaveBeenCalledWith('u1/avatar.gif', mockBlob, {
+      upsert: true,
+      contentType: 'image/gif',
     });
   });
 

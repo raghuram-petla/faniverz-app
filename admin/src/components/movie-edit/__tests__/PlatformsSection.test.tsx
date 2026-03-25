@@ -249,6 +249,44 @@ describe('PlatformsSection', () => {
     expect(options[1]).toHaveValue('US');
   });
 
+  it('falls back to first visible country when activeCountry is not in allVisibleCountries', () => {
+    // Set up availability for US only (not IN)
+    setupMocks({
+      availability: [
+        {
+          id: 'avail-us',
+          movie_id: 'movie-1',
+          country_code: 'US',
+          platform_id: 'netflix',
+          availability_type: 'svod',
+        },
+      ],
+    });
+    render(<PlatformsSection movieId="movie-1" />);
+    // Default activeCountry is 'IN' but only 'US' is visible
+    // effectiveCountry should fall back to 'US'
+    expect(screen.getByTestId('active-country').textContent).toBe('US');
+  });
+
+  it('changes active country when dropdown value changes', () => {
+    setupMocks({
+      availability: [
+        ...IN_AVAILABILITY,
+        {
+          id: 'avail-2',
+          movie_id: 'movie-1',
+          country_code: 'US',
+          platform_id: 'prime',
+          availability_type: 'svod',
+        },
+      ],
+    });
+    render(<PlatformsSection movieId="movie-1" />);
+    // Change to US
+    fireEvent.change(screen.getByTestId('country-dropdown'), { target: { value: 'US' } });
+    expect(screen.getByTestId('active-country').textContent).toBe('US');
+  });
+
   it('falls back to display_order 999 for unknown countries', () => {
     setupMocks({
       availability: [
@@ -267,5 +305,31 @@ describe('PlatformsSection', () => {
     const options = screen.getAllByRole('option');
     expect(options[0]).toHaveValue('IN');
     expect(options[1]).toHaveValue('UK');
+  });
+
+  it('sorts addedCountries using display_order fallback for unknown codes', () => {
+    setupMocks({
+      availability: [],
+      countries: [
+        { code: 'IN', name: 'India', display_order: 1 },
+        { code: 'US', name: 'United States', display_order: 2 },
+      ],
+    });
+    render(<PlatformsSection movieId="movie-1" />);
+    // Add US via picker — US has display_order 2
+    fireEvent.click(screen.getByText('Add Country'));
+    fireEvent.click(screen.getByText('Select US'));
+    // US should be visible now; panel shows US as active
+    expect(screen.getByTestId('active-country').textContent).toBe('US');
+  });
+
+  it('handles empty code from handleAddCountry guard', () => {
+    setupMocks({ availability: [] });
+    render(<PlatformsSection movieId="movie-1" />);
+    // No add action — just ensure no crash when picker is open
+    fireEvent.click(screen.getByText('Add Country'));
+    expect(screen.getByTestId('country-picker')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByTestId('country-picker')).not.toBeInTheDocument();
   });
 });

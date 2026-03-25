@@ -317,6 +317,187 @@ describe('POST /api/sync/lookup', () => {
     expect(res.status).toBe(500);
   });
 
+  it('skips re-fetch when originalLanguage is provided as non-English', async () => {
+    const movieDetail = {
+      id: 110,
+      title: 'Telugu Movie',
+      overview: 'Overview',
+      release_date: '2025-01-01',
+      runtime: 120,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      original_language: 'te',
+      credits: { cast: [], crew: [] },
+      videos: { results: [] },
+      translations: { translations: [] },
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: 'Released',
+      vote_average: 7.0,
+      vote_count: 100,
+      budget: 0,
+      revenue: 0,
+    };
+    mockGetMovieDetails.mockResolvedValue(movieDetail);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const res = await POST(makeRequest({ tmdbId: 110, type: 'movie', originalLanguage: 'te' }));
+    expect(res.status).toBe(200);
+    // Should call getMovieDetails only once (with originalLanguage), not twice
+    expect(mockGetMovieDetails).toHaveBeenCalledTimes(1);
+    expect(mockGetMovieDetails).toHaveBeenCalledWith(110, 'test-tmdb-key', 'te');
+  });
+
+  it('skips re-fetch when originalLanguage is "en"', async () => {
+    const movieDetail = {
+      id: 111,
+      title: 'English Movie',
+      overview: '',
+      release_date: '2025-01-01',
+      runtime: 90,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      original_language: 'en',
+      credits: { cast: [], crew: [] },
+      videos: { results: [] },
+      translations: { translations: [] },
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: 'Released',
+      vote_average: 5.0,
+      vote_count: 10,
+      budget: 0,
+      revenue: 0,
+    };
+    mockGetMovieDetails.mockResolvedValue(movieDetail);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const res = await POST(makeRequest({ tmdbId: 111, type: 'movie', originalLanguage: 'en' }));
+    expect(res.status).toBe(200);
+    // Should call once with no language param (English path)
+    expect(mockGetMovieDetails).toHaveBeenCalledTimes(1);
+    expect(mockGetMovieDetails).toHaveBeenCalledWith(111, 'test-tmdb-key');
+  });
+
+  it('auto-refetches when original_language is non-English and originalLanguage not provided', async () => {
+    const movieDetail = {
+      id: 112,
+      title: 'Korean Movie',
+      overview: 'A movie',
+      release_date: '2025-01-01',
+      runtime: 110,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      original_language: 'ko',
+      credits: { cast: [], crew: [] },
+      videos: { results: [] },
+      translations: { translations: [] },
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: 'Released',
+      vote_average: 7.0,
+      vote_count: 100,
+      budget: 0,
+      revenue: 0,
+    };
+    mockGetMovieDetails.mockResolvedValue(movieDetail);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    // No originalLanguage provided, and original_language is 'ko' (non-English)
+    const res = await POST(makeRequest({ tmdbId: 112, type: 'movie' }));
+    expect(res.status).toBe(200);
+    // Should call getMovieDetails twice: first without lang, then with 'ko'
+    expect(mockGetMovieDetails).toHaveBeenCalledTimes(2);
+    expect(mockGetMovieDetails).toHaveBeenNthCalledWith(1, 112, 'test-tmdb-key');
+    expect(mockGetMovieDetails).toHaveBeenNthCalledWith(2, 112, 'test-tmdb-key', 'ko');
+  });
+
+  it('does not re-fetch when original_language is English and no originalLanguage provided', async () => {
+    const movieDetail = {
+      id: 113,
+      title: 'English Only',
+      overview: '',
+      release_date: '2025-01-01',
+      runtime: 90,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      original_language: 'en',
+      credits: { cast: [], crew: [] },
+      videos: { results: [] },
+      translations: { translations: [] },
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: 'Released',
+      vote_average: 5.0,
+      vote_count: 10,
+      budget: 0,
+      revenue: 0,
+    };
+    mockGetMovieDetails.mockResolvedValue(movieDetail);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const res = await POST(makeRequest({ tmdbId: 113, type: 'movie' }));
+    expect(res.status).toBe(200);
+    // original_language is 'en' — should NOT re-fetch
+    expect(mockGetMovieDetails).toHaveBeenCalledTimes(1);
+  });
+
+  it('handles missing translations object gracefully', async () => {
+    const movieDetail = {
+      id: 114,
+      title: 'No Translations',
+      overview: '',
+      release_date: '2025-01-01',
+      runtime: 90,
+      genres: [],
+      poster_path: null,
+      backdrop_path: null,
+      original_language: 'en',
+      credits: { cast: [], crew: [] },
+      videos: { results: [] },
+      // translations undefined
+      release_dates: { results: [] },
+      external_ids: {},
+      keywords: { keywords: [] },
+      production_companies: [],
+      spoken_languages: [],
+      tagline: '',
+      status: 'Released',
+      vote_average: null,
+      vote_count: null,
+      budget: null,
+      revenue: null,
+    };
+    mockGetMovieDetails.mockResolvedValue(movieDetail);
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const res = await POST(makeRequest({ tmdbId: 114, type: 'movie' }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.data.titleTe).toBeNull();
+    expect(data.data.synopsisTe).toBeNull();
+  });
+
   it('returns movie image and provider counts', async () => {
     const movieDetail = {
       id: 104,

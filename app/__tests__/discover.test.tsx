@@ -573,4 +573,132 @@ describe('DiscoverScreen', () => {
     fireEvent.press(getByText('Upcoming'));
     expect(useFilterStore.getState().sortBy).toBe('upcoming');
   });
+
+  it('does not call fetchNextPage when hasNextPage is false', () => {
+    setupDefaultMock({ hasNextPage: false, isFetchingNextPage: false });
+
+    const { UNSAFE_getByType } = render(<DiscoverScreen />);
+    const { FlatList } = require('react-native');
+    const flatList = UNSAFE_getByType(FlatList);
+
+    flatList.props.onEndReached?.();
+
+    expect(mockFetchNextPage).not.toHaveBeenCalled();
+  });
+
+  it('does not show movie count row when filteredMovies is empty', () => {
+    setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
+    const { queryByText } = render(<DiscoverScreen />);
+    expect(queryByText(/discover\.movie/)).toBeNull();
+  });
+
+  it('does not show filter count badge when no filters are active', () => {
+    const { queryByText } = render(<DiscoverScreen />);
+    // No badge number should be present
+    expect(queryByText('0')).toBeNull();
+  });
+
+  it('filters movies by director when director is null (covers ?. branch)', () => {
+    const movieNoDirector = [{ ...mockMovies[0], director: null }];
+    setupDefaultMock({ data: { pages: [movieNoDirector], pageParams: [0] } });
+
+    const { getByPlaceholderText, queryByText } = render(<DiscoverScreen />);
+    const input = getByPlaceholderText('discover.searchPlaceholder');
+
+    fireEvent.changeText(input, 'nonexistent');
+
+    expect(queryByText('Pushpa 2')).toBeNull();
+  });
+
+  it('handles data being undefined (allMovies defaults to empty array)', () => {
+    setupDefaultMock({ data: undefined });
+    const { getByPlaceholderText } = render(<DiscoverScreen />);
+    expect(getByPlaceholderText('discover.searchPlaceholder')).toBeTruthy();
+  });
+
+  it('does not re-add platform from URL params when already selected', () => {
+    // Pre-populate the platform in store
+    useFilterStore.getState().togglePlatform('netflix');
+    mockLocalSearchParams.platform = 'netflix';
+
+    render(<DiscoverScreen />);
+
+    // Platform should still be selected (not toggled off)
+    expect(useFilterStore.getState().selectedPlatforms).toContain('netflix');
+  });
+
+  it('applies movieStatus filter to paginated hook when filter is not all', () => {
+    useFilterStore.getState().setFilter('in_theaters');
+
+    render(<DiscoverScreen />);
+
+    expect(mockUseMoviesPaginated).toHaveBeenCalledWith(
+      expect.objectContaining({ movieStatus: 'in_theaters' }),
+    );
+  });
+
+  it('handles platform filtering when movie has no platforms in map (empty array fallback)', () => {
+    const { useMoviePlatformMap } = require('@/features/ott/hooks');
+    useMoviePlatformMap.mockReturnValue({ data: {} });
+    useFilterStore.getState().togglePlatform('netflix');
+
+    const { queryByText } = render(<DiscoverScreen />);
+    // No movies should match since platformMap is empty
+    expect(queryByText('Pushpa 2')).toBeNull();
+    expect(queryByText('Kalki')).toBeNull();
+  });
+
+  it('handles genre filtering when movie genres is null (covers ?? [] branch)', () => {
+    const movieNullGenres = [{ ...mockMovies[0], genres: null }];
+    setupDefaultMock({ data: { pages: [movieNullGenres], pageParams: [0] } });
+    useFilterStore.getState().toggleGenre('Action');
+
+    const { queryByText } = render(<DiscoverScreen />);
+    expect(queryByText('Pushpa 2')).toBeNull();
+  });
+
+  it('does not send movieStatus to API when selectedFilter is all', () => {
+    useFilterStore.getState().setFilter('all');
+    render(<DiscoverScreen />);
+    expect(mockUseMoviesPaginated).toHaveBeenCalledWith(
+      expect.not.objectContaining({ movieStatus: expect.anything() }),
+    );
+  });
+
+  it('closes sort dropdown when a sort option is selected', () => {
+    const { getByText } = render(<DiscoverScreen />);
+    fireEvent.press(getByText('Popular'));
+    expect(getByText('Rating')).toBeTruthy();
+    fireEvent.press(getByText('Rating'));
+    // Dropdown should close — sort options should no longer be visible
+    // The label should now show "Rating"
+    expect(getByText('Rating')).toBeTruthy();
+  });
+
+  it('does not show filter count badge when activeFilterCount is 0', () => {
+    // Ensure no filters are set
+    useFilterStore.getState().clearAll();
+    const { queryByText } = render(<DiscoverScreen />);
+    // No badge number visible
+    expect(queryByText('1')).toBeNull();
+  });
+
+  it('shows singular movie count for exactly 1 movie', () => {
+    setupDefaultMock({ data: { pages: [[mockMovies[0]]], pageParams: [0] } });
+    const { getByText } = render(<DiscoverScreen />);
+    expect(getByText('1 discover.movie')).toBeTruthy();
+  });
+
+  it('handles animations disabled for chevron rotation (non-animated branch)', () => {
+    const mod = require('@/hooks/useAnimationsEnabled');
+    const orig = mod.useAnimationsEnabled;
+    mod.useAnimationsEnabled = () => false;
+
+    const { getByText } = render(<DiscoverScreen />);
+    // Toggle sort dropdown to trigger the animations-disabled branch
+    fireEvent.press(getByText('Popular'));
+    expect(getByText('Rating')).toBeTruthy();
+
+    mod.useAnimationsEnabled = orig;
+  });
 });

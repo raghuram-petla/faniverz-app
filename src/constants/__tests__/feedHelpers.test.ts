@@ -88,6 +88,22 @@ describe('getFeedTypeColor', () => {
     expect(getFeedTypeColor('update')).toBe(colors.gray500);
   });
 
+  it('returns red for new_movie', () => {
+    expect(getFeedTypeColor('new_movie')).toBe(colors.red600);
+  });
+
+  it('returns red for theatrical_release', () => {
+    expect(getFeedTypeColor('theatrical_release')).toBe(colors.red600);
+  });
+
+  it('returns purple for ott_release', () => {
+    expect(getFeedTypeColor('ott_release')).toBe(colors.purple600);
+  });
+
+  it('returns yellow for rating_milestone', () => {
+    expect(getFeedTypeColor('rating_milestone')).toBe(colors.yellow400);
+  });
+
   it('returns red as fallback', () => {
     expect(getFeedTypeColor('unknown')).toBe(colors.red600);
   });
@@ -107,6 +123,13 @@ describe('getFeedTypeLabel', () => {
     expect(getFeedTypeLabel('short-film')).toBe('Short Film');
     expect(getFeedTypeLabel('update')).toBe('Update');
     expect(getFeedTypeLabel('promo')).toBe('Promo');
+  });
+
+  it('returns correct labels for update content types', () => {
+    expect(getFeedTypeLabel('new_movie')).toBe('New Movie');
+    expect(getFeedTypeLabel('theatrical_release')).toBe('In Theaters');
+    expect(getFeedTypeLabel('ott_release')).toBe('Now Streaming');
+    expect(getFeedTypeLabel('rating_milestone')).toBe('Milestone');
   });
 
   it('returns raw value for unknown types', () => {
@@ -142,6 +165,31 @@ describe('getFeedTypeIconName', () => {
     expect(getFeedTypeIconName('update')).toBe('megaphone');
   });
 
+  it('returns play-circle for glimpse and promo', () => {
+    expect(getFeedTypeIconName('glimpse')).toBe('play-circle');
+    expect(getFeedTypeIconName('promo')).toBe('play-circle');
+  });
+
+  it('returns film for short-film', () => {
+    expect(getFeedTypeIconName('short-film')).toBe('film');
+  });
+
+  it('returns star for new_movie', () => {
+    expect(getFeedTypeIconName('new_movie')).toBe('star');
+  });
+
+  it('returns ticket for theatrical_release', () => {
+    expect(getFeedTypeIconName('theatrical_release')).toBe('ticket');
+  });
+
+  it('returns tv for ott_release', () => {
+    expect(getFeedTypeIconName('ott_release')).toBe('tv');
+  });
+
+  it('returns trophy for rating_milestone', () => {
+    expect(getFeedTypeIconName('rating_milestone')).toBe('trophy');
+  });
+
   it('returns newspaper as fallback', () => {
     expect(getFeedTypeIconName('unknown')).toBe('newspaper');
   });
@@ -161,6 +209,18 @@ describe('getYouTubeThumbnail', () => {
   it('constructs correct URL with maxresdefault quality', () => {
     expect(getYouTubeThumbnail('abc123', 'maxresdefault')).toBe(
       'https://img.youtube.com/vi/abc123/maxresdefault.jpg',
+    );
+  });
+
+  it('constructs correct URL with default quality', () => {
+    expect(getYouTubeThumbnail('abc123', 'default')).toBe(
+      'https://img.youtube.com/vi/abc123/default.jpg',
+    );
+  });
+
+  it('sanitizes special characters from youtubeId', () => {
+    expect(getYouTubeThumbnail('abc/../evil')).toBe(
+      'https://img.youtube.com/vi/abcevil/hqdefault.jpg',
     );
   });
 });
@@ -278,6 +338,16 @@ describe('getEntityName', () => {
     });
     expect(getEntityName(item)).toBe('Allu Arjun');
   });
+
+  it('returns Unknown for non-movie items with null title', () => {
+    const item = makeFeedItem({
+      movie_id: null,
+      movie: undefined,
+      source_table: 'actors',
+      title: null as unknown as string,
+    });
+    expect(getEntityName(item)).toBe('Unknown');
+  });
 });
 
 describe('getEntityId', () => {
@@ -301,6 +371,12 @@ describe('getEntityId', () => {
 
   it('returns null when no movie_id and no source_id', () => {
     expect(getEntityId(makeFeedItem({ movie_id: null }))).toBeNull();
+  });
+
+  it('returns null when source_id is set but source_table is null', () => {
+    expect(
+      getEntityId(makeFeedItem({ movie_id: null, source_table: null, source_id: 'orphan-1' })),
+    ).toBeNull();
   });
 });
 

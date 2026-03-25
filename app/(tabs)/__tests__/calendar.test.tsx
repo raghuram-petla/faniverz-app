@@ -636,6 +636,49 @@ describe('CalendarScreen', () => {
     expect(state.selectedMonth).toBeNull();
   });
 
+  it('filters movies with mismatched year', () => {
+    useCalendarStore.setState({
+      selectedYear: 2020,
+      selectedMonth: null,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+
+    const { queryByText, getByText } = render(<CalendarScreen />);
+    // Movies are from 2025, filtering to 2020 shows nothing
+    expect(queryByText('Pushpa 2')).toBeNull();
+    expect(getByText('No releases found for the selected filters.')).toBeTruthy();
+  });
+
+  it('filters movies with mismatched month', () => {
+    useCalendarStore.setState({
+      selectedYear: null,
+      selectedMonth: 0, // January, but movies are in March
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: true,
+    });
+
+    const { queryByText } = render(<CalendarScreen />);
+    expect(queryByText('Pushpa 2')).toBeNull();
+  });
+
+  it('shows empty state without clear filters when no filters set', () => {
+    setupDefaultMock({ data: { pages: [[]], pageParams: [0] } });
+    useCalendarStore.setState({
+      selectedYear: null,
+      selectedMonth: null,
+      selectedDay: null,
+      showFilters: false,
+      hasUserFiltered: false,
+    });
+
+    const { getByText, queryByText } = render(<CalendarScreen />);
+    expect(getByText('No releases found for the selected filters.')).toBeTruthy();
+    expect(queryByText('Clear filters')).toBeNull();
+  });
+
   it('pressing day filter pill X removes day filter', () => {
     useCalendarStore.setState({
       selectedYear: null,

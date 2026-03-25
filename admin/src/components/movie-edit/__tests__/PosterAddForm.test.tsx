@@ -315,6 +315,94 @@ describe('PosterAddForm', () => {
     });
   });
 
+  describe('date input', () => {
+    it('updates poster_date when date input changes', async () => {
+      mockNaturalWidth = 500;
+      mockNaturalHeight = 750;
+      mockPosterUpload.mockResolvedValue('https://cdn.example.com/poster.jpg');
+
+      const onConfirm = vi.fn();
+      render(<PosterAddForm {...makeProps({ onConfirm })} />);
+
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      fireEvent.change(dateInput, { target: { value: '2025-12-25' } });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(['data'], 'poster.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+      fireEvent.change(fileInput);
+
+      await waitFor(() => screen.getByText('poster'));
+      fireEvent.click(screen.getByText('Add to Gallery'));
+
+      expect(onConfirm).toHaveBeenCalledWith(
+        expect.objectContaining({ poster_date: '2025-12-25' }),
+        expect.any(String),
+      );
+    });
+  });
+
+  describe('image onerror fallback', () => {
+    it('falls back to poster type when image fails to load', async () => {
+      // Stub Image constructor to trigger onerror instead of onload
+      vi.stubGlobal(
+        'Image',
+        class {
+          onload: (() => void) | null = null;
+          onerror: (() => void) | null = null;
+          _src = '';
+          get naturalWidth() {
+            return 0;
+          }
+          get naturalHeight() {
+            return 0;
+          }
+          get src() {
+            return this._src;
+          }
+          set src(val: string) {
+            this._src = val;
+            setTimeout(() => this.onerror?.(), 0);
+          }
+        },
+      );
+
+      mockPosterUpload.mockResolvedValue('https://cdn.example.com/poster.jpg');
+
+      const onConfirm = vi.fn();
+      render(<PosterAddForm {...makeProps({ onConfirm })} />);
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(['data'], 'broken.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+      fireEvent.change(fileInput);
+
+      await waitFor(() => expect(mockPosterUpload).toHaveBeenCalled());
+    });
+  });
+
+  describe('upload button states', () => {
+    it('shows "Change Image" after initial upload', async () => {
+      mockNaturalWidth = 500;
+      mockNaturalHeight = 750;
+      mockPosterUpload.mockResolvedValue('https://cdn.example.com/poster.jpg');
+
+      render(<PosterAddForm {...makeProps()} />);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(['data'], 'poster.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+      fireEvent.change(fileInput);
+
+      await waitFor(() => expect(screen.getByText('Change Image')).toBeInTheDocument());
+    });
+
+    it('shows "Uploading…" while upload is in progress', () => {
+      posterUploading = true;
+      render(<PosterAddForm {...makeProps()} />);
+      expect(screen.getByText('Uploading…')).toBeInTheDocument();
+    });
+  });
+
   describe('title input', () => {
     it('uses provided title in onConfirm', async () => {
       mockNaturalWidth = 500;

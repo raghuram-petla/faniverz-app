@@ -307,6 +307,191 @@ describe('processActorRefresh', () => {
     ).rejects.toThrow('Actor fetch failed: not found');
   });
 
+  it('updates also_known_as when order differs', async () => {
+    vi.mocked(getPersonDetails).mockResolvedValue({
+      name: 'Same Name',
+      biography: null,
+      place_of_birth: null,
+      birthday: null,
+      profile_path: null,
+      gender: 2,
+      also_known_as: ['B', 'A'],
+      deathday: null,
+      imdb_id: null,
+      known_for_department: null,
+      external_ids: {},
+    } as never);
+
+    vi.mocked(maybeUploadImage).mockResolvedValueOnce(null);
+    supabase.single.mockResolvedValueOnce({
+      data: {
+        name: 'Same Name',
+        biography: null,
+        place_of_birth: null,
+        birth_date: null,
+        photo_url: null,
+        gender: 2,
+        imdb_id: null,
+        known_for_department: null,
+        also_known_as: ['A', 'B'],
+        death_date: null,
+        instagram_id: null,
+        twitter_id: null,
+      },
+      error: null,
+    });
+
+    const result = await processActorRefresh(
+      'actor-123',
+      999,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    // Same items just different order — should NOT update
+    expect(result.updated).toBe(false);
+    expect(result.fields).not.toContain('also_known_as');
+  });
+
+  it('updates deathday when set on TMDB', async () => {
+    vi.mocked(getPersonDetails).mockResolvedValue({
+      name: 'Same Name',
+      biography: null,
+      place_of_birth: null,
+      birthday: null,
+      profile_path: null,
+      gender: 2,
+      also_known_as: [],
+      deathday: '2025-01-15',
+      imdb_id: null,
+      known_for_department: null,
+      external_ids: {},
+    } as never);
+
+    vi.mocked(maybeUploadImage).mockResolvedValueOnce(null);
+    supabase.single.mockResolvedValueOnce({
+      data: {
+        name: 'Same Name',
+        biography: null,
+        place_of_birth: null,
+        birth_date: null,
+        photo_url: null,
+        gender: 2,
+        imdb_id: null,
+        known_for_department: null,
+        also_known_as: null,
+        death_date: null,
+        instagram_id: null,
+        twitter_id: null,
+      },
+      error: null,
+    });
+    (supabase as Record<string, unknown>).update = vi
+      .fn()
+      .mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+
+    const result = await processActorRefresh(
+      'actor-123',
+      999,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result.updated).toBe(true);
+    expect(result.fields).toContain('death_date');
+  });
+
+  it('falls back to "Unknown" name when person.name and current.name are both empty', async () => {
+    vi.mocked(getPersonDetails).mockResolvedValue({
+      name: '',
+      biography: null,
+      place_of_birth: null,
+      birthday: null,
+      profile_path: null,
+      gender: null,
+      also_known_as: [],
+      deathday: null,
+      imdb_id: null,
+      known_for_department: null,
+      external_ids: {},
+    } as never);
+
+    vi.mocked(maybeUploadImage).mockResolvedValueOnce(null);
+    supabase.single.mockResolvedValueOnce({
+      data: {
+        name: null,
+        biography: null,
+        place_of_birth: null,
+        birth_date: null,
+        photo_url: null,
+        gender: null,
+        imdb_id: null,
+        known_for_department: null,
+        also_known_as: null,
+        death_date: null,
+        instagram_id: null,
+        twitter_id: null,
+      },
+      error: null,
+    });
+
+    const result = await processActorRefresh(
+      'actor-123',
+      999,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result.name).toBe('Unknown');
+  });
+
+  it('uses person.imdb_id directly when external_ids.imdb_id is missing', async () => {
+    vi.mocked(getPersonDetails).mockResolvedValue({
+      name: 'Actor',
+      biography: null,
+      place_of_birth: null,
+      birthday: null,
+      profile_path: null,
+      gender: 2,
+      also_known_as: [],
+      deathday: null,
+      imdb_id: 'nm999',
+      known_for_department: null,
+      external_ids: {},
+    } as never);
+
+    vi.mocked(maybeUploadImage).mockResolvedValueOnce(null);
+    supabase.single.mockResolvedValueOnce({
+      data: {
+        name: 'Actor',
+        biography: null,
+        place_of_birth: null,
+        birth_date: null,
+        photo_url: null,
+        gender: 2,
+        imdb_id: null,
+        known_for_department: null,
+        also_known_as: null,
+        death_date: null,
+        instagram_id: null,
+        twitter_id: null,
+      },
+      error: null,
+    });
+    (supabase as Record<string, unknown>).update = vi
+      .fn()
+      .mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+
+    const result = await processActorRefresh(
+      'actor-123',
+      999,
+      'api-key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result.fields).toContain('imdb_id');
+  });
+
   it('throws when actor update fails', async () => {
     vi.mocked(getPersonDetails).mockResolvedValue({
       name: 'Changed Name',

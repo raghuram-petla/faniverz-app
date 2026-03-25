@@ -470,4 +470,202 @@ describe('FeedCard', () => {
     fireEvent.press(screen.getByLabelText('Go to Test Movie'));
     expect(onEntityPress).toHaveBeenCalledWith('movie', 'm1');
   });
+
+  // Memo comparator tests
+  it('does not re-render when only callback refs change (memo comparator)', () => {
+    const item = makeItem();
+    const onPress1 = jest.fn();
+    const onPress2 = jest.fn();
+    const { rerender } = render(<FeedCard item={item} onPress={onPress1} />);
+    // Re-render with new callback ref but same item data
+    rerender(<FeedCard item={item} onPress={onPress2} />);
+    // Component should still be rendered (memo skips re-render)
+    expect(screen.getByText('Test Trailer')).toBeTruthy();
+  });
+
+  it('re-renders when userVote changes (memo comparator)', () => {
+    const item = makeItem();
+    const { rerender } = render(
+      <FeedCard
+        item={item}
+        onPress={jest.fn()}
+        userVote={null}
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    rerender(
+      <FeedCard
+        item={item}
+        onPress={jest.fn()}
+        userVote="up"
+        onUpvote={jest.fn()}
+        onDownvote={jest.fn()}
+      />,
+    );
+    expect(screen.getByTestId('action-user-vote').props.children).toBe('up');
+  });
+
+  it('re-renders when isFollowing changes (memo comparator)', () => {
+    const item = makeItem();
+    const { rerender } = render(
+      <FeedCard item={item} onPress={jest.fn()} isFollowing={false} onFollow={jest.fn()} />,
+    );
+    rerender(<FeedCard item={item} onPress={jest.fn()} isFollowing={true} onFollow={jest.fn()} />);
+    expect(screen.getByTestId('follow-button-state').props.children).toBe('Following');
+  });
+
+  it('re-renders when item upvote_count changes (memo comparator)', () => {
+    const item1 = makeItem({ upvote_count: 5 });
+    const item2 = { ...item1, upvote_count: 10 };
+    const { rerender } = render(<FeedCard item={item1} onPress={jest.fn()} onUpvote={jest.fn()} />);
+    rerender(<FeedCard item={item2} onPress={jest.fn()} onUpvote={jest.fn()} />);
+    expect(screen.getByTestId('action-upvote-count').props.children).toBe(10);
+  });
+
+  // No-video, no-thumbnail: description renders
+  it('does not render description when description is null', () => {
+    const item = makeItem({
+      description: null,
+      thumbnail_url: null,
+      youtube_id: null,
+      movie: { id: 'm1', title: 'Movie', poster_url: null, release_date: '2024-01-01' },
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    // No description text should appear
+    expect(screen.queryByText('A text update')).toBeNull();
+  });
+
+  it('does not call onVideoLayout when not provided and item has video', () => {
+    const item = makeItem({ youtube_id: 'vid1' });
+    // Should not throw even without onVideoLayout
+    expect(() => render(<FeedCard item={item} onPress={jest.fn()} />)).not.toThrow();
+  });
+
+  it('renders with isVideoActive undefined (defaults to false)', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.getByText('Paused')).toBeTruthy();
+  });
+
+  it('defaults userVote to none when not provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.getByTestId('action-user-vote').props.children).toBe('none');
+  });
+
+  it('does not call openImage when imageUrl is null (handlePosterPress guard)', () => {
+    const item = makeItem({
+      youtube_id: null,
+      thumbnail_url: null,
+      movie: { id: 'm1', title: 'Movie', poster_url: null, release_date: '2024-01-01' },
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    // No poster image is rendered when both thumbnail_url and movie.poster_url are null
+    expect(screen.queryByLabelText(/poster/)).toBeNull();
+  });
+
+  it('does not render entity name as touchable when entityId is null', () => {
+    const item = makeItem({
+      movie_id: null,
+      movie: undefined,
+      source_id: null,
+      source_table: null,
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} onEntityPress={jest.fn()} />);
+    // Entity name renders as plain Text, not TouchableOpacity
+    expect(screen.queryByLabelText(/Go to/)).toBeNull();
+  });
+
+  it('does not render avatar as pressable when entityId is null and onEntityPress is provided', () => {
+    const item = makeItem({
+      movie_id: null,
+      movie: undefined,
+      source_id: null,
+      source_table: null,
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} onEntityPress={jest.fn()} />);
+    expect(screen.queryByTestId('avatar-press')).toBeNull();
+  });
+
+  it('does not render description when it exists but thumbnail also exists', () => {
+    const item = makeItem({
+      description: 'Should be hidden',
+      thumbnail_url: 'https://example.com/thumb.jpg',
+      youtube_id: null,
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.queryByText('Should be hidden')).toBeNull();
+  });
+
+  it('calls onFollow when not following and FollowButton is pressed', () => {
+    const onFollow = jest.fn();
+    const item = makeItem({ movie_id: 'm1' });
+    render(<FeedCard item={item} onPress={jest.fn()} isFollowing={false} onFollow={onFollow} />);
+    fireEvent.press(screen.getByTestId('follow-button'));
+    expect(onFollow).toHaveBeenCalledWith('movie', 'm1');
+  });
+
+  it('fires onLoad on poster Image to set mediaLoaded true (hides skeleton)', () => {
+    const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    // Find the Image component inside the poster container and fire onLoad
+    const { Image } = require('expo-image');
+    const images = screen.UNSAFE_getAllByType(Image);
+    const posterImage = images.find(
+      (img: { props: { onLoad?: () => void } }) => typeof img.props.onLoad === 'function',
+    );
+    expect(posterImage).toBeTruthy();
+    const { act } = require('@testing-library/react-native');
+    act(() => posterImage!.props.onLoad());
+    // After onLoad, skeleton should be hidden (mediaLoaded = true)
+    expect(screen.getByText('Test Trailer')).toBeTruthy();
+  });
+
+  it('calls onVideoLayout when layout event fires on video card', () => {
+    const onVideoLayout = jest.fn();
+    const item = makeItem();
+    const { UNSAFE_root } = render(
+      <FeedCard item={item} onPress={jest.fn()} onVideoLayout={onVideoLayout} />,
+    );
+    // Find the outer View with onLayout prop (styles.post container)
+    const { View } = require('react-native');
+    const views = UNSAFE_root.findAllByType(View);
+    const layoutView = views.find(
+      (v: { props: { onLayout?: unknown } }) => typeof v.props.onLayout === 'function',
+    );
+    expect(layoutView).toBeTruthy();
+    fireEvent(layoutView!, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 100, width: 400, height: 300 } },
+    });
+    expect(onVideoLayout).toHaveBeenCalledWith(item.id, 100, 300);
+  });
+
+  it('layout event without onVideoLayout does not crash', () => {
+    const item = makeItem();
+    const { UNSAFE_root } = render(<FeedCard item={item} onPress={jest.fn()} />);
+    const { View } = require('react-native');
+    const views = UNSAFE_root.findAllByType(View);
+    const layoutView = views.find(
+      (v: { props: { onLayout?: unknown } }) => typeof v.props.onLayout === 'function',
+    );
+    if (layoutView) {
+      fireEvent(layoutView, 'layout', {
+        nativeEvent: { layout: { x: 0, y: 50, width: 400, height: 200 } },
+      });
+    }
+    expect(screen.getByText('Test Trailer')).toBeTruthy();
+  });
+
+  it('calls openImage when poster is pressed on a non-video card', () => {
+    const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    fireEvent.press(screen.getByLabelText(`View ${item.title} poster`));
+    expect(mockOpenImage).toHaveBeenCalled();
+  });
+
+  it('re-renders when isVideoActive changes (memo comparator)', () => {
+    const item = makeItem();
+    const { rerender } = render(<FeedCard item={item} onPress={jest.fn()} isVideoActive={false} />);
+    rerender(<FeedCard item={item} onPress={jest.fn()} isVideoActive={true} />);
+    expect(screen.getByText('Playing')).toBeTruthy();
+  });
 });

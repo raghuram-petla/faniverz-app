@@ -642,6 +642,40 @@ describe('useImageVariants', () => {
     rejectFetch?.(new Error('Network failed'));
   });
 
+  it('covers cancelled ref in setIsChecking during non-http URL path', async () => {
+    // Make getImageUrl return non-http URLs
+    const imageUrlMod = await import('@shared/imageUrl');
+    vi.mocked(imageUrlMod.getImageUrl).mockReturnValue('relative/path');
+
+    mockGetSession.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          void resolve;
+        }),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ url }: { url: string | null }) => useImageVariants(url, 'poster', 'POSTERS'),
+      { initialProps: { url: 'relative/path' } },
+    );
+
+    // Wait for variants to be built (non-http path sets all to error without calling getSession)
+    await waitFor(() => {
+      expect(result.current.variants.length).toBe(4);
+    });
+
+    // Restore http URLs for second render
+    vi.mocked(imageUrlMod.getImageUrl).mockImplementation((url: string | null, size?: string) =>
+      !url ? null : size === 'original' ? url : `${url}_${size}`,
+    );
+
+    // Change URL to trigger cancellation
+    rerender({ url: 'https://cdn/other.jpg' });
+
+    // The cancelled ref from first render should prevent any state updates
+    expect(result.current.variants.length).toBe(4);
+  });
+
   it('handles error in res.json() catch gracefully', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(global.fetch).mockResolvedValue({

@@ -278,4 +278,90 @@ describe('EditActorPage', () => {
     expect(screen.getByTestId('device-selector')).toBeTruthy();
     expect(screen.getByTestId('actor-preview')).toBeTruthy();
   });
+
+  it('handles actor with null optional fields', () => {
+    mockUseAdminActor.mockReturnValue({
+      data: {
+        ...mockActor,
+        photo_url: null,
+        birth_date: null,
+        biography: null,
+        place_of_birth: null,
+        height_cm: null,
+        tmdb_person_id: null,
+        gender: null,
+      },
+      isLoading: false,
+    });
+    render(<EditActorPage />);
+    // Should render without errors, fields default to empty strings
+    expect(screen.getByText('Edit Actor')).toBeTruthy();
+  });
+
+  it('saves payload with null for empty optional fields', async () => {
+    mockUseAdminActor.mockReturnValue({
+      data: {
+        ...mockActor,
+        photo_url: null,
+        birth_date: null,
+        biography: null,
+        place_of_birth: null,
+        height_cm: null,
+        tmdb_person_id: null,
+      },
+      isLoading: false,
+    });
+    render(<EditActorPage />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-btn'));
+    });
+    expect(mockUpdateActorAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        photo_url: null,
+        birth_date: null,
+        biography: null,
+        place_of_birth: null,
+        height_cm: null,
+        tmdb_person_id: null,
+      }),
+    );
+  });
+
+  it('saves numeric height_cm when value is provided', async () => {
+    render(<EditActorPage />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-btn'));
+    });
+    expect(mockUpdateActorAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        height_cm: 175,
+        tmdb_person_id: 12345,
+      }),
+    );
+  });
+
+  it('shows generic "Upload failed" for non-Error upload rejection', async () => {
+    const alertMock = vi.fn();
+    vi.stubGlobal('alert', alertMock);
+    mockUpload.mockRejectedValue('string error');
+    render(<EditActorPage />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('photo-upload-btn'));
+    });
+    await waitFor(() => expect(alertMock).toHaveBeenCalledWith('Upload failed'));
+  });
+
+  it('applies pointer-events-none and opacity when readOnly', () => {
+    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    const { container } = render(<EditActorPage />);
+    const el = container.querySelector('.pointer-events-none');
+    expect(el).toBeTruthy();
+  });
+
+  it('changes device via DeviceSelector', () => {
+    render(<EditActorPage />);
+    fireEvent.click(screen.getByTestId('device-selector'));
+    // Should not crash — device state updates
+    expect(screen.getByTestId('device-frame')).toBeTruthy();
+  });
 });

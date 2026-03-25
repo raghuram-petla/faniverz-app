@@ -781,6 +781,72 @@ describe('DiscoverByYear', () => {
     });
   });
 
+  it('handles link duplicate when poster_path is null in results', async () => {
+    mockLinkTmdbIdMutateAsync.mockResolvedValue({});
+
+    const data = makeDiscoverResult({
+      results: [
+        {
+          id: 1,
+          title: 'Movie A',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ],
+      duplicateSuspects: { 1: { id: 'db-1', title: 'Existing Movie A' } },
+    });
+    render(<DiscoverByYear data={data} />);
+
+    fireEvent.click(screen.getByTestId('link-btn'));
+
+    await waitFor(() => {
+      expect(mockLinkTmdbIdMutateAsync).toHaveBeenCalledWith({
+        movieId: 'db-1',
+        tmdbId: 1,
+      });
+    });
+
+    // poster_url should be null since poster_path is null
+    await waitFor(() => {
+      expect(screen.getByTestId('existing-count').textContent).toBe('1');
+    });
+  });
+
+  it('handles import with empty successResults array', async () => {
+    mockImportMutateAsync.mockResolvedValue({
+      results: [],
+      errors: [],
+    });
+
+    render(<DiscoverByYear data={makeDiscoverResult()} />);
+    fireEvent.click(screen.getByTestId('toggle-btn'));
+    fireEvent.click(screen.getByTestId('import-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('progress-1')).toHaveTextContent('done');
+    });
+  });
+
+  it('handles undefined duplicateSuspects in data', () => {
+    const data: DiscoverResult = {
+      results: [
+        {
+          id: 1,
+          title: 'Movie A',
+          poster_path: null,
+          release_date: '2024-01-01',
+          original_language: 'te',
+        },
+      ],
+      existingMovies: [],
+      duplicateSuspects: undefined as unknown as DiscoverResult['duplicateSuspects'],
+    };
+    render(<DiscoverByYear data={data} />);
+    // Movie 1 should be in new movies since duplicateSuspects is undefined
+    expect(screen.getByTestId('new-movies-count').textContent).toBe('1');
+  });
+
   it('handles import with undefined results array in data', async () => {
     mockImportMutateAsync.mockResolvedValue({
       results: [{ tmdbId: 1, movieId: 'db-1', title: 'Movie A' }],

@@ -406,6 +406,70 @@ describe('getEntityDisplayName - additional edge cases', () => {
   });
 });
 
+describe('getEntityDisplayName - null field branch coverage', () => {
+  it('returns null for actors without name field', () => {
+    expect(getEntityDisplayName('actors', { new: { id: 'abc' } })).toBeNull();
+  });
+
+  it('returns null for platforms without name field', () => {
+    expect(getEntityDisplayName('platforms', { new: { id: 'p1' } })).toBeNull();
+  });
+
+  it('returns null for production_houses without name field', () => {
+    expect(getEntityDisplayName('production_houses', { new: { id: 'ph1' } })).toBeNull();
+  });
+
+  it('returns null for countries without name field', () => {
+    expect(getEntityDisplayName('countries', { new: { code: 'IN' } })).toBeNull();
+  });
+
+  it('returns null for languages without name field', () => {
+    expect(getEntityDisplayName('languages', { new: { code: 'te' } })).toBeNull();
+  });
+
+  it('returns null for admin_roles without name field', () => {
+    expect(getEntityDisplayName('admin_roles', { new: { id: 'role-1' } })).toBeNull();
+  });
+
+  it('returns null for admin_user_roles without user_id', () => {
+    expect(getEntityDisplayName('admin_user_roles', { new: { role: 'admin' } })).toBeNull();
+  });
+
+  it('returns null for admin_ph_assignments without user_id', () => {
+    expect(getEntityDisplayName('admin_ph_assignments', { new: { ph_id: 'ph-1' } })).toBeNull();
+  });
+
+  it('returns null for admin_invitations without email', () => {
+    expect(getEntityDisplayName('admin_invitations', { new: { role: 'admin' } })).toBeNull();
+  });
+
+  it('returns null for movie_cast without character_name', () => {
+    expect(getEntityDisplayName('movie_cast', { new: { actor_id: 'a1' } })).toBeNull();
+  });
+
+  it('returns null for movie_backdrops without image_type', () => {
+    expect(getEntityDisplayName('movie_backdrops', { new: { display_order: 0 } })).toBeNull();
+  });
+
+  it('returns null for movie_keywords without keyword', () => {
+    expect(getEntityDisplayName('movie_keywords', { new: { movie_id: 'm1' } })).toBeNull();
+  });
+
+  it('returns null for movie_production_houses without production_house_name', () => {
+    expect(getEntityDisplayName('movie_production_houses', { new: { movie_id: 'm1' } })).toBeNull();
+  });
+
+  it('returns null for user_languages without language_code', () => {
+    expect(getEntityDisplayName('user_languages', { new: { user_id: 'u1' } })).toBeNull();
+  });
+
+  it('returns null for movie_platform_availability without platform_name', () => {
+    expect(
+      getEntityDisplayName('movie_platform_availability', { new: { platform_id: 'p1' } }),
+    ).toBeNull();
+  });
+});
+
 describe('canRevert - additional edge cases', () => {
   it('returns true for an unknown action with data (defaults to true)', () => {
     expect(canRevert('unknown_action', { old: { x: 1 } })).toBe(true);

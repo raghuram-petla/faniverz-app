@@ -177,4 +177,32 @@ describe('FeaturedVideoCard', () => {
     // FALLBACK_VIDEO_ID = 'roYRXbhxhlM'
     expect(shareYouTubeVideo).toHaveBeenCalledWith('roYRXbhxhlM');
   });
+
+  it('does not render description when it is an empty string', () => {
+    const emptyDescItem = { ...mockItem, description: '' };
+    render(<FeaturedVideoCard item={emptyDescItem} styles={mockStyles} />);
+    // Empty string is falsy — description block should not render
+    expect(screen.queryByText('Behind the scenes footage')).toBeNull();
+  });
+
+  it('renders with youtube_id set directly (not using fallback)', () => {
+    const withIdItem = { ...mockItem, youtube_id: 'realId123' };
+    render(<FeaturedVideoCard item={withIdItem} styles={mockStyles} />);
+    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
+  });
+
+  it('renders description when it is a non-empty string', () => {
+    const descItem = { ...mockItem, description: 'Full description text here' };
+    render(<FeaturedVideoCard item={descItem} styles={mockStyles} />);
+    expect(screen.getByText('Full description text here')).toBeTruthy();
+  });
+
+  it('uses PLACEHOLDER_POSTER as thumbnail when videoId is falsy empty string', () => {
+    // videoId = item.youtube_id ?? FALLBACK => when youtube_id is '' (empty string),
+    // ?? does NOT trigger ('' is not null/undefined), so videoId = ''
+    // Then thumbnailUrl = '' ? ... : PLACEHOLDER_POSTER => false branch hit
+    const emptyYoutubeItem = { ...mockItem, youtube_id: '' };
+    render(<FeaturedVideoCard item={emptyYoutubeItem} styles={mockStyles} />);
+    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
+  });
 });

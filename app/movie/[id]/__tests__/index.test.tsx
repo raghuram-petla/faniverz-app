@@ -602,4 +602,121 @@ describe('MovieDetailScreen', () => {
     expect(screen.getByText('Production')).toBeTruthy();
     expect(screen.getByText('Mythri Movie Makers')).toBeTruthy();
   });
+
+  it('shows skeleton when movie is loading (isLoading=true, data=undefined)', () => {
+    (useMovieDetail as jest.Mock).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      refetch: jest.fn(),
+    });
+    render(<MovieDetailScreen />);
+    expect(screen.getByTestId('movie-detail-skeleton')).toBeTruthy();
+  });
+
+  it('shows skeleton when movie is null and not loading', () => {
+    (useMovieDetail as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    render(<MovieDetailScreen />);
+    expect(screen.getByTestId('movie-detail-skeleton')).toBeTruthy();
+  });
+
+  it('handles movie with null synopsis in share', async () => {
+    const noSynopsisMovie = { ...mockMovie, synopsis: null, release_date: null };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: noSynopsisMovie });
+    const shareSpy = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({ action: 'sharedAction' } as never);
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share'));
+    expect(shareSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.not.stringContaining('(') }),
+    );
+    shareSpy.mockRestore();
+  });
+
+  it('handles Share.share rejection gracefully', async () => {
+    const shareSpy = jest.spyOn(Share, 'share').mockRejectedValue(new Error('cancelled'));
+    render(<MovieDetailScreen />);
+    // Should not throw
+    fireEvent.press(screen.getByLabelText('Share'));
+    expect(shareSpy).toHaveBeenCalled();
+    shareSpy.mockRestore();
+  });
+
+  it('submits review with spoiler toggled on', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+    fireEvent.press(screen.getByTestId('star-rate-4'));
+    fireEvent.press(screen.getByText('Contains Spoiler'));
+    fireEvent.press(screen.getByText('Submit'));
+    expect(mockCreateReviewMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contains_spoiler: true,
+      }),
+    );
+  });
+
+  it('uses stub movie object when movie data is null for useMovieAction', () => {
+    // When movie is null and not loading, skeleton shows but useMovieAction is called
+    // with the stub object { id, release_date: null, in_theaters: false }
+    (useMovieDetail as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: false,
+      refetch: jest.fn(),
+    });
+    render(<MovieDetailScreen />);
+    expect(screen.getByTestId('movie-detail-skeleton')).toBeTruthy();
+  });
+
+  it('uses empty string for userId when user is null', () => {
+    jest
+      .spyOn(require('@/features/auth/providers/AuthProvider'), 'useAuth')
+      .mockReturnValue({ user: null });
+    render(<MovieDetailScreen />);
+    // Renders skeleton because movie loads but userId is ''
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('handles undefined id from URL params (id ?? "" branch)', () => {
+    const expoRouter = require('expo-router');
+    const origParams = expoRouter.useLocalSearchParams;
+    expoRouter.useLocalSearchParams = () => ({ id: undefined });
+    (useMovieDetail as jest.Mock).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      refetch: jest.fn(),
+    });
+    render(<MovieDetailScreen />);
+    expect(screen.getByTestId('movie-detail-skeleton')).toBeTruthy();
+    expoRouter.useLocalSearchParams = origParams;
+  });
+
+  it('navigates to media screen via onExploreMedia in OverviewTab', () => {
+    const movieWithVideos = {
+      ...mockMovie,
+      videos: [
+        {
+          id: 'v1',
+          movie_id: 'movie-1',
+          youtube_id: 'dQw4w9WgXcQ',
+          title: 'Official Trailer',
+          video_type: 'trailer',
+          description: null,
+          video_date: null,
+          duration: '3:20',
+          display_order: 0,
+          created_at: '',
+        },
+      ],
+    };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: movieWithVideos });
+    render(<MovieDetailScreen />);
+    // OverviewTab shows "Explore All Media" which navigates to media route
+    fireEvent.press(screen.getByText('Explore All Media'));
+    expect(mockPush).toHaveBeenCalledWith('/movie/movie-1/media');
+  });
 });

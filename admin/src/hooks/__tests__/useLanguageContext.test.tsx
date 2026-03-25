@@ -292,6 +292,79 @@ describe('useLanguageContext — admin role with 2+ languages', () => {
   });
 });
 
+describe('useLanguageContext — root role', () => {
+  it('shows switcher for root role', async () => {
+    mockUseEffectiveUser.mockReturnValue({ role: 'root', languageIds: [] });
+    const Wrapper = makeWrapper();
+    render(
+      <Wrapper>
+        <Consumer />
+      </Wrapper>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('show-switcher').textContent).toBe('true');
+    });
+  });
+
+  it('availableLanguages = all languages for root', async () => {
+    mockUseEffectiveUser.mockReturnValue({ role: 'root', languageIds: [] });
+    const Wrapper = makeWrapper();
+    render(
+      <Wrapper>
+        <Consumer />
+      </Wrapper>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('available-count').textContent).toBe('3');
+    });
+  });
+
+  it('defaults to null (all languages) for root', async () => {
+    mockUseEffectiveUser.mockReturnValue({ role: 'root', languageIds: [] });
+    const Wrapper = makeWrapper();
+    render(
+      <Wrapper>
+        <Consumer />
+      </Wrapper>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('selected-id').textContent).toBe('null');
+    });
+  });
+});
+
+describe('useLanguageContext — selectedLanguageCode fallback', () => {
+  it('returns null code when selectedLanguageId does not match any language', async () => {
+    mockLocalStorage['faniverz-admin-selected-language'] = 'lang-nonexistent';
+    mockUseEffectiveUser.mockReturnValue({ role: 'super_admin', languageIds: [] });
+    const Wrapper = makeWrapper();
+    render(
+      <Wrapper>
+        <Consumer />
+      </Wrapper>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('selected-id').textContent).toBe('lang-nonexistent');
+      expect(screen.getByTestId('selected-code').textContent).toBe('null');
+    });
+  });
+});
+
+describe('useLanguageContext — viewer role (not admin or super_admin)', () => {
+  it('does not show switcher for viewer role', async () => {
+    mockUseEffectiveUser.mockReturnValue({ role: 'viewer', languageIds: [] });
+    const Wrapper = makeWrapper();
+    render(
+      <Wrapper>
+        <Consumer />
+      </Wrapper>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('show-switcher').textContent).toBe('false');
+    });
+  });
+});
+
 describe('useLanguageContext — fetchLanguages', () => {
   it('returns empty array when fetch fails', async () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: false, json: async () => null });

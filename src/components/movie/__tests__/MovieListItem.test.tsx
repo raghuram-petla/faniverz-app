@@ -165,4 +165,41 @@ describe('MovieListItem', () => {
     const { getByTestId } = render(<MovieListItem movie={mockMovie} testID="custom-item" />);
     expect(getByTestId('custom-item')).toBeTruthy();
   });
+
+  it('renders streaming platform badge on poster for streaming movies', () => {
+    const streamingMovie = { ...mockMovie, in_theaters: false, premiere_date: null };
+    const { getByText } = render(
+      <MovieListItem movie={streamingMovie} platforms={mockPlatforms} />,
+    );
+    // Platform badge shows on poster for streaming status
+    expect(getByText('Netflix')).toBeTruthy();
+    expect(getByText('Aha')).toBeTruthy();
+  });
+
+  it('does not render rating for streaming movie with rating 0', () => {
+    const streamingMovie = {
+      ...mockMovie,
+      in_theaters: false,
+      premiere_date: null,
+      rating: 0,
+    };
+    const { queryByText } = render(
+      <MovieListItem movie={streamingMovie} platforms={mockPlatforms} />,
+    );
+    expect(queryByText('/ 5')).toBeNull();
+  });
+
+  it('renders rating for streaming movie with positive rating', () => {
+    const streamingMovie = {
+      ...mockMovie,
+      in_theaters: false,
+      premiere_date: null,
+      rating: 4.2,
+    };
+    const { getByText } = render(
+      <MovieListItem movie={streamingMovie} platforms={mockPlatforms} />,
+    );
+    expect(getByText('4.2')).toBeTruthy();
+    expect(getByText('/ 5')).toBeTruthy();
+  });
 });

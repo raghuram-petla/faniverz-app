@@ -154,6 +154,11 @@ describe('fetchNewsFeed', () => {
     expect(mocks.mockEq).toHaveBeenCalledWith('feed_type', 'surprise');
   });
 
+  it('applies updates filter', async () => {
+    await fetchNewsFeed('updates');
+    expect(mocks.mockEq).toHaveBeenCalledWith('feed_type', 'update');
+  });
+
   it('paginates with correct range', async () => {
     await fetchNewsFeed('all', 2, 15);
     expect(mocks.mockRange).toHaveBeenCalledWith(30, 44);
@@ -191,6 +196,12 @@ describe('fetchFeaturedFeedItems', () => {
   it('throws on supabase error', async () => {
     mocks.mockLimit.mockResolvedValue({ data: null, error: new Error('fail') });
     await expect(fetchFeaturedFeedItems()).rejects.toThrow('fail');
+  });
+
+  it('returns empty array when data is null', async () => {
+    mocks.mockLimit.mockResolvedValue({ data: null, error: null });
+    const result = await fetchFeaturedFeedItems();
+    expect(result).toEqual([]);
   });
 });
 
@@ -451,6 +462,18 @@ describe('fetchUserVotes', () => {
   it('throws on supabase error', async () => {
     mocks.mockVoteIn.mockResolvedValue({ data: null, error: new Error('Fetch votes failed') });
     await expect(fetchUserVotes('user-123', ['item-1'])).rejects.toThrow('Fetch votes failed');
+  });
+
+  it('batches large feedItemIds into chunks of 40', async () => {
+    const ids = Array.from({ length: 50 }, (_, i) => `item-${i}`);
+    mocks.mockVoteIn.mockResolvedValue({
+      data: [{ feed_item_id: 'item-0', vote_type: 'up' }],
+      error: null,
+    });
+    const result = await fetchUserVotes('user-123', ids);
+    // Should have been called twice: batch of 40 + batch of 10
+    expect(mocks.mockVoteIn).toHaveBeenCalledTimes(2);
+    expect(result['item-0']).toBe('up');
   });
 });
 

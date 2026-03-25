@@ -202,7 +202,10 @@ describe('SearchScreen', () => {
   });
 
   it('renders Trending Now section when movies exist', () => {
-    const trendingMovies = [{ ...mockResults[0], id: 't1', title: 'Top Movie', rating: 5.0 }];
+    const trendingMovies = [
+      { ...mockResults[0], id: 't1', title: 'Top Movie', rating: 5.0 },
+      { ...mockResults[0], id: 't2', title: 'Second Movie', rating: 3.0 },
+    ];
     mockUseMovies.mockReturnValue({ data: trendingMovies });
     render(<SearchScreen />);
     expect(screen.getByText('Trending Now')).toBeTruthy();
@@ -557,5 +560,220 @@ describe('SearchScreen', () => {
     expect(capturedRefreshCallback).not.toBeNull();
     await capturedRefreshCallback!();
     expect(mockRefetch).toHaveBeenCalled();
+  });
+
+  it('filters results to studios only when Studios filter is pressed', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: mockResults,
+        actors: [{ id: 'a1', name: 'Allu Arjun', photo_url: null }],
+        productionHouses: [{ id: 'ph1', name: 'Mythri', logo_url: null }],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'pu');
+
+    fireEvent.press(screen.getByText('Studios (1)'));
+    expect(screen.queryByText('Pushpa 2')).toBeNull();
+    expect(screen.queryByText('Allu Arjun')).toBeNull();
+    expect(screen.getByText('Mythri')).toBeTruthy();
+  });
+
+  it('saveSearch deduplicates existing recent searches', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify(['OldTerm', 'AnotherTerm']));
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: mockResults, actors: [], productionHouses: [] },
+    });
+
+    const { findByText } = render(<SearchScreen />);
+    // Wait for recent searches to load
+    await findByText('OldTerm');
+
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'push');
+    fireEvent.press(screen.getByText('Pushpa 2'));
+
+    // saveSearch('push') runs with recentSearches=['OldTerm', 'AnotherTerm']
+    // The filter callback filters out duplicates
+    await waitFor(() => {
+      expect(AsyncStorage.setItem).toHaveBeenCalled();
+    });
+  });
+
+  it('handles undefined searchResults (covers ?? [] fallbacks)', () => {
+    mockUseUniversalSearch.mockReturnValue({ data: undefined });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'pu');
+
+    // Should show empty state without crashing
+    expect(screen.getByText('No results found')).toBeTruthy();
+  });
+
+  it('shows divider between non-movie results and movie results', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: mockResults,
+        actors: [{ id: 'a1', name: 'Allu Arjun', photo_url: null }],
+        productionHouses: [],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'pu');
+
+    // Both actor and movie results should be visible
+    expect(screen.getByText('Allu Arjun')).toBeTruthy();
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('does not show empty state when actors exist but no movies (ListEmptyComponent branch)', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: [],
+        actors: [{ id: 'a1', name: 'Allu Arjun', photo_url: null }],
+        productionHouses: [],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'al');
+
+    expect(screen.getByText('Allu Arjun')).toBeTruthy();
+    // Should NOT show empty state since actors are found
+    expect(screen.queryByText('No results found')).toBeNull();
+  });
+
+  it('does not save search when query is less than 2 chars on movie press', () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    const trendingMovies = [{ ...mockResults[0], id: 't1', title: 'Top Movie', rating: 5.0 }];
+    mockUseMovies.mockReturnValue({ data: trendingMovies });
+
+    render(<SearchScreen />);
+    // Query is empty (< 2 chars), pressing trending movie should not save search
+    fireEvent.press(screen.getByText('Top Movie'));
+
+    expect(mockPush).toHaveBeenCalledWith('/movie/t1');
+    // setItem should NOT have been called for recent searches
+    expect(
+      AsyncStorage.setItem.mock.calls.filter((c: string[]) => c[0] === 'recent_searches').length,
+    ).toBe(0);
+  });
+
+  it('handles AsyncStorage.getItem rejection gracefully', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    AsyncStorage.getItem.mockRejectedValueOnce(new Error('Storage unavailable'));
+
+    render(<SearchScreen />);
+    // Should not crash
+    expect(screen.getByPlaceholderText(PLACEHOLDER)).toBeTruthy();
+  });
+
+  it('does not show clear button when query is empty', () => {
+    render(<SearchScreen />);
+    // close-circle icon should not be present when query is empty
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    expect(input.props.value).toBe('');
+  });
+
+  it('does not show filter chips when query is less than 2 chars', () => {
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'p');
+
+    expect(screen.queryByText('All')).toBeNull();
+    expect(screen.queryByText('Movies')).toBeNull();
+  });
+
+  it('does not show results count text when totalResults is 0', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: [], actors: [], productionHouses: [] },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'zz');
+
+    // Should not show "0 results found"
+    expect(screen.queryByText('0 results found')).toBeNull();
+    expect(screen.queryByText('0 result found')).toBeNull();
+  });
+
+  it('shows filter chips with counts when results exist', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: mockResults,
+        actors: [{ id: 'a1', name: 'Allu', photo_url: null }],
+        productionHouses: [{ id: 'ph1', name: 'Mythri', logo_url: null }],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'te');
+
+    expect(screen.getByText('Movies (1)')).toBeTruthy();
+    expect(screen.getByText('Actors (1)')).toBeTruthy();
+    expect(screen.getByText('Studios (1)')).toBeTruthy();
+  });
+
+  it('shows filter chips without counts when results are empty', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: [], actors: [], productionHouses: [] },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'te');
+
+    // No counts in labels when 0 results
+    expect(screen.getByText('Movies')).toBeTruthy();
+    expect(screen.getByText('Actors')).toBeTruthy();
+    expect(screen.getByText('Studios')).toBeTruthy();
+  });
+
+  it('does not save actor search when query is less than 2 chars', () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    mockUseUniversalSearch.mockReturnValue({
+      data: {
+        movies: [],
+        actors: [{ id: 'a1', name: 'Short Query Actor', photo_url: null }],
+        productionHouses: [],
+      },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'a'); // 1 char, < 2
+
+    // Since query < 2, hasQuery is false and results are not shown
+    // Verify no save happened
+    expect(
+      AsyncStorage.setItem.mock.calls.filter((c: string[]) => c[0] === 'recent_searches').length,
+    ).toBe(0);
+  });
+
+  it('does not show divider when only movies exist (no actors/houses)', () => {
+    mockUseUniversalSearch.mockReturnValue({
+      data: { movies: mockResults, actors: [], productionHouses: [] },
+    });
+
+    render(<SearchScreen />);
+    const input = screen.getByPlaceholderText(PLACEHOLDER);
+    fireEvent.changeText(input, 'pu');
+
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('handles empty trending movies list (no Trending Now section)', () => {
+    mockUseMovies.mockReturnValue({ data: [] });
+    render(<SearchScreen />);
+    expect(screen.queryByText('Trending Now')).toBeNull();
   });
 });

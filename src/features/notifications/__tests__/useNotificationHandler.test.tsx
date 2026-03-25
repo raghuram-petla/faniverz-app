@@ -180,4 +180,40 @@ describe('useNotificationHandler', () => {
     const { unmount } = renderHook(() => useNotificationHandler());
     expect(() => unmount()).not.toThrow();
   });
+
+  it('navigates to notifications when actor_id is non-string', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ actor_id: 456 }));
+
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('navigates to notifications when production_house_id is non-string', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ production_house_id: 789 }));
+
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('prioritizes actor_id over production_house_id when both present', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ actor_id: 'actor-1', production_house_id: 'ph-1' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/actor/actor-1');
+  });
+
+  it('navigates to notifications when movie_id is empty string', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ movie_id: '' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
 });

@@ -198,11 +198,77 @@ describe('AddActorForm', () => {
       expect(screen.getByText('Photo (optional)')).toBeInTheDocument();
     });
 
+    it('triggers file input click when Photo button is clicked', () => {
+      render(<AddActorForm {...makeProps()} />);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const clickSpy = vi.spyOn(fileInput, 'click');
+      fireEvent.click(screen.getByText('Photo (optional)'));
+      expect(clickSpy).toHaveBeenCalled();
+      clickSpy.mockRestore();
+    });
+
     it('does not call upload when no file is selected', () => {
       render(<AddActorForm {...makeProps()} />);
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       fireEvent.change(fileInput);
       expect(mockUpload).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getImageUrl fallback', () => {
+    it('uses photo_url directly when getImageUrl returns non-null', async () => {
+      const imageUrlMod = await import('@shared/imageUrl');
+      vi.mocked(imageUrlMod.getImageUrl).mockReturnValue('https://cdn/sm.jpg');
+
+      mockUpload.mockResolvedValue('https://cdn/photo.jpg');
+      render(<AddActorForm {...makeProps()} />);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(['data'], 'actor.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+      fireEvent.change(fileInput);
+      await waitFor(() => expect(screen.getByText('Photo uploaded')).toBeInTheDocument());
+
+      // Image should use the getImageUrl result
+      const img = document.querySelector('img') as HTMLImageElement;
+      expect(img.src).toContain('cdn/sm.jpg');
+
+      vi.mocked(imageUrlMod.getImageUrl).mockReturnValue(null);
+    });
+  });
+
+  describe('birth_date field', () => {
+    it('passes birth_date when set', async () => {
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<AddActorForm {...makeProps({ onSubmit })} />);
+      fireEvent.change(screen.getByPlaceholderText('Name *'), { target: { value: 'Actor' } });
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      fireEvent.change(dateInput, { target: { value: '1990-05-20' } });
+      fireEvent.click(screen.getByText('Add'));
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({ birth_date: '1990-05-20' }),
+        ),
+      );
+    });
+  });
+
+  describe('photo with uploaded URL in submit', () => {
+    it('includes photo_url in submission when photo is uploaded', async () => {
+      mockUpload.mockResolvedValue('https://cdn.example.com/photo.jpg');
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<AddActorForm {...makeProps({ onSubmit })} />);
+      fireEvent.change(screen.getByPlaceholderText('Name *'), { target: { value: 'Actor' } });
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(['data'], 'photo.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+      fireEvent.change(fileInput);
+      await waitFor(() => screen.getByText('Photo uploaded'));
+      fireEvent.click(screen.getByText('Add'));
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({ photo_url: 'https://cdn.example.com/photo.jpg' }),
+        ),
+      );
     });
   });
 });

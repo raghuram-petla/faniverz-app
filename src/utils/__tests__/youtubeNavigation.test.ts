@@ -113,4 +113,25 @@ describe('buildYouTubeEmbedHtml', () => {
     expect(html).toContain('autoplay=1');
     expect(html).toContain('playsinline=1');
   });
+
+  it('returns black page for invalid youtube ID (XSS attempt)', () => {
+    const html = buildYouTubeEmbedHtml('<script>alert(1)</script>');
+    expect(html).toBe('<html><body style="background:#000"></body></html>');
+    expect(html).not.toContain('/embed/');
+  });
+
+  it('returns black page for empty youtube ID', () => {
+    const html = buildYouTubeEmbedHtml('');
+    expect(html).toBe('<html><body style="background:#000"></body></html>');
+  });
+});
+
+describe('handleYouTubeNavigation — base URL match', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('allows the exact base URL with trailing slash', () => {
+    // WEBVIEW_BASE_URL + '/' is one of the allowed patterns
+    const result = handleYouTubeNavigation(makeRequest('about:blank'), 'abc');
+    expect(result).toBe(true);
+  });
 });

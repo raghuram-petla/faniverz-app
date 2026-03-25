@@ -392,6 +392,52 @@ describe('MediaPhotosTab', () => {
     }
   });
 
+  it('handlePosterPress uses raw image_url when getImageUrl returns null for feedUrl', () => {
+    const poster = makePoster({ id: 'p-null-url', title: 'Null URL', image_url: 'raw-url.jpg' });
+    const { TouchableOpacity } = require('react-native');
+    mockGetImageUrl.mockImplementation(() => null);
+    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
+
+    const pressables = UNSAFE_root.findAll(
+      (node: { type: unknown; props: Record<string, unknown> }) =>
+        node.type === TouchableOpacity &&
+        typeof node.props.onPress === 'function' &&
+        node.props.accessibilityLabel === 'View Null URL',
+    );
+
+    if (pressables.length > 0) {
+      const refProp = pressables[0].props.ref;
+      if (refProp && typeof refProp === 'object') {
+        (refProp as { current: unknown }).current = {
+          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
+            cb(0, 0, 100, 150);
+          },
+        };
+        pressables[0].props.onPress();
+        // feedUrl should fall back to poster.image_url since getImageUrl returned null
+        expect(mockOpenImage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            feedUrl: 'raw-url.jpg',
+          }),
+        );
+      }
+    }
+    mockGetImageUrl.mockImplementation((url: string | null) => url);
+  });
+
+  it('renders poster with both is_main_poster and is_main_backdrop false (no badges)', () => {
+    const poster = makePoster({
+      id: 'plain',
+      title: 'Plain',
+      is_main_poster: false,
+      is_main_backdrop: false,
+    });
+    render(<MediaPhotosTab posters={[poster]} />);
+    expect(screen.queryByText('Main Poster')).toBeNull();
+    expect(screen.queryByText('Main Backdrop')).toBeNull();
+    expect(screen.getByText('Plain')).toBeTruthy();
+  });
+
   it('shows both Main Poster and Main Backdrop badges on appropriate items', () => {
     const posters = [
       makePoster({ id: 'mp', title: 'Main P', is_main_poster: true, image_type: 'poster' }),

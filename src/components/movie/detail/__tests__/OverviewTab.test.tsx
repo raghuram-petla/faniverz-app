@@ -207,4 +207,59 @@ describe('OverviewTab', () => {
     expect(screen.queryByText('Budget')).toBeNull();
     expect(screen.queryByText('Revenue')).toBeNull();
   });
+
+  it('does not render synopsis when null', () => {
+    const movieNoSynopsis = { ...mockMovie, synopsis: null };
+    render(<OverviewTab movie={movieNoSynopsis} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText(/continuation of Pushpa Raj/)).toBeNull();
+  });
+
+  it('does not render genres when null', () => {
+    const movieNoGenres = { ...mockMovie, genres: null };
+    render(<OverviewTab movie={movieNoGenres} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('Action')).toBeNull();
+    expect(screen.queryByText('Drama')).toBeNull();
+  });
+
+  it('does not render genres when empty array', () => {
+    const movieEmptyGenres = { ...mockMovie, genres: [] };
+    render(<OverviewTab movie={movieEmptyGenres} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('Action')).toBeNull();
+  });
+
+  it('renders production house without logo when logo_url is null', () => {
+    const movieWithPH = {
+      ...mockMovie,
+      productionHouses: [
+        { id: 'ph1', name: 'Mythri', logo_url: null, description: null, created_at: '' },
+      ],
+    };
+    render(<OverviewTab movie={movieWithPH} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('Mythri')).toBeTruthy();
+  });
+
+  it('does not render director when null', () => {
+    const movieNoDir = { ...mockMovie, director: null };
+    render(<OverviewTab movie={movieNoDir} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('Sukumar')).toBeNull();
+  });
+
+  it('does not render certification when null', () => {
+    const movieNoCert = { ...mockMovie, certification: null };
+    render(<OverviewTab movie={movieNoCert} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('UA')).toBeNull();
+  });
+
+  it('does not render MediaSummaryCard when no videos and no posters', () => {
+    const movieNoMedia = { ...mockMovie, videos: [], posters: [] };
+    render(<OverviewTab movie={movieNoMedia} onExploreMedia={onExploreMedia} />);
+    expect(screen.queryByText('Explore All Media')).toBeNull();
+  });
+
+  it('renders both budget and revenue when both > 0', () => {
+    const movieBoth = { ...mockMovie, budget: 50000000, revenue: 200000000 };
+    render(<OverviewTab movie={movieBoth} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('Budget')).toBeTruthy();
+    expect(screen.getByText('Revenue')).toBeTruthy();
+  });
 });

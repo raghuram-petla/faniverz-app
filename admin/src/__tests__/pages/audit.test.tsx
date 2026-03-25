@@ -591,6 +591,426 @@ describe('AuditLogPage', () => {
     mockAuditError = false;
   });
 
+  it('shows plural "entries" when count > 1', () => {
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+        {
+          id: 'audit-2',
+          action: 'create',
+          entity_type: 'movie',
+          entity_id: 'movie-456',
+          entity_display_name: 'RRR',
+          admin_display_name: 'Admin2',
+          admin_email: 'admin2@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: {},
+          created_at: '2025-03-16T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText(/Showing 2 entries/)).toBeInTheDocument();
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('shows impersonating email when display_name is null', () => {
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-imp-email',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Movie',
+          admin_display_name: 'Admin',
+          admin_email: 'admin@example.com',
+          impersonating_role: 'admin',
+          impersonating_display_name: null,
+          impersonating_email: 'imp-email@example.com',
+          details: {},
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText(/imp-email@example.com/)).toBeInTheDocument();
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('shows role label when impersonating has no display_name or email', () => {
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-imp-role',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Movie',
+          admin_display_name: 'Admin',
+          admin_email: 'admin@example.com',
+          impersonating_role: 'admin',
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: {},
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText(/as Admin/)).toBeInTheDocument();
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('shows em dash when entity has no display name and no entity_id', async () => {
+    const auditUtils = await import('@/components/audit/auditUtils');
+    vi.mocked(auditUtils.getEntityDisplayName).mockReturnValue(null);
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-no-id',
+          action: 'delete',
+          entity_type: 'user',
+          entity_id: '',
+          entity_display_name: null,
+          admin_display_name: 'Admin',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: {},
+          created_at: '2025-03-18T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText('—')).toBeInTheDocument();
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('shows admin email only when no display name', () => {
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-email-only',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Movie',
+          admin_display_name: null,
+          admin_email: 'admin-only@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: {},
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText('admin-only@example.com')).toBeInTheDocument();
+    // Should NOT show the sub-email line (only shown when both name AND email exist)
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('uses getEntityDisplayName fallback when entity_display_name is null but details have name', async () => {
+    const auditUtils = await import('@/components/audit/auditUtils');
+    vi.mocked(auditUtils.getEntityDisplayName).mockReturnValue('Details Name');
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-name-from-details',
+          action: 'create',
+          entity_type: 'movie',
+          entity_id: 'movie-789',
+          entity_display_name: null,
+          admin_display_name: 'Admin',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: 'Details Name' },
+          created_at: '2025-03-18T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText('Details Name')).toBeInTheDocument();
+    vi.mocked(auditUtils.getEntityDisplayName).mockReturnValue(null);
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('shows impersonating_role raw string when no display_name, email, or role label found', () => {
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-imp-raw',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Movie',
+          admin_display_name: 'Admin',
+          admin_email: 'admin@example.com',
+          impersonating_role: 'unknown_role_xyz',
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: {},
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText(/as unknown_role_xyz/)).toBeInTheDocument();
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('shows reverted_by_email fallback when reverted_by_display_name is null', async () => {
+    const auditUtils = await import('@/components/audit/auditUtils');
+    vi.mocked(auditUtils.canRevert).mockReturnValue(true);
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-reverted',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Movie',
+          admin_display_name: 'Admin',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: '2025-03-16T10:30:00Z',
+          reverted_by_display_name: null,
+          reverted_by_email: 'reverter@example.com',
+        },
+      ],
+    ];
+    renderWithProviders(<AuditLogPage />);
+    const row = screen.getByText('Movie').closest('tr')!;
+    fireEvent.click(row);
+    // Revert button should be shown
+    expect(screen.getByText('Revert')).toBeInTheDocument();
+    vi.mocked(auditUtils.canRevert).mockReturnValue(false);
+    // Restore
+    mockAuditData.pages = [
+      [
+        {
+          id: 'audit-1',
+          action: 'update',
+          entity_type: 'movie',
+          entity_id: 'movie-123',
+          entity_display_name: 'Pushpa 2',
+          admin_display_name: 'Admin User',
+          admin_email: 'admin@example.com',
+          impersonating_role: null,
+          impersonating_display_name: null,
+          impersonating_email: null,
+          details: { title: { old: 'Old', new: 'New' } },
+          created_at: '2025-03-15T10:30:00Z',
+          reverted_at: null,
+          reverted_by_display_name: null,
+          reverted_by_email: null,
+        },
+      ],
+    ];
+  });
+
+  it('uses non-Error fallback in error display', () => {
+    mockAuditError = true;
+    renderWithProviders(<AuditLogPage />);
+    expect(screen.getByText(/Error loading audit log/)).toBeInTheDocument();
+    mockAuditError = false;
+  });
+
   it('falls back to actionStyles.update for unknown action', () => {
     mockAuditData.pages = [
       [

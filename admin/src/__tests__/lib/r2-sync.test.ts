@@ -290,6 +290,33 @@ describe('maybeUploadImage', () => {
     expect(result).toBeNull();
   });
 
+  it('handles key without file extension', async () => {
+    mockGetR2Client.mockReturnValue({ send: mockSend });
+    const mockHeaders = new Headers();
+    mockHeaders.set('content-type', 'image/jpeg');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: mockHeaders,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(100)),
+      }),
+    );
+
+    const result = await uploadImageFromUrl(
+      'https://image.tmdb.org/t/p/w500/poster',
+      R2_BUCKETS.moviePosters,
+      'noext',
+    );
+
+    expect(result).toBe('noext');
+    // Variants should use 'noext' as baseName with 'jpg' as default ext
+    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ Key: 'noext' }));
+    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ Key: 'noext_sm.jpg' }));
+    expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({ Key: 'noext_md.jpg' }));
+  });
+
   it('constructs sourceUrl using imageBaseUrl and delegates to uploadImageFromUrl', async () => {
     const imageBaseUrl = vi.fn((p: string) => `https://cdn.example.com${p}`);
 

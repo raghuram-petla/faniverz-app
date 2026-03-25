@@ -15,8 +15,9 @@ vi.mock('@/hooks/useImpersonation', () => ({
   useImpersonation: () => mockUseImpersonation(),
 }));
 
+const mockTheme = vi.hoisted(() => ({ current: 'dark' as string | undefined }));
 vi.mock('next-themes', () => ({
-  useTheme: () => ({ theme: 'dark', setTheme: mockSetTheme }),
+  useTheme: () => ({ theme: mockTheme.current, setTheme: mockSetTheme }),
 }));
 
 vi.mock('@/components/layout/Breadcrumb', () => ({
@@ -37,9 +38,11 @@ vi.mock('@/components/users/ImpersonateModal', () => ({
   ),
 }));
 
+const mockGetImageUrl = vi.fn(
+  (_url: string, _size: string, _bucket: string) => `https://cdn.example.com/avatar.jpg`,
+);
 vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: (_url: string, _size: string, _bucket: string) =>
-    `https://cdn.example.com/avatar.jpg`,
+  getImageUrl: (url: string, size: string, bucket: string) => mockGetImageUrl(url, size, bucket),
 }));
 
 vi.mock('@/lib/types', () => ({
@@ -230,6 +233,49 @@ describe('Header', () => {
     fireEvent.click(screen.getByLabelText('User menu'));
     fireEvent.click(screen.getByText('Profile'));
     expect(screen.queryByText('admin@test.com')).toBeNull();
+  });
+
+  it('uses "system" as default when theme is undefined', () => {
+    mockTheme.current = undefined;
+    render(<Header />);
+    fireEvent.click(screen.getByLabelText('User menu'));
+    // "System" theme option should be active
+    const systemBtn = screen.getByLabelText('System theme');
+    expect(systemBtn.className).toContain('bg-surface-card');
+    mockTheme.current = 'dark';
+  });
+
+  it('does not close menu when clicking inside the menu dropdown', () => {
+    render(<Header />);
+    fireEvent.click(screen.getByLabelText('User menu'));
+    expect(screen.getByText('admin@test.com')).toBeTruthy();
+    // Click inside the menu (on the email text) — should not close
+    fireEvent.mouseDown(screen.getByText('admin@test.com'));
+    expect(screen.getByText('admin@test.com')).toBeTruthy();
+  });
+
+  it('falls back to raw avatar_url when getImageUrl returns null', () => {
+    mockGetImageUrl.mockReturnValueOnce(null as unknown as string);
+    mockUseAuth.mockReturnValue({
+      user: { email: 'user@test.com', role: 'admin', avatar_url: '/raw-avatar.jpg' },
+      signOut: mockSignOut,
+    });
+    render(<Header />);
+    const img = screen.getByAltText('Avatar');
+    expect(img).toHaveAttribute('src', '/raw-avatar.jpg');
+  });
+
+  it('falls back to User icon when avatar image fails to load', () => {
+    mockUseAuth.mockReturnValue({
+      user: { email: 'user@test.com', role: 'admin', avatar_url: '/broken.jpg' },
+      signOut: mockSignOut,
+    });
+    render(<Header />);
+    const img = screen.getByAltText('Avatar');
+    // Simulate image error
+    fireEvent.error(img);
+    // After error, the img should be replaced with the User icon
+    expect(screen.queryByAltText('Avatar')).toBeNull();
   });
 
   it('shows "Admin" text fallback when user email is null', () => {

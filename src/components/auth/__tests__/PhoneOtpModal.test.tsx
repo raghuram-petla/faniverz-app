@@ -144,4 +144,70 @@ describe('PhoneOtpModal', () => {
     rerender(<PhoneOtpModal {...defaultProps} error="Invalid OTP" />);
     expect(screen.getByText('Invalid OTP')).toBeTruthy();
   });
+
+  it('does not crash when onSuccess is undefined after successful verification', async () => {
+    render(<PhoneOtpModal {...defaultProps} />);
+    fireEvent.changeText(screen.getByLabelText('Phone number'), '+919876543210');
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.sendOtp'));
+    });
+    fireEvent.changeText(screen.getByLabelText('OTP code'), '123456');
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.verify'));
+    });
+    // onSuccess not provided — should not throw
+    expect(defaultProps.onVerifyOtp).toHaveBeenCalled();
+    expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it('handles onSendOtp rejection gracefully (error surfaced via props)', async () => {
+    const onSendOtp = jest.fn().mockRejectedValue(new Error('Network error'));
+    render(<PhoneOtpModal {...defaultProps} onSendOtp={onSendOtp} />);
+    fireEvent.changeText(screen.getByLabelText('Phone number'), '+919876543210');
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.sendOtp'));
+    });
+    // Should stay on phone step since sendOtp threw
+    expect(screen.getByText('auth.enterPhoneNumber')).toBeTruthy();
+  });
+
+  it('handles onVerifyOtp rejection gracefully (error surfaced via props)', async () => {
+    const onVerifyOtp = jest.fn().mockRejectedValue(new Error('Invalid'));
+    render(<PhoneOtpModal {...defaultProps} onVerifyOtp={onVerifyOtp} />);
+    fireEvent.changeText(screen.getByLabelText('Phone number'), '+919876543210');
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.sendOtp'));
+    });
+    fireEvent.changeText(screen.getByLabelText('OTP code'), '123456');
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.verify'));
+    });
+    // Should not call onClose since verify threw
+    expect(defaultProps.onClose).not.toHaveBeenCalled();
+  });
+
+  it('shows loading indicator on OTP step when isLoading is true', async () => {
+    const { rerender } = render(<PhoneOtpModal {...defaultProps} />);
+    fireEvent.changeText(screen.getByLabelText('Phone number'), '+919876543210');
+    await act(async () => {
+      fireEvent.press(screen.getByText('auth.sendOtp'));
+    });
+    rerender(<PhoneOtpModal {...defaultProps} isLoading={true} />);
+    // When loading on OTP step, verify text is replaced by ActivityIndicator
+    expect(screen.queryByText('auth.verify')).toBeNull();
+  });
+
+  it('validates phone with spaces and parentheses (E.164 with formatting)', () => {
+    render(<PhoneOtpModal {...defaultProps} />);
+    fireEvent.changeText(screen.getByLabelText('Phone number'), '+91 (987) 654-3210');
+    fireEvent.press(screen.getByText('auth.sendOtp'));
+    expect(defaultProps.onSendOtp).toHaveBeenCalledWith('+91 (987) 654-3210');
+  });
+
+  it('rejects phone number that is too short', () => {
+    render(<PhoneOtpModal {...defaultProps} />);
+    fireEvent.changeText(screen.getByLabelText('Phone number'), '+123');
+    fireEvent.press(screen.getByText('auth.sendOtp'));
+    expect(defaultProps.onSendOtp).not.toHaveBeenCalled();
+  });
 });

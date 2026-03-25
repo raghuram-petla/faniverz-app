@@ -31,8 +31,9 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+const mockGetImageUrl = vi.fn((url: string) => url);
 vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: (url: string) => url,
+  getImageUrl: (...args: unknown[]) => mockGetImageUrl(...(args as [string])),
 }));
 
 const mockUseAdminPlatforms = vi.fn();
@@ -265,6 +266,50 @@ describe('PlatformsPage', () => {
     renderWithProviders(<PlatformsPage />);
     fireEvent.click(screen.getByTitle('Delete platform'));
     expect(mockDeleteMutate).not.toHaveBeenCalled();
+  });
+
+  it('handles platforms with null regions gracefully', () => {
+    mockUseAdminPlatforms.mockReturnValue({
+      data: [
+        {
+          id: 'no-regions',
+          name: 'No Regions',
+          logo: 'N',
+          logo_url: null,
+          color: '#000',
+          display_order: 1,
+          tmdb_provider_id: null,
+          regions: null,
+        },
+      ],
+      isLoading: false,
+    });
+    renderWithProviders(<PlatformsPage />);
+    // Should not crash and platform should not match any country
+    expect(screen.getByText(/No platforms/)).toBeInTheDocument();
+  });
+
+  it('renders fallback when getImageUrl returns null', () => {
+    mockGetImageUrl.mockReturnValue(null as unknown as string);
+    mockUseAdminPlatforms.mockReturnValue({
+      data: [
+        {
+          id: 'logo-test',
+          name: 'Logo Test',
+          logo: 'L',
+          logo_url: 'https://original.com/logo.png',
+          color: '#000',
+          display_order: 1,
+          tmdb_provider_id: null,
+          regions: ['IN'],
+        },
+      ],
+      isLoading: false,
+    });
+    renderWithProviders(<PlatformsPage />);
+    const img = screen.getByAltText('Logo Test');
+    // Falls back to the original logo_url
+    expect(img).toHaveAttribute('src', 'https://original.com/logo.png');
   });
 
   it('includes country query param in Add Platform link', () => {

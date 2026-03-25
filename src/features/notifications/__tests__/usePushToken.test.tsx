@@ -309,4 +309,143 @@ describe('usePushToken', () => {
       warnSpy.mockRestore();
     });
   });
+
+  describe('permissions already granted path', () => {
+    it('does not call requestPermissionsAsync when already granted', async () => {
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValueOnce({ status: 'granted' });
+      mockUseAuth.mockReturnValue({ user: { id: 'user-123' } });
+
+      renderHook(() => usePushToken());
+      await flushAsync();
+
+      // Should not need to request since already granted
+      expect(Notifications.requestPermissionsAsync).not.toHaveBeenCalled();
+      expect(mockUpsert).toHaveBeenCalled();
+    });
+  });
+
+  describe('cancelled guard', () => {
+    it('does not upsert if effect is cleaned up before async completes', async () => {
+      // Make AsyncStorage.getItem slow so we can unmount before it resolves
+      let resolveGetItem!: (v: string | null) => void;
+      mockGetItem.mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            resolveGetItem = r;
+          }),
+      );
+      mockUseAuth.mockReturnValue({ user: { id: 'user-A' } });
+
+      const { unmount } = renderHook(() => usePushToken());
+
+      // Unmount triggers cleanup which sets cancelled = true
+      unmount();
+
+      // Now resolve the async storage read - should be cancelled
+      resolveGetItem(null);
+      await flushAsync();
+
+      expect(mockUpsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('edge cases', () => {
+    it('does not upsert when registerForPushNotifications returns null token', async () => {
+      (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({ data: null });
+      mockUseAuth.mockReturnValue({ user: { id: 'user-123' } });
+
+      renderHook(() => usePushToken());
+      await flushAsync();
+
+      expect(mockUpsert).not.toHaveBeenCalled();
+    });
+
+    it('does not deactivate when opted out and getExistingPushToken returns null', async () => {
+      mockGetItem.mockResolvedValue('false');
+      (Notifications.getExpoPushTokenAsync as jest.Mock).mockResolvedValue({ data: null });
+      mockUseAuth.mockReturnValue({ user: { id: 'user-123' } });
+
+      renderHook(() => usePushToken());
+      await flushAsync();
+
+      expect(mockDeactivate).not.toHaveBeenCalled();
+    });
+
+    it('handles Android notification channel setup', async () => {
+      const originalPlatform = require('react-native').Platform.OS;
+      Object.defineProperty(require('react-native').Platform, 'OS', {
+        value: 'android',
+        writable: true,
+      });
+
+      mockUseAuth.mockReturnValue({ user: { id: 'user-123' } });
+
+      renderHook(() => usePushToken());
+      await flushAsync();
+
+      expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith('default', {
+        name: 'Default',
+        importance: Notifications.AndroidImportance.HIGH,
+      });
+
+      Object.defineProperty(require('react-native').Platform, 'OS', {
+        value: originalPlatform,
+        writable: true,
+      });
+    });
+
+    it('cancels opt-out flow on unmount (cancelled guard after getExistingPushToken)', async () => {
+      // Make getPermissionsAsync hang so we can unmount during async
+      let resolvePermissions: ((v: { status: string }) => void) | undefined;
+      (Notifications.getPermissionsAsync as jest.Mock).mockImplementation(
+        () =>
+          new Promise((r) => {
+            resolvePermissions = r;
+          }),
+      );
+      mockGetItem.mockResolvedValue('false');
+      mockUseAuth.mockReturnValue({ user: { id: 'user-cancel' } });
+
+      const { unmount } = renderHook(() => usePushToken());
+      await flushAsync();
+      // Unmount sets cancelled = true
+      unmount();
+      // Now resolve the hanging promise — the cancelled guard should prevent deactivation
+      resolvePermissions?.({ status: 'granted' });
+      await flushAsync();
+      expect(mockDeactivate).not.toHaveBeenCalled();
+    });
+
+    it('cancels registration flow on unmount (cancelled guard after registerForPushNotifications)', async () => {
+      // Make getPermissionsAsync hang so registration stalls
+      let resolvePermissions: ((v: { status: string }) => void) | undefined;
+      (Notifications.getPermissionsAsync as jest.Mock).mockImplementation(
+        () =>
+          new Promise((r) => {
+            resolvePermissions = r;
+          }),
+      );
+      mockGetItem.mockResolvedValue(null); // not opted out — takes registration path
+      mockUseAuth.mockReturnValue({ user: { id: 'user-cancel2' } });
+
+      const { unmount } = renderHook(() => usePushToken());
+      await flushAsync();
+      unmount();
+      resolvePermissions?.({ status: 'granted' });
+      await flushAsync();
+      expect(mockUpsert).not.toHaveBeenCalled();
+    });
+
+    it('does not upsert when registerForPushNotifications returns null token', async () => {
+      // Make registration return null (e.g., permission denied)
+      (Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ status: 'denied' });
+      (Notifications.requestPermissionsAsync as jest.Mock).mockResolvedValue({ status: 'denied' });
+      mockGetItem.mockResolvedValue(null);
+      mockUseAuth.mockReturnValue({ user: { id: 'user-no-token' } });
+
+      renderHook(() => usePushToken());
+      await flushAsync();
+      expect(mockUpsert).not.toHaveBeenCalled();
+    });
+  });
 });

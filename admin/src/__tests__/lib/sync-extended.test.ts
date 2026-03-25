@@ -197,6 +197,56 @@ describe('syncVideos', () => {
     expect(supabase.in).toHaveBeenCalledWith('id', ['stale-id']);
   });
 
+  it('does not count failed video inserts', async () => {
+    const videos: TmdbVideo[] = [
+      { key: 'yt1', site: 'YouTube', type: 'Trailer', name: 'Test', published_at: '' },
+    ];
+
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
+
+    const result = await syncVideos(MOVIE_ID, videos, supabase as unknown as SupabaseClient);
+    // Insert failed, count should be 0
+    expect(result).toBe(0);
+  });
+
+  it('handles null published_at in video date', async () => {
+    const videos: TmdbVideo[] = [
+      {
+        key: 'yt1',
+        site: 'YouTube',
+        type: 'Trailer',
+        name: 'Test',
+        published_at: null as unknown as string,
+      },
+    ];
+
+    const result = await syncVideos(MOVIE_ID, videos, supabase as unknown as SupabaseClient);
+    expect(result).toBe(1);
+    expect(supabase.insert).toHaveBeenCalledWith(expect.objectContaining({ video_date: null }));
+  });
+
+  it('handles null data from stale video cleanup query', async () => {
+    const videos: TmdbVideo[] = [
+      { key: 'yt1', site: 'YouTube', type: 'Trailer', name: 'T', published_at: '' },
+    ];
+
+    // getExisting returns empty
+    supabase.not.mockImplementationOnce(() => ({
+      data: [],
+      error: null,
+    }));
+    // cleanup query returns null
+    supabase.not.mockImplementationOnce(() => ({
+      data: null,
+      error: null,
+    }));
+
+    const result = await syncVideos(MOVIE_ID, videos, supabase as unknown as SupabaseClient);
+    expect(result).toBe(1);
+    // in() should not be called for stale cleanup since null -> []
+    expect(supabase.in).not.toHaveBeenCalledWith('id', expect.anything());
+  });
+
   it('skips all inserts when all videos already exist', async () => {
     const videos: TmdbVideo[] = [
       { key: 'yt1', site: 'YouTube', type: 'Trailer', name: 'A', published_at: '' },
@@ -609,6 +659,80 @@ describe('syncProductionCompanies', () => {
       supabase as unknown as SupabaseClient,
     );
     expect(result).toBe(1);
+  });
+});
+
+describe('syncWatchProviders - movie_platforms insert error', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+  });
+
+  it('does not count when movie_platforms link insert fails', async () => {
+    vi.mocked(getWatchProviders).mockResolvedValue([
+      { provider_id: 532, provider_name: 'Aha', logo_path: '/aha.png' },
+    ]);
+    supabase.maybeSingle
+      .mockResolvedValueOnce({ data: { id: 'aha' }, error: null }) // platform found
+      .mockResolvedValueOnce({ data: null, error: null }); // not already linked
+
+    // Insert fails for movie_platforms link
+    supabase.insert.mockResolvedValueOnce({ error: { message: 'link insert failed' } });
+
+    const result = await syncWatchProviders(
+      MOVIE_ID,
+      999,
+      'key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result).toBe(0);
+  });
+});
+
+describe('syncWatchProviders - platform with logo_path', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+  });
+
+  it('creates platform with logo_url from logo_path', async () => {
+    vi.mocked(getWatchProviders).mockResolvedValue([
+      { provider_id: 999, provider_name: 'New Service', logo_path: '/logo.png' },
+    ]);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    const singleMock = vi.fn().mockResolvedValue({ data: { id: 'new-service-999' }, error: null });
+    const selectAfterInsert = vi.fn().mockReturnValue({ single: singleMock });
+    supabase.insert.mockReturnValueOnce({ select: selectAfterInsert } as never);
+    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const result = await syncWatchProviders(
+      MOVIE_ID,
+      1,
+      'key',
+      supabase as unknown as SupabaseClient,
+    );
+
+    expect(result).toBe(1);
+  });
+});
+
+describe('syncKeywords - null keywords field', () => {
+  let supabase: ReturnType<typeof createMockSupabase>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    supabase = createMockSupabase();
+  });
+
+  it('returns 0 when keywords.keywords is null', async () => {
+    const detail = { keywords: { keywords: null } } as unknown as TmdbMovieDetailExtended;
+    const result = await syncKeywords(MOVIE_ID, detail, supabase as unknown as SupabaseClient);
+    expect(result).toBe(0);
   });
 });
 

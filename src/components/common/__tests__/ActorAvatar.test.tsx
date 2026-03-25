@@ -145,4 +145,137 @@ describe('ActorAvatar', () => {
   it('renders gracefully when actor is undefined', () => {
     expect(() => render(<ActorAvatar actor={undefined} />)).not.toThrow();
   });
+
+  it('uses md photo variant for size between 81 and 160', () => {
+    const actor: Actor = { ...base, photo_url: 'https://pub-abc.r2.dev/photo.jpg' };
+    const views = allViews(render(<ActorAvatar actor={actor} size={120} />));
+    const imgView = views.find(
+      (v) =>
+        (v.props.source as { uri?: string } | undefined)?.uri ===
+        'https://pub-abc.r2.dev/photo_md.jpg',
+    );
+    expect(imgView).toBeTruthy();
+  });
+
+  it('uses lg photo variant for size above 160', () => {
+    const actor: Actor = { ...base, photo_url: 'https://pub-abc.r2.dev/photo.jpg' };
+    const views = allViews(render(<ActorAvatar actor={actor} size={200} />));
+    const imgView = views.find(
+      (v) =>
+        (v.props.source as { uri?: string } | undefined)?.uri ===
+        'https://pub-abc.r2.dev/photo_lg.jpg',
+    );
+    expect(imgView).toBeTruthy();
+  });
+
+  it('renders person-outline for minor with unknown gender (0)', () => {
+    const actor: Actor = { ...base, gender: 0, birth_date: MINOR_DOB };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    expect(views.find((v) => v.props.name === 'person-outline')).toBeTruthy();
+  });
+
+  it('uses default bg for minor with unknown gender', () => {
+    const actor: Actor = { ...base, gender: 0, birth_date: MINOR_DOB };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    // Should use the default background (not minorMale or minorFemale)
+    const bg = views.find(
+      (v) =>
+        (v.props.style as { backgroundColor?: string })?.backgroundColor !== undefined &&
+        (v.props.style as { backgroundColor?: string })?.backgroundColor !== '#1A2F46' &&
+        (v.props.style as { backgroundColor?: string })?.backgroundColor !== '#46151F',
+    );
+    expect(bg).toBeTruthy();
+  });
+
+  it('renders person-outline when actor has no gender and no birth_date', () => {
+    const actor: Actor = { ...base, gender: null, birth_date: null };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    expect(views.find((v) => v.props.name === 'person-outline')).toBeTruthy();
+  });
+
+  it('uses smaller icon size for minor actors', () => {
+    const maleMinor: Actor = { ...base, gender: 2, birth_date: MINOR_DOB };
+    const views = allViews(render(<ActorAvatar actor={maleMinor} size={64} />));
+    // Minor icon size = Math.round(64 * 0.42) = 27
+    expect(views.find((v) => v.props.size === 27)).toBeTruthy();
+  });
+
+  it('uses standard icon size for adult actors', () => {
+    const adultMale: Actor = { ...base, gender: 2, birth_date: ADULT_DOB };
+    const views = allViews(render(<ActorAvatar actor={adultMale} size={64} />));
+    // Adult icon size = Math.round(64 * 0.5) = 32
+    expect(views.find((v) => v.props.size === 32)).toBeTruthy();
+  });
+
+  it('falls back to PLACEHOLDER_AVATAR when getImageUrl returns null', () => {
+    // A null photo_url with an actor that should use image path
+    const actor: Actor = { ...base, photo_url: '' };
+    // Empty string should still attempt to render image branch
+    // but getImageUrl may return null for empty input
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    // Should still render without crashing
+    expect(views.length).toBeGreaterThan(0);
+  });
+
+  it('isMinor returns false when birth_date month difference is exactly 0 but day is same', () => {
+    // Actor born exactly 18 years ago today (edge case for m===0 && now.getDate() < birth.getDate())
+    const now = new Date();
+    const dob18YearsAgo = new Date(now.getFullYear() - 18, now.getMonth(), now.getDate());
+    const actor: Actor = {
+      ...base,
+      gender: 2,
+      birth_date: dob18YearsAgo.toISOString().split('T')[0],
+    };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    // Exactly 18 = not a minor => man-outline
+    expect(views.find((v) => v.props.name === 'man-outline')).toBeTruthy();
+  });
+
+  it('renders correctly with adult female no birth_date (gender=1, no minor check)', () => {
+    const actor: Actor = { ...base, gender: 1, birth_date: null };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    // No birth_date means minor=false, female => woman-outline
+    expect(views.find((v) => v.props.name === 'woman-outline')).toBeTruthy();
+  });
+
+  it('uses light mode background and icon colors when isDark is false', () => {
+    const themeMock = jest.requireMock('@/theme/ThemeContext');
+    const origUseTheme = themeMock.useTheme;
+    const { colors } = require('@shared/colors');
+    const { lightTheme } = require('@shared/themes');
+    themeMock.useTheme = () => ({
+      theme: lightTheme,
+      colors,
+      isDark: false,
+      mode: 'light',
+      setMode: jest.fn(),
+    });
+
+    const actor: Actor = { ...base, gender: 2, birth_date: ADULT_DOB };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    // Should render without crashing using light palette
+    expect(views.find((v) => v.props.name === 'man-outline')).toBeTruthy();
+
+    themeMock.useTheme = origUseTheme;
+  });
+
+  it('uses light mode background for photo url rendering', () => {
+    const themeMock = jest.requireMock('@/theme/ThemeContext');
+    const origUseTheme = themeMock.useTheme;
+    const { colors } = require('@shared/colors');
+    const { lightTheme } = require('@shared/themes');
+    themeMock.useTheme = () => ({
+      theme: lightTheme,
+      colors,
+      isDark: false,
+      mode: 'light',
+      setMode: jest.fn(),
+    });
+
+    const actor: Actor = { ...base, photo_url: 'https://pub-abc.r2.dev/photo.jpg' };
+    const views = allViews(render(<ActorAvatar actor={actor} />));
+    expect(views.length).toBeGreaterThan(0);
+
+    themeMock.useTheme = origUseTheme;
+  });
 });

@@ -3,7 +3,35 @@ import {
   getCategoryLabel,
   getCategoryIconName,
   formatViews,
+  PILLS,
+  CARD_GRADIENTS,
 } from '../surpriseHelpers';
+
+describe('PILLS', () => {
+  it('has 5 pill configs', () => {
+    expect(PILLS).toHaveLength(5);
+  });
+
+  it('first pill is "All" with value "all"', () => {
+    expect(PILLS[0].label).toBe('All');
+    expect(PILLS[0].value).toBe('all');
+  });
+
+  it('every pill has label, value, and activeColor', () => {
+    PILLS.forEach((pill) => {
+      expect(pill.label).toBeTruthy();
+      expect(pill.value).toBeTruthy();
+      expect(pill.activeColor).toBeTruthy();
+    });
+  });
+});
+
+describe('CARD_GRADIENTS', () => {
+  it('is an array of strings', () => {
+    expect(Array.isArray(CARD_GRADIENTS)).toBe(true);
+    CARD_GRADIENTS.forEach((g) => expect(typeof g).toBe('string'));
+  });
+});
 
 describe('getCategoryColor', () => {
   it('returns purple for song', () => {
@@ -47,6 +75,10 @@ describe('getCategoryLabel', () => {
   it('returns "Trailer" for trailer', () => {
     expect(getCategoryLabel('trailer')).toBe('Trailer');
   });
+
+  it('returns raw category string for unknown category', () => {
+    expect(getCategoryLabel('unknown-type' as never)).toBe('unknown-type');
+  });
 });
 
 describe('getCategoryIconName', () => {
@@ -68,6 +100,10 @@ describe('getCategoryIconName', () => {
 
   it('returns play-circle for trailer', () => {
     expect(getCategoryIconName('trailer')).toBe('play-circle');
+  });
+
+  it('returns play for unknown category', () => {
+    expect(getCategoryIconName('unknown-type' as never)).toBe('play');
   });
 });
 

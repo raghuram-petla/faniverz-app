@@ -138,16 +138,51 @@ vi.mock('@/components/movie-edit/SortableCastList', () => ({
         </div>
       ))}
       {items.length >= 2 && (
-        <button
-          onClick={() =>
-            onDragEnd({
-              active: { id: items[0].id },
-              over: { id: items[1].id },
-            })
-          }
-        >
-          Drag
-        </button>
+        <>
+          <button
+            onClick={() =>
+              onDragEnd({
+                active: { id: items[0].id },
+                over: { id: items[1].id },
+              })
+            }
+          >
+            Drag
+          </button>
+          <button
+            onClick={() =>
+              onDragEnd({
+                active: { id: items[0].id },
+                over: { id: items[0].id },
+              })
+            }
+            data-testid="drag-same"
+          >
+            DragSame
+          </button>
+          <button
+            onClick={() =>
+              onDragEnd({
+                active: { id: items[0].id },
+                over: null,
+              })
+            }
+            data-testid="drag-no-over"
+          >
+            DragNoOver
+          </button>
+          <button
+            onClick={() =>
+              onDragEnd({
+                active: { id: 'nonexistent' },
+                over: { id: items[1].id },
+              })
+            }
+            data-testid="drag-invalid"
+          >
+            DragInvalid
+          </button>
+        </>
       )}
     </div>
   ),
@@ -482,6 +517,118 @@ describe('CastSection', () => {
         role_order: 1,
       }),
     );
+  });
+
+  it('does not call onReorder when dragging to same position', () => {
+    const onReorder = vi.fn();
+    const castItems = [
+      makeCast({ id: 'c1', credit_type: 'cast', display_order: 0 }),
+      makeCast({ id: 'c2', credit_type: 'cast', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={castItems} onReorder={onReorder} />);
+    fireEvent.click(screen.getByTestId('drag-same'));
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it('does not call onReorder when over is null', () => {
+    const onReorder = vi.fn();
+    const castItems = [
+      makeCast({ id: 'c1', credit_type: 'cast', display_order: 0 }),
+      makeCast({ id: 'c2', credit_type: 'cast', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={castItems} onReorder={onReorder} />);
+    fireEvent.click(screen.getByTestId('drag-no-over'));
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it('does not call onReorder when active id not found in items', () => {
+    const onReorder = vi.fn();
+    const castItems = [
+      makeCast({ id: 'c1', credit_type: 'cast', display_order: 0 }),
+      makeCast({ id: 'c2', credit_type: 'cast', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={castItems} onReorder={onReorder} />);
+    fireEvent.click(screen.getByTestId('drag-invalid'));
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it('submits crew entry with null role_order when role_order is empty', () => {
+    const onAdd = vi.fn();
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} />);
+
+    // Switch to crew type
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'crew' } });
+
+    // Don't set role_order — leave it empty
+
+    // Select an actor
+    fireEvent.click(screen.getByTestId('select-actor'));
+
+    // Submit
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        credit_type: 'crew',
+        role_order: null, // empty string → null
+      }),
+    );
+  });
+
+  it('submits cast entry with null role_name when empty', () => {
+    const onAdd = vi.fn();
+    render(<CastSection {...defaultProps} showAddForm onAdd={onAdd} />);
+
+    // Select an actor
+    fireEvent.click(screen.getByTestId('select-actor'));
+
+    // Submit without setting role_name
+    fireEvent.submit(screen.getByText('Add Cast / Crew').closest('form')!);
+
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role_name: null, // empty string → null
+      }),
+    );
+  });
+
+  it('does not call onReorder when crew drag to same position', () => {
+    const onReorder = vi.fn();
+    const crewItems = [
+      makeCast({ id: 'cr1', credit_type: 'crew', display_order: 0 }),
+      makeCast({ id: 'cr2', credit_type: 'crew', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={crewItems} onReorder={onReorder} />);
+    fireEvent.click(screen.getByTestId('drag-same'));
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it('does not call onReorder when crew drag has no over', () => {
+    const onReorder = vi.fn();
+    const crewItems = [
+      makeCast({ id: 'cr1', credit_type: 'crew', display_order: 0 }),
+      makeCast({ id: 'cr2', credit_type: 'crew', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={crewItems} onReorder={onReorder} />);
+    fireEvent.click(screen.getByTestId('drag-no-over'));
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it('does not call onReorder when crew drag has invalid active id', () => {
+    const onReorder = vi.fn();
+    const crewItems = [
+      makeCast({ id: 'cr1', credit_type: 'crew', display_order: 0 }),
+      makeCast({ id: 'cr2', credit_type: 'crew', display_order: 1 }),
+    ];
+
+    render(<CastSection {...defaultProps} visibleCast={crewItems} onReorder={onReorder} />);
+    fireEvent.click(screen.getByTestId('drag-invalid'));
+    expect(onReorder).not.toHaveBeenCalled();
   });
 
   it('calls onReorder when crew drag happens', () => {

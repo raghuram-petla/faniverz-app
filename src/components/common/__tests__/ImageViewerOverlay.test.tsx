@@ -465,6 +465,51 @@ describe('ImageViewerOverlay', () => {
     reanimated.useSharedValue.mockImplementation(() => ({ value: 0 }));
   });
 
+  it('animations disabled skips progress bar animation setTimeout', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+    jest.useFakeTimers();
+
+    render(<ImageViewerOverlay {...defaultProps} />);
+    jest.advanceTimersByTime(500);
+    // No crash — the useEffect with animations check returns early
+    expect(screen.getByLabelText('Close image')).toBeTruthy();
+
+    jest.useRealTimers();
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
+  });
+
+  it('handleSwipeDismiss double-dismiss guard prevents second call', () => {
+    let capturedOnDismiss: (() => void) | undefined;
+    jest.requireMock('../ImageViewerGestures').ImageViewerGestures = ({
+      children,
+      onDismiss,
+    }: {
+      children: React.ReactNode;
+      onDismiss: () => void;
+    }) => {
+      capturedOnDismiss = onDismiss;
+      const { View } = require('react-native');
+      return <View testID="gesture-wrapper">{children}</View>;
+    };
+
+    const onClose = jest.fn();
+    render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
+    expect(capturedOnDismiss).toBeDefined();
+    capturedOnDismiss!();
+    capturedOnDismiss!(); // second call should be blocked by closingRef
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    // Restore
+    jest.requireMock('../ImageViewerGestures').ImageViewerGestures = ({
+      children,
+    }: {
+      children: React.ReactNode;
+    }) => {
+      const { View } = require('react-native');
+      return <View testID="gesture-wrapper">{children}</View>;
+    };
+  });
+
   it('swipe dismiss with animations enabled calls animateClose', () => {
     let capturedOnDismiss: (() => void) | undefined;
     jest.requireMock('../ImageViewerGestures').ImageViewerGestures = ({
@@ -532,5 +577,42 @@ describe('ImageViewerOverlay', () => {
       const { View } = require('react-native');
       return <View testID="gesture-wrapper">{children}</View>;
     };
+  });
+
+  it('skips progress bar animation when fullResLoaded is already true (L92 false branch)', () => {
+    jest.useFakeTimers();
+    const { UNSAFE_getAllByType } = render(<ImageViewerOverlay {...defaultProps} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    const fullResImage = images.find(
+      (img: { props: { onLoad?: () => void } }) => img.props.onLoad !== undefined,
+    );
+    // Fire onLoad BEFORE the delay timeout fires — sets fullResLoaded = true
+    if (fullResImage?.props.onLoad) {
+      fullResImage.props.onLoad();
+    }
+    // Now advance timers so the setTimeout fires with fullResLoaded already true
+    jest.advanceTimersByTime(500);
+    // The if (!fullResLoaded) check is false — progress bar never starts
+    expect(screen.getByLabelText('Close image')).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it('covers animations-disabled branch when fullResLoaded transitions to true (L110)', () => {
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => false;
+
+    const { UNSAFE_getAllByType } = render(<ImageViewerOverlay {...defaultProps} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    const fullResImage = images.find(
+      (img: { props: { onLoad?: () => void } }) => img.props.onLoad !== undefined,
+    );
+    // Fire onLoad to set fullResLoaded=true with animations disabled
+    if (fullResImage?.props.onLoad) {
+      fullResImage.props.onLoad();
+    }
+    expect(screen.getByLabelText('Close image')).toBeTruthy();
+
+    jest.requireMock('@/hooks/useAnimationsEnabled').useAnimationsEnabled = () => true;
   });
 });

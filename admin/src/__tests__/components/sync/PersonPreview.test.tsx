@@ -143,4 +143,19 @@ describe('PersonPreview', () => {
     const btn = screen.getByText('Refresh from TMDB').closest('button')!;
     expect(btn).toBeDisabled();
   });
+
+  it('hides close button when onClose is not provided', () => {
+    const result = makePersonResult({ existsInDb: true, existingId: 'actor-1' });
+    render(<PersonPreview result={result} isPending={false} onRefresh={vi.fn()} />);
+    expect(screen.queryByLabelText('Close details')).not.toBeInTheDocument();
+  });
+
+  it('shows spinner in import button when isPending is true', () => {
+    const result = makePersonResult({ existsInDb: false });
+    render(
+      <PersonPreview result={result} isPending={true} onRefresh={vi.fn()} onImport={vi.fn()} />,
+    );
+    const importBtn = screen.getByText('Import Actor').closest('button')!;
+    expect(importBtn).toBeDisabled();
+  });
 });
