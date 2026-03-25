@@ -91,10 +91,12 @@ describe('MovieSearchResults', () => {
     } as ReturnType<typeof langMod.useLanguageContext>);
   });
 
-  it('renders movies count in heading', () => {
+  it('renders Movies heading without count', () => {
     const movies = [makeMovie(), makeMovie({ id: 2, title: 'Movie 2' })];
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
-    expect(screen.getByText(/Movies \(2\)/)).toBeInTheDocument();
+    expect(screen.getByText('Movies')).toBeInTheDocument();
+    // Count shown as plain text when no language restriction
+    expect(screen.getByText('(2)')).toBeInTheDocument();
   });
 
   it('renders each movie title', () => {
@@ -240,9 +242,9 @@ describe('MovieSearchResults', () => {
     const movies = [makeMovie()];
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
 
-    expect(screen.getByText('All languages')).toBeInTheDocument();
-    // "My languages" button should be present
-    expect(screen.getByText('My languages')).toBeInTheDocument();
+    expect(screen.getByText(/All \(\d+\)/)).toBeInTheDocument();
+    // "My languages" button should be present with count
+    expect(screen.getByText(/My languages \(\d+\)/)).toBeInTheDocument();
   });
 
   it('does not show language filter toggle when no restriction', () => {
@@ -253,7 +255,7 @@ describe('MovieSearchResults', () => {
     expect(screen.queryByText('All languages')).not.toBeInTheDocument();
   });
 
-  it('shows language label from LANGUAGE_OPTIONS when selectedLanguageCode is set', async () => {
+  it('shows language label with count when selectedLanguageCode is set', async () => {
     const { useLanguageContext } = await import('@/hooks/useLanguageContext');
     vi.mocked(useLanguageContext).mockReturnValue({
       selectedLanguageCode: 'te',
@@ -262,10 +264,10 @@ describe('MovieSearchResults', () => {
     const movies = [makeMovie()];
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
 
-    expect(screen.getByText('Telugu')).toBeInTheDocument();
+    expect(screen.getByText(/Telugu \(\d+\)/)).toBeInTheDocument();
   });
 
-  it('shows "My languages" label when no selectedLanguageCode but has languageCodes', async () => {
+  it('shows "My languages" label with count when no selectedLanguageCode but has languageCodes', async () => {
     const { usePermissions } = await import('@/hooks/usePermissions');
     vi.mocked(usePermissions).mockReturnValue({
       isReadOnly: false,
@@ -280,10 +282,10 @@ describe('MovieSearchResults', () => {
     const movies = [makeMovie()];
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
 
-    expect(screen.getByText('My languages')).toBeInTheDocument();
+    expect(screen.getByText(/My languages \(\d+\)/)).toBeInTheDocument();
   });
 
-  it('shows "Not your language" badge for language-blocked movies', async () => {
+  it('shows "Not your language" badge for language-blocked movies when "All languages" is active', async () => {
     const { usePermissions } = await import('@/hooks/usePermissions');
     vi.mocked(usePermissions).mockReturnValue({
       isReadOnly: false,
@@ -297,10 +299,13 @@ describe('MovieSearchResults', () => {
     const movies = [makeMovie({ original_language: 'en' })]; // English is blocked
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
 
+    // Default is filtered to selected language — switch to "All" to see blocked movies
+    fireEvent.click(screen.getByText(/All \(\d+\)/));
+
     expect(screen.getByText('Not your language')).toBeInTheDocument();
   });
 
-  it('filters movies when language filter is toggled on', async () => {
+  it('defaults to selected language filter and shows all when toggled off', async () => {
     const { useLanguageContext } = await import('@/hooks/useLanguageContext');
     vi.mocked(useLanguageContext).mockReturnValue({
       selectedLanguageCode: 'te',
@@ -312,13 +317,15 @@ describe('MovieSearchResults', () => {
     ];
     render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
 
-    // Click Telugu filter
-    const teluguBtn = screen.getByText('Telugu');
-    fireEvent.click(teluguBtn);
+    // Default: filterByLanguage=true — English movie should be hidden
+    expect(screen.queryByText('English Movie')).not.toBeInTheDocument();
+    expect(screen.getByText('Telugu Movie')).toBeInTheDocument();
 
-    // English movie should be hidden (it's blocked by language filter)
+    // Click "All" to show all
+    fireEvent.click(screen.getByText(/All \(\d+\)/));
+
     await waitFor(() => {
-      expect(screen.queryByText('English Movie')).not.toBeInTheDocument();
+      expect(screen.getByText('English Movie')).toBeInTheDocument();
     });
   });
 

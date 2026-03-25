@@ -42,7 +42,11 @@ export function MovieSearchResults({
   const canImportMovie = (lang: string | undefined) =>
     !hasLanguageRestriction || (lang ? activeLanguageFilter.includes(lang) : true);
 
-  const [filterByLanguage, setFilterByLanguage] = useState(false);
+  // @contract Default to showing only selected language; toggle switches to all supported languages
+  const [filterByLanguage, setFilterByLanguage] = useState(true);
+  const filteredCount = hasLanguageRestriction
+    ? movies.filter((m) => canImportMovie(m.original_language)).length
+    : movies.length;
   const visibleMovies =
     filterByLanguage && hasLanguageRestriction
       ? movies.filter((m) => canImportMovie(m.original_language))
@@ -137,25 +141,14 @@ export function MovieSearchResults({
       <div className="flex items-center flex-wrap gap-3">
         <h3 className="text-sm font-semibold text-on-surface flex items-center gap-2">
           <Film className="w-4 h-4 text-status-blue" />
-          Movies ({visibleMovies.length}
-          {filterByLanguage && hasLanguageRestriction ? `/${movies.length}` : ''})
+          Movies
         </h3>
-        {/* @contract Segmented toggle — "All languages | Telugu" — shown when language restriction is active */}
+        {/* @contract Segmented toggle with counts — "Telugu (3) | All (5)" — defaults to selected language */}
         {hasLanguageRestriction && (
           <div className="inline-flex rounded-lg border border-outline overflow-hidden text-xs font-medium">
             <button
-              onClick={() => setFilterByLanguage(false)}
-              className={`px-3 py-1 transition-colors ${
-                !filterByLanguage
-                  ? 'bg-red-600 text-white'
-                  : 'text-on-surface-muted hover:text-on-surface hover:bg-input'
-              }`}
-            >
-              All languages
-            </button>
-            <button
               onClick={() => setFilterByLanguage(true)}
-              className={`px-3 py-1 border-l border-outline transition-colors ${
+              className={`px-3 py-1 transition-colors ${
                 filterByLanguage
                   ? 'bg-red-600 text-white'
                   : 'text-on-surface-muted hover:text-on-surface hover:bg-input'
@@ -163,9 +156,24 @@ export function MovieSearchResults({
             >
               {selectedLanguageCode
                 ? (langName(selectedLanguageCode) ?? selectedLanguageCode)
-                : 'My languages'}
+                : 'My languages'}{' '}
+              ({filteredCount})
+            </button>
+            <button
+              onClick={() => setFilterByLanguage(false)}
+              className={`px-3 py-1 border-l border-outline transition-colors ${
+                !filterByLanguage
+                  ? 'bg-red-600 text-white'
+                  : 'text-on-surface-muted hover:text-on-surface hover:bg-input'
+              }`}
+            >
+              All ({movies.length})
             </button>
           </div>
+        )}
+        {/* @contract Show plain count when no language restriction (no toggle visible) */}
+        {!hasLanguageRestriction && (
+          <span className="text-xs text-on-surface-muted">({movies.length})</span>
         )}
         {newMovies.length > 0 && (
           <button

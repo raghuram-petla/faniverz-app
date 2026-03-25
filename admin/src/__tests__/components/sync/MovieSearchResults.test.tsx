@@ -95,9 +95,10 @@ beforeEach(() => {
 });
 
 describe('MovieSearchResults', () => {
-  it('renders movie count heading', () => {
+  it('renders Movies heading with plain count when no restriction', () => {
     render(<MovieSearchResults {...defaultProps} />);
-    expect(screen.getByText(/Movies \(3/)).toBeInTheDocument();
+    expect(screen.getByText('Movies')).toBeInTheDocument();
+    expect(screen.getByText('(3)')).toBeInTheDocument();
   });
 
   it('renders movie titles', () => {
@@ -191,11 +192,11 @@ describe('MovieSearchResults', () => {
     expect(screen.getByText('No date')).toBeInTheDocument();
   });
 
-  it('shows language filter toggle when language restriction active', () => {
+  it('shows language filter toggle with counts when language restriction active', () => {
     mockSelectedLanguageCode.current = 'te';
     render(<MovieSearchResults {...defaultProps} />);
-    expect(screen.getByText('All languages')).toBeInTheDocument();
-    expect(screen.getByText('Telugu')).toBeInTheDocument();
+    expect(screen.getByText(/All \(\d+\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Telugu \(\d+\)/)).toBeInTheDocument();
   });
 
   it('does not show language filter when no restriction', () => {
@@ -203,9 +204,11 @@ describe('MovieSearchResults', () => {
     expect(screen.queryByText('All languages')).not.toBeInTheDocument();
   });
 
-  it('shows "Not your language" badge for blocked movies', () => {
+  it('shows "Not your language" badge for blocked movies when "All languages" active', () => {
     mockSelectedLanguageCode.current = 'ta';
     render(<MovieSearchResults {...defaultProps} />);
+    // Default is filtered to selected language — switch to "All" to see blocked movies
+    fireEvent.click(screen.getByText(/All \(\d+\)/));
     // All movies are 'te' but filter is 'ta', so they should be blocked
     expect(screen.getAllByText('Not your language').length).toBe(3);
   });

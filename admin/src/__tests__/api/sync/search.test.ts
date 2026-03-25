@@ -27,14 +27,20 @@ vi.mock('@/lib/sync-helpers', () => ({
 }));
 
 const mockIsNull = vi.fn();
+const mockLanguagesSelect = vi.fn();
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
-    from: () => ({
-      select: () => ({
-        in: mockSelectIn,
-        is: () => ({ in: mockIsNull }),
-      }),
-    }),
+    from: (table: string) => {
+      if (table === 'languages') {
+        return { select: () => mockLanguagesSelect() };
+      }
+      return {
+        select: () => ({
+          in: mockSelectIn,
+          is: () => ({ in: mockIsNull }),
+        }),
+      };
+    },
   }),
 }));
 
@@ -55,7 +61,12 @@ describe('POST /api/sync/search', () => {
     mockSearchPersons.mockReset();
     mockSelectIn.mockReset();
     mockIsNull.mockReset();
+    mockLanguagesSelect.mockReset();
     mockIsNull.mockResolvedValue({ data: [] });
+    // @contract Default: supported languages = te, hi — filters out unsupported languages
+    mockLanguagesSelect.mockResolvedValue({
+      data: [{ code: 'te' }, { code: 'hi' }, { code: 'en' }],
+    });
 
     mockVerifyAdmin.mockResolvedValue({ id: 'user-1', email: 'admin@test.com' });
     mockEnsureTmdbApiKey.mockReturnValue({ ok: true, apiKey: 'test-tmdb-key' });
@@ -128,5 +139,39 @@ describe('POST /api/sync/search', () => {
     // No type in body — should still work
     const res = await POST(makeRequest({ query: 'test query' }));
     expect(res.status).toBe(200);
+  });
+
+  it('filters out movies in unsupported languages', async () => {
+    mockLanguagesSelect.mockResolvedValue({ data: [{ code: 'te' }, { code: 'hi' }] });
+    mockSearchMovies.mockResolvedValue([
+      { id: 100, title: 'Telugu Movie', original_language: 'te' },
+      { id: 200, title: 'French Movie', original_language: 'fr' },
+      { id: 300, title: 'Hindi Movie', original_language: 'hi' },
+    ]);
+    mockSearchPersons.mockResolvedValue([]);
+    mockSelectIn.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: [] });
+
+    const res = await POST(makeRequest({ query: 'test movie' }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+
+    // French movie should be filtered out
+    expect(data.movies.results).toHaveLength(2);
+    expect(data.movies.results.map((m: { id: number }) => m.id)).toEqual([100, 300]);
+  });
+
+  it('returns all movies when no supported languages in DB', async () => {
+    mockLanguagesSelect.mockResolvedValue({ data: [] });
+    mockSearchMovies.mockResolvedValue([
+      { id: 100, title: 'Movie A', original_language: 'te' },
+      { id: 200, title: 'Movie B', original_language: 'fr' },
+    ]);
+    mockSearchPersons.mockResolvedValue([]);
+    mockSelectIn.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({ data: [] });
+
+    const res = await POST(makeRequest({ query: 'test' }));
+    const data = await res.json();
+
+    expect(data.movies.results).toHaveLength(2);
   });
 });

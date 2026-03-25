@@ -34,12 +34,24 @@ export async function POST(request: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
+    // @contract Fetch supported language codes from DB — used to filter search results
+    const { data: supportedLangs } = await supabase.from('languages').select('code');
+    const supportedCodes = new Set((supportedLangs ?? []).map((l) => l.code as string));
+
     // @sideeffect parallel TMDB API calls for movies + persons
     // @nullable language — when provided, filters movies by original_language
-    const [movieResults, personResults] = await Promise.all([
+    const [allMovieResults, personResults] = await Promise.all([
       searchMovies(query, tmdb.apiKey, language || undefined),
       searchPersons(query, tmdb.apiKey),
     ]);
+
+    // @contract Filter movie results to only supported languages
+    const movieResults =
+      supportedCodes.size > 0
+        ? allMovieResults.filter(
+            (m) => !m.original_language || supportedCodes.has(m.original_language),
+          )
+        : allMovieResults;
 
     // @sideeffect parallel DB lookups to mark existing items
     const movieTmdbIds = movieResults.map((m) => m.id);
