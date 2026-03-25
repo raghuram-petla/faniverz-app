@@ -409,9 +409,12 @@ const x = condition ? trueVal : /* istanbul ignore next */ falseVal;
 /* istanbul ignore next */
 const style = useAnimatedStyle(() => { ... });
 
-// ✅ CORRECT — implicit else branch
+// ✅ CORRECT — implicit else branch (when the `if` is always true)
 /* istanbul ignore else */
 if (condition) { ... }
+
+// ✅ CORRECT — guard clause with early return
+if /* istanbul ignore next */ (!item) return;
 
 // ❌ WRONG — separate line before ?? (doesn't cover the ?? branch)
 /* istanbul ignore next */
@@ -426,20 +429,67 @@ const x = value ?? fallback;
 
 **V8 coverage ignores are line-based, not AST-based.** `/* v8 ignore next */` does NOT reliably work with TypeScript compilation + source maps. Use start/stop ranges instead.
 
+**IMPORTANT: Do NOT use `@vitest/coverage-istanbul` — it has a known aggregation bug where ignore comments work per-file but get stripped during full-suite coverage merging. Always use the default V8 provider.**
+
 ```typescript
-// ✅ CORRECT — start/stop range
+// ✅ CORRECT — start/stop range covering the FULL block body
 /* v8 ignore start -- reason */
-const x = value ?? fallback;
+if (condition) {
+  doSomething();  // ← must be INSIDE the range, not just the `if`
+}
 /* v8 ignore stop */
 
-// ✅ CORRECT — in JSX (.tsx files, use JSX comment syntax)
+// ✅ CORRECT — in JSX (.tsx files, use JSX comment syntax for start/stop)
 {/* v8 ignore start -- reason */}
 {condition && <Component />}
 {/* v8 ignore stop */}
 
+// ✅ CORRECT — inline expressions
+/* v8 ignore start */
+const x = value ?? fallback;
+/* v8 ignore stop */
+
+// ❌ WRONG — only wrapping the condition, not the body (S/F/L still uncovered)
+/* v8 ignore start */
+if (condition) {
+/* v8 ignore stop */
+  doSomething();  // ← this line is NOT ignored!
+}
+
+// ❌ WRONG — bare JS comment inside JSX content (renders as literal text!)
+<button>
+  /* v8 ignore start */    ← appears as visible text in the DOM
+  {uploading ? 'Uploading...' : 'Photo'}
+  /* v8 ignore stop */
+</button>
+
 // ❌ WRONG — v8 ignore next (unreliable with TS compilation)
 /* v8 ignore next */
 const x = value ?? fallback;
+```
+
+### Phantom `else` branches (V8-specific)
+
+V8 creates phantom branch entries for `if` statements without explicit `else` blocks. Two fixes:
+
+**Option 1 — Wrap the entire `if` block with v8 ignore (preferred):**
+
+```typescript
+/* v8 ignore start */
+if (condition) {
+  doSomething();
+}
+/* v8 ignore stop */
+```
+
+**Option 2 — Add explicit empty `else` (when option 1 doesn't work):**
+
+```typescript
+if (condition) {
+  doSomething();
+} /* v8 ignore start */ else {
+  /* noop */
+} /* v8 ignore stop */
 ```
 
 ### Testing Platform.OS branches (ALWAYS test, never ignore)
@@ -468,6 +518,57 @@ it('uses undefined behavior on Android', () => {
   Platform.OS = 'ios'; // restore
 });
 ```
+
+### Coverage config exclusions
+
+Ensure coverage collection excludes files that are exempt from testing. Files that appear in coverage reports at 0% drag down the totals.
+
+**Mobile (`jest.config.js` → `collectCoverageFrom`):**
+
+```javascript
+collectCoverageFrom: [
+  'src/**/*.{ts,tsx}',
+  'app/**/*.{ts,tsx}',
+  '!**/*.d.ts',
+  '!**/node_modules/**',
+  '!src/types/**',
+  '!**/index.ts',
+  '!**/*.styles.ts',          // style files — no logic
+  '!src/theme/colors.ts',     // constants file — no logic
+  '!src/components/profile/settingsTypes.ts', // type-only
+],
+```
+
+**Admin (`vitest.config.ts` → `test.coverage.exclude`):**
+
+```typescript
+coverage: {
+  provider: 'v8',  // NEVER use 'istanbul' — aggregation bug
+  exclude: [
+    'src/__tests__/**',         // test utilities
+    'src/app/globals.css',      // CSS file
+    'src/lib/variant-config.ts', // config constants
+  ],
+},
+```
+
+### Per-file coverage technique
+
+When fixing stubborn branches, run coverage on a SINGLE test file to see exact uncovered lines — much faster than a full suite run:
+
+**Mobile:**
+
+```bash
+npx jest <test-file> --forceExit --maxWorkers=2 --coverage --collectCoverageFrom='<source-file>'
+```
+
+**Admin:**
+
+```bash
+cd admin && npx vitest run <test-file> --maxWorkers=2 --coverage --coverage.include='<source-file>'
+```
+
+This shows the "Uncovered Line #s" column which tells you exactly which lines to target.
 
 ## Rules
 
