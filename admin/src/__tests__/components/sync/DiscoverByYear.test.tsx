@@ -70,6 +70,7 @@ const makeExisting = (tmdb_id: number, title: string) => ({
   revenue: null,
   certification: null,
   spoken_languages: null,
+  release_date: null,
 });
 
 const makeData = (

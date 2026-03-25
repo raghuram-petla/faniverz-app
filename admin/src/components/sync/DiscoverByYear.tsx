@@ -154,6 +154,7 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
                 revenue: null,
                 certification: null,
                 spoken_languages: null,
+                release_date: tmdb?.release_date ?? null,
               };
             });
             setImportedMovieData((prev) => [...prev, ...newExisting]);
