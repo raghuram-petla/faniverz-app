@@ -58,38 +58,42 @@ export default function ValidationsPage() {
   const handleFixSingle = useCallback(
     async (item: ScanResult) => {
       if (!hasIssue(item)) return;
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      // @edge: throw early if session expired — avoids sending "Bearer undefined"
-      if (!session?.access_token) throw new Error('Session expired — please sign in again.');
-      const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      };
-      // @edge: check res.ok to surface fix failures instead of silently succeeding
-      const res = await fetch('/api/validations/fix', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          items: [
-            {
-              id: item.id,
-              entity: item.entity,
-              field: item.field,
-              currentUrl: item.currentUrl,
-              fixType: item.urlType === 'external' ? 'migrate_external' : 'regenerate_variants',
-              tmdbId: item.tmdbId ?? undefined,
-            },
-          ],
-        }),
-      });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error ?? `Fix failed: ${res.status}`);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        // @edge: throw early if session expired — avoids sending "Bearer undefined"
+        if (!session?.access_token) throw new Error('Session expired — please sign in again.');
+        const headers = {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        };
+        // @edge: check res.ok to surface fix failures instead of silently succeeding
+        const res = await fetch('/api/validations/fix', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            items: [
+              {
+                id: item.id,
+                entity: item.entity,
+                field: item.field,
+                currentUrl: item.currentUrl,
+                fixType: item.urlType === 'external' ? 'migrate_external' : 'regenerate_variants',
+                tmdbId: item.tmdbId ?? undefined,
+              },
+            ],
+          }),
+        });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.error ?? `Fix failed: ${res.status}`);
+        }
+        // Re-scan to see updated state
+        if (scanProgress?.entity) await startScan(scanProgress.entity);
+      } catch (err) {
+        console.error('[ValidationsPage] fix failed:', err);
       }
-      // Re-scan to see updated state
-      if (scanProgress?.entity) await startScan(scanProgress.entity);
     },
     [scanProgress, startScan],
   );

@@ -37,9 +37,9 @@ vi.mock('@/components/sync/FieldDiffPanel', () => ({
 }));
 
 vi.mock('@/components/sync/syncHelpers', () => ({
-  applyTmdbFields: (movie: object, _tmdb: unknown, fields: string[]) => ({
-    ...movie,
-    _appliedFields: fields,
+  applyTmdbFields: (movie: object, tmdb: unknown, fields: string[]) => ({
+    movie: { ...movie, _appliedFields: fields },
+    tmdb,
   }),
 }));
 

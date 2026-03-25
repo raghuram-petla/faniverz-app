@@ -367,19 +367,24 @@ describe('ValidationsPage', () => {
   });
 
   describe('handleFixSingle — error cases', () => {
-    it('throws when session is expired', async () => {
+    it('logs error when session is expired', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetSession.mockResolvedValue({
         data: { session: null },
         error: null,
       });
 
       renderWithProviders(<ValidationsPage />);
-      // The fix-single button will call handleFixSingle which should throw
       fireEvent.click(screen.getByTestId('fix-single'));
-      // The error will be caught internally — no crash
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('[ValidationsPage] fix failed:', expect.any(Error));
+      });
+      consoleSpy.mockRestore();
     });
 
-    it('throws when fix API returns non-ok response', async () => {
+    it('logs error when fix API returns non-ok response', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
@@ -388,10 +393,15 @@ describe('ValidationsPage', () => {
 
       renderWithProviders(<ValidationsPage />);
       fireEvent.click(screen.getByTestId('fix-single'));
-      // Error thrown but caught — component doesn't crash
+
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('[ValidationsPage] fix failed:', expect.any(Error));
+      });
+      consoleSpy.mockRestore();
     });
 
     it('handles json parse failure on error response gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
@@ -401,9 +411,10 @@ describe('ValidationsPage', () => {
       renderWithProviders(<ValidationsPage />);
       fireEvent.click(screen.getByTestId('fix-single'));
 
-      // The .catch(() => ({})) handles the JSON parse failure
-      // handleFixSingle's throw produces an unhandled rejection — expected
-      await new Promise((r) => setTimeout(r, 50));
+      await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('[ValidationsPage] fix failed:', expect.any(Error));
+      });
+      consoleSpy.mockRestore();
     });
 
     it('uses regenerate_variants fixType for non-external URLs', async () => {
