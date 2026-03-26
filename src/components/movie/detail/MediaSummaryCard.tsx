@@ -37,8 +37,7 @@ export function MediaSummaryCard({ videos, posters, onExploreMedia }: MediaSumma
   const { posterCount, backdropCount } = posters.reduce(
     (acc, p) => {
       if (p.image_type === 'poster') acc.posterCount++;
-      else if (p.image_type === 'backdrop')
-        /* istanbul ignore next -- image_type is always poster or backdrop */ acc.backdropCount++;
+      else if (p.image_type === 'backdrop') acc.backdropCount++;
       return acc;
     },
     { posterCount: 0, backdropCount: 0 },

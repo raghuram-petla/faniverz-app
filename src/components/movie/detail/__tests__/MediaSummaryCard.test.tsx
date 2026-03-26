@@ -211,6 +211,15 @@ describe('MediaSummaryCard', () => {
     expect(screen.getByLabelText('1 Video — Explore all media')).toBeTruthy();
   });
 
+  it('ignores unknown image_type entries in poster count', () => {
+    const posters = [
+      makePoster({ id: 'p1', image_type: 'poster' }),
+      makePoster({ id: 'x1', image_type: 'unknown' as 'poster' }),
+    ];
+    render(<MediaSummaryCard videos={[]} posters={posters} onExploreMedia={onExploreMedia} />);
+    expect(screen.getByText('1 Poster')).toBeTruthy();
+  });
+
   it('uses singular "Backdrop" for single backdrop', () => {
     const posters = [makePoster({ id: 'b1', image_type: 'backdrop' })];
     render(<MediaSummaryCard videos={[]} posters={posters} onExploreMedia={onExploreMedia} />);
