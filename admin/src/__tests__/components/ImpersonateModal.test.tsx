@@ -81,14 +81,15 @@ describe('ImpersonateModal', () => {
     expect(screen.getByText('Admin')).toBeInTheDocument();
   });
 
-  it('shows role selector with Admin and PH Admin options when no targetUser', () => {
+  it('shows role selector with Admin, PH Admin, and Viewer options when no targetUser', () => {
     render(<ImpersonateModal targetUser={null} onClose={onClose} />);
     const select = screen.getByRole('combobox');
     expect(select).toBeInTheDocument();
     const options = screen.getAllByRole('option');
-    expect(options).toHaveLength(2);
+    expect(options).toHaveLength(3);
     expect(options[0]).toHaveTextContent('Admin');
     expect(options[1]).toHaveTextContent('PH Admin');
+    expect(options[2]).toHaveTextContent('Viewer');
   });
 
   it('calls startImpersonation with target user ID when clicking Start', async () => {
@@ -139,19 +140,21 @@ describe('ImpersonateModal', () => {
     mockRealUser = { role: 'root' };
     render(<ImpersonateModal targetUser={null} onClose={onClose} />);
     const options = screen.getAllByRole('option');
-    expect(options).toHaveLength(3);
+    expect(options).toHaveLength(4);
     expect(options[0]).toHaveTextContent('Super Admin');
     expect(options[1]).toHaveTextContent('Admin');
     expect(options[2]).toHaveTextContent('PH Admin');
+    expect(options[3]).toHaveTextContent('Viewer');
   });
 
   it('does not show Super Admin option when real user is super_admin', () => {
     mockRealUser = { role: 'super_admin' };
     render(<ImpersonateModal targetUser={null} onClose={onClose} />);
     const options = screen.getAllByRole('option');
-    expect(options).toHaveLength(2);
+    expect(options).toHaveLength(3);
     expect(options[0]).toHaveTextContent('Admin');
     expect(options[1]).toHaveTextContent('PH Admin');
+    expect(options[2]).toHaveTextContent('Viewer');
   });
 
   it('shows error message when production houses fetch fails', async () => {

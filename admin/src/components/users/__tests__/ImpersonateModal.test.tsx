@@ -240,6 +240,31 @@ describe('ImpersonateModal', () => {
     expect(values).not.toContain('super_admin');
   });
 
+  it('shows viewer option in role dropdown', () => {
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    const select = screen.getByRole('combobox');
+    const options = Array.from(select.querySelectorAll('option'));
+    const values = options.map((o) => o.getAttribute('value'));
+    expect(values).toContain('viewer');
+  });
+
+  it('enables button when viewer role is selected', () => {
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'viewer' } });
+    const btn = screen.getByText('Start Impersonating').closest('button')!;
+    expect(btn).not.toBeDisabled();
+  });
+
+  it('calls startRoleImpersonation with viewer role', async () => {
+    mockStartRoleImpersonation.mockResolvedValue(undefined);
+    render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'viewer' } });
+    fireEvent.click(screen.getByText('Start Impersonating'));
+    await waitFor(() => {
+      expect(mockStartRoleImpersonation).toHaveBeenCalledWith('viewer', []);
+    });
+  });
+
   it('enables button when super_admin role is selected', () => {
     mockRealUser.mockReturnValue({ role: 'root' });
     render(<ImpersonateModal targetUser={null} onClose={mockOnClose} />);
