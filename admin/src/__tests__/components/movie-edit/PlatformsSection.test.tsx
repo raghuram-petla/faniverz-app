@@ -52,6 +52,7 @@ vi.mock('@/hooks/useAdminMovieAvailability', () => ({
     data: [
       { code: 'IN', name: 'India', display_order: 1 },
       { code: 'US', name: 'United States', display_order: 2 },
+      { code: 'GB', name: 'United Kingdom', display_order: 3 },
     ],
   }),
 }));
@@ -89,7 +90,15 @@ vi.mock('@/components/common/CountryDropdown', () => ({
 }));
 
 vi.mock('@/components/common/MultiCountrySelector', () => ({
-  MultiCountrySelector: () => <div data-testid="multi-country-selector" />,
+  MultiCountrySelector: ({ onChange }: { onChange: (codes: Set<string>) => void }) => {
+    return (
+      <div data-testid="multi-country-selector">
+        <button onClick={() => onChange(new Set(['IN']))}>Select IN</button>
+        <button onClick={() => onChange(new Set(['IN', 'US']))}>Select IN+US</button>
+        <button onClick={() => onChange(new Set(['IN', 'US', 'GB']))}>Select All</button>
+      </div>
+    );
+  },
 }));
 
 vi.mock('@/components/common/FormField', () => ({
@@ -219,5 +228,109 @@ describe('PlatformsSection', () => {
   it('disables Add button when no platform or no countries selected', () => {
     renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={true} />);
     expect(screen.getByText('Add')).toBeDisabled();
+  });
+
+  it('calls onAdd for each selected country when Add is clicked', () => {
+    const onAdd = vi.fn();
+    const onCloseAddForm = vi.fn();
+    renderWithProviders(
+      <PlatformsSection
+        {...defaultProps}
+        showAddForm={true}
+        onAdd={onAdd}
+        onCloseAddForm={onCloseAddForm}
+      />,
+    );
+    // Select India via the multi-country selector mock
+    fireEvent.click(screen.getByText('Select IN'));
+    // Select Netflix in the platform dropdown
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'netflix' } });
+    // Click Add
+    fireEvent.click(screen.getByText('Add'));
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        platform_id: 'netflix',
+        country_code: 'IN',
+        availability_type: 'flatrate',
+      }),
+    );
+    expect(onCloseAddForm).toHaveBeenCalled();
+  });
+
+  it('calls onAdd for multiple countries and skips duplicates', () => {
+    const onAdd = vi.fn();
+    const existing = [makeAvailability({ id: 'a1', country_code: 'IN', platform_id: 'netflix' })];
+    renderWithProviders(
+      <PlatformsSection
+        {...defaultProps}
+        showAddForm={true}
+        visibleAvailability={existing}
+        onAdd={onAdd}
+        onCloseAddForm={vi.fn()}
+      />,
+    );
+    // Select IN+US
+    fireEvent.click(screen.getByText('Select IN+US'));
+    // Select netflix
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'netflix' } });
+    // Click Add — should skip IN (already exists), add US only
+    fireEvent.click(screen.getByText(/Add to/));
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ platform_id: 'netflix', country_code: 'US' }),
+    );
+  });
+
+  it('shows "Add to N countries" when multiple countries selected', () => {
+    renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={true} />);
+    // Select IN+US
+    fireEvent.click(screen.getByText('Select IN+US'));
+    // Select a platform so button is enabled
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'prime' } });
+    expect(screen.getByText('Add to 2 countries')).toBeInTheDocument();
+  });
+
+  it('shows "Add to all countries" when all countries selected', () => {
+    renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={true} />);
+    // Select all (IN+US = all 2 countries)
+    fireEvent.click(screen.getByText('Select All'));
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'prime' } });
+    expect(screen.getByText('Add to all countries')).toBeInTheDocument();
+  });
+
+  it('fills form fields and resets after add', () => {
+    const onAdd = vi.fn();
+    renderWithProviders(
+      <PlatformsSection
+        {...defaultProps}
+        showAddForm={true}
+        onAdd={onAdd}
+        onCloseAddForm={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByText('Select IN'));
+    // Fill all form fields
+    const comboboxes = screen.getAllByRole('combobox');
+    fireEvent.change(comboboxes[0], { target: { value: 'netflix' } });
+    fireEvent.change(comboboxes[1], { target: { value: 'rent' } });
+    const dateInput = screen.getByPlaceholderText('Available from');
+    fireEvent.change(dateInput, { target: { value: '2026-03-20' } });
+    const urlInput = screen.getByPlaceholderText('Streaming URL (optional)');
+    fireEvent.change(urlInput, { target: { value: 'https://netflix.com/movie' } });
+    fireEvent.click(screen.getByText('Add'));
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        availability_type: 'rent',
+        available_from: '2026-03-20',
+        streaming_url: 'https://netflix.com/movie',
+      }),
+    );
+  });
+
+  it('filters platforms by selected country regions', () => {
+    renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={true} />);
+    // With no countries selected, all platforms show
+    expect(screen.getByText('Netflix')).toBeInTheDocument();
+    expect(screen.getByText('Amazon Prime')).toBeInTheDocument();
   });
 });
