@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockFrom = vi.fn();
 const mockSupabase = { from: mockFrom };
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getAuditableSupabaseAdmin: vi.fn(() => mockSupabase),
+vi.mock('@/lib/route-wrappers', () => ({
+  withMutationAdmin: (_label: string, handler: Function) => handler,
 }));
 
 vi.mock('@/lib/r2-client', () => ({
@@ -23,54 +23,26 @@ vi.mock('@/lib/variant-config', () => ({
   VARIANT_SPECS: { poster: [], backdrop: [], photo: [], avatar: [] },
 }));
 
-vi.mock('@/lib/sync-helpers', () => ({
-  verifyAdminCanMutate: vi.fn(),
-  unauthorizedResponse: vi.fn(() => {
-    const { NextResponse } = require('next/server');
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }),
-  viewerReadonlyResponse: vi.fn(() => {
-    const { NextResponse } = require('next/server');
-    return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
-  }),
-}));
-
 import { POST } from '@/app/api/validations/fix/route';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdminCanMutate } from '@/lib/sync-helpers';
 import { NextRequest } from 'next/server';
 
-function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/validations/fix', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+function makeCtx(body: Record<string, unknown>) {
+  return {
+    req: new NextRequest('http://localhost/api/validations/fix', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    supabase: mockSupabase,
+    auth: { user: { id: 'admin-11' } as never, role: 'super_admin' },
+  };
 }
 
 describe('POST /api/validations/fix', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(verifyAdminCanMutate).mockResolvedValue({
-      user: { id: 'admin-11' } as never,
-      role: 'super_admin',
-    });
-  });
-
-  it('returns 401 when auth fails', async () => {
-    vi.mocked(verifyAdminCanMutate).mockResolvedValue(null);
-    const res = await POST(makeRequest({ items: [{ id: '1', field: 'poster_url' }] }));
-    expect(res.status).toBe(401);
-  });
-
-  it('returns 403 for viewer role', async () => {
-    vi.mocked(verifyAdminCanMutate).mockResolvedValue('viewer_readonly');
-    const res = await POST(makeRequest({ items: [{ id: '1', field: 'poster_url' }] }));
-    expect(res.status).toBe(403);
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('returns 400 when items is empty', async () => {
-    const res = await POST(makeRequest({ items: [] }));
+    const res = await POST(makeCtx({ items: [] }) as never);
     expect(res.status).toBe(400);
   });
 
@@ -82,11 +54,11 @@ describe('POST /api/validations/fix', () => {
       fixType: 'migrate_external',
       currentUrl: 'https://image.tmdb.org/t/p/w500/test.jpg',
     }));
-    const res = await POST(makeRequest({ items }));
+    const res = await POST(makeCtx({ items }) as never);
     expect(res.status).toBe(400);
   });
 
-  it('uses auditable supabase client and passes correct URL to DB', async () => {
+  it('fixes items and passes correct URL to DB', async () => {
     const mockUpdate = vi.fn().mockReturnValue({
       eq: vi.fn().mockResolvedValue({ error: null }),
     });
@@ -95,7 +67,7 @@ describe('POST /api/validations/fix', () => {
     const { uploadImageFromUrl } = await import('@/lib/r2-sync');
 
     const res = await POST(
-      makeRequest({
+      makeCtx({
         items: [
           {
             id: 'movie-1',
@@ -105,10 +77,9 @@ describe('POST /api/validations/fix', () => {
             currentUrl: 'https://image.tmdb.org/t/p/w500/test.jpg',
           },
         ],
-      }),
+      }) as never,
     );
     expect(res.status).toBe(200);
-    expect(getAuditableSupabaseAdmin).toHaveBeenCalledWith('admin-11');
     expect(uploadImageFromUrl).toHaveBeenCalledWith(
       'https://image.tmdb.org/t/p/original/test.jpg',
       'faniverz-movie-posters',

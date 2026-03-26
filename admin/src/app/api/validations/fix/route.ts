@@ -1,15 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import {
-  verifyAdminCanMutate,
-  unauthorizedResponse,
-  viewerReadonlyResponse,
-} from '@/lib/sync-helpers';
-import { getAuditableSupabaseAdmin, getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getR2Client } from '@/lib/r2-client';
 import { uploadImageFromUrl } from '@/lib/r2-sync';
 import { generateVariants } from '@/lib/image-resize';
 import { VARIANT_SPECS } from '@/lib/variant-config';
+import { withMutationAdmin } from '@/lib/route-wrappers';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { FixItem, FixResult } from '@/hooks/useValidationTypes';
 import type { VariantType } from '@/lib/variant-config';
 
@@ -44,12 +40,8 @@ function extractTmdbPath(url: string): string | null {
 }
 
 // @boundary: mutation endpoint — requires non-viewer admin role
-export async function POST(request: NextRequest) {
-  const authResult = await verifyAdminCanMutate(request.headers.get('authorization'));
-  if (authResult === 'viewer_readonly') return viewerReadonlyResponse();
-  if (!authResult) return unauthorizedResponse();
-
-  const body = await request.json();
+export const POST = withMutationAdmin('Validations fix', async ({ req, supabase }) => {
+  const body = await req.json();
   const items = body.items as FixItem[];
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -64,8 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'R2 storage is not configured' }, { status: 503 });
   }
 
-  // @contract: auditable client attributes all DB changes to the admin who initiated the fix
-  const supabase = getAuditableSupabaseAdmin(authResult.user.id);
   const results: FixResult[] = [];
 
   for (const item of items) {
@@ -103,12 +93,12 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ results });
-}
+});
 
 // @sideeffect: downloads from TMDB, uploads to R2, updates DB
 async function handleMigrateExternal(
   r2: NonNullable<ReturnType<typeof getR2Client>>,
-  supabase: ReturnType<typeof getSupabaseAdmin>,
+  supabase: SupabaseClient,
   item: FixItem,
   bucket: string,
 ): Promise<string> {

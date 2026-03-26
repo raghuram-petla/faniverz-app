@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
+import { NextResponse } from 'next/server';
 import { getMovieDetails } from '@/lib/tmdb';
 import { extractTeluguTranslation, extractIndiaCertification } from '@/lib/tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
@@ -8,7 +7,7 @@ import { syncAllImages } from '@/lib/sync-images';
 import { syncVideos, syncKeywords, syncProductionCompanies } from '@/lib/sync-extended';
 import { syncWatchProvidersMultiCountry } from '@/lib/sync-watch-providers';
 import { syncCastCrewAdditive } from '@/lib/sync-cast';
-import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
+import { withSyncAdmin } from '@/lib/route-wrappers';
 import { randomUUID } from 'crypto';
 
 /**
@@ -24,14 +23,9 @@ import { randomUUID } from 'crypto';
  */
 // @sideeffect: updates movie row and/or junction tables based on requested fields
 // @assumes: movie must already exist in DB with a valid tmdb_id
-export async function POST(request: NextRequest) {
+export const POST = withSyncAdmin('Fill fields', async ({ req, supabase, apiKey }) => {
   try {
-    // @boundary: viewer role is read-only
-    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
-    if (!guard.ok) return guard.response;
-    const { apiKey, auth } = guard;
-
-    const { tmdbId, fields, forceResyncCast } = (await request.json()) as {
+    const { tmdbId, fields, forceResyncCast } = (await req.json()) as {
       tmdbId: number;
       fields: string[];
       forceResyncCast?: boolean;
@@ -40,9 +34,6 @@ export async function POST(request: NextRequest) {
     if (!tmdbId || !Array.isArray(fields) || (fields.length === 0 && !forceResyncCast)) {
       return NextResponse.json({ error: 'tmdbId and fields[] are required.' }, { status: 400 });
     }
-
-    // @contract: auditable client attributes all DB changes to the admin who initiated the sync
-    const supabase = getAuditableSupabaseAdmin(auth.user.id);
 
     // @contract: verify movie exists and read original_language for native-lang fetching
     const { data: existing } = await supabase
@@ -199,7 +190,6 @@ export async function POST(request: NextRequest) {
       /* v8 ignore start */
       await syncProductionCompanies(movieId, detail.production_companies ?? [], supabase);
       /* v8 ignore stop */
-
       updatedFields.push('production_companies');
     }
 
@@ -217,9 +207,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ movieId, updatedFields });
   } catch (err) {
+    // @edge: surface TMDB rate-limit errors as 429 to the frontend
     if (err instanceof Error && err.message.includes('→ 429')) {
       return NextResponse.json({ error: err.message }, { status: 429 });
     }
-    return errorResponse('Fill fields', err);
+    throw err; // let wrapper handle all other errors
   }
-}
+});

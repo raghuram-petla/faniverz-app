@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
+import { NextResponse } from 'next/server';
 import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
+import { withSyncAdmin } from '@/lib/route-wrappers';
 
 /**
  * POST /api/sync/refresh-movie
@@ -10,66 +9,55 @@ import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
  */
 // @contract: accepts { movieId: UUID }; returns { syncLogId, result } on success
 // @sideeffect: overwrites movie + related credits/genres with latest TMDB data; writes sync_log
-export async function POST(request: NextRequest) {
-  try {
-    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
-    if (!guard.ok) return guard.response;
-    const { apiKey, auth } = guard;
+export const POST = withSyncAdmin('Refresh movie', async ({ req, supabase, apiKey }) => {
+  const body = await req.json();
+  // @assumes: movieId is a local UUID, not a TMDB ID
+  const { movieId } = body as { movieId: string };
 
-    const body = await request.json();
-    // @assumes: movieId is a local UUID, not a TMDB ID
-    const { movieId } = body as { movieId: string };
-
-    if (!movieId) {
-      return NextResponse.json({ error: 'movieId is required.' }, { status: 400 });
-    }
-
-    // @contract: auditable client attributes all DB changes to the admin who initiated the refresh
-    const supabase = getAuditableSupabaseAdmin(auth.user.id);
-
-    // Look up tmdb_id
-    const { data: movie, error: lookupErr } = await supabase
-      .from('movies')
-      .select('tmdb_id, title')
-      .eq('id', movieId)
-      .single();
-
-    if (lookupErr || !movie) {
-      return NextResponse.json({ error: 'Movie not found.' }, { status: 404 });
-    }
-
-    // @edge: manually-created movies (no TMDB link) cannot be refreshed
-    if (!movie.tmdb_id) {
-      return NextResponse.json(
-        { error: 'Movie has no TMDB ID. Cannot refresh from TMDB.' },
-        { status: 400 },
-      );
-    }
-
-    const syncLogId = await createSyncLog(supabase, `refresh-movie`);
-
-    try {
-      const result = await processMovieFromTmdb(movie.tmdb_id, apiKey, supabase);
-
-      await completeSyncLog(supabase, syncLogId, {
-        status: 'success',
-        moviesUpdated: 1,
-        details: [movie.title],
-      });
-
-      return NextResponse.json({ syncLogId, result });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-
-      // @sideeffect: sync_log completed as 'failed' — preserves audit trail on error
-      await completeSyncLog(supabase, syncLogId, {
-        status: 'failed',
-        errors: [{ movieId, tmdbId: movie.tmdb_id, message }],
-      });
-
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-  } catch (err) {
-    return errorResponse('Refresh movie', err);
+  if (!movieId) {
+    return NextResponse.json({ error: 'movieId is required.' }, { status: 400 });
   }
-}
+
+  // Look up tmdb_id
+  const { data: movie, error: lookupErr } = await supabase
+    .from('movies')
+    .select('tmdb_id, title')
+    .eq('id', movieId)
+    .single();
+
+  if (lookupErr || !movie) {
+    return NextResponse.json({ error: 'Movie not found.' }, { status: 404 });
+  }
+
+  // @edge: manually-created movies (no TMDB link) cannot be refreshed
+  if (!movie.tmdb_id) {
+    return NextResponse.json(
+      { error: 'Movie has no TMDB ID. Cannot refresh from TMDB.' },
+      { status: 400 },
+    );
+  }
+
+  const syncLogId = await createSyncLog(supabase, `refresh-movie`);
+
+  try {
+    const result = await processMovieFromTmdb(movie.tmdb_id, apiKey, supabase);
+
+    await completeSyncLog(supabase, syncLogId, {
+      status: 'success',
+      moviesUpdated: 1,
+      details: [movie.title],
+    });
+
+    return NextResponse.json({ syncLogId, result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+
+    // @sideeffect: sync_log completed as 'failed' — preserves audit trail on error
+    await completeSyncLog(supabase, syncLogId, {
+      status: 'failed',
+      errors: [{ movieId, tmdbId: movie.tmdb_id, message }],
+    });
+
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+});

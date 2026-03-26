@@ -3,9 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockFrom = vi.fn();
 const mockSupabase = { from: mockFrom };
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getSupabaseAdmin: vi.fn(() => mockSupabase),
-  getAuditableSupabaseAdmin: vi.fn(() => mockSupabase),
+vi.mock('@/lib/route-wrappers', () => ({
+  withSyncAdmin: (_label: string, handler: Function) => handler,
 }));
 
 vi.mock('@/lib/tmdb', () => ({
@@ -35,62 +34,49 @@ vi.mock('@/lib/sync-extended', () => ({
 vi.mock('@/lib/sync-watch-providers', () => ({ syncWatchProvidersMultiCountry: vi.fn() }));
 vi.mock('@/lib/sync-cast', () => ({ syncCastCrewAdditive: vi.fn() }));
 
-vi.mock('@/lib/sync-helpers', () => ({
-  ensureAdminMutateAuth: vi.fn(),
-  errorResponse: vi.fn((_label: string, err: unknown) => {
-    const { NextResponse } = require('next/server');
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 },
-    );
-  }),
-}));
-
 import { POST } from '@/app/api/sync/fill-fields/route';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { getMovieDetails } from '@/lib/tmdb';
-import { ensureAdminMutateAuth } from '@/lib/sync-helpers';
 import { NextRequest } from 'next/server';
 
-function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/sync/fill-fields', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+function makeCtx(body: Record<string, unknown>) {
+  return {
+    req: new NextRequest('http://localhost/api/sync/fill-fields', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    supabase: mockSupabase,
+    auth: { user: { id: 'admin-42' } as never, role: 'super_admin' },
+    apiKey: 'tmdb-key',
+  };
 }
 
 describe('POST /api/sync/fill-fields', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: true,
-      auth: { user: { id: 'admin-42' } as never, role: 'super_admin' },
-      apiKey: 'tmdb-key',
-    });
-  });
-
-  it('returns error response when auth fails', async () => {
-    const { NextResponse } = await import('next/server');
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: false,
-      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-    });
-    const res = await POST(makeRequest({ tmdbId: 1, fields: ['title'] }));
-    expect(res.status).toBe(401);
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('returns 400 when tmdbId is missing', async () => {
-    const res = await POST(makeRequest({ fields: ['title'] }));
+    const res = await POST(makeCtx({ fields: ['title'] }) as never);
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when fields is empty', async () => {
-    const res = await POST(makeRequest({ tmdbId: 1, fields: [] }));
+    const res = await POST(makeCtx({ tmdbId: 1, fields: [] }) as never);
     expect(res.status).toBe(400);
   });
 
-  it('uses auditable supabase client and passes correct fields to update', async () => {
+  it('returns 404 when movie not found in DB', async () => {
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+        }),
+      }),
+    });
+    const res = await POST(makeCtx({ tmdbId: 999, fields: ['title'] }) as never);
+    expect(res.status).toBe(404);
+  });
+
+  it('passes correct fields to movie update', async () => {
     const mockUpdate = vi.fn().mockReturnValue({
       eq: vi.fn().mockResolvedValue({ error: null }),
     });
@@ -129,22 +115,8 @@ describe('POST /api/sync/fill-fields', () => {
       keywords: { keywords: [] },
     } as never);
 
-    const res = await POST(makeRequest({ tmdbId: 123, fields: ['title'] }));
+    const res = await POST(makeCtx({ tmdbId: 123, fields: ['title'] }) as never);
     expect(res.status).toBe(200);
-    expect(getAuditableSupabaseAdmin).toHaveBeenCalledWith('admin-42');
     expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ title: 'Test' }));
-  });
-
-  it('returns 404 when movie not found in DB', async () => {
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-        }),
-      }),
-    });
-
-    const res = await POST(makeRequest({ tmdbId: 999, fields: ['title'] }));
-    expect(res.status).toBe(404);
   });
 });

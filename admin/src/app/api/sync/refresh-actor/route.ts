@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
+import { NextResponse } from 'next/server';
 import { processActorRefresh, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
-import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
+import { withSyncAdmin } from '@/lib/route-wrappers';
 
 /**
  * POST /api/sync/refresh-actor
@@ -10,66 +9,55 @@ import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
  */
 // @contract: accepts { actorId: UUID }; returns { syncLogId, result } on success
 // @sideeffect: updates actors table with latest TMDB data; writes sync_log entry
-export async function POST(request: NextRequest) {
-  try {
-    const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
-    if (!guard.ok) return guard.response;
-    const { apiKey, auth } = guard;
+export const POST = withSyncAdmin('Refresh actor', async ({ req, supabase, apiKey }) => {
+  const body = await req.json();
+  // @assumes: actorId is a valid UUID from the actors table, not a TMDB person ID
+  const { actorId } = body as { actorId: string };
 
-    const body = await request.json();
-    // @assumes: actorId is a valid UUID from the actors table, not a TMDB person ID
-    const { actorId } = body as { actorId: string };
-
-    if (!actorId) {
-      return NextResponse.json({ error: 'actorId is required.' }, { status: 400 });
-    }
-
-    // @contract: auditable client attributes all DB changes to the admin who initiated the refresh
-    const supabase = getAuditableSupabaseAdmin(auth.user.id);
-
-    // Look up tmdb_person_id
-    const { data: actor, error: lookupErr } = await supabase
-      .from('actors')
-      .select('tmdb_person_id, name')
-      .eq('id', actorId)
-      .single();
-
-    if (lookupErr || !actor) {
-      return NextResponse.json({ error: 'Actor not found.' }, { status: 404 });
-    }
-
-    // @edge: manually-created actors (no TMDB link) cannot be refreshed — guard early
-    if (!actor.tmdb_person_id) {
-      return NextResponse.json(
-        { error: 'Actor has no TMDB person ID. Cannot refresh from TMDB.' },
-        { status: 400 },
-      );
-    }
-
-    const syncLogId = await createSyncLog(supabase, `refresh-actor`);
-
-    try {
-      const result = await processActorRefresh(actorId, actor.tmdb_person_id, apiKey, supabase);
-
-      await completeSyncLog(supabase, syncLogId, {
-        status: 'success',
-        moviesUpdated: result.updated ? 1 : 0,
-        details: [actor.name],
-      });
-
-      return NextResponse.json({ syncLogId, result });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-
-      // @sideeffect: sync_log still completed (as 'failed') even when refresh throws — audit trail preserved
-      await completeSyncLog(supabase, syncLogId, {
-        status: 'failed',
-        errors: [{ actorId, tmdbPersonId: actor.tmdb_person_id, message }],
-      });
-
-      return NextResponse.json({ error: message }, { status: 500 });
-    }
-  } catch (err) {
-    return errorResponse('Refresh actor', err);
+  if (!actorId) {
+    return NextResponse.json({ error: 'actorId is required.' }, { status: 400 });
   }
-}
+
+  // Look up tmdb_person_id
+  const { data: actor, error: lookupErr } = await supabase
+    .from('actors')
+    .select('tmdb_person_id, name')
+    .eq('id', actorId)
+    .single();
+
+  if (lookupErr || !actor) {
+    return NextResponse.json({ error: 'Actor not found.' }, { status: 404 });
+  }
+
+  // @edge: manually-created actors (no TMDB link) cannot be refreshed — guard early
+  if (!actor.tmdb_person_id) {
+    return NextResponse.json(
+      { error: 'Actor has no TMDB person ID. Cannot refresh from TMDB.' },
+      { status: 400 },
+    );
+  }
+
+  const syncLogId = await createSyncLog(supabase, `refresh-actor`);
+
+  try {
+    const result = await processActorRefresh(actorId, actor.tmdb_person_id, apiKey, supabase);
+
+    await completeSyncLog(supabase, syncLogId, {
+      status: 'success',
+      moviesUpdated: result.updated ? 1 : 0,
+      details: [actor.name],
+    });
+
+    return NextResponse.json({ syncLogId, result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+
+    // @sideeffect: sync_log still completed (as 'failed') even when refresh throws — audit trail preserved
+    await completeSyncLog(supabase, syncLogId, {
+      status: 'failed',
+      errors: [{ actorId, tmdbPersonId: actor.tmdb_person_id, message }],
+    });
+
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+});

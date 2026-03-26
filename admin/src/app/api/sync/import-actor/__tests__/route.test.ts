@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockFrom = vi.fn();
 const mockSupabase = { from: mockFrom };
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getAuditableSupabaseAdmin: vi.fn(() => mockSupabase),
+vi.mock('@/lib/route-wrappers', () => ({
+  withSyncAdmin: (_label: string, handler: Function) => handler,
 }));
 
 vi.mock('@/lib/tmdb', () => ({
@@ -24,58 +24,33 @@ vi.mock('@/lib/sync-engine', () => ({
   completeSyncLog: vi.fn(),
 }));
 
-vi.mock('@/lib/sync-helpers', () => ({
-  ensureAdminMutateAuth: vi.fn(),
-  errorResponse: vi.fn((_label: string, err: unknown) => {
-    const { NextResponse } = require('next/server');
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 },
-    );
-  }),
-}));
-
 import { POST } from '@/app/api/sync/import-actor/route';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { getPersonDetails } from '@/lib/tmdb';
 import { maybeUploadImage } from '@/lib/r2-sync';
-import { ensureAdminMutateAuth } from '@/lib/sync-helpers';
 import { NextRequest } from 'next/server';
 
-function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/sync/import-actor', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+function makeCtx(body: Record<string, unknown>) {
+  return {
+    req: new NextRequest('http://localhost/api/sync/import-actor', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    supabase: mockSupabase,
+    auth: { user: { id: 'admin-3' } as never, role: 'admin' },
+    apiKey: 'tmdb-key',
+  };
 }
 
 describe('POST /api/sync/import-actor', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: true,
-      auth: { user: { id: 'admin-3' } as never, role: 'admin' },
-      apiKey: 'tmdb-key',
-    });
-  });
-
-  it('returns error when auth fails', async () => {
-    const { NextResponse } = await import('next/server');
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: false,
-      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-    });
-    const res = await POST(makeRequest({ tmdbPersonId: 1 }));
-    expect(res.status).toBe(401);
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('returns 400 when tmdbPersonId is missing', async () => {
-    const res = await POST(makeRequest({}));
+    const res = await POST(makeCtx({}) as never);
     expect(res.status).toBe(400);
   });
 
-  it('uses auditable supabase client with admin user id', async () => {
+  it('imports actor successfully', async () => {
     vi.mocked(getPersonDetails).mockResolvedValue({
       name: 'Test Actor',
       biography: 'Bio',
@@ -93,9 +68,8 @@ describe('POST /api/sync/import-actor', () => {
       }),
     });
 
-    const res = await POST(makeRequest({ tmdbPersonId: 789 }));
+    const res = await POST(makeCtx({ tmdbPersonId: 789 }) as never);
     expect(res.status).toBe(200);
-    expect(getAuditableSupabaseAdmin).toHaveBeenCalledWith('admin-3');
   });
 
   it('returns 500 when upsert fails', async () => {
@@ -119,7 +93,7 @@ describe('POST /api/sync/import-actor', () => {
       }),
     });
 
-    const res = await POST(makeRequest({ tmdbPersonId: 789 }));
+    const res = await POST(makeCtx({ tmdbPersonId: 789 }) as never);
     expect(res.status).toBe(500);
   });
 });

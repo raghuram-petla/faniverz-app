@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockSupabase = { from: vi.fn() };
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getAuditableSupabaseAdmin: vi.fn(() => mockSupabase),
+vi.mock('@/lib/route-wrappers', () => ({
+  withSyncAdmin: (_label: string, handler: Function) => handler,
 }));
 
 vi.mock('@/lib/sync-engine', () => ({
@@ -12,72 +12,45 @@ vi.mock('@/lib/sync-engine', () => ({
   completeSyncLog: vi.fn(),
 }));
 
-vi.mock('@/lib/sync-helpers', () => ({
-  ensureAdminMutateAuth: vi.fn(),
-  errorResponse: vi.fn((_label: string, err: unknown) => {
-    const { NextResponse } = require('next/server');
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 },
-    );
-  }),
-}));
-
 import { POST } from '@/app/api/sync/import-movies/route';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb } from '@/lib/sync-engine';
-import { ensureAdminMutateAuth } from '@/lib/sync-helpers';
 import { NextRequest } from 'next/server';
 
-function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/sync/import-movies', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+function makeCtx(body: Record<string, unknown>) {
+  return {
+    req: new NextRequest('http://localhost/api/sync/import-movies', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    supabase: mockSupabase,
+    auth: { user: { id: 'admin-7' } as never, role: 'admin' },
+    apiKey: 'tmdb-key',
+  };
 }
 
 describe('POST /api/sync/import-movies', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: true,
-      auth: { user: { id: 'admin-7' } as never, role: 'admin' },
-      apiKey: 'tmdb-key',
-    });
-  });
-
-  it('returns error when auth fails', async () => {
-    const { NextResponse } = await import('next/server');
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: false,
-      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-    });
-    const res = await POST(makeRequest({ tmdbIds: [1] }));
-    expect(res.status).toBe(401);
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('returns 400 when tmdbIds is missing', async () => {
-    const res = await POST(makeRequest({}));
+    const res = await POST(makeCtx({}) as never);
     expect(res.status).toBe(400);
   });
 
   it('returns 400 when tmdbIds exceeds batch limit', async () => {
-    const res = await POST(makeRequest({ tmdbIds: [1, 2, 3, 4, 5, 6] }));
+    const res = await POST(makeCtx({ tmdbIds: [1, 2, 3, 4, 5, 6] }) as never);
     expect(res.status).toBe(400);
   });
 
-  it('uses auditable supabase client with admin user id', async () => {
+  it('imports movies and returns results', async () => {
     vi.mocked(processMovieFromTmdb).mockResolvedValue({
       movieId: 'm-1',
       title: 'Test',
       isNew: true,
     } as never);
 
-    const res = await POST(makeRequest({ tmdbIds: [123] }));
+    const res = await POST(makeCtx({ tmdbIds: [123] }) as never);
     expect(res.status).toBe(200);
-    expect(getAuditableSupabaseAdmin).toHaveBeenCalledWith('admin-7');
-
     const body = await res.json();
     expect(body.results).toHaveLength(1);
   });
@@ -87,7 +60,7 @@ describe('POST /api/sync/import-movies', () => {
       .mockResolvedValueOnce({ movieId: 'm-1', title: 'OK', isNew: true } as never)
       .mockRejectedValueOnce(new Error('TMDB 404'));
 
-    const res = await POST(makeRequest({ tmdbIds: [1, 2] }));
+    const res = await POST(makeCtx({ tmdbIds: [1, 2] }) as never);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.results).toHaveLength(1);

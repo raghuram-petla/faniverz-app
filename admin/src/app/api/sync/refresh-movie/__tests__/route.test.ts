@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockFrom = vi.fn();
 const mockSupabase = { from: mockFrom };
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getAuditableSupabaseAdmin: vi.fn(() => mockSupabase),
+vi.mock('@/lib/route-wrappers', () => ({
+  withSyncAdmin: (_label: string, handler: Function) => handler,
 }));
 
 vi.mock('@/lib/sync-engine', () => ({
@@ -13,53 +13,28 @@ vi.mock('@/lib/sync-engine', () => ({
   completeSyncLog: vi.fn(),
 }));
 
-vi.mock('@/lib/sync-helpers', () => ({
-  ensureAdminMutateAuth: vi.fn(),
-  errorResponse: vi.fn((_label: string, err: unknown) => {
-    const { NextResponse } = require('next/server');
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Unknown error' },
-      { status: 500 },
-    );
-  }),
-}));
-
 import { POST } from '@/app/api/sync/refresh-movie/route';
-import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb, completeSyncLog } from '@/lib/sync-engine';
-import { ensureAdminMutateAuth } from '@/lib/sync-helpers';
 import { NextRequest } from 'next/server';
 
-function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/sync/refresh-movie', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+function makeCtx(body: Record<string, unknown>) {
+  return {
+    req: new NextRequest('http://localhost/api/sync/refresh-movie', {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    supabase: mockSupabase,
+    auth: { user: { id: 'admin-5' } as never, role: 'super_admin' },
+    apiKey: 'tmdb-key',
+  };
 }
 
 describe('POST /api/sync/refresh-movie', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: true,
-      auth: { user: { id: 'admin-5' } as never, role: 'super_admin' },
-      apiKey: 'tmdb-key',
-    });
-  });
-
-  it('returns error when auth fails', async () => {
-    const { NextResponse } = await import('next/server');
-    vi.mocked(ensureAdminMutateAuth).mockResolvedValue({
-      ok: false,
-      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-    });
-    const res = await POST(makeRequest({ movieId: 'm-1' }));
-    expect(res.status).toBe(401);
-  });
+  beforeEach(() => vi.clearAllMocks());
 
   it('returns 400 when movieId is missing', async () => {
-    const res = await POST(makeRequest({}));
+    const res = await POST(makeCtx({}) as never);
     expect(res.status).toBe(400);
   });
 
@@ -71,7 +46,7 @@ describe('POST /api/sync/refresh-movie', () => {
         }),
       }),
     });
-    const res = await POST(makeRequest({ movieId: 'missing-id' }));
+    const res = await POST(makeCtx({ movieId: 'missing-id' }) as never);
     expect(res.status).toBe(404);
   });
 
@@ -85,11 +60,11 @@ describe('POST /api/sync/refresh-movie', () => {
         }),
       }),
     });
-    const res = await POST(makeRequest({ movieId: 'manual-id' }));
+    const res = await POST(makeCtx({ movieId: 'manual-id' }) as never);
     expect(res.status).toBe(400);
   });
 
-  it('uses auditable supabase client with admin user id', async () => {
+  it('refreshes movie successfully', async () => {
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
@@ -105,9 +80,8 @@ describe('POST /api/sync/refresh-movie', () => {
       isNew: false,
     } as never);
 
-    const res = await POST(makeRequest({ movieId: 'm-1' }));
+    const res = await POST(makeCtx({ movieId: 'm-1' }) as never);
     expect(res.status).toBe(200);
-    expect(getAuditableSupabaseAdmin).toHaveBeenCalledWith('admin-5');
   });
 
   it('logs failure when processMovieFromTmdb throws', async () => {
@@ -120,7 +94,7 @@ describe('POST /api/sync/refresh-movie', () => {
     });
     vi.mocked(processMovieFromTmdb).mockRejectedValue(new Error('TMDB down'));
 
-    const res = await POST(makeRequest({ movieId: 'm-1' }));
+    const res = await POST(makeCtx({ movieId: 'm-1' }) as never);
     expect(res.status).toBe(500);
     expect(completeSyncLog).toHaveBeenCalledWith(
       mockSupabase,
