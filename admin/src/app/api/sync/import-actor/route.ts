@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { getPersonDetails, TMDB_IMAGE } from '@/lib/tmdb';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { createSyncLog, completeSyncLog } from '@/lib/sync-engine';
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
     if (!guard.ok) return guard.response;
-    const { apiKey } = guard;
+    const { apiKey, auth } = guard;
 
     const body = await request.json();
     const { tmdbPersonId } = body as { tmdbPersonId: number };
@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'tmdbPersonId is required.' }, { status: 400 });
     }
 
-    const supabase = getSupabaseAdmin();
+    // @contract: auditable client attributes all DB changes to the admin who initiated the import
+    const supabase = getAuditableSupabaseAdmin(auth.user.id);
     const syncLogId = await createSyncLog(supabase, 'import-actor');
 
     try {

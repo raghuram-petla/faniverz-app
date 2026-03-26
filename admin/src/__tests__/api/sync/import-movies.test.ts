@@ -20,8 +20,8 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getSupabaseAdmin: () => ({
+vi.mock('@/lib/supabase-admin', () => {
+  const client = {
     from: () => ({
       select: () => ({
         eq: () => ({
@@ -30,8 +30,12 @@ vi.mock('@/lib/supabase-admin', () => ({
         }),
       }),
     }),
-  }),
-}));
+  };
+  return {
+    getSupabaseAdmin: () => client,
+    getAuditableSupabaseAdmin: () => client,
+  };
+});
 
 vi.mock('@/lib/sync-engine', () => ({
   processMovieFromTmdb: (...args: unknown[]) => mockProcessMovieFromTmdb(...args),

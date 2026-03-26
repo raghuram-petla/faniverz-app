@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin, getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { verifyBearer, unauthorizedResponse } from '@/lib/sync-helpers';
 
 /**
@@ -32,7 +32,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Identity mismatch' }, { status: 403 });
     }
 
+    // @contract: read-only lookups use the shared singleton; mutations use auditable client
     const supabaseAdmin = getSupabaseAdmin();
+    // @contract: auditable client attributes invitation acceptance to the accepting user
+    const auditableAdmin = getAuditableSupabaseAdmin(authUser.id);
 
     // Find pending, non-expired invitation for this email
     // @assumes: admin_invitations.email is stored lowercase; caller email is normalized above
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     if (existingRole) {
       // Already has a role, mark invitation as accepted and return
-      const { error: updateErr } = await supabaseAdmin
+      const { error: updateErr } = await auditableAdmin
         .from('admin_invitations')
         .update({ status: 'accepted', accepted_at: new Date().toISOString() })
         .eq('id', invitation.id);
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create admin role assignment
-    const { error: roleErr } = await supabaseAdmin.from('admin_user_roles').insert({
+    const { error: roleErr } = await auditableAdmin.from('admin_user_roles').insert({
       user_id: userId,
       role_id: invitation.role_id,
       assigned_by: invitation.invited_by,
@@ -90,7 +93,7 @@ export async function POST(req: NextRequest) {
         production_house_id: phId,
         assigned_by: invitation.invited_by,
       }));
-      const { error: phErr } = await supabaseAdmin.from('admin_ph_assignments').insert(phRows);
+      const { error: phErr } = await auditableAdmin.from('admin_ph_assignments').insert(phRows);
       if (phErr) {
         return NextResponse.json({ error: 'Failed to assign production houses' }, { status: 500 });
       }
@@ -98,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     // Mark invitation as accepted
     // @edge: if role insert succeeded but this update fails, user has role but invitation stays pending
-    const { error: acceptErr } = await supabaseAdmin
+    const { error: acceptErr } = await auditableAdmin
       .from('admin_invitations')
       .update({ status: 'accepted', accepted_at: new Date().toISOString() })
       .eq('id', invitation.id);

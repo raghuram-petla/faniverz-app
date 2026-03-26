@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { getMovieDetails } from '@/lib/tmdb';
 import { extractTeluguTranslation, extractIndiaCertification } from '@/lib/tmdbTypes';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // @boundary: viewer role is read-only
     const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
     if (!guard.ok) return guard.response;
-    const { apiKey } = guard;
+    const { apiKey, auth } = guard;
 
     const { tmdbId, fields, forceResyncCast } = (await request.json()) as {
       tmdbId: number;
@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'tmdbId and fields[] are required.' }, { status: 400 });
     }
 
-    const supabase = getSupabaseAdmin();
+    // @contract: auditable client attributes all DB changes to the admin who initiated the sync
+    const supabase = getAuditableSupabaseAdmin(auth.user.id);
 
     // @contract: verify movie exists and read original_language for native-lang fetching
     const { data: existing } = await supabase

@@ -5,7 +5,7 @@ import {
   unauthorizedResponse,
   viewerReadonlyResponse,
 } from '@/lib/sync-helpers';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getAuditableSupabaseAdmin, getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getR2Client } from '@/lib/r2-client';
 import { uploadImageFromUrl } from '@/lib/r2-sync';
 import { generateVariants } from '@/lib/image-resize';
@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'R2 storage is not configured' }, { status: 503 });
   }
 
-  const supabase = getSupabaseAdmin();
+  // @contract: auditable client attributes all DB changes to the admin who initiated the fix
+  const supabase = getAuditableSupabaseAdmin(authResult.user.id);
   const results: FixResult[] = [];
 
   for (const item of items) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { processActorRefresh, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
 import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
     if (!guard.ok) return guard.response;
-    const { apiKey } = guard;
+    const { apiKey, auth } = guard;
 
     const body = await request.json();
     // @assumes: actorId is a valid UUID from the actors table, not a TMDB person ID
@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'actorId is required.' }, { status: 400 });
     }
 
-    const supabase = getSupabaseAdmin();
+    // @contract: auditable client attributes all DB changes to the admin who initiated the refresh
+    const supabase = getAuditableSupabaseAdmin(auth.user.id);
 
     // Look up tmdb_person_id
     const { data: actor, error: lookupErr } = await supabase

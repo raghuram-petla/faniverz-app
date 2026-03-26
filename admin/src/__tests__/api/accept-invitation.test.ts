@@ -12,11 +12,13 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getSupabaseAdmin: () => ({
-    from: (...args: unknown[]) => mockFrom(...args),
-  }),
-}));
+vi.mock('@/lib/supabase-admin', () => {
+  const client = { from: (...args: unknown[]) => mockFrom(...args) };
+  return {
+    getSupabaseAdmin: () => client,
+    getAuditableSupabaseAdmin: () => client,
+  };
+});
 
 vi.mock('next/server', () => {
   return {

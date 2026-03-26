@@ -54,8 +54,8 @@ vi.mock('@/lib/sync-helpers', () => ({
   }),
 }));
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getSupabaseAdmin: () => ({
+vi.mock('@/lib/supabase-admin', () => {
+  const client = {
     from: () => ({
       upsert: () => ({
         select: () => ({
@@ -63,8 +63,12 @@ vi.mock('@/lib/supabase-admin', () => ({
         }),
       }),
     }),
-  }),
-}));
+  };
+  return {
+    getSupabaseAdmin: () => client,
+    getAuditableSupabaseAdmin: () => client,
+  };
+});
 
 vi.mock('@/lib/tmdb', () => ({
   getPersonDetails: (...args: unknown[]) => mockGetPersonDetails(...args),

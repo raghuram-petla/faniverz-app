@@ -29,8 +29,8 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
-vi.mock('@/lib/supabase-admin', () => ({
-  getSupabaseAdmin: () => ({
+vi.mock('@/lib/supabase-admin', () => {
+  const client = {
     from: (table: string) => {
       if (table === 'movies') {
         return {
@@ -60,8 +60,12 @@ vi.mock('@/lib/supabase-admin', () => ({
         }),
       };
     },
-  }),
-}));
+  };
+  return {
+    getSupabaseAdmin: () => client,
+    getAuditableSupabaseAdmin: () => client,
+  };
+});
 
 // @contract: minimal TMDB detail for tests — only fields used by the route
 const MOCK_DETAIL = {

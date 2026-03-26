@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { processMovieFromTmdb, createSyncLog, completeSyncLog } from '@/lib/sync-engine';
 import { ensureAdminMutateAuth, errorResponse } from '@/lib/sync-helpers';
 
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     // @boundary: admin-only — import creates significant DB state
     const guard = await ensureAdminMutateAuth(request.headers.get('authorization'));
     if (!guard.ok) return guard.response;
-    const { apiKey } = guard;
+    const { apiKey, auth } = guard;
 
     const body = await request.json();
     // @edge: originalLanguage is optional — when provided (from discover results),
@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = getSupabaseAdmin();
+    // @contract: auditable client attributes all DB changes to the admin who initiated the import
+    const supabase = getAuditableSupabaseAdmin(auth.user.id);
     const syncLogId = await createSyncLog(supabase, 'import-movies');
 
     const results = [];

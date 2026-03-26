@@ -14,3 +14,16 @@ export function getSupabaseAdmin(): SupabaseClient {
   }
   return _client;
 }
+
+// @contract: returns a per-request service-role client with x-admin-user-id header set.
+// The audit_trigger_fn reads this header via current_setting('request.header.x-admin-user-id')
+// to attribute DB changes to the admin who initiated them.
+// @sideeffect: creates a NEW client per call — do NOT cache; each request needs its own header.
+// @coupling: audit_trigger_fn in 20260314000069_fix_audit_trigger_null_guard.sql reads this header.
+export function getAuditableSupabaseAdmin(adminUserId: string): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { global: { headers: { 'x-admin-user-id': adminUserId } } },
+  );
+}
