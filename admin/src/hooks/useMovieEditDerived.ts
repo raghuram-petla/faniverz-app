@@ -8,9 +8,10 @@ import type {
   PendingPosterAdd,
   PendingPlatformAdd,
   PendingPHAdd,
+  PendingAvailabilityAdd,
 } from '@/hooks/useMovieEditTypes';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
-import type { OTTPlatform, ProductionHouse } from '@shared/types';
+import type { OTTPlatform, ProductionHouse, MoviePlatformAvailability } from '@shared/types';
 
 // Server data shape used by useMoviePlatforms
 type MoviePlatformRow = {
@@ -51,7 +52,6 @@ interface VideoRow {
 type PosterRow = MovieImage;
 
 // @contract All visible* arrays merge server data with pending adds, minus pending removes
-// @coupling Used by both useMovieEditState (edit flow) and useMovieAddState (add flow)
 export function useMovieEditDerived(params: {
   id: string;
   castData: MovieCast[];
@@ -71,6 +71,9 @@ export function useMovieEditDerived(params: {
   movieProductionHouses: MovieProductionHouseRow[];
   pendingPHAdds: PendingPHAdd[];
   pendingPHRemoveIds: Set<string>;
+  availabilityData: MoviePlatformAvailability[];
+  pendingAvailabilityAdds: PendingAvailabilityAdd[];
+  pendingAvailabilityRemoveIds: Set<string>;
   theatricalRuns: TheatricalRun[];
   pendingRunAdds: PendingRun[];
   pendingRunRemoveIds: Set<string>;
@@ -97,6 +100,9 @@ export function useMovieEditDerived(params: {
     movieProductionHouses,
     pendingPHAdds,
     pendingPHRemoveIds,
+    availabilityData,
+    pendingAvailabilityAdds,
+    pendingAvailabilityRemoveIds,
     theatricalRuns,
     pendingRunAdds,
     pendingRunRemoveIds,
@@ -195,6 +201,26 @@ export function useMovieEditDerived(params: {
     [movieProductionHouses, pendingPHAdds, pendingPHRemoveIds, id],
   );
 
+  // @contract visibleAvailability merges server rows with pending adds, minus pending removes
+  const visibleAvailability = useMemo(
+    () => [
+      ...availabilityData.filter((r) => !pendingAvailabilityRemoveIds.has(r.id)),
+      ...pendingAvailabilityAdds.map((p) => ({
+        id: p._id,
+        movie_id: id,
+        platform_id: p.platform_id,
+        country_code: p.country_code,
+        availability_type: p.availability_type,
+        available_from: p.available_from,
+        streaming_url: p.streaming_url,
+        tmdb_display_priority: null,
+        created_at: '',
+        platform: p._platform,
+      })),
+    ],
+    [availabilityData, pendingAvailabilityAdds, pendingAvailabilityRemoveIds, id],
+  );
+
   // @sync: uses stable _id (UUID) instead of index-based 'pending-run-N' — prevents index-shift
   // bugs when runs are removed out-of-order from the pending list
   const visibleRuns = useMemo(
@@ -231,6 +257,7 @@ export function useMovieEditDerived(params: {
     if (pendingMainPosterId !== null && pendingMainPosterId !== savedMainPosterId) return true;
     if (pendingPlatformAdds.length > 0 || pendingPlatformRemoveIds.size > 0) return true;
     if (pendingPHAdds.length > 0 || pendingPHRemoveIds.size > 0) return true;
+    if (pendingAvailabilityAdds.length > 0 || pendingAvailabilityRemoveIds.size > 0) return true;
     if (pendingRunAdds.length > 0 || pendingRunRemoveIds.size > 0) return true;
     if (pendingRunEndIds.size > 0) return true;
     // @contract: shallow field comparison avoids expensive JSON.stringify on every render
@@ -252,6 +279,8 @@ export function useMovieEditDerived(params: {
     pendingPlatformRemoveIds,
     pendingPHAdds,
     pendingPHRemoveIds,
+    pendingAvailabilityAdds,
+    pendingAvailabilityRemoveIds,
     pendingRunAdds,
     pendingRunRemoveIds,
     pendingRunEndIds,
@@ -263,6 +292,7 @@ export function useMovieEditDerived(params: {
     visiblePosters,
     visiblePlatforms,
     visibleProductionHouses,
+    visibleAvailability,
     visibleRuns,
     isDirty,
     savedMainPosterId,

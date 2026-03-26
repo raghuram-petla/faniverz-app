@@ -84,6 +84,7 @@ vi.mock('@/hooks/useMovieAddState', () => ({
     visiblePosters: [],
     visiblePlatforms: [],
     visibleProductionHouses: [],
+    visibleAvailability: [],
     visibleRuns: [],
     actors: [],
     castSearchQuery: '',

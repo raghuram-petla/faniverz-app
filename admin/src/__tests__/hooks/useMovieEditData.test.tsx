@@ -58,6 +58,12 @@ vi.mock('@/hooks/useAdminPlatforms', () => ({
   useAdminPlatforms: () => ({ data: [] }),
 }));
 
+vi.mock('@/hooks/useAdminMovieAvailability', () => ({
+  useMovieAvailability: () => ({ data: [] }),
+  useAddMovieAvailability: () => ({ mutateAsync: vi.fn() }),
+  useRemoveMovieAvailability: () => ({ mutateAsync: vi.fn() }),
+}));
+
 describe('useMovieEditData', () => {
   it('returns movie data and loading state', () => {
     const { result } = renderHook(() => useMovieEditData('1'));

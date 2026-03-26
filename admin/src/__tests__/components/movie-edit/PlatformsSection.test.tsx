@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { PlatformsSection } from '@/components/movie-edit/PlatformsSection';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { MoviePlatformAvailability, OTTPlatform } from '@shared/types';
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -18,54 +19,90 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-vi.mock('@shared/imageUrl', () => ({
-  getImageUrl: (url: string) => url,
-}));
+vi.mock('@shared/imageUrl', () => ({ getImageUrl: (url: string) => url }));
+vi.mock('@shared/colors', () => ({ colors: { zinc900: '#18181B' } }));
 
-vi.mock('@shared/colors', () => ({
-  colors: { zinc900: '#18181B' },
-}));
-
-const mockAddMutate = vi.fn();
-const mockRemoveMutate = vi.fn();
+const mockPlatforms: OTTPlatform[] = [
+  {
+    id: 'netflix',
+    name: 'Netflix',
+    logo: 'N',
+    logo_url: null,
+    color: '#E50914',
+    display_order: 1,
+    regions: ['IN'],
+  },
+  {
+    id: 'prime',
+    name: 'Amazon Prime',
+    logo: 'P',
+    logo_url: null,
+    color: '#00A8E1',
+    display_order: 2,
+    regions: ['IN', 'US'],
+  },
+];
 
 vi.mock('@/hooks/useAdminPlatforms', () => ({
-  useAdminPlatforms: () => ({
-    data: [
-      {
-        id: 'netflix',
-        name: 'Netflix',
-        logo: 'N',
-        logo_url: null,
-        color: '#E50914',
-        display_order: 1,
-        regions: ['IN'],
-      },
-      {
-        id: 'prime',
-        name: 'Amazon Prime',
-        logo: 'P',
-        logo_url: null,
-        color: '#00A8E1',
-        display_order: 2,
-        regions: ['IN'],
-      },
-    ],
-  }),
+  useAdminPlatforms: () => ({ data: mockPlatforms }),
 }));
 
-const mockUseMovieAvailability = vi.fn();
-
 vi.mock('@/hooks/useAdminMovieAvailability', () => ({
-  useMovieAvailability: () => mockUseMovieAvailability(),
   useCountries: () => ({
     data: [
       { code: 'IN', name: 'India', display_order: 1 },
       { code: 'US', name: 'United States', display_order: 2 },
     ],
   }),
-  useAddMovieAvailability: () => ({ mutate: mockAddMutate }),
-  useRemoveMovieAvailability: () => ({ mutate: mockRemoveMutate }),
+}));
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockPanel = vi.fn((_props?: any) => <div data-testid="country-panel" />);
+vi.mock('@/components/movie-edit/CountryAvailabilityPanel', () => ({
+  CountryAvailabilityPanel: (props: Record<string, unknown>) => {
+    mockPanel(props);
+    return <div data-testid="country-panel" />;
+  },
+}));
+
+vi.mock('@/components/common/CountryDropdown', () => ({
+  CountryDropdown: ({
+    countries,
+    value,
+    onChange,
+    formatLabel,
+  }: {
+    countries: { code: string; name: string; display_order: number }[];
+    value: string;
+    onChange: (code: string) => void;
+    formatLabel: (c: { code: string; name: string }) => string;
+  }) => (
+    <div data-testid="country-dropdown">
+      {countries.map((c) => (
+        <button key={c.code} onClick={() => onChange(c.code)}>
+          {formatLabel(c)}
+        </button>
+      ))}
+      <span data-testid="active-country">{value}</span>
+    </div>
+  ),
+}));
+
+vi.mock('@/components/common/MultiCountrySelector', () => ({
+  MultiCountrySelector: () => <div data-testid="multi-country-selector" />,
+}));
+
+vi.mock('@/components/common/FormField', () => ({
+  INPUT_CLASSES: { compact: 'compact-class' },
+}));
+
+vi.mock('@/components/common/Button', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Button: ({ children, onClick, disabled }: any) => (
+    <button onClick={onClick} disabled={disabled}>
+      {children}
+    </button>
+  ),
 }));
 
 const mockUsePermissions = vi.fn();
@@ -78,88 +115,109 @@ function renderWithProviders(ui: React.ReactElement) {
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
+function makeAvailability(
+  overrides: Partial<MoviePlatformAvailability> = {},
+): MoviePlatformAvailability {
+  return {
+    id: 'a1',
+    movie_id: 'movie-1',
+    platform_id: 'netflix',
+    country_code: 'IN',
+    availability_type: 'flatrate',
+    available_from: null,
+    streaming_url: null,
+    tmdb_display_priority: null,
+    created_at: '2024-01-01',
+    platform: mockPlatforms[0],
+    ...overrides,
+  };
+}
+
+const defaultProps = {
+  visibleAvailability: [] as MoviePlatformAvailability[],
+  pendingIds: new Set<string>(),
+  showAddForm: false,
+  onCloseAddForm: vi.fn(),
+  onAdd: vi.fn(),
+  onRemove: vi.fn(),
+};
+
 describe('PlatformsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUsePermissions.mockReturnValue({ isReadOnly: false });
-    mockUseMovieAvailability.mockReturnValue({ data: [] });
   });
 
-  it('renders without crashing when no availability', () => {
-    renderWithProviders(<PlatformsSection movieId="movie-1" />);
-    expect(document.querySelector('[class*="space-y"]')).toBeInTheDocument();
-  });
-
-  it('renders "Add Country" button when not read-only', () => {
-    renderWithProviders(<PlatformsSection movieId="movie-1" />);
-    expect(screen.getByText('Add Country')).toBeInTheDocument();
-  });
-
-  it('hides "Add Country" button when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
-    renderWithProviders(<PlatformsSection movieId="movie-1" />);
-    expect(screen.queryByText('Add Country')).not.toBeInTheDocument();
-  });
-
-  it('shows empty state message when no availability data', () => {
-    renderWithProviders(<PlatformsSection movieId="movie-1" />);
+  it('shows empty state when no availability and add form closed', () => {
+    renderWithProviders(<PlatformsSection {...defaultProps} />);
     expect(screen.getByText(/No OTT availability data/)).toBeInTheDocument();
   });
 
-  it('renders country dropdown when availability data exists', () => {
-    mockUseMovieAvailability.mockReturnValue({
-      data: [
-        {
-          id: 'a1',
-          movie_id: 'movie-1',
-          platform_id: 'netflix',
-          country_code: 'IN',
-          availability_type: 'flatrate',
-          available_from: null,
-          streaming_url: null,
-          tmdb_display_priority: null,
-          created_at: '2024-01-01',
-          platform: {
-            id: 'netflix',
-            name: 'Netflix',
-            logo: 'N',
-            logo_url: null,
-            color: '#E50914',
-            display_order: 1,
-          },
-        },
-      ],
-    });
-    renderWithProviders(<PlatformsSection movieId="movie-1" />);
-    // Should show country selector and platform data
-    expect(screen.getByText('Netflix')).toBeInTheDocument();
+  it('renders country dropdown when availability exists', () => {
+    renderWithProviders(
+      <PlatformsSection {...defaultProps} visibleAvailability={[makeAvailability()]} />,
+    );
+    expect(screen.getByTestId('country-dropdown')).toBeInTheDocument();
   });
 
-  it('renders "Add platform" button inside CountryAvailabilityPanel', () => {
-    mockUseMovieAvailability.mockReturnValue({
-      data: [
-        {
-          id: 'a1',
-          movie_id: 'movie-1',
-          platform_id: 'netflix',
-          country_code: 'IN',
-          availability_type: 'flatrate',
-          available_from: null,
-          streaming_url: null,
-          tmdb_display_priority: null,
-          created_at: '2024-01-01',
-          platform: {
-            id: 'netflix',
-            name: 'Netflix',
-            logo: 'N',
-            logo_url: null,
-            color: '#E50914',
-            display_order: 1,
-          },
-        },
-      ],
-    });
-    renderWithProviders(<PlatformsSection movieId="movie-1" />);
-    expect(screen.getByText('Add platform')).toBeInTheDocument();
+  it('renders CountryAvailabilityPanel with active rows', () => {
+    const availability = [makeAvailability()];
+    renderWithProviders(<PlatformsSection {...defaultProps} visibleAvailability={availability} />);
+    expect(screen.getByTestId('country-panel')).toBeInTheDocument();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastCall = (mockPanel.mock.calls as any[]).at(-1)?.[0];
+    expect(lastCall.rows).toEqual(availability);
+  });
+
+  it('shows add form with multi-country selector when showAddForm is true', () => {
+    renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={true} />);
+    expect(screen.getByTestId('multi-country-selector')).toBeInTheDocument();
+    expect(screen.getByText('Select platform…')).toBeInTheDocument();
+  });
+
+  it('hides add form when showAddForm is false', () => {
+    renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={false} />);
+    expect(screen.queryByTestId('multi-country-selector')).not.toBeInTheDocument();
+  });
+
+  it('hides add form when read-only even if showAddForm is true', () => {
+    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={true} />);
+    expect(screen.queryByTestId('multi-country-selector')).not.toBeInTheDocument();
+  });
+
+  it('calls onCloseAddForm when Cancel is clicked', () => {
+    const onCloseAddForm = vi.fn();
+    renderWithProviders(
+      <PlatformsSection {...defaultProps} showAddForm={true} onCloseAddForm={onCloseAddForm} />,
+    );
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(onCloseAddForm).toHaveBeenCalled();
+  });
+
+  it('shows country label with count in dropdown', () => {
+    const availability = [
+      makeAvailability({ id: 'a1' }),
+      makeAvailability({ id: 'a2', platform_id: 'prime' }),
+    ];
+    renderWithProviders(<PlatformsSection {...defaultProps} visibleAvailability={availability} />);
+    expect(screen.getByText('India (2)')).toBeInTheDocument();
+  });
+
+  it('switches country when dropdown option is clicked', () => {
+    const availability = [
+      makeAvailability({ id: 'a1', country_code: 'IN' }),
+      makeAvailability({ id: 'a2', country_code: 'US', platform_id: 'prime' }),
+    ];
+    renderWithProviders(<PlatformsSection {...defaultProps} visibleAvailability={availability} />);
+    fireEvent.click(screen.getByText('United States (1)'));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastCall = (mockPanel.mock.calls as any[]).at(-1)?.[0];
+    expect(lastCall.rows).toEqual([availability[1]]);
+  });
+
+  it('disables Add button when no platform or no countries selected', () => {
+    renderWithProviders(<PlatformsSection {...defaultProps} showAddForm={true} />);
+    expect(screen.getByText('Add')).toBeDisabled();
   });
 });

@@ -7,6 +7,7 @@ import type {
   PendingPosterAdd,
   PendingPlatformAdd,
   PendingPHAdd,
+  PendingAvailabilityAdd,
 } from '@/hooks/useMovieEditTypes';
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
@@ -22,6 +23,8 @@ export interface CommonFormDeps {
   setPendingPlatformRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingPHAdds: React.Dispatch<React.SetStateAction<PendingPHAdd[]>>;
   setPendingPHRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setPendingAvailabilityAdds: React.Dispatch<React.SetStateAction<PendingAvailabilityAdd[]>>;
+  setPendingAvailabilityRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingCastAdds: React.Dispatch<React.SetStateAction<PendingCastAdd[]>>;
   setPendingCastRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingRunAdds: React.Dispatch<React.SetStateAction<PendingRun[]>>;
@@ -45,6 +48,8 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     setPendingPlatformRemoveIds,
     setPendingPHAdds,
     setPendingPHRemoveIds,
+    setPendingAvailabilityAdds,
+    setPendingAvailabilityRemoveIds,
     setPendingCastAdds,
     setPendingCastRemoveIds,
     setPendingRunAdds,
@@ -112,6 +117,15 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     }
   }
 
+  // @invariant isPending=true means id is a stable _id UUID; isPending=false means a real DB UUID
+  function handleAvailabilityRemove(availId: string, isPending: boolean) {
+    if (isPending) {
+      setPendingAvailabilityAdds((prev) => prev.filter((a) => a._id !== availId));
+    } else {
+      setPendingAvailabilityRemoveIds((prev) => new Set([...prev, availId]));
+    }
+  }
+
   function handlePHRemove(phId: string, isPending: boolean) {
     if (isPending) {
       setPendingPHAdds((prev) => prev.filter((p) => p.production_house_id !== phId));
@@ -152,6 +166,7 @@ export function createCommonFormHandlers(deps: CommonFormDeps) {
     handleVideoRemove,
     handlePosterRemove,
     handlePlatformRemove,
+    handleAvailabilityRemove,
     handlePHRemove,
     handleCastRemove,
     handleRunRemove,

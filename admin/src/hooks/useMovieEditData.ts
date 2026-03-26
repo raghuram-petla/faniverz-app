@@ -38,6 +38,11 @@ import {
   useRemoveMoviePlatform,
 } from '@/hooks/useAdminOtt';
 import { useAdminPlatforms } from '@/hooks/useAdminPlatforms';
+import {
+  useMovieAvailability,
+  useAddMovieAvailability,
+  useRemoveMovieAvailability,
+} from '@/hooks/useAdminMovieAvailability';
 
 // @contract Centralizes all data-fetching hooks for the movie edit page
 // @coupling Each hook maps 1:1 to a Supabase table or RPC; composed by useMovieEditState
@@ -108,6 +113,13 @@ export function useMovieEditData(id: string) {
   const addMoviePlatform = useAddMoviePlatform();
   const removeMoviePlatform = useRemoveMoviePlatform();
 
+  const { data: rawAvailabilityData } = useMovieAvailability(id);
+  /* v8 ignore start */
+  const availabilityData = rawAvailabilityData ?? [];
+  /* v8 ignore stop */
+  const addMovieAvailability = useAddMovieAvailability();
+  const removeMovieAvailability = useRemoveMovieAvailability();
+
   return {
     movie,
     isLoading,
@@ -143,5 +155,8 @@ export function useMovieEditData(id: string) {
     allPlatforms,
     addMoviePlatform,
     removeMoviePlatform,
+    availabilityData,
+    addMovieAvailability,
+    removeMovieAvailability,
   };
 }

@@ -95,6 +95,7 @@ export function useMovieAddState() {
     postersData: [],
     moviePlatforms: [],
     movieProductionHouses: [],
+    availabilityData: [],
     theatricalRuns: [],
     form,
     initialForm: INITIAL_FORM,

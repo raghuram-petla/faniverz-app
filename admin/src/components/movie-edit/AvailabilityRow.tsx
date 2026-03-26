@@ -8,13 +8,16 @@ import { colors } from '@shared/colors';
 // @nullable platform relation may not be joined — falls back to platform_id
 export interface AvailabilityRowProps {
   row: MoviePlatformAvailability;
-  onRemove: (id: string, movieId: string) => void;
+  isPending: boolean;
+  onRemove: (id: string) => void;
   isReadOnly: boolean;
 }
 
-export function AvailabilityRow({ row, onRemove, isReadOnly }: AvailabilityRowProps) {
+export function AvailabilityRow({ row, isPending, onRemove, isReadOnly }: AvailabilityRowProps) {
   return (
-    <div className="flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3">
+    <div
+      className={`flex items-center gap-3 bg-surface-elevated rounded-xl px-4 py-3${isPending ? ' ring-1 ring-amber-500/40' : ''}`}
+    >
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
         style={{ backgroundColor: row.platform?.color || colors.zinc900 }}
@@ -48,7 +51,7 @@ export function AvailabilityRow({ row, onRemove, isReadOnly }: AvailabilityRowPr
       </div>
       {!isReadOnly && (
         <button
-          onClick={() => onRemove(row.id, row.movie_id)}
+          onClick={() => onRemove(row.id)}
           className="p-1.5 text-on-surface-subtle hover:text-status-red transition-colors"
           aria-label={`Remove ${row.platform?.name}`}
         >

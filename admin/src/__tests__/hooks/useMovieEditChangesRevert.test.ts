@@ -37,6 +37,11 @@ function makeParams(overrides: Partial<UseMovieEditChangesParams> = {}): UseMovi
     movieProductionHouses: [],
     setPendingPHAdds: vi.fn(),
     setPendingPHRemoveIds: vi.fn(),
+    pendingAvailabilityAdds: [],
+    pendingAvailabilityRemoveIds: new Set(),
+    availabilityData: [],
+    setPendingAvailabilityAdds: vi.fn(),
+    setPendingAvailabilityRemoveIds: vi.fn(),
     pendingRunAdds: [],
     pendingRunRemoveIds: new Set(),
     pendingRunEndIds: new Map(),
@@ -120,6 +125,36 @@ describe('revertEntity', () => {
     const p = makeParams();
     revertEntity('entity:ph-remove-xyz', p);
     expect(p.setPendingPHRemoveIds).toHaveBeenCalled();
+  });
+
+  it('reverts an availability add by _id', () => {
+    const setPendingAvailabilityAdds = vi.fn();
+    const p = makeParams({ setPendingAvailabilityAdds });
+    revertEntity('entity:avail-add-avail-uuid-1', p);
+    const updater = setPendingAvailabilityAdds.mock.calls[0][0];
+    const items = [
+      {
+        _id: 'avail-uuid-1',
+        platform_id: 'plt-1',
+        country_code: 'IN',
+        availability_type: 'flatrate',
+      },
+      { _id: 'avail-uuid-2', platform_id: 'plt-2', country_code: 'US', availability_type: 'rent' },
+    ];
+    const result = updater(items);
+    expect(result).toHaveLength(1);
+    expect(result[0]._id).toBe('avail-uuid-2');
+  });
+
+  it('reverts an availability remove by id', () => {
+    const setPendingAvailabilityRemoveIds = vi.fn();
+    const p = makeParams({ setPendingAvailabilityRemoveIds });
+    revertEntity('entity:avail-remove-avail-1', p);
+    const updater = setPendingAvailabilityRemoveIds.mock.calls[0][0];
+    const set = new Set(['avail-1', 'avail-2']);
+    const result = updater(set);
+    expect(result.has('avail-1')).toBe(false);
+    expect(result.has('avail-2')).toBe(true);
   });
 
   it('reverts a run add by stable _id UUID — no index-shift bugs', () => {
@@ -316,6 +351,8 @@ describe('revertEntity', () => {
     expect(p.setPendingPlatformRemoveIds).not.toHaveBeenCalled();
     expect(p.setPendingPHAdds).not.toHaveBeenCalled();
     expect(p.setPendingPHRemoveIds).not.toHaveBeenCalled();
+    expect(p.setPendingAvailabilityAdds).not.toHaveBeenCalled();
+    expect(p.setPendingAvailabilityRemoveIds).not.toHaveBeenCalled();
     expect(p.setPendingRunAdds).not.toHaveBeenCalled();
     expect(p.setPendingRunRemoveIds).not.toHaveBeenCalled();
     expect(p.setPendingRunEndIds).not.toHaveBeenCalled();

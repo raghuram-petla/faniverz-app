@@ -74,6 +74,9 @@ const makeDataResult = (overrides = {}) => ({
   allPlatforms: [],
   addMoviePlatform: { mutateAsync: vi.fn() },
   removeMoviePlatform: { mutateAsync: vi.fn() },
+  availabilityData: [],
+  addMovieAvailability: { mutateAsync: vi.fn() },
+  removeMovieAvailability: { mutateAsync: vi.fn() },
   ...overrides,
 });
 
@@ -83,6 +86,7 @@ const makeDerivedResult = (overrides = {}) => ({
   visiblePosters: [],
   visiblePlatforms: [],
   visibleProductionHouses: [],
+  visibleAvailability: [],
   visibleRuns: [],
   isDirty: false,
   savedMainPosterId: null,

@@ -91,6 +91,7 @@ const mockEditState = {
   visibleRuns: [],
   visiblePlatforms: [],
   visibleProductionHouses: [],
+  visibleAvailability: [],
   allPlatforms: [],
   actors: [],
   phSearchResults: [],
@@ -105,10 +106,13 @@ const mockEditState = {
   setPendingRunAdds: vi.fn(),
   setPendingPlatformAdds: vi.fn(),
   setPendingPHAdds: vi.fn(),
+  setPendingAvailabilityAdds: vi.fn(),
   pendingPHAdds: [],
   pendingPlatformAdds: [],
+  pendingAvailabilityAdds: [],
   pendingVideoIds: new Set(),
   pendingCastIds: new Set(),
+  pendingAvailabilityIds: new Set(),
   pendingRunIds: new Set(),
   pendingRunEndIds: new Map(),
   setLocalCastOrder: vi.fn(),
@@ -120,6 +124,7 @@ const mockEditState = {
   handleRunRemove: vi.fn(),
   handleRunEnd: vi.fn(),
   handlePHRemove: vi.fn(),
+  handleAvailabilityRemove: vi.fn(),
   handlePlatformRemove: vi.fn(),
   createProductionHouse: { mutateAsync: vi.fn(), isPending: false },
 };
@@ -370,10 +375,12 @@ describe('EditMoviePage', () => {
       expect(addBtns.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows Add button in Releases section', () => {
+    it('shows Add buttons in Releases section', () => {
       renderWithProviders(<EditMoviePage />);
       fireEvent.click(screen.getByText('Releases'));
-      expect(screen.getByText('Add')).toBeInTheDocument();
+      // Two Add buttons: Theatrical Runs + OTT Platforms
+      const addBtns = screen.getAllByText('Add');
+      expect(addBtns.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -594,9 +601,11 @@ describe('EditMoviePage', () => {
     it('TheatricalRunsSection onCloseAddForm resets addFormOpen', () => {
       renderWithProviders(<EditMoviePage />);
       fireEvent.click(screen.getByText('Releases'));
-      fireEvent.click(screen.getByText('Add'));
+      // Two Add buttons: Theatrical Runs + OTT Platforms — click the first one
+      const addBtns = screen.getAllByText('Add');
+      fireEvent.click(addBtns[0]);
       act(() => capturedProps.TheatricalRunsSection.onCloseAddForm());
-      expect(screen.getByText('Add')).toBeInTheDocument();
+      expect(screen.getAllByText('Add').length).toBeGreaterThanOrEqual(2);
     });
   });
 

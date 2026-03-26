@@ -47,6 +47,8 @@ function createMockDeps(overrides?: Partial<MovieEditHandlerDeps>): MovieEditHan
     pendingPlatformRemoveIds: new Set(),
     pendingPHAdds: [],
     pendingPHRemoveIds: new Set(),
+    pendingAvailabilityAdds: [],
+    pendingAvailabilityRemoveIds: new Set(),
     pendingRunAdds: [],
     pendingRunRemoveIds: new Set(),
     pendingRunEndIds: new Map(),
@@ -61,6 +63,8 @@ function createMockDeps(overrides?: Partial<MovieEditHandlerDeps>): MovieEditHan
     setPendingPlatformRemoveIds: vi.fn(),
     setPendingPHAdds: vi.fn(),
     setPendingPHRemoveIds: vi.fn(),
+    setPendingAvailabilityAdds: vi.fn(),
+    setPendingAvailabilityRemoveIds: vi.fn(),
     setPendingRunAdds: vi.fn(),
     setPendingRunRemoveIds: vi.fn(),
     setPendingRunEndIds: vi.fn(),
@@ -80,6 +84,8 @@ function createMockDeps(overrides?: Partial<MovieEditHandlerDeps>): MovieEditHan
     removeMoviePlatform: { mutateAsync: vi.fn().mockResolvedValue({}) },
     addMovieProductionHouse: { mutateAsync: vi.fn().mockResolvedValue({}) },
     removeMovieProductionHouse: { mutateAsync: vi.fn().mockResolvedValue({}) },
+    addMovieAvailability: { mutateAsync: vi.fn().mockResolvedValue({}) },
+    removeMovieAvailability: { mutateAsync: vi.fn().mockResolvedValue({}) },
     addTheatricalRun: { mutateAsync: vi.fn().mockResolvedValue({}) },
     removeTheatricalRun: { mutateAsync: vi.fn().mockResolvedValue({}) },
     updateTheatricalRun: { mutateAsync: vi.fn().mockResolvedValue({}) },
@@ -679,6 +685,47 @@ describe('buildChildMutationPromises', () => {
         data: { is_main_poster: false },
       }),
     );
+  });
+
+  it('adds availability for pending availability adds', async () => {
+    const deps = createMockDeps({
+      pendingAvailabilityAdds: [
+        {
+          _id: 'pav1',
+          platform_id: 'plt-1',
+          country_code: 'IN',
+          availability_type: 'flatrate' as never,
+          available_from: '2026-06-01',
+          streaming_url: 'https://stream.com/movie',
+        },
+      ],
+    });
+
+    const promises = await buildChildMutationPromises(deps);
+
+    await Promise.all(promises);
+    expect(deps.addMovieAvailability.mutateAsync).toHaveBeenCalledWith({
+      movie_id: 'movie-1',
+      platform_id: 'plt-1',
+      country_code: 'IN',
+      availability_type: 'flatrate',
+      available_from: '2026-06-01',
+      streaming_url: 'https://stream.com/movie',
+    });
+  });
+
+  it('removes availability for pending availability removals', async () => {
+    const deps = createMockDeps({
+      pendingAvailabilityRemoveIds: new Set(['avail-1']),
+    });
+
+    const promises = await buildChildMutationPromises(deps);
+
+    await Promise.all(promises);
+    expect(deps.removeMovieAvailability.mutateAsync).toHaveBeenCalledWith({
+      id: 'avail-1',
+      movie_id: 'movie-1',
+    });
   });
 
   it('combines multiple entity types into a single promise array', async () => {

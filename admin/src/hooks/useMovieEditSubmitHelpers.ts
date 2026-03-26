@@ -34,6 +34,10 @@ export async function buildChildMutationPromises(deps: MovieEditHandlerDeps) {
     setMainBackdrop,
     addMoviePlatform,
     removeMoviePlatform,
+    pendingAvailabilityAdds,
+    pendingAvailabilityRemoveIds,
+    addMovieAvailability,
+    removeMovieAvailability,
     addMovieProductionHouse,
     removeMovieProductionHouse,
     addTheatricalRun,
@@ -139,6 +143,21 @@ export async function buildChildMutationPromises(deps: MovieEditHandlerDeps) {
   }
   for (const platformId of pendingPlatformRemoveIds) {
     promises.push(removeMoviePlatform.mutateAsync({ movieId: id, platformId }));
+  }
+  for (const a of pendingAvailabilityAdds) {
+    promises.push(
+      addMovieAvailability.mutateAsync({
+        movie_id: id,
+        platform_id: a.platform_id,
+        country_code: a.country_code,
+        availability_type: a.availability_type,
+        available_from: a.available_from,
+        streaming_url: a.streaming_url,
+      }),
+    );
+  }
+  for (const availId of pendingAvailabilityRemoveIds) {
+    promises.push(removeMovieAvailability.mutateAsync({ id: availId, movie_id: id }));
   }
   for (const ph of pendingPHAdds) {
     promises.push(

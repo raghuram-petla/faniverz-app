@@ -15,6 +15,7 @@ export type {
   PendingPosterAdd,
   PendingPlatformAdd,
   PendingPHAdd,
+  PendingAvailabilityAdd,
 } from '@/hooks/useMovieEditTypes';
 export type { VideoType } from '@/lib/types';
 export type { OTTPlatform, ProductionHouse } from '@shared/types';
@@ -60,6 +61,9 @@ export function useMovieEditState(id: string) {
     allPlatforms,
     addMoviePlatform,
     removeMoviePlatform,
+    availabilityData,
+    addMovieAvailability,
+    removeMovieAvailability,
   } = data;
 
   // Upload state
@@ -97,15 +101,13 @@ export function useMovieEditState(id: string) {
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
-  // @sideeffect Resets pending state + first-load flag on id change (navigation to different movie)
   useEffect(() => {
     pending.resetPendingState();
     isFirstLoadRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // @sideeffect Hydrates form from server data on first load; on refetches updates only initialForm
-  // @edge Preserves unsaved edits: background refetches don't overwrite form after first load
+  // @sideeffect Hydrates form from server data on first load
   useEffect(() => {
     if (movie) {
       const loaded: MovieForm = {
@@ -152,6 +154,7 @@ export function useMovieEditState(id: string) {
     postersData,
     moviePlatforms,
     movieProductionHouses,
+    availabilityData,
     theatricalRuns,
     form,
     initialForm,
@@ -190,6 +193,8 @@ export function useMovieEditState(id: string) {
     setMainBackdrop,
     addMoviePlatform,
     removeMoviePlatform,
+    addMovieAvailability,
+    removeMovieAvailability,
     addMovieProductionHouse,
     removeMovieProductionHouse,
     addTheatricalRun,
@@ -203,7 +208,6 @@ export function useMovieEditState(id: string) {
   });
 
   // @sync: memoized Sets of pending _ids — stable references prevent unnecessary re-renders
-  // when CastSection/VideosSection/TheatricalRunsSection receive these as props
   const pendingCastIds = useMemo(
     () => new Set(pending.pendingCastAdds.map((c) => c._id)),
     [pending.pendingCastAdds],
@@ -212,6 +216,10 @@ export function useMovieEditState(id: string) {
     () => new Set(pending.pendingVideoAdds.map((v) => v._id)),
     [pending.pendingVideoAdds],
   );
+  const pendingAvailabilityIds = useMemo(
+    () => new Set(pending.pendingAvailabilityAdds.map((a) => a._id)),
+    [pending.pendingAvailabilityAdds],
+  );
   // @sync: mirrors pendingCastIds/pendingVideoIds pattern — Set of stable _id UUIDs for pending runs
   const pendingRunIds = useMemo(
     () => new Set(pending.pendingRunAdds.map((r) => r._id)),
@@ -219,7 +227,6 @@ export function useMovieEditState(id: string) {
   );
 
   return {
-    // @contract Pre-built params for useMovieEditChanges — avoids 40-line prop spread in edit page
     changesParams: {
       form,
       initialForm,
@@ -231,6 +238,7 @@ export function useMovieEditState(id: string) {
       postersData,
       moviePlatforms,
       movieProductionHouses,
+      availabilityData,
       theatricalRuns,
       savedMainPosterId: derived.savedMainPosterId,
     },
@@ -249,6 +257,7 @@ export function useMovieEditState(id: string) {
     setPendingPosterAdds: pending.setPendingPosterAdds,
     setPendingPlatformAdds: pending.setPendingPlatformAdds,
     setPendingPHAdds: pending.setPendingPHAdds,
+    setPendingAvailabilityAdds: pending.setPendingAvailabilityAdds,
     setPendingCastAdds: pending.setPendingCastAdds,
     setPendingRunAdds: pending.setPendingRunAdds,
     setPendingMainPosterId: pending.setPendingMainPosterId,
@@ -256,6 +265,7 @@ export function useMovieEditState(id: string) {
     handleVideoRemove: handlers.handleVideoRemove,
     handlePosterRemove: handlers.handlePosterRemove,
     handlePlatformRemove: handlers.handlePlatformRemove,
+    handleAvailabilityRemove: handlers.handleAvailabilityRemove,
     handlePHRemove: handlers.handlePHRemove,
     handleCastRemove: handlers.handleCastRemove,
     handleRunRemove: handlers.handleRunRemove,
@@ -265,6 +275,7 @@ export function useMovieEditState(id: string) {
     visiblePosters: derived.visiblePosters,
     visiblePlatforms: derived.visiblePlatforms,
     visibleProductionHouses: derived.visibleProductionHouses,
+    visibleAvailability: derived.visibleAvailability,
     visibleRuns: derived.visibleRuns,
     savedMainPosterId: derived.savedMainPosterId,
     actors,
@@ -277,16 +288,17 @@ export function useMovieEditState(id: string) {
     createProductionHouse,
     pendingPlatformAdds: pending.pendingPlatformAdds,
     pendingPHAdds: pending.pendingPHAdds,
+    pendingAvailabilityAdds: pending.pendingAvailabilityAdds,
     pendingRunEndIds: pending.pendingRunEndIds,
     pendingCastIds,
     pendingVideoIds,
+    pendingAvailabilityIds,
     pendingRunIds,
     isDirty: derived.isDirty,
     isSaving,
     saveStatus,
     handleSubmit: handlers.handleSubmit,
     handleDelete: handlers.handleDelete,
-    // @contract deferred selection — updates form state + pending ID; persists on Save
     handleSelectMainPoster: (imageId: string) => {
       const img = derived.visiblePosters.find((p) => p.id === imageId);
       if (img) setForm((f) => ({ ...f, poster_url: img.image_url }));

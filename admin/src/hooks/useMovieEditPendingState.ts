@@ -5,6 +5,7 @@ import type {
   PendingPosterAdd,
   PendingPlatformAdd,
   PendingPHAdd,
+  PendingAvailabilityAdd,
 } from '@/hooks/useMovieEditTypes';
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
@@ -31,6 +32,13 @@ export function useMovieEditPendingState() {
   const [pendingPHAdds, setPendingPHAdds] = useState<PendingPHAdd[]>([]);
   const [pendingPHRemoveIds, setPendingPHRemoveIds] = useState<Set<string>>(new Set());
 
+  const [pendingAvailabilityAdds, setPendingAvailabilityAdds] = useState<PendingAvailabilityAdd[]>(
+    [],
+  );
+  const [pendingAvailabilityRemoveIds, setPendingAvailabilityRemoveIds] = useState<Set<string>>(
+    new Set(),
+  );
+
   const [pendingRunAdds, setPendingRunAdds] = useState<PendingRun[]>([]);
   const [pendingRunRemoveIds, setPendingRunRemoveIds] = useState<Set<string>>(new Set());
   // @contract: maps run ID → end_date string; queued for PATCH on save
@@ -50,6 +58,8 @@ export function useMovieEditPendingState() {
     setPendingPlatformRemoveIds(new Set());
     setPendingPHAdds([]);
     setPendingPHRemoveIds(new Set());
+    setPendingAvailabilityAdds([]);
+    setPendingAvailabilityRemoveIds(new Set());
     setPendingRunAdds([]);
     setPendingRunRemoveIds(new Set());
     setPendingRunEndIds(new Map());
@@ -80,6 +90,10 @@ export function useMovieEditPendingState() {
     setPendingPHAdds,
     pendingPHRemoveIds,
     setPendingPHRemoveIds,
+    pendingAvailabilityAdds,
+    setPendingAvailabilityAdds,
+    pendingAvailabilityRemoveIds,
+    setPendingAvailabilityRemoveIds,
     pendingRunAdds,
     setPendingRunAdds,
     pendingRunRemoveIds,

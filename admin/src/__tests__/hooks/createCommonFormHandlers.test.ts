@@ -23,6 +23,8 @@ function createMockDeps(): CommonFormDeps {
     setPendingRunAdds: vi.fn(),
     setPendingRunRemoveIds: vi.fn(),
     setPendingRunEndIds: vi.fn(),
+    setPendingAvailabilityAdds: vi.fn(),
+    setPendingAvailabilityRemoveIds: vi.fn(),
   };
 }
 
@@ -227,5 +229,47 @@ describe('handleRunRemove', () => {
     expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-2')).toBeUndefined();
     expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-1')).toBeDefined();
     expect(result.find((r: { _id: string }) => r._id === 'stable-uuid-3')).toBeDefined();
+  });
+});
+
+describe('handleAvailabilityRemove', () => {
+  it('removes pending availability by _id', () => {
+    const handlers = createCommonFormHandlers(deps);
+    handlers.handleAvailabilityRemove('avail-1', true);
+
+    expect(deps.setPendingAvailabilityAdds).toHaveBeenCalledTimes(1);
+    const updater = (deps.setPendingAvailabilityAdds as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const items = [
+      {
+        _id: 'avail-1',
+        platform_id: 'plt-1',
+        country_code: 'IN',
+        availability_type: 'flatrate' as const,
+        available_from: null,
+        streaming_url: null,
+      },
+      {
+        _id: 'avail-2',
+        platform_id: 'plt-2',
+        country_code: 'US',
+        availability_type: 'rent' as const,
+        available_from: '2026-01-01',
+        streaming_url: null,
+      },
+    ];
+    const result = updater(items);
+    expect(result).toHaveLength(1);
+    expect(result[0]._id).toBe('avail-2');
+  });
+
+  it('adds to remove set for non-pending availability', () => {
+    const handlers = createCommonFormHandlers(deps);
+    handlers.handleAvailabilityRemove('real-avail-id', false);
+
+    expect(deps.setPendingAvailabilityRemoveIds).toHaveBeenCalledTimes(1);
+    const updater = (deps.setPendingAvailabilityRemoveIds as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    const result = updater(new Set<string>());
+    expect(result.has('real-avail-id')).toBe(true);
   });
 });

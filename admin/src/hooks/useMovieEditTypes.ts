@@ -6,7 +6,7 @@ import type { VideoType } from '@/lib/types';
 import type { MovieCast } from '@/lib/types';
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
-import type { OTTPlatform, ProductionHouse } from '@shared/types';
+import type { OTTPlatform, ProductionHouse, AvailabilityType } from '@shared/types';
 
 // @contract MovieForm mirrors the editable subset of the movies table
 // spotlight_focus_* and detail_focus_* are preserved separately in movieData
@@ -67,6 +67,17 @@ export type PendingPlatformAdd = {
 
 export type PendingPHAdd = { production_house_id: string; _ph?: ProductionHouse };
 
+// @contract Pending availability add for multi-country OTT — uses stable _id UUID
+export type PendingAvailabilityAdd = {
+  _id: string;
+  platform_id: string;
+  country_code: string;
+  availability_type: AvailabilityType;
+  available_from: string | null;
+  streaming_url: string | null;
+  _platform?: OTTPlatform;
+};
+
 // @contract Minimal mutation interface — only mutateAsync is required by handlers
 interface MutateAsync<TArgs, TResult = unknown> {
   mutateAsync: (args: TArgs) => Promise<TResult>;
@@ -99,6 +110,8 @@ export interface MovieEditHandlerDeps {
   setPendingPlatformRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingPHAdds: React.Dispatch<React.SetStateAction<PendingPHAdd[]>>;
   setPendingPHRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setPendingAvailabilityAdds: React.Dispatch<React.SetStateAction<PendingAvailabilityAdd[]>>;
+  setPendingAvailabilityRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingRunAdds: React.Dispatch<React.SetStateAction<PendingRun[]>>;
   setPendingRunRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   setPendingRunEndIds: React.Dispatch<React.SetStateAction<Map<string, string>>>;
@@ -118,6 +131,8 @@ export interface MovieEditHandlerDeps {
   pendingPlatformRemoveIds: Set<string>;
   pendingPHAdds: PendingPHAdd[];
   pendingPHRemoveIds: Set<string>;
+  pendingAvailabilityAdds: PendingAvailabilityAdd[];
+  pendingAvailabilityRemoveIds: Set<string>;
   pendingRunAdds: PendingRun[];
   pendingRunRemoveIds: Set<string>;
   pendingRunEndIds: Map<string, string>;
@@ -165,6 +180,15 @@ export interface MovieEditHandlerDeps {
   removeMoviePlatform: MutateAsync<{ movieId: string; platformId: string }>;
   addMovieProductionHouse: MutateAsync<{ movieId: string; productionHouseId: string }>;
   removeMovieProductionHouse: MutateAsync<{ movieId: string; productionHouseId: string }>;
+  addMovieAvailability: MutateAsync<{
+    movie_id: string;
+    platform_id: string;
+    country_code: string;
+    availability_type: AvailabilityType;
+    available_from?: string | null;
+    streaming_url?: string | null;
+  }>;
+  removeMovieAvailability: MutateAsync<{ id: string; movie_id: string }>;
   addTheatricalRun: MutateAsync<{
     movie_id: string;
     release_date: string;
@@ -225,6 +249,13 @@ export interface RunRow {
   release_date: string;
   label?: string | null;
 }
+export interface AvailabilityRow {
+  id: string;
+  platform_id: string;
+  country_code: string;
+  availability_type: AvailabilityType;
+  platform?: { name: string } | null;
+}
 
 // @contract params for useMovieEditChanges — all pending state + server data for change diffing
 export interface UseMovieEditChangesParams {
@@ -267,6 +298,12 @@ export interface UseMovieEditChangesParams {
   movieProductionHouses: PHRow[];
   setPendingPHAdds: React.Dispatch<React.SetStateAction<PendingPHAdd[]>>;
   setPendingPHRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  // Availability (multi-country OTT)
+  pendingAvailabilityAdds: PendingAvailabilityAdd[];
+  pendingAvailabilityRemoveIds: Set<string>;
+  availabilityData: AvailabilityRow[];
+  setPendingAvailabilityAdds: React.Dispatch<React.SetStateAction<PendingAvailabilityAdd[]>>;
+  setPendingAvailabilityRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   // Theatrical Runs
   pendingRunAdds: PendingRun[];
   pendingRunRemoveIds: Set<string>;

@@ -45,6 +45,9 @@ function emptyParams(overrides: Record<string, unknown> = {}) {
     movieProductionHouses: [],
     pendingPHAdds: [],
     pendingPHRemoveIds: new Set<string>(),
+    availabilityData: [],
+    pendingAvailabilityAdds: [],
+    pendingAvailabilityRemoveIds: new Set<string>(),
     theatricalRuns: [],
     pendingRunAdds: [],
     pendingRunRemoveIds: new Set<string>(),
@@ -219,6 +222,86 @@ describe('useMovieEditDerived', () => {
       );
       expect(result.current.visibleVideos).toHaveLength(3);
       expect(result.current.visibleVideos[2].title).toBe('Song');
+    });
+  });
+
+  describe('visibleAvailability', () => {
+    const availabilityData = [
+      {
+        id: 'av1',
+        movie_id: 'movie-1',
+        platform_id: 'plt-1',
+        country_code: 'IN',
+        availability_type: 'flatrate' as const,
+        available_from: null,
+        streaming_url: null,
+        tmdb_display_priority: null,
+        created_at: '',
+        platform: {
+          id: 'plt-1',
+          name: 'Netflix',
+          logo: '',
+          logo_url: null,
+          color: '',
+          display_order: 0,
+          tmdb_provider_id: null,
+        },
+      },
+      {
+        id: 'av2',
+        movie_id: 'movie-1',
+        platform_id: 'plt-2',
+        country_code: 'US',
+        availability_type: 'rent' as const,
+        available_from: '2026-01-01',
+        streaming_url: null,
+        tmdb_display_priority: null,
+        created_at: '',
+        platform: {
+          id: 'plt-2',
+          name: 'Prime',
+          logo: '',
+          logo_url: null,
+          color: '',
+          display_order: 1,
+          tmdb_provider_id: null,
+        },
+      },
+    ];
+
+    it('filters out pendingAvailabilityRemoveIds', () => {
+      const { result } = renderHook(() =>
+        useMovieEditDerived(
+          emptyParams({
+            availabilityData,
+            pendingAvailabilityRemoveIds: new Set(['av1']),
+          }),
+        ),
+      );
+      expect(result.current.visibleAvailability).toHaveLength(1);
+      expect(result.current.visibleAvailability[0].id).toBe('av2');
+    });
+
+    it('includes pendingAvailabilityAdds', () => {
+      const { result } = renderHook(() =>
+        useMovieEditDerived(
+          emptyParams({
+            availabilityData,
+            pendingAvailabilityAdds: [
+              {
+                _id: 'pav1',
+                platform_id: 'plt-3',
+                country_code: 'GB',
+                availability_type: 'buy' as const,
+                available_from: null,
+                streaming_url: null,
+              },
+            ],
+          }),
+        ),
+      );
+      expect(result.current.visibleAvailability).toHaveLength(3);
+      expect(result.current.visibleAvailability[2].country_code).toBe('GB');
     });
   });
 });

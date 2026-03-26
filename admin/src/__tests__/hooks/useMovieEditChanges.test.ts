@@ -10,6 +10,7 @@ import type {
   PendingPosterAdd,
   PendingPlatformAdd,
   PendingPHAdd,
+  PendingAvailabilityAdd,
 } from '@/hooks/useMovieEditTypes';
 
 vi.mock('@/hooks/useFormChanges', () => ({
@@ -86,6 +87,11 @@ function makeParams(overrides: Partial<UseMovieEditChangesParams> = {}): UseMovi
     movieProductionHouses: [],
     setPendingPHAdds: vi.fn(),
     setPendingPHRemoveIds: vi.fn(),
+    pendingAvailabilityAdds: [],
+    pendingAvailabilityRemoveIds: new Set(),
+    availabilityData: [],
+    setPendingAvailabilityAdds: vi.fn(),
+    setPendingAvailabilityRemoveIds: vi.fn(),
     pendingRunAdds: [],
     pendingRunRemoveIds: new Set(),
     pendingRunEndIds: new Map(),
@@ -450,6 +456,52 @@ describe('useMovieEditChanges', () => {
       const change = result.current.changes.find((c) => c.key === 'entity:ph-remove-ph-1');
       expect(change).toBeDefined();
       expect(change!.oldDisplay).toBe('DVV');
+    });
+
+    it('tracks pending availability adds', () => {
+      const avail: PendingAvailabilityAdd = {
+        _id: 'av1',
+        platform_id: 'plt-1',
+        country_code: 'IN',
+        availability_type: 'flatrate',
+        available_from: null,
+        streaming_url: null,
+        _platform: {
+          id: 'plt-1',
+          name: 'Netflix',
+          logo: '',
+          logo_url: null,
+          color: '',
+          display_order: 0,
+          tmdb_provider_id: null,
+        },
+      };
+      const params = makeParams({ pendingAvailabilityAdds: [avail] });
+      const { result } = renderHook(() => useMovieEditChanges(params));
+
+      const change = result.current.changes.find((c) => c.key === 'entity:avail-add-av1');
+      expect(change).toBeDefined();
+      expect(change!.newDisplay).toBe('+ Netflix / Stream / IN');
+    });
+
+    it('tracks pending availability removes', () => {
+      const params = makeParams({
+        pendingAvailabilityRemoveIds: new Set(['avail-1']),
+        availabilityData: [
+          {
+            id: 'avail-1',
+            platform_id: 'plt-1',
+            country_code: 'IN',
+            availability_type: 'flatrate' as const,
+            platform: { name: 'Hotstar' },
+          },
+        ],
+      });
+      const { result } = renderHook(() => useMovieEditChanges(params));
+
+      const change = result.current.changes.find((c) => c.key === 'entity:avail-remove-avail-1');
+      expect(change).toBeDefined();
+      expect(change!.oldDisplay).toBe('Hotstar');
     });
 
     it('tracks pending theatrical run adds', () => {

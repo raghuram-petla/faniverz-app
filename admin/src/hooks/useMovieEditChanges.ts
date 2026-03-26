@@ -158,6 +158,34 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
         ),
       );
     });
+    // Availability (multi-country OTT)
+    // @sync: uses stable _id UUID — mirrors cast/video/poster pattern
+    const availLabels: Record<string, string> = {
+      flatrate: 'Stream',
+      rent: 'Rent',
+      buy: 'Buy',
+      ads: 'Free with Ads',
+      free: 'Free',
+    };
+    params.pendingAvailabilityAdds.forEach((a) => {
+      const platName = a._platform?.name ?? a.platform_id;
+      const typeName = availLabels[a.availability_type] ?? a.availability_type;
+      result.push(
+        makeChange(
+          `entity:avail-add-${a._id}`,
+          'OTT Availability',
+          '(empty)',
+          `+ ${platName} / ${typeName} / ${a.country_code}`,
+        ),
+      );
+    });
+    params.pendingAvailabilityRemoveIds.forEach((id) => {
+      const row = params.availabilityData.find((r) => r.id === id);
+      const platName = row?.platform?.name ?? row?.platform_id ?? id;
+      result.push(
+        makeChange(`entity:avail-remove-${id}`, 'OTT Availability', platName, '(removed)'),
+      );
+    });
     // Theatrical Runs
     // @sync: key uses stable _id UUID — mirrors cast/video/poster pattern to avoid index-shift bugs on revert
     params.pendingRunAdds.forEach((r) => {
@@ -203,6 +231,9 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
     params.pendingPHAdds,
     params.pendingPHRemoveIds,
     params.movieProductionHouses,
+    params.pendingAvailabilityAdds,
+    params.pendingAvailabilityRemoveIds,
+    params.availabilityData,
     params.pendingRunAdds,
     params.pendingRunRemoveIds,
     params.pendingRunEndIds,

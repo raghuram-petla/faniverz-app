@@ -60,6 +60,12 @@ vi.mock('@/hooks/useAdminPlatforms', () => ({
   useAdminPlatforms: vi.fn(() => ({ data: [] })),
 }));
 
+vi.mock('@/hooks/useAdminMovieAvailability', () => ({
+  useMovieAvailability: vi.fn(() => ({ data: [] })),
+  useAddMovieAvailability: vi.fn(() => ({ mutateAsync: vi.fn() })),
+  useRemoveMovieAvailability: vi.fn(() => ({ mutateAsync: vi.fn() })),
+}));
+
 import { useMovieEditData } from '@/hooks/useMovieEditData';
 import { useAdminMovie } from '@/hooks/useAdminMovies';
 import { useAdminActors } from '@/hooks/useAdminCast';

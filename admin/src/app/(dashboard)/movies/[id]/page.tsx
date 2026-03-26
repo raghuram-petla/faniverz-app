@@ -255,8 +255,20 @@ export default function EditMoviePage() {
                   onCloseAddForm={closeAdd}
                 />
               </SectionCard>
-              <SectionCard title="OTT Platforms" icon={Tv}>
-                <PlatformsSection movieId={id} />
+              <SectionCard title="OTT Platforms" icon={Tv} action={addButton('ott', 'Add')}>
+                <PlatformsSection
+                  visibleAvailability={editState.visibleAvailability}
+                  pendingIds={editState.pendingAvailabilityIds}
+                  showAddForm={addFormOpen === 'ott'}
+                  onCloseAddForm={closeAdd}
+                  onAdd={(data) =>
+                    editState.setPendingAvailabilityAdds((prev) => [
+                      ...prev,
+                      { _id: crypto.randomUUID(), ...data },
+                    ])
+                  }
+                  onRemove={editState.handleAvailabilityRemove}
+                />
               </SectionCard>
             </>
           )}

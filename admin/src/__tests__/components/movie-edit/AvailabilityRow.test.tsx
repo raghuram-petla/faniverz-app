@@ -42,7 +42,9 @@ describe('AvailabilityRow', () => {
   });
 
   it('renders platform name', () => {
-    render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} />);
+    render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={false} />,
+    );
     expect(screen.getByText('Netflix')).toBeInTheDocument();
   });
 
@@ -52,6 +54,7 @@ describe('AvailabilityRow', () => {
         row={makeRow({ platform: undefined })}
         onRemove={onRemove}
         isReadOnly={false}
+        isPending={false}
       />,
     );
     expect(screen.getByText('plat-1')).toBeInTheDocument();
@@ -63,13 +66,16 @@ describe('AvailabilityRow', () => {
         row={makeRow({ available_from: '2024-06-15' })}
         onRemove={onRemove}
         isReadOnly={false}
+        isPending={false}
       />,
     );
     expect(screen.getByText('from 2024-06-15')).toBeInTheDocument();
   });
 
   it('does not render date when available_from is null', () => {
-    render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} />);
+    render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={false} />,
+    );
     expect(screen.queryByText(/from/)).not.toBeInTheDocument();
   });
 
@@ -79,6 +85,7 @@ describe('AvailabilityRow', () => {
         row={makeRow({ streaming_url: 'https://netflix.com/watch/123' })}
         onRemove={onRemove}
         isReadOnly={false}
+        isPending={false}
       />,
     );
     const link = screen.getByRole('link');
@@ -87,25 +94,33 @@ describe('AvailabilityRow', () => {
   });
 
   it('does not render streaming URL when null', () => {
-    render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} />);
+    render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={false} />,
+    );
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 
   it('renders remove button when not read-only', () => {
-    render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} />);
+    render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={false} />,
+    );
     const removeBtn = screen.getByRole('button', { name: 'Remove Netflix' });
     expect(removeBtn).toBeInTheDocument();
   });
 
   it('hides remove button when read-only', () => {
-    render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={true} />);
+    render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={true} isPending={false} />,
+    );
     expect(screen.queryByRole('button', { name: 'Remove Netflix' })).not.toBeInTheDocument();
   });
 
   it('calls onRemove with correct args when remove is clicked', () => {
-    render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} />);
+    render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={false} />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Remove Netflix' }));
-    expect(onRemove).toHaveBeenCalledWith('avail-1', 'movie-1');
+    expect(onRemove).toHaveBeenCalledWith('avail-1');
   });
 
   it('renders platform logo image when logo_url is present', () => {
@@ -119,14 +134,16 @@ describe('AvailabilityRow', () => {
         display_order: 1,
       },
     });
-    render(<AvailabilityRow row={row} onRemove={onRemove} isReadOnly={false} />);
+    render(<AvailabilityRow row={row} onRemove={onRemove} isReadOnly={false} isPending={false} />);
     const img = document.querySelector('img');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', 'https://example.com/logo.png');
   });
 
   it('does not render img tag when no logo_url', () => {
-    render(<AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} />);
+    render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={false} />,
+    );
     expect(document.querySelector('img')).not.toBeInTheDocument();
   });
 
@@ -142,9 +159,27 @@ describe('AvailabilityRow', () => {
         display_order: 1,
       },
     });
-    render(<AvailabilityRow row={row} onRemove={onRemove} isReadOnly={false} />);
+    render(<AvailabilityRow row={row} onRemove={onRemove} isReadOnly={false} isPending={false} />);
     const img = document.querySelector('img');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', 'https://raw.example.com/logo.png');
+  });
+
+  it('applies pending ring styling when isPending is true', () => {
+    const { container } = render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={true} />,
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.className).toContain('ring-1');
+    expect(wrapper.className).toContain('ring-amber-500/40');
+  });
+
+  it('does not apply pending ring styling when isPending is false', () => {
+    const { container } = render(
+      <AvailabilityRow row={makeRow()} onRemove={onRemove} isReadOnly={false} isPending={false} />,
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.className).not.toContain('ring-1');
+    expect(wrapper.className).not.toContain('ring-amber-500/40');
   });
 });

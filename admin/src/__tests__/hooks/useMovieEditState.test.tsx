@@ -79,6 +79,9 @@ vi.mock('@/hooks/useMovieEditData', () => ({
     allPlatforms: [],
     addMoviePlatform: { mutateAsync: vi.fn() },
     removeMoviePlatform: { mutateAsync: vi.fn() },
+    availabilityData: [],
+    addMovieAvailability: { mutateAsync: vi.fn() },
+    removeMovieAvailability: { mutateAsync: vi.fn() },
   }),
 }));
 
@@ -108,6 +111,10 @@ vi.mock('@/hooks/useMovieEditPendingState', () => ({
     setPendingPHAdds: vi.fn(),
     pendingPHRemoveIds: new Set(),
     setPendingPHRemoveIds: vi.fn(),
+    pendingAvailabilityAdds: [],
+    setPendingAvailabilityAdds: vi.fn(),
+    pendingAvailabilityRemoveIds: new Set(),
+    setPendingAvailabilityRemoveIds: vi.fn(),
     pendingRunAdds: [],
     setPendingRunAdds: vi.fn(),
     pendingRunRemoveIds: new Set(),
@@ -126,6 +133,7 @@ vi.mock('@/hooks/useMovieEditHandlers', () => ({
     handleVideoRemove: vi.fn(),
     handlePosterRemove: vi.fn(),
     handlePlatformRemove: vi.fn(),
+    handleAvailabilityRemove: vi.fn(),
     handlePHRemove: vi.fn(),
     handleCastRemove: vi.fn(),
     handleRunRemove: vi.fn(),

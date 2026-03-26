@@ -60,6 +60,16 @@ export function revertEntity(key: string, p: UseMovieEditChangesParams) {
       s.delete(id);
       return s;
     });
+  } else if (key.startsWith('entity:avail-add-')) {
+    const _id = key.replace('entity:avail-add-', '');
+    p.setPendingAvailabilityAdds((prev) => prev.filter((a) => a._id !== _id));
+  } else if (key.startsWith('entity:avail-remove-')) {
+    const id = key.replace('entity:avail-remove-', '');
+    p.setPendingAvailabilityRemoveIds((prev) => {
+      const s = new Set(prev);
+      s.delete(id);
+      return s;
+    });
   } else if (key.startsWith('entity:run-add-')) {
     // @sync: key format is 'entity:run-add-{_id}' — extract _id and filter by stable UUID, not index
     const _id = key.replace('entity:run-add-', '');

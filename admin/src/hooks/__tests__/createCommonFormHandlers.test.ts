@@ -18,6 +18,8 @@ function makeDeps() {
     setPendingPlatformRemoveIds: vi.fn(),
     setPendingPHAdds: vi.fn(),
     setPendingPHRemoveIds: vi.fn(),
+    setPendingAvailabilityAdds: vi.fn(),
+    setPendingAvailabilityRemoveIds: vi.fn(),
     setPendingCastAdds: vi.fn(),
     setPendingCastRemoveIds: vi.fn(),
     setPendingRunAdds: vi.fn(),
