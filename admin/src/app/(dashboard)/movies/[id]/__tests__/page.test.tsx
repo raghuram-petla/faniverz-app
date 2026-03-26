@@ -94,6 +94,10 @@ const defaultEditState = {
   handleRunEnd: vi.fn(),
   pendingRunEndIds: new Map<string, string>(),
   pendingRunIds: new Set<string>(),
+  visibleAvailability: [],
+  pendingAvailabilityIds: new Set<string>(),
+  setPendingAvailabilityAdds: vi.fn(),
+  handleAvailabilityRemove: vi.fn(),
   changesParams: {},
 };
 
@@ -137,8 +141,17 @@ vi.mock('@/components/movie-edit', () => ({
   TmdbMetadataSection: () => <div data-testid="tmdb-metadata-section">TMDB Metadata</div>,
   VideosSection: () => <div data-testid="videos-section">Videos</div>,
   PostersSection: () => <div data-testid="posters-section">Posters</div>,
-  PlatformsSection: ({ movieId }: { movieId: string }) => (
-    <div data-testid="platforms-section">Platforms for {movieId}</div>
+  PlatformsSection: ({
+    onAdd,
+  }: {
+    movieId?: string;
+    onAdd?: (data: Record<string, unknown>) => void;
+  }) => (
+    <div data-testid="platforms-section">
+      <button data-testid="platform-add-btn" onClick={() => onAdd?.({ platform_id: 'test' })}>
+        Add Platform
+      </button>
+    </div>
   ),
   ProductionHousesSection: () => <div data-testid="ph-section">Production Houses</div>,
   CastSection: () => <div data-testid="cast-section">Cast</div>,
@@ -301,6 +314,15 @@ describe('EditMoviePage', () => {
     // In read-only, addButton returns undefined so no Add button
     const addButtons = screen.queryAllByRole('button').filter((b) => b.textContent === 'Add');
     expect(addButtons.length).toBe(0);
+  });
+
+  it('calls setPendingAvailabilityAdds when platform onAdd is triggered', () => {
+    const mockSetAdds = vi.fn();
+    defaultEditState.setPendingAvailabilityAdds = mockSetAdds;
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-releases'));
+    fireEvent.click(screen.getByTestId('platform-add-btn'));
+    expect(mockSetAdds).toHaveBeenCalled();
   });
 
   it('applies opacity class in read-only mode', () => {

@@ -617,6 +617,104 @@ describe('useMovieEditChanges', () => {
     });
   });
 
+  describe('entity changes — availability branches', () => {
+    it('generates availability add changes with platform name and known type', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingAvailabilityAdds: [
+              {
+                _id: 'a1',
+                platform_id: 'plat1',
+                availability_type: 'flatrate',
+                country_code: 'IN',
+                available_from: null,
+                streaming_url: null,
+                _platform: { id: 'plat1', name: 'Netflix' } as OTTPlatform,
+              },
+            ],
+          }),
+        ),
+      );
+      const change = result.current.changes.find((c) => c.key.includes('avail-add'));
+      expect(change).toBeDefined();
+      expect(change!.newValue).toBe('+ Netflix / Stream / IN');
+    });
+
+    it('falls back to platform_id when _platform is undefined', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingAvailabilityAdds: [
+              {
+                _id: 'a2',
+                platform_id: 'plat2',
+                availability_type: 'rent',
+                country_code: 'US',
+                available_from: null,
+                streaming_url: null,
+                _platform: undefined,
+              },
+            ],
+          }),
+        ),
+      );
+      const change = result.current.changes.find((c) => c.key.includes('avail-add'));
+      expect(change!.newValue).toBe('+ plat2 / Rent / US');
+    });
+
+    it('generates availability remove changes with platform name', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingAvailabilityRemoveIds: new Set(['avail1']),
+            availabilityData: [
+              {
+                id: 'avail1',
+                platform_id: 'plat1',
+                platform: { id: 'plat1', name: 'Hotstar' },
+              },
+            ] as never[],
+          }),
+        ),
+      );
+      const change = result.current.changes.find((c) => c.key.includes('avail-remove'));
+      expect(change!.oldValue).toBe('Hotstar');
+    });
+
+    it('falls back to platform_id when platform object is missing', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingAvailabilityRemoveIds: new Set(['avail2']),
+            availabilityData: [
+              {
+                id: 'avail2',
+                platform_id: 'plat2',
+                platform: null,
+              },
+            ] as never[],
+          }),
+        ),
+      );
+      const change = result.current.changes.find((c) => c.key.includes('avail-remove'));
+      expect(change!.oldValue).toBe('plat2');
+    });
+
+    it('falls back to id when availability row is not found', () => {
+      const { result } = renderHook(() =>
+        useMovieEditChanges(
+          makeParams({
+            pendingAvailabilityRemoveIds: new Set(['avail99']),
+            availabilityData: [],
+          }),
+        ),
+      );
+      const change = result.current.changes.find((c) => c.key.includes('avail-remove'));
+      expect(change!.oldValue).toBe('avail99');
+    });
+  });
+
   describe('entity changes — theatrical run branches', () => {
     it('generates run remove changes with release_date', () => {
       const { result } = renderHook(() =>

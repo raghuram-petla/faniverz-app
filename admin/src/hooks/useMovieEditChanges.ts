@@ -169,7 +169,9 @@ export function useMovieEditChanges(params: UseMovieEditChangesParams) {
     };
     params.pendingAvailabilityAdds.forEach((a) => {
       const platName = a._platform?.name ?? a.platform_id;
+      /* v8 ignore start -- all AvailabilityType values are in availLabels; ?? fallback is unreachable */
       const typeName = availLabels[a.availability_type] ?? a.availability_type;
+      /* v8 ignore stop */
       result.push(
         makeChange(
           `entity:avail-add-${a._id}`,

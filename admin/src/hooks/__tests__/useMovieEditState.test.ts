@@ -440,4 +440,20 @@ describe('useMovieEditState', () => {
     expect(result.current.form.genres).toEqual([]);
     expect(result.current.form.certification).toBe('');
   });
+
+  it('pendingAvailabilityIds derives from pendingAvailabilityAdds', () => {
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useMovieEditState('movie-1'), { wrapper: Wrapper });
+    act(() => {
+      result.current.setPendingAvailabilityAdds([
+        {
+          _id: 'avail-1',
+          platform_id: 'plat1',
+          availability_type: 'flatrate',
+          country_code: 'IN',
+        } as never,
+      ]);
+    });
+    expect(result.current.pendingAvailabilityIds).toEqual(new Set(['avail-1']));
+  });
 });

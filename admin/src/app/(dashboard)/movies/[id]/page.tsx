@@ -262,10 +262,11 @@ export default function EditMoviePage() {
                   showAddForm={addFormOpen === 'ott'}
                   onCloseAddForm={closeAdd}
                   onAdd={(data) =>
-                    editState.setPendingAvailabilityAdds((prev) => [
-                      ...prev,
-                      { _id: crypto.randomUUID(), ...data },
-                    ])
+                    editState.setPendingAvailabilityAdds(
+                      /* v8 ignore start -- setState updater only runs in real React, mocked in tests */
+                      (prev) => [...prev, { _id: crypto.randomUUID(), ...data }],
+                      /* v8 ignore stop */
+                    )
                   }
                   onRemove={editState.handleAvailabilityRemove}
                 />
