@@ -91,7 +91,7 @@ Present findings as a checklist:
 - §1-§5, §9-§20, Appendices — No relevant code changes
 ```
 
-**Wait for user confirmation before proceeding to Phase 4.** Ask which updates to apply.
+**Do NOT wait for confirmation.** This is an employee training document — every inaccuracy must be fixed. Proceed directly to Phase 4 and apply all identified updates.
 
 ---
 
@@ -187,7 +187,7 @@ Present as:
 - New sections needed: Z
 ```
 
-**Wait for user confirmation before proceeding to Phase 3.** Ask which updates to apply.
+**Do NOT wait for confirmation.** This is an employee training document — every inaccuracy must be fixed. Proceed directly to Phase 3 and apply all identified updates.
 
 ### Phase 3 — Apply Surgical Updates
 
@@ -300,7 +300,7 @@ This uses Chromium under the hood and produces a styled A4 PDF at `docs/ADMIN_TR
 - **Non-technical audience** — avoid code snippets, API details, or developer jargon in the manual itself
 - **Do not modify source code** — this skill only updates documentation files
 - **Preserve the employee-friendly tone** — this is training material, not API docs
-- **Wait for confirmation** before applying changes (Phase 3/4 gate)
+- **Do NOT wait for confirmation** — apply all identified inaccuracies immediately. The manual must match the code.
 - **Always update the version number** — increment minor version for incremental updates, major version for full refresh
 - **Always attempt PDF regeneration** after updating the markdown
 - **Full refresh ≠ full rewrite** — "full" refers to the scope of the _audit_ (all sections), not the scope of the _edits_. The edits are always minimal.

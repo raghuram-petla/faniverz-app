@@ -1,7 +1,7 @@
 # Faniverz Admin Panel — Employee Training Manual
 
-> **Version:** 2.0
-> **Last Updated:** March 25, 2026
+> **Version:** 2.1
+> **Last Updated:** March 26, 2026
 > **Audience:** All admin panel employees (content editors, moderators, super admins)
 
 ---
@@ -594,7 +594,7 @@ Go to the **Sync** page, find the movie, and import it. This pre-fills all avail
 3. Click **"Create Movie"** in the top-right corner.
 4. After creation, you'll be redirected to the edit page where you can add OTT platforms.
 
-> **Note:** The OTT Platforms section is not available during creation — you must save the movie first, then add platforms from the edit page.
+> **Note:** The OTT Platforms section is not available during movie creation — you must save the movie first, then add platforms from the edit page.
 
 ---
 
@@ -829,33 +829,33 @@ This is where you manage which streaming services have the movie, in which count
 
 **How it's organized:**
 
-- A **Country dropdown** at the top lets you view/manage availability per country.
+- A **Country dropdown** at the top lets you view availability per country. Only countries that already have platforms appear in the dropdown, with a count badge (e.g., "India (5)").
 - Each country shows platforms grouped by **availability type**:
   - **Stream** (flatrate subscription — e.g., Netflix, Prime)
   - **Rent** (pay-per-view rental)
   - **Buy** (digital purchase)
   - **Free with Ads** (ad-supported streaming)
   - **Free** (free without ads)
+- Each group can be collapsed/expanded by clicking its header.
 
-**Adding a Country:**
+**Adding Platforms:**
 
-1. Click **"Add Country"**.
-2. Search for and select the country.
-3. The country tab appears — now add platforms within it.
+1. Click the **+ Add** button in the OTT Platforms section header.
+2. The add form appears at the top of the section.
+3. Select one or more **countries** using the checkbox grid. You can check **All** to select every country, or use the search box to filter. A badge shows how many countries are selected.
+4. Choose a **platform** from the dropdown (filtered to platforms available in your selected countries).
+5. Choose the **availability type** (Stream, Rent, Buy, Free with Ads, or Free).
+6. Optionally set an **Available From** date.
+7. Optionally add a **Streaming URL** (direct link to the movie on that platform).
+8. Click **Add** (or **"Add to N countries"** / **"Add to all countries"** when multiple countries are selected).
 
-**Adding a Platform to a Country:**
-
-1. Select the country tab.
-2. In the appropriate availability section (Stream, Rent, Buy, etc.), click **"Add Platform"**.
-3. Select from platforms available in that country (filtered by the platform's registered regions).
-4. Optionally set an **Available From** date.
-5. Optionally add a **Streaming URL** (direct link to the movie on that platform).
+The form automatically skips duplicates — if a platform already exists for a country with the same availability type, it is silently skipped.
 
 **Removing a Platform:**
 
 - Click the **X** button next to any platform entry.
 
-> **Important:** OTT changes save immediately (not via the dock). Each add/remove is committed as you do it.
+> **Important:** OTT changes use the same **pending-state dock** as all other tabs. When you add or remove platforms, the changes appear in the dock at the bottom of the page. Click **Save** to commit all changes, or **Discard** to undo them. You can also **Revert** individual OTT changes from the dock.
 
 ---
 
@@ -1125,7 +1125,7 @@ When you sync a movie's watch providers from TMDB, the system automatically:
 2. Creates new platform entries for unrecognized providers.
 3. Links movies to platforms with country-specific availability.
 
-You can also manually add OTT availability from the movie edit page's **Releases → OTT Platforms** tab.
+You can also manually add OTT availability from the movie edit page's **Releases → OTT Platforms** section using the **+ Add** button, which supports adding a platform to multiple countries at once.
 
 ---
 
@@ -1716,11 +1716,10 @@ When a movie leaves theaters and arrives on a streaming platform:
 ```
 Step 1: In Theaters → Toggle the movie OFF (ends theatrical run)
 Step 2: Movies → Open the movie → Releases tab → OTT Platforms
-Step 3: Select country (e.g., India)
-Step 4: Add platform (e.g., Netflix) under "Stream"
-Step 5: Set "Available From" date
-Step 6: Optionally add streaming URL
-Step 7: Feed → Create a post: "[Movie] now streaming on Netflix"
+Step 3: Click + Add → Select country (e.g., India) → Choose platform (e.g., Netflix) → Type: Stream
+Step 4: Set "Available From" date, optionally add streaming URL
+Step 5: Click Add → Then click Save in the dock to commit
+Step 6: Feed → Create a post: "[Movie] now streaming on Netflix"
 ```
 
 ### Pattern 4: Keeping Data Fresh
