@@ -28,6 +28,16 @@ export interface ImageViewerGesturesProps {
   translateY: SharedValue<number>;
   /** @sync 1 when a drag-to-dismiss swipe is active (scale=1), 0 otherwise. Used to instantly hide close button. */
   isDragging: SharedValue<number>;
+  /** @contract actual image height at scale=1; defaults to IMG_H (poster 2:3) */
+  imageHeight?: number;
+  /** @contract actual image width at scale=1; defaults to IMG_W */
+  imageWidth?: number;
+  /** @contract current screen width (reactive to rotation) */
+  currentScreenW?: number;
+  /** @contract current screen height (reactive to rotation) */
+  currentScreenH?: number;
+  /** @contract when true, backdrop stays opaque during swipe (hides rotated content behind) */
+  keepBackdropOpaque?: boolean;
 }
 
 export const MAX_SCALE = 4;
@@ -61,7 +71,16 @@ export function ImageViewerGestures({
   translateX,
   translateY,
   isDragging,
+  imageHeight,
+  imageWidth,
+  currentScreenW,
+  currentScreenH,
+  keepBackdropOpaque,
 }: ImageViewerGesturesProps) {
+  const imgW = imageWidth ?? IMG_W;
+  const imgH = imageHeight ?? IMG_H;
+  const scrW = currentScreenW ?? SCREEN_W;
+  const scrH = currentScreenH ?? SCREEN_H;
   // Saved values stay internal — synced from current values at gesture start
   const savedScale = useSharedValue(1);
   const savedTranslateX = useSharedValue(0);
@@ -87,6 +106,18 @@ export function ImageViewerGestures({
     backdropOpacity,
   ]);
 
+  const clampXLocal = (x: number, s: number) => {
+    'worklet';
+    const maxX = Math.max(0, (imgW * s - scrW) / 2);
+    return Math.min(maxX, Math.max(-maxX, x));
+  };
+
+  const clampYLocal = (y: number, s: number) => {
+    'worklet';
+    const maxY = Math.max(0, (imgH * s - scrH) / 2) + Y_OVERSCROLL;
+    return Math.min(maxY, Math.max(-maxY, y));
+  };
+
   // @invariant Scale is clamped to [1, MAX_SCALE]; pinch below 1 snaps back on end
   const pinch = Gesture.Pinch()
     .onUpdate((e) => {
@@ -97,10 +128,10 @@ export function ImageViewerGestures({
       if (scale.value <= 1) {
         resetTransforms();
       } else {
-        translateX.value = withTiming(clampX(translateX.value, scale.value));
-        translateY.value = withTiming(clampY(translateY.value, scale.value));
-        savedTranslateX.value = clampX(translateX.value, scale.value);
-        savedTranslateY.value = clampY(translateY.value, scale.value);
+        translateX.value = withTiming(clampXLocal(translateX.value, scale.value));
+        translateY.value = withTiming(clampYLocal(translateY.value, scale.value));
+        savedTranslateX.value = clampXLocal(translateX.value, scale.value);
+        savedTranslateY.value = clampYLocal(translateY.value, scale.value);
       }
     });
 
@@ -119,11 +150,13 @@ export function ImageViewerGestures({
     })
     .onUpdate((e) => {
       if (scale.value > 1) {
-        translateX.value = clampX(savedTranslateX.value + e.translationX, scale.value);
-        translateY.value = clampY(savedTranslateY.value + e.translationY, scale.value);
+        translateX.value = clampXLocal(savedTranslateX.value + e.translationX, scale.value);
+        translateY.value = clampYLocal(savedTranslateY.value + e.translationY, scale.value);
       } else {
         translateY.value = e.translationY;
-        backdropOpacity.value = 1 - Math.min(1, Math.abs(e.translationY) / (SCREEN_H * 0.4));
+        if (!keepBackdropOpaque) {
+          backdropOpacity.value = 1 - Math.min(1, Math.abs(e.translationY) / (scrH * 0.4));
+        }
       }
     })
     .onEnd((e) => {
@@ -144,8 +177,8 @@ export function ImageViewerGestures({
         }
       } else {
         const s = scale.value;
-        const maxX = Math.max(0, (IMG_W * s - SCREEN_W) / 2);
-        const maxY = Math.max(0, (IMG_H * s - SCREEN_H) / 2) + Y_OVERSCROLL;
+        const maxX = Math.max(0, (imgW * s - scrW) / 2);
+        const maxY = Math.max(0, (imgH * s - scrH) / 2) + Y_OVERSCROLL;
         translateX.value = withDecay({
           velocity: e.velocityX,
           deceleration: 0.9994,
@@ -167,10 +200,10 @@ export function ImageViewerGestures({
         resetTransforms();
       } else {
         // Zoom into the tap position: translate so the tapped point stays in place
-        const focalX = e.x - SCREEN_W / 2;
-        const focalY = e.y - SCREEN_H / 2;
-        const tx = clampX(focalX * (1 - MAX_SCALE), MAX_SCALE);
-        const ty = clampY(focalY * (1 - MAX_SCALE), MAX_SCALE);
+        const focalX = e.x - scrW / 2;
+        const focalY = e.y - scrH / 2;
+        const tx = clampXLocal(focalX * (1 - MAX_SCALE), MAX_SCALE);
+        const ty = clampYLocal(focalY * (1 - MAX_SCALE), MAX_SCALE);
         scale.value = withTiming(MAX_SCALE);
         translateX.value = withTiming(tx);
         translateY.value = withTiming(ty);

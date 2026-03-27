@@ -48,6 +48,17 @@ jest.mock('../ImageViewerGestures', () => ({
   },
 }));
 
+jest.mock('@/components/feed/HomeFeedTopChromeMask', () => ({
+  HomeFeedTopChromeMask: ({ topChrome }: { topChrome: { variant: string } }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View testID="top-chrome-mask">
+        <Text>{topChrome.variant}</Text>
+      </View>
+    );
+  },
+}));
+
 jest.mock('@/utils/measureView', () => ({
   measureView: jest.fn((_ref: unknown, onMeasured: (layout: object) => void) =>
     onMeasured({ x: 16, y: 200, width: 200, height: 255 }),
@@ -56,6 +67,10 @@ jest.mock('@/utils/measureView', () => ({
 
 jest.mock('../ImageViewerOverlay.styles', () => ({
   overlayStyles: new Proxy({}, { get: () => ({}) }),
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 48, bottom: 34, left: 0, right: 0 }),
 }));
 
 import React from 'react';
@@ -95,6 +110,37 @@ describe('ImageViewerOverlay', () => {
     expect(screen.getByTestId('gesture-wrapper')).toBeTruthy();
   });
 
+  it('does not render top chrome mask when the source is below the header', () => {
+    render(
+      <ImageViewerOverlay
+        {...defaultProps}
+        topChrome={{
+          variant: 'home-feed',
+          insetTop: 44,
+          headerContentHeight: 52,
+          headerTranslateY: -12,
+        }}
+      />,
+    );
+    expect(screen.queryByTestId('top-chrome-mask')).toBeNull();
+  });
+
+  it('does not render top chrome mask while opening even when the source starts behind the header', () => {
+    render(
+      <ImageViewerOverlay
+        {...defaultProps}
+        sourceLayout={{ x: 16, y: 24, width: 200, height: 255 }}
+        topChrome={{
+          variant: 'home-feed',
+          insetTop: 44,
+          headerContentHeight: 52,
+          headerTranslateY: -12,
+        }}
+      />,
+    );
+    expect(screen.queryByTestId('top-chrome-mask')).toBeNull();
+  });
+
   it('calls onClose when close button is pressed', () => {
     const onClose = jest.fn();
     render(<ImageViewerOverlay {...defaultProps} onClose={onClose} />);
@@ -115,6 +161,24 @@ describe('ImageViewerOverlay', () => {
     render(<ImageViewerOverlay {...defaultProps} />);
     fireEvent.press(screen.getByLabelText('Close image'));
     expect(mockOnSourceShow).toHaveBeenCalled();
+  });
+
+  it('renders the top chrome mask on close when the source starts behind the header', () => {
+    render(
+      <ImageViewerOverlay
+        {...defaultProps}
+        sourceLayout={{ x: 16, y: 24, width: 200, height: 255 }}
+        topChrome={{
+          variant: 'home-feed',
+          insetTop: 44,
+          headerContentHeight: 52,
+          headerTranslateY: -12,
+        }}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('Close image'));
+    expect(screen.getByTestId('top-chrome-mask')).toBeTruthy();
   });
 
   it('handles BackHandler press by calling onClose', () => {

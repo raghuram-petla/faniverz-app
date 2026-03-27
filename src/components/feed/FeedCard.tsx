@@ -23,6 +23,7 @@ import {
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
+import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
 export interface FeedCardProps {
   item: NewsFeedItem;
@@ -38,6 +39,7 @@ export interface FeedCardProps {
   isFollowing?: boolean;
   onFollow?: (entityType: FeedEntityType, entityId: string) => void;
   onUnfollow?: (entityType: FeedEntityType, entityId: string) => void;
+  getImageViewerTopChrome?: () => ImageViewerTopChrome | undefined;
 }
 
 /** @coupling FeedAvatar, FeedActionBar, FeedContentBadge, FeedVideoPlayer, FollowButton — composes all feed sub-components */
@@ -55,6 +57,7 @@ function FeedCardInner({
   isFollowing,
   onFollow,
   onUnfollow,
+  getImageViewerTopChrome,
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = createFeedCardStyles(theme);
@@ -63,6 +66,7 @@ function FeedCardInner({
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const [posterHidden, setPosterHidden] = useState(false);
   const hasVideo = !!item.youtube_id;
+  const isBackdrop = item.feed_type === 'backdrop';
   /** @nullable thumbnail_url and movie?.poster_url may both be null; falls back gracefully */
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
   const hasThumbnail = !!imageUrl;
@@ -86,22 +90,26 @@ function FeedCardInner({
   );
 
   /** @sideeffect opens full-screen image viewer with animated transition from poster position */
+  const imageBucket = isBackdrop ? 'BACKDROPS' : 'POSTERS';
   const handlePosterPress = useCallback(() => {
     /* istanbul ignore next */ if (!imageUrl) return;
     measureView(posterRef, (layout) => {
+      const topChrome = getImageViewerTopChrome?.();
       openImage({
-        // @assumes feed cards always render movie poster images — POSTERS bucket is correct here
-        feedUrl: getImageUrl(imageUrl, 'md', 'POSTERS') ?? /* istanbul ignore next */ imageUrl,
+        feedUrl: getImageUrl(imageUrl, 'md', imageBucket) ?? /* istanbul ignore next */ imageUrl,
         fullUrl:
-          getImageUrl(imageUrl, 'original', 'POSTERS') ?? /* istanbul ignore next */ imageUrl,
+          getImageUrl(imageUrl, 'original', imageBucket) ?? /* istanbul ignore next */ imageUrl,
         sourceLayout: layout,
         sourceRef: posterRef,
         borderRadius: 0,
+        isLandscape: isBackdrop,
+        // @coupling Home feed can supply a header snapshot so the close animation masks under the same chrome.
+        topChrome,
         onSourceHide: () => setPosterHidden(true),
         onSourceShow: () => setPosterHidden(false),
       });
     });
-  }, [imageUrl, openImage]);
+  }, [getImageViewerTopChrome, imageBucket, imageUrl, isBackdrop, openImage]);
 
   return (
     <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
@@ -192,19 +200,22 @@ function FeedCardInner({
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={handlePosterPress}
-            accessibilityLabel={`View ${item.title} poster`}
+            accessibilityLabel={`View ${item.title} ${isBackdrop ? 'backdrop' : 'poster'}`}
           >
             <View
               ref={posterRef}
               collapsable={false}
-              style={[styles.posterMediaContainer, posterHidden && { opacity: 0 }]}
+              style={[
+                isBackdrop ? styles.mediaContainer : styles.posterMediaContainer,
+                posterHidden && { opacity: 0 },
+              ]}
             >
               {!mediaLoaded ? <SkeletonBox width="100%" height="100%" borderRadius={0} /> : null}
               <Image
                 source={{
                   uri:
                     (imageUrl
-                      ? getImageUrl(imageUrl, 'md', 'POSTERS')
+                      ? getImageUrl(imageUrl, 'md', imageBucket)
                       : /* istanbul ignore next */ null) ??
                     /* istanbul ignore next */ imageUrl ??
                     /* istanbul ignore next */ PLACEHOLDER_POSTER,

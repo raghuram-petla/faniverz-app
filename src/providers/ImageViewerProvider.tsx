@@ -9,6 +9,13 @@ export interface ImageSourceLayout {
   height: number;
 }
 
+export interface ImageViewerTopChrome {
+  variant: 'home-feed';
+  insetTop: number;
+  headerContentHeight: number;
+  headerTranslateY: number;
+}
+
 // @contract: feedUrl is the low-res variant already loaded in the feed (e.g. _sm or _md),
 // displayed immediately as a placeholder while fullUrl (original resolution) loads.
 // If feedUrl and fullUrl are the same, the viewer skips the progressive loading step.
@@ -25,6 +32,9 @@ export interface ImageViewerState {
   sourceLayout: ImageSourceLayout;
   sourceRef: React.RefObject<View | null>;
   borderRadius: number;
+  /** @contract when true, image viewer uses 16:9 landscape aspect ratio and unlocks screen rotation */
+  isLandscape?: boolean;
+  topChrome?: ImageViewerTopChrome;
   onSourceHide?: () => void;
   onSourceShow?: () => void;
 }
@@ -74,6 +84,8 @@ export function ImageViewerProvider({ children }: ImageViewerProviderProps) {
           sourceLayout={viewerState.sourceLayout}
           sourceRef={viewerState.sourceRef}
           borderRadius={viewerState.borderRadius}
+          isLandscape={viewerState.isLandscape}
+          topChrome={viewerState.topChrome}
           onSourceHide={viewerState.onSourceHide}
           onSourceShow={viewerState.onSourceShow}
           onClose={closeImage}
