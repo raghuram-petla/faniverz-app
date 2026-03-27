@@ -45,6 +45,21 @@ vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
   useUnsavedChangesWarning: vi.fn(),
 }));
 
+vi.mock('@/hooks/useLanguageContext', () => ({
+  useLanguageContext: () => ({
+    languages: [
+      { id: 'lang-1', code: 'te', name: 'Telugu' },
+      { id: 'lang-2', code: 'ta', name: 'Tamil' },
+    ],
+    selectedLanguageId: null,
+    setSelectedLanguageId: vi.fn(),
+    selectedLanguageCode: null,
+    userLanguageIds: [],
+    showSwitcher: true,
+    availableLanguages: [],
+  }),
+}));
+
 vi.mock('next/link', () => ({
   default: ({
     href,

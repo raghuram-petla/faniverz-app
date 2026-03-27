@@ -97,6 +97,7 @@ export function useInviteAdmin() {
       email: string;
       role_id: AdminRoleId;
       production_house_ids?: string[];
+      language_ids?: string[];
       invited_by: string;
     }) => {
       const { data, error } = await supabase
@@ -106,6 +107,7 @@ export function useInviteAdmin() {
           role_id: invite.role_id,
           invited_by: invite.invited_by,
           production_house_ids: invite.production_house_ids ?? [],
+          language_ids: invite.language_ids ?? [],
         })
         .select()
         .single();

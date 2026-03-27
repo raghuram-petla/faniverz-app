@@ -196,6 +196,7 @@ export interface AdminInvitation {
   role_id: AdminRoleId;
   invited_by: string;
   production_house_ids: string[];
+  language_ids: string[];
   status: 'pending' | 'accepted' | 'revoked';
   token: string;
   created_at: string;

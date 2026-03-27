@@ -7,6 +7,8 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { ADMIN_ROLE_LABELS, type AdminRoleId } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { useLanguageContext } from '@/hooks/useLanguageContext';
+import { CheckboxListField } from '@/components/users/CheckboxListField';
 import { ArrowLeft, Send, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 
@@ -24,6 +26,7 @@ export default function InviteAdminPage() {
   const { user } = useAuth();
   const { canManageAdmin } = usePermissions();
   const inviteAdmin = useInviteAdmin();
+  const { languages } = useLanguageContext();
 
   // @invariant: memoized so the array reference is stable across renders — canManageAdmin is a
   // plain function (new ref each render), so without useMemo availableRoles would be a new array
@@ -53,6 +56,8 @@ export default function InviteAdminPage() {
   /* v8 ignore stop */
   // @sync: selectedPHIds is cleared when role changes away from production_house_admin
   const [selectedPHIds, setSelectedPHIds] = useState<string[]>([]);
+  // @sync: selectedLanguageIds is cleared when role changes away from admin
+  const [selectedLanguageIds, setSelectedLanguageIds] = useState<string[]>([]);
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,15 +88,22 @@ export default function InviteAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableRoles]);
 
-  // @contract: isDirty = true if email is non-empty OR PH IDs selected OR role changed from default
+  // @contract: isDirty = true if email is non-empty OR PH/language IDs selected OR role changed from default
   // @sync: defaultRole is state so this memo correctly recomputes when the default role is updated
   const isDirty = useMemo(
-    () => !!(email.trim() || selectedPHIds.length > 0 || roleId !== defaultRole),
-    [email, selectedPHIds, roleId, defaultRole],
+    () =>
+      !!(
+        email.trim() ||
+        selectedPHIds.length > 0 ||
+        selectedLanguageIds.length > 0 ||
+        roleId !== defaultRole
+      ),
+    [email, selectedPHIds, selectedLanguageIds, roleId, defaultRole],
   );
   useUnsavedChangesWarning(isDirty);
 
   const isPHRole = roleId === 'production_house_admin';
+  const isAdminRole = roleId === 'admin';
 
   // @sideeffect: creates an admin_invitations row with a token (expires in 7 days), then displays the invite link
   // @boundary: invite link points to /login?invite=<token> — AuthProvider auto-calls /api/accept-invitation on OAuth callback
@@ -104,12 +116,17 @@ export default function InviteAdminPage() {
       alert('Please select at least one production house.');
       return;
     }
+    if (isAdminRole && selectedLanguageIds.length === 0) {
+      alert('Please select at least one language.');
+      return;
+    }
 
     try {
       const result = await inviteAdmin.mutateAsync({
         email: email.trim(),
         role_id: roleId,
         production_house_ids: isPHRole ? selectedPHIds : [],
+        language_ids: isAdminRole ? selectedLanguageIds : [],
         invited_by: user.id,
       });
       // Generate invite link (the user signs in via Google OAuth, invitation is auto-accepted)
@@ -136,6 +153,12 @@ export default function InviteAdminPage() {
   function togglePH(phId: string) {
     setSelectedPHIds((prev) =>
       prev.includes(phId) ? prev.filter((id) => id !== phId) : [...prev, phId],
+    );
+  }
+
+  function toggleLanguage(langId: string) {
+    setSelectedLanguageIds((prev) =>
+      prev.includes(langId) ? prev.filter((id) => id !== langId) : [...prev, langId],
     );
   }
 
@@ -224,6 +247,7 @@ export default function InviteAdminPage() {
               onChange={(e) => {
                 setRoleId(e.target.value as AdminRoleId);
                 if (e.target.value !== 'production_house_admin') setSelectedPHIds([]);
+                if (e.target.value !== 'admin') setSelectedLanguageIds([]);
               }}
               className="w-full bg-input rounded-lg px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
             >
@@ -236,32 +260,24 @@ export default function InviteAdminPage() {
           </div>
 
           {isPHRole && (
-            <div>
-              <label className="block text-sm font-medium text-on-surface mb-2">
-                Assign Production Houses
-              </label>
-              <div className="space-y-2 max-h-48 overflow-y-auto border border-outline rounded-lg p-3">
-                {/* v8 ignore start */}
-                {allHouses.length === 0 && (
-                  <p className="text-sm text-on-surface-subtle">No production houses available</p>
-                )}
-                {/* v8 ignore stop */}
-                {allHouses.map((ph) => (
-                  <label
-                    key={ph.id}
-                    className="flex items-center gap-3 cursor-pointer hover:bg-surface-elevated rounded-lg px-2 py-1.5"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedPHIds.includes(ph.id)}
-                      onChange={() => togglePH(ph.id)}
-                      className="rounded border-outline accent-red-600"
-                    />
-                    <span className="text-sm text-on-surface">{ph.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            <CheckboxListField
+              label="Assign Production Houses"
+              items={allHouses}
+              selectedIds={selectedPHIds}
+              onToggle={togglePH}
+              emptyMessage="No production houses available"
+            />
+          )}
+
+          {isAdminRole && (
+            <CheckboxListField
+              label="Assign Languages"
+              hint="(at least one required)"
+              items={languages}
+              selectedIds={selectedLanguageIds}
+              onToggle={toggleLanguage}
+              emptyMessage="No languages available"
+            />
           )}
 
           <button

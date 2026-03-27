@@ -185,6 +185,7 @@ describe('useInviteAdmin', () => {
       role_id: 'admin',
       invited_by: 'admin-1',
       production_house_ids: [],
+      language_ids: [],
     });
   });
 });

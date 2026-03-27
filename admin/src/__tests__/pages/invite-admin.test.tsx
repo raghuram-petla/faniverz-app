@@ -115,6 +115,22 @@ vi.mock('@/hooks/useAdminUsers', () => ({
   useUnblockAdmin: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+vi.mock('@/hooks/useLanguageContext', () => ({
+  useLanguageContext: () => ({
+    languages: [
+      { id: 'lang-1', code: 'te', name: 'Telugu' },
+      { id: 'lang-2', code: 'ta', name: 'Tamil' },
+      { id: 'lang-3', code: 'hi', name: 'Hindi' },
+    ],
+    selectedLanguageId: null,
+    setSelectedLanguageId: vi.fn(),
+    selectedLanguageCode: null,
+    userLanguageIds: [],
+    showSwitcher: true,
+    availableLanguages: [],
+  }),
+}));
+
 vi.mock('@/hooks/useAdminProductionHouses', () => ({
   useAdminProductionHouses: () => ({
     data: { pages: [[]] },
@@ -336,5 +352,80 @@ describe('InviteAdminPage', () => {
     // Should contain the invitable sub-roles
     expect(values).toContain('super_admin');
     expect(values).toContain('admin');
+  });
+
+  it('shows language assignment section when admin role is selected', () => {
+    renderWithProviders(<InviteAdminPage />);
+    const roleSelect = screen.getByRole('combobox');
+    fireEvent.change(roleSelect, { target: { value: 'admin' } });
+    expect(screen.getByText('Assign Languages')).toBeInTheDocument();
+    expect(screen.getByText('Telugu')).toBeInTheDocument();
+    expect(screen.getByText('Tamil')).toBeInTheDocument();
+    expect(screen.getByText('Hindi')).toBeInTheDocument();
+  });
+
+  it('does NOT show language section for non-admin roles', () => {
+    renderWithProviders(<InviteAdminPage />);
+    // Default role is super_admin
+    expect(screen.queryByText('Assign Languages')).not.toBeInTheDocument();
+  });
+
+  it('hides language section when role switches away from admin', () => {
+    renderWithProviders(<InviteAdminPage />);
+    const roleSelect = screen.getByRole('combobox');
+    fireEvent.change(roleSelect, { target: { value: 'admin' } });
+    expect(screen.getByText('Assign Languages')).toBeInTheDocument();
+    fireEvent.change(roleSelect, { target: { value: 'viewer' } });
+    expect(screen.queryByText('Assign Languages')).not.toBeInTheDocument();
+  });
+
+  it('shows alert when admin role is selected but no language is assigned on submit', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    renderWithProviders(<InviteAdminPage />);
+
+    const roleSelect = screen.getByRole('combobox');
+    fireEvent.change(roleSelect, { target: { value: 'admin' } });
+    fireEvent.change(screen.getByPlaceholderText('admin@example.com'), {
+      target: { value: 'admin@example.com' },
+    });
+
+    const form = document.querySelector('form')!;
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith('Please select at least one language.');
+    alertSpy.mockRestore();
+  });
+
+  it('passes language_ids in payload when admin role with languages is submitted', async () => {
+    mockMutateAsync.mockResolvedValue({ token: 'abc-token-123' });
+
+    renderWithProviders(<InviteAdminPage />);
+    const roleSelect = screen.getByRole('combobox');
+    fireEvent.change(roleSelect, { target: { value: 'admin' } });
+
+    fireEvent.change(screen.getByPlaceholderText('admin@example.com'), {
+      target: { value: 'newadmin@example.com' },
+    });
+
+    // Select Telugu language
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]); // Telugu
+
+    const form = document.querySelector('form')!;
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+
+    expect(mockMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'newadmin@example.com',
+        role_id: 'admin',
+        language_ids: ['lang-1'],
+        production_house_ids: [],
+        invited_by: 'super-1',
+      }),
+    );
   });
 });

@@ -3,6 +3,8 @@ import { makeRequest } from './test-utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockFrom: any = vi.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockRpc: any = vi.fn();
 
 const mockGetUser = vi.fn();
 
@@ -13,7 +15,10 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 vi.mock('@/lib/supabase-admin', () => {
-  const client = { from: (...args: unknown[]) => mockFrom(...args) };
+  const client = {
+    from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
+  };
   return {
     getSupabaseAdmin: () => client,
     getAuditableSupabaseAdmin: () => client,
@@ -57,12 +62,14 @@ const INVITATION = {
   status: 'pending',
   invited_by: 'admin-1',
   production_house_ids: null,
+  language_ids: null,
   expires_at: '2099-01-01T00:00:00Z',
   created_at: '2026-01-01T00:00:00Z',
 };
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockRpc.mockReset();
   mockGetUser.mockResolvedValue({
     data: { user: { id: 'user-1', email: 'user@test.com' } },
     error: null,
@@ -430,6 +437,102 @@ describe('POST /api/accept-invitation', () => {
     expect(res.status).toBe(500);
     const json = await res.json();
     expect(json).toEqual({ error: 'Internal server error' });
+  });
+
+  it('creates language assignments when invitation has language_ids', async () => {
+    const invitationWithLangs = {
+      ...INVITATION,
+      language_ids: ['lang-1', 'lang-2'],
+    };
+
+    const mockInvSingle = vi.fn().mockResolvedValue({ data: invitationWithLangs, error: null });
+    const mockInvLimit = vi.fn().mockReturnValue({ single: mockInvSingle });
+    const mockInvOrder = vi.fn().mockReturnValue({ limit: mockInvLimit });
+    const mockInvGte = vi.fn().mockReturnValue({ order: mockInvOrder });
+    const mockInvEqStatus = vi.fn().mockReturnValue({ gte: mockInvGte });
+    const mockInvEqEmail = vi.fn().mockReturnValue({ eq: mockInvEqStatus });
+    const mockInvSelect = vi.fn().mockReturnValue({ eq: mockInvEqEmail });
+
+    const mockRoleSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
+    const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
+    const mockRoleInsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockRpc.mockResolvedValue({ error: null });
+
+    const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+    const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
+
+    let invCallCount = 0;
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_invitations') {
+        invCallCount++;
+        if (invCallCount === 1) return { select: mockInvSelect };
+        return { update: mockUpdate };
+      }
+      if (table === 'admin_user_roles') {
+        if (!mockFrom._roleInsertUsed) {
+          mockFrom._roleInsertUsed = true;
+          return { select: mockRoleSelect };
+        }
+        return { insert: mockRoleInsert };
+      }
+      return {};
+    });
+    mockFrom._roleInsertUsed = false;
+
+    const res = await POST(makeRequest({ email: 'user@test.com', userId: 'user-1' }));
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json).toEqual({ role: 'admin' });
+
+    // Verify language assignments were created via RPC
+    expect(mockRpc).toHaveBeenCalledWith('replace_user_languages', {
+      p_user_id: 'user-1',
+      p_language_ids: ['lang-1', 'lang-2'],
+      p_assigned_by: 'admin-1',
+    });
+  });
+
+  it('returns 500 when language assignment fails', async () => {
+    const invitationWithLangs = {
+      ...INVITATION,
+      language_ids: ['lang-1'],
+    };
+
+    const mockInvSingle = vi.fn().mockResolvedValue({ data: invitationWithLangs, error: null });
+    const mockInvLimit = vi.fn().mockReturnValue({ single: mockInvSingle });
+    const mockInvOrder = vi.fn().mockReturnValue({ limit: mockInvLimit });
+    const mockInvGte = vi.fn().mockReturnValue({ order: mockInvOrder });
+    const mockInvEqStatus = vi.fn().mockReturnValue({ gte: mockInvGte });
+    const mockInvEqEmail = vi.fn().mockReturnValue({ eq: mockInvEqStatus });
+    const mockInvSelect = vi.fn().mockReturnValue({ eq: mockInvEqEmail });
+
+    const mockRoleSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const mockRoleEqUser = vi.fn().mockReturnValue({ maybeSingle: mockRoleSingle });
+    const mockRoleSelect = vi.fn().mockReturnValue({ eq: mockRoleEqUser });
+    const mockRoleInsert = vi.fn().mockResolvedValue({ error: null });
+
+    mockRpc.mockResolvedValue({ error: { message: 'RPC error' } });
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'admin_invitations') return { select: mockInvSelect };
+      if (table === 'admin_user_roles') {
+        if (!mockFrom._roleInsertUsed) {
+          mockFrom._roleInsertUsed = true;
+          return { select: mockRoleSelect };
+        }
+        return { insert: mockRoleInsert };
+      }
+      return {};
+    });
+    mockFrom._roleInsertUsed = false;
+
+    const res = await POST(makeRequest({ email: 'user@test.com', userId: 'user-1' }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json).toEqual({ error: 'Failed to assign languages' });
   });
 
   it('returns 500 when role insertion fails', async () => {

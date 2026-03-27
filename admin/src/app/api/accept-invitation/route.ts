@@ -99,6 +99,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Create language assignments if applicable
+    // @nullable: language_ids may be null/empty for roles that don't need language scoping
+    const langIds = invitation.language_ids as string[] | null;
+    if (langIds && langIds.length > 0) {
+      const { error: langErr } = await auditableAdmin.rpc('replace_user_languages', {
+        p_user_id: userId,
+        p_language_ids: langIds,
+        p_assigned_by: invitation.invited_by,
+      });
+      if (langErr) {
+        return NextResponse.json({ error: 'Failed to assign languages' }, { status: 500 });
+      }
+    }
+
     // Mark invitation as accepted
     // @edge: if role insert succeeded but this update fails, user has role but invitation stays pending
     const { error: acceptErr } = await auditableAdmin
