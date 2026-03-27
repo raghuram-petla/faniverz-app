@@ -59,7 +59,7 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
       <Animated.View style={animatedIconStyle}>
         <Ionicons
           name={isFollowing ? 'heart' : 'heart-outline'}
-          size={18}
+          size={14}
           color={isFollowing ? colors.green500 : theme.textSecondary}
         />
       </Animated.View>
@@ -74,14 +74,14 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 18,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
     borderWidth: 1,
   },
   text: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
 });

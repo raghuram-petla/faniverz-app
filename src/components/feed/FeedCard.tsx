@@ -119,7 +119,7 @@ function FeedCardInner({
           <FeedAvatar
             imageUrl={entityAvatarUrl}
             entityType={entityType}
-            size={56}
+            size={entityType === 'movie' ? 64 : 56}
             label={entityName}
             onPress={
               entityId && onEntityPress ? () => onEntityPress(entityType, entityId) : undefined
@@ -198,7 +198,7 @@ function FeedCardInner({
           />
         ) : isPosterImage ? (
           <TouchableOpacity
-            activeOpacity={0.85}
+            activeOpacity={1}
             onPress={handlePosterPress}
             accessibilityLabel={`View ${item.title} ${isBackdrop ? 'backdrop' : 'poster'}`}
           >
