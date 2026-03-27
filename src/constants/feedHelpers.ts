@@ -27,6 +27,7 @@ export function getFeedTypeColor(contentType: string): string {
     case 'song':
       return colors.purple600;
     case 'poster':
+    case 'backdrop':
       return colors.green500;
     case 'bts':
     case 'interview':
@@ -66,6 +67,8 @@ export function getFeedTypeLabel(contentType: string): string {
       return 'Song';
     case 'poster':
       return 'Poster';
+    case 'backdrop':
+      return 'Backdrop';
     case 'bts':
       return 'BTS';
     case 'interview':
@@ -103,6 +106,7 @@ export function getFeedTypeIconName(
     case 'song':
       return 'musical-notes';
     case 'poster':
+    case 'backdrop':
       return 'image';
     case 'bts':
     case 'making':

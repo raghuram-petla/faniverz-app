@@ -215,7 +215,7 @@ export interface ProductionHouse {
 // ── News Feed ───────────────────────────────────────────────────────────────────
 
 export type FeedEntityType = 'movie' | 'actor' | 'production_house' | 'user';
-export type FeedType = 'video' | 'poster' | 'surprise' | 'update';
+export type FeedType = 'video' | 'poster' | 'backdrop' | 'surprise' | 'update';
 
 export interface NewsFeedItem {
   id: string;

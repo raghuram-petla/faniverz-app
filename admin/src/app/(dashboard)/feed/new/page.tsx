@@ -31,6 +31,7 @@ const CONTENT_TYPES: Record<FeedType, { label: string; value: string }[]> = {
     { label: 'Making', value: 'making' },
   ],
   poster: [{ label: 'Poster', value: 'poster' }],
+  backdrop: [{ label: 'Backdrop', value: 'backdrop' }],
   surprise: [
     { label: 'Song', value: 'song' },
     { label: 'Short Film', value: 'short-film' },

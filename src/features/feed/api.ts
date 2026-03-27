@@ -28,7 +28,7 @@ export async function fetchNewsFeed(
         query = query.eq('content_type', 'song');
         break;
       case 'posters':
-        query = query.eq('feed_type', 'poster');
+        query = query.in('feed_type', ['poster', 'backdrop']);
         break;
       case 'bts':
         query = query.in('content_type', ['bts', 'interview', 'event', 'making']);

@@ -6,6 +6,7 @@ const TABS: { label: string; value: FeedType | 'all' }[] = [
   { label: 'All', value: 'all' },
   { label: 'Videos', value: 'video' },
   { label: 'Posters', value: 'poster' },
+  { label: 'Backdrops', value: 'backdrop' },
   { label: 'Surprise', value: 'surprise' },
   { label: 'Updates', value: 'update' },
 ];
