@@ -277,7 +277,7 @@ export function ImageViewerOverlay({
 
       <Animated.View style={[styles.closeBtnWrapper, animatedCloseBtnStyle]}>
         <TouchableOpacity onPress={handleCloseButton} accessibilityLabel="Close image">
-          <Ionicons name="close" size={28} color={palette.white} />
+          <Ionicons name="close" size={20} color={palette.white} />
         </TouchableOpacity>
       </Animated.View>
     </Animated.View>

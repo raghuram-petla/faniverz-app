@@ -92,7 +92,8 @@ function FeedCardInner({
       openImage({
         // @assumes feed cards always render movie poster images — POSTERS bucket is correct here
         feedUrl: getImageUrl(imageUrl, 'md', 'POSTERS') ?? /* istanbul ignore next */ imageUrl,
-        fullUrl: imageUrl,
+        fullUrl:
+          getImageUrl(imageUrl, 'original', 'POSTERS') ?? /* istanbul ignore next */ imageUrl,
         sourceLayout: layout,
         sourceRef: posterRef,
         borderRadius: 0,

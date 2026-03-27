@@ -61,7 +61,12 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
               'sm',
               poster.image_type === 'backdrop' ? 'BACKDROPS' : 'POSTERS',
             ) ?? /* istanbul ignore next */ poster.image_url,
-          fullUrl: poster.image_url,
+          fullUrl:
+            getImageUrl(
+              poster.image_url,
+              'original',
+              poster.image_type === 'backdrop' ? 'BACKDROPS' : 'POSTERS',
+            ) ?? /* istanbul ignore next */ poster.image_url,
           sourceLayout: { x, y, width, height },
           sourceRef: ref,
           borderRadius: 8,
