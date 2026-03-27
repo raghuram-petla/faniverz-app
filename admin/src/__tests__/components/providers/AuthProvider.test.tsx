@@ -323,7 +323,7 @@ describe('AuthProvider', () => {
 
     mockFetch.mockImplementation(async (url: string) => {
       if (typeof url === 'string' && url.includes('/rest/v1/profiles')) {
-        return { ok: true, json: async () => [{ id: 'user-1', display_name: 'PH Admin' }] };
+        return { ok: true, json: async () => [{ id: 'user-1', display_name: 'Production Admin' }] };
       }
       if (typeof url === 'string' && url.includes('/rest/v1/admin_user_roles')) {
         return {

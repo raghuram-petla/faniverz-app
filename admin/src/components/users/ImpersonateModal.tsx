@@ -141,8 +141,8 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
               >
                 {/* Hierarchy: root sees super_admin option; super_admin does not */}
                 {isRoot && <option value="super_admin">Super Admin</option>}
-                <option value="admin">Admin</option>
-                <option value="production_house_admin">PH Admin</option>
+                <option value="admin">Faniverz Admin</option>
+                <option value="production_house_admin">Production Admin</option>
                 <option value="viewer">Viewer</option>
               </select>
             </div>

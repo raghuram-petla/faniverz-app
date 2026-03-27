@@ -133,8 +133,8 @@ vi.mock('@/lib/types', () => ({
   ADMIN_ROLE_LABELS: {
     root: 'Root',
     super_admin: 'Super Admin',
-    admin: 'Admin',
-    ph_admin: 'PH Admin',
+    admin: 'Faniverz Admin',
+    ph_admin: 'Production Admin',
     read_only: 'Read Only',
   },
 }));
@@ -185,7 +185,7 @@ describe('ProfilePage', () => {
   it('renders role label for admin', () => {
     mockUser = { ...mockUser, role: 'admin' };
     renderWithProviders(<ProfilePage />);
-    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('Faniverz Admin')).toBeInTheDocument();
   });
 
   it('renders avatar upload field', () => {

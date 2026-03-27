@@ -32,8 +32,8 @@ export interface AdminsTableProps {
 /** All non-root roles for dropdown (filtered per-user by canManageAdmin) */
 const ALL_CHANGEABLE_ROLES: { value: AdminRoleId; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'production_house_admin', label: 'PH Admin' },
+  { value: 'admin', label: 'Faniverz Admin' },
+  { value: 'production_house_admin', label: 'Production Admin' },
 ];
 
 export function AdminsTable({

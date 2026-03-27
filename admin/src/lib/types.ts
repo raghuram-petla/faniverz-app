@@ -171,10 +171,10 @@ export interface FeedComment {
 //   root > super_admin > admin > production_house_admin > viewer
 //
 // @contract: Each role can only manage/impersonate roles BELOW it:
-//   root         → can manage super_admin, admin, PH admin, viewer
-//   super_admin  → can manage admin, PH admin, viewer
-//   admin        → can manage PH admin, viewer
-//   PH admin     → can manage viewer only
+//   root         → can manage super_admin, admin, production admin, viewer
+//   super_admin  → can manage admin, production admin, viewer
+//   admin        → can manage production admin, viewer
+//   production admin     → can manage viewer only
 //   viewer       → cannot manage anyone (read-only)
 //
 // @boundary: root is SQL-only — cannot be assigned via the admin UI.
@@ -217,7 +217,7 @@ export interface AdminUser extends UserProfile {
   role: AdminRoleId;
   productionHouseIds: string[];
   /** @contract Empty for root/super_admin (implicit all-language access).
-   * Contains assigned language UUIDs for admin role. Empty for PH admin/viewer.
+   * Contains assigned language UUIDs for admin role. Empty for production admin/viewer.
    * Used by LanguageAssignments component for managing assignments. */
   languageIds: string[];
   /** @contract Language codes (e.g. 'te', 'ta') resolved from languageIds.
@@ -228,8 +228,8 @@ export interface AdminUser extends UserProfile {
 export const ADMIN_ROLE_LABELS: Record<AdminRoleId, string> = {
   root: 'Root',
   super_admin: 'Super Admin',
-  admin: 'Admin',
-  production_house_admin: 'PH Admin',
+  admin: 'Faniverz Admin',
+  production_house_admin: 'Production Admin',
   viewer: 'Viewer',
 };
 

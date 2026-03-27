@@ -153,7 +153,7 @@ describe('AdminsTable', () => {
       canManageAdmin: () => false,
     });
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('Faniverz Admin')).toBeInTheDocument();
   });
 
   it('shows Block button for active users that canManageAdmin', () => {

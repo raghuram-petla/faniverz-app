@@ -78,17 +78,17 @@ describe('ImpersonateModal', () => {
       />,
     );
     expect(screen.getByText('Alice')).toBeInTheDocument();
-    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('Faniverz Admin')).toBeInTheDocument();
   });
 
-  it('shows role selector with Admin, PH Admin, and Viewer options when no targetUser', () => {
+  it('shows role selector with Admin, Production Admin, and Viewer options when no targetUser', () => {
     render(<ImpersonateModal targetUser={null} onClose={onClose} />);
     const select = screen.getByRole('combobox');
     expect(select).toBeInTheDocument();
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(3);
-    expect(options[0]).toHaveTextContent('Admin');
-    expect(options[1]).toHaveTextContent('PH Admin');
+    expect(options[0]).toHaveTextContent('Faniverz Admin');
+    expect(options[1]).toHaveTextContent('Production Admin');
     expect(options[2]).toHaveTextContent('Viewer');
   });
 
@@ -142,8 +142,8 @@ describe('ImpersonateModal', () => {
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(4);
     expect(options[0]).toHaveTextContent('Super Admin');
-    expect(options[1]).toHaveTextContent('Admin');
-    expect(options[2]).toHaveTextContent('PH Admin');
+    expect(options[1]).toHaveTextContent('Faniverz Admin');
+    expect(options[2]).toHaveTextContent('Production Admin');
     expect(options[3]).toHaveTextContent('Viewer');
   });
 
@@ -152,8 +152,8 @@ describe('ImpersonateModal', () => {
     render(<ImpersonateModal targetUser={null} onClose={onClose} />);
     const options = screen.getAllByRole('option');
     expect(options).toHaveLength(3);
-    expect(options[0]).toHaveTextContent('Admin');
-    expect(options[1]).toHaveTextContent('PH Admin');
+    expect(options[0]).toHaveTextContent('Faniverz Admin');
+    expect(options[1]).toHaveTextContent('Production Admin');
     expect(options[2]).toHaveTextContent('Viewer');
   });
 

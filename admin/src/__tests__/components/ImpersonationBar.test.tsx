@@ -68,7 +68,7 @@ describe('ImpersonationBar', () => {
     render(<ImpersonationBar />);
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('(Admin)')).toBeInTheDocument();
+    expect(screen.getByText('(Faniverz Admin)')).toBeInTheDocument();
     expect(screen.getByText(/impersonating/i)).toBeInTheDocument();
   });
 
@@ -105,8 +105,8 @@ describe('ImpersonationBar', () => {
 
   it.each([
     { role: 'super_admin' as const, label: 'Super Admin' },
-    { role: 'admin' as const, label: 'Admin' },
-    { role: 'production_house_admin' as const, label: 'PH Admin' },
+    { role: 'admin' as const, label: 'Faniverz Admin' },
+    { role: 'production_house_admin' as const, label: 'Production Admin' },
   ])('shows correct role label "$label" for role "$role"', ({ role, label }) => {
     mockUseImpersonation.mockReturnValue({
       isImpersonating: true,

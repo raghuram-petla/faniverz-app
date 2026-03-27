@@ -81,6 +81,8 @@ vi.mock('lucide-react', () => ({
   Send: () => <span data-testid="send-icon" />,
   Copy: () => <span data-testid="copy-icon" />,
   Check: () => <span data-testid="check-icon" />,
+  Search: () => <span data-testid="search-icon" />,
+  Loader2: () => <span data-testid="loader-icon" />,
 }));
 
 import InviteAdminPage from '@/app/(dashboard)/users/invite/page';

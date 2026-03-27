@@ -31,8 +31,8 @@ describe('types runtime constants', () => {
     it('maps all role ids to display labels', () => {
       expect(ADMIN_ROLE_LABELS.root).toBe('Root');
       expect(ADMIN_ROLE_LABELS.super_admin).toBe('Super Admin');
-      expect(ADMIN_ROLE_LABELS.admin).toBe('Admin');
-      expect(ADMIN_ROLE_LABELS.production_house_admin).toBe('PH Admin');
+      expect(ADMIN_ROLE_LABELS.admin).toBe('Faniverz Admin');
+      expect(ADMIN_ROLE_LABELS.production_house_admin).toBe('Production Admin');
       expect(ADMIN_ROLE_LABELS.viewer).toBe('Viewer');
     });
 

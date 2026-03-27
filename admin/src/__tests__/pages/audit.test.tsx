@@ -155,7 +155,7 @@ vi.mock('@/components/audit/auditUtils', () => ({
 
 vi.mock('@/lib/types', () => ({
   AUDIT_ENTITY_TYPES: ['movie', 'actor', 'user'],
-  ADMIN_ROLE_LABELS: { super_admin: 'Super Admin', admin: 'Admin' },
+  ADMIN_ROLE_LABELS: { super_admin: 'Super Admin', admin: 'Faniverz Admin' },
 }));
 
 vi.mock('@/lib/utils', () => ({
@@ -727,7 +727,7 @@ describe('AuditLogPage', () => {
       ],
     ];
     renderWithProviders(<AuditLogPage />);
-    expect(screen.getByText(/as Admin/)).toBeInTheDocument();
+    expect(screen.getByText(/as Faniverz Admin/)).toBeInTheDocument();
     // Restore
     mockAuditData.pages = [
       [

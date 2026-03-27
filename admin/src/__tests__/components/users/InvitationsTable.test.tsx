@@ -70,7 +70,7 @@ describe('InvitationsTable', () => {
     renderTable({ invitations });
     expect(screen.getByText('alice@test.com')).toBeInTheDocument();
     expect(screen.getByText('bob@test.com')).toBeInTheDocument();
-    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByText('Faniverz Admin')).toBeInTheDocument();
     expect(screen.getByText('Super Admin')).toBeInTheDocument();
   });
 

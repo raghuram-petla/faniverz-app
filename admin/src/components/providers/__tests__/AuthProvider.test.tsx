@@ -300,7 +300,7 @@ describe('AuthProvider — fetchAdminUser scenarios', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => [] }) // invite
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => [{ id: 'user-1', display_name: 'PH Admin' }],
+        json: async () => [{ id: 'user-1', display_name: 'Production Admin' }],
       })
       .mockResolvedValueOnce({
         ok: true,

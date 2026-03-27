@@ -47,7 +47,7 @@ vi.mock('@shared/imageUrl', () => ({
 
 vi.mock('@/lib/types', () => ({
   ADMIN_ROLE_LABELS: {
-    admin: 'Admin',
+    admin: 'Faniverz Admin',
     super_admin: 'Super Admin',
     root: 'Root',
     editor: 'Editor',
@@ -104,7 +104,7 @@ describe('Header', () => {
   it('shows role label when user has a role', () => {
     render(<Header />);
     fireEvent.click(screen.getByLabelText('User menu'));
-    expect(screen.getByText('Admin')).toBeTruthy();
+    expect(screen.getByText('Faniverz Admin')).toBeTruthy();
   });
 
   it('calls signOut when Sign out clicked', () => {
@@ -285,9 +285,8 @@ describe('Header', () => {
     });
     render(<Header />);
     fireEvent.click(screen.getByLabelText('User menu'));
-    // There will be 'Admin' from both the role badge (ADMIN_ROLE_LABELS) and fallback text —
-    // just verify the menu opened and the role badge is shown
-    const adminTexts = screen.getAllByText('Admin');
-    expect(adminTexts.length).toBeGreaterThanOrEqual(1);
+    // Fallback text "Admin" (from email ?? 'Admin') + role badge "Faniverz Admin"
+    expect(screen.getByText('Admin')).toBeTruthy();
+    expect(screen.getByText('Faniverz Admin')).toBeTruthy();
   });
 });

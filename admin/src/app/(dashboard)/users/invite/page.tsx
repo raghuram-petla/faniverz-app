@@ -8,7 +8,10 @@ import { ADMIN_ROLE_LABELS, type AdminRoleId } from '@/lib/types';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import { useLanguageContext } from '@/hooks/useLanguageContext';
-import { CheckboxListField } from '@/components/users/CheckboxListField';
+import {
+  CheckboxListField,
+  type CheckboxListFieldItem,
+} from '@/components/users/CheckboxListField';
 import { ArrowLeft, Send, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 
@@ -16,8 +19,8 @@ import Link from 'next/link';
 // @invariant: displayed options are further filtered by canManageAdmin — users can only invite roles below their own
 const INVITABLE_ROLES: { value: AdminRoleId; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin — Full access + user management' },
-  { value: 'admin', label: 'Admin — Full content access' },
-  { value: 'production_house_admin', label: 'PH Admin — Scoped to production house(s)' },
+  { value: 'admin', label: 'Faniverz Admin — Full content access' },
+  { value: 'production_house_admin', label: 'Production Admin — Scoped to production house(s)' },
   { value: 'viewer', label: 'Viewer — Read-only access to all data' },
 ];
 
@@ -28,9 +31,7 @@ export default function InviteAdminPage() {
   const inviteAdmin = useInviteAdmin();
   const { languages } = useLanguageContext();
 
-  // @invariant: memoized so the array reference is stable across renders — canManageAdmin is a
-  // plain function (new ref each render), so without useMemo availableRoles would be a new array
-  // every render, causing the sync useEffect to fire on every render
+  // @invariant: memoized so availableRoles ref is stable across renders
   const availableRoles = useMemo(
     () => INVITABLE_ROLES.filter((r) => canManageAdmin(r.value)),
     [canManageAdmin],
@@ -44,18 +45,27 @@ export default function InviteAdminPage() {
     /* v8 ignore stop */
   );
 
-  // @edge: only fetch production houses when PH admin role is selected to avoid unnecessary API call on load
-  // @contract: enabled=false skips the query; data is undefined until role switches to production_house_admin
-  const { data: phData } = useAdminProductionHouses(
-    '',
+  // @contract: server-side search for production houses — phSearch drives the query
+  const [phSearch, setPhSearch] = useState('');
+  const { data: phData, isFetching: phLoading } = useAdminProductionHouses(
+    phSearch,
     undefined,
     roleId === 'production_house_admin',
   );
   /* v8 ignore start */
-  const allHouses = phData?.pages.flat() ?? [];
+  const phItems = useMemo(
+    () =>
+      (phData?.pages.flat() ?? []).map((ph) => ({
+        id: ph.id,
+        name: ph.name,
+        imageUrl: ph.logo_url,
+      })),
+    [phData],
+  );
   /* v8 ignore stop */
-  // @sync: selectedPHIds is cleared when role changes away from production_house_admin
   const [selectedPHIds, setSelectedPHIds] = useState<string[]>([]);
+  // @contract: tracks selected PH item data so they remain visible during server-side search
+  const [selectedPHItems, setSelectedPHItems] = useState<CheckboxListFieldItem[]>([]);
   // @sync: selectedLanguageIds is cleared when role changes away from admin
   const [selectedLanguageIds, setSelectedLanguageIds] = useState<string[]>([]);
   const [inviteLink, setInviteLink] = useState('');
@@ -68,10 +78,8 @@ export default function InviteAdminPage() {
     };
   }, []);
 
-  // @sync: sync roleId + defaultRole to first available role when auth context finishes loading.
-  // @edge: roleId is intentionally excluded from deps — this effect only reacts to availableRoles
-  // changing; including roleId would cause a re-run every time the user changes the role selector.
-  // @invariant: defaultRole is state (not ref) so isDirty recomputes when the default is updated
+  // @sync: sync roleId to first available role when auth context loads
+  // @edge: roleId excluded from deps — only reacts to availableRoles changing
   const [defaultRole, setDefaultRole] = useState<AdminRoleId>(
     /* v8 ignore start */
     (availableRoles[0]?.value as AdminRoleId) ?? 'viewer',
@@ -88,8 +96,6 @@ export default function InviteAdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableRoles]);
 
-  // @contract: isDirty = true if email is non-empty OR PH/language IDs selected OR role changed from default
-  // @sync: defaultRole is state so this memo correctly recomputes when the default role is updated
   const isDirty = useMemo(
     () =>
       !!(
@@ -105,10 +111,7 @@ export default function InviteAdminPage() {
   const isPHRole = roleId === 'production_house_admin';
   const isAdminRole = roleId === 'admin';
 
-  // @sideeffect: creates an admin_invitations row with a token (expires in 7 days), then displays the invite link
-  // @boundary: invite link points to /login?invite=<token> — AuthProvider auto-calls /api/accept-invitation on OAuth callback
-  // @edge: PH admin role requires at least one production house selected; form validates client-side before submit
-  // @assumes: user.id is always available (page is behind auth guard)
+  // @sideeffect: creates admin_invitations row with 7-day token, then displays invite link
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !user?.id) return;
@@ -154,6 +157,11 @@ export default function InviteAdminPage() {
     setSelectedPHIds((prev) =>
       prev.includes(phId) ? prev.filter((id) => id !== phId) : [...prev, phId],
     );
+    setSelectedPHItems((prev) => {
+      if (prev.some((p) => p.id === phId)) return prev.filter((p) => p.id !== phId);
+      const item = phItems.find((p) => p.id === phId);
+      return item ? [...prev, item] : prev;
+    });
   }
 
   function toggleLanguage(langId: string) {
@@ -246,7 +254,11 @@ export default function InviteAdminPage() {
               value={roleId}
               onChange={(e) => {
                 setRoleId(e.target.value as AdminRoleId);
-                if (e.target.value !== 'production_house_admin') setSelectedPHIds([]);
+                if (e.target.value !== 'production_house_admin') {
+                  setSelectedPHIds([]);
+                  setSelectedPHItems([]);
+                  setPhSearch('');
+                }
                 if (e.target.value !== 'admin') setSelectedLanguageIds([]);
               }}
               className="w-full bg-input rounded-lg px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
@@ -262,9 +274,12 @@ export default function InviteAdminPage() {
           {isPHRole && (
             <CheckboxListField
               label="Assign Production Houses"
-              items={allHouses}
+              items={phItems}
               selectedIds={selectedPHIds}
+              selectedItems={selectedPHItems}
               onToggle={togglePH}
+              onSearch={setPhSearch}
+              isLoading={phLoading}
               emptyMessage="No production houses available"
             />
           )}
