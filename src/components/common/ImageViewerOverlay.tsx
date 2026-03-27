@@ -21,12 +21,19 @@ import { measureView } from '@/utils/measureView';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import type { ImageSourceLayout } from '@/providers/ImageViewerProvider';
 
-/**
- * @contract Full-screen image viewer with shared-element open/close transition.
- * @coupling ImageViewerProvider — supplies sourceLayout/sourceRef for position interpolation.
- * @coupling ImageViewerGestures — delegates pinch/pan/double-tap; owns gesture shared values.
- * @sideeffect Hides source thumbnail during open, restores it on close (via onSourceHide/onSourceShow).
- */
+// ─── CRITICAL: Bottom panel tuck-in during close ───
+// The poster tucks behind the tab bar (80px) during close via an animated clip zone.
+// HOW IT WORKS:
+//   - clipStyle: Animated.View with overflow:'hidden', anchored at top:0, shrinks via bottom:80*q
+//   - Wraps the gesture area so the poster is clipped at the tab bar edge
+//   - clipNow shared value: 0 for swipe (gradual ramp), 1 for X button (instant clip)
+//   - Backdrop is OUTSIDE the clip zone (full-screen, fades normally)
+// *** DO NOT move the backdrop inside the clip zone — causes black flash in panel zones ***
+// *** DO NOT use transform-based animation (scale/translate) — distorts or crops image ***
+// *** DO NOT add top panel clipping — 9 approaches tried, all caused black flash/artifacts ***
+// *** DO NOT change the clip zone to use 'top' property — only 'bottom' works without flash ***
+// *** DO NOT add opacity/fade to the image container during close — looks ugly ***
+// See memory: feedback_image_viewer_no_hacks.md for full list of failed approaches.
 export interface ImageViewerOverlayProps {
   feedUrl: string;
   fullUrl: string;
@@ -63,6 +70,9 @@ export function ImageViewerOverlay({
   const backdropOpacity = useSharedValue(animationsEnabled ? 0 : 1);
   // @invariant closingRef prevents double-close from concurrent button press and swipe dismiss
   const closingRef = useRef(false);
+  // Bottom panel clip: 1 = instant full clip (X button), 0 = gradual ramp (swipe)
+  // *** DO NOT remove — poster overlaps tab bar without this ***
+  const clipNow = useSharedValue(0);
 
   // Gesture shared values — owned here so we can animate zoom-out on close
   const gestureScale = useSharedValue(1);
@@ -167,7 +177,6 @@ export function ImageViewerOverlay({
     [progress, backdropOpacity, cleanup],
   );
 
-  // @boundary Re-measures source thumbnail position before fly-back; falls back to fast fade if measure fails
   const doFlyBack = useCallback(() => {
     measureView(
       sourceRef,
@@ -182,7 +191,6 @@ export function ImageViewerOverlay({
     );
   }, [sourceRef, srcX, srcY, srcW, srcH, animateClose]);
 
-  /** @sideeffect Resets gesture zoom and translates, then triggers fly-back to source thumbnail */
   const handleCloseButton = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
@@ -192,6 +200,7 @@ export function ImageViewerOverlay({
       return;
     }
 
+    clipNow.value = 1; // Snap clip to full so poster never peeks below tab bar
     if (gestureScale.value > 1.05) {
       gestureScale.value = withTiming(1, { duration: CLOSE_DURATION, easing: EASING });
       gestureTranslateX.value = withTiming(0, { duration: CLOSE_DURATION, easing: EASING });
@@ -200,7 +209,6 @@ export function ImageViewerOverlay({
     doFlyBack();
   }, [gestureScale, gestureTranslateX, gestureTranslateY, doFlyBack, animationsEnabled, cleanup]);
 
-  // Swipe dismiss: gesture resets its own transforms simultaneously
   const handleSwipeDismiss = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
@@ -220,7 +228,6 @@ export function ImageViewerOverlay({
     return () => sub.remove();
   }, [handleCloseButton]);
 
-  // Animated image container: interpolates position/size/borderRadius
   const animatedContainerStyle = useAnimatedStyle(() => {
     const p = progress.value;
     return {
@@ -238,49 +245,66 @@ export function ImageViewerOverlay({
     opacity: backdropOpacity.value,
   }));
 
-  // @sync Close button instantly hidden when drag-to-dismiss starts; fades with open/close transitions
+  // Close button: appears immediately on open, hidden instantly on drag-to-dismiss
   const animatedCloseBtnStyle = useAnimatedStyle(() => ({
-    opacity: isDragging.value === 1 ? 0 : progress.value,
+    opacity: isDragging.value === 1 ? 0 : progress.value > 0.1 ? 1 : 0,
   }));
+
+  // Bottom panel clip: anchored at top:0, shrinks from bottom via 'bottom' property.
+  // The view NEVER moves (top:0 is fixed) — only its bottom edge changes.
+  // This is critical: using 'top' to clip causes a compositing flash on iOS.
+  // clipNow=1 (X button): instant full clip. Otherwise: gradual ramp via *2 multiplier.
+  // 80 = tab bar height. *** DO NOT change without verifying tab bar height. ***
+  const clipStyle = useAnimatedStyle(() => {
+    const q = clipNow.value === 1 ? 1 : Math.min(1, (1 - progress.value) * 2);
+    return {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 80 * q,
+      overflow: 'hidden' as const,
+    };
+  });
 
   return (
     <Animated.View style={styles.root} pointerEvents="auto">
       <StatusBar style="light" />
+      {/* Backdrop MUST be outside clipStyle — putting it inside causes black flash */}
       <Animated.View style={[styles.backdrop, animatedBackdropStyle]} />
-
-      <ImageViewerGestures
-        onDismiss={handleSwipeDismiss}
-        backdropOpacity={backdropOpacity}
-        scale={gestureScale}
-        translateX={gestureTranslateX}
-        translateY={gestureTranslateY}
-        isDragging={isDragging}
-      >
-        <Animated.View style={[styles.gestureArea]}>
-          <Animated.View style={animatedContainerStyle}>
-            {/* @edge Feed-res image shown immediately; full-res stacked on top with crossfade */}
-            <Image
-              source={{ uri: feedUrl || PLACEHOLDER_POSTER }}
-              style={styles.imageFill}
-              contentFit="cover"
-            />
-            {/* @sideeffect onLoad sets fullResLoaded which fades out the progress bar */}
-            <Image
-              source={{ uri: fullUrl || PLACEHOLDER_POSTER }}
-              style={styles.imageFill}
-              contentFit="cover"
-              transition={300}
-              onLoad={() => setFullResLoaded(true)}
-            />
-            <Animated.View style={progressBarContainerStyle}>
-              <Animated.View style={progressBarFillStyle} />
+      {/* Clip zone wraps gesture area so poster tucks behind tab bar on close */}
+      <Animated.View style={clipStyle}>
+        <ImageViewerGestures
+          onDismiss={handleSwipeDismiss}
+          backdropOpacity={backdropOpacity}
+          scale={gestureScale}
+          translateX={gestureTranslateX}
+          translateY={gestureTranslateY}
+          isDragging={isDragging}
+        >
+          <Animated.View style={[styles.gestureArea]}>
+            <Animated.View style={animatedContainerStyle}>
+              <Image
+                source={{ uri: feedUrl || PLACEHOLDER_POSTER }}
+                style={styles.imageFill}
+                contentFit="cover"
+              />
+              <Image
+                source={{ uri: fullUrl || PLACEHOLDER_POSTER }}
+                style={styles.imageFill}
+                contentFit="cover"
+                transition={300}
+                onLoad={() => setFullResLoaded(true)}
+              />
+              <Animated.View style={progressBarContainerStyle}>
+                <Animated.View style={progressBarFillStyle} />
+              </Animated.View>
             </Animated.View>
           </Animated.View>
-        </Animated.View>
-      </ImageViewerGestures>
-
+        </ImageViewerGestures>
+      </Animated.View>
       <Animated.View style={[styles.closeBtnWrapper, animatedCloseBtnStyle]}>
-        <TouchableOpacity onPress={handleCloseButton} accessibilityLabel="Close image">
+        <TouchableOpacity onPress={handleCloseButton} accessibilityLabel="Close image" hitSlop={16}>
           <Ionicons name="close" size={20} color={palette.white} />
         </TouchableOpacity>
       </Animated.View>
