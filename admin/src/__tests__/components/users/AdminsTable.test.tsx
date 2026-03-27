@@ -9,6 +9,12 @@ vi.mock('@/components/users/LanguageAssignments', () => ({
   ),
 }));
 
+vi.mock('@/components/users/PHAssignments', () => ({
+  PHAssignments: ({ userId }: { userId: string; assignedPHs: unknown[] }) => (
+    <div data-testid={`ph-assignments-${userId}`}>PHs</div>
+  ),
+}));
+
 vi.mock('lucide-react', () => ({
   Loader2: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="loader-icon" {...props} />,
   Eye: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="eye-icon" {...props} />,
@@ -473,25 +479,54 @@ describe('AdminsTable', () => {
   });
 
   describe('production house assignments', () => {
-    it('shows PH names when ph_assignments has entries', () => {
+    it('shows PHAssignments component for PH admin role when isSuperAdmin', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'production_house_admin' })],
+        isSuperAdmin: true,
+      });
+      expect(screen.getByTestId('ph-assignments-other-user')).toBeInTheDocument();
+    });
+
+    it('shows static PH names for PH admin role when not isSuperAdmin', () => {
       renderTable({
         users: [
           makeUser({
             id: 'other-user',
+            role_id: 'production_house_admin',
             ph_assignments: [
               { production_house_id: 'ph-1', production_house: { name: 'Mythri' } } as never,
             ],
           }),
         ],
+        isSuperAdmin: false,
+        canManageAdmin: () => false,
       });
+      expect(screen.queryByTestId('ph-assignments-other-user')).not.toBeInTheDocument();
       expect(screen.getByText('Mythri')).toBeInTheDocument();
     });
 
-    it('shows dash when no PH assignments', () => {
+    it('shows static PH names for non-PH-admin roles', () => {
       renderTable({
-        users: [makeUser({ id: 'other-user', ph_assignments: [] })],
+        users: [
+          makeUser({
+            id: 'other-user',
+            role_id: 'admin',
+            ph_assignments: [
+              { production_house_id: 'ph-1', production_house: { name: 'Mythri' } } as never,
+            ],
+          }),
+        ],
+        isSuperAdmin: true,
       });
-      // The "—" dash in the PHs column
+      expect(screen.queryByTestId('ph-assignments-other-user')).not.toBeInTheDocument();
+      expect(screen.getByText('Mythri')).toBeInTheDocument();
+    });
+
+    it('shows dash when no PH assignments for non-PH-admin', () => {
+      renderTable({
+        users: [makeUser({ id: 'other-user', role_id: 'admin', ph_assignments: [] })],
+        isSuperAdmin: true,
+      });
       const cells = screen.getAllByText('—');
       expect(cells.length).toBeGreaterThanOrEqual(1);
     });
@@ -556,11 +591,14 @@ describe('AdminsTable', () => {
       renderTable({
         users: [
           makeUser({
+            role_id: 'admin',
             ph_assignments: [
               { production_house_id: 'orphan-ph-id', production_house: undefined } as never,
             ],
           }),
         ],
+        isSuperAdmin: false,
+        canManageAdmin: () => false,
       });
       expect(screen.getByText('orphan-ph-id')).toBeInTheDocument();
     });

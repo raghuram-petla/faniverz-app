@@ -2,12 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Pencil, X } from 'lucide-react';
 import { useLanguageContext } from '@/hooks/useLanguageContext';
+import { CheckboxListField } from './CheckboxListField';
 
 /**
  * @contract Manages language assignments for an admin user.
- * Shows checkboxes for each available language.
+ * Compact cell shows assigned language pills + edit button.
+ * Edit opens a modal with CheckboxListField.
  * Only visible when the target user's role is 'admin'.
  * Save calls POST /api/user-languages.
  */
@@ -28,7 +30,8 @@ async function getAccessToken(): Promise<string> {
 export function LanguageAssignments({ userId, roleId }: LanguageAssignmentsProps) {
   const queryClient = useQueryClient();
   const { languages } = useLanguageContext();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isOpen, setIsOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
 
   // @contract Fetch current assignments for this user
   const { data: assignments, isLoading } = useQuery({
@@ -44,12 +47,12 @@ export function LanguageAssignments({ userId, roleId }: LanguageAssignmentsProps
     enabled: roleId === 'admin',
   });
 
-  // @sideeffect Sync local state with fetched assignments
+  // @sideeffect Sync local state when modal opens
   useEffect(() => {
-    if (assignments) {
-      setSelected(new Set(assignments.map((a) => a.language_id)));
+    if (isOpen && assignments) {
+      setSelected(assignments.map((a) => a.language_id));
     }
-  }, [assignments]);
+  }, [isOpen, assignments]);
 
   const saveMutation = useMutation({
     mutationFn: async (languageIds: string[]) => {
@@ -69,6 +72,7 @@ export function LanguageAssignments({ userId, roleId }: LanguageAssignmentsProps
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-languages', userId] });
+      setIsOpen(false);
     },
   });
 
@@ -79,53 +83,104 @@ export function LanguageAssignments({ userId, roleId }: LanguageAssignmentsProps
   }
 
   const toggle = (langId: string) => {
-    const next = new Set(selected);
-    if (next.has(langId)) next.delete(langId);
-    else next.add(langId);
-    setSelected(next);
+    setSelected((prev) =>
+      prev.includes(langId) ? prev.filter((id) => id !== langId) : [...prev, langId],
+    );
   };
 
-  // @contract compare selected set to fetched assignments — shows Save button only on diff
+  // @contract Build display from fetched assignments + language context
+  const langMap = new Map(languages.map((l) => [l.id, l.name]));
+  const assignedIds = new Set(assignments?.map((a) => a.language_id) ?? []);
+  const assignedNames = [...assignedIds].map((id) => langMap.get(id) ?? id);
+
   const hasChanges = (() => {
-    const currentIds = new Set(assignments?.map((a) => a.language_id) ?? []);
-    if (currentIds.size !== selected.size) return true;
-    for (const id of selected) if (!currentIds.has(id)) return true;
+    if (assignedIds.size !== selected.length) return true;
+    for (const id of selected) if (!assignedIds.has(id)) return true;
     return false;
   })();
 
+  const langItems = languages.map((l) => ({ id: l.id, name: l.name }));
+
   return (
-    <div className="space-y-2">
-      <p className="text-xs text-on-surface-muted font-medium">Language Access</p>
-      <div className="flex flex-wrap gap-2">
-        {languages.map((lang) => (
-          <label
-            key={lang.id}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-input text-sm cursor-pointer hover:bg-input-active transition-colors"
-          >
-            <input
-              type="checkbox"
-              checked={selected.has(lang.id)}
-              onChange={() => toggle(lang.id)}
-              className="w-4 h-4 rounded accent-red-600"
-            />
-            <span className="text-on-surface">{lang.name}</span>
-          </label>
-        ))}
-      </div>
-      {hasChanges && (
+    <>
+      {/* Compact cell: language pills + edit icon */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {assignedNames.length > 0 ? (
+          assignedNames.map((name) => (
+            <span
+              key={name}
+              className="inline-block px-2 py-0.5 rounded-md bg-surface-elevated text-xs text-on-surface"
+            >
+              {name}
+            </span>
+          ))
+        ) : (
+          <span className="text-sm text-on-surface-muted">—</span>
+        )}
         <button
-          onClick={() => saveMutation.mutate([...selected])}
-          disabled={saveMutation.isPending}
-          className="mt-1 px-3 py-1 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
+          onClick={() => setIsOpen(true)}
+          className="p-1 text-on-surface-subtle hover:text-on-surface transition-colors shrink-0"
+          title="Edit language assignments"
         >
-          {/* v8 ignore start */}
-          {saveMutation.isPending ? 'Saving...' : 'Save Languages'}
-          {/* v8 ignore stop */}
+          <Pencil className="w-3.5 h-3.5" />
         </button>
+      </div>
+
+      {/* Modal overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setIsOpen(false)}
+          data-testid="lang-modal-backdrop"
+        >
+          <div
+            className="bg-surface-card border border-outline rounded-xl w-full max-w-md mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-outline">
+              <h3 className="text-base font-semibold text-on-surface">Edit Language Assignments</h3>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1 text-on-surface-subtle hover:text-on-surface"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <CheckboxListField
+                label="Languages"
+                items={langItems}
+                selectedIds={selected}
+                onToggle={toggle}
+                emptyMessage="No languages available"
+              />
+            </div>
+            <div className="flex items-center justify-between px-5 py-4 border-t border-outline">
+              {saveMutation.isError && (
+                <p className="text-xs text-status-red">{saveMutation.error?.message}</p>
+              )}
+              {!saveMutation.isError && <div />}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="px-4 py-2 rounded-lg text-sm text-on-surface-muted hover:bg-surface-elevated transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => saveMutation.mutate(selected)}
+                  disabled={!hasChanges || saveMutation.isPending}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {/* v8 ignore start */}
+                  {saveMutation.isPending ? 'Saving...' : 'Save'}
+                  {/* v8 ignore stop */}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-      {saveMutation.isError && (
-        <p className="text-xs text-status-red">{saveMutation.error?.message}</p>
-      )}
-    </div>
+    </>
   );
 }

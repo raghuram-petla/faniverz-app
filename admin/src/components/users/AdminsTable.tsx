@@ -5,6 +5,7 @@ import { formatDateTime } from '@/lib/utils';
 import { getImageUrl } from '@shared/imageUrl';
 import { Loader2, Eye, Ban, ShieldCheck, Trash2 } from 'lucide-react';
 import { LanguageAssignments } from './LanguageAssignments';
+import { PHAssignments } from './PHAssignments';
 
 /**
  * @contract renders admin users table with role hierarchy-aware actions
@@ -60,7 +61,16 @@ export function AdminsTable({
 
   return (
     <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
-      <table className="w-full">
+      <table className="w-full table-fixed">
+        <colgroup>
+          <col className="w-[18%]" />
+          <col className="w-[12%]" />
+          <col className="w-[8%]" />
+          <col className="w-[24%]" />
+          <col className="w-[16%]" />
+          <col className="w-[12%]" />
+          <col className="w-[10%]" />
+        </colgroup>
         <thead>
           <tr className="border-b border-outline">
             {['User', 'Role', 'Status', 'PHs', 'Languages', 'Since'].map((h) => (
@@ -159,12 +169,23 @@ export function AdminsTable({
                     </span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-sm text-on-surface-muted">
-                  {u.ph_assignments.length > 0
-                    ? u.ph_assignments
-                        .map((ph) => ph.production_house?.name ?? ph.production_house_id)
-                        .join(', ')
-                    : '—'}
+                <td className="px-6 py-4">
+                  {/* @contract PH assignments editable for PH admin role when viewer is super admin */}
+                  {isSuperAdmin && u.role_id === 'production_house_admin' ? (
+                    <PHAssignments
+                      userId={u.id}
+                      roleId={u.role_id}
+                      assignedPHs={u.ph_assignments}
+                    />
+                  ) : (
+                    <span className="text-sm text-on-surface-muted">
+                      {u.ph_assignments.length > 0
+                        ? u.ph_assignments
+                            .map((ph) => ph.production_house?.name ?? ph.production_house_id)
+                            .join(', ')
+                        : '—'}
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   {/* @contract Language assignments only shown for admin role users */}

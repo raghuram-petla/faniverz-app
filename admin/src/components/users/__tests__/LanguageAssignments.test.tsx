@@ -19,6 +19,13 @@ vi.mock('@/hooks/useLanguageContext', () => ({
   useLanguageContext: () => mockUseLanguageContext(),
 }));
 
+vi.mock('lucide-react', () => ({
+  Loader2: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="loader-icon" {...props} />,
+  Pencil: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="pencil-icon" {...props} />,
+  X: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="x-icon" {...props} />,
+  Search: (props: React.SVGProps<SVGSVGElement>) => <svg data-testid="search-icon" {...props} />,
+}));
+
 // Mock global fetch
 global.fetch = mockFetch;
 
@@ -74,77 +81,137 @@ describe('LanguageAssignments', () => {
     const { container } = render(<LanguageAssignments userId="user-1" roleId="admin" />, {
       wrapper: makeWrapper(),
     });
-    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(container.querySelector('[data-testid="loader-icon"]')).toBeInTheDocument();
   });
 
-  it('renders language checkboxes after loading', async () => {
+  it('renders assigned language as pill after loading', async () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
       expect(screen.getByText('Telugu')).toBeInTheDocument();
     });
-    expect(screen.getByText('Hindi')).toBeInTheDocument();
-    expect(screen.getByText('Tamil')).toBeInTheDocument();
+    expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
   });
 
-  it('pre-checks the assigned language checkbox', async () => {
+  it('shows dash when no languages assigned', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    });
+
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByText('—')).toBeInTheDocument();
     });
+  });
+
+  it('opens modal when edit button is clicked', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+
+    expect(screen.getByText('Edit Language Assignments')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByText('Save')).toBeInTheDocument();
+  });
+
+  it('shows all languages as checkboxes in the modal', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+
+    // All 3 languages should appear in the modal
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBe(3);
+  });
+
+  it('pre-checks the assigned language in the modal', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
 
     const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    // Telugu is the first — should be checked (it was in assignments)
-    expect(checkboxes[0].checked).toBe(true);
-    expect(checkboxes[1].checked).toBe(false);
-    expect(checkboxes[2].checked).toBe(false);
+    // Telugu (lang-te) should be checked — it's first in sorted order (selected first)
+    const teluguCb = checkboxes.find((cb) => {
+      const label = cb.closest('label');
+      return label?.textContent?.includes('Telugu');
+    });
+    expect(teluguCb?.checked).toBe(true);
   });
 
-  it('does not show Save button when no changes', async () => {
+  it('Save button is disabled when no changes', async () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
     });
 
-    // No changes made — Save button should not appear
-    expect(screen.queryByText('Save Languages')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+
+    expect(screen.getByText('Save')).toBeDisabled();
   });
 
-  it('shows Save button when toggling a checkbox', async () => {
+  it('Save button becomes enabled after toggling a checkbox', async () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
     });
 
-    // Toggle Hindi (currently unchecked)
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+
     const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    fireEvent.click(checkboxes[1]);
+    const hindiCb = checkboxes.find((cb) => {
+      const label = cb.closest('label');
+      return label?.textContent?.includes('Hindi');
+    });
+    fireEvent.click(hindiCb!);
 
-    expect(screen.getByText('Save Languages')).toBeInTheDocument();
+    expect(screen.getByText('Save')).not.toBeDisabled();
   });
 
-  it('hides Save button after toggling back to original state', async () => {
+  it('closes modal when Cancel is clicked', async () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
     });
 
-    // Toggle Telugu off (was on)
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    fireEvent.click(checkboxes[0]);
-    expect(screen.getByText('Save Languages')).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+    expect(screen.getByText('Edit Language Assignments')).toBeInTheDocument();
 
-    // Toggle Telugu back on
-    fireEvent.click(checkboxes[0]);
-    expect(screen.queryByText('Save Languages')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByText('Edit Language Assignments')).not.toBeInTheDocument();
   });
 
-  it('calls POST /api/user-languages with selected language ids on save', async () => {
-    // After save, invalidation will refetch
+  it('closes modal when backdrop is clicked', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+    expect(screen.getByText('Edit Language Assignments')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('lang-modal-backdrop'));
+    expect(screen.queryByText('Edit Language Assignments')).not.toBeInTheDocument();
+  });
+
+  it('calls POST /api/user-languages on save', async () => {
     mockFetch
       .mockResolvedValueOnce({
         ok: true,
@@ -158,14 +225,18 @@ describe('LanguageAssignments', () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
     });
 
-    // Toggle Hindi
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    fireEvent.click(checkboxes[1]);
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
 
-    fireEvent.click(screen.getByText('Save Languages'));
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    const hindiCb = checkboxes.find((cb) => {
+      const label = cb.closest('label');
+      return label?.textContent?.includes('Hindi');
+    });
+    fireEvent.click(hindiCb!);
+    fireEvent.click(screen.getByText('Save'));
 
     await waitFor(() => {
       const postCall = mockFetch.mock.calls.find(
@@ -189,12 +260,18 @@ describe('LanguageAssignments', () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
     });
 
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+
     const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    fireEvent.click(checkboxes[1]);
-    fireEvent.click(screen.getByText('Save Languages'));
+    const hindiCb = checkboxes.find((cb) => {
+      const label = cb.closest('label');
+      return label?.textContent?.includes('Hindi');
+    });
+    fireEvent.click(hindiCb!);
+    fireEvent.click(screen.getByText('Save'));
 
     await waitFor(() => {
       expect(screen.getByText('Save failed')).toBeInTheDocument();
@@ -210,19 +287,7 @@ describe('LanguageAssignments', () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
-    });
-
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    // None checked since assignments returned empty
-    expect(checkboxes.every((c) => !c.checked)).toBe(true);
-  });
-
-  it('renders Language Access heading', async () => {
-    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText('Language Access')).toBeInTheDocument();
+      expect(screen.getByText('—')).toBeInTheDocument();
     });
   });
 
@@ -240,46 +305,22 @@ describe('LanguageAssignments', () => {
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
     });
 
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+
     const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    fireEvent.click(checkboxes[1]);
-    fireEvent.click(screen.getByText('Save Languages'));
+    const hindiCb = checkboxes.find((cb) => {
+      const label = cb.closest('label');
+      return label?.textContent?.includes('Hindi');
+    });
+    fireEvent.click(hindiCb!);
+    fireEvent.click(screen.getByText('Save'));
 
     await waitFor(() => {
       expect(screen.getByText('Failed')).toBeInTheDocument();
     });
-  });
-
-  it('shows Save button with Saving... text when mutation is pending', async () => {
-    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
-    });
-
-    // Toggle to create a change
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    fireEvent.click(checkboxes[1]);
-
-    expect(screen.getByText('Save Languages')).toBeInTheDocument();
-  });
-
-  it('detects hasChanges when selected size differs from assignments size', async () => {
-    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
-    });
-
-    // Toggle Telugu off (was checked) and Hindi on
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    fireEvent.click(checkboxes[0]); // uncheck Telugu
-    fireEvent.click(checkboxes[1]); // check Hindi
-
-    // Same size but different content — hasChanges should be true
-    expect(screen.getByText('Save Languages')).toBeInTheDocument();
   });
 
   it('handles session expired error in getAccessToken', async () => {
@@ -287,9 +328,43 @@ describe('LanguageAssignments', () => {
 
     render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
 
-    // The query should fail since session is null, but the component should still render
+    // Should still render the edit button
     await waitFor(() => {
-      expect(screen.getByText('Telugu')).toBeInTheDocument();
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
     });
+  });
+
+  it('closes modal when X button is clicked', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+    expect(screen.getByText('Edit Language Assignments')).toBeInTheDocument();
+
+    const xButton = screen.getByTestId('x-icon').closest('button')!;
+    fireEvent.click(xButton);
+    expect(screen.queryByText('Edit Language Assignments')).not.toBeInTheDocument();
+  });
+
+  it('detects hasChanges when selected differs from assignments', async () => {
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByTitle('Edit language assignments')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTitle('Edit language assignments'));
+
+    // Uncheck Telugu, check Hindi — same size but different content
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    const teluguCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Telugu'));
+    const hindiCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Hindi'));
+    fireEvent.click(teluguCb!);
+    fireEvent.click(hindiCb!);
+
+    expect(screen.getByText('Save')).not.toBeDisabled();
   });
 });
