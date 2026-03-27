@@ -1,18 +1,11 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import {
-  View,
-  Modal,
-  Pressable,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-} from 'react-native';
+import { View, Modal, Pressable, KeyboardAvoidingView, Platform, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedScrollHandler,
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
@@ -98,28 +91,44 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
     [sheetHeight, dismiss, SNAP_SMALL, SNAP_MEDIUM, SNAP_LARGE],
   );
 
-  // @sideeffect Pan gesture on drag handle resizes the sheet vertically
+  // @sync Track scroll offset so pan gesture only activates when scrolled to top
+  const scrollOffset = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollOffset.value = e.contentOffset.y;
+    },
+  });
+
+  // @sideeffect Pan gesture on entire sheet resizes it vertically
   // @edge Fast downward swipe (velocityY > 1500) dismisses regardless of position
+  // @edge Downward drag is ignored when ScrollView is scrolled away from top
   const FLING_VELOCITY = 1500;
   const panGesture = Gesture.Pan()
     .onStart(() => {
       startHeight.value = sheetHeight.value;
     })
     .onUpdate((e) => {
-      // Dragging up = negative translationY = increase height
+      // @invariant Only allow drag-down when scroll is at top; drag-up always allowed
+      const isDraggingDown = e.translationY > 0;
+      if (isDraggingDown && scrollOffset.value > 1) return;
       const newH = startHeight.value - e.translationY;
       const clamped = Math.max(0, Math.min(newH, SNAP_LARGE));
       sheetHeight.value = clamped;
     })
     .onEnd((e) => {
-      if (e.velocityY > FLING_VELOCITY) {
+      if (e.velocityY > FLING_VELOCITY && scrollOffset.value <= 1) {
         sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
       } else if (e.velocityY < -FLING_VELOCITY) {
         sheetHeight.value = withSpring(SNAP_LARGE, SPRING_CONFIG);
       } else {
         runOnJS(snapToNearest)(sheetHeight.value);
       }
-    });
+    })
+    .activeOffsetY([-10, 10]);
+
+  // @coupling nativeScrollGesture allows ScrollView and pan to work simultaneously
+  const nativeScrollGesture = Gesture.Native();
+  const composedGesture = Gesture.Simultaneous(panGesture, nativeScrollGesture);
 
   // @edge Border radius fades to 0 as sheet approaches full height
   const animatedSheetStyle = useAnimatedStyle(() => {
@@ -160,26 +169,34 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
         >
           <Animated.View style={[styles.sheet, animatedSheetStyle]}>
             <Pressable onPress={(e) => e.stopPropagation()} style={{ flex: 1 }}>
-              <GestureDetector gesture={panGesture}>
-                <View style={styles.dragZone}>
-                  <View style={styles.dragHandle} />
+              <GestureDetector gesture={composedGesture}>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.dragZone}>
+                    <View style={styles.dragHandle} />
+                  </View>
+
+                  <Animated.ScrollView
+                    onScroll={scrollHandler}
+                    scrollEventThrottle={16}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    <GestureDetector gesture={nativeScrollGesture}>
+                      <Animated.View>
+                        <CommentsList
+                          comments={comments}
+                          userId={user?.id ?? null}
+                          isLoading={isLoading}
+                          hasNextPage={hasNextPage}
+                          onLoadMore={() => fetchNextPage()}
+                          onDelete={(id) => deleteMutation.mutate(id)}
+                        />
+                      </Animated.View>
+                    </GestureDetector>
+                  </Animated.ScrollView>
                 </View>
               </GestureDetector>
-
-              <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                <CommentsList
-                  comments={comments}
-                  userId={user?.id ?? null}
-                  isLoading={isLoading}
-                  hasNextPage={hasNextPage}
-                  onLoadMore={() => fetchNextPage()}
-                  onDelete={(id) => deleteMutation.mutate(id)}
-                />
-              </ScrollView>
 
               <CommentInput
                 isAuthenticated={!!user}

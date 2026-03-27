@@ -4,8 +4,22 @@ import { CommentsBottomSheet } from '../CommentsBottomSheet';
 
 jest.mock('react-native-gesture-handler', () => {
   const { View } = require('react-native');
+  const chainable = (): any =>
+    new Proxy(
+      {},
+      {
+        get:
+          () =>
+          (..._args: any[]) =>
+            chainable(),
+      },
+    );
   return {
-    Gesture: { Pan: () => ({ onStart: () => ({ onUpdate: () => ({ onEnd: () => ({}) }) }) }) },
+    Gesture: {
+      Pan: () => chainable(),
+      Native: () => chainable(),
+      Simultaneous: () => chainable(),
+    },
     GestureDetector: ({ children }: any) => <View>{children}</View>,
   };
 });
