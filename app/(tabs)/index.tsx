@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -28,6 +28,7 @@ import { useAuthGate } from '@/hooks/useAuthGate';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
+import { CommentsBottomSheet } from '@/components/feed/CommentsBottomSheet';
 import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpers';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
@@ -56,6 +57,7 @@ export default function FeedScreen() {
   const { gate } = useAuthGate();
   const { user } = useAuth();
   const router = useRouter();
+  const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
 
   // @invariant Deduplicates by item.id — infinite query pages can overlap during refetch
   const allItems = useMemo(() => {
@@ -162,12 +164,9 @@ export default function FeedScreen() {
     [router],
   );
 
-  const handleComment = useCallback(
-    (itemId: string) => {
-      router.push(`/post/${itemId}` as Parameters<typeof router.push>[0]);
-    },
-    [router],
-  );
+  const handleComment = useCallback((itemId: string) => {
+    setCommentSheetItemId(itemId);
+  }, []);
 
   const loadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -250,6 +249,12 @@ export default function FeedScreen() {
           </View>
         )}
       </ScrollView>
+
+      <CommentsBottomSheet
+        visible={!!commentSheetItemId}
+        feedItemId={commentSheetItemId ?? ''}
+        onClose={() => setCommentSheetItemId(null)}
+      />
     </View>
   );
 }

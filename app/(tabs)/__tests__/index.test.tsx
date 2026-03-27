@@ -156,6 +156,18 @@ jest.mock('@/components/feed/FeedCard', () => ({
   },
 }));
 
+jest.mock('@/components/feed/CommentsBottomSheet', () => ({
+  CommentsBottomSheet: ({ visible, feedItemId }: any) => {
+    if (!visible) return null;
+    const { View, Text } = require('react-native');
+    return (
+      <View testID="comments-sheet">
+        <Text testID="comments-sheet-item-id">{feedItemId}</Text>
+      </View>
+    );
+  },
+}));
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import FeedScreen from '../index';
@@ -460,13 +472,15 @@ describe('FeedScreen', () => {
     shareSpy.mockRestore();
   });
 
-  it('calls router.push to post detail when comment button is pressed', () => {
+  it('opens comments bottom sheet when comment button is pressed', () => {
     const item = makeItem({ id: 'item-1', title: 'Commentable' });
     setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
     render(<FeedScreen />);
 
+    expect(screen.queryByTestId('comments-sheet')).toBeNull();
     fireEvent.press(screen.getByLabelText('Comment Commentable'));
-    expect(mockPush).toHaveBeenCalledWith('/post/item-1');
+    expect(screen.getByTestId('comments-sheet')).toBeTruthy();
+    expect(screen.getByTestId('comments-sheet-item-id').props.children).toBe('item-1');
   });
 
   it('calls router.push to post detail when item is pressed', () => {

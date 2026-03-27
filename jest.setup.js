@@ -158,7 +158,10 @@ jest.mock('react-native-reanimated', () => {
       if (callback) callback(true);
       return value;
     }),
-    withSpring: jest.fn((value) => value),
+    withSpring: jest.fn((value, _config, callback) => {
+      if (callback) callback(true);
+      return value;
+    }),
     withSequence: jest.fn((...values) => values[values.length - 1]),
     withDelay: jest.fn((_, animation) => animation),
     withDecay: jest.fn(() => 0),

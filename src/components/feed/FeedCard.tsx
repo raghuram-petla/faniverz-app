@@ -105,19 +105,27 @@ function FeedCardInner({
 
   return (
     <View style={styles.post} onLayout={hasVideo ? handleLayout : undefined}>
-      {/* Header row: inline avatar + name + follow */}
+      {/* Header row: avatar + name/timestamp/badge stacked */}
       <View style={styles.headerRow}>
-        <FeedAvatar
-          imageUrl={entityAvatarUrl}
-          entityType={entityType}
-          size={48}
-          label={entityName}
-          onPress={
-            entityId && onEntityPress ? () => onEntityPress(entityType, entityId) : undefined
-          }
-        />
-        <View style={styles.nameRow}>
-          <View style={styles.nameRowLeft}>
+        <View>
+          <FeedAvatar
+            imageUrl={entityAvatarUrl}
+            entityType={entityType}
+            size={56}
+            label={entityName}
+            onPress={
+              entityId && onEntityPress ? () => onEntityPress(entityType, entityId) : undefined
+            }
+          />
+          <TouchableOpacity
+            style={styles.avatarSpacer}
+            activeOpacity={1}
+            onPress={() => onPress(item)}
+            accessibilityLabel="Open post"
+          />
+        </View>
+        <View style={styles.headerMeta}>
+          <View style={styles.nameRow}>
             {entityId && onEntityPress ? (
               <TouchableOpacity
                 onPress={() => onEntityPress(entityType, entityId)}
@@ -134,35 +142,39 @@ function FeedCardInner({
               </Text>
             )}
             {item.is_featured ? <Ionicons name="star" size={12} color={colors.yellow400} /> : null}
-            <Text style={styles.dot}>·</Text>
-            <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
           </View>
           {entityId && onFollow ? (
-            <FollowButton
-              isFollowing={isFollowing ?? false}
-              entityName={entityName}
-              onPress={() =>
-                isFollowing ? onUnfollow?.(entityType, entityId) : onFollow(entityType, entityId)
-              }
-            />
+            <View style={styles.followWrap}>
+              <FollowButton
+                isFollowing={isFollowing ?? false}
+                entityName={entityName}
+                onPress={() =>
+                  isFollowing ? onUnfollow?.(entityType, entityId) : onFollow(entityType, entityId)
+                }
+              />
+            </View>
           ) : null}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => onPress(item)}
+            accessibilityLabel={`${label}: ${item.title}`}
+          >
+            <View style={styles.badgeTimestampRow}>
+              <FeedContentBadge contentType={item.content_type} />
+              <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
+            </View>
+            <Text style={styles.headerTitle}>{item.title}</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Badge + Title + Description (padded via styles) */}
+      {/* Description + Media */}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={() => onPress(item)}
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${item.title}`}
+        accessibilityLabel={`${label}: ${item.title} media`}
       >
-        <View style={styles.badgeRow}>
-          <FeedContentBadge contentType={item.content_type} />
-        </View>
-        <Text style={styles.title} numberOfLines={2}>
-          {item.title}
-        </Text>
-
         {item.description && !hasThumbnail ? (
           <Text style={styles.description} numberOfLines={3}>
             {item.description}

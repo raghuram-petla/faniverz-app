@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +26,7 @@ import { useAuthGate } from '@/hooks/useAuthGate';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
+import { CommentsBottomSheet } from '@/components/feed/CommentsBottomSheet';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { FeedFilterOption } from '@/types';
 
@@ -51,6 +52,7 @@ export default function FeedScreen() {
   const { gate } = useAuthGate();
   const { user } = useAuth();
   const router = useRouter();
+  const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
 
   // @edge: unlike index.tsx, this does NOT deduplicate — assumes useNewsFeed pages don't overlap
   const allItems = useMemo(
@@ -154,12 +156,9 @@ export default function FeedScreen() {
     [router],
   );
 
-  const handleComment = useCallback(
-    (itemId: string) => {
-      router.push(`/post/${itemId}` as Parameters<typeof router.push>[0]);
-    },
-    [router],
-  );
+  const handleComment = useCallback((itemId: string) => {
+    setCommentSheetItemId(itemId);
+  }, []);
 
   return (
     <View style={styles.screen}>
@@ -242,6 +241,12 @@ export default function FeedScreen() {
           />
         </View>
       )}
+
+      <CommentsBottomSheet
+        visible={!!commentSheetItemId}
+        feedItemId={commentSheetItemId ?? ''}
+        onClose={() => setCommentSheetItemId(null)}
+      />
     </View>
   );
 }

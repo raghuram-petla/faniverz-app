@@ -104,26 +104,33 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
     post: {
       paddingTop: 12,
     },
-    // @contract Inline avatar + name row with horizontal padding
+    // @contract Inline avatar + stacked meta (name, timestamp, badge)
     headerRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       gap: 10,
       paddingHorizontal: 12,
     },
-    // Name row: entity name + optional pin/star + dot + timestamp + follow button
-    nameRow: {
+    // Fills empty space below avatar — tappable to open post
+    avatarSpacer: {
       flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+    },
+    // Stacked column: name, badge+timestamp, title
+    headerMeta: {
+      flex: 1,
       gap: 6,
     },
-    nameRowLeft: {
+    // Name row: entity name only (follow button positioned absolutely)
+    nameRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      flex: 1,
+      paddingRight: 100,
+    },
+    followWrap: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
     },
     entityName: {
       fontSize: 15,
@@ -131,27 +138,23 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       color: t.textPrimary,
       flexShrink: 1,
     },
-    dot: {
-      fontSize: 13,
-      color: t.textTertiary,
+    // Badge + timestamp side by side
+    badgeTimestampRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
     },
     timestamp: {
       fontSize: 13,
       color: t.textTertiary,
     },
-    // Badge row + title (stacked vertically, padded)
-    badgeRow: {
-      flexDirection: 'row',
-      marginTop: 6,
-      paddingHorizontal: 12,
-    },
-    title: {
+    // Title inside headerMeta, next to avatar
+    headerTitle: {
       fontSize: 15,
       fontWeight: '400',
       color: t.textPrimary,
       lineHeight: 21,
-      marginTop: 4,
-      paddingHorizontal: 12,
+      marginTop: 2,
     },
     description: {
       fontSize: 14,

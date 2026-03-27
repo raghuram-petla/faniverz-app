@@ -151,6 +151,18 @@ jest.mock('@/components/feed/FeedCard', () => ({
   },
 }));
 
+jest.mock('@/components/feed/CommentsBottomSheet', () => ({
+  CommentsBottomSheet: ({ visible, feedItemId }: any) => {
+    if (!visible) return null;
+    const { View, Text } = require('react-native');
+    return (
+      <View testID="comments-sheet">
+        <Text testID="comments-sheet-item-id">{feedItemId}</Text>
+      </View>
+    );
+  },
+}));
+
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import FeedScreen from '../feed';
@@ -376,13 +388,13 @@ describe('FeedScreen', () => {
     jest.restoreAllMocks();
   });
 
-  it('comment navigates to post detail', () => {
-    const mockPush = jest.fn();
-    jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+  it('comment opens bottom sheet instead of navigating', () => {
     setupMocks();
     render(<FeedScreen />);
+    expect(screen.queryByTestId('comments-sheet')).toBeNull();
     fireEvent.press(screen.getByLabelText('Comment Test Trailer'));
-    // Router push is called with /post/1
+    expect(screen.getByTestId('comments-sheet')).toBeTruthy();
+    expect(screen.getByTestId('comments-sheet-item-id').props.children).toBe('1');
   });
 
   it('handleFeedItemPress navigates to post detail', () => {
