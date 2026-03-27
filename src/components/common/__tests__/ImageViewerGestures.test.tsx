@@ -100,6 +100,7 @@ const makeProps = (overrides = {}) => ({
   scale: { value: 1 } as never,
   translateX: { value: 0 } as never,
   translateY: { value: 0 } as never,
+  isDragging: { value: 0 } as never,
   ...overrides,
 });
 
@@ -178,6 +179,25 @@ describe('ImageViewerGestures', () => {
     }
   });
 
+  it('resets isDragging to 0 on bounce-back (pan below dismiss threshold)', () => {
+    const scale = { value: 1 } as never;
+    const isDragging = { value: 1 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, isDragging })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panEnd) {
+      capturedCallbacks.panEnd({
+        translationX: 0,
+        translationY: 50,
+        velocityX: 0,
+        velocityY: 100,
+      });
+      expect((isDragging as { value: number }).value).toBe(0);
+    }
+  });
+
   it('pan start syncs saved values', () => {
     const scale = { value: 2 } as never;
     const translateX = { value: 30 } as never;
@@ -192,6 +212,34 @@ describe('ImageViewerGestures', () => {
       capturedCallbacks.panStart();
     }
     expect(screen.getByText('test')).toBeTruthy();
+  });
+
+  it('pan start sets isDragging to 1 when scale <= 1 (drag-to-dismiss mode)', () => {
+    const scale = { value: 1 } as never;
+    const isDragging = { value: 0 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, isDragging })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panStart) {
+      capturedCallbacks.panStart();
+    }
+    expect((isDragging as { value: number }).value).toBe(1);
+  });
+
+  it('pan start does NOT set isDragging when scale > 1 (zoomed panning)', () => {
+    const scale = { value: 2 } as never;
+    const isDragging = { value: 0 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, isDragging })}>
+        <Text>test</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.panStart) {
+      capturedCallbacks.panStart();
+    }
+    expect((isDragging as { value: number }).value).toBe(0);
   });
 
   it('pan update at scale > 1 moves the image', () => {

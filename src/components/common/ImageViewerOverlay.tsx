@@ -68,6 +68,8 @@ export function ImageViewerOverlay({
   const gestureScale = useSharedValue(1);
   const gestureTranslateX = useSharedValue(0);
   const gestureTranslateY = useSharedValue(0);
+  // @sync 1 while a drag-to-dismiss swipe is in progress; drives instant close-button hide
+  const isDragging = useSharedValue(0);
 
   // @sync Source position re-measured on close so fly-back targets correct position after scroll
   const srcX = useSharedValue(sourceLayout.x);
@@ -236,8 +238,9 @@ export function ImageViewerOverlay({
     opacity: backdropOpacity.value,
   }));
 
+  // @sync Close button instantly hidden when drag-to-dismiss starts; fades with open/close transitions
   const animatedCloseBtnStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
+    opacity: isDragging.value === 1 ? 0 : progress.value,
   }));
 
   return (
@@ -251,6 +254,7 @@ export function ImageViewerOverlay({
         scale={gestureScale}
         translateX={gestureTranslateX}
         translateY={gestureTranslateY}
+        isDragging={isDragging}
       >
         <Animated.View style={[styles.gestureArea]}>
           <Animated.View style={animatedContainerStyle}>

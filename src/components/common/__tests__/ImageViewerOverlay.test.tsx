@@ -407,17 +407,47 @@ describe('ImageViewerOverlay', () => {
     reanimated.useAnimatedStyle.mockImplementation(() => ({}));
   });
 
+  it('close button opacity is 0 when isDragging is active', () => {
+    const reanimated = require('react-native-reanimated');
+    const styleResults: object[] = [];
+    reanimated.useAnimatedStyle.mockImplementation((cb: () => object) => {
+      const result = cb();
+      styleResults.push(result);
+      return result;
+    });
+    // Make isDragging (6th useSharedValue call) start with value 1
+    let callCount = 0;
+    reanimated.useSharedValue.mockImplementation((v: number) => {
+      callCount++;
+      // 6th call is isDragging — override its initial value to 1
+      return { value: callCount === 6 ? 1 : v };
+    });
+
+    render(<ImageViewerOverlay {...defaultProps} />);
+    // useAnimatedStyle order: progressBarContainer, progressBarFill, container, backdrop, closeBtn
+    const closeBtnStyle = styleResults[4] as { opacity: number } | undefined;
+    expect(closeBtnStyle).toBeDefined();
+    expect(closeBtnStyle!.opacity).toBe(0);
+
+    reanimated.useAnimatedStyle.mockImplementation(() => ({}));
+    reanimated.useSharedValue.mockImplementation((v: number) => ({ value: v }));
+  });
+
   it('handleSwipeDismiss is passed to ImageViewerGestures as onDismiss', () => {
-    // Override the mock to capture onDismiss
+    // Override the mock to capture onDismiss and isDragging
     let capturedOnDismiss: (() => void) | undefined;
+    let capturedIsDragging: { value: number } | undefined;
     jest.requireMock('../ImageViewerGestures').ImageViewerGestures = ({
       children,
       onDismiss,
+      isDragging,
     }: {
       children: React.ReactNode;
       onDismiss: () => void;
+      isDragging: { value: number };
     }) => {
       capturedOnDismiss = onDismiss;
+      capturedIsDragging = isDragging;
       const { View } = require('react-native');
       return <View testID="gesture-wrapper">{children}</View>;
     };
@@ -426,6 +456,8 @@ describe('ImageViewerOverlay', () => {
     const onSourceShow = jest.fn();
     render(<ImageViewerOverlay {...defaultProps} onClose={onClose} onSourceShow={onSourceShow} />);
     expect(capturedOnDismiss).toBeDefined();
+    expect(capturedIsDragging).toBeDefined();
+    expect(typeof capturedIsDragging!.value).toBe('number');
     capturedOnDismiss!();
     expect(onClose).toHaveBeenCalled();
     expect(onSourceShow).toHaveBeenCalled();

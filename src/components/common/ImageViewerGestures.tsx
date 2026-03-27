@@ -26,6 +26,8 @@ export interface ImageViewerGesturesProps {
   translateX: SharedValue<number>;
   /** Gesture translateY -- owned by parent. */
   translateY: SharedValue<number>;
+  /** @sync 1 when a drag-to-dismiss swipe is active (scale=1), 0 otherwise. Used to instantly hide close button. */
+  isDragging: SharedValue<number>;
 }
 
 export const MAX_SCALE = 4;
@@ -58,6 +60,7 @@ export function ImageViewerGestures({
   scale,
   translateX,
   translateY,
+  isDragging,
 }: ImageViewerGesturesProps) {
   // Saved values stay internal — synced from current values at gesture start
   const savedScale = useSharedValue(1);
@@ -109,6 +112,10 @@ export function ImageViewerGestures({
       savedScale.value = scale.value;
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
+      // @sideeffect Instantly signal drag-to-dismiss mode so close button hides immediately
+      if (scale.value <= 1) {
+        isDragging.value = 1;
+      }
     })
     .onUpdate((e) => {
       if (scale.value > 1) {
@@ -133,6 +140,7 @@ export function ImageViewerGestures({
         } else {
           translateY.value = withTiming(0);
           backdropOpacity.value = withTiming(1);
+          isDragging.value = 0;
         }
       } else {
         const s = scale.value;
