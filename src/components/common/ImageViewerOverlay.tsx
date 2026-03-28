@@ -38,7 +38,7 @@ export interface ImageViewerOverlayProps {
 // @assumes All poster images follow 2:3 aspect ratio.
 const POSTER_ASPECT = 3 / 2;
 const OPEN_DURATION = 300;
-const CLOSE_DURATION = 250;
+const CLOSE_DURATION = 400;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 export function ImageViewerOverlay({
   feedUrl,
@@ -63,6 +63,7 @@ export function ImageViewerOverlay({
   const gestureTranslateX = useSharedValue(0);
   const gestureTranslateY = useSharedValue(0);
   const isDragging = useSharedValue(0);
+  const closing = useSharedValue(0);
   const srcX = useSharedValue(sourceLayout.x);
   const srcY = useSharedValue(sourceLayout.y);
   const srcW = useSharedValue(sourceLayout.width);
@@ -136,7 +137,7 @@ export function ImageViewerOverlay({
       progress.value = withTiming(0, { duration: dur, easing: EASING }, (finished) => {
         if (finished) runOnJS(cleanup)();
       });
-      backdropOpacity.value = withTiming(0, { duration: dur, easing: EASING });
+      backdropOpacity.value = 0;
     },
     [progress, backdropOpacity, cleanup],
   );
@@ -157,6 +158,7 @@ export function ImageViewerOverlay({
   const handleCloseButton = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
+    closing.value = 1;
 
     if (!animationsEnabled) {
       cleanup();
@@ -175,24 +177,32 @@ export function ImageViewerOverlay({
       gestureTranslateY.value = withTiming(0, { duration: CLOSE_DURATION, easing: EASING });
     }
     doFlyBack();
-  }, [gestureScale, gestureTranslateX, gestureTranslateY, doFlyBack, animationsEnabled, cleanup]);
+  }, [
+    gestureScale,
+    gestureTranslateX,
+    gestureTranslateY,
+    doFlyBack,
+    animationsEnabled,
+    cleanup,
+    closing,
+  ]);
 
   const handleSwipeDismiss = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
+    closing.value = 1;
 
     if (!animationsEnabled) {
       cleanup();
       return;
     }
-    // @contract If in landscape, rotate to portrait first then fly-back
     if (isScreenLandscape && isLandscape) {
       waitingForPortrait.current = true;
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
       return;
     }
     animateClose(CLOSE_DURATION);
-  }, [animateClose, animationsEnabled, cleanup, isScreenLandscape, isLandscape]);
+  }, [animateClose, animationsEnabled, cleanup, isScreenLandscape, isLandscape, closing]);
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       handleCloseButton();
@@ -230,10 +240,9 @@ export function ImageViewerOverlay({
       overflow: 'hidden' as const,
     };
   });
-  // @sync Mask opacity = inverse of backdrop: invisible when backdrop is opaque (viewing),
-  // gradually appears as backdrop fades (close/swipe), fully visible when backdrop is gone.
+  // @sync Mask snaps: visible immediately on close, hidden immediately on open.
   const topChromeMaskStyle = useAnimatedStyle(() => ({
-    opacity: 1 - backdropOpacity.value,
+    opacity: closing.value === 1 ? 1 : backdropOpacity.value > 0 ? 0 : 1,
   }));
 
   return (
@@ -252,7 +261,6 @@ export function ImageViewerOverlay({
           imageWidth={tgtW}
           currentScreenW={screenW}
           currentScreenH={screenH}
-          keepBackdropOpaque={isScreenLandscape}
         >
           <Animated.View style={[styles.gestureArea, { width: screenW, height: screenH }]}>
             <Animated.View style={animatedContainerStyle}>

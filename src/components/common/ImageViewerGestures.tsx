@@ -36,8 +36,6 @@ export interface ImageViewerGesturesProps {
   currentScreenW?: number;
   /** @contract current screen height (reactive to rotation) */
   currentScreenH?: number;
-  /** @contract when true, backdrop stays opaque during swipe (hides rotated content behind) */
-  keepBackdropOpaque?: boolean;
 }
 
 export const MAX_SCALE = 4;
@@ -75,7 +73,6 @@ export function ImageViewerGestures({
   imageWidth,
   currentScreenW,
   currentScreenH,
-  keepBackdropOpaque,
 }: ImageViewerGesturesProps) {
   const imgW = imageWidth ?? IMG_W;
   const imgH = imageHeight ?? IMG_H;
@@ -143,9 +140,10 @@ export function ImageViewerGestures({
       savedScale.value = scale.value;
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
-      // @sideeffect Instantly signal drag-to-dismiss mode so close button hides immediately
+      // @sideeffect Instantly signal drag-to-dismiss mode so close button hides and backdrop clears
       if (scale.value <= 1) {
         isDragging.value = 1;
+        backdropOpacity.value = 0;
       }
     })
     .onUpdate((e) => {
@@ -154,25 +152,22 @@ export function ImageViewerGestures({
         translateY.value = clampYLocal(savedTranslateY.value + e.translationY, scale.value);
       } else {
         translateY.value = e.translationY;
-        if (!keepBackdropOpaque) {
-          backdropOpacity.value = 1 - Math.min(1, Math.abs(e.translationY) / (scrH * 0.4));
-        }
       }
     })
     .onEnd((e) => {
       if (scale.value <= 1) {
         if (Math.abs(e.translationY) > DISMISS_THRESHOLD) {
-          // Reset gesture transforms so they don't conflict with fly-back
-          translateY.value = withTiming(0, { duration: 250 });
-          translateX.value = withTiming(0, { duration: 250 });
-          scale.value = withTiming(1, { duration: 250 });
+          // Animate gesture transforms to 0 in sync with the fly-back
+          translateY.value = withTiming(0, { duration: 400 });
+          translateX.value = withTiming(0, { duration: 400 });
+          scale.value = withTiming(1, { duration: 400 });
           savedScale.value = 1;
           savedTranslateX.value = 0;
           savedTranslateY.value = 0;
           runOnJS(onDismiss)();
         } else {
           translateY.value = withTiming(0);
-          backdropOpacity.value = withTiming(1);
+          backdropOpacity.value = 1;
           isDragging.value = 0;
         }
       } else {
