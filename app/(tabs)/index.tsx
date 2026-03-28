@@ -104,9 +104,11 @@ export default function FeedScreen() {
   const navigation = useNavigation();
   const scrollOffsetRef = useRef(0);
 
-  // @edge First tap scrolls to top; second tap (when already at top) triggers refresh
+  // @edge Only act on tab press when already on home screen; first tap scrolls to top, second tap refreshes
   useEffect(() => {
-    return navigation.addListener('tabPress' as never, () => {
+    return navigation.addListener('tabPress' as never, (e: { preventDefault?: () => void }) => {
+      if (!navigation.isFocused()) return; // navigating here from another tab — do nothing
+      e.preventDefault?.(); // prevent default scroll-to-top so we control behavior
       if (scrollOffsetRef.current <= 2) {
         onRefresh();
       } else {
