@@ -79,27 +79,8 @@ export function ImageViewerOverlay({
     isLandscape && isScreenLandscape ? screenH : screenW * (isLandscape ? 9 / 16 : POSTER_ASPECT);
   const tgtX = 0;
   const tgtY = (screenH - tgtH) / 2;
-  // @sideeffect Smooth rotation: compute how much the image area changes and
-  // start from that ratio so it smoothly grows/shrinks to fill the new layout.
-  // Hides full-res image during transition to avoid jank from resizing large files.
-  const rotationScale = useSharedValue(1);
-  const fullResOpacity = useSharedValue(1);
-  const prevTgtW = useRef(tgtW);
-  const prevTgtH = useRef(tgtH);
-  useEffect(() => {
-    if (prevTgtW.current === tgtW && prevTgtH.current === tgtH) return;
-    const oldArea = prevTgtW.current * prevTgtH.current;
-    const newArea = tgtW * tgtH;
-    const startScale = Math.sqrt(oldArea / newArea);
-    prevTgtW.current = tgtW;
-    prevTgtH.current = tgtH;
-    // Hide full-res during rotation, show feed-res only (much lighter)
-    fullResOpacity.value = 0;
-    rotationScale.value = startScale;
-    rotationScale.value = withTiming(1, { duration: 500, easing: EASING }, (finished) => {
-      if (finished) fullResOpacity.value = 1;
-    });
-  }, [tgtW, tgtH, rotationScale, fullResOpacity]);
+  // @contract No custom rotation animation — the OS rotation provides the
+  // visual transition. We just snap to the correct dimensions immediately.
   const [fullResLoaded, setFullResLoaded] = useState(false);
   const [showClosingTopChrome, setShowClosingTopChrome] = useState(false);
   const progressX = useSharedValue(-1);
@@ -258,28 +239,18 @@ export function ImageViewerOverlay({
 
   const animatedContainerStyle = useAnimatedStyle(() => {
     const p = progress.value;
-    const s = rotationScale.value;
-    const w = srcW.value + (tgtW - srcW.value) * p;
-    const h = srcH.value + (tgtH - srcH.value) * p;
-    const x = srcX.value + (tgtX - srcX.value) * p;
-    const y = srcY.value + (tgtY - srcY.value) * p;
     return {
       position: 'absolute',
-      left: x + (w * (1 - s)) / 2,
-      top: y + (h * (1 - s)) / 2,
-      width: w * s,
-      height: h * s,
+      left: srcX.value + (tgtX - srcX.value) * p,
+      top: srcY.value + (tgtY - srcY.value) * p,
+      width: srcW.value + (tgtW - srcW.value) * p,
+      height: srcH.value + (tgtH - srcH.value) * p,
       borderRadius: srcRadius * (1 - p),
       overflow: 'hidden' as const,
     };
   });
   const animatedBackdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
-  }));
-  // @sideeffect Hide full-res image during rotation to avoid jank
-  const animatedFullResStyle = useAnimatedStyle(() => ({
-    ...styles.imageFill,
-    opacity: fullResOpacity.value,
   }));
   const animatedCloseBtnStyle = useAnimatedStyle(() => ({
     opacity: isDragging.value === 1 ? 0 : progress.value > 0.1 ? 1 : 0,
@@ -321,15 +292,13 @@ export function ImageViewerOverlay({
                 style={styles.imageFill}
                 contentFit="cover"
               />
-              <Animated.View style={animatedFullResStyle}>
-                <Image
-                  source={{ uri: fullUrl || PLACEHOLDER_POSTER }}
-                  style={styles.imageFill}
-                  contentFit="cover"
-                  transition={300}
-                  onLoad={() => setFullResLoaded(true)}
-                />
-              </Animated.View>
+              <Image
+                source={{ uri: fullUrl || PLACEHOLDER_POSTER }}
+                style={styles.imageFill}
+                contentFit="cover"
+                transition={300}
+                onLoad={() => setFullResLoaded(true)}
+              />
               <Animated.View style={progressBarContainerStyle}>
                 <Animated.View style={progressBarFillStyle} />
               </Animated.View>
