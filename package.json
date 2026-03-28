@@ -10,7 +10,10 @@
     "test": "jest --silent",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ios:build:dev": "bash scripts/ios/build-dev.sh",
+    "ios:build:prod": "bash scripts/ios/build-production.sh",
+    "ios:deploy:testflight": "bash scripts/ios/deploy-testflight.sh"
   },
   "dependencies": {
     "@expo-google-fonts/exo-2": "^0.4.2",
