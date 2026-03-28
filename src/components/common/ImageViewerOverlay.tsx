@@ -37,7 +37,7 @@ export interface ImageViewerOverlayProps {
 
 // @assumes All poster images follow 2:3 aspect ratio.
 const POSTER_ASPECT = 3 / 2;
-const OPEN_DURATION = 300;
+const OPEN_DURATION = 400;
 const CLOSE_DURATION = 400;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 export function ImageViewerOverlay({
@@ -102,14 +102,11 @@ export function ImageViewerOverlay({
   }, [isLandscape]);
 
   useEffect(() => {
+    onSourceHide?.();
     if (animationsEnabled) {
       progress.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });
       backdropOpacity.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });
-      const timer = setTimeout(() => onSourceHide?.(), OPEN_DURATION);
-      return () => clearTimeout(timer);
     }
-    onSourceHide?.();
-    return undefined;
   }, [progress, backdropOpacity, onSourceHide, animationsEnabled]);
   // @sideeffect When dismissing from landscape, rotate to portrait first,
   // then run the normal fly-back animation into the feed card.
