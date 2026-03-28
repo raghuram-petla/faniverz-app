@@ -100,16 +100,17 @@ export const createFeedStyles = (t: SemanticTheme) =>
 
 export const createFeedCardStyles = (t: SemanticTheme) =>
   StyleSheet.create({
-    // @contract Stacked container — no flex row, media bleeds edge-to-edge
+    // @contract Stacked container — paddingHorizontal creates gap between content and film rails
     post: {
       paddingTop: 12,
+      paddingHorizontal: 4,
     },
     // @contract Inline avatar + stacked meta (name, timestamp, badge)
     headerRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: 10,
-      paddingHorizontal: 12,
+      paddingHorizontal: 8,
     },
     // Fills empty space below avatar — tappable to open post
     avatarSpacer: {
@@ -161,7 +162,7 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       color: t.textSecondary,
       lineHeight: 20,
       marginTop: 4,
-      paddingHorizontal: 12,
+      paddingHorizontal: 8,
     },
     // @contract Media containers — full bleed, no border radius, no horizontal padding
     mediaContainer: {
@@ -198,7 +199,7 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
     actionBar: {
       paddingTop: 10,
       paddingBottom: 4,
-      paddingHorizontal: 12,
+      paddingHorizontal: 8,
     },
     separator: {
       height: 2,
