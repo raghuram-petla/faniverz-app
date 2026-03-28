@@ -15,9 +15,9 @@ export const createFilterPillBarStyles = (t: SemanticTheme) =>
       flexDirection: 'row',
     },
     pill: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
       borderWidth: 1,
     },
     pillInactive: {
@@ -25,7 +25,7 @@ export const createFilterPillBarStyles = (t: SemanticTheme) =>
       borderColor: t.inputActive,
     },
     pillText: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '500',
       color: t.textSecondary,
     },
