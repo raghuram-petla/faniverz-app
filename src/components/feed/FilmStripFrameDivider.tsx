@@ -4,10 +4,10 @@ import { useTheme } from '@/theme';
 import { useFilmStripStore } from '@/stores/useFilmStripStore';
 import { RAIL_WIDTH, SPROCKET_SIZE, SPROCKET_RADIUS, getFilmColor } from '@/constants/filmStrip';
 
-/** @invariant divider height = sprocket + vertical padding so the hole sits centered */
-const DIVIDER_HEIGHT = SPROCKET_SIZE + 2;
+/** @invariant divider height — thin bar of film material between frames */
+const DIVIDER_HEIGHT = 12;
 /** @invariant edge divider is half-height — clips the sprocket to look like a film cut */
-const EDGE_HEIGHT = Math.ceil(SPROCKET_SIZE / 2) + 2;
+const EDGE_HEIGHT = 7;
 
 export interface FilmStripFrameDividerProps {
   /** @contract when true, renders a half-cut sprocket at the edge (film snip effect) */
