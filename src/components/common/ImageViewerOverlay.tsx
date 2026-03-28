@@ -155,39 +155,35 @@ export function ImageViewerOverlay({
     onSourceHide?.();
     return undefined;
   }, [progress, backdropOpacity, onSourceHide, animationsEnabled]);
-  // @sideeffect When dismissing from landscape, we lock to portrait first and defer
-  // the actual unmount until the screen has rotated back. This prevents the feed
-  // from ever being visible in landscape orientation.
+  // @sideeffect When dismissing from landscape, rotate to portrait first,
+  // then run the normal fly-back animation into the feed card.
   const waitingForPortrait = useRef(false);
+  const doFlyBackRef = useRef<() => void>(() => {});
   useEffect(() => {
     if (waitingForPortrait.current && !isScreenLandscape) {
       waitingForPortrait.current = false;
-      onSourceShow?.();
-      onClose();
+      // @sideeffect Small delay lets the image settle at portrait dimensions
+      // before the fly-back animation starts, so the user sees it shrink first.
+      const t = setTimeout(() => {
+        clipNow.value = 1;
+        doFlyBackRef.current();
+      }, 200);
+      return () => clearTimeout(t);
     }
-  }, [isScreenLandscape, onClose, onSourceShow]);
+  }, [isScreenLandscape, clipNow]);
 
   const cleanup = useCallback(() => {
-    if (isScreenLandscape && isLandscape) {
-      // Lock to portrait and wait — the useEffect above will unmount once rotated
-      waitingForPortrait.current = true;
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-      return;
-    }
     onSourceShow?.();
     onClose();
-  }, [isLandscape, isScreenLandscape, onClose, onSourceShow]);
+  }, [onClose, onSourceShow]);
   const animateClose = useCallback(
     (dur: number) => {
       progress.value = withTiming(0, { duration: dur, easing: EASING }, (finished) => {
         if (finished) runOnJS(cleanup)();
       });
-      // @contract Keep backdrop opaque when dismissing from landscape
-      if (!isScreenLandscape) {
-        backdropOpacity.value = withTiming(0, { duration: dur, easing: EASING });
-      }
+      backdropOpacity.value = withTiming(0, { duration: dur, easing: EASING });
     },
-    [progress, backdropOpacity, cleanup, isScreenLandscape],
+    [progress, backdropOpacity, cleanup],
   );
   const doFlyBack = useCallback(() => {
     measureView(
@@ -202,12 +198,19 @@ export function ImageViewerOverlay({
       () => animateClose(200),
     );
   }, [sourceRef, srcX, srcY, srcW, srcH, animateClose]);
+  doFlyBackRef.current = doFlyBack;
   const handleCloseButton = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
     setShowClosingTopChrome(true);
     if (!animationsEnabled) {
       cleanup();
+      return;
+    }
+    // @contract If in landscape, rotate to portrait first then fly-back
+    if (isScreenLandscape && isLandscape) {
+      waitingForPortrait.current = true;
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
       return;
     }
     clipNow.value = 1;
@@ -227,8 +230,14 @@ export function ImageViewerOverlay({
       cleanup();
       return;
     }
+    // @contract If in landscape, rotate to portrait first then fly-back
+    if (isScreenLandscape && isLandscape) {
+      waitingForPortrait.current = true;
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      return;
+    }
     animateClose(CLOSE_DURATION);
-  }, [animateClose, animationsEnabled, cleanup]);
+  }, [animateClose, animationsEnabled, cleanup, isScreenLandscape, isLandscape]);
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       handleCloseButton();
