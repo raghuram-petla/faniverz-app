@@ -1,17 +1,9 @@
-import React, { useMemo } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
 /** @invariant sprocket sizing — classic film reel proportions */
 const STRIP_HEIGHT = 7;
-const SPROCKET_SIZE = 5;
-const SPROCKET_RADIUS = 1.5;
-const DOT_SIZE = 2;
-const ITEM_GAP = 2;
-/** @assumes each cell = one sprocket + gap + one dot + gap */
-const CELL_WIDTH = SPROCKET_SIZE + ITEM_GAP + DOT_SIZE + ITEM_GAP;
-const CELL_COUNT = Math.ceil(SCREEN_WIDTH / CELL_WIDTH) + 1;
 
 export interface FilmStripDividerProps {
   /** @contract optional top margin override; defaults to 10 */
@@ -20,35 +12,30 @@ export interface FilmStripDividerProps {
 
 /**
  * @coupling FeedCard — used as the between-card separator in the news feed
- * Renders a horizontal film strip: alternating sprocket holes and dots
- * (hole · dot · hole · dot) for a classic movie reel look.
+ * Renders a lightweight film strip divider using a dashed border pattern
+ * instead of individual View elements per sprocket hole.
  */
-export function FilmStripDivider({ marginTop = 10 }: FilmStripDividerProps) {
+function FilmStripDividerInner({ marginTop = 10 }: FilmStripDividerProps) {
   const { theme } = useTheme();
-  const stripColor = theme.textTertiary;
-  const holeColor = theme.background;
-  const dotColor = theme.textSecondary;
-
-  /** @assumes builds alternating [hole, dot, hole, dot, ...] row */
-  const cells = useMemo(() => {
-    const items: React.ReactElement[] = [];
-    for (let i = 0; i < CELL_COUNT; i++) {
-      items.push(
-        <View key={`s${i}`} style={[localStyles.sprocket, { backgroundColor: holeColor }]} />,
-      );
-      items.push(<View key={`d${i}`} style={[localStyles.dot, { backgroundColor: dotColor }]} />);
-    }
-    return items;
-  }, [holeColor, dotColor]);
 
   return (
     <View style={[localStyles.container, { marginTop }]}>
-      <View style={[localStyles.strip, { backgroundColor: stripColor }]}>
-        <View style={localStyles.row}>{cells}</View>
+      <View style={[localStyles.strip, { backgroundColor: theme.textTertiary }]}>
+        <View
+          style={[
+            localStyles.sprocketRow,
+            {
+              borderColor: theme.background,
+            },
+          ]}
+        />
       </View>
     </View>
   );
 }
+
+/** @sync React.memo prevents re-render when parent (FeedCard) re-renders with same theme */
+export const FilmStripDivider = React.memo(FilmStripDividerInner);
 
 const localStyles = StyleSheet.create({
   container: {
@@ -58,20 +45,13 @@ const localStyles = StyleSheet.create({
     height: STRIP_HEIGHT,
     justifyContent: 'center',
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sprocket: {
-    width: SPROCKET_SIZE,
-    height: SPROCKET_SIZE,
-    borderRadius: SPROCKET_RADIUS,
-    marginHorizontal: ITEM_GAP / 2,
-  },
-  dot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    marginHorizontal: ITEM_GAP / 2,
+  /** @assumes dashed border approximates the sprocket hole pattern with only 1 View
+   * instead of ~160 Views (2 per cell × 80 cells). dashGap and dashWidth tuned to
+   * match the original SPROCKET_SIZE=5, DOT_SIZE=2, ITEM_GAP=2 spacing. */
+  sprocketRow: {
+    height: 5,
+    borderStyle: 'dashed',
+    borderWidth: 2.5,
+    borderRadius: 1.5,
   },
 });

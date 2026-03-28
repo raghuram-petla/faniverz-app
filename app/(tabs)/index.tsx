@@ -1,7 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Share } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, ActivityIndicator, Share } from 'react-native';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -27,7 +29,6 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { useScrollToTop } from '@react-navigation/native';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
@@ -86,8 +87,15 @@ export default function FeedScreen() {
     handlePullScroll,
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
-  const scrollRef = useRef<ScrollView>(null);
-  useScrollToTop(scrollRef);
+  const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
+  const navigation = useNavigation();
+
+  // @sync Scroll to top when the Home tab is tapped while already on this screen
+  useEffect(() => {
+    return navigation.addListener('tabPress' as never, () => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+  }, [navigation]);
 
   // @contract Toggle behavior: re-upvoting removes the vote; first upvote or switching from down creates new vote
   // @nullable prev can be null (no vote), 'up', or 'down'
@@ -178,6 +186,13 @@ export default function FeedScreen() {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // @sync memoize gated callbacks once — gate() returns a new wrapper each call,
+  // so calling it inline in renderItem defeats FeedCard's React.memo
+  const gatedUpvote = useMemo(() => gate(handleUpvote), [gate, handleUpvote]);
+  const gatedDownvote = useMemo(() => gate(handleDownvote), [gate, handleDownvote]);
+  const gatedFollow = useMemo(() => gate(handleFollow), [gate, handleFollow]);
+  const gatedUnfollow = useMemo(() => gate(handleUnfollow), [gate, handleUnfollow]);
+
   // @contract Snapshot is read only when a poster opens so the image viewer closes under the same header position.
   const getImageViewerTopChrome = useCallback(
     (): ImageViewerTopChrome => ({
@@ -198,74 +213,80 @@ export default function FeedScreen() {
         totalHeaderHeight={totalHeaderHeight}
       />
 
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: totalHeaderHeight }]}
-        showsVerticalScrollIndicator={false}
-        // @sync Three scroll handlers chained: pull-to-refresh, collapsible header, infinite load + video autoplay
-        onScroll={(e) => {
-          handlePullScroll(e);
-          handleScroll(e);
-          // @edge 300px threshold triggers next page fetch before user reaches the bottom
-          const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-          if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 300) {
-            loadMore();
-          }
-          handleScrollForVideo(contentOffset.y, layoutMeasurement.height);
-        }}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onScrollEndDrag={handleScrollEndDrag}
-        scrollEventThrottle={16}
-      >
-        <PullToRefreshIndicator
-          pullDistance={pullDistance}
-          isRefreshing={isRefreshing}
-          refreshing={refreshing}
-        />
-
-        {/* Filter pills */}
-        <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
-
-        {isLoading ? (
+      {/* @coupling FlashList virtualizes feed cards — only visible + drawDistance cards are mounted */}
+      {isLoading ? (
+        <View style={[styles.scroll, { paddingTop: totalHeaderHeight }]}>
+          <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
           <FeedContentSkeleton />
-        ) : allItems.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />
-            <Text style={styles.emptyTitle}>{t('feed.noUpdates')}</Text>
-            <Text style={styles.emptySubtitle}>
-              {filter !== 'all'
-                ? t('feed.noFilterContent', {
-                    filter: FEED_PILLS.find((p) => p.value === filter)?.label ?? filter,
-                  })
-                : t('feed.checkBackSoon')}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.feedList}>
-            {allItems.map((item) => (
+        </View>
+      ) : (
+        <View style={styles.scroll}>
+          <FlashList
+            ref={listRef}
+            data={allItems}
+            keyExtractor={(item) => item.id}
+            drawDistance={500}
+            contentContainerStyle={{ paddingTop: totalHeaderHeight }}
+            showsVerticalScrollIndicator={false}
+            // @sync Three scroll handlers chained: pull-to-refresh, collapsible header, video autoplay
+            onScroll={(e) => {
+              handlePullScroll(e);
+              handleScroll(e);
+              const { contentOffset, layoutMeasurement } = e.nativeEvent;
+              handleScrollForVideo(contentOffset.y, layoutMeasurement.height);
+            }}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onScrollEndDrag={handleScrollEndDrag}
+            scrollEventThrottle={16}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
+            ListHeaderComponent={
+              <>
+                <PullToRefreshIndicator
+                  pullDistance={pullDistance}
+                  isRefreshing={isRefreshing}
+                  refreshing={refreshing}
+                />
+                <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
+              </>
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="newspaper-outline" size={48} color={colors.gray500} />
+                <Text style={styles.emptyTitle}>{t('feed.noUpdates')}</Text>
+                <Text style={styles.emptySubtitle}>
+                  {filter !== 'all'
+                    ? t('feed.noFilterContent', {
+                        filter: FEED_PILLS.find((p) => p.value === filter)?.label ?? filter,
+                      })
+                    : t('feed.checkBackSoon')}
+                </Text>
+              </View>
+            }
+            ListFooterComponent={
+              isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null
+            }
+            renderItem={({ item }) => (
               <FeedCard
-                key={item.id}
                 item={item}
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
-                onUpvote={gate(handleUpvote)} /* @boundary gate wraps — guests see login prompt */
-                onDownvote={gate(handleDownvote)}
+                onUpvote={gatedUpvote} /* @boundary gate wraps — guests see login prompt */
+                onDownvote={gatedDownvote}
                 onComment={handleComment}
                 onShare={handleShare}
                 isVideoActive={activeVideoId === item.id}
                 onVideoLayout={item.youtube_id ? registerVideoLayout : undefined}
                 getImageViewerTopChrome={getImageViewerTopChrome}
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
-                onFollow={gate(handleFollow)}
-                onUnfollow={gate(handleUnfollow)}
+                onFollow={gatedFollow}
+                onUnfollow={gatedUnfollow}
               />
-            ))}
-            {isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null}
-          </View>
-        )}
-      </ScrollView>
+            )}
+          />
+        </View>
+      )}
 
       <CommentsBottomSheet
         visible={!!commentSheetItemId}

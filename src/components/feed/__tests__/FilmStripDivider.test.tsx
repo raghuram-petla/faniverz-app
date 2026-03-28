@@ -8,13 +8,19 @@ describe('FilmStripDivider', () => {
     expect(toJSON()).toBeTruthy();
   });
 
-  it('renders a strip with sprocket holes', () => {
+  it('renders a strip with a dashed sprocket row', () => {
     const { toJSON } = render(<FilmStripDivider />);
     const tree = toJSON() as any;
-    // Container > strip > sprocketRow > sprockets
+    // Container > strip > sprocketRow
     const strip = tree.children[0];
     const sprocketRow = strip.children[0];
-    expect(sprocketRow.children.length).toBeGreaterThan(10);
+    const styles = [].concat(
+      ...(Array.isArray(sprocketRow.props.style)
+        ? sprocketRow.props.style
+        : [sprocketRow.props.style]),
+    );
+    const hasDashed = styles.some((s: any) => s?.borderStyle === 'dashed');
+    expect(hasDashed).toBe(true);
   });
 
   it('applies custom marginTop', () => {
@@ -25,12 +31,14 @@ describe('FilmStripDivider', () => {
     );
   });
 
-  it('sprocket holes have border radius for rounded look', () => {
+  it('sprocket row has border radius for rounded look', () => {
     const { toJSON } = render(<FilmStripDivider />);
     const tree = toJSON() as any;
-    const sprocket = tree.children[0].children[0].children[0];
+    const sprocketRow = tree.children[0].children[0];
     const styles = [].concat(
-      ...(Array.isArray(sprocket.props.style) ? sprocket.props.style : [sprocket.props.style]),
+      ...(Array.isArray(sprocketRow.props.style)
+        ? sprocketRow.props.style
+        : [sprocketRow.props.style]),
     );
     const hasRadius = styles.some((s: any) => s?.borderRadius != null && s.borderRadius > 0);
     expect(hasRadius).toBe(true);

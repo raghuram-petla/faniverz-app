@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -61,7 +61,7 @@ function FeedCardInner({
   getImageViewerTopChrome,
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
-  const styles = createFeedCardStyles(theme);
+  const styles = useMemo(() => createFeedCardStyles(theme), [theme]);
   const { openImage } = useImageViewer();
   const posterRef = useRef<View>(null);
   const [mediaLoaded, setMediaLoaded] = useState(false);

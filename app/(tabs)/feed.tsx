@@ -49,6 +49,7 @@ export default function FeedScreen() {
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
   // @boundary gate() wraps callbacks — redirects guests to login instead of executing the action
+  // @sync gated callbacks memoized here so renderItem doesn't recreate them per render
   const { gate } = useAuthGate();
   const { user } = useAuth();
   const router = useRouter();
@@ -160,6 +161,13 @@ export default function FeedScreen() {
     setCommentSheetItemId(itemId);
   }, []);
 
+  // @sync memoize gated callbacks once — gate() returns a new wrapper each call,
+  // so calling it inline in renderItem defeats FeedCard's React.memo
+  const gatedUpvote = useMemo(() => gate(handleUpvote), [gate, handleUpvote]);
+  const gatedDownvote = useMemo(() => gate(handleDownvote), [gate, handleDownvote]);
+  const gatedFollow = useMemo(() => gate(handleFollow), [gate, handleFollow]);
+  const gatedUnfollow = useMemo(() => gate(handleUnfollow), [gate, handleUnfollow]);
+
   return (
     <View style={styles.screen}>
       <SafeAreaCover />
@@ -229,13 +237,13 @@ export default function FeedScreen() {
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
-                onUpvote={gate(handleUpvote)} /* @boundary gate wraps — guests see login prompt */
-                onDownvote={gate(handleDownvote)}
+                onUpvote={gatedUpvote} /* @boundary gate wraps — guests see login prompt */
+                onDownvote={gatedDownvote}
                 onComment={handleComment}
                 onShare={handleShare}
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
-                onFollow={gate(handleFollow)}
-                onUnfollow={gate(handleUnfollow)}
+                onFollow={gatedFollow}
+                onUnfollow={gatedUnfollow}
               />
             )}
           />
