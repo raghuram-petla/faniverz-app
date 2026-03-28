@@ -12,6 +12,7 @@ import { FeedActionBar } from './FeedActionBar';
 import { FeedContentBadge } from './FeedContentBadge';
 import { FeedVideoPlayer } from './FeedVideoPlayer';
 import { FollowButton } from './FollowButton';
+import { FilmStripDivider } from './FilmStripDivider';
 import { formatRelativeTime } from '@/utils/formatDate';
 import {
   getFeedTypeLabel,
@@ -244,7 +245,7 @@ function FeedCardInner({
         />
       </View>
 
-      <View style={styles.separator} />
+      <FilmStripDivider />
     </View>
   );
 }
