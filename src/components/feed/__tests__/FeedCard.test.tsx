@@ -366,6 +366,36 @@ describe('FeedCard', () => {
     );
   });
 
+  it('passes top chrome metadata when the caller provides it', () => {
+    const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
+    const getImageViewerTopChrome = jest.fn(() => ({
+      variant: 'home-feed' as const,
+      insetTop: 44,
+      headerContentHeight: 52,
+      headerTranslateY: -16,
+    }));
+
+    render(
+      <FeedCard
+        item={item}
+        onPress={jest.fn()}
+        getImageViewerTopChrome={getImageViewerTopChrome}
+      />,
+    );
+
+    fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
+
+    expect(getImageViewerTopChrome).toHaveBeenCalled();
+    expect(mockOpenImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topChrome: expect.objectContaining({
+          variant: 'home-feed',
+          headerTranslateY: -16,
+        }),
+      }),
+    );
+  });
+
   it('hides poster when onSourceHide is called and shows on onSourceShow', () => {
     const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
     const { rerender } = render(<FeedCard item={item} onPress={jest.fn()} />);

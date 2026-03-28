@@ -36,17 +36,31 @@ jest.mock('@/stores/useFeedStore', () => ({
   useFeedStore: jest.fn(),
 }));
 
+const mockGetCurrentHeaderTranslateY = jest.fn(() => -18);
+
 jest.mock('@/components/feed/FeedHeader', () => ({
-  FeedHeader: () => null,
+  FeedHeader: () => {
+    const { View } = require('react-native');
+    return <View testID="feed-header" />;
+  },
+  HOME_FEED_HEADER_CONTENT_HEIGHT: 52,
   useCollapsibleHeader: () => ({
     headerTranslateY: { setValue: jest.fn() },
     totalHeaderHeight: 99,
     handleScroll: jest.fn(),
+    getCurrentHeaderTranslateY: mockGetCurrentHeaderTranslateY,
   }),
 }));
 
 jest.mock('@/components/feed/FeedFilterPills', () => ({
   FeedFilterPills: () => null,
+}));
+
+jest.mock('@/components/common/SafeAreaCover', () => ({
+  SafeAreaCover: () => {
+    const { View } = require('react-native');
+    return <View testID="safe-area-cover" />;
+  },
 }));
 
 const mockPush = jest.fn();
@@ -81,11 +95,15 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onEntityPress,
     onFollow,
     onUnfollow,
+    getImageViewerTopChrome,
   }: Record<string, any>) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
         <Text>{item.title}</Text>
+        {getImageViewerTopChrome ? (
+          <Text testID={`top-chrome-${item.id}`}>{JSON.stringify(getImageViewerTopChrome())}</Text>
+        ) : null}
         {item.is_pinned ? <Text>Pinned</Text> : null}
         {item.is_featured ? <Text>Featured</Text> : null}
         {onUpvote && (
@@ -278,6 +296,7 @@ function setupMocks(
 describe('FeedScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetCurrentHeaderTranslateY.mockReturnValue(-18);
     setupMocks();
   });
 
@@ -305,6 +324,17 @@ describe('FeedScreen', () => {
     render(<FeedScreen />);
     expect(screen.getByText('First Trailer')).toBeTruthy();
     expect(screen.getByText('Second Trailer')).toBeTruthy();
+  });
+
+  it('passes the current home-feed top chrome snapshot to feed cards', () => {
+    render(<FeedScreen />);
+    expect(mockGetCurrentHeaderTranslateY).toHaveBeenCalled();
+    expect(screen.getByTestId('top-chrome-item-1').props.children).toContain(
+      '"variant":"home-feed"',
+    );
+    expect(screen.getByTestId('top-chrome-item-1').props.children).toContain(
+      '"headerTranslateY":-18',
+    );
   });
 
   it('renders pinned and featured indicators in stream', () => {

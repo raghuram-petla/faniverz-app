@@ -25,7 +25,7 @@ import React from 'react';
 import { Animated } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { renderHook, act } from '@testing-library/react-native';
-import { FeedHeader, useCollapsibleHeader } from '../FeedHeader';
+import { FeedHeader, HOME_FEED_HEADER_CONTENT_HEIGHT, useCollapsibleHeader } from '../FeedHeader';
 
 describe('FeedHeader', () => {
   const defaultProps = {
@@ -72,12 +72,17 @@ describe('useCollapsibleHeader', () => {
     expect(result.current.headerTranslateY).toBeDefined();
     expect(result.current.totalHeaderHeight).toBeDefined();
     expect(result.current.handleScroll).toBeDefined();
+    expect(result.current.getCurrentHeaderTranslateY).toBeDefined();
     expect(typeof result.current.handleScroll).toBe('function');
   });
 
   it('totalHeaderHeight equals insetTop + 52', () => {
     const { result } = renderHook(() => useCollapsibleHeader(44));
     expect(result.current.totalHeaderHeight).toBe(96);
+  });
+
+  it('re-exports the shared header content height', () => {
+    expect(HOME_FEED_HEADER_CONTENT_HEIGHT).toBe(52);
   });
 
   it('calculates totalHeaderHeight with different insetTop', () => {
@@ -132,5 +137,17 @@ describe('useCollapsibleHeader', () => {
       result.current.headerTranslateY as unknown as { __getValue: () => number }
     ).__getValue();
     expect(val).toBe(0);
+  });
+
+  it('getCurrentHeaderTranslateY matches the latest collapse offset', () => {
+    const { result } = renderHook(() => useCollapsibleHeader(44));
+
+    act(() => {
+      result.current.handleScroll({
+        nativeEvent: { contentOffset: { y: 20 } },
+      } as never);
+    });
+
+    expect(result.current.getCurrentHeaderTranslateY()).toBe(-20);
   });
 });

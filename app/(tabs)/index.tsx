@@ -17,7 +17,11 @@ import {
 import { useFeedStore } from '@/stores/useFeedStore';
 import { useActiveVideo } from '@/hooks/useActiveVideo';
 import { FeedCard } from '@/components/feed/FeedCard';
-import { FeedHeader, useCollapsibleHeader } from '@/components/feed/FeedHeader';
+import {
+  FeedHeader,
+  HOME_FEED_HEADER_CONTENT_HEIGHT,
+  useCollapsibleHeader,
+} from '@/components/feed/FeedHeader';
 import { FeedFilterPills } from '@/components/feed/FeedFilterPills';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
@@ -31,6 +35,7 @@ import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
 import { CommentsBottomSheet } from '@/components/feed/CommentsBottomSheet';
 import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpers';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
+import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
 // @boundary Home tab — personalized feed with collapsible header, video autoplay, voting, and follow
 // @coupling useFeedStore (Zustand), usePersonalizedFeed, useActiveVideo, useEntityFollows
@@ -42,7 +47,8 @@ export default function FeedScreen() {
   // @sync filter persists in Zustand store — survives tab switches but not app restarts
   const { filter, setFilter } = useFeedStore();
   // @sideeffect useCollapsibleHeader attaches animated translateY to scroll position
-  const { headerTranslateY, totalHeaderHeight, handleScroll } = useCollapsibleHeader(insets.top);
+  const { headerTranslateY, totalHeaderHeight, handleScroll, getCurrentHeaderTranslateY } =
+    useCollapsibleHeader(insets.top);
   const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     usePersonalizedFeed(filter);
   // @sideeffect vote/remove mutations use optimistic updates via TanStack Query cache
@@ -172,10 +178,20 @@ export default function FeedScreen() {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // @contract Snapshot is read only when a poster opens so the image viewer closes under the same header position.
+  const getImageViewerTopChrome = useCallback(
+    (): ImageViewerTopChrome => ({
+      variant: 'home-feed',
+      insetTop: insets.top,
+      headerContentHeight: HOME_FEED_HEADER_CONTENT_HEIGHT,
+      headerTranslateY: getCurrentHeaderTranslateY(),
+    }),
+    [getCurrentHeaderTranslateY, insets.top],
+  );
+
   return (
     <View style={styles.screen}>
       <SafeAreaCover />
-
       <FeedHeader
         insetTop={insets.top}
         headerTranslateY={headerTranslateY}
@@ -240,6 +256,7 @@ export default function FeedScreen() {
                 onShare={handleShare}
                 isVideoActive={activeVideoId === item.id}
                 onVideoLayout={item.youtube_id ? registerVideoLayout : undefined}
+                getImageViewerTopChrome={getImageViewerTopChrome}
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
                 onFollow={gate(handleFollow)}
                 onUnfollow={gate(handleUnfollow)}

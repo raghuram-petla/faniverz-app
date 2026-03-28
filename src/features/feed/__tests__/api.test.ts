@@ -136,7 +136,7 @@ describe('fetchNewsFeed', () => {
 
   it('applies posters filter', async () => {
     await fetchNewsFeed('posters');
-    expect(mocks.mockEq).toHaveBeenCalledWith('feed_type', 'poster');
+    expect(mocks.mockIn).toHaveBeenCalledWith('feed_type', ['poster', 'backdrop']);
   });
 
   it('applies bts filter', async () => {

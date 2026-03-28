@@ -1,11 +1,13 @@
 jest.mock('@/components/common/ImageViewerOverlay', () => ({
   ImageViewerOverlay: ({
     feedUrl,
+    topChrome,
     onClose,
     onSourceHide,
     onSourceShow,
   }: {
     feedUrl: string;
+    topChrome?: { variant: string; headerTranslateY: number };
     onClose: () => void;
     onSourceHide?: () => void;
     onSourceShow?: () => void;
@@ -14,6 +16,9 @@ jest.mock('@/components/common/ImageViewerOverlay', () => ({
     return (
       <View testID="image-viewer-overlay">
         <Text>{feedUrl}</Text>
+        {topChrome ? (
+          <Text testID="overlay-top-chrome">{`${topChrome.variant}:${topChrome.headerTranslateY}`}</Text>
+        ) : null}
         <TouchableOpacity
           onPress={() => {
             onSourceHide?.();
@@ -242,5 +247,44 @@ describe('ImageViewerProvider', () => {
     expect(screen.getByText('https://example.com/first.jpg')).toBeTruthy();
     fireEvent.press(screen.getByLabelText('Open Second'));
     expect(screen.getByText('https://example.com/second.jpg')).toBeTruthy();
+  });
+
+  it('passes top chrome metadata through to the overlay', () => {
+    function TopChromeConsumer() {
+      const { openImage } = useImageViewer();
+      return (
+        <View>
+          <TouchableOpacity
+            accessibilityLabel="Open with top chrome"
+            onPress={() =>
+              openImage({
+                feedUrl: 'https://example.com/feed.jpg',
+                fullUrl: 'https://example.com/full.jpg',
+                sourceLayout: { x: 16, y: 200, width: 200, height: 255 },
+                sourceRef: { current: null } as never,
+                borderRadius: 12,
+                topChrome: {
+                  variant: 'home-feed',
+                  insetTop: 44,
+                  headerContentHeight: 52,
+                  headerTranslateY: -18,
+                },
+              })
+            }
+          >
+            <Text>Open With Top Chrome</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    render(
+      <ImageViewerProvider>
+        <TopChromeConsumer />
+      </ImageViewerProvider>,
+    );
+
+    fireEvent.press(screen.getByLabelText('Open with top chrome'));
+    expect(screen.getByTestId('overlay-top-chrome').props.children).toBe('home-feed:-18');
   });
 });
