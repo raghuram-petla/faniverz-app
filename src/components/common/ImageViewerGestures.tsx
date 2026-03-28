@@ -36,6 +36,9 @@ export interface ImageViewerGesturesProps {
   currentScreenW?: number;
   /** @contract current screen height (reactive to rotation) */
   currentScreenH?: number;
+  /** @contract When true (landscape backdrops), keep backdrop opaque during swipe
+   * to hide the ugly portrait feed underneath. Portrait posters clear it instantly. */
+  keepBackdropOpaque?: boolean;
 }
 
 export const MAX_SCALE = 4;
@@ -73,6 +76,7 @@ export function ImageViewerGestures({
   imageWidth,
   currentScreenW,
   currentScreenH,
+  keepBackdropOpaque,
 }: ImageViewerGesturesProps) {
   const imgW = imageWidth ?? IMG_W;
   const imgH = imageHeight ?? IMG_H;
@@ -140,10 +144,14 @@ export function ImageViewerGestures({
       savedScale.value = scale.value;
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
-      // @sideeffect Instantly signal drag-to-dismiss mode so close button hides and backdrop clears
+      // @sideeffect Instantly signal drag-to-dismiss mode so close button hides and backdrop clears.
+      // @edge keepBackdropOpaque=true for landscape backdrops — the portrait feed behind looks
+      // ugly, so the black backdrop must stay visible until the viewer fully closes.
       if (scale.value <= 1) {
         isDragging.value = 1;
-        backdropOpacity.value = 0;
+        if (!keepBackdropOpaque) {
+          backdropOpacity.value = 0;
+        }
       }
     })
     .onUpdate((e) => {
@@ -151,12 +159,15 @@ export function ImageViewerGestures({
         translateX.value = clampXLocal(savedTranslateX.value + e.translationX, scale.value);
         translateY.value = clampYLocal(savedTranslateY.value + e.translationY, scale.value);
       } else {
+        // @contract Track both axes so user can swipe in any direction to dismiss.
+        translateX.value = e.translationX;
         translateY.value = e.translationY;
       }
     })
     .onEnd((e) => {
       if (scale.value <= 1) {
-        if (Math.abs(e.translationY) > DISMISS_THRESHOLD) {
+        const dist = Math.sqrt(e.translationX ** 2 + e.translationY ** 2);
+        if (dist > DISMISS_THRESHOLD) {
           // Animate gesture transforms to 0 in sync with the fly-back
           translateY.value = withTiming(0, { duration: 400 });
           translateX.value = withTiming(0, { duration: 400 });
@@ -166,6 +177,7 @@ export function ImageViewerGestures({
           savedTranslateY.value = 0;
           runOnJS(onDismiss)();
         } else {
+          translateX.value = withTiming(0);
           translateY.value = withTiming(0);
           backdropOpacity.value = 1;
           isDragging.value = 0;
@@ -208,8 +220,26 @@ export function ImageViewerGestures({
       }
     });
 
-  // @contract Pinch runs simultaneously with pan/double-tap; double-tap and pan race (first recognized wins)
-  const gesture = Gesture.Simultaneous(pinch, Gesture.Race(doubleTap, pan));
+  // @sideeffect Long press toggles fill-to-screen: scales image so no blank space
+  // remains in any direction (cover mode). Toggles back to identity on second long press.
+  const fillScale = Math.max(scrW / imgW, scrH / imgH);
+  const longPress = Gesture.LongPress()
+    .minDuration(400)
+    .onStart(() => {
+      if (scale.value > 1) {
+        resetTransforms();
+      } else {
+        scale.value = withTiming(fillScale);
+        translateX.value = withTiming(0);
+        translateY.value = withTiming(0);
+        savedScale.value = fillScale;
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      }
+    });
+
+  // @contract Pinch runs simultaneously with all tap gestures; double-tap, long-press, and pan race
+  const gesture = Gesture.Simultaneous(pinch, Gesture.Race(doubleTap, longPress, pan));
 
   /* istanbul ignore next -- Reanimated worklet cannot execute in Jest */
   const animatedStyle = useAnimatedStyle(() => ({

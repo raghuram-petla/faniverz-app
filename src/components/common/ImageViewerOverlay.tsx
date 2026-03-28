@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,6 +18,7 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { overlayStyles as styles } from './ImageViewerOverlay.styles';
 import { measureView } from '@/utils/measureView';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
+import { useDeviceLandscape } from '@/hooks/useDeviceLandscape';
 import { HomeFeedTopChromeMask } from '@/components/feed/HomeFeedTopChromeMask';
 import type { ImageSourceLayout, ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 export interface ImageViewerOverlayProps {
@@ -27,7 +27,8 @@ export interface ImageViewerOverlayProps {
   sourceLayout: ImageSourceLayout;
   sourceRef: React.RefObject<View | null>;
   borderRadius: number;
-  /** @contract when true, uses 16:9 landscape aspect ratio and unlocks screen rotation */
+  /** @contract when true, uses 16:9 landscape aspect ratio; screen stays portrait-locked,
+   * device tilt detected via accelerometer triggers CSS rotation of the image only. */
   isLandscape?: boolean;
   topChrome?: ImageViewerTopChrome;
   onSourceHide?: () => void;
@@ -39,6 +40,7 @@ export interface ImageViewerOverlayProps {
 const POSTER_ASPECT = 3 / 2;
 const OPEN_DURATION = 400;
 const CLOSE_DURATION = 400;
+const ROTATION_DURATION = 300;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 export function ImageViewerOverlay({
   feedUrl,
@@ -68,15 +70,33 @@ export function ImageViewerOverlay({
   const srcY = useSharedValue(sourceLayout.y);
   const srcW = useSharedValue(sourceLayout.width);
   const srcH = useSharedValue(sourceLayout.height);
-  // @contract For landscape images in landscape orientation, fill the screen
-  const isScreenLandscape = screenW > screenH;
-  const tgtW = screenW;
-  const tgtH =
-    isLandscape && isScreenLandscape ? screenH : screenW * (isLandscape ? 9 / 16 : POSTER_ASPECT);
-  const tgtX = 0;
+  // @contract Screen stays portrait-locked. Accelerometer detects physical tilt.
+  // When tilted to landscape, CSS rotation + rescaling applied to image container only.
+  // The feed behind never rotates — only the image does.
+  // @contract Returns 0 (portrait), 90 (tilted left), or -90 (tilted right).
+  const deviceRotation = useDeviceLandscape(!!isLandscape);
+  const deviceLandscape = deviceRotation !== 0;
+  const rotation = useSharedValue(0);
+  // @contract Portrait target: normal 16:9 bar. Landscape target: pre-rotation container
+  // sized so that after 90° CSS rotation, visual width=screenW, visual height=screenW*16/9.
+  const portraitTgtW = screenW;
+  const portraitTgtH = screenW * (isLandscape ? 9 / 16 : POSTER_ASPECT);
+  const landscapeTgtW = screenW * (16 / 9);
+  const landscapeTgtH = screenW;
+  const tgtW = deviceLandscape ? landscapeTgtW : portraitTgtW;
+  const tgtH = deviceLandscape ? landscapeTgtH : portraitTgtH;
+  const tgtX = deviceLandscape ? (screenW - landscapeTgtW) / 2 : 0;
   const tgtY = (screenH - tgtH) / 2;
-  // @contract No custom rotation animation — the OS rotation provides the
-  // visual transition. We just snap to the correct dimensions immediately.
+
+  // @sideeffect Animate rotation when device tilt changes (only while not closing).
+  // Honors tilt direction: 90° for left tilt, -90° for right tilt.
+  useEffect(() => {
+    if (closingRef.current) return;
+    rotation.value = animationsEnabled
+      ? withTiming(deviceRotation, { duration: ROTATION_DURATION, easing: EASING })
+      : deviceRotation;
+  }, [deviceRotation, rotation, animationsEnabled]);
+
   const [fullResLoaded, setFullResLoaded] = useState(false);
   const { containerStyle: progressBarContainerStyle, fillStyle: progressBarFillStyle } =
     useLoadingProgressBar({
@@ -92,15 +112,6 @@ export function ImageViewerOverlay({
   const needsTopChromeOcclusion =
     topChrome?.variant === 'home-feed' && sourceLayout.y < topChromeBoundary;
 
-  // @sideeffect unlock screen rotation for landscape images, re-lock on close
-  useEffect(() => {
-    if (!isLandscape) return;
-    ScreenOrientation.unlockAsync();
-    return () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-    };
-  }, [isLandscape]);
-
   useEffect(() => {
     onSourceHide?.();
     if (animationsEnabled) {
@@ -108,22 +119,6 @@ export function ImageViewerOverlay({
       backdropOpacity.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });
     }
   }, [progress, backdropOpacity, onSourceHide, animationsEnabled]);
-  // @sideeffect When dismissing from landscape, rotate to portrait first,
-  // then run the normal fly-back animation into the feed card.
-  const waitingForPortrait = useRef(false);
-  const doFlyBackRef = useRef<() => void>(() => {});
-  useEffect(() => {
-    if (waitingForPortrait.current && !isScreenLandscape) {
-      waitingForPortrait.current = false;
-      // @sideeffect Small delay lets the image settle at portrait dimensions
-      // before the fly-back animation starts, so the user sees it shrink first.
-      const t = setTimeout(() => {
-        clipNow.value = 1;
-        doFlyBackRef.current();
-      }, 200);
-      return () => clearTimeout(t);
-    }
-  }, [isScreenLandscape, clipNow]);
 
   const cleanup = useCallback(() => {
     onSourceShow?.();
@@ -135,8 +130,10 @@ export function ImageViewerOverlay({
         if (finished) runOnJS(cleanup)();
       });
       backdropOpacity.value = 0;
+      // @sideeffect Animate rotation back to 0 during fly-back so image un-rotates smoothly.
+      rotation.value = withTiming(0, { duration: dur, easing: EASING });
     },
-    [progress, backdropOpacity, cleanup],
+    [progress, backdropOpacity, rotation, cleanup],
   );
   const doFlyBack = useCallback(() => {
     measureView(
@@ -151,7 +148,6 @@ export function ImageViewerOverlay({
       () => animateClose(200),
     );
   }, [sourceRef, srcX, srcY, srcW, srcH, animateClose]);
-  doFlyBackRef.current = doFlyBack;
   const handleCloseButton = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
@@ -159,12 +155,6 @@ export function ImageViewerOverlay({
 
     if (!animationsEnabled) {
       cleanup();
-      return;
-    }
-    // @contract If in landscape, rotate to portrait first then fly-back
-    if (isScreenLandscape && isLandscape) {
-      waitingForPortrait.current = true;
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
       return;
     }
     clipNow.value = 1;
@@ -193,13 +183,8 @@ export function ImageViewerOverlay({
       cleanup();
       return;
     }
-    if (isScreenLandscape && isLandscape) {
-      waitingForPortrait.current = true;
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-      return;
-    }
     animateClose(CLOSE_DURATION);
-  }, [animateClose, animationsEnabled, cleanup, isScreenLandscape, isLandscape, closing]);
+  }, [animateClose, animationsEnabled, cleanup, closing]);
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       handleCloseButton();
@@ -218,13 +203,14 @@ export function ImageViewerOverlay({
       height: srcH.value + (tgtH - srcH.value) * p,
       borderRadius: srcRadius * (1 - p),
       overflow: 'hidden' as const,
+      transform: [{ rotate: `${rotation.value}deg` }],
     };
   });
   const animatedBackdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
   }));
   const animatedCloseBtnStyle = useAnimatedStyle(() => ({
-    opacity: isDragging.value === 1 ? 0 : progress.value > 0.1 ? 1 : 0,
+    opacity: closing.value === 1 || isDragging.value === 1 ? 0 : progress.value > 0.1 ? 1 : 0,
   }));
   const clipStyle = useAnimatedStyle(() => {
     const q = clipNow.value === 1 ? 1 : Math.min(1, (1 - progress.value) * 2);
@@ -244,7 +230,7 @@ export function ImageViewerOverlay({
 
   return (
     <Animated.View style={styles.root} pointerEvents="auto">
-      <StatusBar style="light" />
+      <StatusBar style="light" hidden={deviceLandscape} />
       <Animated.View style={[styles.backdrop, animatedBackdropStyle]} />
       <Animated.View style={clipStyle}>
         <ImageViewerGestures
@@ -254,10 +240,11 @@ export function ImageViewerOverlay({
           translateX={gestureTranslateX}
           translateY={gestureTranslateY}
           isDragging={isDragging}
-          imageHeight={tgtH}
-          imageWidth={tgtW}
+          imageHeight={deviceLandscape ? tgtW : tgtH}
+          imageWidth={deviceLandscape ? tgtH : tgtW}
           currentScreenW={screenW}
           currentScreenH={screenH}
+          keepBackdropOpaque={deviceLandscape}
         >
           <Animated.View style={[styles.gestureArea, { width: screenW, height: screenH }]}>
             <Animated.View style={animatedContainerStyle}>
@@ -287,7 +274,7 @@ export function ImageViewerOverlay({
           showHeaderChrome
         />
       ) : null}
-      {!isScreenLandscape ? (
+      {!deviceLandscape ? (
         <Animated.View
           style={[styles.closeBtnWrapper, { top: insets.top + 12 }, animatedCloseBtnStyle]}
         >
