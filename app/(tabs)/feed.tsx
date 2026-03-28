@@ -231,7 +231,7 @@ export default function FeedScreen() {
             ListFooterComponent={
               isFetchingNextPage ? <ActivityIndicator size="small" color={colors.red600} /> : null
             }
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <FeedCard
                 item={item}
                 onPress={handleFeedItemPress}
@@ -244,6 +244,7 @@ export default function FeedScreen() {
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}
                 onFollow={gatedFollow}
                 onUnfollow={gatedUnfollow}
+                isFirst={index === 0}
               />
             )}
           />
