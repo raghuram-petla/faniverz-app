@@ -4,10 +4,10 @@ import { useTheme } from '@/theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 /** @invariant sprocket sizing — classic film reel proportions */
-const STRIP_HEIGHT = 10;
-const SPROCKET_SIZE = 8;
-const SPROCKET_RADIUS = 2;
-const DOT_SIZE = 3;
+const STRIP_HEIGHT = 7;
+const SPROCKET_SIZE = 5;
+const SPROCKET_RADIUS = 1.5;
+const DOT_SIZE = 2;
 const ITEM_GAP = 2;
 /** @assumes each cell = one sprocket + gap + one dot + gap */
 const CELL_WIDTH = SPROCKET_SIZE + ITEM_GAP + DOT_SIZE + ITEM_GAP;
