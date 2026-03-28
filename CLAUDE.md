@@ -1,5 +1,17 @@
 # Faniverz Codebase Rules
 
+## Protected Files — DO NOT MODIFY
+
+The following files contain carefully tuned animation logic with 14+ failed approaches documented. **Do not refactor, deduplicate, reorganize, or "improve" these files** unless the user explicitly asks to change image viewer behavior. This includes skills like `/deduplicate`, `/simplify`, `/refactor-check`, `/dead-code-scan`, and `/test-coverage` — skip these files entirely.
+
+- `src/components/common/ImageViewerOverlay.tsx`
+- `src/components/common/ImageViewerOverlay.styles.ts`
+- `src/components/common/ImageViewerGestures.tsx`
+- `src/components/common/useLoadingProgressBar.ts`
+- `src/components/feed/HomeFeedTopChromeMask.tsx`
+- `src/components/feed/HomeFeedHeaderChrome.tsx`
+- `src/providers/ImageViewerProvider.tsx`
+
 ## 300-Line File Limit
 
 **Every source file must stay under 300 lines.** After making any code change (feature, bug fix, refactor), check if the modified files exceed 300 lines. If they do, refactor before considering the task done.

@@ -19,3 +19,5 @@ export type { PendingCastAdd } from './CastSection';
 export type { PendingRun } from './TheatricalRunsSection';
 export { SyncSection } from './SyncSection';
 export type { SyncSectionProps } from './SyncSection';
+export { MovieEditHeader } from './MovieEditHeader';
+export type { MovieEditHeaderProps } from './MovieEditHeader';

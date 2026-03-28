@@ -15,28 +15,13 @@ import { ReviewsContentSkeleton } from '@/components/profile/ReviewsContentSkele
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/reviews.styles';
+import { StarRow } from '@/components/profile/StarRow';
 import { getImageUrl } from '@shared/imageUrl';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
 type SortKey = 'recent' | 'rating' | 'helpful';
-
-function StarRow({ rating, styles }: { rating: number; styles: ReturnType<typeof createStyles> }) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.starRow}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Ionicons
-          key={star}
-          name={star <= rating ? 'star' : star - 0.5 <= rating ? 'star-half' : 'star-outline'}
-          size={14}
-          color={colors.yellow400}
-        />
-      ))}
-    </View>
-  );
-}
 
 // @boundary: My Reviews — user's review history with sort, edit, and delete capabilities
 // @coupling: useUserReviews, useReviewMutations (update/remove) — backed by reviews table

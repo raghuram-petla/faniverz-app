@@ -2,9 +2,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Loader2,
-  Trash2,
   FileText,
   Play,
   Film,
@@ -34,6 +32,7 @@ import {
   SectionCard,
   PreviewPanel,
   SyncSection,
+  MovieEditHeader,
 } from '@/components/movie-edit';
 import type { MovieSectionId, SyncSectionProps } from '@/components/movie-edit';
 
@@ -95,31 +94,12 @@ export default function EditMoviePage() {
   return (
     <div className="max-w-6xl">
       {/* ─── Sticky Header ─── */}
-      <div className="sticky top-0 z-30 backdrop-blur bg-surface/95 border-b border-outline -mx-4 px-4 py-3 mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="p-2 rounded-lg bg-input hover:bg-input-active"
-          >
-            <ArrowLeft className="w-4 h-4 text-on-surface" />
-          </button>
-          <h1 className="text-2xl font-bold text-on-surface">
-            Edit Movie
-            {editState.form.title && (
-              <span className="text-on-surface-muted font-normal"> — {editState.form.title}</span>
-            )}
-          </h1>
-        </div>
-        {/* @invariant Top-level delete: only root/super_admin */}
-        {canDeleteTopLevel() && (
-          <button
-            onClick={editState.handleDelete}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-status-red hover:bg-red-600/30 text-sm"
-          >
-            <Trash2 className="w-4 h-4" /> Delete
-          </button>
-        )}
-      </div>
+      <MovieEditHeader
+        title={editState.form.title}
+        onBack={() => router.back()}
+        canDelete={canDeleteTopLevel()}
+        onDelete={editState.handleDelete}
+      />
 
       {/* ─── Section Nav (6 tabs — TMDB Sync hidden when no tmdb_id) ─── */}
       <SectionNav

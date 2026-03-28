@@ -3,8 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Pressable,
-  Modal,
   Linking,
   LayoutAnimation,
   Platform,
@@ -15,7 +13,6 @@ import {
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +21,6 @@ import { useActorDetail } from '@/features/actors/hooks';
 import { useEntityFollows, useFollowEntity, useUnfollowEntity } from '@/features/feed';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useTheme } from '@/theme';
-import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/actorDetail.styles';
 import { CollapsibleProfileLayout } from '@/components/common/CollapsibleProfileLayout';
@@ -38,6 +34,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { ActorDetailSkeleton } from '@/components/actor/ActorDetailSkeleton';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import { ActorPhotoModal } from './components/ActorPhotoModal';
 
 // @coupling: gender codes match the TMDB gender enum values stored in the actors table
 const GENDER_LABEL_KEYS: Record<number, string> = {
@@ -277,29 +274,14 @@ export default function ActorDetailScreen() {
         </View>
       </CollapsibleProfileLayout>
 
-      <Modal visible={showPhoto} animationType="fade" transparent testID="photo-modal">
-        <Pressable
-          style={styles.photoOverlay}
-          onPress={() => setShowPhoto(false)}
-          testID="photo-overlay"
-        >
-          <TouchableOpacity
-            style={[styles.photoCloseButton, { top: insets.top + 12 }]}
-            onPress={() => setShowPhoto(false)}
-            accessibilityLabel="Close photo"
-            testID="photo-close"
-          >
-            <Ionicons name="close" size={28} color={theme.textPrimary} />
-          </TouchableOpacity>
-          <Pressable onPress={/* istanbul ignore next */ (e) => e.stopPropagation()}>
-            <Image
-              source={{ uri: actor.photo_url ?? PLACEHOLDER_PHOTO }}
-              style={styles.photoFull}
-              contentFit="contain"
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <ActorPhotoModal
+        visible={showPhoto}
+        photoUrl={actor.photo_url}
+        onClose={() => setShowPhoto(false)}
+        topInset={insets.top}
+        textPrimaryColor={theme.textPrimary}
+        styles={styles}
+      />
     </>
   );
 }

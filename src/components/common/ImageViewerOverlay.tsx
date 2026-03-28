@@ -9,13 +9,11 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withRepeat,
-  withSequence,
-  cancelAnimation,
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
 import { ImageViewerGestures } from './ImageViewerGestures';
+import { useLoadingProgressBar } from './useLoadingProgressBar';
 import { colors as palette } from '@/theme/colors';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { overlayStyles as styles } from './ImageViewerOverlay.styles';
@@ -23,7 +21,6 @@ import { measureView } from '@/utils/measureView';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { HomeFeedTopChromeMask } from '@/components/feed/HomeFeedTopChromeMask';
 import type { ImageSourceLayout, ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
-// Bottom tuck-in stays clip-based. Top tuck-in uses a visual chrome mask to avoid iOS artifacts from top clipping.
 export interface ImageViewerOverlayProps {
   feedUrl: string;
   fullUrl: string;
@@ -43,8 +40,6 @@ const POSTER_ASPECT = 3 / 2;
 const OPEN_DURATION = 300;
 const CLOSE_DURATION = 250;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
-const PROGRESS_BAR_H = 2;
-const PROGRESS_BAR_COLOR = palette.red600;
 export function ImageViewerOverlay({
   feedUrl,
   fullUrl,
@@ -82,8 +77,13 @@ export function ImageViewerOverlay({
   // @contract No custom rotation animation — the OS rotation provides the
   // visual transition. We just snap to the correct dimensions immediately.
   const [fullResLoaded, setFullResLoaded] = useState(false);
-  const progressX = useSharedValue(-1);
-  const progressBarOpacity = useSharedValue(0);
+  const { containerStyle: progressBarContainerStyle, fillStyle: progressBarFillStyle } =
+    useLoadingProgressBar({
+      loaded: fullResLoaded,
+      delayMs: OPEN_DURATION,
+      screenW,
+      animationsEnabled,
+    });
   const topChromeBoundary =
     topChrome?.variant === 'home-feed'
       ? topChrome.insetTop + Math.max(0, topChrome.headerContentHeight + topChrome.headerTranslateY)
@@ -100,50 +100,6 @@ export function ImageViewerOverlay({
     };
   }, [isLandscape]);
 
-  useEffect(() => {
-    if (!animationsEnabled) return;
-    const delay = setTimeout(() => {
-      if (!fullResLoaded) {
-        progressBarOpacity.value = withTiming(1, { duration: 200 });
-        progressX.value = withRepeat(
-          withSequence(
-            withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-            withTiming(-1, { duration: 0 }),
-          ),
-          -1,
-        );
-      }
-    }, OPEN_DURATION);
-    return () => clearTimeout(delay);
-  }, [fullResLoaded, progressX, progressBarOpacity, animationsEnabled]);
-  useEffect(() => {
-    if (fullResLoaded) {
-      cancelAnimation(progressX);
-      progressBarOpacity.value = animationsEnabled
-        ? withTiming(0, { duration: 300 })
-        : /* istanbul ignore next */ 0;
-    }
-  }, [fullResLoaded, progressX, progressBarOpacity, animationsEnabled]);
-  /* istanbul ignore next -- Reanimated worklet cannot execute in Jest */
-  const progressBarContainerStyle = useAnimatedStyle(() => ({
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    height: PROGRESS_BAR_H,
-    overflow: 'hidden' as const,
-    opacity: progressBarOpacity.value,
-  }));
-  const progressBarFillStyle = useAnimatedStyle(() => ({
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    width: '40%' as unknown as number,
-    height: PROGRESS_BAR_H,
-    backgroundColor: PROGRESS_BAR_COLOR,
-    borderRadius: PROGRESS_BAR_H / 2,
-    transform: [{ translateX: progressX.value * screenW * 0.6 + screenW * 0.3 }],
-  }));
   useEffect(() => {
     if (animationsEnabled) {
       progress.value = withTiming(1, { duration: OPEN_DURATION, easing: EASING });

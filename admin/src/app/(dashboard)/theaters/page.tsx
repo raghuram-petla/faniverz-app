@@ -13,30 +13,8 @@ import { Loader2 } from 'lucide-react';
 import { MovieColumn } from '@/components/theaters/MovieColumn';
 import { ManualAddPanel } from '@/components/theaters/ManualAddPanel';
 import { PendingChangesDock, type DateAction } from '@/components/theaters/PendingChangesSection';
+import { type PendingChange, daysUntil } from '@/components/theaters/theaterUtils';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
-
-// @contract Pending change: toggle direction + date + movie title for display + optional label
-// @edge When inTheaters=true and date < releaseDate, dateAction determines what gets updated
-
-interface PendingChange {
-  inTheaters: boolean;
-  date: string;
-  title: string;
-  posterUrl: string | null;
-  label?: string | null;
-  releaseDate: string | null;
-  dateAction: DateAction;
-}
-
-function daysUntil(dateStr: string): string {
-  // @edge: parse as UTC to avoid timezone-induced off-by-one near day boundaries
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const releaseUtc = Date.UTC(y, m - 1, d);
-  const now = new Date();
-  const todayUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const diff = Math.ceil((releaseUtc - todayUtc) / 86400000);
-  return diff <= 0 ? 'Today' : diff === 1 ? 'Tomorrow' : `In ${diff} days`;
-}
 
 // @contract Theaters page uses a batch-save pattern (not immediate mutations) — all toggle
 // changes accumulate in pendingChanges Map and are committed together via handleSave.

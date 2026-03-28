@@ -135,6 +135,23 @@ vi.mock('@/components/common/Button', () => ({
 }));
 
 vi.mock('@/components/movie-edit', () => ({
+  MovieEditHeader: ({
+    title,
+    onBack,
+    canDelete,
+    onDelete,
+  }: {
+    title: string | null;
+    onBack: () => void;
+    canDelete: boolean;
+    onDelete: () => void;
+  }) => (
+    <div data-testid="movie-edit-header">
+      <h1>Edit Movie{title && <span> — {title}</span>}</h1>
+      <button onClick={onBack}>Back</button>
+      {canDelete && <button onClick={onDelete}>Delete</button>}
+    </div>
+  ),
   BasicInfoSection: ({ form }: { form: { title: string } }) => (
     <div data-testid="basic-info-section">BasicInfo: {form.title || '(empty)'}</div>
   ),
@@ -263,7 +280,7 @@ describe('EditMoviePage', () => {
 
   it('calls router.back() when back button is clicked', () => {
     render(<EditMoviePage />);
-    const backBtn = screen.getByRole('button', { name: '' }); // ArrowLeft button has no text
+    const backBtn = screen.getByRole('button', { name: 'Back' });
     fireEvent.click(backBtn);
     expect(mockRouterBack).toHaveBeenCalled();
   });

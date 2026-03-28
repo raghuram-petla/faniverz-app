@@ -2,6 +2,9 @@
 
 import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 import type { FillableField } from '@/lib/syncUtils';
+import { fmt } from './fieldDiffFormatters';
+
+export { fmt, truncate } from './fieldDiffFormatters';
 
 export type FieldStatus = 'missing' | 'changed' | 'same';
 
@@ -286,16 +289,4 @@ export function buildFieldDefs(movie: ExistingMovieData, tmdb: LookupMovieData):
       tmdbDisplay: tmdb.spokenLanguages?.join(', ') || '',
     },
   ];
-}
-
-export function fmt(val: string | string[] | number | null | undefined): string {
-  if (val == null) return '';
-  if (Array.isArray(val)) return val.join(', ');
-  if (typeof val === 'number') return String(val);
-  return val;
-}
-
-export function truncate(s: string | null | undefined, n = 80): string {
-  if (!s) return '';
-  return s.length > n ? s.slice(0, n) + '…' : s;
 }

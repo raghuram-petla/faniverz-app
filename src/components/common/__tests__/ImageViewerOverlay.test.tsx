@@ -125,7 +125,7 @@ describe('ImageViewerOverlay', () => {
     expect(screen.queryByTestId('top-chrome-mask')).toBeNull();
   });
 
-  it('does not render top chrome mask while opening even when the source starts behind the header', () => {
+  it('renders top chrome mask when the source starts behind the header', () => {
     render(
       <ImageViewerOverlay
         {...defaultProps}
@@ -138,7 +138,7 @@ describe('ImageViewerOverlay', () => {
         }}
       />,
     );
-    expect(screen.queryByTestId('top-chrome-mask')).toBeNull();
+    expect(screen.queryByTestId('top-chrome-mask')).not.toBeNull();
   });
 
   it('calls onClose when close button is pressed', () => {

@@ -7,6 +7,18 @@ import type { MovieCast } from '@/lib/types';
 import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
 import type { OTTPlatform, ProductionHouse, AvailabilityType } from '@shared/types';
+import type {
+  CastRow,
+  VideoRow,
+  PosterRow,
+  PlatformRow,
+  PHRow,
+  RunRow,
+  AvailabilityRow,
+} from './useMovieEditRowTypes';
+
+export type { CastRow, VideoRow, PosterRow, PlatformRow, PHRow, RunRow, AvailabilityRow };
+export type { AvailabilityType } from '@shared/types';
 
 // @contract MovieForm mirrors the editable subset of the movies table
 // spotlight_focus_* and detail_focus_* are preserved separately in movieData
@@ -204,57 +216,6 @@ export interface MovieEditHandlerDeps {
   setSaveStatus: React.Dispatch<React.SetStateAction<'idle' | 'success'>>;
   setUploadingPoster: (v: boolean) => void;
   setUploadingBackdrop: (v: boolean) => void;
-}
-
-// ── Change-tracking types (used by useMovieEditChanges + revert helper) ──
-
-// Minimal interfaces for server data lookups (only fields needed for display names)
-export interface CastRow {
-  id: string;
-  actor?: { name: string } | null;
-  character_name?: string | null;
-}
-export interface VideoRow {
-  id: string;
-  title: string;
-}
-export interface PosterRow {
-  id: string;
-  title: string | null;
-  image_url: string;
-  image_type: 'poster' | 'backdrop';
-  is_main_poster: boolean;
-  is_main_backdrop: boolean;
-  description: string | null;
-  poster_date: string | null;
-  tmdb_file_path: string | null;
-  iso_639_1: string | null;
-  width: number | null;
-  height: number | null;
-  vote_average: number;
-  display_order: number;
-  created_at: string;
-  movie_id: string;
-}
-export interface PlatformRow {
-  platform_id: string;
-  platform?: { name: string } | null;
-}
-export interface PHRow {
-  production_house_id: string;
-  production_house?: { name: string } | null;
-}
-export interface RunRow {
-  id: string;
-  release_date: string;
-  label?: string | null;
-}
-export interface AvailabilityRow {
-  id: string;
-  platform_id: string;
-  country_code: string;
-  availability_type: AvailabilityType;
-  platform?: { name: string } | null;
 }
 
 // @contract params for useMovieEditChanges — all pending state + server data for change diffing

@@ -6,6 +6,7 @@ import {
   unauthorizedResponse,
   viewerReadonlyResponse,
 } from '@/lib/sync-helpers';
+import { hasLanguageAccess } from '@/lib/language-access';
 
 // @boundary Generic CRUD endpoint that delegates to the admin_crud RPC function.
 // The RPC sets app.admin_user_id in the same transaction, ensuring the audit
@@ -34,22 +35,6 @@ const MOVIE_CHILD_TABLES = new Set([
 ]);
 
 const forbiddenResponse = (msg: string) => NextResponse.json({ error: msg }, { status: 403 });
-
-/**
- * @boundary Validates that an admin user has access to a movie's language.
- * Compares the admin's allowed language codes against movie.original_language.
- * Root/super_admin always pass (empty languageCodes = all languages).
- */
-function hasLanguageAccess(languageCodes: string[], movieLang: string | null): boolean {
-  /* v8 ignore start */
-  if (languageCodes.length === 0) return true; // root/super_admin — all languages
-  /* v8 ignore stop */
-  /* v8 ignore start */
-  if (!movieLang) return true; // movie has no language set yet
-  /* v8 ignore stop */
-
-  return languageCodes.includes(movieLang);
-}
 
 /** @boundary Executes admin_crud RPC with audit attribution */
 function execRpc(

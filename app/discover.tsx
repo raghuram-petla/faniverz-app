@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { createStyles } from '@/styles/discover.styles';
@@ -17,10 +16,11 @@ import {
   useProductionHouses,
   useMovieIdsByProductionHouse,
 } from '@/features/productionHouses/hooks';
-import { DiscoverFilterModal, SORT_OPTIONS } from '@/components/discover/DiscoverFilterModal';
+import { DiscoverFilterModal } from '@/components/discover/DiscoverFilterModal';
 import { DiscoverGridItem } from '@/components/discover/DiscoverGridItem';
 import { DiscoverSearchHeader } from '@/components/discover/DiscoverSearchHeader';
 import { ActiveFilterPills } from '@/components/discover/ActiveFilterPills';
+import { DiscoverFilterBar } from '@/components/discover/DiscoverFilterBar';
 import { SortDropdown } from '@/components/discover/SortDropdown';
 import { DiscoverContentSkeleton } from '@/components/discover/DiscoverContentSkeleton';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
@@ -177,28 +177,15 @@ export default function DiscoverScreen() {
         onBack={() => router.back()}
       />
 
-      <View style={styles.filterBar}>
-        <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-          <Ionicons name="options" size={16} color={theme.textPrimary} />
-          <Text style={styles.filterBarText}>{t('discover.filters')}</Text>
-          {activeFilterCount > 0 && (
-            <View style={styles.filterCountBadge}>
-              <Text style={styles.filterCountText}>{activeFilterCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setShowSortDropdown(!showSortDropdown)}
-        >
-          <Text style={styles.filterBarText}>
-            {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
-          </Text>
-          <Animated.View style={chevronStyle}>
-            <Ionicons name="chevron-down" size={16} color={theme.textSecondary} />
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
+      <DiscoverFilterBar
+        theme={theme}
+        styles={styles}
+        activeFilterCount={activeFilterCount}
+        sortBy={sortBy}
+        chevronStyle={chevronStyle}
+        onOpenFilterModal={() => setShowFilterModal(true)}
+        onToggleSortDropdown={() => setShowSortDropdown(!showSortDropdown)}
+      />
 
       <SortDropdown
         visible={showSortDropdown}

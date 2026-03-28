@@ -162,6 +162,23 @@ vi.mock('@/components/common/Button', () => ({
 const capturedProps: Record<string, any> = {};
 
 vi.mock('@/components/movie-edit', () => ({
+  MovieEditHeader: ({
+    title,
+    onBack,
+    canDelete,
+    onDelete,
+  }: {
+    title: string | null;
+    onBack: () => void;
+    canDelete: boolean;
+    onDelete: () => void;
+  }) => (
+    <div data-testid="movie-edit-header">
+      <h1>Edit Movie{title && <span> — {title}</span>}</h1>
+      <button onClick={onBack}>Back</button>
+      {canDelete && <button onClick={onDelete}>Delete</button>}
+    </div>
+  ),
   BasicInfoSection: (props: any) => {
     capturedProps.BasicInfoSection = props;
     return <div data-testid="basic-info-section" />;

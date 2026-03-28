@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
@@ -7,6 +7,7 @@ import { createMovieEditHandlers } from '@/hooks/useMovieEditHandlers';
 import { useMovieEditDerived } from '@/hooks/useMovieEditDerived';
 import { useMovieEditPendingState } from '@/hooks/useMovieEditPendingState';
 import { useMovieEditData } from '@/hooks/useMovieEditData';
+import { useMovieEditPendingIds } from '@/hooks/useMovieEditPendingIds';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
 
 export type { MovieForm };
@@ -207,24 +208,8 @@ export function useMovieEditState(id: string) {
     setUploadingBackdrop,
   });
 
-  // @sync: memoized Sets of pending _ids — stable references prevent unnecessary re-renders
-  const pendingCastIds = useMemo(
-    () => new Set(pending.pendingCastAdds.map((c) => c._id)),
-    [pending.pendingCastAdds],
-  );
-  const pendingVideoIds = useMemo(
-    () => new Set(pending.pendingVideoAdds.map((v) => v._id)),
-    [pending.pendingVideoAdds],
-  );
-  const pendingAvailabilityIds = useMemo(
-    () => new Set(pending.pendingAvailabilityAdds.map((a) => a._id)),
-    [pending.pendingAvailabilityAdds],
-  );
-  // @sync: mirrors pendingCastIds/pendingVideoIds pattern — Set of stable _id UUIDs for pending runs
-  const pendingRunIds = useMemo(
-    () => new Set(pending.pendingRunAdds.map((r) => r._id)),
-    [pending.pendingRunAdds],
-  );
+  const { pendingCastIds, pendingVideoIds, pendingAvailabilityIds, pendingRunIds } =
+    useMovieEditPendingIds(pending);
 
   return {
     changesParams: {
