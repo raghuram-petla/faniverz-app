@@ -12,6 +12,7 @@ import { ThemeProvider, useTheme } from '@/theme';
 import { usePushToken } from '@/features/notifications/usePushToken';
 import { useNotificationHandler } from '@/features/notifications/useNotificationHandler';
 import { useAnimationStore } from '@/stores/useAnimationStore';
+import { useFilmStripStore } from '@/stores/useFilmStripStore';
 import { languageReady } from '@/i18n';
 
 // @invariant: must be called at module scope (not inside a component) — if called
@@ -72,6 +73,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded && i18nReady) SplashScreen.hideAsync();
     useAnimationStore.getState().loadFromStorage();
+    useFilmStripStore.getState().loadFromStorage();
   }, [fontsLoaded, i18nReady]);
 
   if (!fontsLoaded || !i18nReady) return null;

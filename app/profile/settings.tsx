@@ -12,6 +12,7 @@ import { createStyles } from '@/styles/profile/settings.styles';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { useTranslation } from 'react-i18next';
 import { useAnimationStore } from '@/stores/useAnimationStore';
+import { useFilmStripStore } from '@/stores/useFilmStripStore';
 import type { IconName, Section } from '@/components/profile/settingsTypes';
 
 // @boundary: Settings hub — appearance, notifications, privacy, preferences, and about links
@@ -34,12 +35,11 @@ export default function SettingsScreen() {
   );
 
   const { animationsEnabled, setAnimationsEnabled } = useAnimationStore();
+  const { filmStripEnabled, setFilmStripEnabled } = useFilmStripStore();
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(false);
 
-  // @sync: Notification preferences are stored locally via AsyncStorage only.
-  // @assumes: There is no backend table for these settings. Push delivery is controlled
-  // server-side; these toggles control the client's local filtering behavior.
+  // @sync: Notification prefs stored locally via AsyncStorage — no backend table
   useEffect(() => {
     let mounted = true;
     AsyncStorage.getItem(STORAGE_KEYS.PUSH_NOTIFICATIONS)
@@ -57,29 +57,27 @@ export default function SettingsScreen() {
     };
   }, []);
 
-  const togglePush = () => {
-    setPushEnabled((prev) => {
-      const next = !prev;
-      AsyncStorage.setItem(STORAGE_KEYS.PUSH_NOTIFICATIONS, String(next));
-      return next;
-    });
+  const toggleAsync = (key: string, cur: boolean, set: (v: boolean) => void) => {
+    set(!cur);
+    AsyncStorage.setItem(key, String(!cur));
   };
-
-  const toggleEmail = () => {
-    setEmailEnabled((prev) => {
-      const next = !prev;
-      AsyncStorage.setItem(STORAGE_KEYS.EMAIL_NOTIFICATIONS, String(next));
-      return next;
-    });
-  };
-
   // @coupling: toggle keys must match the 'key' field in section row definitions below
   const toggleMap: Record<string, { value: boolean; setter: () => void }> = {
-    push: { value: pushEnabled, setter: togglePush },
-    email: { value: emailEnabled, setter: toggleEmail },
+    push: {
+      value: pushEnabled,
+      setter: () => toggleAsync(STORAGE_KEYS.PUSH_NOTIFICATIONS, pushEnabled, setPushEnabled),
+    },
+    email: {
+      value: emailEnabled,
+      setter: () => toggleAsync(STORAGE_KEYS.EMAIL_NOTIFICATIONS, emailEnabled, setEmailEnabled),
+    },
     animations: {
       value: animationsEnabled,
       setter: () => setAnimationsEnabled(!animationsEnabled),
+    },
+    filmStrip: {
+      value: filmStripEnabled,
+      setter: () => setFilmStripEnabled(!filmStripEnabled),
     },
   };
 
@@ -103,6 +101,12 @@ export default function SettingsScreen() {
           icon: 'sparkles-outline' as IconName,
           label: t('settings.animations'),
           key: 'animations',
+        },
+        {
+          kind: 'toggle' as const,
+          icon: 'film-outline' as IconName,
+          label: t('settings.filmStrip'),
+          key: 'filmStrip',
         },
       ],
     },

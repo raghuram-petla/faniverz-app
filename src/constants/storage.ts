@@ -7,4 +7,5 @@ export const STORAGE_KEYS = {
   PUSH_NOTIFICATIONS: 'push_notifications',
   EMAIL_NOTIFICATIONS: 'email_notifications',
   ANIMATIONS_ENABLED: 'faniverz_animations_enabled',
+  FILM_STRIP_ENABLED: 'faniverz_film_strip_enabled',
 } as const;

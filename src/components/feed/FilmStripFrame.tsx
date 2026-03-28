@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import { useTheme } from '@/theme';
+import { useFilmStripStore } from '@/stores/useFilmStripStore';
 import {
   RAIL_WIDTH,
   SPROCKET_SIZE,
@@ -20,6 +21,7 @@ export interface FilmStripFrameProps {
  */
 function FilmStripFrameInner({ children }: FilmStripFrameProps) {
   const { theme } = useTheme();
+  const enabled = useFilmStripStore((s) => s.filmStripEnabled);
   const filmColor = getFilmColor(theme);
   const [height, setHeight] = useState(0);
 
@@ -37,6 +39,11 @@ function FilmStripFrameInner({ children }: FilmStripFrameProps) {
       (_, i) => offset + i * SPROCKET_SPACING - SPROCKET_SIZE / 2,
     );
   }, [height]);
+
+  // @contract when disabled, render children in a simple rounded card
+  if (!enabled) {
+    return <View style={[styles.card, { backgroundColor: theme.surface }]}>{children}</View>;
+  }
 
   return (
     <View style={[styles.outer, { backgroundColor: filmColor }]} onLayout={handleLayout}>
@@ -91,5 +98,10 @@ const styles = StyleSheet.create({
   frame: {
     borderRadius: FRAME_RADIUS,
     overflow: 'hidden',
+  },
+  card: {
+    borderRadius: FRAME_RADIUS,
+    overflow: 'hidden',
+    marginHorizontal: 8,
   },
 });

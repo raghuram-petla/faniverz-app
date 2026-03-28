@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme';
+import { useFilmStripStore } from '@/stores/useFilmStripStore';
 import { RAIL_WIDTH, SPROCKET_SIZE, SPROCKET_RADIUS, getFilmColor } from '@/constants/filmStrip';
 
 /** @invariant divider height = sprocket + vertical padding so the hole sits centered */
@@ -19,6 +20,10 @@ export interface FilmStripFrameDividerProps {
  */
 function FilmStripFrameDividerInner({ isEdge }: FilmStripFrameDividerProps) {
   const { theme } = useTheme();
+  const enabled = useFilmStripStore((s) => s.filmStripEnabled);
+
+  // @contract when disabled, render a small spacer between cards
+  if (!enabled) return <View style={styles.spacer} />;
   const filmColor = getFilmColor(theme);
   const height = isEdge ? EDGE_HEIGHT : DIVIDER_HEIGHT;
 
@@ -70,5 +75,8 @@ const styles = StyleSheet.create({
   },
   sprocketRight: {
     right: (RAIL_WIDTH - SPROCKET_SIZE) / 2,
+  },
+  spacer: {
+    height: 10,
   },
 });
