@@ -82,7 +82,6 @@ export function ImageViewerOverlay({
   // @contract No custom rotation animation — the OS rotation provides the
   // visual transition. We just snap to the correct dimensions immediately.
   const [fullResLoaded, setFullResLoaded] = useState(false);
-  const [showClosingTopChrome, setShowClosingTopChrome] = useState(false);
   const progressX = useSharedValue(-1);
   const progressBarOpacity = useSharedValue(0);
   const topChromeBoundary =
@@ -202,7 +201,7 @@ export function ImageViewerOverlay({
   const handleCloseButton = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
-    setShowClosingTopChrome(true);
+
     if (!animationsEnabled) {
       cleanup();
       return;
@@ -225,7 +224,7 @@ export function ImageViewerOverlay({
   const handleSwipeDismiss = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
-    setShowClosingTopChrome(true);
+
     if (!animationsEnabled) {
       cleanup();
       return;
@@ -275,6 +274,11 @@ export function ImageViewerOverlay({
       overflow: 'hidden' as const,
     };
   });
+  // @sync Mask opacity = inverse of backdrop: invisible when backdrop is opaque (viewing),
+  // gradually appears as backdrop fades (close/swipe), fully visible when backdrop is gone.
+  const topChromeMaskStyle = useAnimatedStyle(() => ({
+    opacity: 1 - backdropOpacity.value,
+  }));
 
   return (
     <Animated.View style={styles.root} pointerEvents="auto">
@@ -315,8 +319,12 @@ export function ImageViewerOverlay({
           </Animated.View>
         </ImageViewerGestures>
       </Animated.View>
-      {showClosingTopChrome && needsTopChromeOcclusion && topChrome ? (
-        <HomeFeedTopChromeMask topChrome={topChrome} showHeaderChrome />
+      {needsTopChromeOcclusion && topChrome ? (
+        <HomeFeedTopChromeMask
+          topChrome={topChrome}
+          animatedStyle={topChromeMaskStyle}
+          showHeaderChrome
+        />
       ) : null}
       {!isScreenLandscape ? (
         <Animated.View
