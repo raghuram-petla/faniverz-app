@@ -1,25 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+jest.mock('@/theme', () => ({
+  useTheme: () => ({
+    theme: new Proxy({}, { get: () => '#000' }),
+    colors: { white: '#fff', red600: '#dc2626' },
+  }),
+}));
+
+jest.mock('@/components/common/FilterPillBar.styles', () => ({
+  createFilterPillBarStyles: () => new Proxy({}, { get: () => ({}) }),
+}));
+
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { MediaFilterPills } from '../MediaFilterPills';
 
-jest.mock('@/theme/colors', () => ({
-  colors: new Proxy({}, { get: () => '#000' }),
-}));
-
-const mockTheme = new Proxy({}, { get: () => '#111' }) as any;
-
 const categories = ['All', 'Trailer', 'Song', 'Posters'];
 
 function renderPills(active = 'All', onSelect = jest.fn()) {
-  return render(
-    <MediaFilterPills
-      categories={categories}
-      active={active}
-      onSelect={onSelect}
-      theme={mockTheme}
-    />,
-  );
+  return render(<MediaFilterPills categories={categories} active={active} onSelect={onSelect} />);
 }
 
 describe('MediaFilterPills', () => {

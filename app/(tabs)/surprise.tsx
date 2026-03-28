@@ -20,6 +20,7 @@ import {
 import { FeaturedVideoCard } from '@/components/surprise/FeaturedVideoCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SurpriseContentSkeleton } from '@/components/surprise/SurpriseContentSkeleton';
+import { FilterPillBar } from '@/components/common/FilterPillBar';
 import { createStyles } from '@/styles/tabs/surprise.styles';
 
 type FilterOption = 'all' | SurpriseCategory;
@@ -139,34 +140,11 @@ export default function SurpriseScreen() {
       </View>
 
       {/* ── Category pills ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.pillScroll}
-        contentContainerStyle={styles.pillScrollContent}
-      >
-        {PILLS.map((pill) => {
-          const active = filter === pill.value;
-          return (
-            <TouchableOpacity
-              key={pill.value}
-              style={[
-                styles.pill,
-                active
-                  ? { backgroundColor: pill.activeColor, borderColor: pill.activeColor }
-                  : styles.pillInactive,
-              ]}
-              onPress={() => setFilter(pill.value)}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={`Filter by ${pill.label}`}
-            >
-              <Text style={[styles.pillText, active && styles.pillTextActive]}>{pill.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <FilterPillBar
+        pills={PILLS}
+        activeValue={filter}
+        onSelect={(v) => setFilter(v as FilterOption)}
+      />
 
       {/* ── Main scrollable content ── */}
       <ScrollView

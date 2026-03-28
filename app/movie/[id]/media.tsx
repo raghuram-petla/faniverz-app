@@ -156,7 +156,6 @@ export default function MediaScreen() {
                 categories={categories}
                 active={activeCategory}
                 onSelect={setActiveCategory}
-                theme={theme}
               />
             </View>
           )}

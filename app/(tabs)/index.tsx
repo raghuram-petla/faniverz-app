@@ -221,7 +221,7 @@ export default function FeedScreen() {
 
       {isLoading ? (
         <View style={[styles.scroll, { paddingTop: totalHeaderHeight }]}>
-          <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
+          <FeedFilterPills filter={filter} setFilter={setFilter} />
           <FeedContentSkeleton />
         </View>
       ) : (
@@ -254,7 +254,7 @@ export default function FeedScreen() {
                   isRefreshing={isRefreshing}
                   refreshing={refreshing}
                 />
-                <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
+                <FeedFilterPills filter={filter} setFilter={setFilter} />
               </>
             }
             ListEmptyComponent={

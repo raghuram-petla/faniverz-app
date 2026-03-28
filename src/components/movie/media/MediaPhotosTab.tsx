@@ -93,7 +93,6 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
           categories={[...PHOTO_CATEGORIES]}
           active={activeCategory}
           onSelect={(cat) => setActiveCategory(cat as PhotoCategory)}
-          theme={theme}
         />
       </View>
       <View style={styles.photoGrid}>

@@ -1,10 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
+import { View, Text, ActivityIndicator, Share } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/theme';
 import {
   useNewsFeed,
@@ -15,13 +14,10 @@ import {
   useFollowEntity,
   useUnfollowEntity,
 } from '@/features/feed';
-import { fetchComments } from '@/features/feed/commentsApi';
 import { useFeedStore } from '@/stores/useFeedStore';
-import { useSmartPagination } from '@/hooks/useSmartPagination';
-import { usePrefetchOnVisibility } from '@/hooks/usePrefetchOnVisibility';
-import { NEWS_FEED_PAGINATION, COMMENTS_PAGINATION } from '@/constants/paginationConfig';
 import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
+import { FeedFilterPills } from '@/components/feed/FeedFilterPills';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
@@ -33,50 +29,37 @@ import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
 import { CommentsBottomSheet } from '@/components/feed/CommentsBottomSheet';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
-import type { FeedFilterOption } from '@/types';
 
+// @boundary News feed tab — FlashList-based feed with voting, follows, and filter pills
+// @coupling useFeedStore (Zustand), useNewsFeed (distinct from usePersonalizedFeed in index.tsx)
 export default function FeedScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
   const styles = useMemo(() => createFeedStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
+  // @sync filter persists in Zustand store — shared with index.tsx feed
   const { filter, setFilter } = useFeedStore();
-  const queryClient = useQueryClient();
-  const { allItems, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
+  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     useNewsFeed(filter);
+  // @sideeffect vote/remove mutations use optimistic updates via TanStack Query cache
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
+  // @coupling: followSet is a Set<"entityType:entityId"> — same composite key format as index.tsx feed
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
+  // @boundary gate() wraps callbacks — redirects guests to login instead of executing the action
+  // @sync gated callbacks memoized here so renderItem doesn't recreate them per render
   const { gate } = useAuthGate();
   const { user } = useAuth();
   const router = useRouter();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
 
-  const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
-    totalItems: allItems.length,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    config: NEWS_FEED_PAGINATION,
-  });
-
-  const commentKeyFactory = useCallback(
-    (item: NewsFeedItem) => ['feed-comments', item.id] as const,
-    [],
+  // @edge: unlike index.tsx, this does NOT deduplicate — assumes useNewsFeed pages don't overlap
+  const allItems = useMemo(
+    () => data?.pages.flatMap((page) => page) ?? /* istanbul ignore next */ [],
+    [data?.pages],
   );
-  const commentPrefetchFn = useCallback(
-    (item: NewsFeedItem) => fetchComments(item.id, 0, COMMENTS_PAGINATION.initialPageSize),
-    [],
-  );
-  const { viewabilityConfig, onViewableItemsChanged } = usePrefetchOnVisibility<NewsFeedItem>({
-    config: NEWS_FEED_PAGINATION,
-    queryClient,
-    queryKeyFactory: commentKeyFactory,
-    queryFn: commentPrefetchFn,
-  });
-
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   /* istanbul ignore next */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
@@ -89,6 +72,12 @@ export default function FeedScreen() {
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
 
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // @contract Toggle behavior: re-voting with same direction removes vote; otherwise creates/switches
+  // @nullable prev defaults to null when user has no existing vote on this item
   const handleUpvote = useCallback(
     (itemId: string) => {
       const prev = userVotes[itemId] ?? null;
@@ -122,6 +111,7 @@ export default function FeedScreen() {
     [allItems],
   );
 
+  // @contract: isPending guards prevent duplicate follow/unfollow API calls from rapid taps in the feed
   const handleFollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       if (followMutation.isPending || unfollowMutation.isPending) return;
@@ -138,6 +128,8 @@ export default function FeedScreen() {
     [followMutation, unfollowMutation],
   );
 
+  // @edge If entityId matches current user, routes to own profile tab instead of user detail
+  // @assumes entityType values are constrained by FeedEntityType union
   const handleEntityPress = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       if (entityType === 'user') {
@@ -169,6 +161,8 @@ export default function FeedScreen() {
     setCommentSheetItemId(itemId);
   }, []);
 
+  // @sync memoize gated callbacks once — gate() returns a new wrapper each call,
+  // so calling it inline in renderItem defeats FeedCard's React.memo
   const gatedUpvote = useMemo(() => gate(handleUpvote), [gate, handleUpvote]);
   const gatedDownvote = useMemo(() => gate(handleDownvote), [gate, handleDownvote]);
   const gatedFollow = useMemo(() => gate(handleFollow), [gate, handleFollow]);
@@ -178,6 +172,7 @@ export default function FeedScreen() {
     <View style={styles.screen}>
       <SafeAreaCover />
 
+      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerIconBadge}>
           <Ionicons name="newspaper" size={20} color={colors.white} />
@@ -189,7 +184,7 @@ export default function FeedScreen() {
       </View>
 
       {/* Filter pills */}
-      <FilterPills filter={filter} setFilter={setFilter} styles={styles} />
+      <FeedFilterPills filter={filter} setFilter={setFilter} />
 
       {/* Content */}
       {isLoading ? (
@@ -197,6 +192,7 @@ export default function FeedScreen() {
           <FeedContentSkeleton />
         </View>
       ) : (
+        // @coupling FlashList from @shopify — requires fixed estimatedItemSize or drawDistance for perf
         <View style={styles.scroll}>
           <FlashList
             data={allItems}
@@ -208,10 +204,8 @@ export default function FeedScreen() {
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}
             scrollEventThrottle={16}
-            onEndReached={handleEndReached}
-            onEndReachedThreshold={onEndReachedThreshold}
-            viewabilityConfig={viewabilityConfig}
-            onViewableItemsChanged={onViewableItemsChanged}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
             ListHeaderComponent={
               <PullToRefreshIndicator
                 pullDistance={pullDistance}
@@ -263,44 +257,5 @@ export default function FeedScreen() {
         onClose={() => setCommentSheetItemId(null)}
       />
     </View>
-  );
-}
-
-interface FilterPillsProps {
-  filter: FeedFilterOption;
-  setFilter: (f: FeedFilterOption) => void;
-  styles: ReturnType<typeof createFeedStyles>;
-}
-
-function FilterPills({ filter, setFilter, styles }: FilterPillsProps) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.pillScroll}
-      contentContainerStyle={styles.pillScrollContent}
-    >
-      {FEED_PILLS.map((pill) => {
-        const active = filter === pill.value;
-        return (
-          <TouchableOpacity
-            key={pill.value}
-            style={[
-              styles.pill,
-              active
-                ? { backgroundColor: pill.activeColor, borderColor: pill.activeColor }
-                : styles.pillInactive,
-            ]}
-            onPress={() => setFilter(pill.value)}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={`Filter by ${pill.label}`}
-          >
-            <Text style={[styles.pillText, active && styles.pillTextActive]}>{pill.label}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </ScrollView>
   );
 }

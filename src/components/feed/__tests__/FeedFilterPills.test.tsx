@@ -1,3 +1,14 @@
+jest.mock('@/theme', () => ({
+  useTheme: () => ({
+    theme: new Proxy({}, { get: () => '#000' }),
+    colors: { white: '#fff', red600: '#dc2626' },
+  }),
+}));
+
+jest.mock('@/components/common/FilterPillBar.styles', () => ({
+  createFilterPillBarStyles: () => new Proxy({}, { get: () => ({}) }),
+}));
+
 jest.mock('@/constants/feedHelpers', () => ({
   FEED_PILLS: [
     { label: 'All', value: 'all', activeColor: '#dc2626' },
@@ -15,12 +26,8 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { FeedFilterPills } from '../FeedFilterPills';
 import type { FeedFilterOption } from '@/types';
 
-const proxyStyles = new Proxy({}, { get: () => ({}) }) as ReturnType<
-  typeof import('@/styles/tabs/feed.styles').createFeedStyles
->;
-
 function renderPills(filter: FeedFilterOption = 'all', setFilter: jest.Mock = jest.fn()) {
-  return render(<FeedFilterPills filter={filter} setFilter={setFilter} styles={proxyStyles} />);
+  return render(<FeedFilterPills filter={filter} setFilter={setFilter} />);
 }
 
 describe('FeedFilterPills', () => {
