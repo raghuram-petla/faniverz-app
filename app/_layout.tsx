@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,6 +12,7 @@ import { ThemeProvider, useTheme } from '@/theme';
 import { usePushToken } from '@/features/notifications/usePushToken';
 import { useNotificationHandler } from '@/features/notifications/useNotificationHandler';
 import { useAnimationStore } from '@/stores/useAnimationStore';
+import { languageReady } from '@/i18n';
 
 // @invariant: must be called at module scope (not inside a component) — if called
 // inside RootLayout, the splash screen flickers because the component mounts after
@@ -53,6 +54,13 @@ function ThemedStack() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Exo2_800ExtraBold_Italic });
+  const [i18nReady, setI18nReady] = useState(false);
+
+  // @sync: wait for i18n to load stored language preference before rendering,
+  // otherwise translation keys (e.g. "tabs.home") appear as raw strings.
+  useEffect(() => {
+    languageReady.then(() => setI18nReady(true));
+  }, []);
 
   // @edge: loadFromStorage() runs on every fontsLoaded change, including the initial
   // false->true transition. It reads the user's animation preferences from AsyncStorage.
@@ -62,11 +70,11 @@ export default function RootLayout() {
   // hidden is a no-op. But if fontsLoaded is false and this effect runs, hideAsync
   // is NOT called (guarded by if), keeping the splash screen visible.
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
+    if (fontsLoaded && i18nReady) SplashScreen.hideAsync();
     useAnimationStore.getState().loadFromStorage();
-  }, [fontsLoaded]);
+  }, [fontsLoaded, i18nReady]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || !i18nReady) return null;
 
   // @invariant: provider ordering matters — ImageViewerProvider must be INSIDE
   // AuthProvider (it may need auth state for image URLs) and QueryClientProvider

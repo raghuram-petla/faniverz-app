@@ -8,7 +8,7 @@ import { useTheme } from '@/theme';
 import { useUpcomingMovies } from '@/features/movies/hooks/useUpcomingMovies';
 import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { Movie } from '@/types';
-import { DateGroupItem } from './components/DateGroupItem';
+import { DateGroupItem } from '@/components/calendar/DateGroupItem';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { CalendarFilterPanel } from '@/components/calendar/CalendarFilterPanel';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';

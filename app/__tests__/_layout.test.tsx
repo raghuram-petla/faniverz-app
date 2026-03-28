@@ -1,3 +1,7 @@
+jest.mock('@/i18n', () => ({
+  languageReady: Promise.resolve(),
+}));
+
 jest.mock('@expo-google-fonts/exo-2', () => ({
   useFonts: jest.fn(() => [false]),
   Exo2_800ExtraBold_Italic: 'Exo2_800ExtraBold_Italic',
@@ -55,7 +59,7 @@ jest.mock('@/theme', () => ({
 }));
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import RootLayout from '../_layout';
 import { useFonts } from '@expo-google-fonts/exo-2';
 import * as SplashScreen from 'expo-splash-screen';
@@ -70,20 +74,24 @@ describe('RootLayout', () => {
 
   it('renders without crashing when fonts are not loaded', () => {
     const { toJSON } = render(<RootLayout />);
-    // When !fontsLoaded, returns null
+    // When !fontsLoaded, returns null (i18n may or may not be ready)
     expect(toJSON()).toBeNull();
   });
 
-  it('renders the full layout when fonts are loaded without crashing', () => {
+  it('renders the full layout when fonts are loaded and i18n is ready', async () => {
     mockUseFonts.mockReturnValue([true]);
-    // Should not throw when fonts are loaded (covers the fontsLoaded=true branch)
-    expect(() => render(<RootLayout />)).not.toThrow();
+    // languageReady resolves asynchronously, so wait for re-render
+    await waitFor(() => {
+      expect(() => render(<RootLayout />)).not.toThrow();
+    });
   });
 
-  it('calls SplashScreen.hideAsync when fonts finish loading', () => {
+  it('calls SplashScreen.hideAsync when fonts and i18n are ready', async () => {
     mockUseFonts.mockReturnValue([true]);
     render(<RootLayout />);
-    expect(SplashScreen.hideAsync).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(SplashScreen.hideAsync).toHaveBeenCalled();
+    });
   });
 
   it('does not call SplashScreen.hideAsync when fonts are not loaded', () => {
@@ -92,11 +100,12 @@ describe('RootLayout', () => {
     expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
   });
 
-  it('renders with light StatusBar style when isDark is false', () => {
+  it('renders with light StatusBar style when isDark is false', async () => {
     mockIsDark.value = false;
     mockUseFonts.mockReturnValue([true]);
-    // Should not throw — isDark=false path renders StatusBar with style="dark"
-    expect(() => render(<RootLayout />)).not.toThrow();
+    await waitFor(() => {
+      expect(() => render(<RootLayout />)).not.toThrow();
+    });
     mockIsDark.value = true;
   });
 });
