@@ -53,15 +53,27 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import ActivityScreen from '../activity';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeActivityMock(overrides: Record<string, any> = {}) {
+  const data = 'data' in overrides ? overrides.data : { pages: [] };
+  const allItems = 'allItems' in overrides ? overrides.allItems : (data?.pages?.flat() ?? []);
+  return {
+    data,
+    allItems,
+    isLoading: false,
+    fetchNextPage: jest.fn(),
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    isBackgroundExpanding: false,
+    refetch: jest.fn(),
+    ...overrides,
+  };
+}
+
 describe('ActivityScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseUserActivity.mockReturnValue({
-      data: { pages: [] },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(makeActivityMock());
   });
 
   it('renders header', () => {
@@ -83,28 +95,26 @@ describe('ActivityScreen', () => {
   });
 
   it('renders activity items', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'feed_item', entity_id: 'f1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'feed_item', entity_id: 'f1' }]],
+        },
+      }),
+    );
 
     render(<ActivityScreen />);
     expect(screen.getByText('vote')).toBeTruthy();
   });
 
   it('navigates to post when feed_item activity is pressed', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'feed_item', entity_id: 'f1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'feed_item', entity_id: 'f1' }]],
+        },
+      }),
+    );
 
     render(<ActivityScreen />);
     fireEvent.press(screen.getByText('vote'));
@@ -112,14 +122,13 @@ describe('ActivityScreen', () => {
   });
 
   it('navigates to movie when movie activity is pressed', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a1', action_type: 'follow', entity_type: 'movie', entity_id: 'm1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a1', action_type: 'follow', entity_type: 'movie', entity_id: 'm1' }]],
+        },
+      }),
+    );
 
     render(<ActivityScreen />);
     fireEvent.press(screen.getByText('follow'));
@@ -133,14 +142,13 @@ describe('ActivityScreen', () => {
   });
 
   it('navigates to actor when actor activity is pressed', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a2', action_type: 'follow', entity_type: 'actor', entity_id: 'ac1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a2', action_type: 'follow', entity_type: 'actor', entity_id: 'ac1' }]],
+        },
+      }),
+    );
 
     render(<ActivityScreen />);
     fireEvent.press(screen.getByText('follow'));
@@ -148,16 +156,22 @@ describe('ActivityScreen', () => {
   });
 
   it('navigates to production house when production_house activity is pressed', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [
-          [{ id: 'a3', action_type: 'follow', entity_type: 'production_house', entity_id: 'ph1' }],
-        ],
-      },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [
+            [
+              {
+                id: 'a3',
+                action_type: 'follow',
+                entity_type: 'production_house',
+                entity_id: 'ph1',
+              },
+            ],
+          ],
+        },
+      }),
+    );
 
     render(<ActivityScreen />);
     fireEvent.press(screen.getByText('follow'));
@@ -165,14 +179,15 @@ describe('ActivityScreen', () => {
   });
 
   it('does not navigate for unknown entity_type', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a4', action_type: 'vote', entity_type: 'unknown_type', entity_id: 'x1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [
+            [{ id: 'a4', action_type: 'vote', entity_type: 'unknown_type', entity_id: 'x1' }],
+          ],
+        },
+      }),
+    );
 
     render(<ActivityScreen />);
     fireEvent.press(screen.getByText('vote'));
@@ -181,15 +196,16 @@ describe('ActivityScreen', () => {
 
   it('calls fetchNextPage when end reached and hasNextPage is true', () => {
     const mockFetchNextPage = jest.fn();
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: mockFetchNextPage,
-      hasNextPage: true,
-      isFetchingNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+        },
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: true,
+        isFetchingNextPage: false,
+      }),
+    );
 
     render(<ActivityScreen />);
     const list = screen.UNSAFE_getByType(require('react-native').FlatList);
@@ -198,38 +214,38 @@ describe('ActivityScreen', () => {
   });
 
   it('shows skeleton when loading', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: undefined,
+        isLoading: true,
+      }),
+    );
     render(<ActivityScreen />);
     expect(screen.getByTestId('activity-skeleton')).toBeTruthy();
   });
 
   it('handles undefined data gracefully', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: undefined,
+      }),
+    );
     render(<ActivityScreen />);
     expect(screen.getByText('profile.noActivity')).toBeTruthy();
   });
 
   it('does not call fetchNextPage when hasNextPage is false', () => {
     const mockFetchNextPage = jest.fn();
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: mockFetchNextPage,
-      hasNextPage: false,
-      isFetchingNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+        },
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: false,
+        isFetchingNextPage: false,
+      }),
+    );
 
     render(<ActivityScreen />);
     const list = screen.UNSAFE_getByType(require('react-native').FlatList);
@@ -257,40 +273,30 @@ describe('ActivityScreen', () => {
   });
 
   it('uses emptyList style when activities list is empty', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: { pages: [] },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-      isFetchingNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(makeActivityMock());
     render(<ActivityScreen />);
     expect(screen.getByText('profile.noActivity')).toBeTruthy();
   });
 
   it('does not apply emptyList style when activities exist', () => {
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-      isFetchingNextPage: false,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+        },
+      }),
+    );
     render(<ActivityScreen />);
     expect(screen.getByText('vote')).toBeTruthy();
   });
 
   it('refresh callback calls refetch', async () => {
     const mockRefetch = jest.fn().mockResolvedValue(undefined);
-    mockUseUserActivity.mockReturnValue({
-      data: { pages: [] },
-      isLoading: false,
-      fetchNextPage: jest.fn(),
-      hasNextPage: false,
-      refetch: mockRefetch,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        refetch: mockRefetch,
+      }),
+    );
     render(<ActivityScreen />);
     expect(capturedRefreshCallback).not.toBeNull();
     await capturedRefreshCallback!();
@@ -299,15 +305,16 @@ describe('ActivityScreen', () => {
 
   it('does not call fetchNextPage when already fetching', () => {
     const mockFetchNextPage = jest.fn();
-    mockUseUserActivity.mockReturnValue({
-      data: {
-        pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
-      },
-      isLoading: false,
-      fetchNextPage: mockFetchNextPage,
-      hasNextPage: true,
-      isFetchingNextPage: true,
-    });
+    mockUseUserActivity.mockReturnValue(
+      makeActivityMock({
+        data: {
+          pages: [[{ id: 'a1', action_type: 'vote', entity_type: 'movie', entity_id: 'm1' }]],
+        },
+        fetchNextPage: mockFetchNextPage,
+        hasNextPage: true,
+        isFetchingNextPage: true,
+      }),
+    );
 
     render(<ActivityScreen />);
     const list = screen.UNSAFE_getByType(require('react-native').FlatList);

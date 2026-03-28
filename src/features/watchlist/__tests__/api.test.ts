@@ -290,13 +290,13 @@ describe('watchlist api', () => {
       expect(mockRange).toHaveBeenCalledWith(0, 4);
     });
 
-    it('calls range(10, 19) for page 1', async () => {
+    it('calls range(10, 19) for offset 10', async () => {
       mockSelect.mockReturnValue({ eq: mockEq });
       mockEq.mockReturnValue({ order: mockOrder });
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockResolvedValue({ data: [], error: null });
 
-      await fetchWatchlistPaginated('user-1', 1);
+      await fetchWatchlistPaginated('user-1', 10);
       expect(mockRange).toHaveBeenCalledWith(10, 19);
     });
 

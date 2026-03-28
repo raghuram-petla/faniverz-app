@@ -14,7 +14,7 @@ describe('useMoviesPaginated', () => {
     jest.clearAllMocks();
   });
 
-  it('calls fetchMoviesPaginated with page 0 and no filters initially', async () => {
+  it('calls fetchMoviesPaginated with offset 0 and initialPageSize initially', async () => {
     mockFetch.mockResolvedValue([]);
 
     const { result } = renderHook(() => useMoviesPaginated(), {
@@ -23,7 +23,7 @@ describe('useMoviesPaginated', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFetch).toHaveBeenCalledWith(0, 10, undefined);
+    expect(mockFetch).toHaveBeenCalledWith(0, 5, undefined);
   });
 
   it('passes filters to fetchMoviesPaginated', async () => {
@@ -36,10 +36,10 @@ describe('useMoviesPaginated', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockFetch).toHaveBeenCalledWith(0, 10, filters);
+    expect(mockFetch).toHaveBeenCalledWith(0, 5, filters);
   });
 
-  it('returns movies from the first page', async () => {
+  it('returns movies from the first page via allItems', async () => {
     const movies = [
       { id: '1', title: 'Movie A', release_date: '2025-06-01' },
       { id: '2', title: 'Movie B', release_date: '2025-06-15' },
@@ -52,10 +52,10 @@ describe('useMoviesPaginated', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.pages[0]).toEqual(movies);
+    expect(result.current.allItems).toEqual(movies);
   });
 
-  it('has no next page when fewer than PAGE_SIZE results returned', async () => {
+  it('has no next page when fewer than initialPageSize results returned', async () => {
     mockFetch.mockResolvedValue([{ id: '1', title: 'Only One' }]);
 
     const { result } = renderHook(() => useMoviesPaginated(), {
@@ -67,20 +67,24 @@ describe('useMoviesPaginated', () => {
     expect(result.current.hasNextPage).toBe(false);
   });
 
-  it('has next page when exactly PAGE_SIZE results returned', async () => {
-    const fullPage = Array.from({ length: 10 }, (_, i) => ({
+  it('has next page when exactly expandedPageSize results returned on background expand', async () => {
+    // First call (initialPageSize=5): return 5 items → triggers background expand
+    const initialPage = Array.from({ length: 5 }, (_, i) => ({
       id: String(i),
       title: `Movie ${i}`,
     }));
-    mockFetch.mockResolvedValue(fullPage);
+    // Second call (expandedPageSize=10): return 10 items → hasNextPage = true
+    const expandedPage = Array.from({ length: 10 }, (_, i) => ({
+      id: String(i + 5),
+      title: `Movie ${i + 5}`,
+    }));
+    mockFetch.mockResolvedValueOnce(initialPage).mockResolvedValueOnce(expandedPage);
 
     const { result } = renderHook(() => useMoviesPaginated(), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(result.current.hasNextPage).toBe(true);
+    await waitFor(() => expect(result.current.hasNextPage).toBe(true));
   });
 
   it('handles API errors gracefully', async () => {

@@ -161,7 +161,7 @@ describe('fetchNewsFeed', () => {
 
   it('paginates with correct range', async () => {
     await fetchNewsFeed('all', 2, 15);
-    expect(mocks.mockRange).toHaveBeenCalledWith(30, 44);
+    expect(mocks.mockRange).toHaveBeenCalledWith(2, 16);
   });
 
   it('throws on supabase error', async () => {
@@ -246,7 +246,7 @@ describe('fetchPersonalizedFeed', () => {
       p_user_id: 'user-123',
       p_filter: 'trailers',
       p_limit: 15,
-      p_offset: 15,
+      p_offset: 1,
     });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe('item-1');

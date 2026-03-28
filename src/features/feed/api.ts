@@ -2,15 +2,15 @@ import { supabase } from '@/lib/supabase';
 import type { FeedFilterOption } from '@/types';
 import type { NewsFeedItem, FeedVote } from '@shared/types';
 
-const PAGE_SIZE = 15;
-
 // @coupling: the movie join uses the explicit FK name 'news_feed_movie_id_fkey' — if this FK is renamed in a migration, Supabase returns data without the movie relation (silently null) rather than erroring. The same FK name is used in fetchFeaturedFeedItems and fetchFeedItemById below; all three must stay in sync.
 // @nullable: movie_id on news_feed is nullable. When movie_id IS NULL, the join returns movie: null. The NewsFeedItem type declares movie as optional, so TypeScript won't catch UI code that assumes movie is always present.
 // @edge: filter 'trailers' matches feed_type='video' AND content_type IN ('trailer','teaser','glimpse','promo') — but the personalized feed RPC (get_personalized_feed) has its OWN copy of this filter logic in SQL. Adding a new content_type to one but not the other causes different results between the two feeds.
+// @contract: `offset` is the absolute row offset and `limit` is the number of rows to fetch.
+// The caller (useSmartInfiniteQuery) computes correct offsets for variable page sizes.
 export async function fetchNewsFeed(
   filter?: FeedFilterOption,
-  page: number = 0,
-  pageSize: number = PAGE_SIZE,
+  offset: number = 0,
+  limit: number = 15,
 ): Promise<NewsFeedItem[]> {
   let query = supabase
     .from('news_feed')
@@ -42,9 +42,8 @@ export async function fetchNewsFeed(
     }
   }
 
-  const from = page * pageSize;
-  const to = from + pageSize - 1;
-  query = query.range(from, to);
+  const to = offset + limit - 1;
+  query = query.range(offset, to);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -66,17 +65,18 @@ export async function fetchFeaturedFeedItems(): Promise<NewsFeedItem[]> {
 // @boundary: calls Supabase RPC 'get_personalized_feed' — the function returns a flat row (no nested movie object). This function manually reconstructs the nested { movie: { id, title, poster_url, release_date } } shape to match NewsFeedItem. If the RPC adds new columns (e.g., movie_backdrop_url), they must be mapped here too or they're silently dropped.
 // @assumes: the RPC returns movie_title as null for non-movie feed items. The ternary `row.movie_title ? { ... } : undefined` means feed items without a movie get movie=undefined, matching the fetchNewsFeed behavior. But if movie_title is empty string (not null), it would create a movie object with empty title.
 // @sideeffect: the `as Record<string, unknown>[]` cast discards all Supabase type inference. If the RPC return type changes (e.g., column renamed from 'score' to 'rank_score'), the cast hides the mismatch and the field silently becomes undefined.
+// @contract: `offset` is the absolute row offset and `limit` is the number of rows to fetch.
 export async function fetchPersonalizedFeed(
   userId: string | null,
   filter: FeedFilterOption = 'all',
-  page: number = 0,
-  pageSize: number = PAGE_SIZE,
+  offset: number = 0,
+  limit: number = 15,
 ): Promise<NewsFeedItem[]> {
   const { data, error } = await supabase.rpc('get_personalized_feed', {
     p_user_id: userId,
     p_filter: filter,
-    p_limit: pageSize,
-    p_offset: page * pageSize,
+    p_limit: limit,
+    p_offset: offset,
   });
 
   if (error) throw error;

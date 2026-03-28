@@ -27,10 +27,12 @@ const FILTER_MAP: Record<ActivityFilter, ActivityActionType[]> = {
 };
 
 // @boundary: user_activity table is populated by DB triggers (on vote, follow, comment actions) — this API only reads. If a trigger is disabled or fails, activities silently stop appearing. There's no backfill mechanism.
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
 export async function fetchUserActivity(
   userId: string,
   filter: ActivityFilter = 'all',
-  page: number = 0,
+  offset: number = 0,
+  limit: number = PAGE_SIZE,
 ): Promise<UserActivity[]> {
   let query = supabase
     .from('user_activity')
@@ -43,10 +45,8 @@ export async function fetchUserActivity(
     query = query.in('action_type', actionTypes);
   }
 
-  // @edge: .range() uses inclusive start and inclusive end. If PAGE_SIZE is 20, page 0 fetches rows 0-19,
-  // page 1 fetches 20-39, etc. getNextPageParam checks lastPage.length < PAGE_SIZE to stop pagination.
-  // If exactly PAGE_SIZE rows exist, one extra empty page fetch occurs before pagination stops — harmless but wasteful.
-  const { data, error } = await query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+  const to = offset + limit - 1;
+  const { data, error } = await query.range(offset, to);
   if (error) throw error;
   return data ?? [];
 }

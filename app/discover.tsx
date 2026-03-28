@@ -27,6 +27,8 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useSmartPagination } from '@/hooks/useSmartPagination';
+import { DISCOVER_PAGINATION } from '@/constants/paginationConfig';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
 // @boundary: Discover screen — paginated movie grid with deep-link support for filter/platform params
@@ -89,8 +91,14 @@ export default function DiscoverScreen() {
     [selectedFilter, sortBy],
   );
 
-  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch } =
-    useMoviesPaginated(filters);
+  const {
+    allItems: allMovies,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+  } = useMoviesPaginated(filters);
 
   const { refreshing, onRefresh } = useRefresh(refetch);
   const {
@@ -100,12 +108,6 @@ export default function DiscoverScreen() {
     handlePullScroll,
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
-
-  // @edge: depend on data?.pages (not data) to avoid recomputation on isFetching toggles
-  const allMovies = useMemo(
-    () => data?.pages.flat() ?? /* istanbul ignore next */ [],
-    [data?.pages],
-  );
   /* istanbul ignore next */
   const { data: platforms = [] } = usePlatforms();
   /* istanbul ignore next */
@@ -158,12 +160,13 @@ export default function DiscoverScreen() {
   const activeFilterCount =
     selectedGenres.length + selectedPlatforms.length + selectedProductionHouses.length;
 
-  // @edge: guard against double-fetch when already loading the next page
-  const handleEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
+    totalItems: allMovies.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    config: DISCOVER_PAGINATION,
+  });
 
   return (
     <View style={styles.screen}>
@@ -249,7 +252,7 @@ export default function DiscoverScreen() {
             </AnimatedListItem>
           )}
           onEndReached={handleEndReached}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={onEndReachedThreshold}
           ListEmptyComponent={
             <EmptyState
               icon="film-outline"

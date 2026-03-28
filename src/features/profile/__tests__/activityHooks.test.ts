@@ -26,7 +26,7 @@ describe('useUserActivity', () => {
     const { result } = renderHook(() => useUserActivity('all'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(mockFetch).toHaveBeenCalledWith('u1', 'all', 0);
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'all', 0, 5);
   });
 
   it('does not fetch when user is not authenticated', () => {
@@ -50,16 +50,20 @@ describe('useUserActivity', () => {
     expect(result.current.hasNextPage).toBe(false);
   });
 
-  it('continues pagination when last page has exactly PAGE_SIZE items', async () => {
+  it('continues pagination when background expand returns full expandedPageSize items', async () => {
     mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
-    // Return exactly PAGE_SIZE (20) items — means there may be more
-    const fullPage = Array.from({ length: 20 }, (_, i) => ({ id: `a${i}`, action_type: 'vote' }));
-    mockFetch.mockResolvedValue(fullPage);
+    // First call (initialPageSize=5): return 5 items → triggers background expand
+    const initialPage = Array.from({ length: 5 }, (_, i) => ({ id: `a${i}`, action_type: 'vote' }));
+    // Second call (expandedPageSize=20): return 20 items → hasNextPage = true
+    const expandedPage = Array.from({ length: 20 }, (_, i) => ({
+      id: `a${i + 5}`,
+      action_type: 'vote',
+    }));
+    mockFetch.mockResolvedValueOnce(initialPage).mockResolvedValueOnce(expandedPage);
 
     const { result } = renderHook(() => useUserActivity('all'), { wrapper: createWrapper() });
 
-    await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(result.current.hasNextPage).toBe(true);
+    await waitFor(() => expect(result.current.hasNextPage).toBe(true));
   });
 
   it('uses the filter parameter in the query key', async () => {
@@ -69,7 +73,7 @@ describe('useUserActivity', () => {
     const { result } = renderHook(() => useUserActivity('follows'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(mockFetch).toHaveBeenCalledWith('u1', 'follows', 0);
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'follows', 0, 5);
   });
 
   it('uses default filter of all when no filter argument provided', async () => {
@@ -79,7 +83,7 @@ describe('useUserActivity', () => {
     const { result } = renderHook(() => useUserActivity(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(mockFetch).toHaveBeenCalledWith('u1', 'all', 0);
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'all', 0, 5);
   });
 
   it('fetches with different filter values to exercise query key differentiation', async () => {
@@ -89,7 +93,7 @@ describe('useUserActivity', () => {
     const { result } = renderHook(() => useUserActivity('votes'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
-    expect(mockFetch).toHaveBeenCalledWith('u1', 'votes', 0);
+    expect(mockFetch).toHaveBeenCalledWith('u1', 'votes', 0, 5);
   });
 
   it('uses userId fallback when user object has no id property', async () => {

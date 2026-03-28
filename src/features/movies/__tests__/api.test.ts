@@ -440,10 +440,10 @@ describe('movies api', () => {
       expect(mockRange).toHaveBeenCalledWith(0, 9);
     });
 
-    it('calls range(10, 19) for page 1', async () => {
+    it('calls range(10, 19) for offset 10', async () => {
       mockRange.mockReturnValue(makeRangeResult([]));
 
-      await fetchMoviesPaginated(1);
+      await fetchMoviesPaginated(10);
       expect(mockRange).toHaveBeenCalledWith(10, 19);
     });
 
@@ -568,7 +568,7 @@ describe('movies api', () => {
       mockOrder.mockReturnValue({ range: mockRange });
       mockRange.mockReturnValue(makeRangeResult([]));
 
-      await fetchUpcomingMovies(1);
+      await fetchUpcomingMovies(10);
       expect(mockRange).toHaveBeenCalledWith(10, 19);
     });
 

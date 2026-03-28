@@ -4,7 +4,15 @@ import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { STALE_5M } from '@/constants/queryConfig';
-import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from './followApi';
+import { FOLLOWING_PAGINATION } from '@/constants/paginationConfig';
+import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
+import {
+  fetchUserFollows,
+  fetchEnrichedFollows,
+  fetchEnrichedFollowsPaginated,
+  followEntity,
+  unfollowEntity,
+} from './followApi';
 import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
 
 // @coupling: followSet builds keys as `${entity_type}:${entity_id}` — any consumer checking isFollowed must use this exact format. If entity_type enum in shared/types.ts adds a new value (e.g., 'director'), the set will contain it but consumers won't know to check for it.
@@ -87,6 +95,21 @@ export function useEnrichedFollows() {
     queryFn: () => fetchEnrichedFollows(userId ?? /* istanbul ignore next */ ''),
     enabled: !!userId,
     staleTime: STALE_5M,
+  });
+}
+
+/** @contract Paginated version of useEnrichedFollows using smart infinite query */
+export function useEnrichedFollowsPaginated() {
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  return useSmartInfiniteQuery<EnrichedFollow & { id: string }>({
+    queryKey: ['enriched-follows-paginated', userId],
+    queryFn: (offset, limit) =>
+      fetchEnrichedFollowsPaginated(userId ?? /* istanbul ignore next */ '', offset, limit),
+    config: FOLLOWING_PAGINATION,
+    staleTime: STALE_5M,
+    enabled: !!userId,
   });
 }
 

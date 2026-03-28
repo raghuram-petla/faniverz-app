@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchNewsFeed,
   fetchFeaturedFeedItems,
@@ -10,24 +10,25 @@ import {
   fetchUserVotes,
 } from './api';
 import { STALE_2M, STALE_5M, STALE_10M } from '@/constants/queryConfig';
+import { NEWS_FEED_PAGINATION, FEED_PAGINATION } from '@/constants/paginationConfig';
+import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import type { FeedFilterOption } from '@/types';
 import type { NewsFeedItem } from '@shared/types';
 
-const PAGE_SIZE = 15;
 // @invariant: FEED_QUERY_KEYS must list every top-level feed query key used in this file. The vote mutations use this array to cancel/rollback/invalidate ALL feed caches. If a new feed query key is added (e.g., 'trending-feed') but not added here, vote optimistic updates will miss that cache entirely.
 const FEED_QUERY_KEYS = ['news-feed', 'personalized-feed'] as const;
 
-// @coupling: PAGE_SIZE here (15) must match the PAGE_SIZE in feed/api.ts (also 15). The getNextPageParam logic returns undefined when lastPage.length < PAGE_SIZE. If api.ts PAGE_SIZE changes without updating hooks.ts, infinite scroll will stop prematurely or never stop.
+// @contract: Uses smart pagination — loads 5 items initially for instant display,
+// then background-expands to 15 more. Smart prefetch threshold triggers next page
+// when 5 items remain unseen.
 export function useNewsFeed(filter?: FeedFilterOption) {
-  return useInfiniteQuery({
+  return useSmartInfiniteQuery<NewsFeedItem>({
     queryKey: ['news-feed', filter],
-    queryFn: ({ pageParam }) => fetchNewsFeed(filter, pageParam, PAGE_SIZE),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
+    queryFn: (offset, limit) => fetchNewsFeed(filter, offset, limit),
+    config: NEWS_FEED_PAGINATION,
     staleTime: STALE_5M,
   });
 }
@@ -46,12 +47,10 @@ export function usePersonalizedFeed(filter: FeedFilterOption = 'all') {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  return useInfiniteQuery({
+  return useSmartInfiniteQuery<NewsFeedItem>({
     queryKey: ['personalized-feed', filter, userId],
-    queryFn: ({ pageParam }) => fetchPersonalizedFeed(userId, filter, pageParam, PAGE_SIZE),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
+    queryFn: (offset, limit) => fetchPersonalizedFeed(userId, filter, offset, limit),
+    config: FEED_PAGINATION,
     staleTime: STALE_5M,
   });
 }

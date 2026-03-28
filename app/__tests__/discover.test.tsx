@@ -155,12 +155,18 @@ const mockUseMoviesPaginated = useMoviesPaginated as jest.Mock;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setupDefaultMock(overrides: Record<string, any> = {}) {
+  const defaultData = { pages: [mockMovies], pageParams: [0] };
+  const data = 'data' in overrides ? overrides.data : defaultData;
+  const allItems = 'allItems' in overrides ? overrides.allItems : (data?.pages?.flat() ?? []);
   mockUseMoviesPaginated.mockReturnValue({
-    data: { pages: [mockMovies], pageParams: [0] },
+    data,
+    allItems,
     hasNextPage: false,
     fetchNextPage: mockFetchNextPage,
     isFetchingNextPage: false,
     isLoading: false,
+    isBackgroundExpanding: false,
+    refetch: jest.fn(),
     ...overrides,
   });
 }

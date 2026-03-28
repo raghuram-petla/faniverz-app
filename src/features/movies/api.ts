@@ -235,9 +235,10 @@ export async function searchMovies(query: string): Promise<Movie[]> {
 
 // @sync: shares filter/sort logic with fetchMovies via applyMovieFilters helper — adding a new MovieStatus case or sort option only requires updating applyMovieFilters.
 // @sync: like fetchMovies, passes featuredFirst: true so featured movies surface first in paginated results too.
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
 export async function fetchMoviesPaginated(
-  page: number,
-  pageSize: number = 10,
+  offset: number,
+  limit: number = 10,
   filters?: MovieFilters,
 ): Promise<Movie[]> {
   let query = supabase.from('movies').select('*');
@@ -246,18 +247,17 @@ export async function fetchMoviesPaginated(
   if (result === null) return [];
   query = result;
 
-  const from = page * pageSize;
-  const to = from + pageSize - 1;
-  query = query.range(from, to);
+  const to = offset + limit - 1;
+  query = query.range(offset, to);
 
   return unwrapList(await query);
 }
 
 // @assumes: getLocalDateString() returns the device's local date — if a user's device clock is off by a day, they'll see yesterday's releases in upcoming or miss today's.
-export async function fetchUpcomingMovies(page: number, pageSize: number = 10): Promise<Movie[]> {
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
+export async function fetchUpcomingMovies(offset: number, limit: number = 10): Promise<Movie[]> {
   const todayStr = getLocalDateString();
-  const from = page * pageSize;
-  const to = from + pageSize - 1;
+  const to = offset + limit - 1;
 
   return unwrapList(
     await supabase
@@ -265,7 +265,7 @@ export async function fetchUpcomingMovies(page: number, pageSize: number = 10): 
       .select('*')
       .gte('release_date', todayStr)
       .order('release_date', { ascending: true })
-      .range(from, to),
+      .range(offset, to),
   );
 }
 

@@ -70,20 +70,20 @@ export async function moveBackToWatchlist(userId: string, movieId: string): Prom
   if (error) throw error;
 }
 
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
 export async function fetchWatchlistPaginated(
   userId: string,
-  page: number,
-  pageSize: number = 10,
+  offset: number,
+  limit: number = 10,
 ): Promise<WatchlistEntry[]> {
-  const from = page * pageSize;
-  const to = from + pageSize - 1;
+  const to = offset + limit - 1;
 
   const { data, error } = await supabase
     .from('watchlists')
     .select('*, movie:movies(*, movie_platforms(count))')
     .eq('user_id', userId)
     .order('added_at', { ascending: false })
-    .range(from, to);
+    .range(offset, to);
 
   if (error) throw error;
   // @sideeffect: flatten platform count from nested aggregate

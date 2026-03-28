@@ -1,11 +1,5 @@
 import { useMemo } from 'react';
-import {
-  useQuery,
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-  InfiniteData,
-} from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import {
   fetchWatchlist,
   fetchWatchlistPaginated,
@@ -18,11 +12,11 @@ import {
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { STALE_2M } from '@/constants/queryConfig';
+import { WATCHLIST_PAGINATION } from '@/constants/paginationConfig';
+import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { WatchlistEntry } from '@/types';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
-
-const PAGE_SIZE = 10;
 
 // @contract: API response extends WatchlistEntry with _platformCount for streaming classification
 type WatchlistEntryWithPlatformCount = WatchlistEntry & { _platformCount?: number };
@@ -60,18 +54,15 @@ export function useWatchlist(userId: string) {
 }
 
 export function useWatchlistPaginated(userId: string) {
-  const query = useInfiniteQuery({
+  const query = useSmartInfiniteQuery<WatchlistEntryWithPlatformCount>({
     queryKey: ['watchlist-paginated', userId],
-    queryFn: ({ pageParam }) => fetchWatchlistPaginated(userId, pageParam, PAGE_SIZE),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
-    enabled: !!userId,
+    queryFn: (offset, limit) => fetchWatchlistPaginated(userId, offset, limit),
+    config: WATCHLIST_PAGINATION,
     staleTime: STALE_2M,
+    enabled: !!userId,
   });
 
-  const entries = query.data?.pages.flat() ?? [];
-  const { available, upcoming, watched } = categorizeEntries(entries);
+  const { available, upcoming, watched } = categorizeEntries(query.allItems);
 
   return { ...query, available, upcoming, watched };
 }

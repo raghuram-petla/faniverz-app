@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/theme';
 import {
   usePersonalizedFeed,
@@ -16,8 +17,12 @@ import {
   useFollowEntity,
   useUnfollowEntity,
 } from '@/features/feed';
+import { fetchComments } from '@/features/feed/commentsApi';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { useActiveVideo } from '@/hooks/useActiveVideo';
+import { useSmartPagination } from '@/hooks/useSmartPagination';
+import { usePrefetchOnVisibility } from '@/hooks/usePrefetchOnVisibility';
+import { FEED_PAGINATION, COMMENTS_PAGINATION } from '@/constants/paginationConfig';
 import { FeedCard } from '@/components/feed/FeedCard';
 import {
   FeedHeader,
@@ -38,8 +43,6 @@ import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpe
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
-// @boundary Home tab — personalized feed with collapsible header, video autoplay, voting, and follow
-// @coupling useFeedStore (Zustand), usePersonalizedFeed, useActiveVideo, useEntityFollows
 export default function FeedScreen() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -47,35 +50,45 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   // @sync filter persists in Zustand store — survives tab switches but not app restarts
   const { filter, setFilter } = useFeedStore();
-  // @sideeffect useCollapsibleHeader attaches animated translateY to scroll position
   const { headerTranslateY, totalHeaderHeight, handleScroll, getCurrentHeaderTranslateY } =
-    useCollapsibleHeader(insets.top);
-  const { data, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
+    useCollapsibleHeader(insets.top); // @sideeffect attaches animated translateY to scroll position
+  const queryClient = useQueryClient();
+  const { allItems, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     usePersonalizedFeed(filter);
-  // @sideeffect vote/remove mutations use optimistic updates via TanStack Query cache
-  const voteMutation = useVoteFeedItem();
+  const voteMutation = useVoteFeedItem(); // @sideeffect optimistic updates via TanStack Query cache
   const removeMutation = useRemoveFeedVote();
-  // @sync activeVideoId tracks the single auto-playing video based on scroll position
-  const { activeVideoId, registerVideoLayout, handleScrollForVideo } = useActiveVideo();
+  const { activeVideoId, registerVideoLayout, handleScrollForVideo } = useActiveVideo(); // @sync single auto-playing video
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
-  // @boundary gate() wraps callbacks — redirects guests to login instead of executing the action
-  const { gate } = useAuthGate();
+  const { gate } = useAuthGate(); // @boundary redirects guests to login
   const { user } = useAuth();
   const router = useRouter();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
 
-  // @invariant Deduplicates by item.id — infinite query pages can overlap during refetch
-  const allItems = useMemo(() => {
-    const flat = data?.pages.flatMap((page) => page) ?? /* istanbul ignore next */ [];
-    const seen = new Set<string>();
-    return flat.filter((item) => {
-      if (seen.has(item.id)) return false;
-      seen.add(item.id);
-      return true;
-    });
-  }, [data?.pages]);
+  const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
+    totalItems: allItems.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    config: FEED_PAGINATION,
+  });
+
+  const commentKeyFactory = useCallback(
+    (item: NewsFeedItem) => ['feed-comments', item.id] as const,
+    [],
+  );
+  const commentPrefetchFn = useCallback(
+    (item: NewsFeedItem) => fetchComments(item.id, 0, COMMENTS_PAGINATION.initialPageSize),
+    [],
+  );
+  const { viewabilityConfig, onViewableItemsChanged } = usePrefetchOnVisibility<NewsFeedItem>({
+    config: FEED_PAGINATION,
+    queryClient,
+    queryKeyFactory: commentKeyFactory,
+    queryFn: commentPrefetchFn,
+  });
+
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   /* istanbul ignore next */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
@@ -89,16 +102,19 @@ export default function FeedScreen() {
   } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
   const navigation = useNavigation();
+  const scrollOffsetRef = useRef(0);
 
-  // @sync Scroll to top when the Home tab is tapped while already on this screen
+  // @edge First tap scrolls to top; second tap (when already at top) triggers refresh
   useEffect(() => {
     return navigation.addListener('tabPress' as never, () => {
-      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      if (scrollOffsetRef.current <= 2) {
+        onRefresh();
+      } else {
+        listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }
     });
-  }, [navigation]);
+  }, [navigation, onRefresh]);
 
-  // @contract Toggle behavior: re-upvoting removes the vote; first upvote or switching from down creates new vote
-  // @nullable prev can be null (no vote), 'up', or 'down'
   const handleUpvote = useCallback(
     (itemId: string) => {
       const prev = userVotes[itemId] ?? null;
@@ -132,7 +148,6 @@ export default function FeedScreen() {
     [allItems],
   );
 
-  // @contract: isPending guards prevent duplicate follow/unfollow API calls from rapid taps in the feed
   const handleFollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       if (followMutation.isPending || unfollowMutation.isPending) return;
@@ -149,8 +164,6 @@ export default function FeedScreen() {
     [followMutation, unfollowMutation],
   );
 
-  // @edge If entityId matches current user, navigates to own profile instead of user/:id
-  // @assumes entityType is always one of 'user' | 'movie' | 'actor' | 'production_house'
   const handleEntityPress = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
       if (entityType === 'user') {
@@ -182,18 +195,11 @@ export default function FeedScreen() {
     setCommentSheetItemId(itemId);
   }, []);
 
-  const loadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  // @sync memoize gated callbacks once — gate() returns a new wrapper each call,
-  // so calling it inline in renderItem defeats FeedCard's React.memo
   const gatedUpvote = useMemo(() => gate(handleUpvote), [gate, handleUpvote]);
   const gatedDownvote = useMemo(() => gate(handleDownvote), [gate, handleDownvote]);
   const gatedFollow = useMemo(() => gate(handleFollow), [gate, handleFollow]);
   const gatedUnfollow = useMemo(() => gate(handleUnfollow), [gate, handleUnfollow]);
 
-  // @contract Snapshot is read only when a poster opens so the image viewer closes under the same header position.
   const getImageViewerTopChrome = useCallback(
     (): ImageViewerTopChrome => ({
       variant: 'home-feed',
@@ -213,7 +219,6 @@ export default function FeedScreen() {
         totalHeaderHeight={totalHeaderHeight}
       />
 
-      {/* @coupling FlashList virtualizes feed cards — only visible + drawDistance cards are mounted */}
       {isLoading ? (
         <View style={[styles.scroll, { paddingTop: totalHeaderHeight }]}>
           <FeedFilterPills filter={filter} setFilter={setFilter} styles={styles} />
@@ -228,18 +233,20 @@ export default function FeedScreen() {
             drawDistance={500}
             contentContainerStyle={{ paddingTop: totalHeaderHeight }}
             showsVerticalScrollIndicator={false}
-            // @sync Three scroll handlers chained: pull-to-refresh, collapsible header, video autoplay
             onScroll={(e) => {
               handlePullScroll(e);
               handleScroll(e);
               const { contentOffset, layoutMeasurement } = e.nativeEvent;
+              scrollOffsetRef.current = contentOffset.y;
               handleScrollForVideo(contentOffset.y, layoutMeasurement.height);
             }}
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}
             scrollEventThrottle={16}
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.5}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={onEndReachedThreshold}
+            viewabilityConfig={viewabilityConfig}
+            onViewableItemsChanged={onViewableItemsChanged}
             ListHeaderComponent={
               <>
                 <PullToRefreshIndicator

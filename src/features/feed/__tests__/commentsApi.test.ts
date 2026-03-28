@@ -32,13 +32,13 @@ describe('fetchComments', () => {
     expect(mockRange).toHaveBeenCalledWith(0, 19);
   });
 
-  it('handles page offset correctly', async () => {
+  it('handles offset correctly', async () => {
     const mockRange = jest.fn().mockResolvedValue({ data: [], error: null });
     const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
     const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
     mockSelect.mockReturnValue({ eq: mockEq });
 
-    await fetchComments('f1', 2, 10);
+    await fetchComments('f1', 20, 10);
     expect(mockRange).toHaveBeenCalledWith(20, 29);
   });
 

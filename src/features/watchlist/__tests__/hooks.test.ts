@@ -98,7 +98,7 @@ describe('useWatchlistPaginated', () => {
     const { result } = renderHook(() => useWatchlistPaginated('u1'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(api.fetchWatchlistPaginated).toHaveBeenCalledWith('u1', 0, 10);
+    expect(api.fetchWatchlistPaginated).toHaveBeenCalledWith('u1', 0, 5);
   });
 
   it('separates entries into available, upcoming, and watched', async () => {
@@ -134,21 +134,30 @@ describe('useWatchlistPaginated', () => {
     expect(result.current.hasNextPage).toBe(false);
   });
 
-  it('returns hasNextPage true when full page size returned', async () => {
-    // 10 items — exactly PAGE_SIZE, so there may be more
-    const fullPage = Array.from({ length: 10 }, (_, i) => ({
+  it('returns hasNextPage true when background expand returns full expandedPageSize', async () => {
+    // First call (initialPageSize=5): return 5 items → triggers background expand
+    const initialPage = Array.from({ length: 5 }, (_, i) => ({
       id: `w${i}`,
       user_id: 'u1',
       movie_id: `m${i}`,
       status: 'watchlist' as const,
       movie: { id: `m${i}`, title: `Movie ${i}`, in_theaters: false, premiere_date: null },
     }));
-    (api.fetchWatchlistPaginated as jest.Mock).mockResolvedValue(fullPage);
+    // Second call (expandedPageSize=10): return 10 items → hasNextPage = true
+    const expandedPage = Array.from({ length: 10 }, (_, i) => ({
+      id: `w${i + 5}`,
+      user_id: 'u1',
+      movie_id: `m${i + 5}`,
+      status: 'watchlist' as const,
+      movie: { id: `m${i + 5}`, title: `Movie ${i + 5}`, in_theaters: false, premiere_date: null },
+    }));
+    (api.fetchWatchlistPaginated as jest.Mock)
+      .mockResolvedValueOnce(initialPage)
+      .mockResolvedValueOnce(expandedPage);
 
     const { result } = renderHook(() => useWatchlistPaginated('u1'), { wrapper: createWrapper() });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.hasNextPage).toBe(true);
+    await waitFor(() => expect(result.current.hasNextPage).toBe(true));
   });
 });
 

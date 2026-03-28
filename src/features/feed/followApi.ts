@@ -90,6 +90,71 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
   });
 }
 
+// @contract: Paginated version of fetchEnrichedFollows — fetches a page of follows then enriches them.
+// `offset` is absolute row offset, `limit` is number of follows to fetch.
+export async function fetchEnrichedFollowsPaginated(
+  userId: string,
+  offset: number,
+  limit: number = 10,
+): Promise<(EnrichedFollow & { id: string })[]> {
+  const to = offset + limit - 1;
+  const { data, error } = await supabase
+    .from('entity_follows')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, to);
+  if (error) throw error;
+  const follows = (data ?? []) as EntityFollow[];
+  if (follows.length === 0) return [];
+
+  const grouped: Record<FeedEntityType, string[]> = {
+    movie: [],
+    actor: [],
+    production_house: [],
+    user: [],
+  };
+  for (const f of follows) grouped[f.entity_type]?.push(f.entity_id);
+
+  const [movies, actors, houses, users] = await Promise.all([
+    grouped.movie.length > 0
+      ? supabase.from('movies').select('id, title, poster_url').in('id', grouped.movie).then(unwrap)
+      : [],
+    grouped.actor.length > 0
+      ? supabase.from('actors').select('id, name, photo_url').in('id', grouped.actor).then(unwrap)
+      : [],
+    grouped.production_house.length > 0
+      ? supabase
+          .from('production_houses')
+          .select('id, name, logo_url')
+          .in('id', grouped.production_house)
+          .then(unwrap)
+      : [],
+    grouped.user.length > 0
+      ? supabase
+          .from('profiles')
+          .select('id, display_name, avatar_url')
+          .in('id', grouped.user)
+          .then(unwrap)
+      : [],
+  ]);
+
+  const lookup = new Map<string, { name: string; image_url: string | null }>();
+  for (const m of movies) lookup.set(m.id, { name: m.title, image_url: m.poster_url });
+  for (const a of actors) lookup.set(a.id, { name: a.name, image_url: a.photo_url });
+  for (const h of houses) lookup.set(h.id, { name: h.name, image_url: h.logo_url });
+  for (const u of users) lookup.set(u.id, { name: u.display_name, image_url: u.avatar_url });
+
+  return follows.map((f) => ({
+    id: `${f.entity_type}:${f.entity_id}`,
+    entity_type: f.entity_type,
+    entity_id: f.entity_id,
+    name: lookup.get(f.entity_id)?.name ?? 'Deleted',
+    image_url: lookup.get(f.entity_id)?.image_url ?? null,
+    created_at: f.created_at,
+  }));
+}
+
 // @edge: delete matches on all three columns (user_id, entity_type, entity_id). If the follow doesn't exist (already unfollowed via another device), Supabase returns success with 0 affected rows — no error. The caller's optimistic update already removed it from the local set, so the UI stays consistent.
 export async function unfollowEntity(
   userId: string,

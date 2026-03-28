@@ -164,8 +164,20 @@ jest.mock('@/components/feed/CommentsBottomSheet', () => ({
 }));
 
 import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react-native';
+import { render as rawRender, fireEvent, screen } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import FeedScreen from '../feed';
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+});
+function Wrapper({ children }: { children: React.ReactNode }) {
+  return React.createElement(QueryClientProvider, { client: queryClient }, children);
+}
+
+function render(ui: React.ReactElement, options?: any) {
+  return rawRender(ui, { wrapper: Wrapper, ...options });
+}
 import { useNewsFeed, useVoteFeedItem, useRemoveFeedVote, useUserVotes } from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 
@@ -207,13 +219,20 @@ function setupMocks(overrides: Record<string, any> = {}) {
     setFilter: mockSetFilter,
     ...overrides.store,
   });
+  const defaultData = { pages: [[mockItem]], pageParams: [0] };
+  const feed = overrides.feed ?? {};
+  const feedData = 'data' in feed ? feed.data : defaultData;
+  const allItems = 'allItems' in feed ? feed.allItems : (feedData?.pages?.flat() ?? []);
   mockUseNewsFeed.mockReturnValue({
-    data: { pages: [[mockItem]], pageParams: [0] },
+    data: feedData,
+    allItems,
     isLoading: false,
     hasNextPage: false,
     fetchNextPage: jest.fn(),
     isFetchingNextPage: false,
-    ...overrides.feed,
+    isBackgroundExpanding: false,
+    refetch: jest.fn(),
+    ...feed,
   } as any);
   mockUseVoteFeedItem.mockReturnValue({ mutate: mockVoteMutate } as any);
   mockUseRemoveFeedVote.mockReturnValue({ mutate: mockRemoveMutate } as any);

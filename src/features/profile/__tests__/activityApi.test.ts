@@ -57,10 +57,10 @@ describe('fetchUserActivity', () => {
     expect(mockIn).toHaveBeenCalledWith('action_type', ['comment']);
   });
 
-  it('paginates with page parameter', async () => {
+  it('paginates with offset parameter', async () => {
     mockRange.mockResolvedValue({ data: [], error: null });
 
-    await fetchUserActivity('user-1', 'all', 2);
+    await fetchUserActivity('user-1', 'all', 40);
 
     expect(mockRange).toHaveBeenCalledWith(40, 59);
   });

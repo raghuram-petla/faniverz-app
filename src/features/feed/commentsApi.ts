@@ -3,20 +3,20 @@ import type { FeedComment } from '@shared/types';
 
 // @coupling: select joins profile:profiles(display_name) using an implicit FK from feed_comments.user_id -> profiles.id. The FeedComment type (shared/types.ts) declares profile as optional { display_name: string | null }. If a user deletes their account (profiles row deleted via CASCADE), existing comments are also deleted (ON DELETE CASCADE on the FK). So orphan comments without profiles shouldn't occur — but if CASCADE is removed, profile will be null and display shows as anonymous.
 // @contract: body column has CHECK(char_length(body) BETWEEN 1 AND 500) in the DB. The API doesn't validate length before insert — if the client sends >500 chars, the DB rejects it and the error surfaces as a generic Alert in useAddComment. No field-level validation message is shown.
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
 export async function fetchComments(
   feedItemId: string,
-  page: number,
-  pageSize: number = 20,
+  offset: number = 0,
+  limit: number = 20,
 ): Promise<FeedComment[]> {
-  const from = page * pageSize;
-  const to = from + pageSize - 1;
+  const to = offset + limit - 1;
 
   const { data, error } = await supabase
     .from('feed_comments')
     .select('id, feed_item_id, user_id, body, created_at, profile:profiles(display_name)')
     .eq('feed_item_id', feedItemId)
     .order('created_at', { ascending: true })
-    .range(from, to);
+    .range(offset, to);
 
   if (error) throw error;
   return (data ?? []) as unknown as FeedComment[];

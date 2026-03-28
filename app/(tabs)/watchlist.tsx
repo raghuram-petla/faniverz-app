@@ -23,6 +23,8 @@ import { useWatchlistPaginated } from '@/features/watchlist/hooks';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useSmartPagination } from '@/hooks/useSmartPagination';
+import { WATCHLIST_PAGINATION } from '@/constants/paginationConfig';
 import { useScrollToTop } from '@react-navigation/native';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
@@ -161,11 +163,13 @@ export default function WatchlistScreen() {
     }
   };
 
-  const handleEndReached = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  };
+  const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
+    totalItems: available.length + upcoming.length + watched.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    config: WATCHLIST_PAGINATION,
+  });
 
   const renderFooter = () => {
     if (!isFetchingNextPage) return null;
@@ -265,7 +269,7 @@ export default function WatchlistScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={onEndReachedThreshold}
         ListFooterComponent={renderFooter}
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}

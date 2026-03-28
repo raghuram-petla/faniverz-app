@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { escapeLike } from '@/utils/escapeLike';
+import { unwrapList } from '@/utils/supabaseQuery';
 import type { Movie, Actor, ProductionHouse } from '@shared/types';
 
 export interface UniversalSearchResult {
@@ -41,4 +42,48 @@ export async function searchAll(query: string): Promise<UniversalSearchResult> {
         ? (housesRes.value.data ?? [])
         : [],
   };
+}
+
+// --- Paginated search APIs for smart pagination ---
+
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
+export async function searchMoviesPaginated(
+  query: string,
+  offset: number,
+  limit: number = 10,
+): Promise<Movie[]> {
+  const q = `%${escapeLike(query)}%`;
+  const to = offset + limit - 1;
+  return unwrapList(
+    await supabase
+      .from('movies')
+      .select('*')
+      .ilike('title', q)
+      .order('rating', { ascending: false })
+      .range(offset, to),
+  );
+}
+
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
+export async function searchActorsPaginated(
+  query: string,
+  offset: number,
+  limit: number = 10,
+): Promise<Actor[]> {
+  const q = `%${escapeLike(query)}%`;
+  const to = offset + limit - 1;
+  return unwrapList(await supabase.from('actors').select('*').ilike('name', q).range(offset, to));
+}
+
+// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
+export async function searchProductionHousesPaginated(
+  query: string,
+  offset: number,
+  limit: number = 10,
+): Promise<ProductionHouse[]> {
+  const q = `%${escapeLike(query)}%`;
+  const to = offset + limit - 1;
+  return unwrapList(
+    await supabase.from('production_houses').select('*').ilike('name', q).range(offset, to),
+  );
 }

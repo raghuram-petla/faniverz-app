@@ -1,21 +1,20 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
+import { COMMENTS_PAGINATION } from '@/constants/paginationConfig';
 import { fetchComments, addComment, deleteComment } from './commentsApi';
 import type { FeedComment } from '@shared/types';
 
 const COMMENTS_KEY = 'feed-comments';
-const PAGE_SIZE = 20;
 
-// @coupling: PAGE_SIZE (20) here must match the getNextPageParam check `lastPage.length === PAGE_SIZE`. If fetchComments in commentsApi.ts returns fewer than 20 due to a different default pageSize, infinite scroll stops after the first page even if more comments exist.
+// @contract: Uses smart pagination — loads 5 comments initially, background-expands to 20 more.
 export function useComments(feedItemId: string) {
-  return useInfiniteQuery({
+  return useSmartInfiniteQuery<FeedComment>({
     queryKey: [COMMENTS_KEY, feedItemId],
-    queryFn: ({ pageParam }) => fetchComments(feedItemId, pageParam as number, PAGE_SIZE),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length < PAGE_SIZE ? undefined : (lastPageParam as number) + 1,
+    queryFn: (offset, limit) => fetchComments(feedItemId, offset, limit),
+    config: COMMENTS_PAGINATION,
     enabled: !!feedItemId,
   });
 }

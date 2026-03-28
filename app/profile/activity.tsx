@@ -8,6 +8,8 @@ import { ProfileListSkeleton } from '@/components/profile/ProfileListSkeleton';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useSmartPagination } from '@/hooks/useSmartPagination';
+import { ACTIVITY_PAGINATION } from '@/constants/paginationConfig';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
@@ -33,11 +35,14 @@ export default function ActivityScreen() {
   const [filter, setFilter] = useState<ActivityFilter>('all');
 
   // @boundary: useUserActivity returns paginated data filtered by activity type
-  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useUserActivity(filter);
-  // @contract: pages are flattened into a single array for FlatList consumption
-  // @edge: depend on data?.pages (not data) to avoid recomputation on isFetching toggles
-  const activities = useMemo(() => data?.pages.flatMap((p) => p) ?? [], [data?.pages]);
+  const {
+    allItems: activities,
+    isLoading,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useUserActivity(filter);
 
   const { refreshing, onRefresh } = useRefresh(async () => {
     await refetch();
@@ -49,6 +54,14 @@ export default function ActivityScreen() {
     handlePullScroll,
     handleScrollEndDrag,
   } = usePullToRefresh(onRefresh, refreshing);
+
+  const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
+    totalItems: activities.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    config: ACTIVITY_PAGINATION,
+  });
 
   // @edge: unknown entity_type values are silently ignored (no navigation)
   const handleActivityPress = useCallback(
@@ -93,10 +106,8 @@ export default function ActivityScreen() {
           renderItem={({ item }) => (
             <ActivityItem activity={item} onPress={() => handleActivityPress(item)} />
           )}
-          onEndReached={() => {
-            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-          }}
-          onEndReachedThreshold={0.5}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={onEndReachedThreshold}
           onScroll={handlePullScroll}
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}

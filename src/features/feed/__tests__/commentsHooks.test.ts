@@ -43,8 +43,8 @@ describe('useComments', () => {
     const { result } = renderHook(() => useComments('f1'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.pages[0]).toEqual([baseComment]);
-    expect(mockFetchComments).toHaveBeenCalledWith('f1', 0, 20);
+    expect(result.current.allItems).toEqual([baseComment]);
+    expect(mockFetchComments).toHaveBeenCalledWith('f1', 0, 5);
   });
 
   it('does not fetch when feedItemId is empty', () => {
@@ -356,9 +356,9 @@ describe('useAddComment — mutationFn throws for unauthenticated user directly'
 describe('useComments — getNextPageParam', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('returns undefined for next page when last page has fewer than PAGE_SIZE items', async () => {
-    // Return 5 items — less than PAGE_SIZE (20), so no next page
-    const shortPage = Array.from({ length: 5 }, (_, i) => ({ ...newComment, id: `c${i}` }));
+  it('returns undefined for next page when last page has fewer than initialPageSize items', async () => {
+    // Return 3 items — less than initialPageSize (5), so no next page
+    const shortPage = Array.from({ length: 3 }, (_, i) => ({ ...newComment, id: `c${i}` }));
     mockFetchComments.mockResolvedValue(shortPage);
 
     const { result } = renderHook(() => useComments('f1'), { wrapper: createWrapper() });
@@ -367,14 +367,15 @@ describe('useComments — getNextPageParam', () => {
     expect(result.current.hasNextPage).toBe(false);
   });
 
-  it('returns next page param when last page has exactly PAGE_SIZE items', async () => {
-    // Return 20 items (PAGE_SIZE) — indicates there may be more
-    const fullPage = Array.from({ length: 20 }, (_, i) => ({ ...newComment, id: `c${i}` }));
-    mockFetchComments.mockResolvedValue(fullPage);
+  it('returns next page param when background expand returns full expandedPageSize items', async () => {
+    // First call (initialPageSize=5): return 5 items → triggers background expand
+    const initialPage = Array.from({ length: 5 }, (_, i) => ({ ...newComment, id: `c${i}` }));
+    // Second call (expandedPageSize=20): return 20 items → hasNextPage = true
+    const expandedPage = Array.from({ length: 20 }, (_, i) => ({ ...newComment, id: `c${i + 5}` }));
+    mockFetchComments.mockResolvedValueOnce(initialPage).mockResolvedValueOnce(expandedPage);
 
     const { result } = renderHook(() => useComments('f1'), { wrapper: createWrapper() });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.hasNextPage).toBe(true);
+    await waitFor(() => expect(result.current.hasNextPage).toBe(true));
   });
 });

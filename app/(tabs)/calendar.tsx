@@ -15,6 +15,8 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useSmartPagination } from '@/hooks/useSmartPagination';
+import { CALENDAR_PAGINATION } from '@/constants/paginationConfig';
 import { useScrollToTop } from '@react-navigation/native';
 import { CalendarSkeleton } from '@/components/calendar/CalendarSkeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -30,15 +32,14 @@ export default function CalendarScreen() {
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
-  const { data, hasNextPage, fetchNextPage, isFetchingNextPage, isLoading, refetch } =
-    useUpcomingMovies();
-
-  // @coupling: pages come from useUpcomingMovies infinite query — each page is Movie[]
-  // @edge: depend on data?.pages (not data) to avoid recomputation on isFetching toggles
-  const allMovies = useMemo(
-    () => data?.pages.flat() ?? /* istanbul ignore next */ [],
-    [data?.pages],
-  );
+  const {
+    allItems: allMovies,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+  } = useUpcomingMovies();
   const movieIds = useMemo(() => allMovies.map((m) => m.id), [allMovies]);
   // @sync: platformMap is refetched alongside movie data during pull-to-refresh
   /* istanbul ignore next */
@@ -127,9 +128,13 @@ export default function CalendarScreen() {
     [allMovies],
   );
 
-  const handleEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
+    totalItems: allMovies.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    config: CALENDAR_PAGINATION,
+  });
 
   if (isLoading) {
     return <CalendarSkeleton />;
@@ -213,7 +218,7 @@ export default function CalendarScreen() {
           />
         }
         onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={onEndReachedThreshold}
         ListEmptyComponent={
           <EmptyState
             icon="calendar-outline"

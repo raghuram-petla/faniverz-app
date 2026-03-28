@@ -87,7 +87,7 @@ describe('useNewsFeed', () => {
   it('passes filter to API', async () => {
     const { result } = renderHook(() => useNewsFeed('trailers'), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFetchNewsFeed).toHaveBeenCalledWith('trailers', 0, 15);
+    expect(mockFetchNewsFeed).toHaveBeenCalledWith('trailers', 0, 5);
   });
 
   it('handles errors', async () => {
@@ -133,13 +133,13 @@ describe('usePersonalizedFeed', () => {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFetchPersonalized).toHaveBeenCalledWith('user-123', 'trailers', 0, 15);
+    expect(mockFetchPersonalized).toHaveBeenCalledWith('user-123', 'trailers', 0, 5);
   });
 
   it('defaults filter to all', async () => {
     const { result } = renderHook(() => usePersonalizedFeed(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFetchPersonalized).toHaveBeenCalledWith('user-123', 'all', 0, 15);
+    expect(mockFetchPersonalized).toHaveBeenCalledWith('user-123', 'all', 0, 5);
   });
 
   it('handles errors', async () => {
@@ -448,7 +448,7 @@ describe('usePersonalizedFeed — pagination boundary', () => {
     mockFetchPersonalized.mockResolvedValue([]);
     const { result } = renderHook(() => usePersonalizedFeed(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFetchPersonalized).toHaveBeenCalledWith(null, 'all', 0, 15);
+    expect(mockFetchPersonalized).toHaveBeenCalledWith(null, 'all', 0, 5);
   });
 });
 

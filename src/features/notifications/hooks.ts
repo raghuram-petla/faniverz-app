@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { STALE_1M } from '@/constants/queryConfig';
-import { fetchNotifications, markAsRead, markAllAsRead } from './api';
+import { NOTIFICATIONS_PAGINATION } from '@/constants/paginationConfig';
+import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
+import { fetchNotifications, fetchNotificationsPaginated, markAsRead, markAllAsRead } from './api';
+import type { Notification } from '@/types';
 
 export function useNotifications(userId: string) {
   return useQuery({
@@ -18,6 +21,17 @@ export function useNotifications(userId: string) {
 export function useUnreadCount(userId: string) {
   const { data } = useNotifications(userId);
   return data?.filter((n) => !n.read).length ?? 0;
+}
+
+/** @contract Paginated version of useNotifications using smart infinite query */
+export function useNotificationsPaginated(userId: string) {
+  return useSmartInfiniteQuery<Notification>({
+    queryKey: ['notifications-paginated', userId],
+    queryFn: (offset, limit) => fetchNotificationsPaginated(userId, offset, limit),
+    config: NOTIFICATIONS_PAGINATION,
+    staleTime: STALE_1M,
+    enabled: !!userId,
+  });
 }
 
 export function useNotificationMutations() {

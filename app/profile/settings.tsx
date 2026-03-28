@@ -13,6 +13,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import { useTranslation } from 'react-i18next';
 import { useAnimationStore } from '@/stores/useAnimationStore';
 import { useFilmStripStore } from '@/stores/useFilmStripStore';
+import { SettingsRowItem } from '@/components/profile/SettingsRowItem';
 import type { IconName, Section } from '@/components/profile/settingsTypes';
 
 // @boundary: Settings hub — appearance, notifications, privacy, preferences, and about links
@@ -205,88 +206,16 @@ export default function SettingsScreen() {
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>
           <View style={styles.sectionCard}>
-            {section.rows.map((row, index) => {
-              const isLast = index === section.rows.length - 1;
-              if (row.kind === 'toggle') {
-                const toggle = toggleMap[row.key];
-                return (
-                  <View key={row.label} style={[styles.row, !isLast && styles.rowBorder]}>
-                    <View style={styles.rowLeft}>
-                      <View style={styles.iconWrapper}>
-                        <Ionicons name={row.icon} size={18} color={theme.textSecondary} />
-                      </View>
-                      <Text style={styles.rowLabel}>{row.label}</Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={toggle.setter}
-                      activeOpacity={0.8}
-                      style={[styles.toggle, toggle.value ? styles.toggleOn : styles.toggleOff]}
-                    >
-                      <View
-                        style={[
-                          styles.toggleThumb,
-                          toggle.value ? styles.toggleThumbOn : styles.toggleThumbOff,
-                        ]}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                );
-              }
-              if (row.kind === 'radio') {
-                return (
-                  <View key={row.label} style={[styles.radioRow, !isLast && styles.rowBorder]}>
-                    <View style={styles.radioHeader}>
-                      <View style={styles.iconWrapper}>
-                        <Ionicons name={row.icon} size={18} color={theme.textSecondary} />
-                      </View>
-                      <Text style={styles.rowLabel}>{row.label}</Text>
-                    </View>
-                    <View style={styles.radioOptions}>
-                      {row.options.map((opt) => {
-                        const isSelected = opt.key === row.selected;
-                        return (
-                          <TouchableOpacity
-                            key={opt.key}
-                            style={[styles.radioChip, isSelected && styles.radioChipSelected]}
-                            activeOpacity={1}
-                            onPress={() => row.onSelect(opt.key)}
-                          >
-                            <Text
-                              style={[
-                                styles.radioChipText,
-                                isSelected && styles.radioChipTextSelected,
-                              ]}
-                            >
-                              {opt.label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                );
-              }
-              // link row
-              return (
-                <TouchableOpacity
-                  key={row.label}
-                  style={[styles.row, !isLast && styles.rowBorder]}
-                  activeOpacity={0.7}
-                  onPress={row.onPress}
-                >
-                  <View style={styles.rowLeft}>
-                    <View style={styles.iconWrapper}>
-                      <Ionicons name={row.icon} size={18} color={theme.textSecondary} />
-                    </View>
-                    <Text style={styles.rowLabel}>{row.label}</Text>
-                  </View>
-                  <View style={styles.rowRight}>
-                    {row.value ? <Text style={styles.rowValue}>{row.value}</Text> : null}
-                    <Ionicons name="chevron-forward" size={16} color={theme.textDisabled} />
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+            {section.rows.map((row, index) => (
+              <SettingsRowItem
+                key={row.label}
+                row={row}
+                isLast={index === section.rows.length - 1}
+                styles={styles}
+                theme={theme}
+                toggleMap={toggleMap}
+              />
+            ))}
           </View>
         </View>
       ))}

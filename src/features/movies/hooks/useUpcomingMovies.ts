@@ -1,17 +1,15 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
 import { STALE_5M } from '@/constants/queryConfig';
+import { CALENDAR_PAGINATION } from '@/constants/paginationConfig';
+import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { fetchUpcomingMovies } from '../api';
+import type { Movie } from '@shared/types';
 
-const PAGE_SIZE = 10;
-
-// @coupling: PAGE_SIZE=10 must match the getNextPageParam check — if fetchUpcomingMovies in ../api.ts applies additional filters that reduce results below 10, pagination stops prematurely.
+// @contract: Uses smart pagination — loads 5 items initially, background-expands to 10 more.
 export function useUpcomingMovies() {
-  return useInfiniteQuery({
+  return useSmartInfiniteQuery<Movie>({
     queryKey: ['upcoming-movies'],
-    queryFn: ({ pageParam }) => fetchUpcomingMovies(pageParam, PAGE_SIZE),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length < PAGE_SIZE ? undefined : lastPageParam + 1,
+    queryFn: (offset, limit) => fetchUpcomingMovies(offset, limit),
+    config: CALENDAR_PAGINATION,
     staleTime: STALE_5M,
   });
 }
