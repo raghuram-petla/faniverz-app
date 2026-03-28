@@ -85,7 +85,7 @@ function dataToForm(data: unknown): ActorFormState {
 }
 
 export default function EditActorPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const dataResult = useAdminActor(id);
   const updateMutation = useUpdateActor();
@@ -141,7 +141,7 @@ export default function EditActorPage() {
           </Link>
           <h1 className="text-2xl font-bold text-on-surface">Edit Actor</h1>
         </div>
-        {!isReadOnly && (
+        {canDeleteTopLevel() && (
           <button
             onClick={handleDelete}
             className="flex items-center gap-2 bg-red-600/20 text-status-red px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-600/30"

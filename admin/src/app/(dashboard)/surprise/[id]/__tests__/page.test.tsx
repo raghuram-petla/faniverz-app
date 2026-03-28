@@ -78,7 +78,7 @@ describe('EditSurpriseContentPage', () => {
     vi.clearAllMocks();
     window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
-    mockUsePermissions.mockReturnValue({ isReadOnly: false });
+    mockUsePermissions.mockReturnValue({ isReadOnly: false, canDeleteTopLevel: () => true });
     mockUseUpdateSurprise.mockReturnValue({
       mutateAsync: mockUpdateMutateAsync,
       isError: false,
@@ -116,7 +116,7 @@ describe('EditSurpriseContentPage', () => {
   });
 
   it('hides Delete button when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     render(<EditSurpriseContentPage />);
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   });
@@ -228,7 +228,7 @@ describe('EditSurpriseContentPage', () => {
   });
 
   it('applies pointer-events-none when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     const { container } = render(<EditSurpriseContentPage />);
     const el = container.querySelector('.pointer-events-none');
     expect(el).toBeInTheDocument();

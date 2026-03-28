@@ -359,23 +359,32 @@ describe('usePermissions', () => {
     });
   });
 
-  // canDelete delegates to canUpdate
+  // canDelete — only root/super_admin can delete
   describe('canDelete', () => {
-    it('returns same result as canUpdate for super_admin', () => {
+    it('returns true for all entities for super_admin', () => {
       setUser(makeUser({ role: 'super_admin' }));
       const { result } = renderHook(() => usePermissions());
 
       for (const entity of ALL_ENTITIES) {
-        expect(result.current.canDelete(entity)).toBe(result.current.canUpdate(entity));
+        expect(result.current.canDelete(entity)).toBe(true);
       }
     });
 
-    it('returns same result as canUpdate for PH admin with ownerId', () => {
+    it('returns false for all entities for admin', () => {
+      setUser(makeUser({ role: 'admin' }));
+      const { result } = renderHook(() => usePermissions());
+
+      for (const entity of ALL_ENTITIES) {
+        expect(result.current.canDelete(entity)).toBe(false);
+      }
+    });
+
+    it('returns false for all entities for PH admin', () => {
       setUser(makeUser({ id: 'user-1', role: 'production_house_admin' }));
       const { result } = renderHook(() => usePermissions());
 
-      expect(result.current.canDelete('actor', 'user-1')).toBe(true);
-      expect(result.current.canDelete('actor', 'other-user')).toBe(false);
+      expect(result.current.canDelete('actor', 'user-1')).toBe(false);
+      expect(result.current.canDelete('movie')).toBe(false);
     });
   });
 
@@ -561,7 +570,7 @@ describe('usePermissions', () => {
     });
   });
 
-  // canDeleteChild — root/super_admin/admin only
+  // canDeleteChild — root/super_admin only (admin and PH admin cannot delete)
   describe('canDeleteChild', () => {
     it('returns true for root', () => {
       setUser(makeUser({ role: 'root' }));
@@ -575,10 +584,10 @@ describe('usePermissions', () => {
       expect(result.current.canDeleteChild()).toBe(true);
     });
 
-    it('returns true for admin', () => {
+    it('returns false for admin', () => {
       setUser(makeUser({ role: 'admin' }));
       const { result } = renderHook(() => usePermissions());
-      expect(result.current.canDeleteChild()).toBe(true);
+      expect(result.current.canDeleteChild()).toBe(false);
     });
 
     it('returns false for production_house_admin', () => {

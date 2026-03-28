@@ -24,10 +24,12 @@ type ResultMode = 'search' | 'discover' | 'lookup';
 export interface DiscoverTabProps {
   /** @contract: notifies parent when import starts/stops so tab switching can be blocked */
   onImportingChange?: (importing: boolean) => void;
+  /** @contract: when true, all mutation buttons (import/refresh) are hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 /** @contract Unified TMDB sync — search bar + discover by year, one results area */
-export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
+export function DiscoverTab({ onImportingChange, isReadOnly }: DiscoverTabProps) {
   const { selectedLanguageCode, languages } = useLanguageContext();
   const [query, setQuery] = useState('');
   const [year, setYear] = useState(CURRENT_YEAR);
@@ -201,10 +203,16 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
         </p>
       )}
 
-      {resultMode === 'search' && searchData && <SearchResultsPanel data={searchData} />}
+      {resultMode === 'search' && searchData && (
+        <SearchResultsPanel data={searchData} isReadOnly={isReadOnly} />
+      )}
 
       {resultMode === 'discover' && discoverData && (
-        <DiscoverByYear data={discoverData} onImportingChange={onImportingChange} />
+        <DiscoverByYear
+          data={discoverData}
+          onImportingChange={onImportingChange}
+          isReadOnly={isReadOnly}
+        />
       )}
 
       {resultMode === 'lookup' && lookupResult?.type === 'movie' && (
@@ -213,6 +221,7 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
             result={importMovies.isSuccess ? { ...lookupResult, existsInDb: true } : lookupResult}
             isPending={importMovies.isPending}
             onImport={handleLookupImport}
+            isReadOnly={isReadOnly}
           />
           {importMovies.isSuccess && (
             <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">
@@ -229,6 +238,7 @@ export function DiscoverTab({ onImportingChange }: DiscoverTabProps) {
             isPending={refreshActor.isPending || importActor.isPending}
             onRefresh={handleRefreshPerson}
             onImport={handleImportPerson}
+            isReadOnly={isReadOnly}
           />
           {importActor.isSuccess && (
             <div className="bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">

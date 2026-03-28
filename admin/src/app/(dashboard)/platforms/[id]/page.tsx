@@ -74,7 +74,7 @@ function formToPayload(form: PlatformForm, id: string) {
 /** @coupling useEditPageState, useAdminPlatform, useUpdatePlatform, useDeletePlatform, useImageUpload, useCountries */
 // @sideeffect delete navigates to /platforms; logo upload hits /api/upload/platform-logo
 export default function EditPlatformPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const dataResult = useAdminPlatform(id);
   const updateMutation = useUpdatePlatform();
@@ -134,7 +134,7 @@ export default function EditPlatformPage() {
           </Link>
           <h1 className="text-2xl font-bold text-on-surface">Edit Platform</h1>
         </div>
-        {!isReadOnly && (
+        {canDeleteTopLevel() && (
           <button
             onClick={handleDelete}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-status-red hover:bg-red-600/30 text-sm"

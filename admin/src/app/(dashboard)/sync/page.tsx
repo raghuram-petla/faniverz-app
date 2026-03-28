@@ -5,6 +5,7 @@ import { Search, Zap, Clock } from 'lucide-react';
 import { DiscoverTab } from '@/components/sync/DiscoverTab';
 import { BulkTab } from '@/components/sync/BulkTab';
 import { HistoryTab } from '@/components/sync/HistoryTab';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // @contract Tab components are lazy-rendered — only the active tab mounts
 const TABS = [
@@ -18,6 +19,7 @@ type Tab = (typeof TABS)[number]['id'];
 // this controls whether tab switching is blocked with a confirmation dialog.
 // @boundary TMDB API calls happen inside tab components, not here — this page is purely navigation.
 export default function SyncPage() {
+  const { isReadOnly } = usePermissions();
   const [activeTab, setActiveTab] = useState<Tab>('Discover');
   const [isImporting, setIsImporting] = useState(false);
 
@@ -56,8 +58,10 @@ export default function SyncPage() {
         })}
       </div>
 
-      {activeTab === 'Discover' && <DiscoverTab onImportingChange={setIsImporting} />}
-      {activeTab === 'Bulk' && <BulkTab />}
+      {activeTab === 'Discover' && (
+        <DiscoverTab onImportingChange={setIsImporting} isReadOnly={isReadOnly} />
+      )}
+      {activeTab === 'Bulk' && <BulkTab isReadOnly={isReadOnly} />}
       {activeTab === 'History' && <HistoryTab />}
     </div>
   );

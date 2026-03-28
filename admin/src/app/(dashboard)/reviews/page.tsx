@@ -25,7 +25,7 @@ function RatingStars({ rating }: { rating: number }) {
 // @boundary No pagination — all matching reviews loaded in a single query. May need cursor-based
 // pagination if review count grows significantly.
 export default function ReviewsPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   // @contract ratingFilter=0 means "all ratings" — hook interprets 0 as no filter
   const [ratingFilter, setRatingFilter] = useState(0);
@@ -199,25 +199,29 @@ export default function ReviewsPage() {
                             <X className="w-4 h-4" />
                           </button>
                         </>
-                      ) : !isReadOnly ? (
+                      ) : (
                         <>
-                          <button
-                            onClick={() => startEdit(review)}
-                            className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
-                            title="Edit review"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(review.id)}
-                            disabled={deleteReview.isPending}
-                            className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
-                            title="Delete review"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {!isReadOnly && (
+                            <button
+                              onClick={() => startEdit(review)}
+                              className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
+                              title="Edit review"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          )}
+                          {canDeleteTopLevel() && (
+                            <button
+                              onClick={() => handleDelete(review.id)}
+                              disabled={deleteReview.isPending}
+                              className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
+                              title="Delete review"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </>
-                      ) : null}
+                      )}
                     </div>
                   </td>
                 </tr>

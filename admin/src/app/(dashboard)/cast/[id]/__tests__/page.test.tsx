@@ -135,7 +135,7 @@ const mockActor = {
 describe('EditActorPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUsePermissions.mockReturnValue({ isReadOnly: false });
+    mockUsePermissions.mockReturnValue({ isReadOnly: false, canDeleteTopLevel: () => true });
     mockUseAdminActor.mockReturnValue({ data: mockActor, isLoading: false });
     mockUpdateActorAsync.mockResolvedValue({});
     mockDeleteActorAsync.mockResolvedValue({});
@@ -173,7 +173,7 @@ describe('EditActorPage', () => {
   });
 
   it('does not render Delete button when readOnly', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     render(<EditActorPage />);
     expect(screen.queryByText('Delete')).toBeNull();
   });
@@ -352,7 +352,7 @@ describe('EditActorPage', () => {
   });
 
   it('applies pointer-events-none and opacity when readOnly', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     const { container } = render(<EditActorPage />);
     const el = container.querySelector('.pointer-events-none');
     expect(el).toBeTruthy();

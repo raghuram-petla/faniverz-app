@@ -85,7 +85,7 @@ describe('EditFeedItemPage', () => {
     vi.clearAllMocks();
     window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
-    mockUsePermissions.mockReturnValue({ isReadOnly: false });
+    mockUsePermissions.mockReturnValue({ isReadOnly: false, canDeleteTopLevel: () => true });
     mockUseAdminFeedItem.mockReturnValue({ data: makeItem(), isLoading: false });
     mockUpdateMutateAsync.mockResolvedValue({});
     mockDeleteMutateAsync.mockResolvedValue({});
@@ -120,7 +120,7 @@ describe('EditFeedItemPage', () => {
   });
 
   it('hides Delete button when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     render(<EditFeedItemPage />);
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   });
@@ -259,7 +259,7 @@ describe('EditFeedItemPage', () => {
   });
 
   it('shows pointer-events-none when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     const { container } = render(<EditFeedItemPage />);
     const form = container.querySelector('.pointer-events-none');
     expect(form).toBeInTheDocument();

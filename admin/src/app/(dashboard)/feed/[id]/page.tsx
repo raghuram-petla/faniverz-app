@@ -60,7 +60,7 @@ function formToPayload(form: FeedForm, id: string) {
 /** @coupling useEditPageState, useAdminFeedItem, useUpdateFeedItem, useDeleteFeedItem */
 // @sideeffect delete navigates to /feed via useEditPageState
 export default function EditFeedItemPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const params = useParams();
   // @nullable: UNGUARDED — params.id cast to string without null check
   const id = params.id as string;
@@ -117,7 +117,7 @@ export default function EditFeedItemPage() {
           </Link>
           <h1 className="text-2xl font-bold text-on-surface">Edit Feed Item</h1>
         </div>
-        {!isReadOnly && (
+        {canDeleteTopLevel() && (
           <button
             onClick={handleDelete}
             disabled={deleteMutation.isPending}

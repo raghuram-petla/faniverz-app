@@ -9,10 +9,12 @@ import { PersonPreview } from './PersonPreview';
 export interface ActorSearchResultsProps {
   actors: TmdbSearchAllResult['actors']['results'];
   existingSet: Set<number>;
+  /** @contract: when true, import/refresh buttons are hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 /** @contract Shows TMDB actor search results with inline detail panel and import/refresh */
-export function ActorSearchResults({ actors, existingSet }: ActorSearchResultsProps) {
+export function ActorSearchResults({ actors, existingSet, isReadOnly }: ActorSearchResultsProps) {
   const lookup = useTmdbLookup();
   const importActor = useImportActor();
   const refreshActor = useRefreshActor();
@@ -128,6 +130,7 @@ export function ActorSearchResults({ actors, existingSet }: ActorSearchResultsPr
                     onRefresh={handleRefresh}
                     onImport={handleImportActor}
                     onClose={handleClose}
+                    isReadOnly={isReadOnly}
                   />
                   {importActor.isSuccess && (
                     <div className="mt-2 bg-green-600/10 border border-green-600/30 rounded-lg px-4 py-3 text-status-green text-sm">

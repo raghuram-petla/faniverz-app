@@ -30,6 +30,8 @@ export interface StaleMoviesSectionProps {
   onRefreshAll: () => void;
   /** @invariant when true, disables Refresh All button to prevent concurrent bulk operations */
   isBulkRunning: boolean;
+  /** @contract: when true, Refresh All button is hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 export function StaleMoviesSection({
@@ -42,6 +44,7 @@ export function StaleMoviesSection({
   onToggleList,
   onRefreshAll,
   isBulkRunning,
+  isReadOnly,
 }: StaleMoviesSectionProps) {
   return (
     <div className="flex-1 min-w-[300px] bg-surface-card border border-outline rounded-xl p-5">
@@ -100,13 +103,15 @@ export function StaleMoviesSection({
               <Eye className="w-3.5 h-3.5" />
               {showList ? 'Hide' : 'Preview'}
             </button>
-            <button
-              onClick={onRefreshAll}
-              disabled={isBulkRunning || (staleMovies.data?.items.length ?? 0) === 0}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh All
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={onRefreshAll}
+                disabled={isBulkRunning || (staleMovies.data?.items.length ?? 0) === 0}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh All
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -139,6 +144,8 @@ export interface MissingBiosSectionProps {
   /** @sideeffect triggers sequential TMDB bio fetch for all actors missing bios */
   onFetchAll: () => void;
   isBulkRunning: boolean;
+  /** @contract: when true, Fetch All Bios button is hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 export function MissingBiosSection({
@@ -147,6 +154,7 @@ export function MissingBiosSection({
   onToggleList,
   onFetchAll,
   isBulkRunning,
+  isReadOnly,
 }: MissingBiosSectionProps) {
   return (
     <div className="flex-1 min-w-[300px] bg-surface-card border border-outline rounded-xl p-5">
@@ -176,13 +184,15 @@ export function MissingBiosSection({
               <Eye className="w-3.5 h-3.5" />
               {showList ? 'Hide' : 'Preview'}
             </button>
-            <button
-              onClick={onFetchAll}
-              disabled={isBulkRunning || (missingBios.data?.items.length ?? 0) === 0}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              <Download className="w-3.5 h-3.5" /> Fetch All Bios
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={onFetchAll}
+                disabled={isBulkRunning || (missingBios.data?.items.length ?? 0) === 0}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" /> Fetch All Bios
+              </button>
+            )}
           </div>
         </div>
       )}

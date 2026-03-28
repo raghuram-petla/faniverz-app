@@ -60,7 +60,7 @@ function formToPayload(form: ProductionHouseForm, id: string) {
 }
 
 export default function EditProductionHousePage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const dataResult = useAdminProductionHouse(id);
   const house = dataResult.data;
@@ -117,7 +117,7 @@ export default function EditProductionHousePage() {
           </Link>
           <h1 className="text-2xl font-bold text-on-surface">Edit Production House</h1>
         </div>
-        {!isReadOnly && (
+        {canDeleteTopLevel() && (
           <button
             onClick={handleDelete}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-status-red hover:bg-red-600/30 text-sm"

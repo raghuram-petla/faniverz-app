@@ -53,7 +53,7 @@ describe('SurpriseContentPage', () => {
     vi.clearAllMocks();
     window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
-    mockUsePermissions.mockReturnValue({ isReadOnly: false });
+    mockUsePermissions.mockReturnValue({ isReadOnly: false, canDeleteTopLevel: () => true });
     mockUseAdminSurprise.mockReturnValue({
       data: [],
       isLoading: false,
@@ -66,7 +66,7 @@ describe('SurpriseContentPage', () => {
   });
 
   it('hides Add Content button when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     render(<SurpriseContentPage />);
     expect(screen.queryByText('Add Content')).not.toBeInTheDocument();
   });
@@ -165,7 +165,7 @@ describe('SurpriseContentPage', () => {
   });
 
   it('hides delete button when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     mockUseAdminSurprise.mockReturnValue({
       data: [makeItem('s1', 'A Song', 'song')],
       isLoading: false,

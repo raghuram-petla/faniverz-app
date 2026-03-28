@@ -62,7 +62,7 @@ describe('CommentsPage', () => {
     vi.clearAllMocks();
     window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
-    mockUsePermissions.mockReturnValue({ isReadOnly: false });
+    mockUsePermissions.mockReturnValue({ isReadOnly: false, canDeleteTopLevel: () => true });
     mockUseAdminComments.mockReturnValue({
       data: [],
       isLoading: false,
@@ -291,7 +291,7 @@ describe('CommentsPage', () => {
   });
 
   it('hides edit/delete buttons when isReadOnly is true', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     mockUseAdminComments.mockReturnValue({
       data: [makeComment('c1', 'Comment')],
       isLoading: false,

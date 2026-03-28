@@ -48,6 +48,8 @@ export interface DiscoverResultsProps {
   onGapCountChange?: (count: number | null) => void;
   /** @contract import progress items — shown between buttons and movie grid */
   importProgress?: ImportProgress[];
+  /** @contract: when true, all mutation buttons (import/select/link) are hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 export function DiscoverResults({
@@ -70,6 +72,7 @@ export function DiscoverResults({
   linkingTmdbId,
   onGapCountChange,
   importProgress,
+  isReadOnly,
 }: DiscoverResultsProps) {
   const langName = useLanguageName();
   return (
@@ -99,7 +102,7 @@ export function DiscoverResults({
             </>
           )}
         </p>
-        {newMovies.length > 0 && !isImporting && (
+        {!isReadOnly && newMovies.length > 0 && !isImporting && (
           <button
             onClick={selected.size > 0 ? onDeselectAll : onSelectAllNew}
             className="border border-outline hover:border-on-surface-subtle text-on-surface px-3 py-1 rounded-lg text-xs font-medium transition-colors"
@@ -107,7 +110,7 @@ export function DiscoverResults({
             {selected.size > 0 ? 'Deselect all' : `Select all new (${newMovies.length})`}
           </button>
         )}
-        {selected.size > 0 && !isImporting && (
+        {!isReadOnly && selected.size > 0 && !isImporting && (
           <button
             onClick={onImport}
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
@@ -116,7 +119,7 @@ export function DiscoverResults({
             Import {selected.size} selected
           </button>
         )}
-        {newMovies.length > 0 && selected.size === 0 && !isImporting && (
+        {!isReadOnly && newMovies.length > 0 && selected.size === 0 && !isImporting && (
           <button
             onClick={onImportAllNew}
             className="flex items-center gap-2 bg-red-600/80 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
@@ -125,7 +128,7 @@ export function DiscoverResults({
             Import all new ({newMovies.length})
           </button>
         )}
-        {isImporting && onCancelImport && (
+        {!isReadOnly && isImporting && onCancelImport && (
           <button
             onClick={onCancelImport}
             className="flex items-center gap-2 border border-status-red text-status-red hover:bg-status-red/10 px-4 py-1.5 rounded-lg text-xs font-medium transition-colors"
@@ -152,8 +155,8 @@ export function DiscoverResults({
             return (
               <div key={movie.id}>
                 <button
-                  onClick={() => !suspect && onToggleSelect(movie.id)}
-                  disabled={isImporting || !!suspect}
+                  onClick={() => !suspect && !isReadOnly && onToggleSelect(movie.id)}
+                  disabled={isImporting || !!suspect || isReadOnly}
                   className={`relative w-full bg-black rounded-xl overflow-hidden text-left transition-all ${
                     suspect
                       ? 'ring-2 ring-yellow-500'
@@ -204,7 +207,7 @@ export function DiscoverResults({
                       Matches &ldquo;{suspect.title}&rdquo; (no TMDB ID)
                     </p>
                     <div className="flex items-center gap-2">
-                      {onLinkDuplicate && (
+                      {!isReadOnly && onLinkDuplicate && (
                         <button
                           onClick={() => onLinkDuplicate(movie.id, suspect)}
                           disabled={linkingTmdbId === movie.id}

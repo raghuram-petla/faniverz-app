@@ -21,6 +21,8 @@ export interface MovieSearchCardProps {
   langName: (code: string | null | undefined) => string | null;
   onToggleSelect: (id: number) => void;
   onLinkDuplicate: (tmdbId: number, suspect: DuplicateSuspect) => void;
+  /** @contract: when true, selection and link buttons are disabled — viewer role */
+  isReadOnly?: boolean;
 }
 
 /** @contract Single movie card with import/duplicate/language badges */
@@ -35,12 +37,13 @@ export function MovieSearchCard({
   langName,
   onToggleSelect,
   onLinkDuplicate,
+  isReadOnly,
 }: MovieSearchCardProps) {
   return (
     <div>
       <button
-        disabled={exists || isImporting || languageBlocked || (!!suspect && !exists)}
-        onClick={() => !suspect && !languageBlocked && onToggleSelect(movie.id)}
+        disabled={exists || isImporting || languageBlocked || (!!suspect && !exists) || isReadOnly}
+        onClick={() => !suspect && !languageBlocked && !isReadOnly && onToggleSelect(movie.id)}
         className={`relative w-full bg-black rounded-xl overflow-hidden text-left transition-all ${
           languageBlocked && !exists
             ? 'opacity-50 cursor-default ring-1 ring-outline'
@@ -105,18 +108,20 @@ export function MovieSearchCard({
             Matches &ldquo;{suspect.title}&rdquo; (no TMDB ID)
           </p>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => onLinkDuplicate(movie.id, suspect)}
-              disabled={linkingTmdbId === movie.id}
-              className="text-[10px] bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-0.5 rounded-full font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
-            >
-              {linkingTmdbId === movie.id ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Link2 className="w-3 h-3" />
-              )}
-              Link to TMDB
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={() => onLinkDuplicate(movie.id, suspect)}
+                disabled={linkingTmdbId === movie.id}
+                className="text-[10px] bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-0.5 rounded-full font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                {linkingTmdbId === movie.id ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Link2 className="w-3 h-3" />
+                )}
+                Link to TMDB
+              </button>
+            )}
             <a
               href={`/movies/${suspect.id}`}
               target="_blank"

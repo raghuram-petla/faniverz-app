@@ -9,6 +9,8 @@ export interface PersonPreviewProps {
   onImport?: () => void;
   /** @nullable close/dismiss handler */
   onClose?: () => void;
+  /** @contract: when true, import/refresh buttons are hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 /** @contract shows TMDB person details; refresh if in DB, import if not
@@ -19,6 +21,7 @@ export function PersonPreview({
   onRefresh,
   onImport,
   onClose,
+  isReadOnly,
 }: PersonPreviewProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5 relative">
@@ -66,25 +69,27 @@ export function PersonPreview({
                 <span className="inline-flex items-center gap-1.5 text-sm text-status-green">
                   <CheckCircle className="w-4 h-4" /> In database
                 </span>
-                <button
-                  onClick={onRefresh}
-                  disabled={isPending}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                >
-                  {isPending ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  )}
-                  Refresh from TMDB
-                </button>
+                {!isReadOnly && (
+                  <button
+                    onClick={onRefresh}
+                    disabled={isPending}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    )}
+                    Refresh from TMDB
+                  </button>
+                )}
               </>
             ) : (
               <>
                 <span className="inline-flex items-center gap-1.5 text-sm text-status-yellow">
                   <AlertCircle className="w-4 h-4" /> Not in database
                 </span>
-                {onImport && (
+                {!isReadOnly && onImport && (
                   <button
                     onClick={onImport}
                     disabled={isPending}

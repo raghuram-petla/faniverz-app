@@ -7,11 +7,13 @@ export interface MoviePreviewProps {
   result: LookupResult & { type: 'movie' };
   isPending: boolean;
   onImport: () => void;
+  /** @contract: when true, import/re-sync button is hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 /** @contract shows TMDB movie details with import/re-sync action; existsInDb controls button label
  *  @nullable posterUrl, releaseDate, runtime, director, genres — all fall back to '—' */
-export function MoviePreview({ result, isPending, onImport }: MoviePreviewProps) {
+export function MoviePreview({ result, isPending, onImport, isReadOnly }: MoviePreviewProps) {
   return (
     <div className="bg-surface-card border border-outline rounded-xl p-5">
       <div className="flex gap-5">
@@ -67,18 +69,20 @@ export function MoviePreview({ result, isPending, onImport }: MoviePreviewProps)
                 <AlertCircle className="w-4 h-4" /> Not in database
               </span>
             )}
-            <button
-              onClick={onImport}
-              disabled={isPending}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-            >
-              {isPending ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Download className="w-3.5 h-3.5" />
-              )}
-              {result.existsInDb ? 'Re-sync from TMDB' : 'Import Movie'}
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={onImport}
+                disabled={isPending}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                {result.existsInDb ? 'Re-sync from TMDB' : 'Import Movie'}
+              </button>
+            )}
           </div>
         </div>
       </div>

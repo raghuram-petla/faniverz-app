@@ -72,7 +72,10 @@ function setup(
     error?: Error | null;
   } = {},
 ) {
-  mockUsePermissions.mockReturnValue({ isReadOnly: overrides.isReadOnly ?? false });
+  mockUsePermissions.mockReturnValue({
+    isReadOnly: overrides.isReadOnly ?? false,
+    canDeleteTopLevel: () => !(overrides.isReadOnly ?? false),
+  });
   mockUseAdminReviews.mockReturnValue({
     data: overrides.isLoading ? undefined : (overrides.reviews ?? [makeReview()]),
     isLoading: overrides.isLoading ?? false,

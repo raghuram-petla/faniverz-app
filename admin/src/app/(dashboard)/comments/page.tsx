@@ -11,7 +11,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 // @boundary No pagination — all matching comments loaded in a single query.
 // @coupling Shares identical inline-edit UX pattern with ReviewsPage (same Save/Cancel buttons).
 export default function CommentsPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
   // @invariant At most one comment can be in edit mode (editingId is singular)
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -142,7 +142,7 @@ export default function CommentsPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {isReadOnly ? null : editingId === comment.id ? (
+                      {!isReadOnly && editingId === comment.id ? (
                         <>
                           <button
                             onClick={saveEdit}
@@ -162,21 +162,25 @@ export default function CommentsPage() {
                         </>
                       ) : (
                         <>
-                          <button
-                            onClick={() => startEdit(comment.id, comment.body)}
-                            className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
-                            title="Edit comment"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(comment.id)}
-                            disabled={deleteComment.isPending}
-                            className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
-                            title="Delete comment"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {!isReadOnly && (
+                            <button
+                              onClick={() => startEdit(comment.id, comment.body)}
+                              className="p-2 text-on-surface-subtle hover:text-status-blue transition-colors"
+                              title="Edit comment"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          )}
+                          {canDeleteTopLevel() && (
+                            <button
+                              onClick={() => handleDelete(comment.id)}
+                              disabled={deleteComment.isPending}
+                              className="p-2 text-on-surface-subtle hover:text-status-red transition-colors disabled:opacity-50"
+                              title="Delete comment"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </>
                       )}
                     </div>

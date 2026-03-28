@@ -4,8 +4,13 @@ import { useState } from 'react';
 import { useStaleItems, useRefreshMovie, useRefreshActor } from '@/hooks/useSync';
 import { StaleMoviesSection, MissingBiosSection, BulkProgressPanel } from './BulkSections';
 
+export interface BulkTabProps {
+  /** @contract: when true, all mutation buttons (refresh/fetch) are hidden — viewer role */
+  isReadOnly?: boolean;
+}
+
 /** @contract orchestrates bulk TMDB sync: stale movie refresh + missing actor bio fetch */
-export function BulkTab() {
+export function BulkTab({ isReadOnly }: BulkTabProps) {
   const [staleDays, setStaleDays] = useState(30);
   const [sinceYear, setSinceYear] = useState(new Date().getFullYear() - 3);
   const staleMovies = useStaleItems('movies', staleDays, sinceYear);
@@ -92,6 +97,7 @@ export function BulkTab() {
           onToggleList={() => setShowStaleList((v) => !v)}
           onRefreshAll={handleBulkRefreshMovies}
           isBulkRunning={isBulkRunning}
+          isReadOnly={isReadOnly}
         />
 
         <MissingBiosSection
@@ -100,6 +106,7 @@ export function BulkTab() {
           onToggleList={() => setShowBioList((v) => !v)}
           onFetchAll={handleBulkRefreshActors}
           isBulkRunning={isBulkRunning}
+          isReadOnly={isReadOnly}
         />
       </div>
 

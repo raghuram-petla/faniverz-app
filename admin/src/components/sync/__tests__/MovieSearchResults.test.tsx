@@ -572,6 +572,32 @@ describe('MovieSearchResults', () => {
     expect(screen.getByText('In DB')).toBeInTheDocument();
   });
 
+  describe('isReadOnly', () => {
+    it('hides select all and import buttons when isReadOnly', async () => {
+      const permsMod = await import('@/hooks/usePermissions');
+      vi.mocked(permsMod.usePermissions).mockReturnValue({
+        isReadOnly: true,
+        languageCodes: [],
+      } as unknown as ReturnType<typeof permsMod.usePermissions>);
+      const movies = [makeMovie()];
+      render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+      expect(screen.queryByText(/Select all new/)).not.toBeInTheDocument();
+    });
+
+    it('passes isReadOnly to MovieSearchCard', async () => {
+      const permsMod = await import('@/hooks/usePermissions');
+      vi.mocked(permsMod.usePermissions).mockReturnValue({
+        isReadOnly: true,
+        languageCodes: [],
+      } as unknown as ReturnType<typeof permsMod.usePermissions>);
+      const movies = [makeMovie()];
+      render(<MovieSearchResults movies={movies} existingSet={new Set()} />);
+      // Card button should be disabled (isReadOnly passed through)
+      const card = screen.getByText('Test Movie').closest('button');
+      expect(card).toBeDisabled();
+    });
+  });
+
   it('shows "In DB" badge immediately after successful import without re-search', async () => {
     mockImportMutateAsync.mockResolvedValue({
       results: [{ tmdbId: 1, movieId: 'db-1', title: 'Test Movie' }],

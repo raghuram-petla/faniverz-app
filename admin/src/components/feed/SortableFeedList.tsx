@@ -22,7 +22,7 @@ export interface SortableFeedListProps {
   onTogglePin: (id: string, pinned: boolean) => void;
   onToggleFeature: (id: string, featured: boolean) => void;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function SortableFeedList({

@@ -17,7 +17,7 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
 // @contract Surprise content is a flat list (no pagination/infinite scroll) — assumes < 200 items.
 // @coupling Delete uses confirm() dialog — no undo/soft-delete support.
 export default function SurpriseContentPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { data: items, isLoading } = useAdminSurprise();
   const deleteItem = useDeleteSurprise();
 
@@ -102,7 +102,7 @@ export default function SurpriseContentPage() {
                         >
                           <Pencil className="w-4 h-4" />
                         </Link>
-                        {!isReadOnly && (
+                        {canDeleteTopLevel() && (
                           <button
                             onClick={() => handleDelete(item.id)}
                             disabled={deleteItem.isPending}

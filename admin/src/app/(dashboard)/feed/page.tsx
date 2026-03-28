@@ -22,7 +22,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 // display_order values in a single batch mutation (not just the moved item).
 // @coupling FeedMobilePreview renders a live phone-frame preview of the current item list.
 export default function FeedPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const router = useRouter();
   // @contract Filter 'all' maps to undefined (no server-side filter applied)
   const [filter, setFilter] = useState<FeedType | 'all'>('all');
@@ -101,7 +101,7 @@ export default function FeedPage() {
               onTogglePin={handleTogglePin}
               onToggleFeature={handleToggleFeature}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDelete={canDeleteTopLevel() ? handleDelete : undefined}
             />
           </div>
 

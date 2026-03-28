@@ -95,7 +95,7 @@ describe('usePermissions', () => {
       expect(result.current.isAdmin).toBe(true);
       expect(result.current.isReadOnly).toBe(false);
       expect(result.current.canDeleteTopLevel()).toBe(false);
-      expect(result.current.canDeleteChild()).toBe(true);
+      expect(result.current.canDeleteChild()).toBe(false);
       expect(result.current.auditScope).toBe('own');
     });
 
@@ -215,8 +215,14 @@ describe('usePermissions', () => {
   });
 
   describe('canDelete (legacy)', () => {
-    it('delegates to canUpdate', () => {
+    it('returns false for admin (no delete permissions)', () => {
       mockEffectiveUser.mockReturnValue(makeUser('admin'));
+      const { result } = renderHook(() => usePermissions());
+      expect(result.current.canDelete('movie')).toBe(false);
+    });
+
+    it('returns true for super_admin', () => {
+      mockEffectiveUser.mockReturnValue(makeUser('super_admin'));
       const { result } = renderHook(() => usePermissions());
       expect(result.current.canDelete('movie')).toBe(true);
     });

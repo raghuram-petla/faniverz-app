@@ -198,6 +198,30 @@ describe('StaleMoviesSection', () => {
     fireEvent.change(selects[0], { target: { value: '2020' } });
     expect(onSinceYearChange).toHaveBeenCalledWith(2020);
   });
+
+  it('hides Refresh All button when isReadOnly is true', () => {
+    render(
+      <StaleMoviesSection
+        {...makeStaleProps({
+          isReadOnly: true,
+          staleMovies: { data: { items: [{ id: '1' }] }, isLoading: false },
+        })}
+      />,
+    );
+    expect(screen.queryByText('Refresh All')).not.toBeInTheDocument();
+  });
+
+  it('shows Refresh All button when isReadOnly is false', () => {
+    render(
+      <StaleMoviesSection
+        {...makeStaleProps({
+          isReadOnly: false,
+          staleMovies: { data: { items: [{ id: '1' }] }, isLoading: false },
+        })}
+      />,
+    );
+    expect(screen.getByText('Refresh All')).toBeInTheDocument();
+  });
 });
 
 describe('MissingBiosSection', () => {
@@ -313,6 +337,30 @@ describe('MissingBiosSection', () => {
       />,
     );
     expect(screen.getByText('Hide')).toBeInTheDocument();
+  });
+
+  it('hides Fetch All Bios button when isReadOnly is true', () => {
+    render(
+      <MissingBiosSection
+        {...makeBioProps({
+          isReadOnly: true,
+          missingBios: { data: { items: [{ id: '1' }] }, isLoading: false },
+        })}
+      />,
+    );
+    expect(screen.queryByText('Fetch All Bios')).not.toBeInTheDocument();
+  });
+
+  it('shows Fetch All Bios button when isReadOnly is false', () => {
+    render(
+      <MissingBiosSection
+        {...makeBioProps({
+          isReadOnly: false,
+          missingBios: { data: { items: [{ id: '1' }] }, isLoading: false },
+        })}
+      />,
+    );
+    expect(screen.getByText('Fetch All Bios')).toBeInTheDocument();
   });
 });
 

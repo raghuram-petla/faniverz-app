@@ -12,10 +12,12 @@ export interface DiscoverByYearProps {
   data: DiscoverResult;
   /** @contract: notifies parent when import starts/stops so tab switching can be blocked */
   onImportingChange?: (importing: boolean) => void;
+  /** @contract: when true, all mutation buttons (import/link) are hidden — viewer role */
+  isReadOnly?: boolean;
 }
 
 /** @contract Renders discover-by-year results with batch import. Form lives in DiscoverTab. */
-export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps) {
+export function DiscoverByYear({ data, onImportingChange, isReadOnly }: DiscoverByYearProps) {
   const importMovies = useImportMovies();
   const linkTmdbId = useLinkTmdbId();
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -261,6 +263,7 @@ export function DiscoverByYear({ data, onImportingChange }: DiscoverByYearProps)
         linkingTmdbId={linkingTmdbId}
         onGapCountChange={setGapCount}
         importProgress={importProgress}
+        isReadOnly={isReadOnly}
       />
     </div>
   );

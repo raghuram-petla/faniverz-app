@@ -26,7 +26,7 @@ export function MovieSearchResults({
 }: MovieSearchResultsProps) {
   const importMovies = useImportMovies();
   const linkTmdbId = useLinkTmdbId();
-  const { languageCodes } = usePermissions();
+  const { languageCodes, isReadOnly } = usePermissions();
   const langName = useLanguageName();
   const { selectedLanguageCode } = useLanguageContext();
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -184,7 +184,7 @@ export function MovieSearchResults({
         {!hasLanguageRestriction && (
           <span className="text-xs text-on-surface-muted">({movies.length})</span>
         )}
-        {newMovies.length > 0 && (
+        {!isReadOnly && newMovies.length > 0 && (
           <button
             onClick={() => {
               if (selected.size > 0) setSelected(new Set());
@@ -195,7 +195,7 @@ export function MovieSearchResults({
             {selected.size > 0 ? 'Deselect all' : `Select all new (${newMovies.length})`}
           </button>
         )}
-        {selected.size > 0 && (
+        {!isReadOnly && selected.size > 0 && (
           <button
             onClick={handleImport}
             disabled={isImporting}
@@ -228,6 +228,7 @@ export function MovieSearchResults({
             langName={langName}
             onToggleSelect={toggleSelect}
             onLinkDuplicate={handleLinkDuplicate}
+            isReadOnly={isReadOnly}
           />
         ))}
       </div>

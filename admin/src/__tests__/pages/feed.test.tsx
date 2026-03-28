@@ -51,6 +51,7 @@ vi.mock('@/hooks/usePermissions', () => ({
     canCreate: () => true,
     canUpdate: () => true,
     canDelete: () => true,
+    canDeleteTopLevel: () => !mockIsReadOnly,
   }),
 }));
 

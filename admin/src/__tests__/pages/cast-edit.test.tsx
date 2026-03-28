@@ -67,7 +67,7 @@ vi.mock('@/hooks/useImageUpload', () => ({
 }));
 
 vi.mock('@/hooks/usePermissions', () => ({
-  usePermissions: vi.fn(() => ({ isReadOnly: false })),
+  usePermissions: vi.fn(() => ({ isReadOnly: false, canDeleteTopLevel: () => true })),
 }));
 
 vi.mock('@shared/constants', () => ({
@@ -172,9 +172,10 @@ describe('EditActorPage', () => {
     mockUpdateMutateAsync.mockReset();
     mockDeleteMutateAsync.mockReset();
 
-    mockedUsePermissions.mockReturnValue({ isReadOnly: false } as ReturnType<
-      typeof usePermissions
-    >);
+    mockedUsePermissions.mockReturnValue({
+      isReadOnly: false,
+      canDeleteTopLevel: () => true,
+    } as ReturnType<typeof usePermissions>);
     mockedUseUpdateActor.mockReturnValue({
       mutateAsync: mockUpdateMutateAsync,
       isPending: false,
@@ -257,7 +258,10 @@ describe('EditActorPage', () => {
   });
 
   it('hides delete button when read-only', async () => {
-    mockedUsePermissions.mockReturnValue({ isReadOnly: true } as ReturnType<typeof usePermissions>);
+    mockedUsePermissions.mockReturnValue({
+      isReadOnly: true,
+      canDeleteTopLevel: () => false,
+    } as ReturnType<typeof usePermissions>);
     mockedUseAdminActor.mockReturnValue({
       data: actorData,
       isLoading: false,

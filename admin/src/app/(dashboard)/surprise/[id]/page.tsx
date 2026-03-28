@@ -67,7 +67,7 @@ function formToPayload(form: SurpriseForm, id: string) {
 }
 
 export default function EditSurpriseContentPage() {
-  const { isReadOnly } = usePermissions();
+  const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const params = useParams();
   const id = params.id as string;
 
@@ -129,7 +129,7 @@ export default function EditSurpriseContentPage() {
             <h1 className="text-2xl font-bold text-on-surface">Edit Content</h1>
           </div>
         </div>
-        {!isReadOnly && (
+        {canDeleteTopLevel() && (
           <button
             onClick={handleDelete}
             disabled={deleteMutation.isPending}

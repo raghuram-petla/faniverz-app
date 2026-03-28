@@ -139,7 +139,7 @@ describe('EditProductionHousePage', () => {
     vi.clearAllMocks();
     window.confirm = vi.fn(() => true);
     window.alert = vi.fn();
-    mockUsePermissions.mockReturnValue({ isReadOnly: false });
+    mockUsePermissions.mockReturnValue({ isReadOnly: false, canDeleteTopLevel: () => true });
     mockUseAdminProductionHouse.mockReturnValue({ data: mockHouse, isLoading: false });
   });
 
@@ -175,7 +175,7 @@ describe('EditProductionHousePage', () => {
   });
 
   it('hides Delete button when read-only', () => {
-    mockUsePermissions.mockReturnValue({ isReadOnly: true });
+    mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     render(<EditProductionHousePage />);
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
   });

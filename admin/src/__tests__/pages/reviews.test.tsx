@@ -6,7 +6,7 @@ const mockMutate = vi.fn();
 const mockSetSearch = vi.fn();
 
 vi.mock('@/hooks/usePermissions', () => ({
-  usePermissions: () => ({ isReadOnly: false }),
+  usePermissions: () => ({ isReadOnly: false, canDeleteTopLevel: () => true }),
 }));
 
 vi.mock('@/hooks/useAdminReviews', () => ({

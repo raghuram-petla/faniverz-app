@@ -37,6 +37,10 @@ vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'ph-1' }),
 }));
 
+vi.mock('@/hooks/usePermissions', () => ({
+  usePermissions: () => ({ isReadOnly: false, canDeleteTopLevel: () => true }),
+}));
+
 vi.mock('next/link', () => ({
   default: ({
     children,

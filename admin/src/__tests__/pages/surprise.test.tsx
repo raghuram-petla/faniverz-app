@@ -46,6 +46,7 @@ vi.mock('@/hooks/usePermissions', () => ({
     isSuperAdmin: true,
     isReadOnly: mockIsReadOnly,
     canViewPage: () => true,
+    canDeleteTopLevel: () => !mockIsReadOnly,
   }),
 }));
 

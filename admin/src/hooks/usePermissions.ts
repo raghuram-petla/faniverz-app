@@ -160,22 +160,20 @@ export function usePermissions() {
 
   /**
    * @contract Can delete child entities (posters, videos, cast, platforms, etc.)
-   * root/super_admin/admin can delete child entities.
-   * Admin's language scope is enforced by the backend.
-   * PH admin cannot delete child entities.
+   * Only root/super_admin can delete child entities.
+   * Admin and PH admin cannot delete any entities.
    */
   function canDeleteChild(): boolean {
-    if (!role) return false;
-    if (isViewer || isPHAdmin) return false;
-    return true;
+    return isSuperAdmin;
   }
 
   /**
-   * @contract Legacy canDelete — delegates to canDeleteTopLevel for backward compatibility.
+   * @contract Legacy canDelete — only root/super_admin can delete any entity.
+   * Admin and PH admin have no delete permissions.
    * Prefer canDeleteTopLevel / canDeleteChild for new code.
    */
-  function canDelete(entity: AdminEntity, ownerId?: string | null): boolean {
-    return canUpdate(entity, ownerId);
+  function canDelete(_entity: AdminEntity, _ownerId?: string | null): boolean {
+    return isSuperAdmin;
   }
 
   /**

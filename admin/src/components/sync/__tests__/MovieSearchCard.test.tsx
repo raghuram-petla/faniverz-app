@@ -122,4 +122,25 @@ describe('MovieSearchCard', () => {
     const linkBtn = screen.getByText('Link to TMDB').closest('button');
     expect(linkBtn).toBeDisabled();
   });
+
+  describe('isReadOnly', () => {
+    it('disables card selection when isReadOnly', () => {
+      const onToggleSelect = vi.fn();
+      render(<MovieSearchCard {...defaultProps} isReadOnly={true} onToggleSelect={onToggleSelect} />);
+      fireEvent.click(screen.getByRole('button', { name: /Test Movie/ }));
+      expect(onToggleSelect).not.toHaveBeenCalled();
+    });
+
+    it('hides Link to TMDB button when isReadOnly', () => {
+      const suspect = { id: 'db-1', title: 'Test Film' };
+      render(<MovieSearchCard {...defaultProps} suspect={suspect} isReadOnly={true} />);
+      expect(screen.queryByText('Link to TMDB')).not.toBeInTheDocument();
+    });
+
+    it('still shows Edit instead link when isReadOnly', () => {
+      const suspect = { id: 'db-1', title: 'Test Film' };
+      render(<MovieSearchCard {...defaultProps} suspect={suspect} isReadOnly={true} />);
+      expect(screen.getByText('Edit instead')).toBeInTheDocument();
+    });
+  });
 });

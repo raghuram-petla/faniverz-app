@@ -29,7 +29,7 @@ export interface AdminFeedCardProps {
   onTogglePin: (id: string, pinned: boolean) => void;
   onToggleFeature: (id: string, featured: boolean) => void;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function AdminFeedCard({
@@ -133,13 +133,15 @@ export function AdminFeedCard({
         >
           <Pencil className="w-4 h-4" />
         </button>
-        <button
-          onClick={() => onDelete(item.id)}
-          className="p-1.5 rounded-lg text-on-surface-subtle hover:text-status-red hover:bg-input"
-          title="Delete"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {onDelete && (
+          <button
+            onClick={() => onDelete(item.id)}
+            className="p-1.5 rounded-lg text-on-surface-subtle hover:text-status-red hover:bg-input"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );
