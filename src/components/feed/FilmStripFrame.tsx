@@ -44,7 +44,7 @@ function FilmStripFrameInner({ children }: FilmStripFrameProps) {
   // @edge dark: pure black cards; light: pure white cards — divider line provides separation
   const isDark = theme.statusBarStyle === 'light';
   const cardBg = isDark ? '#000000' : '#FFFFFF';
-  const cardBorder = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
   if (!enabled) {
     return (
       <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
