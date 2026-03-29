@@ -2,12 +2,14 @@
  * Format a date string as relative time (e.g., "2m ago", "3h ago", "5d ago").
  * Falls back to short date for older timestamps.
  */
-// @assumes dateStr is a valid ISO 8601 or JS-parseable date string
+// @nullable dateStr — returns 'Unknown' for null/undefined/unparseable input
 // @edge future dates produce negative diffs, shown as "Just now"
 // @coupling used by FeedCard, CommentItem, NotificationItem for timestamp display
-export function formatRelativeTime(dateStr: string): string {
+export function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'Unknown';
   const now = new Date();
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return 'Unknown';
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);

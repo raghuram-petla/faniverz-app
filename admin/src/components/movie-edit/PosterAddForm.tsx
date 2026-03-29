@@ -56,6 +56,7 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
   function handleConfirmAdd() {
     /* v8 ignore start */
     if (!uploadedUrl) return;
+    if (!posterForm.poster_date) return;
     /* v8 ignore stop */
 
     const pendingId = `pending-poster-${crypto.randomUUID()}`;
@@ -115,13 +116,21 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
               />
             </div>
             <div>
-              <label className="block text-xs text-on-surface-subtle mb-1">Date</label>
+              <label className="block text-xs text-on-surface-subtle mb-1">
+                Date <span className="text-red-500">*</span>
+              </label>
               <input
                 type="date"
+                required
                 value={posterForm.poster_date}
                 onChange={(e) => setPosterForm((p) => ({ ...p, poster_date: e.target.value }))}
-                className="w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600"
+                className={`w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600 ${!posterForm.poster_date ? 'ring-2 ring-red-500' : ''}`}
               />
+              {!posterForm.poster_date && (
+                <p className="text-red-500 text-xs mt-1">
+                  Date is required — sets when this appears in the feed
+                </p>
+              )}
             </div>
           </div>
 
@@ -161,7 +170,7 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
           type="button"
           variant="primary"
           size="md"
-          disabled={!uploadedUrl}
+          disabled={!uploadedUrl || !posterForm.poster_date}
           icon={<Check className="w-4 h-4" />}
           onClick={handleConfirmAdd}
         >

@@ -195,3 +195,21 @@ describe('formatRelativeTime — future dates', () => {
     expect(formatRelativeTime(futureDate)).toBe('Just now');
   });
 });
+
+describe('formatRelativeTime — null/invalid guard', () => {
+  it('returns "Unknown" for null', () => {
+    expect(formatRelativeTime(null)).toBe('Unknown');
+  });
+
+  it('returns "Unknown" for undefined', () => {
+    expect(formatRelativeTime(undefined)).toBe('Unknown');
+  });
+
+  it('returns "Unknown" for empty string', () => {
+    expect(formatRelativeTime('')).toBe('Unknown');
+  });
+
+  it('returns "Unknown" for an unparseable string', () => {
+    expect(formatRelativeTime('not-a-date')).toBe('Unknown');
+  });
+});

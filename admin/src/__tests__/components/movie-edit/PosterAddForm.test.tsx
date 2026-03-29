@@ -51,7 +51,8 @@ describe('PosterAddForm', () => {
   it('renders title and date inputs', () => {
     render(<PosterAddForm {...defaultProps} />);
     expect(screen.getByPlaceholderText(/First Look/)).toBeInTheDocument();
-    expect(screen.getByText('Date')).toBeInTheDocument();
+    // Label now includes a required asterisk — match partially
+    expect(screen.getByText(/^Date/, { selector: 'label' })).toBeInTheDocument();
     expect(document.querySelector('input[type="date"]')).toBeInTheDocument();
   });
 
@@ -230,5 +231,41 @@ describe('PosterAddForm', () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, { target: { files: [] } });
     expect(mockUpload).not.toHaveBeenCalled();
+  });
+
+  it('disables Add to Gallery and shows error when date is cleared', async () => {
+    mockUpload.mockResolvedValueOnce('uploaded-key.jpg');
+    render(<PosterAddForm {...defaultProps} />);
+
+    // Upload an image so uploadedUrl is set
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['img'], 'poster.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() => expect(mockUpload).toHaveBeenCalledWith(file));
+
+    // Clear the date
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '' } });
+
+    // Button should be disabled and error message shown
+    const addBtn = screen.getByText('Add to Gallery').closest('button')!;
+    expect(addBtn).toBeDisabled();
+    expect(screen.getByText(/Date is required/)).toBeInTheDocument();
+  });
+
+  it('does not call onConfirm when date is empty even after upload', async () => {
+    mockUpload.mockResolvedValueOnce('uploaded-key.jpg');
+    render(<PosterAddForm {...defaultProps} />);
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['img'], 'poster.jpg', { type: 'image/jpeg' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    await waitFor(() => expect(mockUpload).toHaveBeenCalledWith(file));
+
+    // Clear the date then try to click (button is disabled, but guard also protects)
+    const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(dateInput, { target: { value: '' } });
+
+    expect(defaultProps.onConfirm).not.toHaveBeenCalled();
   });
 });
