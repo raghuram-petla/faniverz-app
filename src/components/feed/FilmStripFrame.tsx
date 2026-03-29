@@ -100,8 +100,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   card: {
-    borderRadius: FRAME_RADIUS,
     overflow: 'hidden',
-    marginHorizontal: 8,
   },
 });
