@@ -5,14 +5,29 @@ import * as path from 'path';
 
 /**
  * @contract APP_VARIANT env var controls bundle ID and app name.
- *   'development' → com.faniverz.app.dev / "Faniverz Dev"
- *   undefined     → com.faniverz.app     / "Faniverz"
+ *   'development' → com.faniverz.app.dev     / "Faniverz Dev"
+ *   'preview'     → com.faniverz.app.preview / "Faniverz Preview"
+ *   undefined     → com.faniverz.app         / "Faniverz"
+ * All three variants install as separate apps on the same device.
  */
 const IS_DEV = process.env.APP_VARIANT === 'development';
+const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
 
-const getBundleId = () => (IS_DEV ? 'com.faniverz.app.dev' : 'com.faniverz.app');
-const getAppName = () => (IS_DEV ? 'Faniverz Dev' : 'Faniverz');
-const getScheme = () => (IS_DEV ? 'faniverz-dev' : 'faniverz');
+const getBundleId = () => {
+  if (IS_DEV) return 'com.faniverz.app.dev';
+  if (IS_PREVIEW) return 'com.faniverz.app.preview';
+  return 'com.faniverz.app';
+};
+const getAppName = () => {
+  if (IS_DEV) return 'Faniverz Dev';
+  if (IS_PREVIEW) return 'Faniverz Preview';
+  return 'Faniverz';
+};
+const getScheme = () => {
+  if (IS_DEV) return 'faniverz-dev';
+  if (IS_PREVIEW) return 'faniverz-preview';
+  return 'faniverz';
+};
 
 // @boundary Xcode 26+ added allowable-clients restriction on SwiftUICore.
 // expo prebuild regenerates /ios/ (gitignored), so the fix must live here as a
@@ -57,7 +72,11 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     slug: 'faniverz',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: IS_DEV ? './assets/icon-dev-light.png' : './assets/icon-light.png',
+    icon: IS_DEV
+      ? './assets/icon-dev-light.png'
+      : IS_PREVIEW
+        ? './assets/icon-preview-light.png'
+        : './assets/icon-light.png',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     scheme: getScheme(),
@@ -75,11 +94,17 @@ export default ({ config }: ConfigContext): ExpoConfig =>
             dark: './assets/icon-dev-dark.png',
             tinted: './assets/icon-dev-tinted.png',
           }
-        : {
-            light: './assets/icon-light.png',
-            dark: './assets/icon-dark.png',
-            tinted: './assets/icon-tinted.png',
-          },
+        : IS_PREVIEW
+          ? {
+              light: './assets/icon-preview-light.png',
+              dark: './assets/icon-preview-dark.png',
+              tinted: './assets/icon-preview-tinted.png',
+            }
+          : {
+              light: './assets/icon-light.png',
+              dark: './assets/icon-dark.png',
+              tinted: './assets/icon-tinted.png',
+            },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
