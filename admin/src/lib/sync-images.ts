@@ -141,8 +141,10 @@ export async function syncPosters(
       }),
     );
     // @contract: count successes after batch completes to avoid race on shared counter
+    // @edge: throw on insert error so fill-fields surfaces the DB error to the user
+    //        instead of silently reporting success while the row was never written
     for (const r of results) {
-      if (r.error) console.warn('syncPosters: insert failed', r.error.message);
+      if (r.error) throw new Error(`syncPosters: insert failed — ${r.error.message}`);
       else count++;
     }
   }
@@ -231,8 +233,10 @@ export async function syncBackdrops(
         return { error };
       }),
     );
+    // @edge: throw on insert error so fill-fields surfaces the DB error to the user
+    //        instead of silently reporting success while the row was never written
     for (const r of results) {
-      if (r.error) console.warn('syncBackdrops: insert failed', r.error.message);
+      if (r.error) throw new Error(`syncBackdrops: insert failed — ${r.error.message}`);
       else count++;
     }
   }

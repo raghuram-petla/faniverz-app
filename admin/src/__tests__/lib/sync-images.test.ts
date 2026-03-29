@@ -445,25 +445,20 @@ describe('syncAllImages', () => {
     expect(mockUpload).not.toHaveBeenCalled();
   });
 
-  it('handles poster insert error and warns', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('throws on poster insert error so fill-fields surfaces the DB error', async () => {
     mockGetMovieImages.mockResolvedValue({
       posters: [makePoster({ file_path: '/fail.jpg', iso_639_1: null })],
       backdrops: [],
       logos: [],
     });
-    // Poster insert fails
     supabase.insert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
 
-    const result = await syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never);
-
-    expect(consoleWarn).toHaveBeenCalledWith('syncPosters: insert failed', 'insert failed');
-    expect(result.posterCount).toBe(0);
-    consoleWarn.mockRestore();
+    await expect(syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never)).rejects.toThrow(
+      'syncPosters: insert failed — insert failed',
+    );
   });
 
-  it('handles backdrop insert error and warns', async () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('throws on backdrop insert error so fill-fields surfaces the DB error', async () => {
     mockGetMovieImages.mockResolvedValue({
       posters: [],
       backdrops: [makeBackdrop({ file_path: '/fail-b.jpg' })],
@@ -471,14 +466,9 @@ describe('syncAllImages', () => {
     });
     supabase.insert.mockResolvedValueOnce({ error: { message: 'backdrop insert failed' } });
 
-    const result = await syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never);
-
-    expect(consoleWarn).toHaveBeenCalledWith(
-      'syncBackdrops: insert failed',
-      'backdrop insert failed',
+    await expect(syncAllImages(MOVIE_ID, TMDB_ID, 'api-key', supabase as never)).rejects.toThrow(
+      'syncBackdrops: insert failed — backdrop insert failed',
     );
-    expect(result.backdropCount).toBe(0);
-    consoleWarn.mockRestore();
   });
 
   it('uses "no lang" fallback when poster iso_639_1 is null', async () => {
