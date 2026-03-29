@@ -5,12 +5,12 @@ import { STORAGE_KEYS } from '@/constants/storage';
 describe('useFilmStripStore', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useFilmStripStore.setState({ filmStripEnabled: true, loaded: false });
+    useFilmStripStore.setState({ filmStripEnabled: false, loaded: false });
   });
 
   it('has correct default state', () => {
     const state = useFilmStripStore.getState();
-    expect(state.filmStripEnabled).toBe(true);
+    expect(state.filmStripEnabled).toBe(false);
     expect(state.loaded).toBe(false);
   });
 
@@ -53,7 +53,7 @@ describe('useFilmStripStore', () => {
 
     await useFilmStripStore.getState().loadFromStorage();
 
-    expect(useFilmStripStore.getState().filmStripEnabled).toBe(true);
+    expect(useFilmStripStore.getState().filmStripEnabled).toBe(false);
     expect(useFilmStripStore.getState().loaded).toBe(true);
   });
 

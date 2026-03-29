@@ -1,51 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('react-native-webview', () => {
-  const { View } = require('react-native');
-  return { WebView: (props: Record<string, any>) => <View testID="webview" {...props} /> };
-});
-
 jest.mock('@/theme/colors', () => ({
   colors: new Proxy({}, { get: () => '#000' }),
 }));
 
-jest.mock('@expo/vector-icons', () => ({
-  Ionicons: 'Ionicons',
-  MaterialIcons: 'MaterialIcons',
-}));
-
-jest.mock('expo-image', () => ({
-  Image: 'Image',
-}));
-
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => {
-      const map: Record<string, string> = {
-        'common.shareVideo': 'Share video',
-      };
-      return map[key] ?? key;
-    },
-    i18n: { language: 'en' },
-  }),
-}));
-
-jest.mock('@/utils/youtubeNavigation', () => ({
-  buildYouTubeEmbedHtml: jest.fn(() => '<html>embed</html>'),
-  shareYouTubeVideo: jest.fn(),
-  handleYouTubeNavigation: jest.fn(() => true),
-  handleYouTubeOpenWindow: jest.fn(),
-}));
-
-jest.mock('@/constants/webview', () => ({
-  WEBVIEW_BASE_URL: 'https://localhost',
-}));
-
-jest.mock('@/constants/placeholders', () => ({
-  PLACEHOLDER_POSTER: 'https://placeholder.com/poster.png',
-}));
+jest.mock('@/components/youtube/CustomYouTubePlayer', () => {
+  const { View } = require('react-native');
+  return {
+    CustomYouTubePlayer: (props: Record<string, unknown>) => (
+      <View testID="youtube-player" {...props} />
+    ),
+  };
+});
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react-native';
 import { MediaVideoCard } from '../MediaVideoCard';
 import type { MovieVideo } from '@/types';
 
@@ -76,14 +44,44 @@ describe('MediaVideoCard', () => {
     expect(toJSON()).toBeTruthy();
   });
 
-  it('renders video title in collapsed state', () => {
+  it('renders video title', () => {
     render(
       <MediaVideoCard video={makeVideo()} isPlaying={false} onPlay={onPlay} theme={mockTheme} />,
     );
     expect(screen.getByText('Official Trailer')).toBeTruthy();
   });
 
-  it('calls onPlay with video id when pressed', () => {
+  it('passes isActive=false when not playing', () => {
+    render(
+      <MediaVideoCard video={makeVideo()} isPlaying={false} onPlay={onPlay} theme={mockTheme} />,
+    );
+    const player = screen.getByTestId('youtube-player');
+    expect(player.props.isActive).toBe(false);
+    expect(player.props.autoPlay).toBe(false);
+  });
+
+  it('passes isActive=true and autoPlay=true when playing', () => {
+    render(
+      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
+    );
+    const player = screen.getByTestId('youtube-player');
+    expect(player.props.isActive).toBe(true);
+    expect(player.props.autoPlay).toBe(true);
+  });
+
+  it('passes youtubeId to CustomYouTubePlayer', () => {
+    render(
+      <MediaVideoCard
+        video={makeVideo({ youtube_id: 'xyz789' })}
+        isPlaying={false}
+        onPlay={onPlay}
+        theme={mockTheme}
+      />,
+    );
+    expect(screen.getByTestId('youtube-player').props.youtubeId).toBe('xyz789');
+  });
+
+  it('passes onPlay that calls parent onPlay with video id', () => {
     render(
       <MediaVideoCard
         video={makeVideo({ id: 'v42' })}
@@ -92,22 +90,10 @@ describe('MediaVideoCard', () => {
         theme={mockTheme}
       />,
     );
-    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
+    const player = screen.getByTestId('youtube-player');
+    // Simulate CustomYouTubePlayer calling onPlay from thumbnail tap
+    player.props.onPlay();
     expect(onPlay).toHaveBeenCalledWith('v42');
-  });
-
-  it('renders WebView when playing', () => {
-    render(
-      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
-    );
-    expect(screen.getByTestId('webview')).toBeTruthy();
-  });
-
-  it('shows share button when playing', () => {
-    render(
-      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
-    );
-    expect(screen.getByLabelText('Share video')).toBeTruthy();
   });
 
   it('still shows video title when playing', () => {
@@ -117,7 +103,7 @@ describe('MediaVideoCard', () => {
     expect(screen.getByText('Official Trailer')).toBeTruthy();
   });
 
-  it('has correct accessibility label for play', () => {
+  it('renders with different video titles', () => {
     render(
       <MediaVideoCard
         video={makeVideo({ title: 'Title Song' })}
@@ -126,105 +112,6 @@ describe('MediaVideoCard', () => {
         theme={mockTheme}
       />,
     );
-    expect(screen.getByLabelText('Play Title Song')).toBeTruthy();
-  });
-
-  it('renders with null youtube_id using placeholder', () => {
-    const { toJSON } = render(
-      <MediaVideoCard
-        video={makeVideo({ youtube_id: null as any })}
-        isPlaying={false}
-        onPlay={onPlay}
-        theme={mockTheme}
-      />,
-    );
-    expect(toJSON()).toBeTruthy();
-  });
-
-  it('calls shareYouTubeVideo when share button is pressed', () => {
-    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
-    render(
-      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
-    );
-    fireEvent.press(screen.getByLabelText('Share video'));
-    expect(shareYouTubeVideo).toHaveBeenCalledWith('abc123');
-  });
-
-  it('uses placeholder image when youtube_id is null', () => {
-    const { UNSAFE_getAllByType } = render(
-      <MediaVideoCard
-        video={makeVideo({ youtube_id: null as any })}
-        isPlaying={false}
-        onPlay={onPlay}
-        theme={mockTheme}
-      />,
-    );
-    const images = UNSAFE_getAllByType('Image' as any);
-    // Image should exist with placeholder source
-    expect(images.length).toBeGreaterThanOrEqual(1);
-    const src = images[0].props.source?.uri ?? '';
-    expect(src).toBeTruthy();
-  });
-
-  it('renders youtube thumbnail when youtube_id is provided', () => {
-    const { UNSAFE_getAllByType } = render(
-      <MediaVideoCard
-        video={makeVideo({ youtube_id: 'xyz789' })}
-        isPlaying={false}
-        onPlay={onPlay}
-        theme={mockTheme}
-      />,
-    );
-    const images = UNSAFE_getAllByType('Image' as any);
-    const src = images[0].props.source?.uri ?? '';
-    expect(src).toContain('xyz789');
-  });
-
-  it('renders play-circle icon in thumbnail state', () => {
-    const { UNSAFE_getByProps } = render(
-      <MediaVideoCard video={makeVideo()} isPlaying={false} onPlay={onPlay} theme={mockTheme} />,
-    );
-    expect(UNSAFE_getByProps({ name: 'play-circle' })).toBeTruthy();
-  });
-
-  it('onShouldStartLoadWithRequest callback is invoked by WebView', () => {
-    const { handleYouTubeNavigation } = require('@/utils/youtubeNavigation');
-    const { UNSAFE_getByType } = render(
-      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
-    );
-    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
-    if (webview.props.onShouldStartLoadWithRequest) {
-      webview.props.onShouldStartLoadWithRequest({
-        url: 'https://youtube.com',
-        navigationType: 'other',
-      });
-      expect(handleYouTubeNavigation).toHaveBeenCalled();
-    }
-  });
-
-  it('onOpenWindow callback is invoked by WebView', () => {
-    const { handleYouTubeOpenWindow } = require('@/utils/youtubeNavigation');
-    const { UNSAFE_getByType } = render(
-      <MediaVideoCard video={makeVideo()} isPlaying={true} onPlay={onPlay} theme={mockTheme} />,
-    );
-    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
-    if (webview.props.onOpenWindow) {
-      webview.props.onOpenWindow({ nativeEvent: { targetUrl: 'https://youtube.com/watch?v=abc' } });
-      expect(handleYouTubeOpenWindow).toHaveBeenCalled();
-    }
-  });
-
-  it('share button press calls shareYouTubeVideo with correct id', () => {
-    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
-    render(
-      <MediaVideoCard
-        video={makeVideo({ youtube_id: 'xyz789' })}
-        isPlaying={true}
-        onPlay={onPlay}
-        theme={mockTheme}
-      />,
-    );
-    fireEvent.press(screen.getByLabelText('Share video'));
-    expect(shareYouTubeVideo).toHaveBeenCalledWith('xyz789');
+    expect(screen.getByText('Title Song')).toBeTruthy();
   });
 });

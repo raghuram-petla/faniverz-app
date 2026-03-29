@@ -10,10 +10,10 @@ interface FilmStripState {
 }
 
 // @sideeffect setFilmStripEnabled persists to AsyncStorage on every call (fire-and-forget)
-// @invariant filmStripEnabled defaults to true until loadFromStorage completes
+// @invariant filmStripEnabled defaults to false until loadFromStorage completes
 // @coupling reads/writes STORAGE_KEYS.FILM_STRIP_ENABLED — shared key with settings screen
 export const useFilmStripStore = create<FilmStripState>((set) => ({
-  filmStripEnabled: true,
+  filmStripEnabled: false,
   loaded: false,
   setFilmStripEnabled: (enabled) => {
     set({ filmStripEnabled: enabled });
@@ -23,7 +23,7 @@ export const useFilmStripStore = create<FilmStripState>((set) => ({
   },
   loadFromStorage: async () => {
     const stored = await AsyncStorage.getItem(STORAGE_KEYS.FILM_STRIP_ENABLED);
-    // @edge if stored is null (first launch), keeps default true
+    // @edge if stored is null (first launch), keeps default false
     if (stored !== null) {
       set({ filmStripEnabled: stored === 'true' });
     }

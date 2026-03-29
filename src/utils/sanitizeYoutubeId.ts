@@ -3,8 +3,8 @@
  * Returns the ID if valid, empty string if not.
  * @contract: must be called before interpolating youtubeId into URLs or HTML.
  */
-// @boundary XSS prevention — blocks script injection via crafted YouTube IDs in embed iframes
-// @coupling called by buildYouTubeEmbedHtml in youtubeNavigation.ts
+// @boundary XSS prevention — blocks script injection via crafted YouTube IDs
+// @coupling called by CustomYouTubePlayer and getYouTubeThumbnail
 const YOUTUBE_ID_RE = /^[a-zA-Z0-9_-]+$/;
 
 export function sanitizeYoutubeId(youtubeId: string): string {

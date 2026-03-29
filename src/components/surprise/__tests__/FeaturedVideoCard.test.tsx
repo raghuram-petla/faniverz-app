@@ -6,25 +6,6 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-jest.mock('react-native-webview', () => {
-  const { View } = require('react-native');
-  // Expose props so tests can call WebView callbacks
-  return {
-    WebView: (props: {
-      onShouldStartLoadWithRequest?: (req: object) => boolean;
-      onOpenWindow?: (e: object) => void;
-      [key: string]: any;
-    }) => <View testID="webview" {...props} />,
-  };
-});
-
-jest.mock('@/utils/youtubeNavigation', () => ({
-  buildYouTubeEmbedHtml: jest.fn(() => '<html>embed</html>'),
-  shareYouTubeVideo: jest.fn(),
-  handleYouTubeNavigation: jest.fn(() => true),
-  handleYouTubeOpenWindow: jest.fn(),
-}));
-
 jest.mock('@/constants/surpriseHelpers', () => ({
   getCategoryColor: () => '#FF0000',
   getCategoryLabel: () => 'Behind the Scenes',
@@ -32,8 +13,29 @@ jest.mock('@/constants/surpriseHelpers', () => ({
   formatViews: (n: number) => `${n}`,
 }));
 
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+}));
+
+jest.mock('@/theme/colors', () => ({
+  colors: new Proxy({}, { get: () => '#000' }),
+}));
+
+let capturedOnPlay: (() => void) | undefined;
+
+jest.mock('@/components/youtube/CustomYouTubePlayer', () => {
+  const { View } = require('react-native');
+  return {
+    CustomYouTubePlayer: (props: Record<string, unknown>) => {
+      // Capture onPlay so tests can simulate the thumbnail tap
+      capturedOnPlay = props.onPlay as (() => void) | undefined;
+      return <View testID="youtube-player" {...props} />;
+    },
+  };
+});
+
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, act } from '@testing-library/react-native';
 import { FeaturedVideoCard } from '../FeaturedVideoCard';
 
 const mockStyles = new Proxy({}, { get: () => ({}) });
@@ -47,6 +49,10 @@ const mockItem = {
 } as any;
 
 describe('FeaturedVideoCard', () => {
+  beforeEach(() => {
+    capturedOnPlay = undefined;
+  });
+
   it('renders item title', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
     expect(screen.getByText('Making of Pushpa 2')).toBeTruthy();
@@ -67,26 +73,37 @@ describe('FeaturedVideoCard', () => {
     expect(screen.getByText('Behind the scenes footage')).toBeTruthy();
   });
 
-  it('renders "Play video" accessibility label', () => {
+  it('starts in idle mode (isActive=false on CustomYouTubePlayer)', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
+    const player = screen.getByTestId('youtube-player');
+    expect(player.props.isActive).toBe(false);
   });
 
-  it('activates video player after pressing play', () => {
+  it('activates player when onPlay is called', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    const playButton = screen.getByLabelText('common.playVideo');
-    fireEvent.press(playButton);
-    // After pressing play, the WebView component should be rendered
-    expect(screen.queryByLabelText('common.playVideo')).toBeNull();
+    expect(screen.getByTestId('youtube-player').props.isActive).toBe(false);
+
+    // Simulate thumbnail tap via captured onPlay callback
+    act(() => {
+      capturedOnPlay?.();
+    });
+
+    expect(screen.getByTestId('youtube-player').props.isActive).toBe(true);
+    expect(screen.getByTestId('youtube-player').props.autoPlay).toBe(true);
   });
 
-  it('renders thumbnail image before activation', () => {
-    const { UNSAFE_getAllByType } = render(
-      <FeaturedVideoCard item={mockItem} styles={mockStyles} />,
-    );
-    const { Image } = require('expo-image');
-    const images = UNSAFE_getAllByType(Image);
-    expect(images.length).toBeGreaterThanOrEqual(1);
+  it('uses fallback video ID when youtube_id is null', () => {
+    const noYoutubeItem = { ...mockItem, youtube_id: null };
+    render(<FeaturedVideoCard item={noYoutubeItem} styles={mockStyles} />);
+    const player = screen.getByTestId('youtube-player');
+    // FALLBACK_VIDEO_ID = 'roYRXbhxhlM'
+    expect(player.props.youtubeId).toBe('roYRXbhxhlM');
+  });
+
+  it('passes youtube_id directly when present', () => {
+    const withIdItem = { ...mockItem, youtube_id: 'realId123' };
+    render(<FeaturedVideoCard item={withIdItem} styles={mockStyles} />);
+    expect(screen.getByTestId('youtube-player').props.youtubeId).toBe('realId123');
   });
 
   it('does not render description when item.description is falsy', () => {
@@ -95,100 +112,10 @@ describe('FeaturedVideoCard', () => {
     expect(screen.queryByText('Behind the scenes footage')).toBeNull();
   });
 
-  it('uses fallback video ID when youtube_id is null', () => {
-    const noYoutubeItem = { ...mockItem, youtube_id: null };
-    render(<FeaturedVideoCard item={noYoutubeItem} styles={mockStyles} />);
-    // Should still render the play button with the fallback video
-    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
-  });
-
-  it('renders share button after video activation', () => {
-    render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    fireEvent.press(screen.getByLabelText('common.playVideo'));
-    // Share button should be visible
-    expect(screen.getByLabelText('common.shareVideo')).toBeTruthy();
-  });
-
-  it('shows thumbnail play button when youtube_id is present', () => {
-    const itemWithYoutube = { ...mockItem, youtube_id: 'abc123' };
-    render(<FeaturedVideoCard item={itemWithYoutube} styles={mockStyles} />);
-    // Should show play button in thumbnail state
-    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
-  });
-
-  it('shows thumbnail play button when youtube_id is null (uses fallback)', () => {
-    const noYoutubeItem = { ...mockItem, youtube_id: null };
-    render(<FeaturedVideoCard item={noYoutubeItem} styles={mockStyles} />);
-    // Should still render thumbnail mode with play button using fallback video id
-    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
-  });
-
-  it('WebView replaces thumbnail after activation', () => {
-    render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
-    fireEvent.press(screen.getByLabelText('common.playVideo'));
-    // After activation, the play button should be gone (WebView took over)
-    expect(screen.queryByLabelText('common.playVideo')).toBeNull();
-  });
-
-  it('onNavRequest callback delegates to handleYouTubeNavigation', () => {
-    const { handleYouTubeNavigation } = require('@/utils/youtubeNavigation');
-    const { UNSAFE_getByType } = render(
-      <FeaturedVideoCard item={{ ...mockItem, youtube_id: 'vid123' }} styles={mockStyles} />,
-    );
-    fireEvent.press(screen.getByLabelText('common.playVideo'));
-    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
-    if (webview.props.onShouldStartLoadWithRequest) {
-      webview.props.onShouldStartLoadWithRequest({
-        url: 'https://youtube.com',
-        navigationType: 'click',
-      });
-      expect(handleYouTubeNavigation).toHaveBeenCalled();
-    }
-  });
-
-  it('onOpenWindow callback delegates to handleYouTubeOpenWindow', () => {
-    const { handleYouTubeOpenWindow } = require('@/utils/youtubeNavigation');
-    const { UNSAFE_getByType } = render(
-      <FeaturedVideoCard item={{ ...mockItem, youtube_id: 'vid123' }} styles={mockStyles} />,
-    );
-    fireEvent.press(screen.getByLabelText('common.playVideo'));
-    const webview = UNSAFE_getByType(require('react-native-webview').WebView);
-    if (webview.props.onOpenWindow) {
-      webview.props.onOpenWindow({
-        nativeEvent: { targetUrl: 'https://youtube.com/watch?v=vid123' },
-      });
-      expect(handleYouTubeOpenWindow).toHaveBeenCalled();
-    }
-  });
-
-  it('share button press calls shareYouTubeVideo', () => {
-    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
-    render(<FeaturedVideoCard item={{ ...mockItem, youtube_id: 'vid123' }} styles={mockStyles} />);
-    fireEvent.press(screen.getByLabelText('common.playVideo'));
-    fireEvent.press(screen.getByLabelText('common.shareVideo'));
-    expect(shareYouTubeVideo).toHaveBeenCalledWith('vid123');
-  });
-
-  it('share uses fallback video ID when youtube_id is null', () => {
-    const { shareYouTubeVideo } = require('@/utils/youtubeNavigation');
-    render(<FeaturedVideoCard item={{ ...mockItem, youtube_id: null }} styles={mockStyles} />);
-    fireEvent.press(screen.getByLabelText('common.playVideo'));
-    fireEvent.press(screen.getByLabelText('common.shareVideo'));
-    // FALLBACK_VIDEO_ID = 'roYRXbhxhlM'
-    expect(shareYouTubeVideo).toHaveBeenCalledWith('roYRXbhxhlM');
-  });
-
   it('does not render description when it is an empty string', () => {
     const emptyDescItem = { ...mockItem, description: '' };
     render(<FeaturedVideoCard item={emptyDescItem} styles={mockStyles} />);
-    // Empty string is falsy — description block should not render
     expect(screen.queryByText('Behind the scenes footage')).toBeNull();
-  });
-
-  it('renders with youtube_id set directly (not using fallback)', () => {
-    const withIdItem = { ...mockItem, youtube_id: 'realId123' };
-    render(<FeaturedVideoCard item={withIdItem} styles={mockStyles} />);
-    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
   });
 
   it('renders description when it is a non-empty string', () => {
@@ -197,12 +124,11 @@ describe('FeaturedVideoCard', () => {
     expect(screen.getByText('Full description text here')).toBeTruthy();
   });
 
-  it('uses PLACEHOLDER_POSTER as thumbnail when videoId is falsy empty string', () => {
-    // videoId = item.youtube_id ?? FALLBACK => when youtube_id is '' (empty string),
-    // ?? does NOT trigger ('' is not null/undefined), so videoId = ''
-    // Then thumbnailUrl = '' ? ... : PLACEHOLDER_POSTER => false branch hit
-    const emptyYoutubeItem = { ...mockItem, youtube_id: '' };
-    render(<FeaturedVideoCard item={emptyYoutubeItem} styles={mockStyles} />);
-    expect(screen.getByLabelText('common.playVideo')).toBeTruthy();
+  it('passes maxresdefault thumbnail to CustomYouTubePlayer', () => {
+    const withIdItem = { ...mockItem, youtube_id: 'abc123' };
+    render(<FeaturedVideoCard item={withIdItem} styles={mockStyles} />);
+    const player = screen.getByTestId('youtube-player');
+    expect(player.props.thumbnailUrl).toContain('maxresdefault');
+    expect(player.props.thumbnailUrl).toContain('abc123');
   });
 });

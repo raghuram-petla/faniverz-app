@@ -1,8 +1,3 @@
-jest.mock('react-native-webview', () => {
-  const { View } = require('react-native');
-  return { WebView: (props: Record<string, unknown>) => <View testID="webview" {...props} /> };
-});
-
 jest.mock('@/styles/movieMedia.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
@@ -20,21 +15,13 @@ jest.mock('@/theme/colors', () => ({
   colors: new Proxy({}, { get: () => '#000' }),
 }));
 
-jest.mock('@expo/vector-icons', () => ({
-  Ionicons: 'Ionicons',
-  MaterialIcons: 'MaterialIcons',
-}));
-
-jest.mock('expo-image', () => ({
-  Image: 'Image',
-}));
-
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
       const map: Record<string, string> = {
         'movieDetail.noVideosYet': 'No videos available yet',
         'movieDetail.noVideosInCategory': 'No videos in this category',
+        'common.playVideo': 'Play video',
         'common.shareVideo': 'Share video',
       };
       return map[key] ?? key;
@@ -43,20 +30,25 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
-jest.mock('@/utils/youtubeNavigation', () => ({
-  buildYouTubeEmbedHtml: jest.fn(() => '<html>embed</html>'),
-  shareYouTubeVideo: jest.fn(),
-  handleYouTubeNavigation: jest.fn(() => true),
-  handleYouTubeOpenWindow: jest.fn(),
-}));
-
-jest.mock('@/constants/webview', () => ({
-  WEBVIEW_BASE_URL: 'https://localhost',
-}));
-
-jest.mock('@/constants/placeholders', () => ({
-  PLACEHOLDER_POSTER: 'https://placeholder.com/poster.png',
-}));
+jest.mock('@/components/youtube/CustomYouTubePlayer', () => {
+  const { View } = require('react-native');
+  return {
+    CustomYouTubePlayer: (props: Record<string, unknown>) => {
+      // Simulate idle mode: render a pressable play button so tests can tap to play
+      if (!props.isActive && typeof props.onPlay === 'function') {
+        const { TouchableOpacity } = require('react-native');
+        return (
+          <TouchableOpacity
+            testID="youtube-player-idle"
+            onPress={props.onPlay as () => void}
+            accessibilityLabel={`Play video`}
+          />
+        );
+      }
+      return <View testID="youtube-player-active" {...props} />;
+    },
+  };
+});
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -125,28 +117,26 @@ describe('MediaVideosTab', () => {
     expect(screen.queryByText('Songs')).toBeNull();
   });
 
-  it('plays video when tapped', () => {
+  it('plays video when tapped via CustomYouTubePlayer onPlay', () => {
     render(<MediaVideosTab videosByType={videosByType} activeCategory="All" />);
-    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
-    expect(screen.getByTestId('webview')).toBeTruthy();
-  });
-
-  it('stops playing video when tapped again (toggle)', () => {
-    render(<MediaVideosTab videosByType={videosByType} activeCategory="All" />);
-    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
-    expect(screen.getByTestId('webview')).toBeTruthy();
-    // Re-pressing should not be possible since the WebView is now showing,
-    // but we can verify the initial play works
+    // All videos start idle
+    const idlePlayers = screen.getAllByTestId('youtube-player-idle');
+    expect(idlePlayers.length).toBeGreaterThan(0);
+    // Tap first video's play button
+    fireEvent.press(idlePlayers[0]);
+    // Should now have an active player
+    expect(screen.getByTestId('youtube-player-active')).toBeTruthy();
   });
 
   it('stops playing video when activeCategory changes', () => {
     const { rerender } = render(
       <MediaVideosTab videosByType={videosByType} activeCategory="All" />,
     );
-    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
-    expect(screen.getByTestId('webview')).toBeTruthy();
+    const idlePlayers = screen.getAllByTestId('youtube-player-idle');
+    fireEvent.press(idlePlayers[0]);
+    expect(screen.getByTestId('youtube-player-active')).toBeTruthy();
     rerender(<MediaVideosTab videosByType={videosByType} activeCategory="Song" />);
-    expect(screen.queryByTestId('webview')).toBeNull();
+    expect(screen.queryByTestId('youtube-player-active')).toBeNull();
   });
 
   it('renders multiple videos within a group', () => {
@@ -155,41 +145,25 @@ describe('MediaVideosTab', () => {
     expect(screen.getByText('Trailer 2')).toBeTruthy();
   });
 
-  it('pauses video when same video tapped again (toggle off)', () => {
-    render(<MediaVideosTab videosByType={videosByType} activeCategory="Trailer" />);
-    // Play first video
-    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
-    expect(screen.getByTestId('webview')).toBeTruthy();
-    // Now play second video (which stops first, plays second)
-    fireEvent.press(screen.getByLabelText('Play Trailer 2'));
-    // The Official Trailer should no longer be playing (only Trailer 2's webview shows)
-    expect(screen.getByTestId('webview')).toBeTruthy();
-  });
-
-  it('shows no videos empty state when filtered to non-existent category with data present', () => {
+  it('shows no videos empty state when filtered to non-existent category', () => {
     render(<MediaVideosTab videosByType={videosByType} activeCategory="Featurette" />);
     expect(screen.getByText('No videos in this category')).toBeTruthy();
   });
 
   it('does not show section headers when a specific category is active', () => {
     render(<MediaVideosTab videosByType={videosByType} activeCategory="Trailer" />);
-    // When filtering to a specific category, section title is hidden
     expect(screen.queryByText('Trailers')).toBeNull();
-    // But videos in that category still render
     expect(screen.getByText('Official Trailer')).toBeTruthy();
-    expect(screen.getByText('Trailer 2')).toBeTruthy();
   });
 
   it('resets playing video when activeCategory changes', () => {
     const { rerender } = render(
       <MediaVideosTab videosByType={videosByType} activeCategory="All" />,
     );
-    // Play a video
-    fireEvent.press(screen.getByLabelText('Play Official Trailer'));
-    expect(screen.getByTestId('webview')).toBeTruthy();
-    // Switch category — playing video should be reset
+    const idlePlayers = screen.getAllByTestId('youtube-player-idle');
+    fireEvent.press(idlePlayers[0]);
+    expect(screen.getByTestId('youtube-player-active')).toBeTruthy();
     rerender(<MediaVideosTab videosByType={videosByType} activeCategory="Trailer" />);
-    // No webview since playingVideoId was reset to null
-    expect(screen.queryByTestId('webview')).toBeNull();
+    expect(screen.queryByTestId('youtube-player-active')).toBeNull();
   });
 });

@@ -203,11 +203,13 @@ function FeedCardInner({
 
             {/* Media: full bleed within film frame */}
             {hasVideo ? (
-              <FeedVideoPlayer
-                youtubeId={item.youtube_id!}
-                thumbnailUrl={item.thumbnail_url}
-                isActive={isVideoActive ?? false}
-              />
+              <View style={styles.mediaContainer}>
+                <FeedVideoPlayer
+                  youtubeId={item.youtube_id!}
+                  thumbnailUrl={item.thumbnail_url}
+                  isActive={isVideoActive ?? false}
+                />
+              </View>
             ) : isPosterImage ? (
               <TouchableOpacity
                 activeOpacity={1}
