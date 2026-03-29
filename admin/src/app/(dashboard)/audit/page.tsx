@@ -7,12 +7,8 @@ import { useEffectiveUser } from '@/hooks/useImpersonation';
 import { AUDIT_ENTITY_TYPES, ADMIN_ROLE_LABELS } from '@/lib/types';
 import type { AdminRoleId } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import {
-  actionStyles,
-  formatDetails,
-  getEntityDisplayName,
-  canRevert,
-} from '@/components/audit/auditUtils';
+import { actionStyles, getEntityDisplayName, canRevert } from '@/components/audit/auditUtils';
+import { ChangeDetails } from '@/components/audit/ChangeDetails';
 import { RevertButton } from '@/components/audit/RevertButton';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
@@ -250,14 +246,7 @@ export default function AuditLogPage() {
                       <tr key={`${entry.id}-details`} className="border-b border-outline-subtle">
                         <td colSpan={6} className="px-6 py-4 bg-surface">
                           <div className="space-y-3">
-                            <p className="text-xs font-medium text-on-surface-subtle uppercase tracking-wider">
-                              {entry.action === 'update' ? 'Changes' : 'Details'}
-                            </p>
-                            <div className="overflow-x-auto max-h-60 rounded-lg">
-                              <pre className="text-sm text-on-surface-muted bg-surface-elevated p-4 font-mono whitespace-pre w-max min-w-full">
-                                {formatDetails(entry.action, entry.details)}
-                              </pre>
-                            </div>
+                            <ChangeDetails action={entry.action} details={entry.details} />
                             {!isReadOnly && canRevert(entry.action, entry.details) && (
                               <RevertButton
                                 entryId={entry.id}

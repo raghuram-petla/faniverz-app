@@ -141,6 +141,12 @@ vi.mock('@/components/audit/RevertButton', () => ({
   RevertButton: () => <button>Revert</button>,
 }));
 
+vi.mock('@/components/audit/ChangeDetails', () => ({
+  ChangeDetails: ({ action }: { action: string; details: Record<string, unknown> }) => (
+    <div data-testid="change-details">{action} details rendered</div>
+  ),
+}));
+
 vi.mock('@/components/audit/auditUtils', () => ({
   actionStyles: {
     create: { bg: 'bg-green', text: 'text-green' },
@@ -148,7 +154,6 @@ vi.mock('@/components/audit/auditUtils', () => ({
     delete: { bg: 'bg-red', text: 'text-red' },
     sync: { bg: 'bg-purple', text: 'text-purple' },
   },
-  formatDetails: vi.fn().mockReturnValue('formatted details'),
   getEntityDisplayName: vi.fn().mockReturnValue(null),
   canRevert: vi.fn().mockReturnValue(false),
 }));
@@ -264,18 +269,18 @@ describe('AuditLogPage', () => {
     const row = screen.getByText('Pushpa 2').closest('tr')!;
     fireEvent.click(row);
 
-    // Details should be visible
-    expect(screen.getByText('Changes')).toBeInTheDocument();
-    expect(screen.getByText('formatted details')).toBeInTheDocument();
+    // Details should be visible via ChangeDetails component
+    expect(screen.getByTestId('change-details')).toBeInTheDocument();
+    expect(screen.getByText('update details rendered')).toBeInTheDocument();
   });
 
   it('collapses expanded row on second click', () => {
     renderWithProviders(<AuditLogPage />);
     const row = screen.getByText('Pushpa 2').closest('tr')!;
     fireEvent.click(row);
-    expect(screen.getByText('Changes')).toBeInTheDocument();
+    expect(screen.getByTestId('change-details')).toBeInTheDocument();
     fireEvent.click(row);
-    expect(screen.queryByText('Changes')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('change-details')).not.toBeInTheDocument();
   });
 
   it('shows impersonation trail when impersonating_role is set', () => {
@@ -331,7 +336,7 @@ describe('AuditLogPage', () => {
     expect(screen.getByText(/Showing 1 entry/)).toBeInTheDocument();
   });
 
-  it('shows "Details" label for non-update actions', () => {
+  it('renders ChangeDetails for non-update actions', () => {
     mockAuditData.pages = [
       [
         {
@@ -356,7 +361,7 @@ describe('AuditLogPage', () => {
     renderWithProviders(<AuditLogPage />);
     const row = screen.getByText('Salaar').closest('tr')!;
     fireEvent.click(row);
-    expect(screen.getByText('Details')).toBeInTheDocument();
+    expect(screen.getByText('create details rendered')).toBeInTheDocument();
     // Restore
     mockAuditData.pages = [
       [
