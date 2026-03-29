@@ -38,7 +38,7 @@ export default function MediaScreen() {
   // @boundary: id from URL param — empty string returns null from API
   const { data: movie, isLoading } = useMovieDetail(id ?? '');
 
-  const [activeTab, setActiveTab] = useState<MediaTabName>('videos');
+  const [activeTab, setActiveTab] = useState<MediaTabName>('photos');
   // @invariant: 'All' must be the first category; other categories are derived from VIDEO_TYPES
   const [activeCategory, setActiveCategory] = useState('All');
   const scrollOffset = useSharedValue(0);
@@ -100,10 +100,10 @@ export default function MediaScreen() {
 
   const videoCount = movie.videos.length;
   const photoCount = movie.posters.length;
-  const mediaTabs: MediaTabName[] = ['videos', 'photos'];
+  const mediaTabs: MediaTabName[] = ['photos', 'videos'];
   const mediaTabLabels: Record<MediaTabName, string> = {
-    videos: `${t('movieDetail.videos')} (${videoCount})`,
     photos: `${t('movieDetail.photos')} (${photoCount})`,
+    videos: `${t('movieDetail.videos')} (${videoCount})`,
   };
 
   return (

@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { useImageViewer } from '@/providers/ImageViewerProvider';
+import { measureView } from '@/utils/measureView';
 import { MediaFilterPills } from '@/components/movie/detail/MediaFilterPills';
 import type { MoviePoster } from '@/types';
 import { createStyles } from '@/styles/movieMedia.styles';
@@ -51,25 +52,20 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
   /** @boundary Measures source thumbnail in window coords to animate zoom transition */
   const handlePosterPress = useCallback(
     (poster: MoviePoster, ref: React.RefObject<View | null>) => {
-      /** @edge ref.current may be null if View unmounted during rapid scrolling */
-      /* istanbul ignore next */ if (!ref.current) return;
-      ref.current.measureInWindow((x: number, y: number, width: number, height: number) => {
+      const isBackdrop = poster.image_type === 'backdrop';
+      const imageBucket = isBackdrop ? 'BACKDROPS' : 'POSTERS';
+      measureView(ref, (layout) => {
         openImage({
           feedUrl:
-            getImageUrl(
-              poster.image_url,
-              'sm',
-              poster.image_type === 'backdrop' ? 'BACKDROPS' : 'POSTERS',
-            ) ?? /* istanbul ignore next */ poster.image_url,
+            getImageUrl(poster.image_url, 'md', imageBucket) ??
+            /* istanbul ignore next */ poster.image_url,
           fullUrl:
-            getImageUrl(
-              poster.image_url,
-              'original',
-              poster.image_type === 'backdrop' ? 'BACKDROPS' : 'POSTERS',
-            ) ?? /* istanbul ignore next */ poster.image_url,
-          sourceLayout: { x, y, width, height },
+            getImageUrl(poster.image_url, 'original', imageBucket) ??
+            /* istanbul ignore next */ poster.image_url,
+          sourceLayout: layout,
           sourceRef: ref,
-          borderRadius: 8,
+          borderRadius: 0,
+          isLandscape: isBackdrop,
           onSourceHide: () => setHiddenId(poster.id),
           onSourceShow: () => setHiddenId(null),
         });
@@ -104,44 +100,48 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
           return (
             <TouchableOpacity
               key={poster.id}
-              ref={ref as React.RefObject<View>}
-              style={[
-                isBackdrop ? styles.photoCardBackdrop : styles.photoCard,
-                hiddenId === poster.id && /* istanbul ignore next */ { opacity: 0 },
-              ]}
               onPress={() => handlePosterPress(poster, ref)}
-              activeOpacity={0.8}
+              activeOpacity={1}
               accessibilityLabel={`View ${poster.title}`}
             >
-              <Image
-                source={{
-                  uri:
-                    getImageUrl(poster.image_url, 'sm', isBackdrop ? 'BACKDROPS' : 'POSTERS') ??
-                    PLACEHOLDER_POSTER,
-                }}
-                style={[styles.photoImage, { aspectRatio }]}
-                contentFit="cover"
-              />
-              {poster.is_main_poster && (
-                <View style={styles.mainBadge}>
-                  <Ionicons name="star" size={10} color={colors.yellow400} />
-                  <Text style={styles.mainBadgeText}>Main Poster</Text>
-                </View>
-              )}
-              {poster.is_main_backdrop && (
-                <View style={styles.mainBadge}>
-                  <Ionicons name="star" size={10} color={colors.blue400} />
-                  <Text style={styles.mainBadgeTextBlue}>Main Backdrop</Text>
-                </View>
-              )}
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.7)']}
-                style={styles.photoOverlay}
+              <View
+                ref={ref as React.RefObject<View>}
+                collapsable={false}
+                style={[
+                  isBackdrop ? styles.photoCardBackdrop : styles.photoCard,
+                  hiddenId === poster.id && /* istanbul ignore next */ { opacity: 0 },
+                ]}
               >
-                <Text style={styles.photoTitle} numberOfLines={1}>
-                  {poster.title}
-                </Text>
-              </LinearGradient>
+                <Image
+                  source={{
+                    uri:
+                      getImageUrl(poster.image_url, 'md', isBackdrop ? 'BACKDROPS' : 'POSTERS') ??
+                      PLACEHOLDER_POSTER,
+                  }}
+                  style={[styles.photoImage, { aspectRatio }]}
+                  contentFit="cover"
+                />
+                {poster.is_main_poster && (
+                  <View style={styles.mainBadge}>
+                    <Ionicons name="star" size={10} color={colors.yellow400} />
+                    <Text style={styles.mainBadgeText}>Main Poster</Text>
+                  </View>
+                )}
+                {poster.is_main_backdrop && (
+                  <View style={styles.mainBadge}>
+                    <Ionicons name="star" size={10} color={colors.blue400} />
+                    <Text style={styles.mainBadgeTextBlue}>Main Backdrop</Text>
+                  </View>
+                )}
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.7)']}
+                  style={styles.photoOverlay}
+                >
+                  <Text style={styles.photoTitle} numberOfLines={1}>
+                    {poster.title}
+                  </Text>
+                </LinearGradient>
+              </View>
             </TouchableOpacity>
           );
         })}

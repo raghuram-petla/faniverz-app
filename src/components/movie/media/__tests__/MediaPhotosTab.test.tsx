@@ -45,6 +45,11 @@ jest.mock('@/providers/ImageViewerProvider', () => ({
   useImageViewer: () => ({ openImage: mockOpenImage, closeImage: jest.fn() }),
 }));
 
+const mockMeasureView = jest.fn();
+jest.mock('@/utils/measureView', () => ({
+  measureView: (...args: unknown[]) => mockMeasureView(...args),
+}));
+
 const mockGetImageUrl = jest.fn((url: string | null) => url);
 jest.mock('@shared/imageUrl', () => ({
   get getImageUrl() {
@@ -245,13 +250,13 @@ describe('MediaPhotosTab', () => {
     const backdrop = makePoster({ id: 'bd1', title: 'BD', image_type: 'backdrop' });
     render(<MediaPhotosTab posters={[backdrop]} />);
     // getImageUrl is called when rendering the image — verify it was called for this poster
-    expect(mockGetImageUrl).toHaveBeenCalledWith(expect.anything(), 'sm', 'BACKDROPS');
+    expect(mockGetImageUrl).toHaveBeenCalledWith(expect.anything(), 'md', 'BACKDROPS');
   });
 
   it('builds correct feedUrl using POSTERS bucket for poster image type', () => {
     const poster = makePoster({ id: 'ps1', title: 'PS', image_type: 'poster' });
     render(<MediaPhotosTab posters={[poster]} />);
-    expect(mockGetImageUrl).toHaveBeenCalledWith(expect.anything(), 'sm', 'POSTERS');
+    expect(mockGetImageUrl).toHaveBeenCalledWith(expect.anything(), 'md', 'POSTERS');
   });
 
   it('hides poster card (opacity 0) when hiddenId matches poster id (covered via ref interaction)', () => {
@@ -296,133 +301,94 @@ describe('MediaPhotosTab', () => {
     expect(screen.getByLabelText('View Poster Card')).toBeTruthy();
   });
 
-  it('handlePosterPress calls openImage when ref has measureInWindow', () => {
+  it('handlePosterPress calls openImage via measureView with correct params', () => {
+    mockMeasureView.mockImplementation(
+      (
+        _ref: unknown,
+        onMeasured: (layout: { x: number; y: number; width: number; height: number }) => void,
+      ) => {
+        onMeasured({ x: 10, y: 20, width: 200, height: 300 });
+      },
+    );
     const poster = makePoster({ id: 'p-measure', title: 'Measurable Poster' });
     render(<MediaPhotosTab posters={[poster]} />);
 
-    // Get the card element and find its internal node to set the ref
-    const { TouchableOpacity } = require('react-native');
-    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
-
-    // Find all touchable opacity elements with onPress
-    const pressables = UNSAFE_root.findAll(
-      (node: { type: unknown; props: Record<string, unknown> }) =>
-        node.type === TouchableOpacity &&
-        typeof node.props.onPress === 'function' &&
-        node.props.accessibilityLabel === 'View Measurable Poster',
+    fireEvent.press(screen.getByLabelText('View Measurable Poster'));
+    expect(mockOpenImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fullUrl: 'https://example.com/poster.jpg',
+        borderRadius: 0,
+        isLandscape: false,
+        sourceLayout: { x: 10, y: 20, width: 200, height: 300 },
+      }),
     );
-
-    if (pressables.length > 0) {
-      // The ref prop on the TouchableOpacity is a React ref object
-      const refProp = pressables[0].props.ref;
-      if (refProp && typeof refProp === 'object') {
-        // Set the ref's current to a mock with measureInWindow
-        (refProp as { current: unknown }).current = {
-          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
-            cb(10, 20, 200, 300);
-          },
-        };
-        // Now press — this should trigger handlePosterPress with a non-null ref
-        pressables[0].props.onPress();
-        expect(mockOpenImage).toHaveBeenCalledWith(
-          expect.objectContaining({
-            fullUrl: 'https://example.com/poster.jpg',
-            borderRadius: 8,
-          }),
-        );
-      }
-    }
+    mockMeasureView.mockReset();
   });
 
   it('handlePosterPress onSourceHide/Show callbacks manage hiddenId state', () => {
-    const poster = makePoster({ id: 'p-hide', title: 'Hideable' });
-    const { TouchableOpacity } = require('react-native');
-    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
-
-    const pressables = UNSAFE_root.findAll(
-      (node: { type: unknown; props: Record<string, unknown> }) =>
-        node.type === TouchableOpacity &&
-        typeof node.props.onPress === 'function' &&
-        node.props.accessibilityLabel === 'View Hideable',
+    mockMeasureView.mockImplementation(
+      (
+        _ref: unknown,
+        onMeasured: (layout: { x: number; y: number; width: number; height: number }) => void,
+      ) => {
+        onMeasured({ x: 0, y: 0, width: 100, height: 150 });
+      },
     );
+    const poster = makePoster({ id: 'p-hide', title: 'Hideable' });
+    render(<MediaPhotosTab posters={[poster]} />);
 
-    if (pressables.length > 0) {
-      const refProp = pressables[0].props.ref;
-      if (refProp && typeof refProp === 'object') {
-        (refProp as { current: unknown }).current = {
-          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
-            cb(0, 0, 100, 150);
-          },
-        };
-        pressables[0].props.onPress();
-        if (mockOpenImage.mock.calls.length > 0) {
-          const args = mockOpenImage.mock.calls[mockOpenImage.mock.calls.length - 1][0];
-          args.onSourceHide();
-          args.onSourceShow();
-        }
-      }
-    }
+    fireEvent.press(screen.getByLabelText('View Hideable'));
     expect(mockOpenImage).toHaveBeenCalled();
+    const args = mockOpenImage.mock.calls[mockOpenImage.mock.calls.length - 1][0];
+    args.onSourceHide();
+    args.onSourceShow();
+    mockMeasureView.mockReset();
   });
 
-  it('handlePosterPress passes BACKDROPS bucket for backdrop image type', () => {
-    const poster = makePoster({ id: 'bd-press', title: 'BD Press', image_type: 'backdrop' });
-    const { TouchableOpacity } = require('react-native');
-    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
-
-    const pressables = UNSAFE_root.findAll(
-      (node: { type: unknown; props: Record<string, unknown> }) =>
-        node.type === TouchableOpacity &&
-        typeof node.props.onPress === 'function' &&
-        node.props.accessibilityLabel === 'View BD Press',
+  it('handlePosterPress passes isLandscape true and BACKDROPS bucket for backdrop image type', () => {
+    mockMeasureView.mockImplementation(
+      (
+        _ref: unknown,
+        onMeasured: (layout: { x: number; y: number; width: number; height: number }) => void,
+      ) => {
+        onMeasured({ x: 0, y: 0, width: 100, height: 56 });
+      },
     );
+    const poster = makePoster({ id: 'bd-press', title: 'BD Press', image_type: 'backdrop' });
+    render(<MediaPhotosTab posters={[poster]} />);
 
-    if (pressables.length > 0) {
-      const refProp = pressables[0].props.ref;
-      if (refProp && typeof refProp === 'object') {
-        (refProp as { current: unknown }).current = {
-          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
-            cb(0, 0, 100, 56);
-          },
-        };
-        pressables[0].props.onPress();
-        // Verify getImageUrl was called with BACKDROPS for feedUrl
-        expect(mockGetImageUrl).toHaveBeenCalledWith(expect.anything(), 'sm', 'BACKDROPS');
-      }
-    }
+    fireEvent.press(screen.getByLabelText('View BD Press'));
+    expect(mockOpenImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isLandscape: true,
+        borderRadius: 0,
+      }),
+    );
+    expect(mockGetImageUrl).toHaveBeenCalledWith(expect.anything(), 'md', 'BACKDROPS');
+    mockMeasureView.mockReset();
   });
 
   it('handlePosterPress uses raw image_url when getImageUrl returns null for feedUrl', () => {
-    const poster = makePoster({ id: 'p-null-url', title: 'Null URL', image_url: 'raw-url.jpg' });
-    const { TouchableOpacity } = require('react-native');
-    mockGetImageUrl.mockImplementation(() => null);
-    const { UNSAFE_root } = render(<MediaPhotosTab posters={[poster]} />);
-
-    const pressables = UNSAFE_root.findAll(
-      (node: { type: unknown; props: Record<string, unknown> }) =>
-        node.type === TouchableOpacity &&
-        typeof node.props.onPress === 'function' &&
-        node.props.accessibilityLabel === 'View Null URL',
+    mockMeasureView.mockImplementation(
+      (
+        _ref: unknown,
+        onMeasured: (layout: { x: number; y: number; width: number; height: number }) => void,
+      ) => {
+        onMeasured({ x: 0, y: 0, width: 100, height: 150 });
+      },
     );
+    mockGetImageUrl.mockImplementation(() => null);
+    const poster = makePoster({ id: 'p-null-url', title: 'Null URL', image_url: 'raw-url.jpg' });
+    render(<MediaPhotosTab posters={[poster]} />);
 
-    if (pressables.length > 0) {
-      const refProp = pressables[0].props.ref;
-      if (refProp && typeof refProp === 'object') {
-        (refProp as { current: unknown }).current = {
-          measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => {
-            cb(0, 0, 100, 150);
-          },
-        };
-        pressables[0].props.onPress();
-        // feedUrl should fall back to poster.image_url since getImageUrl returned null
-        expect(mockOpenImage).toHaveBeenCalledWith(
-          expect.objectContaining({
-            feedUrl: 'raw-url.jpg',
-          }),
-        );
-      }
-    }
+    fireEvent.press(screen.getByLabelText('View Null URL'));
+    expect(mockOpenImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feedUrl: 'raw-url.jpg',
+      }),
+    );
     mockGetImageUrl.mockImplementation((url: string | null) => url);
+    mockMeasureView.mockReset();
   });
 
   it('renders poster with both is_main_poster and is_main_backdrop false (no badges)', () => {

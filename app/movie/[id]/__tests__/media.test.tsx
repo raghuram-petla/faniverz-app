@@ -125,17 +125,17 @@ describe('MediaScreen', () => {
     expect(screen.getByText('Photos (1)')).toBeTruthy();
   });
 
-  it('defaults to Videos tab', () => {
+  it('defaults to Photos tab', () => {
     render(<MediaScreen />);
-    expect(screen.getByText('Official Trailer')).toBeTruthy();
-    expect(screen.getByText('Title Song')).toBeTruthy();
-  });
-
-  it('switches to Photos tab on press', () => {
-    render(<MediaScreen />);
-    fireEvent.press(screen.getByText('Photos (1)'));
     expect(screen.getByLabelText('View First Look')).toBeTruthy();
     expect(screen.getByText('Main Poster')).toBeTruthy();
+  });
+
+  it('switches to Videos tab on press', () => {
+    render(<MediaScreen />);
+    fireEvent.press(screen.getByText('Videos (2)'));
+    expect(screen.getByText('Official Trailer')).toBeTruthy();
+    expect(screen.getByText('Title Song')).toBeTruthy();
   });
 
   it('shows loading spinner when data is loading', () => {
@@ -163,13 +163,13 @@ describe('MediaScreen', () => {
 
   it('shows filter pills in videos tab', () => {
     render(<MediaScreen />);
+    fireEvent.press(screen.getByText('Videos (2)'));
     expect(screen.getByText('Trailer (1)')).toBeTruthy();
     expect(screen.getByText('Song (1)')).toBeTruthy();
   });
 
   it('hides filter pills in photos tab', () => {
     render(<MediaScreen />);
-    fireEvent.press(screen.getByText('Photos (1)'));
     expect(screen.queryByText('Trailer (1)')).toBeNull();
     expect(screen.queryByText('Song (1)')).toBeNull();
   });
@@ -198,6 +198,7 @@ describe('MediaScreen', () => {
 
   it('filters videos by active category when a filter pill is pressed', () => {
     render(<MediaScreen />);
+    fireEvent.press(screen.getByText('Videos (2)'));
     // Click Trailer filter pill
     fireEvent.press(screen.getByText('Trailer (1)'));
     // Official Trailer should still be visible (Trailer type), Title Song should be hidden
@@ -222,6 +223,7 @@ describe('MediaScreen', () => {
     const movieNoVideos = { ...mockMovie, videos: [] };
     (useMovieDetail as jest.Mock).mockReturnValue({ data: movieNoVideos, isLoading: false });
     render(<MediaScreen />);
+    fireEvent.press(screen.getByText('Videos (0)'));
     // Filter pills (All, Trailer, Song) should not appear
     expect(screen.queryByText('All')).toBeNull();
     expect(screen.queryByText('Trailer (1)')).toBeNull();
@@ -229,6 +231,7 @@ describe('MediaScreen', () => {
 
   it('strips count suffix from active category label', () => {
     render(<MediaScreen />);
+    fireEvent.press(screen.getByText('Videos (2)'));
     // Press a category filter pill with count suffix
     fireEvent.press(screen.getByText('Trailer (1)'));
     // The activeCategoryLabel should be 'Trailer' (stripped count)
