@@ -7,6 +7,7 @@ import {
   canRevert,
   getRevertDescription,
 } from '@/components/audit/auditUtils';
+import { AUDIT_ENTITY_TYPES } from '@/lib/types';
 
 describe('getChangedFields', () => {
   it('returns changed fields when old and new differ', () => {
@@ -163,8 +164,8 @@ describe('getEntityDisplayName', () => {
     expect(getEntityDisplayName('production_houses', { new: { name: 'Mythri' } })).toBe('Mythri');
   });
 
-  it('returns character_name for movie_cast', () => {
-    expect(getEntityDisplayName('movie_cast', { new: { character_name: 'Pushpa Raj' } })).toBe(
+  it('returns role_name for movie_cast', () => {
+    expect(getEntityDisplayName('movie_cast', { new: { role_name: 'Pushpa Raj' } })).toBe(
       'Pushpa Raj',
     );
   });
@@ -193,13 +194,7 @@ describe('getEntityDisplayName', () => {
     );
   });
 
-  it('returns label for movie_theatrical_runs', () => {
-    expect(getEntityDisplayName('movie_theatrical_runs', { new: { label: 'Re-release' } })).toBe(
-      'Re-release',
-    );
-  });
-
-  it('returns null for movie_theatrical_runs without label', () => {
+  it('returns null for movie_theatrical_runs (resolved by DB view)', () => {
     expect(
       getEntityDisplayName('movie_theatrical_runs', { new: { movie_id: 'some-uuid' } }),
     ).toBeNull();
@@ -315,22 +310,24 @@ describe('getRevertDescription', () => {
 });
 
 describe('getEntityDisplayName - additional edge cases', () => {
-  it('returns platform_name for movie_platforms', () => {
-    expect(getEntityDisplayName('movie_platforms', { new: { platform_name: 'Netflix' } })).toBe(
-      'Netflix',
-    );
-  });
-
-  it('returns production_house_name for movie_production_houses', () => {
-    expect(
-      getEntityDisplayName('movie_production_houses', {
-        new: { production_house_name: 'Mythri' },
-      }),
-    ).toBe('Mythri');
-  });
-
-  it('returns null for movie_platforms without platform_name', () => {
+  it('returns null for movie_platforms (resolved by DB view)', () => {
     expect(getEntityDisplayName('movie_platforms', { new: { platform_id: 'p1' } })).toBeNull();
+  });
+
+  it('returns null for movie_platform_availability (resolved by DB view)', () => {
+    expect(
+      getEntityDisplayName('movie_platform_availability', { new: { platform_id: 'p1' } }),
+    ).toBeNull();
+  });
+
+  it('returns null for movie_production_houses (resolved by DB view)', () => {
+    expect(
+      getEntityDisplayName('movie_production_houses', { new: { production_house_id: 'ph1' } }),
+    ).toBeNull();
+  });
+
+  it('returns null for user_languages (resolved by DB view)', () => {
+    expect(getEntityDisplayName('user_languages', { new: { language_id: 'l1' } })).toBeNull();
   });
 
   it('returns null for unknown entity without title or name', () => {
@@ -361,20 +358,20 @@ describe('getEntityDisplayName - additional edge cases', () => {
     );
   });
 
-  it('returns truncated user_id for admin_user_roles', () => {
+  it('returns null for admin_user_roles (resolved by DB view)', () => {
     expect(
       getEntityDisplayName('admin_user_roles', {
         new: { user_id: '12345678-abcd-efgh-ijkl-mnopqrstuvwx' },
       }),
-    ).toBe('12345678');
+    ).toBeNull();
   });
 
-  it('returns truncated user_id for admin_ph_assignments', () => {
+  it('returns null for admin_ph_assignments (resolved by DB view)', () => {
     expect(
       getEntityDisplayName('admin_ph_assignments', {
         new: { user_id: 'abcdefgh-1234-5678-9012-ijklmnopqrst' },
       }),
-    ).toBe('abcdefgh');
+    ).toBeNull();
   });
 
   it('returns email for admin_invitations', () => {
@@ -389,20 +386,20 @@ describe('getEntityDisplayName - additional edge cases', () => {
     );
   });
 
-  it('returns keyword for movie_keywords', () => {
-    expect(getEntityDisplayName('movie_keywords', { new: { keyword: 'action' } })).toBe('action');
+  it('returns keyword_name for movie_keywords', () => {
+    expect(getEntityDisplayName('movie_keywords', { new: { keyword_name: 'action' } })).toBe(
+      'action',
+    );
   });
 
-  it('returns platform_name for movie_platform_availability', () => {
-    expect(
-      getEntityDisplayName('movie_platform_availability', {
-        new: { platform_name: 'Amazon Prime' },
-      }),
-    ).toBe('Amazon Prime');
+  it('returns title for movie_posters', () => {
+    expect(getEntityDisplayName('movie_posters', { new: { title: 'First Look' } })).toBe(
+      'First Look',
+    );
   });
 
-  it('returns language_code for user_languages', () => {
-    expect(getEntityDisplayName('user_languages', { new: { language_code: 'te' } })).toBe('te');
+  it('returns title for movie_videos', () => {
+    expect(getEntityDisplayName('movie_videos', { new: { title: 'Trailer' } })).toBe('Trailer');
   });
 });
 
@@ -431,11 +428,11 @@ describe('getEntityDisplayName - null field branch coverage', () => {
     expect(getEntityDisplayName('admin_roles', { new: { id: 'role-1' } })).toBeNull();
   });
 
-  it('returns null for admin_user_roles without user_id', () => {
+  it('returns null for admin_user_roles (always resolved by DB view)', () => {
     expect(getEntityDisplayName('admin_user_roles', { new: { role: 'admin' } })).toBeNull();
   });
 
-  it('returns null for admin_ph_assignments without user_id', () => {
+  it('returns null for admin_ph_assignments (always resolved by DB view)', () => {
     expect(getEntityDisplayName('admin_ph_assignments', { new: { ph_id: 'ph-1' } })).toBeNull();
   });
 
@@ -443,7 +440,7 @@ describe('getEntityDisplayName - null field branch coverage', () => {
     expect(getEntityDisplayName('admin_invitations', { new: { role: 'admin' } })).toBeNull();
   });
 
-  it('returns null for movie_cast without character_name', () => {
+  it('returns null for movie_cast without role_name', () => {
     expect(getEntityDisplayName('movie_cast', { new: { actor_id: 'a1' } })).toBeNull();
   });
 
@@ -451,23 +448,84 @@ describe('getEntityDisplayName - null field branch coverage', () => {
     expect(getEntityDisplayName('movie_backdrops', { new: { display_order: 0 } })).toBeNull();
   });
 
-  it('returns null for movie_keywords without keyword', () => {
+  it('returns null for movie_keywords without keyword_name', () => {
     expect(getEntityDisplayName('movie_keywords', { new: { movie_id: 'm1' } })).toBeNull();
   });
 
-  it('returns null for movie_production_houses without production_house_name', () => {
-    expect(getEntityDisplayName('movie_production_houses', { new: { movie_id: 'm1' } })).toBeNull();
+  it('returns null for movie_posters without title', () => {
+    expect(getEntityDisplayName('movie_posters', { new: { display_order: 0 } })).toBeNull();
   });
 
-  it('returns null for user_languages without language_code', () => {
-    expect(getEntityDisplayName('user_languages', { new: { user_id: 'u1' } })).toBeNull();
+  it('returns null for movie_videos without title', () => {
+    expect(getEntityDisplayName('movie_videos', { new: { youtube_id: 'abc' } })).toBeNull();
+  });
+});
+
+// ── GUARDRAIL: Ensures every AUDIT_ENTITY_TYPES entry is explicitly handled ──
+// If this test fails, a new entity type was added to AUDIT_ENTITY_TYPES without
+// a corresponding case in getEntityDisplayName. This prevents future UUID display bugs.
+describe('getEntityDisplayName - coverage guardrail', () => {
+  // These entity types return null because the DB view resolves their names via JOINs
+  const DB_VIEW_RESOLVED: ReadonlySet<string> = new Set([
+    'admin_user_roles',
+    'admin_ph_assignments',
+    'movie_theatrical_runs',
+    'movie_platforms',
+    'movie_platform_availability',
+    'movie_production_houses',
+    'user_languages',
+  ]);
+
+  // Map each entity type to a sample detail object with the expected name field
+  const ENTITY_SAMPLE_DETAILS: Record<string, Record<string, unknown>> = {
+    movies: { new: { title: 'Test Movie' } },
+    notifications: { new: { title: 'Test Notification' } },
+    surprise_content: { new: { title: 'Test Content' } },
+    news_feed: { new: { title: 'Test News' } },
+    actors: { new: { name: 'Test Actor' } },
+    platforms: { new: { name: 'Test Platform' } },
+    production_houses: { new: { name: 'Test PH' } },
+    countries: { new: { name: 'Test Country' } },
+    languages: { new: { name: 'Test Language' } },
+    admin_roles: { new: { name: 'test_role' } },
+    admin_user_roles: { new: { user_id: '12345678-abcd' } }, // DB-view-resolved
+    admin_ph_assignments: { new: { user_id: '12345678-abcd' } }, // DB-view-resolved
+    admin_invitations: { new: { email: 'test@test.com' } },
+    movie_cast: { new: { role_name: 'Test Role' } },
+    movie_images: { new: { title: 'Test Image' } },
+    movie_backdrops: { new: { image_type: 'backdrop' } },
+    movie_posters: { new: { title: 'Test Poster' } },
+    movie_videos: { new: { title: 'Test Video' } },
+    movie_keywords: { new: { keyword_name: 'test' } },
+    // DB-view-resolved types — these return null from getEntityDisplayName
+    movie_theatrical_runs: { new: { movie_id: 'uuid' } },
+    movie_platforms: { new: { platform_id: 'p1' } },
+    movie_platform_availability: { new: { platform_id: 'p1' } },
+    movie_production_houses: { new: { production_house_id: 'uuid' } },
+    user_languages: { new: { language_id: 'uuid' } },
+  };
+
+  it('every AUDIT_ENTITY_TYPES entry has a sample in ENTITY_SAMPLE_DETAILS', () => {
+    const missing = AUDIT_ENTITY_TYPES.filter((et) => !(et in ENTITY_SAMPLE_DETAILS));
+    expect(missing).toEqual([]);
   });
 
-  it('returns null for movie_platform_availability without platform_name', () => {
-    expect(
-      getEntityDisplayName('movie_platform_availability', { new: { platform_id: 'p1' } }),
-    ).toBeNull();
-  });
+  for (const entityType of AUDIT_ENTITY_TYPES) {
+    if (DB_VIEW_RESOLVED.has(entityType)) {
+      it(`${entityType} returns null (resolved by DB view)`, () => {
+        const details = ENTITY_SAMPLE_DETAILS[entityType];
+        expect(getEntityDisplayName(entityType, details)).toBeNull();
+      });
+    } else {
+      it(`${entityType} returns a non-null display name`, () => {
+        const details = ENTITY_SAMPLE_DETAILS[entityType];
+        const result = getEntityDisplayName(entityType, details);
+        expect(result).not.toBeNull();
+        expect(typeof result).toBe('string');
+        expect(result!.length).toBeGreaterThan(0);
+      });
+    }
+  }
 });
 
 describe('canRevert - additional edge cases', () => {

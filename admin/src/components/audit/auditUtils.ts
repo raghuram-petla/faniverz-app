@@ -34,8 +34,14 @@ export function formatDetails(action: string, details: Record<string, unknown>):
   return JSON.stringify(details, null, 2);
 }
 
-// @contract Extracts a human-readable name from audit details based on entity_type
-// Falls back to null if no recognizable name field is found
+// @contract Extracts a human-readable name from audit details based on entity_type.
+// Falls back to null if no recognizable name field is found.
+// @coupling Field names MUST match actual DB column names (not denormalized names).
+// Junction tables that only store FK UUIDs should return null here — the DB view
+// resolves their display names via JOINs (see audit_log_view).
+// @invariant Every entry in AUDIT_ENTITY_TYPES must have an explicit case here.
+// The auditEntityDisplayNameCoverage test enforces this — never add a new entity
+// type to AUDIT_ENTITY_TYPES without adding a corresponding case below.
 export function getEntityDisplayName(
   entityType: string,
   details: Record<string, unknown>,
@@ -46,45 +52,59 @@ export function getEntityDisplayName(
 
   // @edge Each entity type has a different "name" field — matches TG_TABLE_NAME values
   switch (entityType) {
+    // ── Tables with `title` field ──────────────────────────────────────
     case 'movies':
     case 'notifications':
     case 'surprise_content':
     case 'news_feed':
       return (entity.title as string) ?? null;
+
+    // ── Tables with `name` field ───────────────────────────────────────
     case 'actors':
     case 'platforms':
     case 'production_houses':
     case 'countries':
     case 'languages':
-      return (entity.name as string) ?? null;
     case 'admin_roles':
       return (entity.name as string) ?? null;
+
+    // ── Admin junction tables resolved by DB view (JOINs profiles for name) ──
     case 'admin_user_roles':
     case 'admin_ph_assignments':
-      return (entity.user_id as string)?.slice(0, 8) ?? null;
+      return null;
+
     case 'admin_invitations':
       return (entity.email as string) ?? null;
+
+    // ── Movie sub-entity tables with inline name fields ────────────────
     case 'movie_cast':
-      return (entity.character_name as string) ?? null;
+      // @coupling actual column is `role_name`, not `character_name`
+      return (entity.role_name as string) ?? null;
     case 'movie_images':
       return (entity.title as string) ?? (entity.image_type as string) ?? null;
     case 'movie_backdrops':
       return (entity.image_type as string) ?? null;
+    case 'movie_posters':
+      return (entity.title as string) ?? null;
+    case 'movie_videos':
+      return (entity.title as string) ?? null;
     case 'movie_keywords':
-      return (entity.keyword as string) ?? null;
+      // @coupling actual column is `keyword_name`, not `keyword`
+      return (entity.keyword_name as string) ?? null;
+
+    // ── Junction tables resolved by DB view (no name field in table) ───
+    // These return null here; the DB view resolves them via JOINs.
+    // The page display uses: entity_display_name ?? getEntityDisplayName() ?? truncatedId
     case 'movie_theatrical_runs':
-      // @edge movie_theatrical_runs only has movie_id (UUID), not the movie title;
-      // entity_display_name from the DB view resolves this — return label as fallback
-      return (entity.label as string) ?? null;
     case 'movie_platforms':
     case 'movie_platform_availability':
-      return (entity.platform_name as string) ?? null;
     case 'movie_production_houses':
-      return (entity.production_house_name as string) ?? null;
     case 'user_languages':
-      return (entity.language_code as string) ?? null;
+      return null;
+
     default:
-      // Try common name fields
+      // @edge Unknown entity type — try common name fields as last resort.
+      // If you land here, add an explicit case above and update AUDIT_ENTITY_TYPES.
       return (entity.title as string) ?? (entity.name as string) ?? null;
   }
 }

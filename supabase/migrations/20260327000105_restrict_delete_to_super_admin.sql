@@ -26,12 +26,16 @@ CREATE POLICY "Role-aware movie_cast delete"
   USING (public.is_super_admin());
 
 -- ============================================================
--- MOVIE_POSTERS
+-- MOVIE_POSTERS (renamed to movie_images — skip if not exists)
 -- ============================================================
-DROP POLICY IF EXISTS "Role-aware movie_posters delete" ON movie_posters;
-CREATE POLICY "Role-aware movie_posters delete"
-  ON movie_posters FOR DELETE
-  USING (public.is_super_admin());
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'movie_posters') THEN
+    DROP POLICY IF EXISTS "Role-aware movie_posters delete" ON movie_posters;
+    CREATE POLICY "Role-aware movie_posters delete"
+      ON movie_posters FOR DELETE
+      USING (public.is_super_admin());
+  END IF;
+END $$;
 
 -- ============================================================
 -- MOVIE_VIDEOS
@@ -98,12 +102,16 @@ CREATE POLICY "Role-aware news_feed delete"
   USING (public.is_super_admin());
 
 -- ============================================================
--- MOVIE_BACKDROPS
+-- MOVIE_BACKDROPS (merged into movie_images — skip if not exists)
 -- ============================================================
-DROP POLICY IF EXISTS "Admins can delete movie_backdrops" ON movie_backdrops;
-CREATE POLICY "Super admins can delete movie_backdrops"
-  ON movie_backdrops FOR DELETE
-  USING (public.is_super_admin());
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'movie_backdrops') THEN
+    DROP POLICY IF EXISTS "Admins can delete movie_backdrops" ON movie_backdrops;
+    CREATE POLICY "Super admins can delete movie_backdrops"
+      ON movie_backdrops FOR DELETE
+      USING (public.is_super_admin());
+  END IF;
+END $$;
 
 -- ============================================================
 -- MOVIE_KEYWORDS
