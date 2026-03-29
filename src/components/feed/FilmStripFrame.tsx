@@ -44,13 +44,8 @@ function FilmStripFrameInner({ children }: FilmStripFrameProps) {
   // @edge dark: pure black cards; light: pure white cards — divider line provides separation
   const isDark = theme.statusBarStyle === 'light';
   const cardBg = isDark ? '#1A1A1A' : '#F2F2F2';
-  const cardBorder = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
   if (!enabled) {
-    return (
-      <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-        {children}
-      </View>
-    );
+    return <View style={[styles.card, { backgroundColor: cardBg }]}>{children}</View>;
   }
 
   return (
@@ -109,7 +104,6 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: FRAME_RADIUS,
-    borderWidth: 1,
     overflow: 'hidden',
   },
 });
