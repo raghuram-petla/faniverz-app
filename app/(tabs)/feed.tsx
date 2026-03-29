@@ -224,11 +224,16 @@ export default function FeedScreen() {
       ) : (
         // @coupling FlashList from @shopify — requires fixed estimatedItemSize or drawDistance for perf
         <View style={styles.scroll}>
+          {/* @invariant maintainVisibleContentPosition disabled — FlashList 2.x enables scroll anchoring
+              by default (designed for chat apps). On filter change, applyOffsetCorrection() fires after
+              layout stabilizes and scrolls to keep the first visible trailer in view, overriding any
+              programmatic scroll to top. This feed is not a chat; disable anchoring entirely. */}
           <FlashList
             ref={listRef}
             data={allItems}
             keyExtractor={(item) => item.id}
             drawDistance={500}
+            maintainVisibleContentPosition={{ disabled: true }}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             onScroll={handlePullScroll}
