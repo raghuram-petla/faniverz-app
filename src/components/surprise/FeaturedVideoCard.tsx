@@ -50,6 +50,7 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
           thumbnailUrl={thumbnailUrl}
           isActive={activated}
           autoPlay={activated}
+          mountShellWhenIdle
           onPlay={handlePlay}
         />
       </View>

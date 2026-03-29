@@ -1,4 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+type MockActiveVideoState = {
+  activeVideoId: string | null;
+  preloadedVideoId: string | null;
+  mountedVideoIds: string[];
+  registerVideoLayout: jest.Mock;
+  unregisterVideoLayout: jest.Mock;
+  handleScrollForVideo: jest.Mock;
+};
+
+const createActiveVideoState = (): MockActiveVideoState => ({
+  activeVideoId: null,
+  preloadedVideoId: null,
+  mountedVideoIds: [],
+  registerVideoLayout: jest.fn(),
+  unregisterVideoLayout: jest.fn(),
+  handleScrollForVideo: jest.fn(),
+});
+
+const mockUseActiveVideo = jest.fn<MockActiveVideoState, []>(createActiveVideoState);
+
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
@@ -68,13 +88,14 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-const mockTabPressListeners: Array<() => void> = [];
+const mockTabPressListeners: Array<(e?: { preventDefault?: () => void }) => void> = [];
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
-    addListener: jest.fn((_event: string, cb: () => void) => {
+    addListener: jest.fn((_event: string, cb: (e?: { preventDefault?: () => void }) => void) => {
       mockTabPressListeners.push(cb);
       return jest.fn();
     }),
+    isFocused: jest.fn(() => true),
   }),
 }));
 
@@ -87,11 +108,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 }));
 
 jest.mock('@/hooks/useActiveVideo', () => ({
-  useActiveVideo: () => ({
-    activeVideoId: null,
-    registerVideoLayout: jest.fn(),
-    handleScrollForVideo: jest.fn(),
-  }),
+  useActiveVideo: () => mockUseActiveVideo(),
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
@@ -106,11 +123,16 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onFollow,
     onUnfollow,
     getImageViewerTopChrome,
+    isVideoActive,
+    shouldMountVideo,
   }: Record<string, any>) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
         <Text>{item.title}</Text>
+        <Text testID={`video-props-${item.id}`}>
+          {JSON.stringify({ isVideoActive, shouldMountVideo })}
+        </Text>
         {getImageViewerTopChrome ? (
           <Text testID={`top-chrome-${item.id}`}>{JSON.stringify(getImageViewerTopChrome())}</Text>
         ) : null}
@@ -335,6 +357,7 @@ describe('FeedScreen', () => {
     jest.clearAllMocks();
     mockTabPressListeners.length = 0;
     mockGetCurrentHeaderTranslateY.mockReturnValue(-18);
+    mockUseActiveVideo.mockReturnValue(createActiveVideoState());
     setupMocks();
   });
 
@@ -362,6 +385,37 @@ describe('FeedScreen', () => {
     render(<FeedScreen />);
     expect(screen.getByText('First Trailer')).toBeTruthy();
     expect(screen.getByText('Second Trailer')).toBeTruthy();
+  });
+
+  it('mounts every nearby video returned by useActiveVideo', () => {
+    const items = [
+      makeItem({ id: 'item-1', title: 'First Trailer' }),
+      makeItem({ id: 'item-2', title: 'Second Trailer' }),
+    ];
+    mockUseActiveVideo.mockReturnValue({
+      activeVideoId: 'item-1',
+      preloadedVideoId: 'item-2',
+      mountedVideoIds: ['item-1', 'item-2'],
+      registerVideoLayout: jest.fn(),
+      unregisterVideoLayout: jest.fn(),
+      handleScrollForVideo: jest.fn(),
+    });
+    setupMocks({ feed: { data: { pages: [items], pageParams: [0] }, isLoading: false } });
+
+    render(<FeedScreen />);
+
+    expect(screen.getByTestId('video-props-item-1').props.children).toContain(
+      '"shouldMountVideo":true',
+    );
+    expect(screen.getByTestId('video-props-item-1').props.children).toContain(
+      '"isVideoActive":true',
+    );
+    expect(screen.getByTestId('video-props-item-2').props.children).toContain(
+      '"shouldMountVideo":true',
+    );
+    expect(screen.getByTestId('video-props-item-2').props.children).toContain(
+      '"isVideoActive":false',
+    );
   });
 
   it('passes the current home-feed top chrome snapshot to feed cards', () => {
@@ -771,9 +825,11 @@ describe('FeedScreen', () => {
     // Listener is registered — scroll offset defaults to 0 (at top)
     expect(mockTabPressListeners.length).toBeGreaterThan(0);
     const tabPressHandler = mockTabPressListeners[mockTabPressListeners.length - 1];
+    const mockEvent = { preventDefault: jest.fn() };
 
     // First tap when already at top should trigger refresh (calls refetch)
-    tabPressHandler();
+    tabPressHandler(mockEvent);
+    expect(mockEvent.preventDefault).toHaveBeenCalled();
     expect(mockRefetch).toHaveBeenCalled();
   });
 
@@ -793,7 +849,9 @@ describe('FeedScreen', () => {
     });
 
     const tabPressHandler = mockTabPressListeners[mockTabPressListeners.length - 1];
-    tabPressHandler();
+    const mockEvent = { preventDefault: jest.fn() };
+    tabPressHandler(mockEvent);
+    expect(mockEvent.preventDefault).toHaveBeenCalled();
 
     // Should NOT have called refetch — only scroll to top
     // (refetch is internal to useRefresh, so we verify by checking

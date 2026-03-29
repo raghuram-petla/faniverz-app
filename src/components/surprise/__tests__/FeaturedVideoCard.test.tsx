@@ -77,6 +77,7 @@ describe('FeaturedVideoCard', () => {
     render(<FeaturedVideoCard item={mockItem} styles={mockStyles} />);
     const player = screen.getByTestId('youtube-player');
     expect(player.props.isActive).toBe(false);
+    expect(player.props.mountShellWhenIdle).toBe(true);
   });
 
   it('activates player when onPlay is called', () => {
@@ -90,6 +91,7 @@ describe('FeaturedVideoCard', () => {
 
     expect(screen.getByTestId('youtube-player').props.isActive).toBe(true);
     expect(screen.getByTestId('youtube-player').props.autoPlay).toBe(true);
+    expect(screen.getByTestId('youtube-player').props.mountShellWhenIdle).toBe(true);
   });
 
   it('uses fallback video ID when youtube_id is null', () => {

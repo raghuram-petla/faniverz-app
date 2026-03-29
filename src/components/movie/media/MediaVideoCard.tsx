@@ -36,6 +36,7 @@ export function MediaVideoCard({ video, isPlaying, onPlay, theme }: MediaVideoCa
           youtubeId={video.youtube_id}
           isActive={isPlaying}
           autoPlay={isPlaying}
+          mountShellWhenIdle
           onPlay={handlePlay}
         />
       </View>

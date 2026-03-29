@@ -37,6 +37,7 @@ export interface FeedCardProps {
   onComment?: (itemId: string) => void;
   onShare?: (itemId: string) => void;
   isVideoActive?: boolean;
+  shouldMountVideo?: boolean;
   onVideoLayout?: (id: string, y: number, height: number) => void;
   isFollowing?: boolean;
   onFollow?: (entityType: FeedEntityType, entityId: string) => void;
@@ -57,6 +58,7 @@ function FeedCardInner({
   onComment,
   onShare,
   isVideoActive,
+  shouldMountVideo,
   onVideoLayout,
   isFollowing,
   onFollow,
@@ -188,62 +190,67 @@ function FeedCardInner({
             </View>
           </View>
 
-          {/* Description + Media */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => onPress(item)}
-            accessibilityRole="button"
-            accessibilityLabel={`${label}: ${item.title} media`}
-          >
-            {item.description && !hasThumbnail ? (
-              <Text style={styles.description} numberOfLines={3}>
-                {item.description}
-              </Text>
-            ) : null}
+          {/* Description (non-video) + poster media — tappable to navigate */}
+          {!hasVideo && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => onPress(item)}
+              accessibilityRole="button"
+              accessibilityLabel={`${label}: ${item.title} media`}
+            >
+              {item.description && !hasThumbnail ? (
+                <Text style={styles.description} numberOfLines={3}>
+                  {item.description}
+                </Text>
+              ) : null}
 
-            {/* Media: full bleed within film frame */}
-            {hasVideo ? (
-              <View style={styles.mediaContainer}>
-                <FeedVideoPlayer
-                  youtubeId={item.youtube_id!}
-                  thumbnailUrl={item.thumbnail_url}
-                  isActive={isVideoActive ?? false}
-                />
-              </View>
-            ) : isPosterImage ? (
-              <TouchableOpacity
-                activeOpacity={1}
-                onPress={handlePosterPress}
-                accessibilityLabel={`View ${item.title} ${isBackdrop ? 'backdrop' : 'poster'}`}
-              >
-                <View
-                  ref={posterRef}
-                  collapsable={false}
-                  style={[
-                    isBackdrop ? styles.mediaContainer : styles.posterMediaContainer,
-                    posterHidden && { opacity: 0 },
-                  ]}
+              {isPosterImage ? (
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={handlePosterPress}
+                  accessibilityLabel={`View ${item.title} ${isBackdrop ? 'backdrop' : 'poster'}`}
                 >
-                  {!mediaLoaded ? (
-                    <SkeletonBox width="100%" height="100%" borderRadius={0} />
-                  ) : null}
-                  <Image
-                    source={{
-                      uri:
-                        (imageUrl
-                          ? getImageUrl(imageUrl, 'md', imageBucket)
-                          : /* istanbul ignore next */ null) ??
-                        /* istanbul ignore next */ imageUrl ??
-                        /* istanbul ignore next */ PLACEHOLDER_POSTER,
-                    }}
-                    style={styles.media}
-                    contentFit="cover"
-                    onLoad={() => setMediaLoaded(true)}
-                  />
-                </View>
-              </TouchableOpacity>
-            ) : null}
-          </TouchableOpacity>
+                  <View
+                    ref={posterRef}
+                    collapsable={false}
+                    style={[
+                      isBackdrop ? styles.mediaContainer : styles.posterMediaContainer,
+                      posterHidden && { opacity: 0 },
+                    ]}
+                  >
+                    {!mediaLoaded ? (
+                      <SkeletonBox width="100%" height="100%" borderRadius={0} />
+                    ) : null}
+                    <Image
+                      source={{
+                        uri:
+                          (imageUrl
+                            ? getImageUrl(imageUrl, 'md', imageBucket)
+                            : /* istanbul ignore next */ null) ??
+                          /* istanbul ignore next */ imageUrl ??
+                          /* istanbul ignore next */ PLACEHOLDER_POSTER,
+                      }}
+                      style={styles.media}
+                      contentFit="cover"
+                      onLoad={() => setMediaLoaded(true)}
+                    />
+                  </View>
+                </TouchableOpacity>
+              ) : null}
+            </TouchableOpacity>
+          )}
+
+          {/* @edge Video player rendered OUTSIDE TouchableOpacity so taps reach the YouTube WebView */}
+          {hasVideo ? (
+            <View style={styles.mediaContainer}>
+              <FeedVideoPlayer
+                youtubeId={item.youtube_id!}
+                thumbnailUrl={item.thumbnail_url}
+                isActive={isVideoActive ?? false}
+                shouldMount={shouldMountVideo ?? isVideoActive ?? false}
+              />
+            </View>
+          ) : null}
 
           {/* Action bar (padded via styles) */}
           <View style={styles.actionBar}>
@@ -273,6 +280,7 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
     prev.item.id === next.item.id &&
     prev.userVote === next.userVote &&
     prev.isVideoActive === next.isVideoActive &&
+    prev.shouldMountVideo === next.shouldMountVideo &&
     prev.isFollowing === next.isFollowing &&
     prev.item.upvote_count === next.item.upvote_count &&
     prev.item.downvote_count === next.item.downvote_count &&

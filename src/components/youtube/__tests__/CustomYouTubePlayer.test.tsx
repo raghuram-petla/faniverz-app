@@ -1,11 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-jest.mock('react-native-youtube-iframe', () => {
-  const { View } = require('react-native');
-  const MockPlayer = (props: Record<string, any>) => <View testID="youtube-player" {...props} />;
-  MockPlayer.displayName = 'YoutubePlayer';
-  return { __esModule: true, default: MockPlayer };
-});
-
 jest.mock('expo-image', () => ({
   Image: 'Image',
 }));
@@ -23,7 +16,6 @@ jest.mock('react-i18next', () => ({
       };
       return map[key] ?? key;
     },
-    i18n: { language: 'en' },
   }),
 }));
 
@@ -47,78 +39,139 @@ jest.mock('../CustomYouTubePlayer.styles', () => ({
   styles: new Proxy({}, { get: () => ({}) }),
 }));
 
+jest.mock('../InlineYouTubeWebView', () => {
+  const { View } = require('react-native');
+  return {
+    InlineYouTubeWebView: (props: Record<string, unknown>) => (
+      <View testID="youtube-inline-webview" {...props} />
+    ),
+  };
+});
+
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { CustomYouTubePlayer } from '../CustomYouTubePlayer';
 
 describe('CustomYouTubePlayer', () => {
-  // --- Idle mode (isActive=false) ---
-
-  it('renders thumbnail with play button when isActive=false', () => {
-    render(<CustomYouTubePlayer youtubeId="abc123" isActive={false} />);
-    expect(screen.getByLabelText('Play video')).toBeTruthy();
-    expect(screen.queryByTestId('youtube-player')).toBeNull();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('calls onPlay when thumbnail is tapped in idle mode', () => {
+  it('renders a native thumbnail button when idle shell mounting is disabled', () => {
+    render(<CustomYouTubePlayer youtubeId="abc123" isActive={false} />);
+    expect(screen.getByLabelText('Play video')).toBeTruthy();
+    expect(screen.queryByTestId('youtube-inline-webview')).toBeNull();
+  });
+
+  it('calls onPlay when the native idle thumbnail is tapped', () => {
     const onPlay = jest.fn();
     render(<CustomYouTubePlayer youtubeId="abc123" isActive={false} onPlay={onPlay} />);
     fireEvent.press(screen.getByLabelText('Play video'));
     expect(onPlay).toHaveBeenCalledTimes(1);
   });
 
-  it('does not mount YouTube player when isActive=false', () => {
-    render(<CustomYouTubePlayer youtubeId="abc123" isActive={false} />);
-    expect(screen.queryByTestId('youtube-player')).toBeNull();
-  });
-
-  it('uses custom thumbnailUrl when provided in idle mode', () => {
-    const { root } = render(
+  it('mounts the inline WebView shell when idle mounting is requested', () => {
+    render(
       <CustomYouTubePlayer
         youtubeId="abc123"
         isActive={false}
+        mountShellWhenIdle
         thumbnailUrl="https://custom.com/thumb.jpg"
       />,
     );
-    const images = root.findAll(
-      (node: { props: Record<string, any> }) =>
-        typeof node.props.source === 'object' &&
-        node.props.source !== null &&
-        (node.props.source as { uri?: string }).uri === 'https://custom.com/thumb.jpg',
-    );
-    expect(images.length).toBeGreaterThan(0);
+    const player = screen.getByTestId('youtube-inline-webview');
+    expect(player.props.videoId).toBe('abc123');
+    expect(player.props.thumbnailUrl).toBe('https://custom.com/thumb.jpg');
+    expect(player.props.autoPlay).toBe(false);
   });
 
-  it('uses maxresdefault thumbnail when thumbnailUrl is null in idle mode', () => {
-    const { root } = render(
-      <CustomYouTubePlayer youtubeId="abc123" isActive={false} thumbnailUrl={null} />,
+  it('passes autoplay and mute settings to the inline WebView when active', () => {
+    render(
+      <CustomYouTubePlayer youtubeId="abc123" isActive={true} autoPlay={true} autoMute={true} />,
     );
-    const images = root.findAll(
-      (node: { props: Record<string, any> }) =>
-        typeof node.props.source === 'object' &&
-        node.props.source !== null &&
-        typeof (node.props.source as { uri?: string }).uri === 'string' &&
-        (node.props.source as { uri: string }).uri.includes('maxresdefault'),
-    );
-    expect(images.length).toBeGreaterThan(0);
+    const player = screen.getByTestId('youtube-inline-webview');
+    expect(player.props.autoPlay).toBe(true);
+    expect(player.props.muted).toBe(true);
+    expect(player.props.pauseToken).toBe(0);
   });
 
-  // --- Active mode (isActive=true) ---
-
-  it('renders without crashing in active mode', () => {
-    const { toJSON } = render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} />);
-    expect(toJSON()).toBeTruthy();
-  });
-
-  it('renders thumbnail overlay before playback starts in active mode', () => {
-    const { root } = render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} />);
-    const overlays = root.findAll(
-      (node: { props: Record<string, any> }) => node.props.pointerEvents === 'none',
+  it('calls onPlay when the inline shell reports a play press', () => {
+    const onPlay = jest.fn();
+    render(
+      <CustomYouTubePlayer
+        youtubeId="abc123"
+        isActive={false}
+        mountShellWhenIdle
+        onPlay={onPlay}
+      />,
     );
-    expect(overlays.length).toBeGreaterThan(0);
+
+    const player = screen.getByTestId('youtube-inline-webview');
+    player.props.onPlayPress();
+
+    expect(onPlay).toHaveBeenCalledTimes(1);
   });
 
-  it('renders share button in active mode', () => {
+  it('forwards inline state changes to onStateChange', () => {
+    const onStateChange = jest.fn();
+    render(
+      <CustomYouTubePlayer
+        youtubeId="abc123"
+        isActive={true}
+        mountShellWhenIdle
+        onStateChange={onStateChange}
+      />,
+    );
+
+    const player = screen.getByTestId('youtube-inline-webview');
+    player.props.onStateChange('playing');
+
+    expect(onStateChange).toHaveBeenCalledWith('playing');
+  });
+
+  it('increments resetToken when an interactive shell leaves active playback', () => {
+    const { rerender } = render(
+      <CustomYouTubePlayer youtubeId="abc123" isActive={true} mountShellWhenIdle />,
+    );
+    const player = screen.getByTestId('youtube-inline-webview');
+    player.props.onStateChange('playing');
+
+    rerender(<CustomYouTubePlayer youtubeId="abc123" isActive={false} mountShellWhenIdle />);
+
+    expect(screen.getByTestId('youtube-inline-webview').props.resetToken).toBe(1);
+  });
+
+  it('pauses an older playing shell when another shell starts playing', async () => {
+    render(
+      <>
+        <CustomYouTubePlayer youtubeId="abc123" isActive={true} mountShellWhenIdle />
+        <CustomYouTubePlayer youtubeId="def456" isActive={true} mountShellWhenIdle />
+      </>,
+    );
+
+    let [firstPlayer, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+    React.act(() => {
+      firstPlayer.props.onPlayPress();
+      firstPlayer.props.onStateChange('playing');
+    });
+
+    [firstPlayer, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+    expect(firstPlayer.props.pauseToken).toBe(0);
+    expect(secondPlayer.props.pauseToken).toBe(0);
+
+    React.act(() => {
+      secondPlayer.props.onPlayPress();
+      secondPlayer.props.onStateChange('playing');
+    });
+
+    await waitFor(() => {
+      [firstPlayer, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+      expect(firstPlayer.props.pauseToken).toBe(1);
+      expect(secondPlayer.props.pauseToken).toBe(0);
+    });
+  });
+
+  it('renders share button whenever the shell is mounted', () => {
     render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} />);
     expect(screen.getByLabelText('Share video')).toBeTruthy();
   });
@@ -130,76 +183,23 @@ describe('CustomYouTubePlayer', () => {
     expect(shareYouTubeVideo).toHaveBeenCalledWith('abc123');
   });
 
-  it('passes autoPlay prop to YoutubePlayer play prop', () => {
-    render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} autoPlay />);
-    const player = screen.queryByTestId('youtube-player');
-    if (player) {
-      expect(player.props.play).toBe(true);
-    }
-  });
-
-  it('passes autoMute prop to YoutubePlayer mute prop', () => {
-    render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} autoMute />);
-    const player = screen.queryByTestId('youtube-player');
-    if (player) {
-      expect(player.props.mute).toBe(true);
-    }
-  });
-
-  it('defaults play to false when autoPlay not provided', () => {
-    render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} />);
-    const player = screen.queryByTestId('youtube-player');
-    if (player) {
-      expect(player.props.play).toBe(false);
-    }
-  });
-
-  it('defaults mute to false when autoMute not provided', () => {
-    render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} />);
-    const player = screen.queryByTestId('youtube-player');
-    if (player) {
-      expect(player.props.mute).toBe(false);
-    }
-  });
-
-  it('passes correct initialPlayerParams', () => {
-    render(<CustomYouTubePlayer youtubeId="abc123" isActive={true} />);
-    const player = screen.queryByTestId('youtube-player');
-    if (player) {
-      expect(player.props.initialPlayerParams).toEqual({
-        modestbranding: true,
-        rel: false,
-        iv_load_policy: 3,
-        preventFullScreen: false,
-      });
-    }
-  });
-
-  it('passes videoId to YoutubePlayer', () => {
-    render(<CustomYouTubePlayer youtubeId="testVid123" isActive={true} />);
-    const player = screen.queryByTestId('youtube-player');
-    if (player) {
-      expect(player.props.videoId).toBe('testVid123');
-    }
-  });
-
-  it('calls onStateChange callback when provided', () => {
-    const onStateChange = jest.fn();
+  it('falls back to maxresdefault thumbnail when thumbnailUrl is null', () => {
     render(
-      <CustomYouTubePlayer youtubeId="abc123" isActive={true} onStateChange={onStateChange} />,
+      <CustomYouTubePlayer
+        youtubeId="abc123"
+        isActive={false}
+        mountShellWhenIdle
+        thumbnailUrl={null}
+      />,
     );
-    const player = screen.queryByTestId('youtube-player');
-    if (player && player.props.onChangeState) {
-      player.props.onChangeState('playing');
-      expect(onStateChange).toHaveBeenCalledWith('playing');
-    }
+    expect(screen.getByTestId('youtube-inline-webview').props.thumbnailUrl).toContain(
+      'maxresdefault',
+    );
   });
 
-  // --- Invalid ID handling ---
-
-  it('renders placeholder for invalid youtube ID (XSS attempt)', () => {
+  it('renders placeholder for invalid youtube IDs', () => {
     const { root } = render(<CustomYouTubePlayer youtubeId="<script>alert(1)</script>" />);
-    expect(screen.queryByTestId('youtube-player')).toBeNull();
+    expect(screen.queryByTestId('youtube-inline-webview')).toBeNull();
     const images = root.findAll(
       (node: { props: Record<string, any> }) =>
         typeof node.props.source === 'object' &&
@@ -209,16 +209,8 @@ describe('CustomYouTubePlayer', () => {
     expect(images.length).toBeGreaterThan(0);
   });
 
-  it('renders placeholder for empty youtube ID', () => {
-    render(<CustomYouTubePlayer youtubeId="" />);
-    expect(screen.queryByTestId('youtube-player')).toBeNull();
-  });
-
-  // --- Default isActive behavior ---
-
-  it('defaults isActive to true (active mode)', () => {
+  it('defaults to mounting the interactive shell when isActive is omitted', () => {
     render(<CustomYouTubePlayer youtubeId="abc123" />);
-    // Should be in active mode — share button visible, no play button
-    expect(screen.getByLabelText('Share video')).toBeTruthy();
+    expect(screen.getByTestId('youtube-inline-webview')).toBeTruthy();
   });
 });

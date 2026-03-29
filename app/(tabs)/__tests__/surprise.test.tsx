@@ -274,16 +274,12 @@ describe('SurpriseScreen', () => {
     expect(screen.getAllByText('BTS').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('activates video player when Play video button is pressed on featured video', () => {
+  it('mounts the featured video WebView shell immediately for single-tap playback', () => {
     mockUseSurpriseContent.mockReturnValue({ data: mockContent, isLoading: false });
 
     render(<SurpriseScreen />);
 
-    // Press the "Play video" accessibility button to activate the WebView
-    fireEvent.press(screen.getByLabelText('common.playVideo'));
-
-    // After activation, the WebView should be shown (testID="video-player")
-    expect(screen.getByTestId('video-player')).toBeTruthy();
+    expect(screen.getByTestId('youtube-inline-webview')).toBeTruthy();
   });
 
   it('shows Interview label when interview item is the featured video', () => {

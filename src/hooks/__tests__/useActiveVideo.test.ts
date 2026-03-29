@@ -5,6 +5,8 @@ describe('useActiveVideo', () => {
   it('returns null when no videos registered', () => {
     const { result } = renderHook(() => useActiveVideo());
     expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
+    expect(result.current.mountedVideoIds).toEqual([]);
   });
 
   it('returns null after scroll with no registered videos', () => {
@@ -13,6 +15,8 @@ describe('useActiveVideo', () => {
       result.current.handleScrollForVideo(0, 800);
     });
     expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
+    expect(result.current.mountedVideoIds).toEqual([]);
   });
 
   it('activates the only visible video', () => {
@@ -27,6 +31,8 @@ describe('useActiveVideo', () => {
     });
 
     expect(result.current.activeVideoId).toBe('v1');
+    expect(result.current.preloadedVideoId).toBeNull();
+    expect(result.current.mountedVideoIds).toEqual(['v1']);
   });
 
   it('picks the most centered video when multiple are visible', () => {
@@ -44,6 +50,8 @@ describe('useActiveVideo', () => {
     });
 
     expect(result.current.activeVideoId).toBe('v2');
+    expect(result.current.preloadedVideoId).toBe('v1');
+    expect(result.current.mountedVideoIds).toEqual(['v1', 'v2', 'v3']);
   });
 
   it('ignores video with less than 50% visibility', () => {
@@ -61,6 +69,7 @@ describe('useActiveVideo', () => {
     });
 
     expect(result.current.activeVideoId).toBe('v1');
+    expect(result.current.preloadedVideoId).toBe('v2');
   });
 
   it('returns null when all videos are off-screen', () => {
@@ -75,6 +84,56 @@ describe('useActiveVideo', () => {
     });
 
     expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
+  });
+
+  it('preloads a nearby non-active video that is just below the viewport', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    act(() => {
+      result.current.registerVideoLayout('active', 250, 200);
+      result.current.registerVideoLayout('v1', 880, 200);
+    });
+
+    act(() => {
+      result.current.handleScrollForVideo(0, 800);
+    });
+
+    expect(result.current.activeVideoId).toBe('active');
+    expect(result.current.preloadedVideoId).toBe('v1');
+    expect(result.current.mountedVideoIds).toEqual(['active', 'v1']);
+  });
+
+  it('mounts every nearby visible video so more than one feed card can be ready for a first tap', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    act(() => {
+      result.current.registerVideoLayout('v1', 120, 180);
+      result.current.registerVideoLayout('v2', 360, 180);
+      result.current.registerVideoLayout('v3', 640, 180);
+    });
+
+    act(() => {
+      result.current.handleScrollForVideo(0, 800);
+    });
+
+    expect(result.current.activeVideoId).toBe('v2');
+    expect(result.current.mountedVideoIds).toEqual(['v1', 'v2', 'v3']);
+  });
+
+  it('recomputes active video when a visible card registers after viewport metrics are known', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    act(() => {
+      result.current.handleScrollForVideo(0, 800);
+    });
+
+    act(() => {
+      result.current.registerVideoLayout('v1', 240, 200);
+    });
+
+    expect(result.current.activeVideoId).toBe('v1');
+    expect(result.current.preloadedVideoId).toBeNull();
   });
 
   it('updates active video as user scrolls', () => {
@@ -90,12 +149,14 @@ describe('useActiveVideo', () => {
       result.current.handleScrollForVideo(0, 800);
     });
     expect(result.current.activeVideoId).toBe('v1');
+    expect(result.current.preloadedVideoId).toBe('v2');
 
     // Scroll down — v2 becomes centered
     act(() => {
       result.current.handleScrollForVideo(600, 800);
     });
     expect(result.current.activeVideoId).toBe('v2');
+    expect(result.current.preloadedVideoId).toBeNull();
   });
 
   it('unregisters a video so it is no longer considered', () => {
@@ -114,6 +175,8 @@ describe('useActiveVideo', () => {
     });
 
     expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
+    expect(result.current.mountedVideoIds).toEqual([]);
   });
 
   it('overwrites layout on re-register', () => {
@@ -134,5 +197,6 @@ describe('useActiveVideo', () => {
 
     // v1 is now off-screen at y=2000
     expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
   });
 });

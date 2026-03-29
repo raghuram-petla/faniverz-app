@@ -58,6 +58,7 @@ describe('MediaVideoCard', () => {
     const player = screen.getByTestId('youtube-player');
     expect(player.props.isActive).toBe(false);
     expect(player.props.autoPlay).toBe(false);
+    expect(player.props.mountShellWhenIdle).toBe(true);
   });
 
   it('passes isActive=true and autoPlay=true when playing', () => {
@@ -67,6 +68,7 @@ describe('MediaVideoCard', () => {
     const player = screen.getByTestId('youtube-player');
     expect(player.props.isActive).toBe(true);
     expect(player.props.autoPlay).toBe(true);
+    expect(player.props.mountShellWhenIdle).toBe(true);
   });
 
   it('passes youtubeId to CustomYouTubePlayer', () => {

@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
-import { View, TouchableOpacity, LayoutChangeEvent } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import YoutubePlayer from 'react-native-youtube-iframe';
 import { useTranslation } from 'react-i18next';
 import { colors } from '@/theme/colors';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
@@ -10,40 +9,38 @@ import { getYouTubeThumbnail } from '@/constants/feedHelpers';
 import { sanitizeYoutubeId } from '@/utils/sanitizeYoutubeId';
 import { shareYouTubeVideo } from '@/utils/youtubeNavigation';
 import { styles } from './CustomYouTubePlayer.styles';
+import { InlineYouTubeWebView } from './InlineYouTubeWebView';
 
 export interface CustomYouTubePlayerProps {
-  /** YouTube video ID */
   youtubeId: string;
-  /** Optional custom thumbnail URL — falls back to maxresdefault */
   thumbnailUrl?: string | null;
-  /**
-   * @contract Controls whether the YouTube player iframe is mounted.
-   * When false: renders only a static thumbnail + play button (no player loaded).
-   * When true: mounts the YouTube player with thumbnail overlay.
-   * This is critical for feed performance — prevents loading iframes for off-screen videos.
-   */
   isActive?: boolean;
-  /** Whether the video should auto-play when isActive becomes true */
   autoPlay?: boolean;
-  /** Whether to start muted (e.g. feed videos) */
   autoMute?: boolean;
-  /** Called when the user taps the thumbnail play button (only fires when isActive=false) */
   onPlay?: () => void;
-  /** Called when playback state changes */
   onStateChange?: (state: string) => void;
-  /** Container corner radius — defaults to 12, pass 0 for edge-to-edge contexts */
   borderRadius?: number;
+  mountShellWhenIdle?: boolean;
 }
 
+type PlayingPlayerListener = (instanceId: number | null) => void;
+
+const playingPlayerListeners = new Set<PlayingPlayerListener>();
+let activePlayingInstanceId: number | null = null;
+let nextPlayingInstanceId = 0;
+
+const publishPlayingInstance = (instanceId: number | null) => {
+  if (activePlayingInstanceId === instanceId) {
+    return;
+  }
+  activePlayingInstanceId = instanceId;
+  playingPlayerListeners.forEach((listener) => listener(instanceId));
+};
+
 /**
- * @contract Single source of truth for all YouTube video rendering in the app.
- * Three modes:
- * 1. isActive=false: static thumbnail + play button. Tapping calls onPlay.
- * 2. isActive=true, hasStarted=false: YouTube player loading under custom thumbnail overlay.
- *    pointerEvents="none" lets taps pass through to YouTube's native player.
- * 3. isActive=true, hasStarted=true: YouTube player visible, overlay dismissed.
- *
- * @invariant hasStarted only flips to true — overlay never returns once playback begins.
+ * @contract Single source of truth for YouTube rendering across feed, movie media, and surprise cards.
+ * When mountShellWhenIdle=false it falls back to a cheap native thumbnail button.
+ * When mountShellWhenIdle=true it mounts the interactive WebView shell early so the first tap happens inside iOS WebView content.
  */
 export function CustomYouTubePlayer({
   youtubeId,
@@ -54,38 +51,89 @@ export function CustomYouTubePlayer({
   onPlay,
   onStateChange,
   borderRadius: borderRadiusProp = 12,
+  mountShellWhenIdle = false,
 }: CustomYouTubePlayerProps) {
   const { t } = useTranslation();
   const safeId = sanitizeYoutubeId(youtubeId);
-  const containerStyle = [styles.container, { borderRadius: borderRadiusProp }];
-
-  /** @sideeffect once hasStarted flips to true, thumbnail overlay never returns */
-  const [hasStarted, setHasStarted] = useState(false);
-  const [playerHeight, setPlayerHeight] = useState(0);
-
-  /** @nullable thumbnailUrl — falls back to YouTube's maxresdefault thumbnail */
+  /** @nullable thumbnailUrl falls back to YouTube maxresdefault when callers do not provide a custom asset. */
   const thumb = thumbnailUrl ?? getYouTubeThumbnail(safeId || youtubeId, 'maxresdefault');
+  const [hasStarted, setHasStarted] = useState(false);
+  const [pauseToken, setPauseToken] = useState(0);
+  const [resetToken, setResetToken] = useState(0);
+  const hasStartedRef = useRef(false);
+  const instanceIdRef = useRef<number | null>(null);
+  const containerStyle = [styles.container, { borderRadius: borderRadiusProp }];
+  const shouldMountShell = isActive || mountShellWhenIdle;
+  if (instanceIdRef.current === null) {
+    instanceIdRef.current = ++nextPlayingInstanceId;
+  }
+  const instanceId = instanceIdRef.current;
 
-  const handleStateChange = useCallback(
+  useEffect(() => {
+    hasStartedRef.current = hasStarted;
+  }, [hasStarted]);
+
+  useEffect(() => {
+    setHasStarted(false);
+    setPauseToken(0);
+    setResetToken(0);
+  }, [safeId]);
+
+  useEffect(() => {
+    // @sync every mounted shell listens for the current playing instance so a newly started video can pause older ones immediately.
+    const handlePlayingInstance = (playingInstanceId: number | null) => {
+      if (playingInstanceId !== null && playingInstanceId !== instanceId && hasStartedRef.current) {
+        setPauseToken((prev) => prev + 1);
+      }
+    };
+    playingPlayerListeners.add(handlePlayingInstance);
+    return () => {
+      playingPlayerListeners.delete(handlePlayingInstance);
+      if (activePlayingInstanceId === instanceId) {
+        publishPlayingInstance(null);
+      }
+    };
+  }, [instanceId]);
+
+  useEffect(() => {
+    if (!isActive && hasStarted && mountShellWhenIdle) {
+      setHasStarted(false);
+      setResetToken((prev) => prev + 1);
+    }
+  }, [hasStarted, isActive, mountShellWhenIdle]);
+
+  const handleShellPlay = useCallback(() => {
+    setHasStarted(true);
+    publishPlayingInstance(instanceId);
+    onPlay?.();
+  }, [instanceId, onPlay]);
+
+  const handleShellStateChange = useCallback(
     (state: string) => {
       if (state === 'playing') {
         setHasStarted(true);
+        publishPlayingInstance(instanceId);
+      }
+      if (state === 'paused' && activePlayingInstanceId === instanceId) {
+        publishPlayingInstance(null);
+      }
+      if (state === 'ended' || state === 'idle') {
+        setHasStarted(false);
+        if (activePlayingInstanceId === instanceId) {
+          publishPlayingInstance(null);
+        }
       }
       onStateChange?.(state);
     },
-    [onStateChange],
+    [instanceId, onStateChange],
   );
 
-  const handleLayout = useCallback((e: LayoutChangeEvent) => {
-    const { height } = e.nativeEvent.layout;
-    if (height > 0) setPlayerHeight(Math.round(height));
-  }, []);
-
   const handleShare = useCallback(() => {
-    if (safeId) shareYouTubeVideo(safeId);
+    if (safeId) {
+      shareYouTubeVideo(safeId);
+    }
   }, [safeId]);
 
-  // Invalid / empty ID → placeholder image
   if (!safeId) {
     return (
       <View style={containerStyle}>
@@ -94,8 +142,7 @@ export function CustomYouTubePlayer({
     );
   }
 
-  // Idle mode — static thumbnail + play button, no player loaded
-  if (!isActive) {
+  if (!shouldMountShell) {
     return (
       <View style={containerStyle}>
         <TouchableOpacity
@@ -120,50 +167,22 @@ export function CustomYouTubePlayer({
     );
   }
 
-  // Active mode — YouTube player + thumbnail overlay until playback starts
   return (
-    <View style={styles.container} onLayout={handleLayout}>
+    <View style={containerStyle}>
       <View style={styles.playerWrapper}>
-        {playerHeight > 0 && (
-          <YoutubePlayer
-            height={playerHeight}
-            videoId={safeId}
-            play={autoPlay}
-            mute={autoMute}
-            onChangeState={handleStateChange}
-            initialPlayerParams={{
-              modestbranding: true,
-              rel: false,
-              iv_load_policy: 3,
-              preventFullScreen: false,
-            }}
-            webViewProps={{
-              allowsInlineMediaPlayback: true,
-              scrollEnabled: false,
-              bounces: false,
-            }}
-          />
-        )}
+        <InlineYouTubeWebView
+          videoId={safeId}
+          thumbnailUrl={thumb || PLACEHOLDER_POSTER}
+          autoPlay={isActive && autoPlay}
+          muted={autoMute}
+          pauseToken={pauseToken}
+          resetToken={resetToken}
+          onPlayPress={handleShellPlay}
+          onStateChange={handleShellStateChange}
+        />
       </View>
 
-      {/* @edge Thumbnail overlay hides YouTube's red play button for a cleaner look */}
-      {/* pointerEvents="none" lets taps pass through to YouTube's native player underneath */}
-      {!hasStarted && (
-        <View style={styles.thumbnailContainer} pointerEvents="none">
-          <Image
-            source={{ uri: thumb || PLACEHOLDER_POSTER }}
-            style={styles.thumbnail}
-            contentFit="cover"
-          />
-          <View style={styles.playOverlay}>
-            <View style={styles.playCircle}>
-              <Ionicons name="play" size={28} color={colors.white} />
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Share button overlay — always visible in active mode */}
+      {/* @edge share remains native so we keep the existing app-wide YouTube sharing path without custom DOM wiring. */}
       <View style={styles.shareOverlay} pointerEvents="box-none">
         <TouchableOpacity
           style={styles.shareHitArea}

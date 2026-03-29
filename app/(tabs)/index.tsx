@@ -57,7 +57,8 @@ export default function FeedScreen() {
     usePersonalizedFeed(filter);
   const voteMutation = useVoteFeedItem(); // @sideeffect optimistic updates via TanStack Query cache
   const removeMutation = useRemoveFeedVote();
-  const { activeVideoId, registerVideoLayout, handleScrollForVideo } = useActiveVideo(); // @sync single auto-playing video
+  const { activeVideoId, mountedVideoIds, registerVideoLayout, handleScrollForVideo } =
+    useActiveVideo(); // @sync one auto-playing video, but multiple nearby cards can stay mounted for single-tap playback
   const { followSet } = useEntityFollows();
   const followMutation = useFollowEntity();
   const unfollowMutation = useUnfollowEntity();
@@ -235,6 +236,9 @@ export default function FeedScreen() {
             drawDistance={500}
             contentContainerStyle={{ paddingTop: totalHeaderHeight }}
             showsVerticalScrollIndicator={false}
+            onLayout={(e) => {
+              handleScrollForVideo(scrollOffsetRef.current, e.nativeEvent.layout.height);
+            }}
             onScroll={(e) => {
               handlePullScroll(e);
               handleScroll(e);
@@ -286,6 +290,9 @@ export default function FeedScreen() {
                 onComment={handleComment}
                 onShare={handleShare}
                 isVideoActive={activeVideoId === item.id}
+                shouldMountVideo={mountedVideoIds.includes(
+                  item.id,
+                )} /* @coupling useActiveVideo decides which nearby cards are warm enough to mount early */
                 onVideoLayout={item.youtube_id ? registerVideoLayout : undefined}
                 getImageViewerTopChrome={getImageViewerTopChrome}
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}

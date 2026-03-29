@@ -117,11 +117,20 @@ jest.mock('../FollowButton', () => ({
 }));
 
 jest.mock('../FeedVideoPlayer', () => ({
-  FeedVideoPlayer: ({ isActive, youtubeId }: { isActive: boolean; youtubeId: string }) => {
+  FeedVideoPlayer: ({
+    isActive,
+    youtubeId,
+    shouldMount,
+  }: {
+    isActive: boolean;
+    youtubeId: string;
+    shouldMount?: boolean;
+  }) => {
     const { View, Text } = require('react-native');
     return (
       <View testID="feed-video-player">
         <Text>{isActive ? 'Playing' : 'Paused'}</Text>
+        <Text>{shouldMount ? 'Mounted' : 'Idle'}</Text>
         <Text>{youtubeId}</Text>
       </View>
     );
@@ -326,6 +335,18 @@ describe('FeedCard', () => {
   it('passes isVideoActive to FeedVideoPlayer', () => {
     render(<FeedCard item={makeItem()} onPress={jest.fn()} isVideoActive={true} />);
     expect(screen.getByText('Playing')).toBeTruthy();
+  });
+
+  it('passes shouldMountVideo to FeedVideoPlayer', () => {
+    render(
+      <FeedCard
+        item={makeItem()}
+        onPress={jest.fn()}
+        isVideoActive={false}
+        shouldMountVideo={true}
+      />,
+    );
+    expect(screen.getByText('Mounted')).toBeTruthy();
   });
 
   it('shows Paused state when isVideoActive is false', () => {
@@ -697,5 +718,16 @@ describe('FeedCard', () => {
     const { rerender } = render(<FeedCard item={item} onPress={jest.fn()} isVideoActive={false} />);
     rerender(<FeedCard item={item} onPress={jest.fn()} isVideoActive={true} />);
     expect(screen.getByText('Playing')).toBeTruthy();
+  });
+
+  it('re-renders when shouldMountVideo changes (memo comparator)', () => {
+    const item = makeItem();
+    const { rerender } = render(
+      <FeedCard item={item} onPress={jest.fn()} isVideoActive={false} shouldMountVideo={false} />,
+    );
+    rerender(
+      <FeedCard item={item} onPress={jest.fn()} isVideoActive={false} shouldMountVideo={true} />,
+    );
+    expect(screen.getByText('Mounted')).toBeTruthy();
   });
 });
