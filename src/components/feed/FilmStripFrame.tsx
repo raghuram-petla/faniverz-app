@@ -41,10 +41,16 @@ function FilmStripFrameInner({ children }: FilmStripFrameProps) {
   }, [height]);
 
   // @contract when disabled, render children in a simple rounded card
-  // @edge card bg is more distinct than theme.surface — zinc800 dark, zinc200 light
-  const cardBg = theme.statusBarStyle === 'light' ? '#27272A' : '#E4E4E7';
+  // @edge dark: pure black cards; light: pure white cards — divider line provides separation
+  const isDark = theme.statusBarStyle === 'light';
+  const cardBg = isDark ? '#000000' : '#FFFFFF';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
   if (!enabled) {
-    return <View style={[styles.card, { backgroundColor: cardBg }]}>{children}</View>;
+    return (
+      <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+        {children}
+      </View>
+    );
   }
 
   return (
@@ -103,6 +109,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: FRAME_RADIUS,
+    borderWidth: 1,
     overflow: 'hidden',
   },
 });

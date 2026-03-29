@@ -22,7 +22,7 @@ function FilmStripFrameDividerInner({ isEdge }: FilmStripFrameDividerProps) {
   const { theme } = useTheme();
   const enabled = useFilmStripStore((s) => s.filmStripEnabled);
 
-  // @contract when disabled, render a small spacer between cards
+  // @contract when disabled, render a simple spacer — card borders provide separation
   if (!enabled) return <View style={styles.spacer} />;
   const filmColor = getFilmColor(theme);
   const height = isEdge ? EDGE_HEIGHT : DIVIDER_HEIGHT;
@@ -77,6 +77,6 @@ const styles = StyleSheet.create({
     right: (RAIL_WIDTH - SPROCKET_SIZE) / 2,
   },
   spacer: {
-    height: 10,
+    height: 12,
   },
 });
