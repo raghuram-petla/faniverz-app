@@ -11,6 +11,11 @@ jest.mock('@/theme', () => ({
   }),
 }));
 
+jest.mock('@/stores/useFilmStripStore', () => ({
+  useFilmStripStore: (sel: (s: { filmStripEnabled: boolean }) => boolean) =>
+    sel({ filmStripEnabled: true }),
+}));
+
 type TestView = { props: { style?: Array<Record<string, unknown>> } };
 
 describe('FilmStripFrameDivider', () => {

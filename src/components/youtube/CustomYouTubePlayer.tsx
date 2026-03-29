@@ -31,6 +31,8 @@ export interface CustomYouTubePlayerProps {
   onPlay?: () => void;
   /** Called when playback state changes */
   onStateChange?: (state: string) => void;
+  /** Container corner radius — defaults to 12, pass 0 for edge-to-edge contexts */
+  borderRadius?: number;
 }
 
 /**
@@ -51,9 +53,11 @@ export function CustomYouTubePlayer({
   autoMute = false,
   onPlay,
   onStateChange,
+  borderRadius: borderRadiusProp = 12,
 }: CustomYouTubePlayerProps) {
   const { t } = useTranslation();
   const safeId = sanitizeYoutubeId(youtubeId);
+  const containerStyle = [styles.container, { borderRadius: borderRadiusProp }];
 
   /** @sideeffect once hasStarted flips to true, thumbnail overlay never returns */
   const [hasStarted, setHasStarted] = useState(false);
@@ -84,7 +88,7 @@ export function CustomYouTubePlayer({
   // Invalid / empty ID → placeholder image
   if (!safeId) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <Image source={{ uri: PLACEHOLDER_POSTER }} style={styles.thumbnail} contentFit="cover" />
       </View>
     );
@@ -93,7 +97,7 @@ export function CustomYouTubePlayer({
   // Idle mode — static thumbnail + play button, no player loaded
   if (!isActive) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <TouchableOpacity
           style={styles.thumbnailContainer}
           onPress={onPlay}

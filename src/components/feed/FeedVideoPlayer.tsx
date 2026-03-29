@@ -19,6 +19,7 @@ export function FeedVideoPlayer({ youtubeId, thumbnailUrl, isActive }: FeedVideo
       isActive={isActive}
       autoPlay={isActive}
       autoMute
+      borderRadius={0}
     />
   );
 }

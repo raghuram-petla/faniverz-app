@@ -6,9 +6,14 @@ import { RAIL_WIDTH, SPROCKET_SIZE, SPROCKET_SPACING } from '@/constants/filmStr
 
 jest.mock('@/theme', () => ({
   useTheme: () => ({
-    theme: { background: '#000000' },
+    theme: { background: '#000000', surface: '#18181B' },
     colors: {},
   }),
+}));
+
+jest.mock('@/stores/useFilmStripStore', () => ({
+  useFilmStripStore: (sel: (s: { filmStripEnabled: boolean }) => boolean) =>
+    sel({ filmStripEnabled: true }),
 }));
 
 type TestView = { props: { style?: Array<Record<string, unknown>> } };
