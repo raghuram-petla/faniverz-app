@@ -331,9 +331,74 @@ describe('CollapsibleProfileLayout', () => {
     const sv = scrollViews.find(
       (s: { props: Record<string, unknown> }) => typeof s.props.onScrollEndDrag === 'function',
     );
-    const event = { nativeEvent: { contentOffset: { y: 0, x: 0 } } };
+    const event = { nativeEvent: { contentOffset: { y: 0, x: 0 }, velocity: { y: 0 } } };
     sv.props.onScrollEndDrag(event);
     expect(onScrollEndDrag).toHaveBeenCalledWith(event);
+  });
+
+  describe('snap behavior', () => {
+    const getAnimatedScrollView = (root: ReturnType<typeof render>['UNSAFE_root']) => {
+      const Animated = require('react-native-reanimated').default;
+      const scrollViews = root.findAllByType(Animated.ScrollView);
+      return scrollViews.find(
+        (s: { props: Record<string, unknown> }) => typeof s.props.onScrollEndDrag === 'function',
+      );
+    };
+
+    it('has onMomentumScrollEnd handler on scroll view', () => {
+      const { UNSAFE_root } = render(<CollapsibleProfileLayout {...defaultProps} />);
+      const sv = getAnimatedScrollView(UNSAFE_root);
+      expect(sv.props.onMomentumScrollEnd).toBeDefined();
+      expect(typeof sv.props.onMomentumScrollEnd).toBe('function');
+    });
+
+    it('handleScrollEndDrag forwards event to parent onScrollEndDrag', () => {
+      const onScrollEndDrag = jest.fn();
+      const { UNSAFE_root } = render(
+        <CollapsibleProfileLayout {...defaultProps} onScrollEndDrag={onScrollEndDrag} />,
+      );
+      const sv = getAnimatedScrollView(UNSAFE_root);
+      const event = { nativeEvent: { contentOffset: { y: 50 }, velocity: { y: 0 } } };
+      sv.props.onScrollEndDrag(event);
+      expect(onScrollEndDrag).toHaveBeenCalledWith(event);
+    });
+
+    it('handleScrollEndDrag forwards event even with high velocity', () => {
+      const onScrollEndDrag = jest.fn();
+      const { UNSAFE_root } = render(
+        <CollapsibleProfileLayout {...defaultProps} onScrollEndDrag={onScrollEndDrag} />,
+      );
+      const sv = getAnimatedScrollView(UNSAFE_root);
+      const event = { nativeEvent: { contentOffset: { y: 50 }, velocity: { y: 3.0 } } };
+      sv.props.onScrollEndDrag(event);
+      expect(onScrollEndDrag).toHaveBeenCalledWith(event);
+    });
+
+    it('handleScrollEndDrag does not crash without parent onScrollEndDrag', () => {
+      const { UNSAFE_root } = render(<CollapsibleProfileLayout {...defaultProps} />);
+      const sv = getAnimatedScrollView(UNSAFE_root);
+      const event = { nativeEvent: { contentOffset: { y: 50 }, velocity: { y: 0 } } };
+      expect(() => sv.props.onScrollEndDrag(event)).not.toThrow();
+    });
+
+    it('onMomentumScrollEnd does not crash when called', () => {
+      const { UNSAFE_root } = render(<CollapsibleProfileLayout {...defaultProps} />);
+      const sv = getAnimatedScrollView(UNSAFE_root);
+      const event = { nativeEvent: { contentOffset: { y: 80 } } };
+      expect(() => sv.props.onMomentumScrollEnd(event)).not.toThrow();
+    });
+
+    it('handleScrollEndDrag handles missing velocity gracefully', () => {
+      const onScrollEndDrag = jest.fn();
+      const { UNSAFE_root } = render(
+        <CollapsibleProfileLayout {...defaultProps} onScrollEndDrag={onScrollEndDrag} />,
+      );
+      const sv = getAnimatedScrollView(UNSAFE_root);
+      // velocity may be undefined on some platforms
+      const event = { nativeEvent: { contentOffset: { y: 50 } } };
+      expect(() => sv.props.onScrollEndDrag(event)).not.toThrow();
+      expect(onScrollEndDrag).toHaveBeenCalledWith(event);
+    });
   });
 
   it('renders placeholder view when rightContent is not provided', () => {

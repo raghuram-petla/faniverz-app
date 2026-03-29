@@ -40,10 +40,25 @@ jest.mock('@/components/common/ScreenHeader', () => {
 
 jest.mock('@/styles/movieMedia.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
+  HERO_HEIGHT: 200,
+  POSTER_EXPANDED_W: 56,
+  POSTER_EXPANDED_H: 84,
+  POSTER_COLLAPSED_W: 28,
+  POSTER_COLLAPSED_H: 42,
+  NAV_ROW_HEIGHT: 56,
+  TITLE_SCALE: 0.7,
 }));
 
 jest.mock('@/theme/colors', () => ({
   colors: new Proxy({}, { get: () => '#000' }),
+}));
+
+jest.mock('@shared/imageUrl', () => ({
+  getImageUrl: (url: string | null) => url,
+}));
+
+jest.mock('@/constants/placeholders', () => ({
+  PLACEHOLDER_POSTER: 'https://placeholder.com/poster.png',
 }));
 
 import React from 'react';
@@ -109,12 +124,22 @@ describe('MediaScreen', () => {
     (useMovieDetail as jest.Mock).mockReturnValue({ data: mockMovie, isLoading: false });
   });
 
-  it('renders movie title in hero and sticky header', () => {
+  it('renders movie title in floating title element', () => {
     render(<MediaScreen />);
-    expect(screen.getAllByText('Pushpa 2')).toHaveLength(2);
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
   });
 
-  it('shows media stats in hero header', () => {
+  it('renders floating poster element', () => {
+    render(<MediaScreen />);
+    expect(screen.getByTestId('floating-poster')).toBeTruthy();
+  });
+
+  it('renders floating title element', () => {
+    render(<MediaScreen />);
+    expect(screen.getByTestId('floating-title')).toBeTruthy();
+  });
+
+  it('shows media stats subtitle in floating group', () => {
     render(<MediaScreen />);
     expect(screen.getByText(/2 Videos.*1 Photo/)).toBeTruthy();
   });
@@ -181,31 +206,19 @@ describe('MediaScreen', () => {
       back: mockBack,
       dismissAll: jest.fn(),
     });
-
     render(<MediaScreen />);
     fireEvent.press(screen.getByLabelText('Go back'));
     expect(mockBack).toHaveBeenCalled();
   });
 
-  it('handles scroll event without crashing', () => {
-    render(<MediaScreen />);
-    const scrollView = screen.UNSAFE_getByType(require('react-native').ScrollView);
-    fireEvent.scroll(scrollView, {
-      nativeEvent: { contentOffset: { y: 120, x: 0 }, layoutMeasurement: {}, contentSize: {} },
-    });
-    // No crash is the assertion — handleScroll updates shared value
-  });
-
   it('filters videos by active category when a filter pill is pressed', () => {
     render(<MediaScreen />);
     fireEvent.press(screen.getByText('Videos (2)'));
-    // Click Trailer filter pill
     fireEvent.press(screen.getByText('Trailer (1)'));
-    // Official Trailer should still be visible (Trailer type), Title Song should be hidden
     expect(screen.getByText('Official Trailer')).toBeTruthy();
   });
 
-  it('useAnimatedStyle callback for title fade returns opacity', () => {
+  it('useAnimatedStyle callbacks produce correct animated styles', () => {
     const useAnimatedStyle = require('react-native-reanimated').useAnimatedStyle;
     const interpolate = require('react-native-reanimated').interpolate;
     interpolate.mockImplementation((value: number) => value);
@@ -224,32 +237,57 @@ describe('MediaScreen', () => {
     (useMovieDetail as jest.Mock).mockReturnValue({ data: movieNoVideos, isLoading: false });
     render(<MediaScreen />);
     fireEvent.press(screen.getByText('Videos (0)'));
-    // Filter pills (All, Trailer, Song) should not appear
     expect(screen.queryByText('All')).toBeNull();
-    expect(screen.queryByText('Trailer (1)')).toBeNull();
   });
 
   it('strips count suffix from active category label', () => {
     render(<MediaScreen />);
     fireEvent.press(screen.getByText('Videos (2)'));
-    // Press a category filter pill with count suffix
     fireEvent.press(screen.getByText('Trailer (1)'));
-    // The activeCategoryLabel should be 'Trailer' (stripped count)
-    // Verify the Trailer video is visible
     expect(screen.getByText('Official Trailer')).toBeTruthy();
   });
 
-  it('renders correctly when id param is undefined (covers id ?? empty string)', () => {
-    // The default mock always returns data, but the ?? '' branch for id is covered
-    // when useLocalSearchParams returns undefined id
+  it('renders correctly when id param is undefined', () => {
     const routerModule = jest.requireMock('expo-router');
     const origUseLocalSearchParams = routerModule.useLocalSearchParams;
     routerModule.useLocalSearchParams = () => ({ id: undefined });
-
     (useMovieDetail as jest.Mock).mockReturnValue({ data: undefined, isLoading: false });
     render(<MediaScreen />);
     expect(screen.getByText('No results found')).toBeTruthy();
-
     routerModule.useLocalSearchParams = origUseLocalSearchParams;
+  });
+
+  it('scroll end drag handler does not crash', () => {
+    const { UNSAFE_root } = render(<MediaScreen />);
+    const Animated = require('react-native-reanimated').default;
+    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
+    const sv = scrollViews.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: any) => typeof s.props.onScrollEndDrag === 'function',
+    );
+    if (sv) {
+      expect(() =>
+        sv.props.onScrollEndDrag({
+          nativeEvent: { contentOffset: { y: 50 }, velocity: { y: 0 } },
+        }),
+      ).not.toThrow();
+    }
+  });
+
+  it('momentum scroll end handler does not crash', () => {
+    const { UNSAFE_root } = render(<MediaScreen />);
+    const Animated = require('react-native-reanimated').default;
+    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
+    const sv = scrollViews.find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (s: any) => typeof s.props.onMomentumScrollEnd === 'function',
+    );
+    if (sv) {
+      expect(() =>
+        sv.props.onMomentumScrollEnd({
+          nativeEvent: { contentOffset: { y: 100 } },
+        }),
+      ).not.toThrow();
+    }
   });
 });

@@ -7,32 +7,54 @@ const GRID_GAP = 4;
 const NUM_COLUMNS = 3;
 const CARD_WIDTH = (SCREEN_WIDTH - 32 - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
+/** @contract Hero height defines the scroll distance over which the collapse animation runs */
+export const HERO_HEIGHT = 200;
+/** Poster size in the hero (expanded) state */
+export const POSTER_EXPANDED_W = 56;
+export const POSTER_EXPANDED_H = 84;
+/** Poster size in the nav bar (collapsed) state */
+export const POSTER_COLLAPSED_W = 28;
+export const POSTER_COLLAPSED_H = 42;
+/** Nav row total height: paddingVertical(8)*2 + button(40) */
+export const NAV_ROW_HEIGHT = 56;
+/** Title scale factor: collapsed font / hero font (14/20) */
+export const TITLE_SCALE = 14 / 20;
+
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
     scrollContent: { paddingHorizontal: 16, paddingBottom: 40 },
 
-    // Hero header
-    heroContainer: { height: 200, width: SCREEN_WIDTH, overflow: 'hidden' },
-    heroInfo: {
+    // Hero header (backdrop only — poster + title are floating)
+    heroContainer: { height: HERO_HEIGHT, width: SCREEN_WIDTH, overflow: 'hidden' },
+
+    // Floating poster (absolutely positioned, animated via transforms)
+    floatingPoster: {
       position: 'absolute',
-      bottom: 0,
-      left: 16,
-      right: 16,
-      paddingBottom: 16,
+      width: POSTER_EXPANDED_W,
+      height: POSTER_EXPANDED_H,
+      zIndex: 11,
     },
-    heroTitle: {
+    floatingPosterImage: {
+      width: POSTER_EXPANDED_W,
+      height: POSTER_EXPANDED_H,
+      borderRadius: 6,
+    },
+
+    // Floating title (absolutely positioned, animated via transforms)
+    floatingTitle: {
+      position: 'absolute',
+      zIndex: 11,
+    },
+    floatingTitleText: {
       fontSize: 20,
       fontWeight: '700',
-      color: colors.white,
-      textShadowColor: 'rgba(0,0,0,0.6)',
-      textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 6,
+      color: t.textPrimary,
     },
-    heroSubtitle: {
+    floatingSubtitle: {
       fontSize: 14,
-      color: colors.white60,
-      marginTop: 4,
+      color: t.textSecondary,
+      marginTop: 2,
     },
 
     // Sticky section
@@ -53,8 +75,7 @@ export const createStyles = (t: SemanticTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    stickyTitleWrap: { flex: 1, alignItems: 'center', marginHorizontal: 8 },
-    stickyTitle: { fontSize: 18, fontWeight: '700', color: t.textPrimary },
+    stickyNavPlaceholder: { flex: 1 },
     stickyNavRight: { width: 88 },
     filterPillsContainer: { paddingHorizontal: 16, paddingBottom: 4 },
 
