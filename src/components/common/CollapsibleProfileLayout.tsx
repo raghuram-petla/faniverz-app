@@ -1,11 +1,6 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
-import type {
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  LayoutChangeEvent,
-  ScrollView,
-} from 'react-native';
+import type { NativeSyntheticEvent, NativeScrollEvent, LayoutChangeEvent } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,6 +10,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
+import { useSnapScroll } from '@/hooks/useSnapScroll';
 import { HomeButton } from './HomeButton';
 import {
   createStyles,
@@ -71,8 +67,15 @@ export function CollapsibleProfileLayout({
   const insets = useSafeAreaInsets();
   const styles = createStyles(theme);
   const { width: screenWidth } = useWindowDimensions();
-  const scrollRef = useRef<ScrollView>(null);
   const scrollOffset = useSharedValue(0);
+  const {
+    scrollRef,
+    contentMinHeight,
+    handleLayout: onScrollViewLayout,
+    handleScroll: onSnapScroll,
+    handleScrollEndDrag: onSnapScrollEndDrag,
+    handleMomentumEnd: onSnapMomentumEnd,
+  } = useSnapScroll({ scrollOffset, snapThreshold: COLLAPSE_SCROLL_DISTANCE });
   // @edge nameWidth/nameHeight initialize to estimated values; corrected on first onLayout
   const nameWidth = useSharedValue(200);
   const nameHeight = useSharedValue(30);
@@ -151,31 +154,19 @@ export function CollapsibleProfileLayout({
     };
   });
 
-  /** @sideeffect Snaps scroll to 0 or COLLAPSE_SCROLL_DISTANCE when stopped in the transition zone */
-  const snapIfNeeded = useCallback((y: number) => {
-    if (y > 0 && y < COLLAPSE_SCROLL_DISTANCE) {
-      const target = y < COLLAPSE_SCROLL_DISTANCE / 2 ? 0 : COLLAPSE_SCROLL_DISTANCE;
-      scrollRef.current?.scrollTo({ y: target, animated: true });
-    }
-  }, []);
-
   /** @sideeffect Writes to scrollOffset shared value AND forwards event to parent onScroll */
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollOffset.value = e.nativeEvent.contentOffset.y;
+    onSnapScroll(e);
     onScroll?.(e);
   };
 
   const handleScrollEndDrag = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const vy = e.nativeEvent.velocity?.y ?? 0;
-    // @edge If no momentum will follow (velocity ≈ 0), snap immediately
-    if (Math.abs(vy) < 0.1) {
-      snapIfNeeded(e.nativeEvent.contentOffset.y);
-    }
+    onSnapScrollEndDrag(e);
     onScrollEndDrag?.(e);
   };
 
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    snapIfNeeded(e.nativeEvent.contentOffset.y);
+    onSnapMomentumEnd(e);
   };
 
   return (
@@ -218,8 +209,9 @@ export function CollapsibleProfileLayout({
       <Animated.ScrollView
         ref={scrollRef as React.RefObject<Animated.ScrollView>}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40, minHeight: contentMinHeight }}
         showsVerticalScrollIndicator={false}
+        onLayout={onScrollViewLayout}
         onScroll={handleScroll}
         onScrollBeginDrag={onScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}

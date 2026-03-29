@@ -1,11 +1,6 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
-import type {
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  ScrollView,
-  LayoutChangeEvent,
-} from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -35,6 +30,7 @@ import {
   NAV_ROW_HEIGHT,
   TITLE_SCALE,
 } from '@/styles/movieMedia.styles';
+import { useSnapScroll } from '@/hooks/useSnapScroll';
 import { useTheme } from '@/theme';
 import { getImageUrl } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
@@ -59,10 +55,17 @@ export default function MediaScreen() {
   const [activeTab, setActiveTab] = useState<MediaTabName>('photos');
   // @invariant: 'All' must be the first category; other categories are derived from VIDEO_TYPES
   const [activeCategory, setActiveCategory] = useState('All');
-  const scrollRef = useRef<ScrollView>(null);
   const scrollOffset = useSharedValue(0);
   const titleWidth = useSharedValue(200);
   const titleHeight = useSharedValue(24);
+  const {
+    scrollRef,
+    contentMinHeight,
+    handleLayout,
+    handleScroll,
+    handleScrollEndDrag,
+    handleMomentumEnd,
+  } = useSnapScroll({ scrollOffset, snapThreshold: HERO_HEIGHT });
 
   const onTitleLayout = useCallback(
     (e: LayoutChangeEvent) => {
@@ -157,32 +160,6 @@ export default function MediaScreen() {
     opacity: interpolate(scrollOffset.value, [0, HERO_HEIGHT * 0.4], [1, 0], Extrapolation.CLAMP),
   }));
 
-  /** @sideeffect Snaps scroll to 0 or HERO_HEIGHT when stopped in the transition zone */
-  const snapIfNeeded = useCallback((y: number) => {
-    if (y > 0 && y < HERO_HEIGHT) {
-      scrollRef.current?.scrollTo({ y: y < HERO_HEIGHT / 2 ? 0 : HERO_HEIGHT, animated: true });
-    }
-  }, []);
-  const handleScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      scrollOffset.value = e.nativeEvent.contentOffset.y;
-    },
-    [scrollOffset],
-  );
-  const handleScrollEndDrag = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const vy = e.nativeEvent.velocity?.y ?? 0;
-      if (Math.abs(vy) < 0.1) snapIfNeeded(e.nativeEvent.contentOffset.y);
-    },
-    [snapIfNeeded],
-  );
-  const handleMomentumEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      snapIfNeeded(e.nativeEvent.contentOffset.y);
-    },
-    [snapIfNeeded],
-  );
-
   if (isLoading) {
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -249,6 +226,8 @@ export default function MediaScreen() {
       <Animated.ScrollView
         ref={scrollRef as React.RefObject<Animated.ScrollView>}
         stickyHeaderIndices={[1]}
+        contentContainerStyle={{ minHeight: contentMinHeight }}
+        onLayout={handleLayout}
         onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={handleMomentumEnd}
