@@ -1,13 +1,8 @@
 /**
  * Image sync operations — posters and backdrops from TMDB images endpoint.
- * All images stored in unified movie_images table with image_type discriminator.
- * Server-side only.
- *
  * @boundary: makes 1 TMDB API call (getMovieImages) for both posters + backdrops.
  * @coupling: depends on r2-sync.ts for image uploads.
- * @contract: additive sync — only uploads missing images (by tmdb_file_path),
- * making imports resumable across 504 timeouts. Stale cleanup runs only when
- * all images are processed (function completes without timeout).
+ * @contract: additive sync — only uploads missing images (by tmdb_file_path).
  */
 
 import { randomUUID } from 'crypto';
@@ -261,9 +256,53 @@ export async function syncAllImages(
   tmdbMainPaths?: { posterPath?: string | null; backdropPath?: string | null },
 ): Promise<{ posterCount: number; backdropCount: number }> {
   const images = await getMovieImages(tmdbId, apiKey);
-  const [posterCount, backdropCount] = await Promise.all([
-    syncPosters(movieId, tmdbId, images, supabase, tmdbMainPaths?.posterPath),
-    syncBackdrops(movieId, tmdbId, images, supabase, tmdbMainPaths?.backdropPath),
-  ]);
+  // @sync: run sequentially to avoid trigger race condition — concurrent inserts into
+  // movie_images can cause sync_movie_poster_to_feed triggers to cross-contaminate
+  // thumbnail_url values in news_feed entries (observed 1-in-93 failure rate).
+  const posterCount = await syncPosters(
+    movieId,
+    tmdbId,
+    images,
+    supabase,
+    tmdbMainPaths?.posterPath,
+  );
+  const backdropCount = await syncBackdrops(
+    movieId,
+    tmdbId,
+    images,
+    supabase,
+    tmdbMainPaths?.backdropPath,
+  );
+
+  // @sideeffect: post-sync verification — correct any feed entries where thumbnail_url
+  // drifted from the source movie_images row (safety net for trigger race conditions).
+  await repairFeedThumbnails(movieId, supabase);
+
   return { posterCount, backdropCount };
+}
+
+/** @sideeffect: repairs news_feed rows where thumbnail_url != movie_images.image_url. */
+async function repairFeedThumbnails(movieId: string, supabase: SupabaseClient): Promise<void> {
+  const { data: images } = await supabase
+    .from('movie_images')
+    .select('id, image_url')
+    .eq('movie_id', movieId);
+  if (!images?.length) return;
+
+  const imageMap = new Map(images.map((i) => [i.id as string, i.image_url as string]));
+  const ids = images.map((i) => i.id as string);
+
+  const { data: feedEntries } = await supabase
+    .from('news_feed')
+    .select('id, source_id, thumbnail_url')
+    .eq('source_table', 'movie_images')
+    .in('source_id', ids);
+  if (!feedEntries?.length) return;
+
+  for (const entry of feedEntries) {
+    const expected = imageMap.get(entry.source_id as string);
+    if (expected && entry.thumbnail_url !== expected) {
+      await supabase.from('news_feed').update({ thumbnail_url: expected }).eq('id', entry.id);
+    }
+  }
 }
