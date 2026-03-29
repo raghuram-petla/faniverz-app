@@ -20,6 +20,9 @@ CREATE POLICY "Anyone can read news feed"
 -- ============================================================
 -- 2. RPC: add published_at <= now() guard (bypasses RLS)
 -- ============================================================
+-- DROP required because CREATE OR REPLACE cannot change return type
+DROP FUNCTION IF EXISTS get_personalized_feed(uuid, text, integer, integer);
+
 CREATE OR REPLACE FUNCTION get_personalized_feed(
   p_user_id uuid DEFAULT NULL,
   p_filter text DEFAULT 'all',
