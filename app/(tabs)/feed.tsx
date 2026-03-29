@@ -57,12 +57,18 @@ export default function FeedScreen() {
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
   const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
 
-  // @sideeffect Scroll to top when filter changes — key-based remount alone is unreliable with FlashList
+  // @sideeffect Scroll to top when filter changes.
+  // key={filter} was removed from FlashList because it causes a remount that races with native layout
+  // in production (Hermes): scrollToOffset fires before RecyclerListView finishes its initial layout,
+  // making it a no-op. Keeping FlashList mounted and using requestAnimationFrame defers the scroll
+  // until after the frame is painted, by which point the list is ready to accept scroll commands.
   const prevFilterRef = useRef(filter);
   useEffect(() => {
     if (prevFilterRef.current !== filter) {
       prevFilterRef.current = filter;
-      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      });
     }
   }, [filter]);
   const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
@@ -218,10 +224,8 @@ export default function FeedScreen() {
       ) : (
         // @coupling FlashList from @shopify — requires fixed estimatedItemSize or drawDistance for perf
         <View style={styles.scroll}>
-          {/* @sideeffect key={filter} remounts list on filter change, resetting scroll to top */}
           <FlashList
             ref={listRef}
-            key={filter}
             data={allItems}
             keyExtractor={(item) => item.id}
             drawDistance={500}
