@@ -4,15 +4,15 @@ import type { FeedPillConfig } from '@/types';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
 // @sync pill values must match FeedFilterOption type and backend content_type groupings
-// @coupling activeColor values should stay consistent with getFeedTypeColor mappings below
+// @coupling all pills use red600 as unified active color; getFeedTypeColor below is for feed card badges only
 export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'All', value: 'all', activeColor: colors.red600 },
-  { label: 'Trailers', value: 'trailers', activeColor: colors.blue600 },
-  { label: 'Songs', value: 'songs', activeColor: colors.purple600 },
-  { label: 'Posters', value: 'posters', activeColor: colors.green500 },
-  { label: 'BTS', value: 'bts', activeColor: colors.orange500 },
-  { label: 'Surprise', value: 'surprise', activeColor: colors.pink600 },
-  { label: 'Updates', value: 'updates', activeColor: colors.yellow400 },
+  { label: 'Trailers', value: 'trailers', activeColor: colors.red600 },
+  { label: 'Songs', value: 'songs', activeColor: colors.red600 },
+  { label: 'Posters', value: 'posters', activeColor: colors.red600 },
+  { label: 'BTS', value: 'bts', activeColor: colors.red600 },
+  { label: 'Surprise', value: 'surprise', activeColor: colors.red600 },
+  { label: 'Updates', value: 'updates', activeColor: colors.red600 },
 ];
 
 // @sync must cover all content_type values from news_feed_items table

@@ -55,7 +55,6 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
-
   const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
     totalItems: allItems.length,
     hasNextPage,
@@ -209,7 +208,9 @@ export default function FeedScreen() {
       ) : (
         // @coupling FlashList from @shopify — requires fixed estimatedItemSize or drawDistance for perf
         <View style={styles.scroll}>
+          {/* @sideeffect key={filter} remounts list on filter change, resetting scroll to top */}
           <FlashList
+            key={filter}
             data={allItems}
             keyExtractor={(item) => item.id}
             drawDistance={500}
