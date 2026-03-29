@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ImageViewerGestures } from './ImageViewerGestures';
 import { useLoadingProgressBar } from './useLoadingProgressBar';
+import { useImageTargetResize } from './useImageTargetResize';
 import { colors as palette } from '@/theme/colors';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { overlayStyles as styles } from './ImageViewerOverlay.styles';
@@ -70,6 +71,11 @@ export function ImageViewerOverlay({
   const srcY = useSharedValue(sourceLayout.y);
   const srcW = useSharedValue(sourceLayout.width);
   const srcH = useSharedValue(sourceLayout.height);
+  const {
+    dynTgtW,
+    dynTgtH,
+    handleFullImageLoad: resizeOnLoad,
+  } = useImageTargetResize(!!isLandscape, screenW, screenH);
   // @contract Screen stays portrait-locked. Accelerometer detects physical tilt.
   // When tilted to landscape, CSS rotation + rescaling applied to image container only.
   // The feed behind never rotates — only the image does.
@@ -85,9 +91,6 @@ export function ImageViewerOverlay({
   const landscapeTgtH = screenW;
   const tgtW = deviceLandscape ? landscapeTgtW : portraitTgtW;
   const tgtH = deviceLandscape ? landscapeTgtH : portraitTgtH;
-  const tgtX = deviceLandscape ? (screenW - landscapeTgtW) / 2 : 0;
-  const tgtY = (screenH - tgtH) / 2;
-
   // @sideeffect Animate rotation when device tilt changes (only while not closing).
   // Honors tilt direction: 90° for left tilt, -90° for right tilt.
   useEffect(() => {
@@ -195,12 +198,18 @@ export function ImageViewerOverlay({
 
   const animatedContainerStyle = useAnimatedStyle(() => {
     const p = progress.value;
+    // For landscape (device tilted), use fixed pre-rotation dimensions.
+    // For portrait, use dynTgtW/dynTgtH which update to the actual image aspect ratio on load.
+    const tw = deviceLandscape ? landscapeTgtW : dynTgtW.value;
+    const th = deviceLandscape ? landscapeTgtH : dynTgtH.value;
+    const tx = deviceLandscape ? (screenW - landscapeTgtW) / 2 : (screenW - dynTgtW.value) / 2;
+    const ty = (screenH - th) / 2;
     return {
       position: 'absolute',
-      left: srcX.value + (tgtX - srcX.value) * p,
-      top: srcY.value + (tgtY - srcY.value) * p,
-      width: srcW.value + (tgtW - srcW.value) * p,
-      height: srcH.value + (tgtH - srcH.value) * p,
+      left: srcX.value + (tx - srcX.value) * p,
+      top: srcY.value + (ty - srcY.value) * p,
+      width: srcW.value + (tw - srcW.value) * p,
+      height: srcH.value + (th - srcH.value) * p,
       borderRadius: srcRadius * (1 - p),
       overflow: 'hidden' as const,
       transform: [{ rotate: `${rotation.value}deg` }],
@@ -257,7 +266,10 @@ export function ImageViewerOverlay({
                 style={styles.imageFill}
                 contentFit="cover"
                 transition={300}
-                onLoad={() => setFullResLoaded(true)}
+                onLoad={(e) => {
+                  resizeOnLoad(e);
+                  setFullResLoaded(true);
+                }}
               />
               <Animated.View style={progressBarContainerStyle}>
                 <Animated.View style={progressBarFillStyle} />

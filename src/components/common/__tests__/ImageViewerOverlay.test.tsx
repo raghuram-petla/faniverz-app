@@ -299,9 +299,35 @@ describe('ImageViewerOverlay', () => {
       (img: { props: { onLoad?: () => void } }) => img.props.onLoad !== undefined,
     );
     if (fullResImage?.props.onLoad) {
-      // Calling onLoad should not throw
+      // Calling onLoad with no args should not throw (safe access guards against missing event)
       expect(() => fullResImage.props.onLoad()).not.toThrow();
     }
+  });
+
+  it('onLoad with actual image dimensions updates dynTgtW/dynTgtH shared values', () => {
+    const reanimated = require('react-native-reanimated');
+    const sharedValues: Array<{ value: number }> = [];
+    reanimated.useSharedValue.mockImplementation((v: number) => {
+      const sv = { value: v };
+      sharedValues.push(sv);
+      return sv;
+    });
+
+    const { UNSAFE_getAllByType } = render(<ImageViewerOverlay {...defaultProps} />);
+    const { Image } = require('expo-image');
+    const images = UNSAFE_getAllByType(Image);
+    const fullResImage = images.find(
+      (img: { props: { onLoad?: (e: unknown) => void } }) => img.props.onLoad !== undefined,
+    );
+    expect(fullResImage?.props.onLoad).toBeDefined();
+    // Fire onLoad with a wide (1:1 square) image — aspect != 2:3, should update target dimensions
+    expect(() =>
+      fullResImage!.props.onLoad({
+        source: { width: 1080, height: 1080, url: '', mediaType: null },
+      }),
+    ).not.toThrow();
+
+    reanimated.useSharedValue.mockImplementation((v: number) => ({ value: v }));
   });
 
   it('renders correctly when animations are disabled (no transition effects)', () => {
