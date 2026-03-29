@@ -244,7 +244,6 @@ export function ImageViewerOverlay({
           imageWidth={deviceLandscape ? tgtH : tgtW}
           currentScreenW={screenW}
           currentScreenH={screenH}
-          keepBackdropOpaque={deviceLandscape}
         >
           <Animated.View style={[styles.gestureArea, { width: screenW, height: screenH }]}>
             <Animated.View style={animatedContainerStyle}>

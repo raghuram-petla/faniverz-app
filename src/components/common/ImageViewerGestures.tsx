@@ -36,9 +36,6 @@ export interface ImageViewerGesturesProps {
   currentScreenW?: number;
   /** @contract current screen height (reactive to rotation) */
   currentScreenH?: number;
-  /** @contract When true (landscape backdrops), keep backdrop opaque during swipe
-   * to hide the ugly portrait feed underneath. Portrait posters clear it instantly. */
-  keepBackdropOpaque?: boolean;
 }
 
 export const MAX_SCALE = 4;
@@ -76,7 +73,6 @@ export function ImageViewerGestures({
   imageWidth,
   currentScreenW,
   currentScreenH,
-  keepBackdropOpaque,
 }: ImageViewerGesturesProps) {
   const imgW = imageWidth ?? IMG_W;
   const imgH = imageHeight ?? IMG_H;
@@ -145,13 +141,9 @@ export function ImageViewerGestures({
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
       // @sideeffect Instantly signal drag-to-dismiss mode so close button hides and backdrop clears.
-      // @edge keepBackdropOpaque=true for landscape backdrops — the portrait feed behind looks
-      // ugly, so the black backdrop must stay visible until the viewer fully closes.
       if (scale.value <= 1) {
         isDragging.value = 1;
-        if (!keepBackdropOpaque) {
-          backdropOpacity.value = 0;
-        }
+        backdropOpacity.value = 0;
       }
     })
     .onUpdate((e) => {
