@@ -227,6 +227,31 @@ describe('VideosSection', () => {
     }
   });
 
+  it('shows error and disables Add Video when video_date is in the future', () => {
+    render(<VideosSection {...defaultProps} showAddForm={true} />);
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: '2099-12-31' } });
+    expect(screen.getByText('Date cannot be in the future')).toBeInTheDocument();
+    expect(screen.getByText('Add Video')).toBeDisabled();
+  });
+
+  it('does not submit form when video_date is in the future', () => {
+    const onAdd = vi.fn();
+    render(<VideosSection {...defaultProps} showAddForm={true} onAdd={onAdd} />);
+
+    const urlInput = screen.getByPlaceholderText(/youtube\.com/);
+    fireEvent.change(urlInput, { target: { value: 'https://youtube.com/watch?v=dQw4w9WgXcQ' } });
+    const titleInput = screen.getByPlaceholderText(/Official Trailer/);
+    fireEvent.change(titleInput, { target: { value: 'My Trailer' } });
+
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    fireEvent.change(dateInputs[0], { target: { value: '2099-12-31' } });
+
+    // Attempt submit — button is disabled but test the guard directly
+    fireEvent.submit(screen.getByText('Add Video').closest('form')!);
+    expect(onAdd).not.toHaveBeenCalled();
+  });
+
   it('shows video type fallback when type is not in VIDEO_TYPES', () => {
     const unknownTypeVideo = { ...mockVideo, video_type: 'custom_type' as never };
     render(<VideosSection {...defaultProps} visibleVideos={[unknownTypeVideo]} />);

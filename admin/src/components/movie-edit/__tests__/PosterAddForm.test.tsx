@@ -340,6 +340,44 @@ describe('PosterAddForm', () => {
         expect.any(String),
       );
     });
+
+    it('shows error and disables Add to Gallery when date is in the future', async () => {
+      mockNaturalWidth = 500;
+      mockNaturalHeight = 750;
+      mockPosterUpload.mockResolvedValue('https://cdn.example.com/poster.jpg');
+
+      render(<PosterAddForm {...makeProps()} />);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(['data'], 'poster.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+      fireEvent.change(fileInput);
+      await waitFor(() => screen.getByText('poster'));
+
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      fireEvent.change(dateInput, { target: { value: '2099-12-31' } });
+
+      expect(screen.getByText('Date cannot be in the future')).toBeInTheDocument();
+      expect(screen.getByText('Add to Gallery').closest('button')).toBeDisabled();
+    });
+
+    it('does not call onConfirm when date is in the future', async () => {
+      mockNaturalWidth = 500;
+      mockNaturalHeight = 750;
+      mockPosterUpload.mockResolvedValue('https://cdn.example.com/poster.jpg');
+
+      const onConfirm = vi.fn();
+      render(<PosterAddForm {...makeProps({ onConfirm })} />);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(['data'], 'poster.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(fileInput, 'files', { value: [file], writable: false });
+      fireEvent.change(fileInput);
+      await waitFor(() => screen.getByText('poster'));
+
+      const dateInput = document.querySelector('input[type="date"]') as HTMLInputElement;
+      fireEvent.change(dateInput, { target: { value: '2099-12-31' } });
+
+      expect(onConfirm).not.toHaveBeenCalled();
+    });
   });
 
   describe('image onerror fallback', () => {

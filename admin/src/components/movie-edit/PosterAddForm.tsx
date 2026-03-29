@@ -79,6 +79,10 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
     );
   }
 
+  // @contract poster_date must not be in the future — future dates sort to feed top as "Just now"
+  const today = new Date().toISOString().slice(0, 10);
+  const isFuturePosterDate = !!posterForm.poster_date && posterForm.poster_date > today;
+
   const bucket = detectedType === 'backdrop' ? 'BACKDROPS' : 'POSTERS';
   const previewClass = detectedType === 'backdrop' ? 'w-32 h-[72px]' : 'w-20 h-[120px]';
 
@@ -124,12 +128,15 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
                 required
                 value={posterForm.poster_date}
                 onChange={(e) => setPosterForm((p) => ({ ...p, poster_date: e.target.value }))}
-                className={`w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600 ${!posterForm.poster_date ? 'ring-2 ring-red-500' : ''}`}
+                className={`w-full bg-input rounded-lg px-3 py-2 text-on-surface text-sm outline-none focus:ring-2 focus:ring-red-600 ${!posterForm.poster_date || isFuturePosterDate ? 'ring-2 ring-red-500' : ''}`}
               />
               {!posterForm.poster_date && (
                 <p className="text-red-500 text-xs mt-1">
                   Date is required — sets when this appears in the feed
                 </p>
+              )}
+              {isFuturePosterDate && (
+                <p className="text-red-500 text-xs mt-1">Date cannot be in the future</p>
               )}
             </div>
           </div>
@@ -170,7 +177,7 @@ export function PosterAddForm({ posterCount, onConfirm, onCancel }: PosterAddFor
           type="button"
           variant="primary"
           size="md"
-          disabled={!uploadedUrl || !posterForm.poster_date}
+          disabled={!uploadedUrl || !posterForm.poster_date || isFuturePosterDate}
           icon={<Check className="w-4 h-4" />}
           onClick={handleConfirmAdd}
         >

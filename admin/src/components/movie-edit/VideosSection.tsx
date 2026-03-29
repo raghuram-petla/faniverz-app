@@ -87,6 +87,10 @@ export function VideosSection({
 }: Props) {
   const [videoForm, setVideoForm] = useState(EMPTY_VIDEO_FORM);
 
+  // @contract video_date must not be in the future — future dates sort to feed top as "Just now"
+  const today = new Date().toISOString().slice(0, 10);
+  const isFutureVideoDate = !!videoForm.video_date && videoForm.video_date > today;
+
   // @contract reverse so newest videos appear first
   const displayVideos = useMemo(() => [...visibleVideos].reverse(), [visibleVideos]);
 
@@ -97,6 +101,8 @@ export function VideosSection({
       alert('Invalid YouTube URL or ID. Please enter a valid YouTube video link.');
       return;
     }
+    /* v8 ignore next */
+    if (isFutureVideoDate) return;
     onAdd({
       _id: crypto.randomUUID(),
       youtube_id: youtubeId,
@@ -143,13 +149,18 @@ export function VideosSection({
             onValueChange={(v) => setVideoForm((p) => ({ ...p, title: v }))}
           />
           <div className="grid grid-cols-2 gap-3">
-            <FormInput
-              label="Date"
-              variant="compact"
-              type="date"
-              value={videoForm.video_date}
-              onValueChange={(v) => setVideoForm((p) => ({ ...p, video_date: v }))}
-            />
+            <div>
+              <FormInput
+                label="Date"
+                variant="compact"
+                type="date"
+                value={videoForm.video_date}
+                onValueChange={(v) => setVideoForm((p) => ({ ...p, video_date: v }))}
+              />
+              {isFutureVideoDate && (
+                <p className="text-red-500 text-xs mt-1">Date cannot be in the future</p>
+              )}
+            </div>
           </div>
           {extractYouTubeId(videoForm.youtube_input) && (
             <div className="rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
@@ -164,7 +175,7 @@ export function VideosSection({
               type="submit"
               variant="primary"
               size="md"
-              disabled={!videoForm.youtube_input || !videoForm.title}
+              disabled={!videoForm.youtube_input || !videoForm.title || isFutureVideoDate}
               icon={<Plus className="w-4 h-4" />}
             >
               Add Video
