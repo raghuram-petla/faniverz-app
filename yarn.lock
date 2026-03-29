@@ -5335,7 +5335,7 @@ expo-router@~6.0.23:
 
 expo-sensors@~15.0.8:
   version "15.0.8"
-  resolved "https://registry.npmjs.org/expo-sensors/-/expo-sensors-15.0.8.tgz"
+  resolved "https://registry.yarnpkg.com/expo-sensors/-/expo-sensors-15.0.8.tgz#9ffe3413e726381d3d5949fe1e19667c0e5288b7"
   integrity sha512-ttibOSCYjFAMIfjV+vVukO1v7GKlbcPRfxcRqbTaSMGneewDwVSXbGFImY530fj1BR3mWq4n9jHnuDp8tAEY9g==
   dependencies:
     invariant "^2.2.4"

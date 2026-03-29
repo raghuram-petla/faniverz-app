@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator, Share } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,6 +55,16 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
+  const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
+
+  // @sideeffect Scroll to top when filter changes — key-based remount alone is unreliable with FlashList
+  const prevFilterRef = useRef(filter);
+  useEffect(() => {
+    if (prevFilterRef.current !== filter) {
+      prevFilterRef.current = filter;
+      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [filter]);
   const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
     totalItems: allItems.length,
     hasNextPage,
@@ -210,6 +220,7 @@ export default function FeedScreen() {
         <View style={styles.scroll}>
           {/* @sideeffect key={filter} remounts list on filter change, resetting scroll to top */}
           <FlashList
+            ref={listRef}
             key={filter}
             data={allItems}
             keyExtractor={(item) => item.id}

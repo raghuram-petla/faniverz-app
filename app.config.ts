@@ -60,6 +60,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-localization',
     'expo-font',
     'expo-system-ui',
+    // @sideeffect motionPermission:false strips NSMotionUsageDescription from Info.plist.
+    // Raw accelerometer (CMMotionManager) doesn't need it — only step/activity tracking does.
+    // Without this, users see a scary "Motion & Fitness" prompt for a movie app.
+    ['expo-sensors', { motionPermission: false }],
     '@react-native-google-signin/google-signin',
   ],
   extra: {
