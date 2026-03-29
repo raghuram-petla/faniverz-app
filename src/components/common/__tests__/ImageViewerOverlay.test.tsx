@@ -148,13 +148,9 @@ describe('ImageViewerOverlay', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('calls onSourceHide after open animation completes', () => {
-    jest.useFakeTimers();
+  it('calls onSourceHide on mount', () => {
     render(<ImageViewerOverlay {...defaultProps} />);
-    expect(mockOnSourceHide).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(300);
     expect(mockOnSourceHide).toHaveBeenCalled();
-    jest.useRealTimers();
   });
 
   it('calls onSourceShow when close button is pressed', () => {

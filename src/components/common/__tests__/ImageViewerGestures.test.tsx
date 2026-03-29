@@ -12,6 +12,7 @@ const capturedCallbacks: {
     velocityY: number;
   }) => void;
   doubleTapEnd?: (e: { x: number; y: number }) => void;
+  longPressStart?: () => void;
 } = {};
 
 jest.mock('react-native-gesture-handler', () => {
@@ -63,6 +64,14 @@ jest.mock('react-native-gesture-handler', () => {
         onEnd: jest.fn((cb: (e: { x: number; y: number }) => void) => {
           capturedCallbacks.doubleTapEnd = cb;
           return {};
+        }),
+      }),
+      LongPress: () => ({
+        minDuration: jest.fn().mockReturnValue({
+          onStart: jest.fn((cb: () => void) => {
+            capturedCallbacks.longPressStart = cb;
+            return {};
+          }),
         }),
       }),
       Simultaneous: jest.fn(),
