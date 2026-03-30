@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Film, Loader2, Plus, Pencil, X, Check } from 'lucide-react';
 import { SearchInput } from '@/components/common/SearchInput';
 import { formatDate } from '@/lib/utils';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import type { Movie } from '@/lib/types';
 
 // @contract Right-column panel: search for a movie, then fill in start date + label to add to theaters
@@ -17,6 +17,7 @@ export interface ManualAddPanelProps {
     movieId: string,
     title: string,
     posterUrl: string | null,
+    posterImageType: 'poster' | 'backdrop' | undefined,
     startDate: string,
     label: string | null,
     releaseDate: string | null,
@@ -46,6 +47,7 @@ export function ManualAddPanel({
       selectedMovie.id,
       selectedMovie.title,
       selectedMovie.poster_url,
+      selectedMovie.poster_image_type,
       startDate,
       label || null,
       selectedMovie.release_date,
@@ -88,7 +90,13 @@ export function ManualAddPanel({
                     >
                       {movie.poster_url ? (
                         <img
-                          src={getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? movie.poster_url}
+                          src={
+                            getImageUrl(
+                              movie.poster_url,
+                              'sm',
+                              posterBucket(movie.poster_image_type),
+                            ) ?? movie.poster_url
+                          }
                           alt=""
                           className="w-8 h-11 rounded object-cover shrink-0"
                         />
@@ -131,8 +139,11 @@ export function ManualAddPanel({
               {selectedMovie.poster_url ? (
                 <img
                   src={
-                    getImageUrl(selectedMovie.poster_url, 'sm', 'POSTERS') ??
-                    selectedMovie.poster_url
+                    getImageUrl(
+                      selectedMovie.poster_url,
+                      'sm',
+                      posterBucket(selectedMovie.poster_image_type),
+                    ) ?? selectedMovie.poster_url
                   }
                   alt=""
                   className="w-10 h-14 rounded object-cover shrink-0"

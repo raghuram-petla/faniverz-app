@@ -8,7 +8,7 @@ import type { MovieStatus } from '@/types';
 import type { MovieWithDetails } from '@/types/movie';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTranslation } from 'react-i18next';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket, backdropBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 
 /** @contract Full-width hero with backdrop, gradient overlay, poster thumbnail, and meta info */
@@ -29,8 +29,8 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
       <Image
         source={{
           uri:
-            getImageUrl(movie.backdrop_url, 'md', 'BACKDROPS') ??
-            getImageUrl(movie.poster_url, 'md', 'POSTERS') ??
+            getImageUrl(movie.backdrop_url, 'md', backdropBucket(movie.backdrop_image_type)) ??
+            getImageUrl(movie.poster_url, 'md', posterBucket(movie.poster_image_type)) ??
             PLACEHOLDER_POSTER,
         }}
         style={StyleSheet.absoluteFill}
@@ -57,7 +57,11 @@ export function MovieHeroSection({ movie, movieStatus, releaseYear }: MovieHeroS
       <View style={styles.heroInfo}>
         <View style={styles.heroInfoRow}>
           <Image
-            source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
+            source={{
+              uri:
+                getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+                PLACEHOLDER_POSTER,
+            }}
             style={styles.heroPoster}
             contentFit="cover"
           />

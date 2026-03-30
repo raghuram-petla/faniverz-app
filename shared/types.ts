@@ -238,7 +238,13 @@ export interface NewsFeedItem {
   published_at: string;
   created_at: string;
   score?: number;
-  movie?: { id: string; title: string; poster_url: string | null; release_date: string | null };
+  movie?: {
+    id: string;
+    title: string;
+    poster_url: string | null;
+    poster_image_type?: 'poster' | 'backdrop' | null;
+    release_date: string | null;
+  };
 }
 
 export interface FeedVote {

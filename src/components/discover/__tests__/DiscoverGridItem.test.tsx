@@ -38,6 +38,8 @@ jest.mock('@shared/movieStatus', () => ({
 }));
 
 jest.mock('@shared/imageUrl', () => ({
+  posterBucket: (t?: string) => (t === 'backdrop' ? 'BACKDROPS' : 'POSTERS'),
+  backdropBucket: (t?: string) => (t === 'poster' ? 'POSTERS' : 'BACKDROPS'),
   getImageUrl: (url: string) => url,
 }));
 

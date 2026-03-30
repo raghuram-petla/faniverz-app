@@ -289,6 +289,7 @@ describe('fetchPersonalizedFeed', () => {
       id: 'm2',
       title: 'Movie Two',
       poster_url: 'https://example.com/poster.jpg',
+      poster_image_type: null,
       release_date: '2024-06-01',
     });
   });

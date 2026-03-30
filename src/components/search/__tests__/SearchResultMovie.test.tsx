@@ -5,6 +5,8 @@ import type { Movie } from '@/types';
 import type { OTTPlatform } from '@/types/ott';
 
 jest.mock('@shared/imageUrl', () => ({
+  posterBucket: (t?: string) => (t === 'backdrop' ? 'BACKDROPS' : 'POSTERS'),
+  backdropBucket: (t?: string) => (t === 'poster' ? 'POSTERS' : 'BACKDROPS'),
   getImageUrl: jest.fn((url: string | null) => url),
 }));
 

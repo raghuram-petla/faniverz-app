@@ -422,10 +422,15 @@ describe('TheatersPage', () => {
     });
   });
 
+  // @edge: use local date formatting (not toISOString which gives UTC) to match
+  // daysUntil() which computes diff from local now.getFullYear()/getMonth()/getDate().
+  const toLocalDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   it('daysUntil shows subtitle for upcoming movies', () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = toLocalDateStr(tomorrow);
     mockUseUpcomingMovies.mockReturnValue({
       data: [{ id: 'm2', title: 'Tomorrow Movie', poster_url: null, release_date: tomorrowStr }],
       isLoading: false,
@@ -435,7 +440,7 @@ describe('TheatersPage', () => {
   });
 
   it('daysUntil shows "Today" for today release', () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateStr(new Date());
     mockUseUpcomingMovies.mockReturnValue({
       data: [{ id: 'm3', title: 'Today Movie', poster_url: null, release_date: today }],
       isLoading: false,
@@ -447,7 +452,7 @@ describe('TheatersPage', () => {
   it('daysUntil shows "In N days" for future release', () => {
     const future = new Date();
     future.setDate(future.getDate() + 5);
-    const futureStr = future.toISOString().split('T')[0];
+    const futureStr = toLocalDateStr(future);
     mockUseUpcomingMovies.mockReturnValue({
       data: [{ id: 'm4', title: 'Future Movie', poster_url: null, release_date: futureStr }],
       isLoading: false,

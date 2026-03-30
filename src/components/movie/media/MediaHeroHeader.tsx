@@ -5,7 +5,7 @@ import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-na
 import type { SharedValue } from 'react-native-reanimated';
 import { createStyles, HERO_HEIGHT } from '@/styles/movieMedia.styles';
 import { useTheme } from '@/theme';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket, backdropBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { MovieWithDetails } from '@/types/movie';
 
@@ -25,8 +25,8 @@ export function MediaHeroHeader({ movie, scrollOffset }: MediaHeroHeaderProps) {
   const styles = createStyles(theme);
 
   const imageUri =
-    getImageUrl(movie.backdrop_url, 'md', 'BACKDROPS') ??
-    getImageUrl(movie.poster_url, 'md', 'POSTERS') ??
+    getImageUrl(movie.backdrop_url, 'md', backdropBucket(movie.backdrop_image_type)) ??
+    getImageUrl(movie.poster_url, 'md', posterBucket(movie.poster_image_type)) ??
     PLACEHOLDER_POSTER;
 
   /** @nullable Focus point overrides; both axes must be non-null for contentPosition to apply */

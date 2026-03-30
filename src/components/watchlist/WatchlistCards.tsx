@@ -7,7 +7,7 @@ import { useWatchlistMutations } from '@/features/watchlist/hooks';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import type { WatchlistEntry } from '@/types';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
 
@@ -42,7 +42,11 @@ export function AvailableCard({ entry, userId, styles }: CardProps) {
     >
       <View style={styles.posterWrapper}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
+          source={{
+            uri:
+              getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+              PLACEHOLDER_POSTER,
+          }}
           style={styles.poster}
           contentFit="cover"
           accessibilityLabel={`${movie.title} poster`}
@@ -123,7 +127,11 @@ export function UpcomingCard({ entry, userId, styles }: CardProps) {
     >
       <View style={styles.posterWrapper}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
+          source={{
+            uri:
+              getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+              PLACEHOLDER_POSTER,
+          }}
           style={styles.poster}
           contentFit="cover"
           accessibilityLabel={`${movie.title} poster`}
@@ -192,7 +200,11 @@ export function WatchedCard({ entry, userId, styles }: CardProps) {
     >
       <View style={styles.posterWrapper}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
+          source={{
+            uri:
+              getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+              PLACEHOLDER_POSTER,
+          }}
           style={[styles.poster, styles.posterWatched]}
           contentFit="cover"
           accessibilityLabel={`${movie.title} poster`}

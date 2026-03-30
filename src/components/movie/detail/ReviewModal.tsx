@@ -16,7 +16,7 @@ import { useTheme } from '@/theme';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { StarRating } from '@/components/ui/StarRating';
 import { createStyles } from '@/styles/movieDetail.styles';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
 
@@ -29,6 +29,8 @@ interface ReviewModalProps {
   movieTitle: string;
   /** @nullable posterUrl is null for movies without posters; falls back to PLACEHOLDER_POSTER */
   posterUrl: string | null;
+  /** @contract determines R2 bucket — 'backdrop' when a backdrop is used as poster */
+  posterImageType?: 'poster' | 'backdrop' | null;
   /** @nullable null for TBA movies */
   releaseYear: number | null;
   /** @nullable null if movie has no credited director */
@@ -51,6 +53,7 @@ export function ReviewModal({
   visible,
   movieTitle,
   posterUrl,
+  posterImageType,
   releaseYear,
   director,
   reviewRating,
@@ -108,7 +111,11 @@ export function ReviewModal({
 
               <View style={styles.modalMovieInfo}>
                 <Image
-                  source={{ uri: getImageUrl(posterUrl, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
+                  source={{
+                    uri:
+                      getImageUrl(posterUrl, 'sm', posterBucket(posterImageType)) ??
+                      PLACEHOLDER_POSTER,
+                  }}
                   style={styles.modalPoster}
                   contentFit="cover"
                 />

@@ -173,7 +173,9 @@ describe('reviews api', () => {
 
       await fetchUserReviews('user-1');
       expect(supabase.from).toHaveBeenCalledWith('reviews');
-      expect(mockSelect).toHaveBeenCalledWith('*, movie:movies(id, title, poster_url)');
+      expect(mockSelect).toHaveBeenCalledWith(
+        '*, movie:movies(id, title, poster_url, poster_image_type)',
+      );
       expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
     });
 

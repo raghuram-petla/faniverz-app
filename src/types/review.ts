@@ -13,7 +13,7 @@ export interface Review {
   created_at: string;
   updated_at: string;
   profile?: Pick<UserProfile, 'id' | 'display_name' | 'avatar_url'>;
-  movie?: Pick<Movie, 'id' | 'title' | 'poster_url'>;
+  movie?: Pick<Movie, 'id' | 'title' | 'poster_url' | 'poster_image_type'>;
 }
 
 export interface CreateReviewInput {

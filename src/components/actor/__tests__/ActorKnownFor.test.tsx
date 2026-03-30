@@ -4,6 +4,8 @@ jest.mock('@/styles/actorDetail.styles', () => ({
 
 const mockGetImageUrl = jest.fn((url: string | null) => url);
 jest.mock('@shared/imageUrl', () => ({
+  posterBucket: (t?: string) => (t === 'backdrop' ? 'BACKDROPS' : 'POSTERS'),
+  backdropBucket: (t?: string) => (t === 'poster' ? 'POSTERS' : 'BACKDROPS'),
   get getImageUrl() {
     return mockGetImageUrl;
   },

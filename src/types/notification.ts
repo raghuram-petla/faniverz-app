@@ -15,6 +15,6 @@ export interface Notification {
   scheduled_for: string;
   status: NotificationStatus;
   created_at: string;
-  movie?: Pick<Movie, 'id' | 'title' | 'poster_url'>;
+  movie?: Pick<Movie, 'id' | 'title' | 'poster_url' | 'poster_image_type'>;
   platform?: { id: string; name: string; logo: string; color: string } | null;
 }

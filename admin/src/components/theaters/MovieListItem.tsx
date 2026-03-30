@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Film, Pencil } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { ToggleSwitch } from './ToggleSwitch';
 
 // @contract Compact movie item — toggle immediately flips and shows editable date inline
@@ -10,6 +10,8 @@ export interface MovieListItemProps {
   id: string;
   title: string;
   posterUrl: string | null;
+  /** @contract determines R2 bucket — 'backdrop' when a backdrop is used as poster */
+  posterImageType?: 'poster' | 'backdrop' | null;
   releaseDate: string | null;
   isOn: boolean;
   pendingDate?: string;
@@ -26,6 +28,7 @@ export function MovieListItem({
   id,
   title,
   posterUrl,
+  posterImageType,
   releaseDate,
   isOn,
   pendingDate,
@@ -56,7 +59,7 @@ export function MovieListItem({
         <Link href={`/movies/${id}`} className="relative shrink-0">
           {posterUrl ? (
             <img
-              src={getImageUrl(posterUrl, 'sm', 'POSTERS') ?? posterUrl}
+              src={getImageUrl(posterUrl, 'sm', posterBucket(posterImageType)) ?? posterUrl}
               alt=""
               className="w-9 h-13 rounded object-cover"
             />

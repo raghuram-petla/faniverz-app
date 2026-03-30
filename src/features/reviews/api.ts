@@ -20,7 +20,7 @@ export async function fetchUserReviews(userId: string): Promise<Review[]> {
   return unwrapList(
     await supabase
       .from('reviews')
-      .select('*, movie:movies(id, title, poster_url)')
+      .select('*, movie:movies(id, title, poster_url, poster_image_type)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false }),
   );
@@ -55,7 +55,7 @@ export async function fetchUserReviewsPaginated(
   return unwrapList(
     await supabase
       .from('reviews')
-      .select('*, movie:movies(id, title, poster_url)')
+      .select('*, movie:movies(id, title, poster_url, poster_image_type)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(offset, to),

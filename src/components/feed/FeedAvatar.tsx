@@ -2,12 +2,14 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { getImageUrl, entityTypeToBucket } from '@shared/imageUrl';
+import { getImageUrl, entityTypeToBucket, type ImageBucket } from '@shared/imageUrl';
 import type { FeedEntityType } from '@shared/types';
 
 export interface FeedAvatarProps {
   imageUrl: string | null;
   entityType: FeedEntityType;
+  /** @contract overrides entityTypeToBucket when poster_image_type differs from default bucket */
+  bucketOverride?: ImageBucket;
   size?: number;
   label?: string;
   onPress?: () => void;
@@ -22,10 +24,17 @@ const FALLBACK_ICONS: Record<FeedEntityType, React.ComponentProps<typeof Ionicon
 };
 
 /** @contract shape varies by entityType: movie=poster, actor=diamond, user=circle, production_house=rounded square */
-export function FeedAvatar({ imageUrl, entityType, size = 52, label, onPress }: FeedAvatarProps) {
+export function FeedAvatar({
+  imageUrl,
+  entityType,
+  bucketOverride,
+  size = 52,
+  label,
+  onPress,
+}: FeedAvatarProps) {
   const { theme } = useTheme();
   /** @nullable imageUrl — when null, resolvedUrl is null and fallback icon renders */
-  const resolvedUrl = getImageUrl(imageUrl, 'sm', entityTypeToBucket(entityType));
+  const resolvedUrl = getImageUrl(imageUrl, 'sm', bucketOverride ?? entityTypeToBucket(entityType));
 
   const accessLabel = onPress ? `Navigate to ${label ?? 'entity'}` : label;
 

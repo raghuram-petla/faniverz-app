@@ -7,6 +7,7 @@ export interface PendingChange {
   date: string;
   title: string;
   posterUrl: string | null;
+  posterImageType?: 'poster' | 'backdrop' | null;
   label?: string | null;
   releaseDate: string | null;
   dateAction: DateAction;

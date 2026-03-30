@@ -200,6 +200,7 @@ export default function MovieDetailScreen() {
         visible={showReviewModal}
         movieTitle={movie.title}
         posterUrl={movie.poster_url}
+        posterImageType={movie.poster_image_type}
         releaseYear={releaseYear}
         director={movie.director}
         reviewRating={reviewRating}

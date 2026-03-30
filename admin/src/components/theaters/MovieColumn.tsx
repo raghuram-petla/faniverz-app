@@ -59,6 +59,7 @@ export function MovieColumn({
               id={movie.id}
               title={movie.title}
               posterUrl={movie.poster_url}
+              posterImageType={movie.poster_image_type}
               releaseDate={movie.release_date}
               isOn={isEffectivelyOn(movie.id)}
               pendingDate={getPendingDate(movie.id)}

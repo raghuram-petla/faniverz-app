@@ -14,7 +14,9 @@ export async function fetchNewsFeed(
 ): Promise<NewsFeedItem[]> {
   let query = supabase
     .from('news_feed')
-    .select('*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, release_date)')
+    .select(
+      '*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, poster_image_type, release_date)',
+    )
     .order('published_at', { ascending: false });
 
   if (filter && filter !== 'all') {
@@ -53,7 +55,9 @@ export async function fetchNewsFeed(
 export async function fetchFeaturedFeedItems(): Promise<NewsFeedItem[]> {
   const { data, error } = await supabase
     .from('news_feed')
-    .select('*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, release_date)')
+    .select(
+      '*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, poster_image_type, release_date)',
+    )
     .eq('is_featured', true)
     .order('display_order')
     .limit(5);
@@ -108,6 +112,7 @@ export async function fetchPersonalizedFeed(
           id: row.movie_id as string,
           title: row.movie_title as string,
           poster_url: row.movie_poster_url as string | null,
+          poster_image_type: (row.movie_poster_image_type as 'poster' | 'backdrop' | null) ?? null,
           release_date: row.movie_release_date as string | null,
         }
       : undefined,
@@ -117,7 +122,9 @@ export async function fetchPersonalizedFeed(
 export async function fetchFeedItemById(id: string): Promise<NewsFeedItem | null> {
   const { data, error } = await supabase
     .from('news_feed')
-    .select('*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, release_date)')
+    .select(
+      '*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, poster_image_type, release_date)',
+    )
     .eq('id', id)
     .single();
 

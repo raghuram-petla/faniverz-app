@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { X, Plus, Minus, Film, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { formatDate } from '@/lib/utils';
 
 // @contract Displays all pending changes as a staging area before Save
@@ -11,6 +11,7 @@ export interface PendingChangeItem {
   movieId: string;
   title: string;
   posterUrl: string | null;
+  posterImageType?: 'poster' | 'backdrop' | null;
   inTheaters: boolean;
   date: string;
   label?: string | null;
@@ -171,7 +172,10 @@ function DockRow({
         </div>
         {change.posterUrl ? (
           <img
-            src={getImageUrl(change.posterUrl, 'sm', 'POSTERS') ?? change.posterUrl}
+            src={
+              getImageUrl(change.posterUrl, 'sm', posterBucket(change.posterImageType)) ??
+              change.posterUrl
+            }
             alt=""
             className="w-6 h-8 rounded object-cover shrink-0"
           />

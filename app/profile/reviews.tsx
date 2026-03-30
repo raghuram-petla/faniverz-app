@@ -16,7 +16,7 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatDate } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/reviews.styles';
 import { StarRow } from '@/components/profile/StarRow';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -198,7 +198,11 @@ export default function MyReviewsScreen() {
         <View style={styles.reviewList}>
           {sorted.map((review) => {
             const posterUrl =
-              getImageUrl(review.movie?.poster_url ?? null, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER;
+              getImageUrl(
+                review.movie?.poster_url ?? null,
+                'sm',
+                posterBucket(review.movie?.poster_image_type),
+              ) ?? PLACEHOLDER_POSTER;
             const movieTitle = review.movie?.title ?? 'Unknown Movie';
             return (
               <View key={review.id} style={styles.reviewCard}>

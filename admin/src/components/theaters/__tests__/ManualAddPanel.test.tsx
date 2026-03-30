@@ -28,6 +28,7 @@ vi.mock('@/lib/utils', () => ({
 const mockGetImageUrl = vi.fn((_url: string) => _url);
 vi.mock('@shared/imageUrl', () => ({
   getImageUrl: (...args: [string]) => mockGetImageUrl(...args),
+  posterBucket: (t?: string) => (t === 'backdrop' ? 'BACKDROPS' : 'POSTERS'),
 }));
 
 import { ManualAddPanel } from '@/components/theaters/ManualAddPanel';
@@ -174,6 +175,7 @@ describe('ManualAddPanel', () => {
       'movie-123',
       'Addable Movie',
       null,
+      undefined, // poster_image_type (not set on mock movie)
       expect.any(String), // start date (today's date)
       null, // label (empty → null)
       '2024-06-01',
@@ -192,6 +194,7 @@ describe('ManualAddPanel', () => {
       expect.any(String),
       'Re-release',
       null,
+      undefined, // poster_image_type
       expect.any(String),
       "Director's Cut",
       expect.anything(),

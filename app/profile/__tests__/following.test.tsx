@@ -60,6 +60,8 @@ jest.mock('@/components/profile/ProfileListSkeleton', () => ({
 }));
 
 jest.mock('@shared/imageUrl', () => ({
+  posterBucket: (t?: string) => (t === 'backdrop' ? 'BACKDROPS' : 'POSTERS'),
+  backdropBucket: (t?: string) => (t === 'poster' ? 'POSTERS' : 'BACKDROPS'),
   getImageUrl: jest.fn(() => 'https://example.com/img.jpg'),
   entityTypeToBucket: (entityType: string) => entityType.toUpperCase(),
 }));

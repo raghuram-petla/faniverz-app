@@ -53,6 +53,7 @@ export default function TheatersPage() {
       movieId: string,
       title: string,
       posterUrl: string | null,
+      posterImageType: 'poster' | 'backdrop' | undefined,
       inTheaters: boolean,
       defaultDate: string,
       releaseDate: string | null,
@@ -64,6 +65,7 @@ export default function TheatersPage() {
           date: defaultDate,
           title,
           posterUrl,
+          posterImageType,
           releaseDate,
           dateAction: 'none',
         });
@@ -154,6 +156,7 @@ export default function TheatersPage() {
     movieId: string,
     title: string,
     posterUrl: string | null,
+    posterImageType: 'poster' | 'backdrop' | undefined,
     startDate: string,
     label: string | null,
     releaseDate: string | null,
@@ -165,6 +168,7 @@ export default function TheatersPage() {
         date: startDate,
         title,
         posterUrl,
+        posterImageType,
         label,
         releaseDate,
         dateAction: 'none',
@@ -204,7 +208,9 @@ export default function TheatersPage() {
           emptyText="No movies currently in theaters"
           isEffectivelyOn={(id) => isEffectivelyOn(id, true)}
           getPendingDate={getPendingDate}
-          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, false, d, m.release_date)}
+          onToggle={(m, d) =>
+            handleToggle(m.id, m.title, m.poster_url, m.poster_image_type, false, d, m.release_date)
+          }
           onRevert={removePendingChange}
           onDateChange={updatePendingDate}
           dateLabel="End date"
@@ -217,7 +223,9 @@ export default function TheatersPage() {
           emptyText="No upcoming releases"
           isEffectivelyOn={(id) => isEffectivelyOn(id, false)}
           getPendingDate={getPendingDate}
-          onToggle={(m, d) => handleToggle(m.id, m.title, m.poster_url, true, d, m.release_date)}
+          onToggle={(m, d) =>
+            handleToggle(m.id, m.title, m.poster_url, m.poster_image_type, true, d, m.release_date)
+          }
           onRevert={removePendingChange}
           onDateChange={updatePendingDate}
           dateLabel="Start date"

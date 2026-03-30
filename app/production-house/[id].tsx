@@ -16,7 +16,7 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createProductionHouseStyles } from '@/styles/productionHouseDetail.styles';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { extractReleaseYear } from '@/utils/formatDate';
 import { ProductionHouseDetailSkeleton } from '@/components/productionHouse/ProductionHouseDetailSkeleton';
@@ -177,7 +177,12 @@ export default function ProductionHouseDetailScreen() {
                 >
                   <Image
                     source={{
-                      uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER,
+                      uri:
+                        getImageUrl(
+                          movie.poster_url,
+                          'sm',
+                          posterBucket(movie.poster_image_type),
+                        ) ?? PLACEHOLDER_POSTER,
                     }}
                     style={styles.moviePoster}
                     contentFit="cover"

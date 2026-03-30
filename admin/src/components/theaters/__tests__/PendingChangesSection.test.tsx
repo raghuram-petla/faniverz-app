@@ -4,6 +4,7 @@ import React from 'react';
 
 vi.mock('@shared/imageUrl', () => ({
   getImageUrl: (_url: string, _size: string, _bucket: string) => `https://cdn.example.com/img.jpg`,
+  posterBucket: (t?: string) => (t === 'backdrop' ? 'BACKDROPS' : 'POSTERS'),
 }));
 
 vi.mock('@/lib/utils', () => ({

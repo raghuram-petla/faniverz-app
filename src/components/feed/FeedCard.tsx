@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { useImageViewer } from '@/providers/ImageViewerProvider';
 import { measureView } from '@/utils/measureView';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
 import { FeedAvatar } from './FeedAvatar';
 import { FeedActionBar } from './FeedActionBar';
@@ -83,6 +83,9 @@ function FeedCardInner({
 
   const entityType = deriveEntityType(item);
   const entityAvatarUrl = getEntityAvatarUrl(item);
+  /** @contract avatarBucket resolves from poster_image_type so backdrop-as-poster movies use BACKDROPS */
+  const avatarBucket =
+    entityType === 'movie' ? posterBucket(item.movie?.poster_image_type) : undefined;
   const entityName = getEntityName(item);
   const entityId = getEntityId(item);
 
@@ -97,7 +100,13 @@ function FeedCardInner({
   );
 
   /** @sideeffect opens full-screen image viewer with animated transition from poster position */
-  const imageBucket = isBackdrop ? 'BACKDROPS' : 'POSTERS';
+  /** @contract imageBucket: backdrop feed→BACKDROPS, poster feed→POSTERS (thumbnail is always a poster-bucket key),
+   *  other feed types (update, surprise)→posterBucket(movie.poster_image_type) because thumbnail IS the movie's poster */
+  const imageBucket = isBackdrop
+    ? ('BACKDROPS' as const)
+    : item.feed_type === 'poster'
+      ? ('POSTERS' as const)
+      : posterBucket(item.movie?.poster_image_type);
   const handlePosterPress = useCallback(() => {
     /* istanbul ignore next */ if (!imageUrl) return;
     measureView(posterRef, (layout) => {
@@ -129,6 +138,7 @@ function FeedCardInner({
               <FeedAvatar
                 imageUrl={entityAvatarUrl}
                 entityType={entityType}
+                bucketOverride={avatarBucket}
                 size={entityType === 'movie' ? 64 : 56}
                 label={entityName}
                 onPress={
@@ -285,6 +295,7 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
     prev.item.upvote_count === next.item.upvote_count &&
     prev.item.downvote_count === next.item.downvote_count &&
     prev.item.view_count === next.item.view_count &&
-    prev.item.comment_count === next.item.comment_count
+    prev.item.comment_count === next.item.comment_count &&
+    prev.item.movie?.poster_image_type === next.item.movie?.poster_image_type
   );
 });

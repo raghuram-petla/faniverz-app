@@ -10,7 +10,7 @@ import { Movie, OTTPlatform } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { deriveMovieStatus } from '@shared/movieStatus';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useMovieAction } from '@/hooks/useMovieAction';
 import { MovieQuickAction } from './MovieQuickAction';
@@ -69,7 +69,11 @@ export function MovieCard({
     >
       <View style={styles.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
+          source={{
+            uri:
+              getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+              PLACEHOLDER_POSTER,
+          }}
           style={styles.poster}
           contentFit="cover"
           transition={200}

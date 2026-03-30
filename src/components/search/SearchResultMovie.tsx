@@ -2,7 +2,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
@@ -30,7 +30,11 @@ export function SearchResultMovie({ movie, platforms, onPress }: SearchResultMov
     <TouchableOpacity style={s.row} onPress={onPress} accessibilityLabel={movie.title}>
       <View style={s.posterContainer}>
         <Image
-          source={{ uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER }}
+          source={{
+            uri:
+              getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+              PLACEHOLDER_POSTER,
+          }}
           style={s.poster}
           contentFit="cover"
         />

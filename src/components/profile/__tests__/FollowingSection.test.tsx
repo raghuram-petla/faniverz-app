@@ -4,6 +4,8 @@ import { FollowingSection } from '../FollowingSection';
 import type { EnrichedFollow } from '@shared/types';
 
 jest.mock('@shared/imageUrl', () => ({
+  posterBucket: (t?: string) => (t === 'backdrop' ? 'BACKDROPS' : 'POSTERS'),
+  backdropBucket: (t?: string) => (t === 'poster' ? 'POSTERS' : 'BACKDROPS'),
   getImageUrl: (url: string | null) => url,
   entityTypeToBucket: (entityType: string) => entityType.toUpperCase(),
 }));

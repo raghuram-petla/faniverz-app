@@ -7,7 +7,7 @@ import { colors as palette } from '@/theme/colors';
 import { getMovieStatusLabel, getMovieStatusColor } from '@/constants';
 import { deriveMovieStatus } from '@shared/movieStatus';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket, backdropBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { getMovieActionType } from '@/hooks/useMovieAction';
 import { extractReleaseYear } from '@/utils/formatDate';
@@ -52,8 +52,8 @@ export function HeroSlide({
         /** @nullable backdrop_url/poster_url may be null; falls back to PLACEHOLDER_POSTER */
         source={{
           uri:
-            getImageUrl(movie.backdrop_url, 'md', 'BACKDROPS') ??
-            getImageUrl(movie.poster_url, 'md', 'POSTERS') ??
+            getImageUrl(movie.backdrop_url, 'md', backdropBucket(movie.backdrop_image_type)) ??
+            getImageUrl(movie.poster_url, 'md', posterBucket(movie.poster_image_type)) ??
             PLACEHOLDER_POSTER,
         }}
         style={styles.backdrop}

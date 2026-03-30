@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createStyles } from '@/styles/actorDetail.styles';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { extractReleaseYear } from '@/utils/formatDate';
 
@@ -17,6 +17,7 @@ export interface FilmCredit {
     id: string;
     title: string;
     poster_url: string | null;
+    poster_image_type?: 'poster' | 'backdrop' | null;
     release_date: string | null;
     rating: number;
   } | null;
@@ -73,7 +74,9 @@ export function ActorFilmography({ credits, onMoviePress }: ActorFilmographyProp
               >
                 <Image
                   source={{
-                    uri: getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER,
+                    uri:
+                      getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+                      PLACEHOLDER_POSTER,
                   }}
                   style={styles.filmPoster}
                   contentFit="cover"

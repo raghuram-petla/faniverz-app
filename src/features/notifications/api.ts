@@ -9,7 +9,9 @@ export async function fetchNotifications(userId: string): Promise<Notification[]
   return unwrapList(
     await supabase
       .from('notifications')
-      .select('*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)')
+      .select(
+        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color)',
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(200),
@@ -26,7 +28,9 @@ export async function fetchNotificationsPaginated(
   return unwrapList(
     await supabase
       .from('notifications')
-      .select('*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)')
+      .select(
+        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color)',
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(offset, to),

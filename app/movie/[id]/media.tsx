@@ -32,7 +32,7 @@ import {
 } from '@/styles/movieMedia.styles';
 import { useSnapScroll } from '@/hooks/useSnapScroll';
 import { useTheme } from '@/theme';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { MovieVideo } from '@/types';
 
@@ -183,7 +183,9 @@ export default function MediaScreen() {
     );
   }
 
-  const posterUri = getImageUrl(movie.poster_url, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER;
+  const posterUri =
+    getImageUrl(movie.poster_url, 'sm', posterBucket(movie.poster_image_type)) ??
+    PLACEHOLDER_POSTER;
   const videoCount = movie.videos.length;
   const photoCount = movie.posters.length;
   const mediaTabs: MediaTabName[] = ['photos', 'videos'];

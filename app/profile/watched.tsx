@@ -15,7 +15,7 @@ import { ProfileGridSkeleton } from '@/components/profile/ProfileGridSkeleton';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { formatWatchTime } from '@/utils/formatDate';
 import { createStyles } from '@/styles/profile/watched.styles';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -205,7 +205,11 @@ export default function WatchedMoviesScreen() {
               {row.map((entry) => {
                 const movie = entry.movie;
                 const posterUrl =
-                  getImageUrl(movie?.poster_url ?? null, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER;
+                  getImageUrl(
+                    movie?.poster_url ?? null,
+                    'sm',
+                    posterBucket(movie?.poster_image_type),
+                  ) ?? PLACEHOLDER_POSTER;
                 const title = movie?.title ?? 'Unknown';
                 const rating = movie?.rating ?? 0;
                 return (

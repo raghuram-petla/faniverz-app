@@ -18,7 +18,7 @@ import {
 import { Notification } from '@/types';
 import { PlatformBadge } from '@/components/ui/PlatformBadge';
 import { formatRelativeTime } from '@/utils/formatDate';
-import { getImageUrl } from '@shared/imageUrl';
+import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
@@ -59,7 +59,12 @@ function NotificationItem({
       <View style={styles.posterContainer}>
         <Image
           source={{
-            uri: getImageUrl(item.movie?.poster_url ?? null, 'sm', 'POSTERS') ?? PLACEHOLDER_POSTER,
+            uri:
+              getImageUrl(
+                item.movie?.poster_url ?? null,
+                'sm',
+                posterBucket(item.movie?.poster_image_type),
+              ) ?? PLACEHOLDER_POSTER,
           }}
           style={styles.poster}
           contentFit="cover"
