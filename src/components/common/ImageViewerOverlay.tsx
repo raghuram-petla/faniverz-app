@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, TouchableOpacity, useWindowDimensions, type View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { setStatusBarHidden } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -114,6 +114,12 @@ export function ImageViewerOverlay({
       : 0;
   const needsTopChromeOcclusion =
     topChrome?.variant === 'home-feed' && sourceLayout.y < topChromeBoundary;
+
+  // @sideeffect Hide status bar when fullscreen overlay opens; restore on unmount.
+  useEffect(() => {
+    setStatusBarHidden(true, 'fade');
+    return () => setStatusBarHidden(false, 'fade');
+  }, []);
 
   useEffect(() => {
     onSourceHide?.();
@@ -239,7 +245,6 @@ export function ImageViewerOverlay({
 
   return (
     <Animated.View style={styles.root} pointerEvents="auto">
-      <StatusBar style="light" hidden={deviceLandscape} />
       <Animated.View style={[styles.backdrop, animatedBackdropStyle]} />
       <Animated.View style={clipStyle}>
         <ImageViewerGestures

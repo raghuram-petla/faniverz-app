@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { StatusBar } from 'expo-status-bar';
 import { View, ScrollView, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -129,7 +128,6 @@ export default function MovieDetailScreen() {
 
   return (
     <View style={styles.screen}>
-      <StatusBar style="light" />
       <SafeAreaCover />
       <ScrollView
         showsVerticalScrollIndicator={false}

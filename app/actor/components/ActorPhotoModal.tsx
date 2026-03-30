@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Modal, Pressable, TouchableOpacity } from 'react-native';
+import { setStatusBarHidden } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { PLACEHOLDER_PHOTO } from '@/constants/placeholders';
@@ -25,24 +27,32 @@ export const ActorPhotoModal = ({
   topInset,
   textPrimaryColor,
   styles,
-}: ActorPhotoModalProps) => (
-  <Modal visible={visible} animationType="fade" transparent testID="photo-modal">
-    <Pressable style={styles.photoOverlay} onPress={onClose} testID="photo-overlay">
-      <TouchableOpacity
-        style={[styles.photoCloseButton, { top: topInset + 12 }]}
-        onPress={onClose}
-        accessibilityLabel="Close photo"
-        testID="photo-close"
-      >
-        <Ionicons name="close" size={28} color={textPrimaryColor} />
-      </TouchableOpacity>
-      <Pressable onPress={/* istanbul ignore next */ (e) => e.stopPropagation()}>
-        <Image
-          source={{ uri: photoUrl ?? PLACEHOLDER_PHOTO }}
-          style={styles.photoFull}
-          contentFit="contain"
-        />
+}: ActorPhotoModalProps) => {
+  // @sideeffect Hide status bar when fullscreen photo modal opens; restore on close.
+  useEffect(() => {
+    setStatusBarHidden(visible, 'fade');
+    return () => setStatusBarHidden(false, 'fade');
+  }, [visible]);
+
+  return (
+    <Modal visible={visible} animationType="fade" transparent testID="photo-modal">
+      <Pressable style={styles.photoOverlay} onPress={onClose} testID="photo-overlay">
+        <TouchableOpacity
+          style={[styles.photoCloseButton, { top: topInset + 12 }]}
+          onPress={onClose}
+          accessibilityLabel="Close photo"
+          testID="photo-close"
+        >
+          <Ionicons name="close" size={28} color={textPrimaryColor} />
+        </TouchableOpacity>
+        <Pressable onPress={/* istanbul ignore next */ (e) => e.stopPropagation()}>
+          <Image
+            source={{ uri: photoUrl ?? PLACEHOLDER_PHOTO }}
+            style={styles.photoFull}
+            contentFit="contain"
+          />
+        </Pressable>
       </Pressable>
-    </Pressable>
-  </Modal>
-);
+    </Modal>
+  );
+};
