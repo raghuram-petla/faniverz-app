@@ -33,7 +33,9 @@ export function FeaturedVideoCard({ item, styles }: FeaturedVideoCardProps) {
   const { t } = useTranslation();
   /** @nullable youtube_id — uses FALLBACK_VIDEO_ID when null */
   const videoId = item.youtube_id ?? FALLBACK_VIDEO_ID;
-  const thumbnailUrl = videoId ? getYouTubeThumbnail(videoId, 'maxresdefault') : PLACEHOLDER_POSTER;
+  const thumbnailUrl = videoId
+    ? getYouTubeThumbnail(videoId, 'maxresdefault')
+    : /* istanbul ignore next */ PLACEHOLDER_POSTER;
   const catColor = getCategoryColor(item.category);
   const catLabel = getCategoryLabel(item.category);
   const iconName = getCategoryIconName(item.category);

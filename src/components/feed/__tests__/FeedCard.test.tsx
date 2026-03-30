@@ -137,6 +137,13 @@ jest.mock('../FeedVideoPlayer', () => ({
   },
 }));
 
+jest.mock('../FilmStripFrameDivider', () => ({
+  FilmStripFrameDivider: ({ isEdge }: { isEdge?: boolean }) => {
+    const { View } = require('react-native');
+    return <View testID={isEdge ? 'film-strip-frame-divider-edge' : 'film-strip-frame-divider'} />;
+  },
+}));
+
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { FeedCard } from '../FeedCard';
@@ -729,5 +736,53 @@ describe('FeedCard', () => {
       <FeedCard item={item} onPress={jest.fn()} isVideoActive={false} shouldMountVideo={true} />,
     );
     expect(screen.getByText('Mounted')).toBeTruthy();
+  });
+
+  it('pressing the avatar spacer calls onPress with the item (Open post button)', () => {
+    const onPress = jest.fn();
+    const item = makeItem();
+    render(<FeedCard item={item} onPress={onPress} />);
+    fireEvent.press(screen.getByLabelText('Open post'));
+    expect(onPress).toHaveBeenCalledWith(item);
+  });
+
+  it('pressing the media wrapper area on a non-video item calls onPress', () => {
+    const onPress = jest.fn();
+    // Non-video item with description and no thumbnail — renders media TouchableOpacity
+    const item = makeItem({
+      youtube_id: null,
+      thumbnail_url: null,
+      description: 'A media description',
+      movie: { id: 'm1', title: 'Test Movie', poster_url: null, release_date: '2024-01-01' },
+    });
+    render(<FeedCard item={item} onPress={onPress} />);
+    fireEvent.press(screen.getByLabelText('Trailer: Test Trailer media'));
+    expect(onPress).toHaveBeenCalledWith(item);
+  });
+
+  it('renders FilmStripFrameDivider when isFirst is true', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} isFirst />);
+    expect(screen.getByTestId('film-strip-frame-divider-edge')).toBeTruthy();
+  });
+
+  it('renders backdrop poster with backdrop accessibilityLabel when feed_type is backdrop', () => {
+    const item = makeItem({
+      feed_type: 'backdrop',
+      thumbnail_url: 'https://example.com/backdrop.jpg',
+      youtube_id: null,
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.getByLabelText('View Test Trailer backdrop')).toBeTruthy();
+  });
+
+  it('uses size 56 for non-movie entity avatar', () => {
+    const item = makeItem({
+      movie_id: null,
+      movie: undefined,
+      source_table: 'actors',
+      source_id: 'a1',
+    });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.getByTestId('feed-avatar')).toBeTruthy();
   });
 });

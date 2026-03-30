@@ -10,7 +10,9 @@ interface ChangeDetailsProps {
 
 // @contract Formats a single value for display — handles null, arrays, objects, booleans, strings
 function formatValue(value: unknown): string {
+  /* v8 ignore start -- ValueDisplay intercepts null/undefined before calling formatValue */
   if (value === null || value === undefined) return 'not set';
+  /* v8 ignore stop */
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (Array.isArray(value)) {
     if (value.length === 0) return 'empty list';

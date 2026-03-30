@@ -135,4 +135,31 @@ describe('InlineYouTubeWebView', () => {
 
     expect(onStateChange).toHaveBeenCalledWith('playing');
   });
+
+  it('ignores stateChange messages without a state value', () => {
+    const onStateChange = jest.fn();
+    render(
+      <InlineYouTubeWebView
+        videoId="abc123"
+        thumbnailUrl="https://example.com/thumb.jpg"
+        onStateChange={onStateChange}
+      />,
+    );
+
+    // stateChange without state property — should not call onStateChange
+    emitMessage({ type: 'stateChange' });
+
+    expect(onStateChange).not.toHaveBeenCalled();
+  });
+
+  it('silently ignores malformed JSON messages', () => {
+    render(<InlineYouTubeWebView videoId="abc123" thumbnailUrl="https://example.com/thumb.jpg" />);
+
+    // Should not throw when receiving invalid JSON
+    act(() => {
+      screen.getByTestId('youtube-inline-webview').props.onMessage({
+        nativeEvent: { data: 'not-valid-json{{{{' },
+      });
+    });
+  });
 });

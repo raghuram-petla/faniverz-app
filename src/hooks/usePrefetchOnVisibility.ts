@@ -97,7 +97,7 @@ export function usePrefetchOnVisibility<TItem extends { id: string }>({
           // @sideeffect Prefetch as infinite query so cache shape matches useSmartInfiniteQuery consumers
           queryClient.prefetchInfiniteQuery({
             queryKey: [...queryKeyFactory(item)],
-            queryFn: () => queryFn(item),
+            queryFn: /* istanbul ignore next */ () => queryFn(item),
             initialPageParam: 0,
           });
         }

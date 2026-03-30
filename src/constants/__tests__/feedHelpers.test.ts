@@ -116,6 +116,7 @@ describe('getFeedTypeLabel', () => {
     expect(getFeedTypeLabel('glimpse')).toBe('Glimpse');
     expect(getFeedTypeLabel('song')).toBe('Song');
     expect(getFeedTypeLabel('poster')).toBe('Poster');
+    expect(getFeedTypeLabel('backdrop')).toBe('Backdrop');
     expect(getFeedTypeLabel('bts')).toBe('BTS');
     expect(getFeedTypeLabel('interview')).toBe('Interview');
     expect(getFeedTypeLabel('event')).toBe('Event');

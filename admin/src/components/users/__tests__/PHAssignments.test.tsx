@@ -402,4 +402,122 @@ describe('PHAssignments', () => {
     expect(screen.getByText('Suresh Productions')).toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
+
+  it('renders phItems as empty array when phData is undefined (useMemo null fallback)', () => {
+    // Return no data from useAdminProductionHouses
+    mockUseAdminProductionHouses.mockReturnValue({
+      data: undefined,
+      isFetching: false,
+    });
+
+    render(<PHAssignments userId="user-1" roleId="production_house_admin" assignedPHs={[]} />, {
+      wrapper: makeWrapper(),
+    });
+
+    fireEvent.click(screen.getByTitle('Edit PH assignments'));
+    // No checkboxes should be rendered since phItems is empty
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+  });
+
+  it('shows session expired error via getAccessToken when session is null', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null } });
+
+    render(
+      <PHAssignments userId="user-1" roleId="production_house_admin" assignedPHs={assignedPHs} />,
+      { wrapper: makeWrapper() },
+    );
+
+    fireEvent.click(screen.getByTitle('Edit PH assignments'));
+
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    const sureshCheckbox = checkboxes.find((cb) => {
+      const label = cb.closest('label');
+      return label?.textContent?.includes('Suresh');
+    });
+    fireEvent.click(sureshCheckbox!);
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Session expired')).toBeInTheDocument();
+    });
+  });
+
+  it('toggle returns prev unchanged when phId not in phItems', async () => {
+    // phItems is empty — toggling an ID that isn't in phItems should not crash
+    mockUseAdminProductionHouses.mockReturnValue({
+      data: { pages: [[]] },
+      isFetching: false,
+    });
+
+    const assignedWithPH: AdminPHAssignment[] = [
+      {
+        user_id: 'user-1',
+        production_house_id: 'ph-99',
+        assigned_by: 'admin-1',
+        created_at: '2026-01-01',
+        production_house: {
+          id: 'ph-99',
+          name: 'Unknown PH',
+          logo_url: null,
+          description: null,
+          tmdb_company_id: null,
+          created_at: '2026-01-01',
+        },
+      },
+    ];
+
+    // Render with a PH that is in assignedPHs but NOT in phItems (empty)
+    render(
+      <PHAssignments
+        userId="user-1"
+        roleId="production_house_admin"
+        assignedPHs={assignedWithPH}
+      />,
+      { wrapper: makeWrapper() },
+    );
+
+    fireEvent.click(screen.getByTitle('Edit PH assignments'));
+
+    // Wait for useEffect to seed selectedItems from assignedPHs
+    await waitFor(() => {
+      const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+      const ph99Cb = checkboxes.find((cb) =>
+        cb.closest('label')?.textContent?.includes('Unknown PH'),
+      );
+      expect(ph99Cb?.checked).toBe(true);
+    });
+
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    const ph99Cb = checkboxes.find((cb) =>
+      cb.closest('label')?.textContent?.includes('Unknown PH'),
+    );
+
+    // Deselect ph-99 (it IS in selectedItems so it removes it via filter branch)
+    fireEvent.click(ph99Cb!);
+    // Now re-select ph-99: phItems is empty, so item won't be found → returns prev unchanged (line 105 false branch)
+    fireEvent.click(ph99Cb!);
+
+    // No crash — modal still open
+    expect(screen.getByText('Save')).toBeInTheDocument();
+  });
+
+  it('hasChanges detects same-size but different IDs (loop branch)', () => {
+    // Start with ph-1 assigned; switch to ph-2 selected (same size, different content)
+    render(
+      <PHAssignments userId="user-1" roleId="production_house_admin" assignedPHs={assignedPHs} />,
+      { wrapper: makeWrapper() },
+    );
+
+    fireEvent.click(screen.getByTitle('Edit PH assignments'));
+
+    // Uncheck ph-1 (Mythri) and check ph-2 (Suresh) — same size but different IDs
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    const mythriCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Mythri'));
+    const sureshCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Suresh'));
+    fireEvent.click(mythriCb!); // deselect Mythri
+    fireEvent.click(sureshCb!); // select Suresh
+
+    // Now selectedIds=['ph-2'], assignedIds=['ph-1'] — same size (1) but different content
+    expect(screen.getByText('Save')).not.toBeDisabled();
+  });
 });

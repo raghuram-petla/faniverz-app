@@ -61,6 +61,16 @@ describe('fetchComments', () => {
     expect(mockRange).toHaveBeenCalledWith(0, 19);
   });
 
+  it('uses default offset of 0 when only feedItemId is provided', async () => {
+    const mockRange = jest.fn().mockResolvedValue({ data: [], error: null });
+    const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
+    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    mockSelect.mockReturnValue({ eq: mockEq });
+
+    await fetchComments('f1');
+    expect(mockRange).toHaveBeenCalledWith(0, 19);
+  });
+
   it('returns empty array when data is null', async () => {
     const mockRange = jest.fn().mockResolvedValue({ data: null, error: null });
     const mockOrder = jest.fn().mockReturnValue({ range: mockRange });

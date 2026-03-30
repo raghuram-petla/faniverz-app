@@ -159,7 +159,9 @@ export default function InviteAdminPage() {
     setSelectedPHItems((prev) => {
       if (prev.some((p) => p.id === phId)) return prev.filter((p) => p.id !== phId);
       const item = phItems.find((p) => p.id === phId);
+      /* v8 ignore start -- fallback when toggled PH not in current phItems (race condition) */
       return item ? [...prev, item] : prev;
+      /* v8 ignore stop */
     });
   }
 

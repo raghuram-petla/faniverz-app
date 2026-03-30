@@ -234,4 +234,30 @@ describe('CommentsBottomSheet', () => {
 
     authModule.useAuth = orig;
   });
+
+  it('renders the sheet content area (inner Pressable that stops propagation)', () => {
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    // Verify the inner sheet content area renders — it uses stopPropagation to prevent overlay dismissal
+    expect(screen.getByTestId('sheet-content-area')).toBeTruthy();
+  });
+
+  it('calls onRequestClose which triggers animateClose and then onClose', () => {
+    const { getByTestId } = render(
+      <CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />,
+    );
+    // Simulate Android back button (onRequestClose on Modal)
+    fireEvent(getByTestId('comments-bottom-sheet'), 'requestClose');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('renders correctly on Android (KeyboardAvoidingView behavior is undefined)', () => {
+    const { Platform } = require('react-native');
+    const origOS = Platform.OS;
+    Platform.OS = 'android';
+
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    expect(screen.getByTestId('comments-bottom-sheet')).toBeTruthy();
+
+    Platform.OS = origOS;
+  });
 });

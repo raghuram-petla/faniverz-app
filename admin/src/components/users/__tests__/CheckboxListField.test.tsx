@@ -183,4 +183,106 @@ describe('CheckboxListField', () => {
     // Loading but no displayed items — show spinner, not "no results"
     expect(screen.queryByText(/No results for/)).not.toBeInTheDocument();
   });
+
+  it('calls onSearch with query when provided and input changes', () => {
+    const onSearch = vi.fn();
+    render(
+      <CheckboxListField
+        label="Production Houses"
+        items={ITEMS}
+        selectedIds={[]}
+        onToggle={vi.fn()}
+        emptyMessage="No production houses"
+        onSearch={onSearch}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'te' } });
+    expect(onSearch).toHaveBeenCalledWith('te');
+  });
+
+  it('merges selectedItems not in current results when onSearch is set', () => {
+    // items contains only lang-2; selectedItems has lang-1 which is not in items
+    const selectedItems = [{ id: 'lang-1', name: 'Telugu' }];
+    render(
+      <CheckboxListField
+        label="Languages"
+        items={[{ id: 'lang-2', name: 'Tamil' }]}
+        selectedIds={['lang-1']}
+        selectedItems={selectedItems}
+        onToggle={vi.fn()}
+        emptyMessage="No languages"
+        onSearch={vi.fn()}
+      />,
+    );
+    // Both Telugu (from selectedItems) and Tamil (from items) should appear
+    expect(screen.getByText('Telugu')).toBeInTheDocument();
+    expect(screen.getByText('Tamil')).toBeInTheDocument();
+  });
+
+  it('does not duplicate items that are both selected and in current results when onSearch is set', () => {
+    // lang-1 appears in both items and selectedItems — should not be duplicated
+    const selectedItems = [{ id: 'lang-1', name: 'Telugu' }];
+    render(
+      <CheckboxListField
+        label="Languages"
+        items={[
+          { id: 'lang-1', name: 'Telugu' },
+          { id: 'lang-2', name: 'Tamil' },
+        ]}
+        selectedIds={['lang-1']}
+        selectedItems={selectedItems}
+        onToggle={vi.fn()}
+        emptyMessage="No languages"
+        onSearch={vi.fn()}
+      />,
+    );
+    // Telugu should appear exactly once
+    const teluguItems = screen.getAllByText('Telugu');
+    expect(teluguItems).toHaveLength(1);
+  });
+
+  it('shows "Type at least 2 characters" hint when onSearch set and search length is 1', () => {
+    render(
+      <CheckboxListField
+        label="Production Houses"
+        items={[]}
+        selectedIds={[]}
+        onToggle={vi.fn()}
+        emptyMessage="No production houses"
+        onSearch={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'a' } });
+    expect(screen.getByText('Type at least 2 characters to search')).toBeInTheDocument();
+  });
+
+  it('shows empty message when onSearch is set and items is empty with no search', () => {
+    render(
+      <CheckboxListField
+        label="Production Houses"
+        items={[]}
+        selectedIds={[]}
+        onToggle={vi.fn()}
+        emptyMessage="No production houses found"
+        onSearch={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('No production houses found')).toBeInTheDocument();
+  });
+
+  it('renders item imageUrl when provided', () => {
+    const itemsWithImage = [{ id: 'ph-1', name: 'Studio A', imageUrl: '/logo.png' }];
+    render(
+      <CheckboxListField
+        label="Production Houses"
+        items={itemsWithImage}
+        selectedIds={[]}
+        onToggle={vi.fn()}
+        emptyMessage="No PHs"
+      />,
+    );
+    const img = screen.getByRole('img', { name: 'Studio A' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', '/logo.png');
+  });
 });

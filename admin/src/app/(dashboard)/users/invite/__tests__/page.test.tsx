@@ -354,4 +354,62 @@ describe('InviteAdminPage', () => {
       );
     });
   });
+
+  it('shows alert when admin role selected but no language chosen on submit', async () => {
+    render(<InviteAdminPage />);
+    // Select 'admin' role
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } });
+    fireEvent.change(screen.getByPlaceholderText('admin@example.com'), {
+      target: { value: 'test@example.com' },
+    });
+    // Do not select any language — submit directly
+    fireEvent.submit(screen.getByRole('button', { name: /Create Invitation/i }).closest('form')!);
+    expect(window.alert).toHaveBeenCalledWith('Please select at least one language.');
+    expect(mockMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('toggles language selection on and off (deselect branch)', () => {
+    render(<InviteAdminPage />);
+    // Switch to admin role to show language selector
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } });
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    // Select Telugu
+    fireEvent.click(checkboxes[0]);
+    expect(checkboxes[0]).toBeChecked();
+    // Deselect Telugu — exercises the `prev.includes(langId)` true branch in toggleLanguage
+    fireEvent.click(checkboxes[0]);
+    expect(checkboxes[0]).not.toBeChecked();
+  });
+
+  it('sends language_ids when admin role is selected with languages', async () => {
+    mockMutateAsync.mockResolvedValue({ token: 'lang-tok' });
+    render(<InviteAdminPage />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } });
+    fireEvent.change(screen.getByPlaceholderText('admin@example.com'), {
+      target: { value: 'admin@test.com' },
+    });
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    fireEvent.click(checkboxes[0]); // select Telugu
+    fireEvent.submit(screen.getByRole('button', { name: /Create Invitation/i }).closest('form')!);
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          role_id: 'admin',
+          language_ids: ['lang-1'],
+        }),
+      );
+    });
+  });
+
+  it('clears selected languages when switching away from admin role', () => {
+    render(<InviteAdminPage />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'admin' } });
+    // Select a language
+    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
+    fireEvent.click(checkboxes[0]);
+    // Switch to viewer role
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'viewer' } });
+    // Language list is hidden
+    expect(screen.queryByText('Telugu')).not.toBeInTheDocument();
+  });
 });

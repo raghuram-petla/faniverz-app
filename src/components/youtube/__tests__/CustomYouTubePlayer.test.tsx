@@ -213,4 +213,185 @@ describe('CustomYouTubePlayer', () => {
     render(<CustomYouTubePlayer youtubeId="abc123" />);
     expect(screen.getByTestId('youtube-inline-webview')).toBeTruthy();
   });
+
+  it('clears the active playing instance when the active player reports paused', () => {
+    const onStateChange = jest.fn();
+    render(
+      <CustomYouTubePlayer
+        youtubeId="abc123"
+        isActive={true}
+        mountShellWhenIdle
+        onStateChange={onStateChange}
+      />,
+    );
+
+    const player = screen.getByTestId('youtube-inline-webview');
+    // First make it the active playing instance
+    React.act(() => {
+      player.props.onPlayPress();
+      player.props.onStateChange('playing');
+    });
+    // Now pause it — should clear active instance
+    React.act(() => {
+      player.props.onStateChange('paused');
+    });
+
+    expect(onStateChange).toHaveBeenCalledWith('paused');
+  });
+
+  it('resets hasStarted when state changes to ended', () => {
+    const onStateChange = jest.fn();
+    render(
+      <CustomYouTubePlayer
+        youtubeId="abc123"
+        isActive={true}
+        mountShellWhenIdle
+        onStateChange={onStateChange}
+      />,
+    );
+
+    // Establish this player as the active instance first
+    React.act(() => {
+      screen.getByTestId('youtube-inline-webview').props.onPlayPress();
+    });
+    React.act(() => {
+      screen.getByTestId('youtube-inline-webview').props.onStateChange('playing');
+    });
+    // Now send ended — activePlayingInstanceId === instanceId, so publishPlayingInstance(null) fires
+    React.act(() => {
+      screen.getByTestId('youtube-inline-webview').props.onStateChange('ended');
+    });
+
+    expect(onStateChange).toHaveBeenCalledWith('ended');
+  });
+
+  it('resets hasStarted when state changes to idle', () => {
+    const onStateChange = jest.fn();
+    render(
+      <CustomYouTubePlayer
+        youtubeId="abc123"
+        isActive={true}
+        mountShellWhenIdle
+        onStateChange={onStateChange}
+      />,
+    );
+
+    // Establish this player as the active instance first
+    React.act(() => {
+      screen.getByTestId('youtube-inline-webview').props.onPlayPress();
+    });
+    React.act(() => {
+      screen.getByTestId('youtube-inline-webview').props.onStateChange('playing');
+    });
+    // Now send idle — activePlayingInstanceId === instanceId, so publishPlayingInstance(null) fires
+    React.act(() => {
+      screen.getByTestId('youtube-inline-webview').props.onStateChange('idle');
+    });
+
+    expect(onStateChange).toHaveBeenCalledWith('idle');
+  });
+
+  it('does not call publishPlayingInstance on paused when player was not the active instance', async () => {
+    // Two players — second starts playing, first receives paused (but is not active)
+    render(
+      <>
+        <CustomYouTubePlayer youtubeId="abc123" isActive={true} mountShellWhenIdle />
+        <CustomYouTubePlayer youtubeId="def456" isActive={true} mountShellWhenIdle />
+      </>,
+    );
+
+    let [firstPlayer, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+
+    // Second player becomes active
+    React.act(() => {
+      secondPlayer.props.onPlayPress();
+      secondPlayer.props.onStateChange('playing');
+    });
+
+    // First player reports paused — it is NOT the active instance, so nothing happens
+    [firstPlayer] = screen.getAllByTestId('youtube-inline-webview');
+    React.act(() => {
+      firstPlayer.props.onStateChange('paused');
+    });
+
+    // Second player should still be active (pauseToken stays at 0)
+    await waitFor(() => {
+      [, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+      expect(secondPlayer.props.pauseToken).toBe(0);
+    });
+  });
+
+  it('does not publishPlayingInstance(null) on ended when player is not the active instance', async () => {
+    // Two players — second starts playing, first sends ended (but is not active)
+    render(
+      <>
+        <CustomYouTubePlayer youtubeId="abc123" isActive={true} mountShellWhenIdle />
+        <CustomYouTubePlayer youtubeId="def456" isActive={true} mountShellWhenIdle />
+      </>,
+    );
+
+    let [firstPlayer, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+
+    // Make first player active first so hasStartedRef is true
+    React.act(() => {
+      firstPlayer.props.onPlayPress();
+      firstPlayer.props.onStateChange('playing');
+    });
+
+    // Second player becomes active (overrides first)
+    [, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+    React.act(() => {
+      secondPlayer.props.onPlayPress();
+      secondPlayer.props.onStateChange('playing');
+    });
+
+    // First player reports ended — it is NOT the active instance
+    [firstPlayer] = screen.getAllByTestId('youtube-inline-webview');
+    React.act(() => {
+      firstPlayer.props.onStateChange('ended');
+    });
+
+    // Second player should still be active (not paused by first player's ended event)
+    await waitFor(() => {
+      [, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+      expect(secondPlayer.props.pauseToken).toBe(0);
+    });
+  });
+
+  it('does not publishPlayingInstance(null) on idle when player is not the active instance', async () => {
+    // Two players — second starts playing, first sends idle (but is not active)
+    render(
+      <>
+        <CustomYouTubePlayer youtubeId="abc123" isActive={true} mountShellWhenIdle />
+        <CustomYouTubePlayer youtubeId="def456" isActive={true} mountShellWhenIdle />
+      </>,
+    );
+
+    let [firstPlayer, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+
+    // Make first player active first
+    React.act(() => {
+      firstPlayer.props.onPlayPress();
+      firstPlayer.props.onStateChange('playing');
+    });
+
+    // Second player becomes active
+    [, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+    React.act(() => {
+      secondPlayer.props.onPlayPress();
+      secondPlayer.props.onStateChange('playing');
+    });
+
+    // First player reports idle — it is NOT the active instance
+    [firstPlayer] = screen.getAllByTestId('youtube-inline-webview');
+    React.act(() => {
+      firstPlayer.props.onStateChange('idle');
+    });
+
+    // Second player should still be active
+    await waitFor(() => {
+      [, secondPlayer] = screen.getAllByTestId('youtube-inline-webview');
+      expect(secondPlayer.props.pauseToken).toBe(0);
+    });
+  });
 });

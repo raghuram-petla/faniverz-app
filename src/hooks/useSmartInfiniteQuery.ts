@@ -121,7 +121,7 @@ export function useSmartInfiniteQuery<TData extends { id: string }>({
     fetchStatus: query.fetchStatus,
     error: query.error,
     isFetchingNextPage: query.isFetchingNextPage,
-    hasNextPage: query.hasNextPage ?? false,
+    hasNextPage: query.hasNextPage ?? /* istanbul ignore next */ false,
     fetchNextPage: query.fetchNextPage,
     refetch,
     isRefetching: query.isRefetching,

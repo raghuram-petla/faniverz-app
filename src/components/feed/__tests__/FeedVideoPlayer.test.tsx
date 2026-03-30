@@ -129,4 +129,11 @@ describe('FeedVideoPlayer', () => {
     render(<FeedVideoPlayer {...defaultProps} />);
     expect(screen.getByTestId('youtube-player').props.showLoadingUntilReady).toBeUndefined();
   });
+
+  it('defaults shouldMount to false when prop is omitted', () => {
+    render(<FeedVideoPlayer youtubeId="abc123" thumbnailUrl={null} isActive={false} />);
+    const player = screen.getByTestId('youtube-player');
+    // shouldMount defaults to false, isActive is false, manualPlay is false → mountShellWhenIdle=false
+    expect(player.props.mountShellWhenIdle).toBe(false);
+  });
 });

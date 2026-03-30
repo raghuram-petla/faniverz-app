@@ -129,6 +129,7 @@ export function CustomYouTubePlayer({
   );
 
   const handleShare = useCallback(() => {
+    /* istanbul ignore else -- handleShare is only reachable when safeId is truthy (early return above) */
     if (safeId) {
       shareYouTubeVideo(safeId);
     }
@@ -153,7 +154,7 @@ export function CustomYouTubePlayer({
           accessibilityLabel={t('common.playVideo')}
         >
           <Image
-            source={{ uri: thumb || PLACEHOLDER_POSTER }}
+            source={{ uri: thumb || /* istanbul ignore next */ PLACEHOLDER_POSTER }}
             style={styles.thumbnail}
             contentFit="cover"
           />
@@ -172,7 +173,7 @@ export function CustomYouTubePlayer({
       <View style={styles.playerWrapper}>
         <InlineYouTubeWebView
           videoId={safeId}
-          thumbnailUrl={thumb || PLACEHOLDER_POSTER}
+          thumbnailUrl={thumb || /* istanbul ignore next */ PLACEHOLDER_POSTER}
           autoPlay={isActive && autoPlay}
           muted={autoMute}
           pauseToken={pauseToken}

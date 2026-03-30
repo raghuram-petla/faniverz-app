@@ -290,4 +290,45 @@ describe('MediaScreen', () => {
       ).not.toThrow();
     }
   });
+
+  it('onTitleLayout fires and updates shared values without crashing', () => {
+    const { UNSAFE_root } = render(<MediaScreen />);
+    const { Text } = require('react-native');
+    // Find the Text that has onLayout — it's the floating title text
+    const texts = UNSAFE_root.findAllByType(Text);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const titleText = texts.find((t: any) => typeof t.props.onLayout === 'function');
+    if (titleText) {
+      expect(() =>
+        titleText.props.onLayout({
+          nativeEvent: { layout: { x: 0, y: 0, width: 180, height: 22 } },
+        }),
+      ).not.toThrow();
+    }
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
+  it('uses PLACEHOLDER_POSTER when poster_url is null', () => {
+    (useMovieDetail as jest.Mock).mockReturnValue({
+      data: { ...mockMovie, poster_url: null },
+      isLoading: false,
+    });
+    render(<MediaScreen />);
+    // Component renders without crashing; floating-poster still appears
+    expect(screen.getByTestId('floating-poster')).toBeTruthy();
+  });
+
+  it('shows singular video/photo labels when counts are 1', () => {
+    (useMovieDetail as jest.Mock).mockReturnValue({
+      data: {
+        ...mockMovie,
+        videos: [mockMovie.videos[0]],
+        posters: [mockMovie.posters[0], { ...mockMovie.posters[0], id: 'p2' }],
+      },
+      isLoading: false,
+    });
+    render(<MediaScreen />);
+    // 1 video → singular branch; 2 posters → plural branch
+    expect(screen.getByText(/1 Video.*2 Photos/)).toBeTruthy();
+  });
 });

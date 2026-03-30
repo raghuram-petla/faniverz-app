@@ -11,9 +11,13 @@ jest.mock('@/theme', () => ({
   }),
 }));
 
+const mockUseFilmStripStore = jest.fn((sel: (s: { filmStripEnabled: boolean }) => boolean) =>
+  sel({ filmStripEnabled: true }),
+);
+
 jest.mock('@/stores/useFilmStripStore', () => ({
-  useFilmStripStore: (sel: (s: { filmStripEnabled: boolean }) => boolean) =>
-    sel({ filmStripEnabled: true }),
+  useFilmStripStore: (...args: Parameters<typeof mockUseFilmStripStore>) =>
+    mockUseFilmStripStore(...args),
 }));
 
 type TestView = { props: { style?: Array<Record<string, unknown>> } };
@@ -56,5 +60,28 @@ describe('FilmStripFrameDivider', () => {
   it('renders without crashing', () => {
     const { toJSON } = render(<FilmStripFrameDivider />);
     expect(toJSON()).toBeTruthy();
+  });
+
+  it('renders a spacer when film strip is disabled', () => {
+    mockUseFilmStripStore.mockImplementationOnce(
+      (sel: (s: { filmStripEnabled: boolean }) => boolean) => sel({ filmStripEnabled: false }),
+    );
+    const { UNSAFE_root } = render(<FilmStripFrameDivider />);
+    const views = UNSAFE_root.findAllByType(View);
+    // Only a single spacer View — no bar or sprockets
+    expect(views.length).toBe(1);
+  });
+
+  it('applies edge height and sprocketEdge style when isEdge=true', () => {
+    const { toJSON } = render(<FilmStripFrameDivider isEdge />);
+    const json = JSON.stringify(toJSON());
+    // Height for edge divider is 7 not 12
+    expect(json).toContain('"height":7');
+  });
+
+  it('applies normal height when isEdge is omitted', () => {
+    const { toJSON } = render(<FilmStripFrameDivider isEdge={false} />);
+    const json = JSON.stringify(toJSON());
+    expect(json).toContain('"height":12');
   });
 });

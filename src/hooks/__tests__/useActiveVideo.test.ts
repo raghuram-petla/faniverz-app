@@ -199,4 +199,124 @@ describe('useActiveVideo', () => {
     expect(result.current.activeVideoId).toBeNull();
     expect(result.current.preloadedVideoId).toBeNull();
   });
+
+  it('resets all state to null/empty when viewportHeight becomes 0 from a non-null state', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    // Register a video and establish an active state
+    act(() => {
+      result.current.registerVideoLayout('v1', 100, 200);
+      result.current.handleScrollForVideo(0, 800);
+    });
+    expect(result.current.activeVideoId).toBe('v1');
+
+    // Now viewport height becomes 0 (e.g. layout not measured yet / off-screen)
+    act(() => {
+      result.current.handleScrollForVideo(0, 0);
+    });
+    expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
+    expect(result.current.mountedVideoIds).toEqual([]);
+  });
+
+  it('stays null/empty without re-render when viewportHeight is 0 and state is already null', () => {
+    const { result } = renderHook(() => useActiveVideo());
+    // No videos registered — state is already null/empty
+    // Trigger the viewportHeight <= 0 guard while already in null state
+    act(() => {
+      result.current.handleScrollForVideo(0, 0);
+    });
+    // State should still be null/empty — the no-change branches of setState are exercised
+    expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
+    expect(result.current.mountedVideoIds).toEqual([]);
+  });
+
+  it('stays null/empty on second call with viewportHeight=0 (preloadedVideoId already null branch)', () => {
+    const { result } = renderHook(() => useActiveVideo());
+    // First call: viewportHeight=0 with no state → no-change paths for all three setState calls
+    act(() => {
+      result.current.handleScrollForVideo(0, 0);
+    });
+    // Second call: state still null/empty — same no-change paths hit again (covers remaining branches)
+    act(() => {
+      result.current.handleScrollForVideo(0, 0);
+    });
+    expect(result.current.preloadedVideoId).toBeNull();
+    expect(result.current.mountedVideoIds).toEqual([]);
+  });
+
+  it('stays preloadedVideoId=null without re-render when called with viewportHeight=0 twice consecutively', () => {
+    const { result } = renderHook(() => useActiveVideo());
+    // Set up a preloadedVideoId first
+    act(() => {
+      result.current.registerVideoLayout('active', 250, 200);
+      result.current.registerVideoLayout('near', 880, 200);
+      result.current.handleScrollForVideo(0, 800);
+    });
+    expect(result.current.preloadedVideoId).toBe('near');
+
+    // Reset with viewport=0 → preloadedVideoId goes to null
+    act(() => {
+      result.current.handleScrollForVideo(0, 0);
+    });
+    expect(result.current.preloadedVideoId).toBeNull();
+
+    // Call again with viewport=0 → prev is already null → the `prev === null ? prev` true branch
+    act(() => {
+      result.current.handleScrollForVideo(0, 0);
+    });
+    expect(result.current.preloadedVideoId).toBeNull();
+  });
+
+  it('handles video with zero height (returns 0 visibility ratio)', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    // Register a video with height=0 — getVisibilityRatio returns 0 (the layout.height===0 branch)
+    act(() => {
+      result.current.registerVideoLayout('v1', 100, 0);
+      result.current.handleScrollForVideo(0, 800);
+    });
+    // Zero-height video can never hit 50% visibility — should not become active
+    expect(result.current.activeVideoId).toBeNull();
+    expect(result.current.preloadedVideoId).toBeNull();
+  });
+
+  it('recomputes selection immediately when unregistering after viewport is known', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    // Register two videos: v1 is centered in viewport (y=300, height=200 → center=400 = vp center)
+    // v2 is off to the side (y=100, height=50 → barely visible but at 50% threshold)
+    act(() => {
+      result.current.registerVideoLayout('v1', 300, 200); // center = 400 (vp center)
+      result.current.registerVideoLayout('v2', 100, 200); // center = 200
+      result.current.handleScrollForVideo(0, 800);
+    });
+    // v1 is closer to center (400) so it's active
+    expect(result.current.activeVideoId).toBe('v1');
+
+    // Unregister v1 while viewport metrics are known — updateSelection fires immediately
+    act(() => {
+      result.current.unregisterVideoLayout('v1');
+    });
+    // v2 is now the only registered video — becomes active
+    expect(result.current.activeVideoId).toBe('v2');
+  });
+
+  it('skips re-render when mountedVideoIds list is unchanged (same length and same IDs)', () => {
+    const { result } = renderHook(() => useActiveVideo());
+
+    act(() => {
+      result.current.registerVideoLayout('v1', 100, 200);
+      result.current.handleScrollForVideo(0, 800);
+    });
+    const mountedAfterFirstScroll = result.current.mountedVideoIds;
+
+    // Scroll slightly — same video still mounted, list reference should be stable
+    act(() => {
+      result.current.handleScrollForVideo(10, 800);
+    });
+    // Same IDs in same order → prev reference is preserved (no new array)
+    expect(result.current.mountedVideoIds).toBe(mountedAfterFirstScroll);
+  });
 });

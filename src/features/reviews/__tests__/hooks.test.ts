@@ -1,6 +1,12 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { createWrapper } from '@/__tests__/helpers/createWrapper';
-import { useMovieReviews, useUserReviews, useReviewMutations } from '../hooks';
+import {
+  useMovieReviews,
+  useUserReviews,
+  useMovieReviewsPaginated,
+  useUserReviewsPaginated,
+  useReviewMutations,
+} from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
@@ -58,6 +64,58 @@ describe('useUserReviews', () => {
 
     expect(result.current.isFetching).toBe(false);
     expect(api.fetchUserReviews).not.toHaveBeenCalled();
+  });
+});
+
+describe('useMovieReviewsPaginated', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetches paginated reviews for a movie', async () => {
+    (api.fetchMovieReviewsPaginated as jest.Mock).mockResolvedValue(mockMovieReviews);
+
+    const { result } = renderHook(() => useMovieReviewsPaginated('m1'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(api.fetchMovieReviewsPaginated).toHaveBeenCalledWith('m1', 0, expect.any(Number));
+  });
+
+  it('does not fetch when movieId is empty', async () => {
+    const { result } = renderHook(() => useMovieReviewsPaginated(''), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(api.fetchMovieReviewsPaginated).not.toHaveBeenCalled();
+  });
+});
+
+describe('useUserReviewsPaginated', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetches paginated reviews for a user', async () => {
+    (api.fetchUserReviewsPaginated as jest.Mock).mockResolvedValue(mockUserReviews);
+
+    const { result } = renderHook(() => useUserReviewsPaginated('u1'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(api.fetchUserReviewsPaginated).toHaveBeenCalledWith('u1', 0, expect.any(Number));
+  });
+
+  it('does not fetch when userId is empty', async () => {
+    const { result } = renderHook(() => useUserReviewsPaginated(''), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(api.fetchUserReviewsPaginated).not.toHaveBeenCalled();
   });
 });
 

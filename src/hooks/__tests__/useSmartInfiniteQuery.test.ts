@@ -176,4 +176,69 @@ describe('useSmartInfiniteQuery', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error?.message).toBe('Network error');
   });
+
+  it('skips setIsBackgroundExpanding(false) when component unmounts during background expansion', async () => {
+    let resolvePage1: (value: ReturnType<typeof makeItems>) => void;
+    const page1Promise = new Promise<ReturnType<typeof makeItems>>((resolve) => {
+      resolvePage1 = resolve;
+    });
+
+    const queryFn = jest
+      .fn()
+      .mockResolvedValueOnce(makeItems(5)) // page 0 resolves immediately
+      .mockReturnValueOnce(page1Promise); // page 1 (background expand) — held pending
+
+    const { result, unmount } = renderHook(
+      () =>
+        useSmartInfiniteQuery({
+          queryKey: ['test-cancel-bg'],
+          queryFn,
+          config: defaultConfig,
+        }),
+      { wrapper: createWrapper() },
+    );
+
+    // Wait for page 0 to load and background expansion to start
+    await waitFor(() => expect(result.current.isBackgroundExpanding).toBe(true));
+
+    // Unmount the hook while background expansion is in progress — sets cancelled=true
+    unmount();
+
+    // Now resolve page 1 — the finally() block runs but should NOT crash since cancelled=true
+    act(() => {
+      resolvePage1!(makeItems(10, 6));
+    });
+
+    // No assertion needed — test passes if no "state update on unmounted component" error
+  });
+
+  it('resets hasExpandedRef when refetch is called so background expansion can re-trigger', async () => {
+    const queryFn = jest
+      .fn()
+      .mockResolvedValueOnce(makeItems(5)) // page 0
+      .mockResolvedValueOnce(makeItems(10, 6)) // page 1 (background expand)
+      .mockResolvedValueOnce(makeItems(5)) // page 0 after refetch
+      .mockResolvedValueOnce(makeItems(10, 6)); // page 1 (background expand again)
+
+    const { result } = renderHook(
+      () =>
+        useSmartInfiniteQuery({
+          queryKey: ['test-refetch'],
+          queryFn,
+          config: defaultConfig,
+        }),
+      { wrapper: createWrapper() },
+    );
+
+    // Wait for initial load + background expand
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+
+    // Trigger refetch — this should reset hasExpandedRef.current
+    await act(async () => {
+      result.current.refetch();
+    });
+
+    // After refetch, background expansion should re-trigger for the fresh page 0
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(4));
+  });
 });

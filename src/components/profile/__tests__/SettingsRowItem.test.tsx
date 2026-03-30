@@ -159,4 +159,63 @@ describe('SettingsRowItem', () => {
     expect(getByText('FAQ')).toBeTruthy();
     expect(queryByText('English')).toBeNull();
   });
+
+  it('returns null when toggle key is missing from toggleMap', () => {
+    const row: ToggleRow = {
+      kind: 'toggle',
+      icon: 'notifications-outline',
+      label: 'Missing Key',
+      key: 'nonexistent_key',
+    };
+    const { toJSON } = render(
+      <SettingsRowItem
+        row={row}
+        isLast={false}
+        styles={baseStyles}
+        theme={baseTheme}
+        toggleMap={baseToggleMap}
+      />,
+    );
+    expect(toJSON()).toBeNull();
+  });
+
+  it('renders toggle row with value=false applying toggleOff styles', () => {
+    const setter = jest.fn();
+    const toggleMap = { email: { value: false, setter } };
+    const row: ToggleRow = {
+      kind: 'toggle',
+      icon: 'mail-outline',
+      label: 'Email',
+      key: 'email',
+    };
+    const { getByText } = render(
+      <SettingsRowItem
+        row={row}
+        isLast={false}
+        styles={baseStyles}
+        theme={baseTheme}
+        toggleMap={toggleMap}
+      />,
+    );
+    expect(getByText('Email')).toBeTruthy();
+  });
+
+  it('renders toggle row with isLast=true (no rowBorder)', () => {
+    const row: ToggleRow = {
+      kind: 'toggle',
+      icon: 'notifications-outline',
+      label: 'Push',
+      key: 'push',
+    };
+    const { getByText } = render(
+      <SettingsRowItem
+        row={row}
+        isLast={true}
+        styles={baseStyles}
+        theme={baseTheme}
+        toggleMap={baseToggleMap}
+      />,
+    );
+    expect(getByText('Push')).toBeTruthy();
+  });
 });

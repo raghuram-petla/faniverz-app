@@ -212,4 +212,73 @@ describe('usePrefetchOnVisibility', () => {
 
     expect(prefetchSpy).not.toHaveBeenCalled();
   });
+
+  it('clears dedup set when config identity changes', () => {
+    const queryKeyFactory = jest.fn((item: { id: string }) => ['comments', item.id] as const);
+    const queryFn = jest.fn().mockResolvedValue([]);
+
+    const configA: SmartPaginationConfigWithPrefetch = { ...configWithPrefetch };
+    const configB: SmartPaginationConfigWithPrefetch = { ...configWithPrefetch };
+
+    const { result, rerender } = renderHook(
+      ({ cfg }: { cfg: SmartPaginationConfigWithPrefetch }) =>
+        usePrefetchOnVisibility({
+          config: cfg,
+          queryClient,
+          queryKeyFactory,
+          queryFn,
+        }),
+      { initialProps: { cfg: configA } },
+    );
+
+    const item = makeItem('1', 20);
+
+    // First visibility event — item gets prefetched and added to dedup set
+    act(() => {
+      result.current.onViewableItemsChanged({ viewableItems: [makeViewToken(item)] });
+    });
+    expect(prefetchSpy).toHaveBeenCalledTimes(1);
+
+    // Config identity changes — dedup set should be cleared
+    rerender({ cfg: configB });
+
+    // Same item should be prefetched again since the dedup set was cleared
+    act(() => {
+      result.current.onViewableItemsChanged({ viewableItems: [makeViewToken(item)] });
+    });
+    expect(prefetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancels pending RAF on unmount to prevent stale prefetch calls', () => {
+    const cancelSpy = jest.spyOn(global, 'cancelAnimationFrame');
+    // Override requestAnimationFrame to return a non-zero ID so the cleanup runs
+    const rafSpy = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(() => {
+      return 42; // Return a pending RAF ID without calling the callback
+    });
+
+    const queryKeyFactory = jest.fn((item: { id: string }) => ['comments', item.id] as const);
+    const queryFn = jest.fn();
+
+    const { result, unmount } = renderHook(() =>
+      usePrefetchOnVisibility({
+        config: configWithPrefetch,
+        queryClient,
+        queryKeyFactory,
+        queryFn,
+      }),
+    );
+
+    // Trigger a visibility change so rafRef.current gets set to 42
+    act(() => {
+      result.current.onViewableItemsChanged({
+        viewableItems: [makeViewToken(makeItem('1', 20))],
+      });
+    });
+
+    // Unmount should cancel the pending RAF
+    unmount();
+    expect(cancelSpy).toHaveBeenCalledWith(42);
+
+    rafSpy.mockRestore();
+  });
 });

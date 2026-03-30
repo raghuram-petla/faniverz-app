@@ -89,13 +89,14 @@ jest.mock('expo-router', () => ({
 }));
 
 const mockTabPressListeners: Array<(e?: { preventDefault?: () => void }) => void> = [];
+let mockIsFocused = jest.fn(() => true);
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     addListener: jest.fn((_event: string, cb: (e?: { preventDefault?: () => void }) => void) => {
       mockTabPressListeners.push(cb);
       return jest.fn();
     }),
-    isFocused: jest.fn(() => true),
+    isFocused: () => mockIsFocused(),
   }),
 }));
 
@@ -207,12 +208,13 @@ jest.mock('@/components/feed/FeedCard', () => ({
 }));
 
 jest.mock('@/components/feed/CommentsBottomSheet', () => ({
-  CommentsBottomSheet: ({ visible, feedItemId }: any) => {
+  CommentsBottomSheet: ({ visible, feedItemId, onClose }: any) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
     if (!visible) return null;
-    const { View, Text } = require('react-native');
     return (
       <View testID="comments-sheet">
         <Text testID="comments-sheet-item-id">{feedItemId}</Text>
+        <TouchableOpacity testID="comments-sheet-close" onPress={onClose} />
       </View>
     );
   },
@@ -358,6 +360,7 @@ describe('FeedScreen', () => {
     mockTabPressListeners.length = 0;
     mockGetCurrentHeaderTranslateY.mockReturnValue(-18);
     mockUseActiveVideo.mockReturnValue(createActiveVideoState());
+    mockIsFocused.mockReturnValue(true);
     setupMocks();
   });
 
@@ -856,5 +859,95 @@ describe('FeedScreen', () => {
     // Should NOT have called refetch — only scroll to top
     // (refetch is internal to useRefresh, so we verify by checking
     //  the mock refetch was NOT called for a non-top scroll position)
+  });
+
+  it('onClose on CommentsBottomSheet clears commentSheetItemId', () => {
+    const item = makeItem({ id: 'item-1', title: 'Commentable2' });
+    setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
+    render(<FeedScreen />);
+
+    // Open the sheet first
+    fireEvent.press(screen.getByLabelText('Comment Commentable2'));
+    expect(screen.getByTestId('comments-sheet')).toBeTruthy();
+
+    // Close via onClose callback
+    fireEvent.press(screen.getByTestId('comments-sheet-close'));
+    expect(screen.queryByTestId('comments-sheet')).toBeNull();
+  });
+
+  it('onLayout on FlashList calls handleScrollForVideo with layout height', () => {
+    const mockHandleScrollForVideo = jest.fn();
+    mockUseActiveVideo.mockReturnValue({
+      ...createActiveVideoState(),
+      handleScrollForVideo: mockHandleScrollForVideo,
+    });
+    setupMocks();
+    const { UNSAFE_getByType } = render(<FeedScreen />);
+
+    const { FlashList } = require('@shopify/flash-list');
+    const flashList = UNSAFE_getByType(FlashList);
+    fireEvent(flashList, 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 700 } },
+    });
+    expect(mockHandleScrollForVideo).toHaveBeenCalledWith(0, 700);
+  });
+
+  it('commentKeyFactory generates correct query key for an item', () => {
+    let capturedKeyFactory: ((item: { id: string }) => readonly unknown[]) | undefined;
+    const prefetchModule = require('@/hooks/usePrefetchOnVisibility');
+    const orig = prefetchModule.usePrefetchOnVisibility;
+    prefetchModule.usePrefetchOnVisibility = (opts: {
+      queryKeyFactory: (item: { id: string }) => readonly unknown[];
+    }) => {
+      capturedKeyFactory = opts.queryKeyFactory;
+      return orig(opts);
+    };
+
+    setupMocks();
+    render(<FeedScreen />);
+
+    expect(capturedKeyFactory?.({ id: 'test-id' })).toEqual(['feed-comments', 'test-id']);
+
+    prefetchModule.usePrefetchOnVisibility = orig;
+  });
+
+  it('commentPrefetchFn calls fetchComments with correct args', () => {
+    let capturedPrefetchFn: ((item: { id: string }) => unknown) | undefined;
+    const prefetchModule = require('@/hooks/usePrefetchOnVisibility');
+    const orig = prefetchModule.usePrefetchOnVisibility;
+    prefetchModule.usePrefetchOnVisibility = (opts: {
+      queryFn: (item: { id: string }) => unknown;
+    }) => {
+      capturedPrefetchFn = opts.queryFn;
+      return orig(opts);
+    };
+
+    const commentsApi = require('@/features/feed/commentsApi');
+    const mockFetchComments = jest.spyOn(commentsApi, 'fetchComments').mockResolvedValue([]);
+
+    setupMocks();
+    render(<FeedScreen />);
+
+    capturedPrefetchFn?.({ id: 'item-42' });
+    expect(mockFetchComments).toHaveBeenCalledWith('item-42', 0, expect.any(Number));
+
+    mockFetchComments.mockRestore();
+    prefetchModule.usePrefetchOnVisibility = orig;
+  });
+
+  it('tab press does nothing when screen is not focused (early return branch)', () => {
+    const mockRefetch = jest.fn().mockResolvedValue({});
+    setupMocks({ feed: { refetch: mockRefetch } });
+    mockIsFocused.mockReturnValue(false);
+    render(<FeedScreen />);
+
+    expect(mockTabPressListeners.length).toBeGreaterThan(0);
+    const tabPressHandler = mockTabPressListeners[mockTabPressListeners.length - 1];
+    const mockEvent = { preventDefault: jest.fn() };
+
+    // When not focused, should return early — no preventDefault, no refetch
+    tabPressHandler(mockEvent);
+    expect(mockEvent.preventDefault).not.toHaveBeenCalled();
+    expect(mockRefetch).not.toHaveBeenCalled();
   });
 });

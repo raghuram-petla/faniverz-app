@@ -367,4 +367,19 @@ describe('LanguageAssignments', () => {
 
     expect(screen.getByText('Save')).not.toBeDisabled();
   });
+
+  it('falls back to language id when assigned language_id is not in languages context', async () => {
+    // Return an assignment for 'unknown-lang-id' which is not in the languages list
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [{ language_id: 'unknown-lang-id' }],
+    });
+
+    render(<LanguageAssignments userId="user-1" roleId="admin" />, { wrapper: makeWrapper() });
+
+    await waitFor(() => {
+      // The pill should show the raw id since it's not in langMap
+      expect(screen.getByText('unknown-lang-id')).toBeInTheDocument();
+    });
+  });
 });

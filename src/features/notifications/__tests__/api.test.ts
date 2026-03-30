@@ -14,7 +14,7 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import { fetchNotifications, markAsRead, markAllAsRead } from '../api';
+import { fetchNotifications, fetchNotificationsPaginated, markAsRead, markAllAsRead } from '../api';
 
 describe('notifications api', () => {
   beforeEach(() => {
@@ -108,6 +108,76 @@ describe('notifications api', () => {
       mockEq2.mockResolvedValue({ error: new Error('Failed') });
 
       await expect(markAllAsRead('user-1')).rejects.toThrow('Failed');
+    });
+  });
+
+  describe('fetchNotificationsPaginated', () => {
+    // @contract uses range() instead of limit() — same select chain as fetchNotifications
+    const mockRange = jest.fn();
+
+    it('queries notifications with range for pagination', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: [], error: null });
+
+      await fetchNotificationsPaginated('user-1', 0, 20);
+      expect(supabase.from).toHaveBeenCalledWith('notifications');
+      expect(mockSelect).toHaveBeenCalledWith(
+        '*, movie:movies(title, poster_url), platform:platforms(id, name, logo, color)',
+      );
+      expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
+      expect(mockRange).toHaveBeenCalledWith(0, 19);
+    });
+
+    it('computes correct range for offset=20, limit=20 (to=39)', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: [], error: null });
+
+      await fetchNotificationsPaginated('user-1', 20, 20);
+      expect(mockRange).toHaveBeenCalledWith(20, 39);
+    });
+
+    it('uses default limit of 20', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: [], error: null });
+
+      await fetchNotificationsPaginated('user-1', 0);
+      expect(mockRange).toHaveBeenCalledWith(0, 19);
+    });
+
+    it('returns data on success', async () => {
+      const notifications = [{ id: 'n1', title: 'Movie release' }];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: notifications, error: null });
+
+      const result = await fetchNotificationsPaginated('user-1', 0, 20);
+      expect(result).toEqual(notifications);
+    });
+
+    it('returns empty array when data is null', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: null, error: null });
+
+      const result = await fetchNotificationsPaginated('user-1', 0, 20);
+      expect(result).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ order: mockOrder });
+      mockOrder.mockReturnValue({ range: mockRange });
+      mockRange.mockResolvedValue({ data: null, error: new Error('DB error') });
+
+      await expect(fetchNotificationsPaginated('user-1', 0, 20)).rejects.toThrow('DB error');
     });
   });
 });

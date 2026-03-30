@@ -152,12 +152,13 @@ jest.mock('@/components/feed/FeedCard', () => ({
 }));
 
 jest.mock('@/components/feed/CommentsBottomSheet', () => ({
-  CommentsBottomSheet: ({ visible, feedItemId }: any) => {
+  CommentsBottomSheet: ({ visible, feedItemId, onClose }: any) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
     if (!visible) return null;
-    const { View, Text } = require('react-native');
     return (
       <View testID="comments-sheet">
         <Text testID="comments-sheet-item-id">{feedItemId}</Text>
+        <TouchableOpacity testID="comments-sheet-close" onPress={onClose} />
       </View>
     );
   },
@@ -593,5 +594,75 @@ describe('FeedScreen', () => {
     const { ActivityIndicator } = require('react-native');
     const indicators = UNSAFE_root.findAllByType(ActivityIndicator);
     expect(indicators.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('onClose on CommentsBottomSheet clears the comment sheet', () => {
+    setupMocks();
+    render(<FeedScreen />);
+
+    // Open sheet
+    fireEvent.press(screen.getByLabelText('Comment Test Trailer'));
+    expect(screen.getByTestId('comments-sheet')).toBeTruthy();
+
+    // Close via onClose
+    fireEvent.press(screen.getByTestId('comments-sheet-close'));
+    expect(screen.queryByTestId('comments-sheet')).toBeNull();
+  });
+
+  it('filter change effect scrolls list to top when filter changes', () => {
+    // Start with filter 'all'
+    setupMocks({ store: { filter: 'all', setFilter: mockSetFilter } });
+    const { rerender } = render(<FeedScreen />);
+
+    // Now change filter — re-render with a new filter value
+    mockUseFeedStore.mockReturnValue({ filter: 'trailers', setFilter: mockSetFilter });
+    const { act } = require('@testing-library/react-native');
+    act(() => rerender(<FeedScreen />));
+
+    // Verifying the effect ran — no crash and feed still renders
+    expect(screen.getByText('Test Trailer')).toBeTruthy();
+  });
+
+  it('commentKeyFactory generates correct query key for an item', () => {
+    let capturedKeyFactory: ((item: { id: string }) => readonly unknown[]) | undefined;
+    const prefetchModule = require('@/hooks/usePrefetchOnVisibility');
+    const orig = prefetchModule.usePrefetchOnVisibility;
+    prefetchModule.usePrefetchOnVisibility = (opts: {
+      queryKeyFactory: (item: { id: string }) => readonly unknown[];
+    }) => {
+      capturedKeyFactory = opts.queryKeyFactory;
+      return orig(opts);
+    };
+
+    setupMocks();
+    render(<FeedScreen />);
+
+    expect(capturedKeyFactory?.({ id: 'news-42' })).toEqual(['feed-comments', 'news-42']);
+
+    prefetchModule.usePrefetchOnVisibility = orig;
+  });
+
+  it('commentPrefetchFn calls fetchComments with correct args', () => {
+    let capturedPrefetchFn: ((item: { id: string }) => unknown) | undefined;
+    const prefetchModule = require('@/hooks/usePrefetchOnVisibility');
+    const orig = prefetchModule.usePrefetchOnVisibility;
+    prefetchModule.usePrefetchOnVisibility = (opts: {
+      queryFn: (item: { id: string }) => unknown;
+    }) => {
+      capturedPrefetchFn = opts.queryFn;
+      return orig(opts);
+    };
+
+    const commentsApi = require('@/features/feed/commentsApi');
+    const mockFetchComments = jest.spyOn(commentsApi, 'fetchComments').mockResolvedValue([]);
+
+    setupMocks();
+    render(<FeedScreen />);
+
+    capturedPrefetchFn?.({ id: 'news-99' });
+    expect(mockFetchComments).toHaveBeenCalledWith('news-99', 0, expect.any(Number));
+
+    mockFetchComments.mockRestore();
+    prefetchModule.usePrefetchOnVisibility = orig;
   });
 });
