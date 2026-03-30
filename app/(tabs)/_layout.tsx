@@ -2,10 +2,12 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
+import { useAppPrefetch } from '@/hooks/useAppPrefetch';
 
 export default function TabLayout() {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
+  useAppPrefetch(); // @sideeffect orchestrates 2-phase prefetch for all tab data
 
   return (
     <Tabs

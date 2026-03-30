@@ -1,3 +1,7 @@
+jest.mock('@/hooks/useAppPrefetch', () => ({
+  useAppPrefetch: jest.fn(),
+}));
+
 jest.mock('expo-router', () => {
   const { View, Text } = require('react-native');
 
