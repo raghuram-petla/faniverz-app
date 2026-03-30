@@ -45,6 +45,7 @@ export default function MyReviewsScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const [sortKey, setSortKey] = useState<SortKey>('recent');
@@ -137,6 +138,7 @@ export default function MyReviewsScreen() {
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
+      refreshControl={refreshControl}
     >
       <PullToRefreshIndicator
         pullDistance={pullDistance}

@@ -112,6 +112,7 @@ export default function NotificationsScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @sideeffect: marks as read (if unread) then navigates to movie detail
@@ -189,6 +190,7 @@ export default function NotificationsScreen() {
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
+        refreshControl={refreshControl}
         ListHeaderComponent={
           <PullToRefreshIndicator
             pullDistance={pullDistance}

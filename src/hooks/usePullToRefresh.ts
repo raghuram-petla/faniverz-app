@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { Platform, RefreshControl } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
@@ -32,15 +33,18 @@ export function usePullToRefresh(onRefresh: () => void, refreshing: boolean) {
     isDragging.current = true;
   }, []);
 
-  // @assumes contentOffset.y is negative when overscrolling above the top of the list
+  // @assumes iOS only: Android overscroll never produces negative contentOffset;
+  // Android pull-to-refresh is handled natively via the refreshControl return value.
   const handlePullScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (!isDragging.current) return;
+    if (!isDragging.current || Platform.OS === 'android') return;
     pullDistance.value = Math.max(0, -e.nativeEvent.contentOffset.y);
   }, []);
 
   // @edge if user releases exactly at -PULL_THRESHOLD, the < check means refresh does NOT trigger (must exceed)
+  // @assumes iOS only: Android uses native RefreshControl, not scroll-end detection
   const handleScrollEndDrag = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     isDragging.current = false;
+    if (Platform.OS === 'android') return;
     if (e.nativeEvent.contentOffset.y < -PULL_THRESHOLD && !refreshingRef.current) {
       isRefreshing.value = true;
       onRefreshRef.current();
@@ -49,11 +53,20 @@ export function usePullToRefresh(onRefresh: () => void, refreshing: boolean) {
     }
   }, []);
 
+  // @sideeffect On Android, returns a native RefreshControl to wire into the scroll component's
+  // refreshControl prop. The native spinner appears both on pull gesture AND when refreshing=true
+  // (e.g. triggered programmatically via tab press). iOS uses the custom pull animation instead.
+  const refreshControl =
+    Platform.OS === 'android'
+      ? React.createElement(RefreshControl, { refreshing, onRefresh })
+      : undefined;
+
   return {
     pullDistance,
     isRefreshing,
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   };
 }

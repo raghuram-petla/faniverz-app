@@ -53,6 +53,7 @@ export default function ActivityScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
@@ -112,6 +113,7 @@ export default function ActivityScreen() {
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
+          refreshControl={refreshControl}
           ListHeaderComponent={
             <PullToRefreshIndicator
               pullDistance={pullDistance}

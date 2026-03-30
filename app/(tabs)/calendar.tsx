@@ -51,6 +51,7 @@ export default function CalendarScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef(null);
   useScrollToTop(listRef);
@@ -210,6 +211,7 @@ export default function CalendarScreen() {
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
+        refreshControl={refreshControl}
         ListHeaderComponent={
           <PullToRefreshIndicator
             pullDistance={pullDistance}

@@ -446,4 +446,13 @@ describe('CollapsibleProfileLayout', () => {
     expect(screen.getByText('Child')).toBeTruthy();
     expect(screen.getByTestId('hero-image-tap')).toBeTruthy();
   });
+
+  it('accepts refreshControl prop without crashing (Android native RefreshControl)', () => {
+    const { RefreshControl } = require('react-native');
+    const refreshControl = (
+      <RefreshControl refreshing={false} onRefresh={jest.fn()} testID="refresh-ctrl" />
+    );
+    render(<CollapsibleProfileLayout {...defaultProps} refreshControl={refreshControl} />);
+    expect(screen.getAllByText('Test Person').length).toBeGreaterThanOrEqual(1);
+  });
 });

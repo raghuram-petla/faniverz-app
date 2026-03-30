@@ -107,6 +107,7 @@ export default function DiscoverScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
   /* istanbul ignore next */
   const { data: platforms = [] } = usePlatforms();
@@ -235,6 +236,7 @@ export default function DiscoverScreen() {
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
+          refreshControl={refreshControl}
           ListHeaderComponent={
             <PullToRefreshIndicator
               pullDistance={pullDistance}

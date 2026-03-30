@@ -1,6 +1,11 @@
 import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
-import type { NativeSyntheticEvent, NativeScrollEvent, LayoutChangeEvent } from 'react-native';
+import type {
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  LayoutChangeEvent,
+  RefreshControlProps,
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -48,6 +53,8 @@ export interface CollapsibleProfileLayoutProps {
   onScrollEndDrag?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /** Content at the very top of the scroll area (e.g., PullToRefreshIndicator) */
   scrollHeader?: React.ReactNode;
+  /** Native RefreshControl for Android pull-to-refresh (from usePullToRefresh) */
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
 export function CollapsibleProfileLayout({
@@ -62,6 +69,7 @@ export function CollapsibleProfileLayout({
   onScrollBeginDrag,
   onScrollEndDrag,
   scrollHeader,
+  refreshControl,
 }: CollapsibleProfileLayoutProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -217,6 +225,7 @@ export function CollapsibleProfileLayout({
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={handleMomentumEnd}
         scrollEventThrottle={16}
+        refreshControl={refreshControl}
       >
         {scrollHeader}
 

@@ -76,6 +76,7 @@ export default function PostDetailScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
@@ -157,6 +158,7 @@ export default function PostDetailScreen() {
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
+        refreshControl={refreshControl}
       >
         <PullToRefreshIndicator
           pullDistance={pullDistance}

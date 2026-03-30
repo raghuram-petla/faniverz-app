@@ -1,6 +1,8 @@
 // Capture animated style callbacks so we can invoke them in tests
 const capturedStyleCallbacks: Array<() => object> = [];
 
+import { Platform } from 'react-native';
+
 jest.mock('react-native-reanimated', () => {
   const original = jest.requireActual('react-native-reanimated');
   const { View } = require('react-native');
@@ -241,6 +243,20 @@ describe('PullToRefreshIndicator', () => {
       const result = rotateCallback() as { transform?: object[] };
       expect(result).toBeDefined();
     }
+  });
+
+  it('returns null on Android (native RefreshControl handles the UI there)', () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'android';
+    const { toJSON } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance()}
+        isRefreshing={makeIsRefreshing()}
+        refreshing={false}
+      />,
+    );
+    expect(toJSON()).toBeNull();
+    (Platform as unknown as { OS: string }).OS = originalOS;
   });
 
   it('contentStyle callback at below-threshold pull returns opacity value', () => {

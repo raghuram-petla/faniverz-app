@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
@@ -23,6 +23,10 @@ export function PullToRefreshIndicator({
   isRefreshing,
   refreshing,
 }: PullToRefreshIndicatorProps) {
+  // @assumes Android: native RefreshControl (from usePullToRefresh) handles both the pull gesture
+  // and the refreshing spinner. This component is iOS-only.
+  if (Platform.OS === 'android') return null;
+
   const { theme } = useTheme();
 
   // @invariant Container height is always max(pull-driven height, refresh-driven height)

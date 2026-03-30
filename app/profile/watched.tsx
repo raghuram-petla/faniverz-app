@@ -52,6 +52,7 @@ export default function WatchedMoviesScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @nullable: watched_at, movie.rating, and movie.title may all be null — defaulted for sort stability
@@ -106,6 +107,7 @@ export default function WatchedMoviesScreen() {
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
+      refreshControl={refreshControl}
     >
       <PullToRefreshIndicator
         pullDistance={pullDistance}

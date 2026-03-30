@@ -1,4 +1,6 @@
+import React from 'react';
 import { renderHook, act } from '@testing-library/react-native';
+import { Platform } from 'react-native';
 import { usePullToRefresh, PULL_THRESHOLD } from '../usePullToRefresh';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
@@ -132,5 +134,67 @@ describe('usePullToRefresh', () => {
 
     rerender({ refreshing: false });
     expect(result.current.isRefreshing.value).toBe(false);
+  });
+
+  it('returns undefined refreshControl on iOS (default)', () => {
+    const { result } = renderHook(() => usePullToRefresh(jest.fn(), false));
+    expect(result.current.refreshControl).toBeUndefined();
+  });
+});
+
+describe('usePullToRefresh — Android platform', () => {
+  const originalOS = Platform.OS;
+
+  beforeEach(() => {
+    (Platform as unknown as { OS: string }).OS = 'android';
+  });
+
+  afterEach(() => {
+    (Platform as unknown as { OS: string }).OS = originalOS;
+  });
+
+  it('handlePullScroll is a no-op on Android (overscroll never goes negative)', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    act(() => {
+      result.current.handleScrollBeginDrag();
+      result.current.handlePullScroll(makeScrollEvent(-80));
+    });
+    expect(result.current.pullDistance.value).toBe(0);
+  });
+
+  it('handleScrollEndDrag does not trigger onRefresh on Android', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    act(() => {
+      result.current.handleScrollBeginDrag();
+      result.current.handleScrollEndDrag(makeScrollEvent(-(PULL_THRESHOLD + 1)));
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('returns a refreshControl React element on Android', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    expect(result.current.refreshControl).toBeDefined();
+    // Should be a React element (has type property)
+    expect(result.current.refreshControl).toHaveProperty('type');
+  });
+
+  it('refreshControl element reflects refreshing prop', () => {
+    const onRefresh = jest.fn();
+    const { result, rerender } = renderHook(
+      ({ refreshing }: { refreshing: boolean }) => usePullToRefresh(onRefresh, refreshing),
+      { initialProps: { refreshing: false } },
+    );
+    const rc1 = result.current.refreshControl as React.ReactElement<{ refreshing: boolean }>;
+    expect(rc1?.props?.refreshing).toBe(false);
+
+    rerender({ refreshing: true });
+    const rc2 = result.current.refreshControl as React.ReactElement<{ refreshing: boolean }>;
+    expect(rc2?.props?.refreshing).toBe(true);
   });
 });

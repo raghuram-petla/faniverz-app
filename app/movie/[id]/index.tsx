@@ -56,6 +56,7 @@ export default function MovieDetailScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @invariant: useMovieAction must be called unconditionally (rules of hooks)
@@ -137,6 +138,7 @@ export default function MovieDetailScreen() {
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
+        refreshControl={refreshControl}
       >
         <PullToRefreshIndicator
           pullDistance={pullDistance}

@@ -51,6 +51,7 @@ export default function FollowingScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const filtered = useMemo(
@@ -167,6 +168,7 @@ export default function FollowingScreen() {
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
+          refreshControl={refreshControl}
           ListHeaderComponent={
             <PullToRefreshIndicator
               pullDistance={pullDistance}

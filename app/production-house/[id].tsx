@@ -46,6 +46,7 @@ export default function ProductionHouseDetailScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @coupling: followSet uses "entityType:entityId" composite key format
@@ -142,6 +143,7 @@ export default function ProductionHouseDetailScreen() {
       onScroll={handlePullScroll}
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
+      refreshControl={refreshControl}
       scrollHeader={
         <PullToRefreshIndicator
           pullDistance={pullDistance}

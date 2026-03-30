@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 
 // @contract Detects physical device landscape tilt via accelerometer WITHOUT
@@ -22,16 +23,19 @@ export function useDeviceLandscape(enabled: boolean): number {
 
     Accelerometer.setUpdateInterval(UPDATE_INTERVAL);
     const sub = Accelerometer.addListener(({ x }) => {
-      // @edge x > 0 = phone tilted right (top points right) → rotate image -90°
-      // x < 0 = phone tilted left (top points left) → rotate image 90°
-      const absX = Math.abs(x);
+      // @edge Android accelerometer x-axis is physically inverted relative to iOS;
+      // negate on Android so tilt-right consistently gives positive nx on both platforms.
+      const nx = Platform.OS === 'android' ? -x : x;
+      // @edge nx > 0 = phone tilted right (top points right) → rotate image -90°
+      // nx < 0 = phone tilted left (top points left) → rotate image 90°
+      const absNx = Math.abs(nx);
       setRotation((prev) => {
         const wasLandscape = prev !== 0;
-        if (!wasLandscape && absX > TILT_THRESHOLD) return x > 0 ? -90 : 90;
-        if (wasLandscape && absX < UNTILT_THRESHOLD) return 0;
+        if (!wasLandscape && absNx > TILT_THRESHOLD) return nx > 0 ? -90 : 90;
+        if (wasLandscape && absNx < UNTILT_THRESHOLD) return 0;
         // @edge If already landscape but tilt direction flipped, update immediately
-        if (wasLandscape && absX > TILT_THRESHOLD) {
-          const newDir = x > 0 ? -90 : 90;
+        if (wasLandscape && absNx > TILT_THRESHOLD) {
+          const newDir = nx > 0 ? -90 : 90;
           if (newDir !== prev) return newDir;
         }
         return prev;

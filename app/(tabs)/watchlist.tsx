@@ -66,6 +66,7 @@ export default function WatchlistScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef<FlatList>(null);
   useScrollToTop(listRef);
@@ -275,6 +276,7 @@ export default function WatchlistScreen() {
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
+        refreshControl={refreshControl}
         ListHeaderComponent={
           <PullToRefreshIndicator
             pullDistance={pullDistance}

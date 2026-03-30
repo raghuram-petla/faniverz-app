@@ -69,6 +69,7 @@ export default function ActorDetailScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @coupling: followSet key format = "entityType:entityId"
@@ -211,6 +212,7 @@ export default function ActorDetailScreen() {
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
+        refreshControl={refreshControl}
         scrollHeader={
           <PullToRefreshIndicator
             pullDistance={pullDistance}

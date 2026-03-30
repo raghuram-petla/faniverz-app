@@ -118,6 +118,7 @@ export default function SurpriseScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @nullable featured is null when items array is empty
@@ -155,6 +156,7 @@ export default function SurpriseScreen() {
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
+        refreshControl={refreshControl}
       >
         <PullToRefreshIndicator
           pullDistance={pullDistance}

@@ -56,6 +56,7 @@ export default function FavoriteActorsScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const actorList = (favorites ?? []) as FavoriteActorWithActor[];
@@ -83,6 +84,7 @@ export default function FavoriteActorsScreen() {
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
+      refreshControl={refreshControl}
     >
       <PullToRefreshIndicator
         pullDistance={pullDistance}

@@ -70,6 +70,7 @@ export default function SearchScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
+    refreshControl,
   } = usePullToRefresh(onRefresh, refreshing);
 
   useEffect(() => {
@@ -230,6 +231,7 @@ export default function SearchScreen() {
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
+          refreshControl={refreshControl}
           ListHeaderComponent={
             <View>
               <PullToRefreshIndicator
