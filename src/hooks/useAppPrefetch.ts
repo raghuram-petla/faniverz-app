@@ -18,7 +18,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
-import { fetchPlatforms } from '@/features/ott/api';
+import { fetchPlatforms, fetchMoviePlatformMap } from '@/features/ott/api';
 import { fetchMovies, fetchUpcomingMovies } from '@/features/movies/api';
 import { fetchPersonalizedFeed, fetchNewsFeed } from '@/features/feed/api';
 import {
@@ -71,11 +71,31 @@ function prefetchImmediate(qc: QueryClient) {
     staleTime: STALE_24H,
   });
   // @coupling queryKey must match useMovies(): ['movies', undefined]
-  qc.prefetchQuery({
+  // @sideeffect uses fetchQuery (not prefetchQuery) so we get data to chain
+  // the movie-platform map prefetch — useMoviePlatformMap depends on movie IDs
+  qc.fetchQuery({
     queryKey: ['movies', undefined],
     queryFn: () => fetchMovies(undefined),
     staleTime: STALE_5M,
-  });
+  })
+    .then((movies) => {
+      if (!movies?.length) return;
+      // @sync stableKey computation must match useMoviePlatformMap's useMemo:
+      //   [...movieIds].sort().join(',')
+      const stableKey = movies
+        .map((m: { id: string }) => m.id)
+        .sort()
+        .join(',');
+      // @coupling queryKey must match useMoviePlatformMap(): ['movie-platforms', stableKey]
+      qc.prefetchQuery({
+        queryKey: ['movie-platforms', stableKey],
+        queryFn: () => fetchMoviePlatformMap(stableKey.split(',')),
+        staleTime: STALE_5M,
+      });
+    })
+    .catch(() => {
+      // Prefetch failure is non-critical — Spotlight will fetch normally
+    });
 }
 
 /** Phase 2: feed filter variants + news feed + calendar */

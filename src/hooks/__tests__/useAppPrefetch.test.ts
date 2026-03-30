@@ -3,9 +3,10 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 }));
 jest.mock('@/features/ott/api', () => ({
   fetchPlatforms: jest.fn().mockResolvedValue([]),
+  fetchMoviePlatformMap: jest.fn().mockResolvedValue({}),
 }));
 jest.mock('@/features/movies/api', () => ({
-  fetchMovies: jest.fn().mockResolvedValue([]),
+  fetchMovies: jest.fn().mockResolvedValue([{ id: 'movie-a' }, { id: 'movie-b' }]),
   fetchUpcomingMovies: jest.fn().mockResolvedValue([]),
 }));
 jest.mock('@/features/feed/api', () => ({
@@ -59,28 +60,36 @@ describe('useAppPrefetch', () => {
     jest.restoreAllMocks();
   });
 
-  it('Phase 1: prefetches platforms and movies immediately', () => {
+  it('Phase 1: prefetches platforms and movies immediately', async () => {
     renderHook(() => useAppPrefetch(), {
       wrapper: createWrapper(queryClient),
     });
 
-    expect(prefetchQuerySpy).toHaveBeenCalledTimes(2);
+    // Flush fetchQuery → then chain (movie-platform map)
+    await act(async () => {});
+
     expect(prefetchQuerySpy).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: ['platforms'] }),
     );
+    // Movie-platform map is chained after fetchQuery resolves movies
     expect(prefetchQuerySpy).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: ['movies', undefined] }),
+      expect.objectContaining({
+        queryKey: ['movie-platforms', expect.any(String)],
+      }),
     );
   });
 
-  it('Phase 1: fires only once on re-render', () => {
+  it('Phase 1: fires only once on re-render', async () => {
     const { rerender } = renderHook(() => useAppPrefetch(), {
       wrapper: createWrapper(queryClient),
     });
-    rerender({});
+    await act(async () => {});
 
-    // Still 2, not 4
-    expect(prefetchQuerySpy).toHaveBeenCalledTimes(2);
+    const callCount = prefetchQuerySpy.mock.calls.length;
+    rerender({});
+    await act(async () => {});
+
+    expect(prefetchQuerySpy).toHaveBeenCalledTimes(callCount);
   });
 
   it('Phase 2: does not fire before all feed settles', () => {
