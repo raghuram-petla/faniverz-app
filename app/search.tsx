@@ -71,6 +71,7 @@ export default function SearchScreen() {
     handlePullScroll,
     handleScrollEndDrag,
     refreshControl,
+    renderScrollComponent,
   } = usePullToRefresh(onRefresh, refreshing);
 
   useEffect(() => {
@@ -225,6 +226,7 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.resultsList}
           showsVerticalScrollIndicator={false}
+          renderScrollComponent={renderScrollComponent}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           onScroll={handlePullScroll}

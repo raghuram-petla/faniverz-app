@@ -88,6 +88,7 @@ export default function FeedScreen() {
     handlePullScroll,
     handleScrollEndDrag,
     refreshControl,
+    renderScrollComponent,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @coupling useFeedActions owns all user-initiated action handlers; component owns data + scroll + layout
@@ -140,6 +141,7 @@ export default function FeedScreen() {
             maintainVisibleContentPosition={{ disabled: true }}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            renderScrollComponent={renderScrollComponent}
             onScroll={handlePullScroll}
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}

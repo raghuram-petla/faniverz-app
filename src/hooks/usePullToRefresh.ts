@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { Platform, RefreshControl } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent, ScrollViewProps } from 'react-native';
+import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { useSharedValue } from 'react-native-reanimated';
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 // @invariant PULL_THRESHOLD must stay positive; UI animation and trigger logic depend on it
 export const PULL_THRESHOLD = 70;
@@ -56,6 +57,9 @@ export function usePullToRefresh(onRefresh: () => void, refreshing: boolean) {
   // @sideeffect On Android, returns a native RefreshControl to wire into the scroll component's
   // refreshControl prop. The native spinner appears both on pull gesture AND when refreshing=true
   // (e.g. triggered programmatically via tab press). iOS uses the custom pull animation instead.
+  // @assumes Android: GestureHandlerRootView intercepts touch events, so the RefreshControl's
+  // SwipeRefreshLayout needs to live inside a gesture-handler-aware ScrollView. Screens must use
+  // renderScrollComponent (for FlashList) or import ScrollView/FlatList from react-native-gesture-handler.
   const refreshControl =
     Platform.OS === 'android'
       ? React.createElement(RefreshControl, { refreshing, onRefresh })
@@ -68,5 +72,11 @@ export function usePullToRefresh(onRefresh: () => void, refreshing: boolean) {
     handlePullScroll,
     handleScrollEndDrag,
     refreshControl,
+    // @contract FlashList screens must pass this so the internal ScrollView integrates with
+    // GestureHandlerRootView on Android. On iOS, undefined means FlashList uses its default.
+    renderScrollComponent:
+      Platform.OS === 'android'
+        ? (GHScrollView as React.ComponentType<ScrollViewProps>)
+        : undefined,
   };
 }

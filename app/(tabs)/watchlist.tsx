@@ -1,13 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  ActivityIndicator,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
+import { View, Text, ActivityIndicator, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 

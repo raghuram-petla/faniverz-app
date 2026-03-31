@@ -12,6 +12,7 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
+import { ScrollView as GHScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -24,6 +25,10 @@ import {
   IMAGE_COLLAPSED,
   COLLAPSE_SCROLL_DISTANCE,
 } from '@/styles/collapsibleProfile.styles';
+
+// @assumes Android: GestureHandlerRootView intercepts touch events; wrapping the gesture-handler
+// ScrollView in Animated ensures both RefreshControl and scroll-driven animations work correctly.
+const AnimatedGHScrollView = Animated.createAnimatedComponent(GHScrollView);
 
 /**
  * @contract Scroll-driven collapsible hero: avatar + name float and shrink into the nav bar as user scrolls.
@@ -214,7 +219,7 @@ export function CollapsibleProfileLayout({
       </Animated.View>
 
       {/* Scrollable content */}
-      <Animated.ScrollView
+      <AnimatedGHScrollView
         ref={scrollRef as React.RefObject<Animated.ScrollView>}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40, minHeight: contentMinHeight }}
@@ -246,7 +251,7 @@ export function CollapsibleProfileLayout({
         </View>
 
         {children}
-      </Animated.ScrollView>
+      </AnimatedGHScrollView>
     </View>
   );
 }

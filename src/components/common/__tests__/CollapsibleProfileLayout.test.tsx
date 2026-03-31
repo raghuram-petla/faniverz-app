@@ -1,3 +1,8 @@
+jest.mock('react-native-gesture-handler', () => {
+  const { ScrollView, FlatList } = require('react-native');
+  return { ScrollView, FlatList };
+});
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
@@ -280,16 +285,20 @@ describe('CollapsibleProfileLayout', () => {
     expect(screen.getAllByText('Layout Test').length).toBeGreaterThanOrEqual(1);
   });
 
+  // @coupling AnimatedGHScrollView = Animated.createAnimatedComponent(GHScrollView);
+  // in tests, createAnimatedComponent returns the component as-is, so we find by props
+  const findScrollView = (root: ReturnType<typeof render>['UNSAFE_root']) =>
+    root.findAll(
+      (node: { props?: Record<string, unknown> }) =>
+        node.props?.scrollEventThrottle === 16 && typeof node.props?.onScroll === 'function',
+    )[0];
+
   it('handleScroll sets scrollOffset and forwards onScroll to parent', () => {
     const onScroll = jest.fn();
     const { UNSAFE_root } = render(
       <CollapsibleProfileLayout {...defaultProps} onScroll={onScroll} />,
     );
-    const Animated = require('react-native-reanimated').default;
-    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
-    const svWithScroll = scrollViews.find(
-      (sv: { props: Record<string, unknown> }) => typeof sv.props.onScroll === 'function',
-    );
+    const svWithScroll = findScrollView(UNSAFE_root);
     expect(svWithScroll).toBeTruthy();
     const event = { nativeEvent: { contentOffset: { y: 75, x: 0 } } };
     svWithScroll.props.onScroll(event);
@@ -298,39 +307,27 @@ describe('CollapsibleProfileLayout', () => {
 
   it('handleScroll works when onScroll is undefined (no crash)', () => {
     const { UNSAFE_root } = render(<CollapsibleProfileLayout {...defaultProps} />);
-    const Animated = require('react-native-reanimated').default;
-    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
-    const svWithScroll = scrollViews.find(
-      (sv: { props: Record<string, unknown> }) => typeof sv.props.onScroll === 'function',
-    );
+    const svWithScroll = findScrollView(UNSAFE_root);
     const event = { nativeEvent: { contentOffset: { y: 50, x: 0 } } };
     expect(() => svWithScroll.props.onScroll(event)).not.toThrow();
   });
 
-  it('onScrollBeginDrag is forwarded via Animated.ScrollView', () => {
+  it('onScrollBeginDrag is forwarded via scroll view', () => {
     const onScrollBeginDrag = jest.fn();
     const { UNSAFE_root } = render(
       <CollapsibleProfileLayout {...defaultProps} onScrollBeginDrag={onScrollBeginDrag} />,
     );
-    const Animated = require('react-native-reanimated').default;
-    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
-    const sv = scrollViews.find(
-      (s: { props: Record<string, unknown> }) => typeof s.props.onScrollBeginDrag === 'function',
-    );
+    const sv = findScrollView(UNSAFE_root);
     sv.props.onScrollBeginDrag();
     expect(onScrollBeginDrag).toHaveBeenCalled();
   });
 
-  it('onScrollEndDrag is forwarded via Animated.ScrollView', () => {
+  it('onScrollEndDrag is forwarded via scroll view', () => {
     const onScrollEndDrag = jest.fn();
     const { UNSAFE_root } = render(
       <CollapsibleProfileLayout {...defaultProps} onScrollEndDrag={onScrollEndDrag} />,
     );
-    const Animated = require('react-native-reanimated').default;
-    const scrollViews = UNSAFE_root.findAllByType(Animated.ScrollView);
-    const sv = scrollViews.find(
-      (s: { props: Record<string, unknown> }) => typeof s.props.onScrollEndDrag === 'function',
-    );
+    const sv = findScrollView(UNSAFE_root);
     const event = { nativeEvent: { contentOffset: { y: 0, x: 0 }, velocity: { y: 0 } } };
     sv.props.onScrollEndDrag(event);
     expect(onScrollEndDrag).toHaveBeenCalledWith(event);
@@ -338,11 +335,7 @@ describe('CollapsibleProfileLayout', () => {
 
   describe('snap behavior', () => {
     const getAnimatedScrollView = (root: ReturnType<typeof render>['UNSAFE_root']) => {
-      const Animated = require('react-native-reanimated').default;
-      const scrollViews = root.findAllByType(Animated.ScrollView);
-      return scrollViews.find(
-        (s: { props: Record<string, unknown> }) => typeof s.props.onScrollEndDrag === 'function',
-      );
+      return findScrollView(root);
     };
 
     it('has onMomentumScrollEnd handler on scroll view', () => {

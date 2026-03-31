@@ -140,6 +140,11 @@ describe('usePullToRefresh', () => {
     const { result } = renderHook(() => usePullToRefresh(jest.fn(), false));
     expect(result.current.refreshControl).toBeUndefined();
   });
+
+  it('returns undefined renderScrollComponent on iOS', () => {
+    const { result } = renderHook(() => usePullToRefresh(jest.fn(), false));
+    expect(result.current.renderScrollComponent).toBeUndefined();
+  });
 });
 
 describe('usePullToRefresh — Android platform', () => {
@@ -182,6 +187,11 @@ describe('usePullToRefresh — Android platform', () => {
     expect(result.current.refreshControl).toBeDefined();
     // Should be a React element (has type property)
     expect(result.current.refreshControl).toHaveProperty('type');
+  });
+
+  it('returns a renderScrollComponent on Android for FlashList integration', () => {
+    const { result } = renderHook(() => usePullToRefresh(jest.fn(), false));
+    expect(result.current.renderScrollComponent).toBeDefined();
   });
 
   it('refreshControl element reflects refreshing prop', () => {

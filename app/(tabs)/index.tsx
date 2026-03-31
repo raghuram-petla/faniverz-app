@@ -84,6 +84,7 @@ export default function FeedScreen() {
     handlePullScroll,
     handleScrollEndDrag,
     refreshControl,
+    renderScrollComponent,
   } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
   const navigation = useNavigation();
@@ -147,6 +148,7 @@ export default function FeedScreen() {
             drawDistance={500}
             contentContainerStyle={{ paddingTop: totalHeaderHeight }}
             showsVerticalScrollIndicator={false}
+            renderScrollComponent={renderScrollComponent}
             onLayout={(e) => {
               handleScrollForVideo(scrollOffsetRef.current, e.nativeEvent.layout.height);
             }}

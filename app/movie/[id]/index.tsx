@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { View, ScrollView, Share } from 'react-native';
+import { View, Share } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
