@@ -406,6 +406,27 @@ describe('MediaPhotosTab', () => {
     expect(screen.getByText('Plain')).toBeTruthy();
   });
 
+  it('calls onCategoryChange when a filter pill is pressed', () => {
+    const onCategoryChange = jest.fn();
+    const posters = [
+      makePoster({ id: 'p1', title: 'Poster One', image_type: 'poster' }),
+      makePoster({ id: 'b1', title: 'Backdrop One', image_type: 'backdrop' }),
+    ];
+    render(<MediaPhotosTab posters={posters} onCategoryChange={onCategoryChange} />);
+    fireEvent.press(screen.getByText('Posters'));
+    expect(onCategoryChange).toHaveBeenCalledTimes(1);
+    fireEvent.press(screen.getByText('All'));
+    expect(onCategoryChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not crash when onCategoryChange is not provided', () => {
+    const posters = [makePoster({ id: 'p1', title: 'Poster One' })];
+    render(<MediaPhotosTab posters={posters} />);
+    fireEvent.press(screen.getByText('Posters'));
+    // No crash = pass
+    expect(screen.getByText('Posters')).toBeTruthy();
+  });
+
   it('shows both Main Poster and Main Backdrop badges on appropriate items', () => {
     const posters = [
       makePoster({ id: 'mp', title: 'Main P', is_main_poster: true, image_type: 'poster' }),

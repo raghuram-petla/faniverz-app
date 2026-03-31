@@ -19,9 +19,11 @@ type PhotoCategory = (typeof PHOTO_CATEGORIES)[number];
 /** @contract Grid of movie posters/backdrops with filter pills and tap-to-zoom via ImageViewer */
 export interface MediaPhotosTabProps {
   posters: MoviePoster[];
+  /** @sideeffect Called when the photo category filter changes, so parent can scroll to top */
+  onCategoryChange?: () => void;
 }
 
-export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
+export function MediaPhotosTab({ posters, onCategoryChange }: MediaPhotosTabProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
@@ -88,7 +90,10 @@ export function MediaPhotosTab({ posters }: MediaPhotosTabProps) {
         <MediaFilterPills
           categories={[...PHOTO_CATEGORIES]}
           active={activeCategory}
-          onSelect={(cat) => setActiveCategory(cat as PhotoCategory)}
+          onSelect={(cat) => {
+            setActiveCategory(cat as PhotoCategory);
+            onCategoryChange?.();
+          }}
         />
       </View>
       <View style={styles.photoGrid}>

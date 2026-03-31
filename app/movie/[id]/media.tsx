@@ -1,12 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  interpolate,
-  Extrapolation,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,18 +21,16 @@ import {
   HERO_HEIGHT,
   POSTER_EXPANDED_W,
   POSTER_EXPANDED_H,
-  POSTER_COLLAPSED_W,
   NAV_ROW_HEIGHT,
-  TITLE_SCALE,
 } from '@/styles/movieMedia.styles';
 import { useSnapScroll } from '@/hooks/useSnapScroll';
+import { useMediaScrollAnimations } from '@/hooks/useMediaScrollAnimations';
 import { useTheme } from '@/theme';
 import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import type { MovieVideo } from '@/types';
 
 type MediaTabName = 'videos' | 'photos';
-const COLLAPSED_GAP = 8;
 
 // @boundary: Media gallery — videos (grouped by type) and photos for a single movie
 // @coupling: VIDEO_TYPES from shared constants, useMovieDetail for videos + posters data
@@ -55,6 +48,8 @@ export default function MediaScreen() {
   const [activeTab, setActiveTab] = useState<MediaTabName>('photos');
   // @invariant: 'All' must be the first category; other categories are derived from VIDEO_TYPES
   const [activeCategory, setActiveCategory] = useState('All');
+  const prevTabRef = useRef(activeTab);
+  const prevCategoryRef = useRef(activeCategory);
   const scrollOffset = useSharedValue(0);
   const titleWidth = useSharedValue(200);
   const titleHeight = useSharedValue(24);
@@ -66,6 +61,30 @@ export default function MediaScreen() {
     handleScrollEndDrag,
     handleMomentumEnd,
   } = useSnapScroll({ scrollOffset, snapThreshold: HERO_HEIGHT });
+
+  /** @sideeffect Scrolls to top when tab or video category filter changes */
+  const scrollToTop = useCallback(() => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+      scrollOffset.value = 0;
+    });
+  }, [scrollRef, scrollOffset]);
+
+  // @sideeffect: Reset scroll when video category filter changes
+  useEffect(() => {
+    if (prevCategoryRef.current !== activeCategory) {
+      prevCategoryRef.current = activeCategory;
+      scrollToTop();
+    }
+  }, [activeCategory, scrollToTop]);
+
+  // @sideeffect: Reset scroll when switching between photos/videos tabs
+  useEffect(() => {
+    if (prevTabRef.current !== activeTab) {
+      prevTabRef.current = activeTab;
+      scrollToTop();
+    }
+  }, [activeTab, scrollToTop]);
 
   const onTitleLayout = useCallback(
     (e: LayoutChangeEvent) => {
@@ -95,70 +114,20 @@ export default function MediaScreen() {
   const activeCategoryLabel =
     activeCategory === 'All' ? 'All' : activeCategory.replace(/\s*\(\d+\)$/, '');
 
-  // --- Animation geometry ---
-  // @assumes floating elements are position:absolute inside a View with paddingTop:insets.top.
-  // Absolute children ignore padding, so all Y coords must include insets.top manually.
+  // @assumes floating elements are position:absolute inside a View with paddingTop:insets.top
   const heroPosterCX = 16 + POSTER_EXPANDED_W / 2;
   const heroPosterCY = insets.top + HERO_HEIGHT - 16 - POSTER_EXPANDED_H / 2;
-  // Collapsed: nav row sits below the safe area inset
   const navCenterY = insets.top + NAV_ROW_HEIGHT / 2;
 
-  // @boundary: p interpolates [0,1] over HERO_HEIGHT; clamped so over-scroll has no effect
-  const animatedPosterStyle = useAnimatedStyle(() => {
-    const s = scrollOffset.value;
-    const p = interpolate(s, [0, HERO_HEIGHT], [0, 1], Extrapolation.CLAMP);
-
-    const titleVisualW = titleWidth.value * TITLE_SCALE;
-    const groupW = POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW;
-    const groupLeft = (screenWidth - groupW) / 2;
-    const collapsedCX = groupLeft + POSTER_COLLAPSED_W / 2;
-
-    const cy = (heroPosterCY - s) * (1 - p) + navCenterY * p;
-    const cx = heroPosterCX * (1 - p) + collapsedCX * p;
-    const scale = interpolate(p, [0, 1], [1, POSTER_COLLAPSED_W / POSTER_EXPANDED_W]);
-
-    return {
-      transform: [
-        { translateX: cx - POSTER_EXPANDED_W / 2 },
-        { translateY: cy - POSTER_EXPANDED_H / 2 },
-        { scale },
-      ],
-    };
+  const { animatedPosterStyle, animatedTitleStyle, subtitleFadeStyle } = useMediaScrollAnimations({
+    scrollOffset,
+    titleWidth,
+    titleHeight,
+    screenWidth,
+    heroPosterCX,
+    heroPosterCY,
+    navCenterY,
   });
-
-  const animatedTitleStyle = useAnimatedStyle(() => {
-    const s = scrollOffset.value;
-    const p = interpolate(s, [0, HERO_HEIGHT], [0, 1], Extrapolation.CLAMP);
-
-    const W = titleWidth.value;
-    const H = titleHeight.value;
-    const scale = interpolate(p, [0, 1], [1, TITLE_SCALE]);
-
-    const titleVisualW = W * TITLE_SCALE;
-    const groupW = POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW;
-    const groupLeft = (screenWidth - groupW) / 2;
-    const collapsedNameCX = groupLeft + POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW / 2;
-
-    // Hero: to the right of poster, vertically centered with poster bottom half
-    const heroTitleCY = heroPosterCY + POSTER_EXPANDED_H * 0.15;
-    const cy = (heroTitleCY - s) * (1 - p) + navCenterY * p;
-
-    const heroTX = heroPosterCX + POSTER_EXPANDED_W / 2 + 12;
-    const collapsedTX = collapsedNameCX - W / 2;
-
-    return {
-      transform: [
-        { translateX: heroTX * (1 - p) + collapsedTX * p },
-        { translateY: cy - H / 2 },
-        { scale },
-      ],
-    };
-  });
-
-  /** @sideeffect Subtitle fades out in first half of scroll transition */
-  const subtitleFadeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollOffset.value, [0, HERO_HEIGHT * 0.4], [1, 0], Extrapolation.CLAMP),
-  }));
 
   if (isLoading) {
     return (
@@ -278,7 +247,7 @@ export default function MediaScreen() {
           {activeTab === 'videos' ? (
             <MediaVideosTab videosByType={videosByType} activeCategory={activeCategoryLabel} />
           ) : (
-            <MediaPhotosTab posters={movie.posters} />
+            <MediaPhotosTab posters={movie.posters} onCategoryChange={scrollToTop} />
           )}
         </View>
       </Animated.ScrollView>
