@@ -25,6 +25,8 @@ import { applyTmdbFields } from '@/components/sync/syncHelpers';
 // ── Props ────────────────────────────────────────────────────────────────────
 
 export interface SyncSectionProps {
+  /** @contract Callback to sync form state after TMDB fields are applied to DB */
+  onFieldsApplied?: () => void;
   /** @contract Full movie row from useAdminMovie — superset of ExistingMovieData */
   movie: {
     id: string;
@@ -82,7 +84,7 @@ function toExistingMovieData(m: SyncSectionProps['movie']): ExistingMovieData {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function SyncSection({ movie }: SyncSectionProps) {
+export function SyncSection({ movie, onFieldsApplied }: SyncSectionProps) {
   const [localMovie, setLocalMovie] = useState<ExistingMovieData>(() => toExistingMovieData(movie));
   const [appliedFields, setAppliedFields] = useState<string[]>([]);
 
@@ -110,6 +112,8 @@ export function SyncSection({ movie }: SyncSectionProps) {
       fields,
     };
     if (forceResyncCast) payload.forceResyncCast = true;
+    // @sideeffect Tell parent form to accept next server refetch, preventing stale form ≠ initialForm
+    onFieldsApplied?.();
     const res = await fillFields.mutateAsync(payload);
     setAppliedFields((prev) => [...new Set([...prev, ...res.updatedFields])]);
     if (tmdbData && res.updatedFields.length > 0) {

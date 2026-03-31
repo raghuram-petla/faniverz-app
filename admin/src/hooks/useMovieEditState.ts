@@ -162,6 +162,12 @@ export function useMovieEditState(id: string) {
     ...pending,
   });
 
+  // @contract Allows TMDB sync (or other external writes) to force the next server
+  // refetch to also overwrite the form state, preventing stale-form ≠ initialForm diffs.
+  const syncFormWithServer = () => {
+    isFirstLoadRef.current = true;
+  };
+
   useUnsavedChangesWarning(derived.isDirty);
 
   const handlers = createMovieEditHandlers({
@@ -280,6 +286,7 @@ export function useMovieEditState(id: string) {
     pendingAvailabilityIds,
     pendingRunIds,
     isDirty: derived.isDirty,
+    syncFormWithServer,
     isSaving,
     saveStatus,
     handleSubmit: handlers.handleSubmit,

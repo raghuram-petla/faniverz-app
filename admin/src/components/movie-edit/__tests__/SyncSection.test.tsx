@@ -325,6 +325,23 @@ describe('SyncSection', () => {
     expect(screen.getByText('Apply failed')).toBeInTheDocument();
   });
 
+  it('calls onFieldsApplied before mutateAsync', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const callOrder: string[] = [];
+    const onFieldsApplied = vi.fn(() => callOrder.push('onFieldsApplied'));
+    mockFillFieldsMutateAsync.mockImplementation(async () => {
+      callOrder.push('mutateAsync');
+      return { movieId: 'movie-uuid-123', updatedFields: ['synopsis'] };
+    });
+    mockApplyTmdbFields.mockReturnValue({ movie: mockMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['synopsis'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledTimes(1);
+    expect(callOrder).toEqual(['onFieldsApplied', 'mutateAsync']);
+  });
+
   it('passes isSaving=true to FieldDiffPanel when fill is pending', () => {
     mockLookupState.data = { type: 'movie', data: mockTmdbData };
     mockFillFieldsState.isPending = true;

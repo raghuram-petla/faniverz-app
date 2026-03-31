@@ -256,7 +256,10 @@ export default function EditMoviePage() {
 
           {activeSection === 'tmdb-sync' && editState.movie?.tmdb_id && (
             <SectionCard title="TMDB Sync" icon={RefreshCw}>
-              <SyncSection movie={editState.movie as SyncSectionProps['movie']} />
+              <SyncSection
+                movie={editState.movie as SyncSectionProps['movie']}
+                onFieldsApplied={editState.syncFormWithServer}
+              />
             </SectionCard>
           )}
         </div>
