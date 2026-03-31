@@ -1,0 +1,211 @@
+i want to  intigrate the tsvector + pg_trgm in Supabase so give me the deatils do not implement
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+now implement the  Plan: tsvector + pg_trgm Full-Text Search Integration the paln was before give by you using model opus
+
+---
+
+"C:\Users\malla\OneDrive\Documents\Pictures\Screenshots\Screenshot 2026-03-31 110122.png" check waht the error and solve it
+
+---
+
+"C:\Users\malla\OneDrive\Documents\Pictures\Screenshots\Screenshot 2026-03-31 110122.png" this the image
+
+---
+
+C:\Users\malla\OneDrive\Documents\Pictures\Screenshot_2026-03-31-11-29-29-39_8ded67fa1b5c2ba58d5f0df78d8eb677.jpg this what after download sreach option is not working give me the problem why it is not working
+
+---
+
+still the seacrch option is not working why if search spirit no movies found is comming i think the problem is with filters once check the issue and just tell me info do not implement any thing
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary Request and Intent:
+   - **Request 1**: Get details on integrating tsvector + pg_trgm in Supabase (plan only, no implementation)
+   - **Request 2**: Implement the full tsvector + pg_trgm integration plan
+   - **Request 3**: Fix EAS build error (`Cannot find module '@expo/config-plugins'`)
+   - **Request 4**: Diagnose why Discover screen search shows "No movies found" for "Mahesh"
+   - **Request 5 (current)**: Search STILL not working — user suspects filters are the problem — provide diagnosis only, no implementation
+
+2. Key Technical Concepts:
+   - **tsvector + Full-Text Search**: PostgreSQL native FTS with weighted columns (A/B/C/D), `plainto_tsquery`, `ts_rank_cd`
+   - **pg_trgm**: Trigram-based fuzzy matching using `similarity()` and `%` operator, GIN indexes
+   - **Hybrid scoring**: `score = ts_rank * 0.6 + similarity * 0.4` via `FULL OUTER JOIN` CTE
+   - **Two-phase admin search**: RPC returns matching IDs → PostgREST filters by `.in('id', ids)`
+   - **Client-side vs server-side filtering**: Discover screen previously filtered already-fetched movies in-memory
+   - **EAS Build**: Expo Application Services builds from git-committed code
+   - **Supabase RPC**: PostgREST calls database functions via `supabase.rpc()`
+   - **React Query / TanStack Query**: Used for all data fetching with debouncing
+   - **Zustand**: `useFilterStore` persists discover screen filter state
+   - **`SET search_path = ''`**: Security pattern used in all trigger/function definitions
+
+3. Files and Code Sections:
+
+   - **`supabase/migrations/20260331000117_add_search_vector_columns.sql`** (NEW)
+     - Adds `search_vector tsvector` column to 6 tables: movies, actors, production_houses, profiles, reviews, news_feed
+
+   - **`supabase/migrations/20260331000118_search_vector_triggers.sql`** (NEW)
+     - BEFORE INSERT OR UPDATE triggers per table with `SET search_path = ''`
+     - English columns: `'pg_catalog.english'` config; Telugu + names: `'pg_catalog.simple'`
+     - Fires only on relevant column changes (`UPDATE OF title, director, ...`)
+
+   - **`supabase/migrations/20260331000119_search_gin_indexes.sql`** (NEW)
+     - tsvector GIN: `CREATE INDEX ... USING gin(search_vector)` on all 6 tables
+     - pg_trgm GIN: `USING gin(title extensions.gin_trgm_ops)` on short-text columns only
+     - Also adds `idx_feed_comments_body_trgm` for existing ILIKE on comments
+
+   - **`supabase/migrations/20260331000120_backfill_search_vectors.sql`** (NEW)
+     - `UPDATE` statements to populate `search_vector` for all existing rows
+
+   - **`supabase/migrations/20260331000121_search_rpc_functions.sql`** (NEW)
+     - 5 RPCs: `search_movies`, `search_actors`, `search_production_houses`, `search_profiles`, `search_reviews`
+     - Each uses FULL OUTER JOIN of tsvector CTE + pg_trgm CTE with `coalesce(f.score,0)*0.6 + coalesce(t.score,0)*0.4`
+     - Short queries (≤3 chars): `SET LOCAL pg_trgm.similarity_threshold = 0.2`
+     - All marked `STABLE`, `SET search_path = ''`
+
+   - **`supabase/migrations/20260331000122_search_universal_rpc.sql`** (NEW)
+     - `search_universal(search_term, result_limit)` returns jsonb with movies/actors/production_houses
+     - Replaces 3 HTTP round-trips with 1 RPC call
+     - Ends with `NOTIFY pgrst, 'reload schema'`
+
+   - **`src/features/search/searchApi.ts`** (MODIFIED)
+     - Before: 3 parallel `supabase.from().select().ilike()` calls
+     - After: `supabase.rpc('search_universal', ...)` for `searchAll`; per-table RPCs for paginated functions
+     - Removed `escapeLike` import (no longer needed for RPC params)
+
+   - **`src/features/movies/api.ts`** (MODIFIED)
+     - `searchMovies()`: ILIKE `.or(title, director)` → `supabase.rpc('search_movies', { search_term: query, result_limit: 20, result_offset: 0 })`
+     - Removed `escapeLike` import
+
+   - **`src/features/actors/api.ts`** (MODIFIED)
+     - `searchActors()`: `.ilike('name', ...)` → `supabase.rpc('search_actors', { search_term: query, result_limit: 20, result_offset: 0 })`
+     - Removed `escapeLike` import
+
+   - **`admin/src/hooks/useAdminMovies.ts`** (MODIFIED)
+     - Added `useQuery` for `['admin', 'search-movie-ids', search]` calling `search_movies` RPC with `result_limit: 1000`
+     - Added `const hasSearch = !!search` and `const resolvedSearchIds = hasSearch ? (searchMovieIds ?? []) : null`
+     - Removed `.ilike('title', '%search%')` line
+     - Added `resolvedSearchIds` to `intersectIdSets()` call
+     - Updated `joinFiltersReady` and `enabled` conditions to include search IDs readiness
+
+   - **`admin/src/hooks/useAdminEndUsers.ts`** (MODIFIED)
+     - When `search` is present: parallel `supabase.rpc('search_profiles', ...)` + email ILIKE → union IDs → `.in('id', allIds)` final query
+     - When not searching: original paginated query with `count: 'exact'`
+
+   - **`admin/src/hooks/useAdminReviews.ts`** (MODIFIED)
+     - Two-phase: `supabase.rpc('search_reviews', ...)` → collect `matchIds` → `query.in('id', matchIds)`
+     - Removed `sanitizeSearchTerm` import
+     - Client-side movie.title and profile.display_name filtering still applied afterward
+
+   - **`admin/src/hooks/useAdminComments.ts`** (MODIFIED)
+     - Only comment updated: "body ILIKE now backed by pg_trgm GIN index"
+
+   - **`src/features/search/__tests__/searchApi.test.ts`** (REWRITTEN)
+     - Mock now uses `mockRpc = jest.fn()` on `supabase.rpc`
+     - Tests check `mockRpc` was called with correct RPC name and params
+
+   - **`admin/src/hooks/__tests__/useAdminEndUsers.test.ts`** (REWRITTEN)
+     - Added `mockRpc = vi.fn()` to supabase mock
+     - Updated search tests to reflect two-phase approach (rpc + email ILIKE + final `.in()` query)
+
+   - **`admin/src/hooks/__tests__/useAdminMovies.test.ts`** (MODIFIED)
+     - Added `rpc: vi.fn()` to supabase mock
+     - Added `const mockRpc = vi.mocked((supabase as any).rpc)`
+     - Added `mockRpc.mockResolvedValue({ data: [], error: null })` to `beforeEach`
+     - Replaced "applies ilike search filter" test with "calls search_movies RPC when search >= 2 chars"
+
+   - **`app/discover.tsx`** (MODIFIED — for search fix)
+     - Added `import { useSearchMoviesPaginated } from '@/features/search/searchHooks'`
+     - Added `const isSearching = searchQuery.length >= 2;` and `const srch = useSearchMoviesPaginated(searchQuery);`
+     - Replaced client-side `if (searchQuery) { movies.filter(...) }` with `let movies = isSearching ? (srch.allItems ?? []) : allMovies;`
+     - Updated `useSmartPagination` to use `srch.*` props when searching
+     - Updated loading: `isLoading || (isSearching && srch.isLoading)`
+     - File stays at 290 lines (under 300 limit)
+
+   - **`app/__tests__/discover.test.tsx`** (MODIFIED)
+     - Added `jest.mock('@/features/search/searchHooks', () => ({ useSearchMoviesPaginated: jest.fn() }))`
+     - Added `mockUseSearchMoviesPaginated` default returning `{ allItems: [], isLoading: false, ... }` in `setupDefaultMock`
+     - Updated "filters movies by search query" and "filters movies by director name" tests to mock search results
+     - Updated "director is null" test to reflect server-side behavior
+
+4. Errors and fixes:
+   - **`@expo/config-plugins` missing**: EAS build failed because `node_modules/@expo/` was entirely absent. Fixed by running `npm install --legacy-peer-deps` (yarn not available in WSL).
+   - **Migration numbering**: Latest migration was `20260330000116` (not `000115` as initially assumed). New migrations correctly start at `000117`.
+   - **pg_trgm schema qualification**: Since `pg_trgm` is installed in `extensions` schema, index creation uses `extensions.gin_trgm_ops`. RPC functions use `extensions.similarity()`.
+   - **`float4` vs `numeric` in RPC return types**: `backdrop_focus_x` columns are `float4` in DB but declared `numeric` in RPC — implicit cast works in PostgreSQL.
+   - **Pre-existing TypeScript errors**: `src/hooks/__tests__/useMediaScrollAnimations.test.ts` had pre-existing `SharedValue` type errors — not introduced by our changes.
+
+5. Problem Solving:
+   - **Universal search performance**: Replaced 3 parallel HTTP requests with 1 `search_universal` RPC call
+   - **Telugu text**: Using `'pg_catalog.simple'` config for `title_te`/`synopsis_te` since PostgreSQL has no Telugu stemmer
+   - **Admin complex filters**: Used two-phase approach to preserve existing filter chain in `useAdminMovies`
+   - **`search_vector` in `SELECT *`**: Acknowledged tsvector column will be returned by existing queries (acceptable overhead)
+   - **Discover search**: Fixed client-side-only limitation by using `useSearchMoviesPaginated` hook (already existed) when `searchQuery ≥ 2 chars`
+
+6. All user messages:
+   - "i want to integrate the tsvector + pg_trgm in Supabase so give me the details do not implement"
+   - "now implement the Plan: tsvector + pg_trgm Full-Text Search Integration the plan was before give by you using model opus"
+   - [Shared screenshot of EAS build error] "check what the error and solve it"
+   - [Shared mobile screenshot of Discover screen] "this what after download search option is not working give me the problem why it is not working"
+   - "still the search option is not working why if search spirit no movies found is coming i think the problem is with filters once check the issue and just tell me info do not implement anything"
+
+7. Pending Tasks:
+   - **Apply DB migrations**: `supabase db push` — the 6 migration files exist on disk but have NOT been applied to the actual Supabase database. Without this, ALL search RPC functions (`search_movies`, `search_universal`, etc.) don't exist in the DB.
+   - **Commit all changes to git**: All 16 modified/new files are uncommitted. EAS builds from git, so no changes take effect until committed and pushed.
+   - **Rebuild and redeploy the app**: After committing and applying migrations, a new EAS build is needed for changes to reach the user's phone.
+
+8. Current Work:
+   The user's most recent request is to diagnose why search still shows "No movies found" in the Discover screen, specifically suspecting filters are the issue. The user wants information only, no implementation.
+
+   **The actual root causes are:**
+
+   **Cause 1 — DB migrations not applied (PRIMARY)**:
+   The 6 migration files (`000117`–`000122`) were created on disk but `supabase db push` was never run. The `search_movies`, `search_universal`, and all other RPCs do NOT exist in the Supabase database. When `discover.tsx` calls `useSearchMoviesPaginated` → `searchMoviesPaginated` → `supabase.rpc('search_movies', ...)`, the RPC call fails (function not found) → `srch.allItems` is `undefined` → `isSearching ? (srch.allItems ?? []) : allMovies` resolves to `[]` → "No movies found".
+
+   **Cause 2 — App build is from old code**:
+   All code changes (including the `discover.tsx` server-side search fix) are uncommitted to git. EAS builds from the git repository. The downloaded app uses the OLD client-side search code. The client-side filter only works on movies already loaded in the current pagination page — if "Mahesh" movies aren't in the first page of paginated results, they won't appear.
+
+   **Cause 3 — Filter store persistence (what the user suspects)**:
+   `useFilterStore` is a Zustand store. If it's configured with persistence (AsyncStorage), any previously set filters (genre, platform, status tab) would survive app restarts. Even though the screenshot shows "All" tab and no filter pills, if a status filter was active internally, it could limit which movies are fetched. However, the screenshot clearly shows "All" tab active.
+
+   **Cause 4 — Status filter + pagination interaction**:
+   The `useMoviesPaginated` hook takes `filters` which includes `movieStatus` and `sortBy`. "Mahesh Babu" movies might exist in the DB but be filtered to a different status (e.g., `streaming` or `released`) that doesn't match the current `selectedFilter`. However, "All" tab means no `movieStatus` filter is applied.
+
+   **Most likely diagnosis**: The app the user downloaded still has the OLD code (uncommitted changes) AND the DB migrations haven't been applied. Both need to happen before search works.
+
+9. Optional Next Step:
+   The user explicitly said **"just tell me info do not implement anything"**. The diagnosis to communicate is:
+
+   There are **3 reasons** search isn't working:
+
+   1. **DB migrations not run**: The `supabase db push` command was never executed, so the `search_movies` RPC and all related functions don't exist in the database yet. Every search call fails silently.
+
+   2. **Code not committed/built**: All code changes (including the `discover.tsx` server-side search fix) are local uncommitted changes. The EAS build on the user's phone was built from git before any of our changes — it still uses the OLD client-side filter that only searches already-loaded movies.
+
+   3. **Filter store may have persisted state**: If `useFilterStore` uses Zustand persistence, previously set filters could be hiding results. But from the screenshot this appears unlikely since "All" is selected.
+
+   **The user's suspicion about filters being the problem** is partially correct for the old code: client-side filtering only works on movies already fetched. If the paginated load doesn't include "Mahesh" movies (because they're on a later page), they're invisible to the client-side filter. This is the fundamental limitation that motivated the server-side search fix — but that fix also isn't deployed yet.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/ramakrishna/.claude/projects/-home-ramakrishna-aikaryashala-projects-faniverz-app/8b14d4e8-a8c7-4821-bc1f-b64927801618.jsonl
+Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.
+
+---
+
+update .gitignore file with .entire
+
+---
+
+now commit files while commmithing first give commit message email and username and then if itell ok then commit the files
+
+---
+
+ok i have change user email now you can proceed

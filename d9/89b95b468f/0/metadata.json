@@ -1,0 +1,50 @@
+{
+  "cli_version": "0.4.9",
+  "checkpoint_id": "d989b95b468f",
+  "session_id": "8b14d4e8-a8c7-4821-bc1f-b64927801618",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-31T06:49:16.158153678Z",
+  "branch": "master",
+  "checkpoints_count": 7,
+  "files_touched": [
+    ".gitignore",
+    "admin/src/hooks/__tests__/useAdminEndUsers.test.ts",
+    "admin/src/hooks/__tests__/useAdminMovies.test.ts",
+    "admin/src/hooks/useAdminComments.ts",
+    "admin/src/hooks/useAdminEndUsers.ts",
+    "admin/src/hooks/useAdminMovies.ts",
+    "admin/src/hooks/useAdminReviews.ts",
+    "app.config.ts",
+    "app/__tests__/discover.test.tsx",
+    "app/discover.tsx",
+    "src/features/actors/api.ts",
+    "src/features/movies/api.ts",
+    "src/features/search/__tests__/searchApi.test.ts",
+    "src/features/search/searchApi.ts",
+    "supabase/migrations/20260331000117_add_search_vector_columns.sql",
+    "supabase/migrations/20260331000118_search_vector_triggers.sql",
+    "supabase/migrations/20260331000119_search_gin_indexes.sql",
+    "supabase/migrations/20260331000120_backfill_search_vectors.sql",
+    "supabase/migrations/20260331000121_search_rpc_functions.sql",
+    "supabase/migrations/20260331000122_search_universal_rpc.sql",
+    "yarn.lock"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "ce72b09da9c1",
+  "token_usage": {
+    "input_tokens": 154,
+    "cache_creation_tokens": 222815,
+    "cache_read_tokens": 13117293,
+    "output_tokens": 69042,
+    "api_call_count": 135
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-31T06:49:14.764821304Z",
+    "agent_lines": 1415,
+    "human_added": 23,
+    "human_modified": 22,
+    "human_removed": 0,
+    "total_committed": 1460,
+    "agent_percentage": 96.91780821917808
+  }
+}
