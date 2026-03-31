@@ -1,11 +1,10 @@
--- Hybrid search RPC functions: combine tsvector full-text (60%) + pg_trgm fuzzy (40%).
--- FULL OUTER JOIN ensures results appear whether matched by FTS, trigram, or both:
---   "Pushpa 2" (correct)   → FTS dominates, trigram contributes → top score
---   "Puspa" (typo)         → FTS misses, trigram catches it → lower but present
---   "action thriller"      → FTS matches synopsis tokens, trigram misses → still found
--- Uses plainto_tsquery (safe, treats all input as literal words — no operator injection).
--- Short queries (≤3 chars) lower the pg_trgm similarity threshold to 0.2 for short titles (e.g. "RRR").
--- All functions: SECURITY INVOKER (default) so table RLS policies are applied.
+-- Fix: replace % trigram operator with extensions.similarity() > threshold.
+-- Root cause: SET search_path = '' in the RPC functions means the % operator
+-- (pg_trgm, installed in the extensions schema) is not resolvable at runtime,
+-- causing all search queries to error and return no results.
+-- Solution: call extensions.similarity() > threshold explicitly instead of
+-- relying on the % operator shorthand which requires extensions in the search_path.
+-- @edge: this is a CREATE OR REPLACE so it is safe to run even if 000121 was never applied.
 
 -- ── search_movies ─────────────────────────────────────────────────────────────────────────────────
 
@@ -68,20 +67,16 @@ AS $$
 DECLARE
   term      text;
   tsq       tsquery;
-  -- @edge: SET search_path='' means % operator (pg_trgm, in extensions schema) is not resolvable.
-  -- Use extensions.similarity() > threshold directly instead of the % operator shorthand.
   threshold float;
 BEGIN
   term := trim(regexp_replace(search_term, '\s+', ' ', 'g'));
 
-  -- Lower trigram threshold for short queries (e.g. "RRR", "NGK")
   IF length(term) <= 3 THEN
     threshold := 0.2;
   ELSE
     threshold := 0.3;
   END IF;
 
-  -- plainto_tsquery: safe for user input — no operator injection
   tsq := plainto_tsquery('pg_catalog.english', term);
 
   RETURN QUERY
@@ -98,8 +93,8 @@ BEGIN
              extensions.similarity(coalesce(m.director, ''), term)
            ) AS score
     FROM public.movies m
-    WHERE extensions.similarity(m.title, term)                      > threshold
-       OR extensions.similarity(coalesce(m.director, ''), term)     > threshold
+    WHERE extensions.similarity(m.title, term)                  > threshold
+       OR extensions.similarity(coalesce(m.director, ''), term) > threshold
   ),
   combined AS (
     SELECT
@@ -172,25 +167,25 @@ CREATE OR REPLACE FUNCTION public.search_actors(
   result_offset int  DEFAULT 0
 )
 RETURNS TABLE (
-  id                  uuid,
-  tmdb_person_id      integer,
-  name                text,
-  photo_url           text,
-  birth_date          date,
-  person_type         text,
-  gender              integer,
-  biography           text,
-  place_of_birth      text,
-  height_cm           integer,
-  imdb_id             text,
+  id                   uuid,
+  tmdb_person_id       integer,
+  name                 text,
+  photo_url            text,
+  birth_date           date,
+  person_type          text,
+  gender               integer,
+  biography            text,
+  place_of_birth       text,
+  height_cm            integer,
+  imdb_id              text,
   known_for_department text,
-  also_known_as       text[],
-  death_date          date,
-  instagram_id        text,
-  twitter_id          text,
-  created_by          uuid,
-  created_at          timestamptz,
-  search_score        float
+  also_known_as        text[],
+  death_date           date,
+  instagram_id         text,
+  twitter_id           text,
+  created_by           uuid,
+  created_at           timestamptz,
+  search_score         float
 )
 LANGUAGE plpgsql
 STABLE
@@ -209,7 +204,6 @@ BEGIN
     threshold := 0.3;
   END IF;
 
-  -- Use simple config for actor names (not stemmed)
   tsq := plainto_tsquery('pg_catalog.simple', term);
 
   RETURN QUERY
@@ -270,14 +264,14 @@ CREATE OR REPLACE FUNCTION public.search_production_houses(
   result_offset int  DEFAULT 0
 )
 RETURNS TABLE (
-  id               uuid,
-  name             text,
-  logo_url         text,
-  description      text,
-  tmdb_company_id  integer,
-  origin_country   text,
-  created_at       timestamptz,
-  search_score     float
+  id              uuid,
+  name            text,
+  logo_url        text,
+  description     text,
+  tmdb_company_id integer,
+  origin_country  text,
+  created_at      timestamptz,
+  search_score    float
 )
 LANGUAGE plpgsql
 STABLE
@@ -338,7 +332,6 @@ END;
 $$;
 
 -- ── search_profiles ───────────────────────────────────────────────────────────────────────────────
--- Used by admin end-users search. RLS on profiles applies (SECURITY INVOKER default).
 
 CREATE OR REPLACE FUNCTION public.search_profiles(
   search_term   text,
@@ -428,16 +421,16 @@ CREATE OR REPLACE FUNCTION public.search_reviews(
   result_limit  int  DEFAULT 200
 )
 RETURNS TABLE (
-  id         uuid,
-  movie_id   uuid,
-  user_id    uuid,
-  title      text,
-  body       text,
-  rating     integer,
+  id               uuid,
+  movie_id         uuid,
+  user_id          uuid,
+  title            text,
+  body             text,
+  rating           integer,
   contains_spoiler boolean,
-  created_at timestamptz,
-  updated_at timestamptz,
-  search_score float
+  created_at       timestamptz,
+  updated_at       timestamptz,
+  search_score     float
 )
 LANGUAGE plpgsql
 STABLE
