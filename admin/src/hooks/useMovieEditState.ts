@@ -162,10 +162,11 @@ export function useMovieEditState(id: string) {
     ...pending,
   });
 
-  // @contract Allows TMDB sync (or other external writes) to force the next server
-  // refetch to also overwrite the form state, preventing stale-form ≠ initialForm diffs.
-  const syncFormWithServer = () => {
-    isFirstLoadRef.current = true;
+  // @contract Patches form + initialForm in-place so TMDB sync (or other external writes)
+  // don't create a stale-form ≠ initialForm diff that triggers the unsaved-changes dock.
+  const patchFormFields = (patch: Partial<MovieForm>) => {
+    setForm((f) => ({ ...f, ...patch }));
+    setInitialForm((f) => (f ? { ...f, ...patch } : f));
   };
 
   useUnsavedChangesWarning(derived.isDirty);
@@ -286,7 +287,7 @@ export function useMovieEditState(id: string) {
     pendingAvailabilityIds,
     pendingRunIds,
     isDirty: derived.isDirty,
-    syncFormWithServer,
+    patchFormFields,
     isSaving,
     saveStatus,
     handleSubmit: handlers.handleSubmit,

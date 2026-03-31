@@ -17,6 +17,7 @@ import {
   type ExistingMovieData,
   type LookupMovieData,
 } from '@/hooks/useSync';
+import type { MovieForm } from '@/hooks/useMovieEditTypes';
 import { FILLABLE_DATA_FIELDS } from '@/lib/syncUtils';
 import { getStatus } from '@/components/sync/fieldDiffHelpers';
 import { FieldDiffPanel } from '@/components/sync/FieldDiffPanel';
@@ -25,8 +26,8 @@ import { applyTmdbFields } from '@/components/sync/syncHelpers';
 // ── Props ────────────────────────────────────────────────────────────────────
 
 export interface SyncSectionProps {
-  /** @contract Callback to sync form state after TMDB fields are applied to DB */
-  onFieldsApplied?: () => void;
+  /** @contract Patches parent form + initialForm so synced values don't trigger unsaved-changes dock */
+  onFieldsApplied?: (patch: Partial<MovieForm>) => void;
   /** @contract Full movie row from useAdminMovie — superset of ExistingMovieData */
   movie: {
     id: string;
@@ -82,6 +83,21 @@ function toExistingMovieData(m: SyncSectionProps['movie']): ExistingMovieData {
   };
 }
 
+/** @contract Maps DB field names from updatedFields to MovieForm-compatible patch */
+function buildFormPatch(fields: string[], m: ExistingMovieData): Partial<MovieForm> {
+  const patch: Partial<MovieForm> = {};
+  for (const f of fields) {
+    if (f === 'title') patch.title = m.title ?? '';
+    else if (f === 'synopsis') patch.synopsis = m.synopsis ?? '';
+    else if (f === 'genres') patch.genres = m.genres ?? [];
+    else if (f === 'certification') patch.certification = m.certification ?? '';
+    else if (f === 'tagline') patch.tagline = m.tagline ?? '';
+    else if (f === 'release_date') patch.release_date = m.release_date ?? '';
+    else if (f === 'runtime') patch.runtime = m.runtime?.toString() ?? '';
+  }
+  return patch;
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function SyncSection({ movie, onFieldsApplied }: SyncSectionProps) {
@@ -112,13 +128,14 @@ export function SyncSection({ movie, onFieldsApplied }: SyncSectionProps) {
       fields,
     };
     if (forceResyncCast) payload.forceResyncCast = true;
-    // @sideeffect Tell parent form to accept next server refetch, preventing stale form ≠ initialForm
-    onFieldsApplied?.();
     const res = await fillFields.mutateAsync(payload);
     setAppliedFields((prev) => [...new Set([...prev, ...res.updatedFields])]);
     if (tmdbData && res.updatedFields.length > 0) {
       const { movie: updatedMovie } = applyTmdbFields(localMovie, tmdbData, res.updatedFields);
       setLocalMovie(updatedMovie);
+      // @sideeffect Patch parent form + initialForm so synced fields don't trigger the dock
+      const patch = buildFormPatch(res.updatedFields, updatedMovie);
+      if (Object.keys(patch).length > 0) onFieldsApplied?.(patch);
     }
   };
 

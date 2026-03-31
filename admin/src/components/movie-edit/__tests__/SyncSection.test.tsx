@@ -325,21 +325,43 @@ describe('SyncSection', () => {
     expect(screen.getByText('Apply failed')).toBeInTheDocument();
   });
 
-  it('calls onFieldsApplied before mutateAsync', async () => {
+  it('calls onFieldsApplied with form patch after successful apply', async () => {
     mockLookupState.data = { type: 'movie', data: mockTmdbData };
-    const callOrder: string[] = [];
-    const onFieldsApplied = vi.fn(() => callOrder.push('onFieldsApplied'));
-    mockFillFieldsMutateAsync.mockImplementation(async () => {
-      callOrder.push('mutateAsync');
-      return { movieId: 'movie-uuid-123', updatedFields: ['synopsis'] };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['synopsis', 'genres'],
+    });
+    const updatedMovie = {
+      ...mockMovie,
+      synopsis: 'New synopsis from TMDB',
+      genres: ['Romance', 'Drama'],
+    };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['synopsis', 'genres'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledTimes(1);
+    expect(onFieldsApplied).toHaveBeenCalledWith({
+      synopsis: 'New synopsis from TMDB',
+      genres: ['Romance', 'Drama'],
+    });
+  });
+
+  it('does not call onFieldsApplied when no form-relevant fields updated', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['cast'],
     });
     mockApplyTmdbFields.mockReturnValue({ movie: mockMovie, tmdb: mockTmdbData });
 
     renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
-    await capturedDiffPanelProps.onApply(['synopsis'], false);
+    await capturedDiffPanelProps.onApply(['cast'], false);
 
-    expect(onFieldsApplied).toHaveBeenCalledTimes(1);
-    expect(callOrder).toEqual(['onFieldsApplied', 'mutateAsync']);
+    expect(onFieldsApplied).not.toHaveBeenCalled();
   });
 
   it('passes isSaving=true to FieldDiffPanel when fill is pending', () => {

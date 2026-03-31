@@ -258,7 +258,7 @@ export default function EditMoviePage() {
             <SectionCard title="TMDB Sync" icon={RefreshCw}>
               <SyncSection
                 movie={editState.movie as SyncSectionProps['movie']}
-                onFieldsApplied={editState.syncFormWithServer}
+                onFieldsApplied={editState.patchFormFields}
               />
             </SectionCard>
           )}
