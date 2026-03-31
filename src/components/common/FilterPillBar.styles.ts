@@ -10,7 +10,7 @@ export const createFilterPillBarStyles = (t: SemanticTheme) =>
     },
     scrollContent: {
       paddingHorizontal: 16,
-      paddingBottom: 12,
+      paddingBottom: 8,
       gap: 8,
       flexDirection: 'row',
     },

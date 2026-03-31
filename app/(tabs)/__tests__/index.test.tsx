@@ -880,7 +880,7 @@ describe('FeedScreen', () => {
 
       expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
       const flashList = UNSAFE_getByType(FlashList);
-      expect(flashList.props.contentContainerStyle.paddingTop).toBe(91);
+      expect(flashList.props.contentContainerStyle.paddingTop).toBe(99);
 
       await act(async () => {
         resolveRefetch?.();
@@ -983,17 +983,16 @@ describe('FeedScreen', () => {
     prefetchModule.usePrefetchOnVisibility = orig;
   });
 
-  it('provides native Android refresh props to the home feed FlashList', () => {
+  it('provides theme-aware native RefreshControl on Android', () => {
     const originalOS = Platform.OS;
     (Platform as unknown as { OS: string }).OS = 'android';
-
     try {
-      const { UNSAFE_root } = render(<FeedScreen />);
-      const flashList = UNSAFE_root.findByType(FlashList);
-      expect(typeof flashList.props.onRefresh).toBe('function');
-      expect(flashList.props.refreshing).toBe(false);
-      expect(flashList.props.progressViewOffset).toBe(99);
-      expect(flashList.props.overScrollMode).toBe('always');
+      const { UNSAFE_getByType } = render(<FeedScreen />);
+      const flashList = UNSAFE_getByType(FlashList);
+      const rc = flashList.props.refreshControl;
+      expect(rc).toBeTruthy();
+      expect(typeof rc.props.onRefresh).toBe('function');
+      expect(rc.props.refreshing).toBe(false);
     } finally {
       (Platform as unknown as { OS: string }).OS = originalOS;
     }
@@ -1005,42 +1004,18 @@ describe('FeedScreen', () => {
     expect(typeof mockScrollToTopRefs[0].current.scrollToTop).toBe('function');
   });
 
-  it('adds extra top gap to the iOS pull indicator so it clears the home header', () => {
-    const originalOS = Platform.OS;
-    (Platform as unknown as { OS: string }).OS = 'ios';
-
-    try {
-      const { UNSAFE_getByType } = render(<FeedScreen />);
-      const flashList = UNSAFE_getByType(FlashList);
-      expect(flashList.props.ListHeaderComponent.props.children[0].props.topGap).toBe(20);
-    } finally {
-      (Platform as unknown as { OS: string }).OS = originalOS;
-    }
+  it('uses unified top padding on both platforms', () => {
+    const { UNSAFE_getByType } = render(<FeedScreen />);
+    const flashList = UNSAFE_getByType(FlashList);
+    // @sync totalHeaderHeight = insetTop(47) + HOME_FEED_HEADER_CONTENT_HEIGHT(52) = 99
+    expect(flashList.props.contentContainerStyle.paddingTop).toBe(99);
   });
 
-  it('keeps neutral pill spacing on iOS at rest', () => {
-    const originalOS = Platform.OS;
-    (Platform as unknown as { OS: string }).OS = 'ios';
-
-    try {
-      const { UNSAFE_getByType } = render(<FeedScreen />);
-      const pillsWrap = screen.getByTestId('home-feed-pills-wrap');
-      expect(pillsWrap.props.style).toBeUndefined();
-      expect(UNSAFE_getByType(FlashList).props.contentContainerStyle.paddingTop).toBe(91);
-    } finally {
-      (Platform as unknown as { OS: string }).OS = originalOS;
-    }
-  });
-
-  it('keeps neutral pill spacing on Android', () => {
-    const originalOS = Platform.OS;
-    (Platform as unknown as { OS: string }).OS = 'android';
-
-    try {
-      render(<FeedScreen />);
-      expect(screen.getByTestId('home-feed-pills-wrap').props.style).toBeUndefined();
-    } finally {
-      (Platform as unknown as { OS: string }).OS = originalOS;
-    }
+  it('always renders PullToRefreshIndicator without topGap', () => {
+    const { UNSAFE_getByType } = render(<FeedScreen />);
+    const flashList = UNSAFE_getByType(FlashList);
+    const refreshIndicator = flashList.props.ListHeaderComponent.props.children[0];
+    expect(refreshIndicator).toBeTruthy();
+    expect(refreshIndicator.props.topGap).toBeUndefined();
   });
 });

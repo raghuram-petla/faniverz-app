@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedReaction,
   useAnimatedStyle,
@@ -22,26 +22,26 @@ const INDICATOR_HEIGHT = INDICATOR_PILL_HEIGHT + INDICATOR_BOTTOM_GAP;
  * On Android, pullDistance is driven by touch-event tracking in usePullToRefresh.
  * @coupling usePullToRefresh hook — reads its shared values (pullDistance, isRefreshing).
  * @sync pullDistance and isRefreshing are worklet-thread shared values; refreshing is JS-thread boolean.
+ * @edge When the spinner is active, a plain View is used instead of Animated.View so that
+ * FlashList on Android can measure the header height correctly (animated styles are invisible
+ * to FlashList's layout system).
  */
 export interface PullToRefreshIndicatorProps {
   pullDistance: SharedValue<number>;
   isRefreshing: SharedValue<boolean>;
   refreshing: boolean;
-  topGap?: number;
 }
 
 export function PullToRefreshIndicator({
   pullDistance,
   isRefreshing,
   refreshing,
-  topGap = 0,
 }: PullToRefreshIndicatorProps) {
   const { theme } = useTheme();
   const refreshingRef = useRef(refreshing);
   refreshingRef.current = refreshing;
   const [showRefreshing, setShowRefreshing] = useState(refreshing || isRefreshing.value);
-  // @edge iOS pull refresh adds breathing room above the pill, while programmatic and Android refreshes can stay flush.
-  const indicatorHeight = INDICATOR_HEIGHT + topGap;
+  const indicatorHeight = INDICATOR_HEIGHT;
   const syncRefreshingVisual = useCallback(
     (nextIsRefreshing: boolean) => {
       setShowRefreshing(nextIsRefreshing || refreshingRef.current);
@@ -63,9 +63,54 @@ export function PullToRefreshIndicator({
     },
   );
 
-  const title = showRefreshing ? 'Refreshing' : 'Release to refresh';
+  // @edge Use refreshing prop directly alongside showRefreshing state so the spinner
+  // appears in the same render frame that the container expands — avoids a blank frame.
+  const isSpinnerVisible = refreshing || showRefreshing;
 
-  // @invariant Container height is always max(pull-driven height, refresh-driven height)
+  // @edge When spinner is active, render a plain View so FlashList can measure the header.
+  // Animated.View height changes are invisible to FlashList's layout on Android.
+  if (isSpinnerVisible) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { height: indicatorHeight, opacity: 1, paddingBottom: INDICATOR_BOTTOM_GAP },
+        ]}
+        testID="refresh-container"
+      >
+        <View
+          style={[
+            styles.pill,
+            { backgroundColor: theme.surfaceElevated, borderColor: theme.input },
+          ]}
+          testID="refresh-pill"
+        >
+          <View style={styles.spinnerWrap} testID="refresh-spinner-wrap">
+            <ActivityIndicator size="small" color={theme.textPrimary} testID="refresh-spinner" />
+          </View>
+          <Text style={[styles.text, { color: theme.textPrimary }]}>Refreshing</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return <PullArrowIndicator pullDistance={pullDistance} indicatorHeight={indicatorHeight} />;
+}
+
+/**
+ * @contract Animated pull-arrow indicator — only rendered during active pull gesture (not refreshing).
+ * Separated so that the refreshing branch can use plain Views for FlashList compatibility.
+ */
+function PullArrowIndicator({
+  pullDistance,
+  indicatorHeight,
+}: {
+  pullDistance: SharedValue<number>;
+  indicatorHeight: number;
+}) {
+  const { theme } = useTheme();
+
+  // @invariant Container height is driven by pull distance during gesture
   const containerStyle = useAnimatedStyle(() => {
     const pullHeight = interpolate(
       pullDistance.value,
@@ -73,13 +118,10 @@ export function PullToRefreshIndicator({
       [0, indicatorHeight],
       Extrapolation.CLAMP,
     );
-    const refreshHeight = isRefreshing.value || refreshing ? indicatorHeight : 0;
     return {
-      height: Math.max(pullHeight, refreshHeight),
-      opacity:
-        isRefreshing.value || refreshing
-          ? 1
-          : interpolate(pullDistance.value, [0, 20], [0, 1], Extrapolation.CLAMP),
+      height: pullHeight,
+      paddingBottom: pullHeight > 0 ? INDICATOR_BOTTOM_GAP : 0,
+      opacity: interpolate(pullDistance.value, [0, 20], [0, 1], Extrapolation.CLAMP),
     };
   });
 
@@ -102,12 +144,12 @@ export function PullToRefreshIndicator({
     ],
   }));
 
-  // @sync Arrow rotates 0deg to 180deg as pull distance crosses threshold (worklet-driven)
+  // @sync Arrow rotates 180deg (down) to 0deg (up) as pull distance crosses threshold (worklet-driven)
   const arrowRotateStyle = useAnimatedStyle(() => {
     const rotation = interpolate(
       pullDistance.value,
       [0, PULL_THRESHOLD],
-      [0, 180],
+      [180, 0],
       Extrapolation.CLAMP,
     );
     return { transform: [{ rotate: `${rotation}deg` }] };
@@ -115,47 +157,21 @@ export function PullToRefreshIndicator({
 
   return (
     <Animated.View style={[styles.container, containerStyle]}>
-      {showRefreshing ? (
-        <Animated.View
-          style={[
-            styles.pill,
-            {
-              backgroundColor: theme.surfaceElevated,
-              borderColor: theme.input,
-            },
-          ]} /* @edge programmatic refreshes need the same visible spinner even without pull distance */
-          testID="refresh-pill"
-        >
-          <Animated.View
-            style={
-              styles.spinnerWrap
-            } /* @edge Spinner stays visually lighter without the extra grey chip */
-            testID="refresh-spinner-wrap"
-          >
-            <ActivityIndicator size="small" color={theme.textPrimary} testID="refresh-spinner" />
+      <Animated.View
+        style={[
+          styles.pill,
+          contentStyle,
+          { backgroundColor: theme.surfaceElevated, borderColor: theme.input },
+        ]}
+        testID="refresh-pill"
+      >
+        <Animated.View style={[styles.iconWrap, { backgroundColor: theme.input }]}>
+          <Animated.View style={arrowRotateStyle}>
+            <Feather name="arrow-up" size={16} color={theme.textPrimary} testID="pull-arrow" />
           </Animated.View>
-          <Text style={[styles.text, { color: theme.textPrimary }]}>{title}</Text>
         </Animated.View>
-      ) : (
-        <Animated.View
-          style={[
-            styles.pill,
-            contentStyle,
-            {
-              backgroundColor: theme.surfaceElevated,
-              borderColor: theme.input,
-            },
-          ]}
-          testID="refresh-pill"
-        >
-          <Animated.View style={[styles.iconWrap, { backgroundColor: theme.input }]}>
-            <Animated.View style={arrowRotateStyle}>
-              <Feather name="arrow-up" size={16} color={theme.textPrimary} testID="pull-arrow" />
-            </Animated.View>
-          </Animated.View>
-          <Text style={[styles.text, { color: theme.textSecondary }]}>{title}</Text>
-        </Animated.View>
-      )}
+        <Text style={[styles.text, { color: theme.textSecondary }]}>Release to refresh</Text>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -165,9 +181,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     overflow: 'hidden',
-    paddingBottom: INDICATOR_BOTTOM_GAP,
   },
-  // @edge Extra bottom gap prevents the indicator from feeling glued to the first feed item.
   pill: {
     minWidth: 164,
     borderRadius: 999,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, Platform, RefreshControl } from 'react-native';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { useScrollToTop } from '@react-navigation/native';
@@ -34,8 +34,6 @@ import type { NewsFeedItem } from '@shared/types';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
 const PROGRAMMATIC_REFRESH_MIN_MS = 450;
-const IOS_RESTING_CONTENT_LIFT = 8;
-const IOS_REFRESH_SLOT_TOP_GAP = 20;
 export default function FeedScreen() {
   const isAndroid = Platform.OS === 'android';
   const { theme, colors } = useTheme();
@@ -97,8 +95,8 @@ export default function FeedScreen() {
     () => ({ filter, refreshing, showProgrammaticRefreshIndicator }),
     [filter, refreshing, showProgrammaticRefreshIndicator],
   );
-  // @edge iOS rests slightly closer to the header, but refresh slot spacing preserves its own breathing room above the bubble.
-  const listTopPadding = totalHeaderHeight - (isAndroid ? 0 : IOS_RESTING_CONTENT_LIFT);
+  // @sync Both platforms use the same top padding — content starts right below the collapsible header.
+  const listTopPadding = totalHeaderHeight;
   const runProgrammaticRefresh = useCallback(() => {
     if (refreshing || showProgrammaticRefreshIndicator) return;
     // @sideeffect Mirrors tab-press refreshes into the shared indicator state so iOS can
@@ -171,10 +169,8 @@ export default function FeedScreen() {
       <FeedFilterPills filter={filter} setFilter={setFilter} />
     </View>
   );
-  const shouldRenderRefreshSlot = !isAndroid || showProgrammaticRefreshIndicator;
-  const refreshSlotRefreshing = isAndroid
-    ? showProgrammaticRefreshIndicator
-    : refreshing || showProgrammaticRefreshIndicator;
+  // @sync Both platforms show the custom PullToRefreshIndicator pill; Android also uses native RefreshControl for pull gesture.
+  const refreshSlotRefreshing = refreshing || showProgrammaticRefreshIndicator;
 
   return (
     <View style={styles.screen}>
@@ -201,9 +197,17 @@ export default function FeedScreen() {
             overScrollMode={isAndroid ? 'always' : 'never'}
             contentContainerStyle={{ paddingTop: listTopPadding }}
             showsVerticalScrollIndicator={false}
-            onRefresh={isAndroid ? onRefresh : undefined}
-            refreshing={isAndroid ? refreshing : undefined}
-            progressViewOffset={isAndroid ? totalHeaderHeight : undefined}
+            refreshControl={
+              isAndroid ? (
+                <RefreshControl
+                  refreshing={false}
+                  onRefresh={onRefresh}
+                  colors={[theme.background]}
+                  progressBackgroundColor={theme.textPrimary}
+                  progressViewOffset={totalHeaderHeight}
+                />
+              ) : undefined
+            }
             onLayout={(e) => {
               handleScrollForVideo(scrollOffsetRef.current, e.nativeEvent.layout.height);
             }}
@@ -223,14 +227,11 @@ export default function FeedScreen() {
             onViewableItemsChanged={onViewableItemsChanged}
             ListHeaderComponent={
               <>
-                {shouldRenderRefreshSlot && (
-                  <PullToRefreshIndicator
-                    pullDistance={pullDistance}
-                    isRefreshing={isRefreshing}
-                    refreshing={refreshSlotRefreshing}
-                    topGap={isAndroid ? 0 : IOS_REFRESH_SLOT_TOP_GAP}
-                  />
-                )}
+                <PullToRefreshIndicator
+                  pullDistance={pullDistance}
+                  isRefreshing={isRefreshing}
+                  refreshing={refreshSlotRefreshing}
+                />
                 {homeFeedPills}
               </>
             }

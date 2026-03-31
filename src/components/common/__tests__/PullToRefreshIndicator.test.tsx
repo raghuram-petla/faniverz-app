@@ -133,18 +133,17 @@ describe('PullToRefreshIndicator', () => {
     expect(StyleSheet.flatten(spinnerWrap.props.style)?.backgroundColor).toBeUndefined();
   });
 
-  it('adds top breathing room when a top gap is provided', () => {
-    const tree = render(
+  it('shows spinner immediately when refreshing prop is true even if showRefreshing state lags', () => {
+    const { getByTestId, queryByTestId } = render(
       <PullToRefreshIndicator
-        pullDistance={makePullDistance(80)}
-        isRefreshing={makeIsRefreshing(true)}
+        pullDistance={makePullDistance(0)}
+        isRefreshing={makeIsRefreshing(false)}
         refreshing={true}
-        topGap={10}
       />,
-    ).toJSON() as { props: { style: unknown } };
-    const style = StyleSheet.flatten(tree.props.style) as { paddingTop?: number; height?: number };
-    expect(style.paddingTop).toBeUndefined();
-    expect(style.height).toBe(72);
+    );
+    // @edge refreshing prop drives spinner visibility directly, no state delay
+    expect(getByTestId('refresh-spinner')).toBeTruthy();
+    expect(queryByTestId('pull-arrow')).toBeNull();
   });
 
   it('shows spinner when shared refresh state is true before React catches up', () => {
