@@ -48,6 +48,18 @@ describe('MovieSearchCard', () => {
     expect(screen.getByText('In DB')).toBeInTheDocument();
   });
 
+  it('shows "Review gaps" link when exists with localMovieId', () => {
+    render(<MovieSearchCard {...defaultProps} exists={true} localMovieId="movie-uuid" />);
+    const link = screen.getByText('Review gaps');
+    expect(link).toBeInTheDocument();
+    expect(link.closest('a')).toHaveAttribute('href', '/movies/movie-uuid?tab=tmdb-sync');
+  });
+
+  it('does not show "Review gaps" link when exists without localMovieId', () => {
+    render(<MovieSearchCard {...defaultProps} exists={true} />);
+    expect(screen.queryByText('Review gaps')).not.toBeInTheDocument();
+  });
+
   it('shows "Selected" badge when isSelected is true', () => {
     render(<MovieSearchCard {...defaultProps} isSelected={true} />);
     expect(screen.getByText('Selected')).toBeInTheDocument();
@@ -126,7 +138,9 @@ describe('MovieSearchCard', () => {
   describe('isReadOnly', () => {
     it('disables card selection when isReadOnly', () => {
       const onToggleSelect = vi.fn();
-      render(<MovieSearchCard {...defaultProps} isReadOnly={true} onToggleSelect={onToggleSelect} />);
+      render(
+        <MovieSearchCard {...defaultProps} isReadOnly={true} onToggleSelect={onToggleSelect} />,
+      );
       fireEvent.click(screen.getByRole('button', { name: /Test Movie/ }));
       expect(onToggleSelect).not.toHaveBeenCalled();
     });

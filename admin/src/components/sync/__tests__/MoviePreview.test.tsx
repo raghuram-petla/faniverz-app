@@ -109,10 +109,32 @@ describe('MoviePreview', () => {
     expect(screen.getByText('Import Movie')).toBeInTheDocument();
   });
 
-  it('shows "Re-sync from TMDB" button when already in DB', () => {
-    const result = { ...baseResult, existsInDb: true } as typeof baseResult;
+  it('shows "Review gaps & sync" link when already in DB with existingId', () => {
+    const result = {
+      ...baseResult,
+      existsInDb: true,
+      existingId: 'movie-uuid',
+    } as typeof baseResult;
     render(<MoviePreview {...makeProps({ result })} />);
-    expect(screen.getByText('Re-sync from TMDB')).toBeInTheDocument();
+    const link = screen.getByText('Review gaps & sync');
+    expect(link).toBeInTheDocument();
+    expect(link.closest('a')).toHaveAttribute('href', '/movies/movie-uuid?tab=tmdb-sync');
+  });
+
+  it('does not show import button when already in DB', () => {
+    const result = {
+      ...baseResult,
+      existsInDb: true,
+      existingId: 'movie-uuid',
+    } as typeof baseResult;
+    render(<MoviePreview {...makeProps({ result })} />);
+    expect(screen.queryByText('Import Movie')).not.toBeInTheDocument();
+  });
+
+  it('does not show "Review gaps" link when existingId is null', () => {
+    const result = { ...baseResult, existsInDb: true, existingId: null } as typeof baseResult;
+    render(<MoviePreview {...makeProps({ result })} />);
+    expect(screen.queryByText('Review gaps & sync')).not.toBeInTheDocument();
   });
 
   it('calls onImport when import button clicked', () => {
@@ -131,7 +153,6 @@ describe('MoviePreview', () => {
   it('hides import button when isReadOnly', () => {
     render(<MoviePreview {...makeProps({ isReadOnly: true })} />);
     expect(screen.queryByText('Import Movie')).not.toBeInTheDocument();
-    expect(screen.queryByText('Re-sync from TMDB')).not.toBeInTheDocument();
   });
 
   it('shows import button when isReadOnly is false', () => {

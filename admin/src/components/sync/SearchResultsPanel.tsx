@@ -28,6 +28,7 @@ export function SearchResultsPanel({ data, isReadOnly }: SearchResultsPanelProps
         <MovieSearchResults
           movies={data.movies.results}
           existingSet={movieExistingSet}
+          existingMovieIds={data.movies.existingMovieIds}
           duplicateSuspects={data.movies.duplicateSuspects}
         />
       )}

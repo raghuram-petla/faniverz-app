@@ -158,6 +158,8 @@ export interface TmdbSearchAllResult {
   movies: {
     results: TmdbDiscoverMovie[];
     existingTmdbIds: number[];
+    /** @contract Map tmdb_id → local movie id for "Edit" links on existing movies */
+    existingMovieIds?: Record<number, string>;
     duplicateSuspects?: Record<number, DuplicateSuspect>;
   };
   actors: { results: TmdbSearchPerson[]; existingTmdbPersonIds: number[] };

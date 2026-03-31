@@ -23,6 +23,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, back: mockBack }),
   usePathname: () => '/movies/123',
   useParams: () => ({ id: 'movie-uuid-123' }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('next/link', () => ({
@@ -162,6 +163,14 @@ vi.mock('@/components/common/Button', () => ({
 const capturedProps: Record<string, any> = {};
 
 vi.mock('@/components/movie-edit', () => ({
+  MOVIE_SECTIONS: [
+    { id: 'basic-info', label: 'Basic Info' },
+    { id: 'posters', label: 'Posters' },
+    { id: 'videos', label: 'Videos' },
+    { id: 'cast-crew', label: 'Cast & Crew' },
+    { id: 'releases', label: 'Releases' },
+    { id: 'tmdb-sync', label: 'TMDB Sync' },
+  ],
   MovieEditHeader: ({
     title,
     onBack,

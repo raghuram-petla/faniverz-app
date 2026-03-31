@@ -9,6 +9,7 @@ const mockUseParams = vi.fn(() => ({ id: 'movie-123' }));
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ back: mockRouterBack }),
   useParams: () => mockUseParams(),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const mockHandleSubmit = vi.fn();
@@ -135,6 +136,14 @@ vi.mock('@/components/common/Button', () => ({
 }));
 
 vi.mock('@/components/movie-edit', () => ({
+  MOVIE_SECTIONS: [
+    { id: 'basic-info', label: 'Basic Info' },
+    { id: 'posters', label: 'Posters' },
+    { id: 'videos', label: 'Videos' },
+    { id: 'cast-crew', label: 'Cast & Crew' },
+    { id: 'releases', label: 'Releases' },
+    { id: 'tmdb-sync', label: 'TMDB Sync' },
+  ],
   MovieEditHeader: ({
     title,
     onBack,

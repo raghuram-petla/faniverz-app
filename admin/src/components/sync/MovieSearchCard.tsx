@@ -1,6 +1,7 @@
 'use client';
 
-import { Film, CheckCircle, AlertTriangle, Ban, Loader2, Link2 } from 'lucide-react';
+import Link from 'next/link';
+import { Film, CheckCircle, AlertTriangle, Ban, Loader2, Link2, ExternalLink } from 'lucide-react';
 import type { DuplicateSuspect } from '@/hooks/useSync';
 
 /** @contract Props for a single TMDB movie card in search results */
@@ -13,6 +14,8 @@ export interface MovieSearchCardProps {
     original_language?: string;
   };
   exists: boolean;
+  /** @contract Local movie ID for "Edit" link — only set when exists=true */
+  localMovieId?: string;
   isSelected: boolean;
   isImporting: boolean;
   languageBlocked: boolean;
@@ -29,6 +32,7 @@ export interface MovieSearchCardProps {
 export function MovieSearchCard({
   movie,
   exists,
+  localMovieId,
   isSelected,
   isImporting,
   languageBlocked,
@@ -102,6 +106,17 @@ export function MovieSearchCard({
           </div>
         )}
       </button>
+      {/* @contract Link to TMDB Sync tab for existing movies */}
+      {exists && localMovieId && (
+        <div className="mt-1 px-1">
+          <Link
+            href={`/movies/${localMovieId}?tab=tmdb-sync`}
+            className="text-[10px] text-status-blue hover:underline flex items-center gap-0.5"
+          >
+            <ExternalLink className="w-3 h-3" /> Review gaps
+          </Link>
+        </div>
+      )}
       {suspect && !exists && (
         <div className="mt-1 px-1 space-y-1">
           <p className="text-[10px] text-status-yellow">

@@ -15,6 +15,8 @@ import { useLanguageName } from '@/hooks/useLanguageOptions';
 export interface MovieSearchResultsProps {
   movies: TmdbSearchAllResult['movies']['results'];
   existingSet: Set<number>;
+  /** @contract Map tmdb_id → local movie id for "Review gaps" links on existing movies */
+  existingMovieIds?: Record<number, string>;
   duplicateSuspects?: Record<number, DuplicateSuspect>;
 }
 
@@ -22,6 +24,7 @@ export interface MovieSearchResultsProps {
 export function MovieSearchResults({
   movies,
   existingSet,
+  existingMovieIds,
   duplicateSuspects,
 }: MovieSearchResultsProps) {
   const importMovies = useImportMovies();
@@ -220,6 +223,7 @@ export function MovieSearchResults({
             key={movie.id}
             movie={movie}
             exists={effectiveExistingSet.has(movie.id)}
+            localMovieId={existingMovieIds?.[movie.id]}
             isSelected={selected.has(movie.id)}
             isImporting={isImporting}
             languageBlocked={!canImportMovie(movie.original_language)}

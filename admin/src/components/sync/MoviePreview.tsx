@@ -1,17 +1,18 @@
 'use client';
 
-import { Film, Loader2, Download, CheckCircle, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Film, Loader2, Download, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
 import type { LookupResult } from '@/hooks/useSync';
 
 export interface MoviePreviewProps {
   result: LookupResult & { type: 'movie' };
   isPending: boolean;
   onImport: () => void;
-  /** @contract: when true, import/re-sync button is hidden — viewer role */
+  /** @contract: when true, import button is hidden — viewer role */
   isReadOnly?: boolean;
 }
 
-/** @contract shows TMDB movie details with import/re-sync action; existsInDb controls button label
+/** @contract shows TMDB movie details with import action for new movies, or edit link for existing
  *  @nullable posterUrl, releaseDate, runtime, director, genres — all fall back to '—' */
 export function MoviePreview({ result, isPending, onImport, isReadOnly }: MoviePreviewProps) {
   return (
@@ -61,27 +62,41 @@ export function MoviePreview({ result, isPending, onImport, isReadOnly }: MovieP
           )}
           <div className="flex items-center gap-3 pt-2">
             {result.existsInDb ? (
-              <span className="inline-flex items-center gap-1.5 text-sm text-status-green">
-                <CheckCircle className="w-4 h-4" /> Already in database
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-sm text-status-yellow">
-                <AlertCircle className="w-4 h-4" /> Not in database
-              </span>
-            )}
-            {!isReadOnly && (
-              <button
-                onClick={onImport}
-                disabled={isPending}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {isPending ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Download className="w-3.5 h-3.5" />
+              <>
+                <span className="inline-flex items-center gap-1.5 text-sm text-status-green">
+                  <CheckCircle className="w-4 h-4" /> Already in database
+                </span>
+                {/* @contract Link to movie edit page TMDB Sync tab instead of blind re-import */}
+                {result.existingId && (
+                  <Link
+                    href={`/movies/${result.existingId}?tab=tmdb-sync`}
+                    className="flex items-center gap-1.5 text-sm text-status-blue hover:underline"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Review gaps & sync
+                  </Link>
                 )}
-                {result.existsInDb ? 'Re-sync from TMDB' : 'Import Movie'}
-              </button>
+              </>
+            ) : (
+              <>
+                <span className="inline-flex items-center gap-1.5 text-sm text-status-yellow">
+                  <AlertCircle className="w-4 h-4" /> Not in database
+                </span>
+                {!isReadOnly && (
+                  <button
+                    onClick={onImport}
+                    disabled={isPending}
+                    className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Import Movie
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

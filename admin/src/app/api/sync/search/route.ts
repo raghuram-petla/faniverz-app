@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const [movieExisting, personExisting] = await Promise.all([
       movieTmdbIds.length > 0
-        ? supabase.from('movies').select('tmdb_id').in('tmdb_id', movieTmdbIds)
+        ? supabase.from('movies').select('id, tmdb_id').in('tmdb_id', movieTmdbIds)
         : { data: [] },
       personTmdbIds.length > 0
         ? supabase.from('actors').select('tmdb_person_id').in('tmdb_person_id', personTmdbIds)
@@ -69,6 +69,11 @@ export async function POST(request: NextRequest) {
     // @sideeffect check for potential title-based duplicates — movies in DB with matching
     // titles but no tmdb_id (manually added). Only check for TMDB movies not already matched.
     const existingTmdbIds = (movieExisting.data ?? []).map((r) => r.tmdb_id as number);
+    // @contract Map tmdb_id → local movie id for "Edit" links on existing movies
+    const existingMovieIds: Record<number, string> = {};
+    for (const r of movieExisting.data ?? []) {
+      existingMovieIds[r.tmdb_id as number] = r.id as string;
+    }
     const unmatchedTitles = movieResults
       .filter((m) => !existingTmdbIds.includes(m.id))
       .map((m) => m.title);
@@ -92,6 +97,7 @@ export async function POST(request: NextRequest) {
       movies: {
         results: movieResults,
         existingTmdbIds,
+        existingMovieIds,
         duplicateSuspects,
       },
       actors: {

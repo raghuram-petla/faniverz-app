@@ -32,6 +32,7 @@ function makeData(
     movies: {
       results: [],
       existingTmdbIds: [],
+      existingMovieIds: {},
       duplicateSuspects: {},
       ...overrides.movies,
     },
@@ -59,7 +60,13 @@ describe('SearchResultsPanel', () => {
     const data = makeData({
       movies: {
         results: [
-          { id: 1, title: 'Movie', poster_path: null, release_date: '2024-01-01', original_language: 'te' },
+          {
+            id: 1,
+            title: 'Movie',
+            poster_path: null,
+            release_date: '2024-01-01',
+            original_language: 'te',
+          },
         ],
       },
     });

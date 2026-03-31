@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2,
   FileText,
@@ -29,6 +29,7 @@ import {
   CastSection,
   TheatricalRunsSection,
   SectionNav,
+  MOVIE_SECTIONS,
   SectionCard,
   PreviewPanel,
   SyncSection,
@@ -46,15 +47,18 @@ function getBucketForUrl(
   return t === 'backdrop' ? 'BACKDROPS' : t === 'poster' ? 'POSTERS' : fallback;
 }
 
-// @coupling: entire edit state managed by useMovieEditState (~12 pieces of pending state);
-// changes are tracked by useMovieEditChanges which diffs current vs initial to populate FormChangesDock.
-// @contract: 5 section tabs are mutually exclusive but share a single pending state —
-// switching tabs preserves unsaved edits. The dock (FormChangesDock) is always visible at the bottom.
+// @coupling: edit state managed by useMovieEditState; changes tracked by useMovieEditChanges.
+// @contract: 6 section tabs share a single pending state — switching tabs preserves unsaved edits.
 export default function EditMoviePage() {
   const { isReadOnly, canDeleteTopLevel } = usePermissions();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<MovieSectionId>('basic-info');
+  const searchParams = useSearchParams();
+  // @contract ?tab=tmdb-sync deep-links to the TMDB Sync tab; invalid values fall back to 'basic-info'
+  const tabParam = searchParams.get('tab') as MovieSectionId | null;
+  const validTab =
+    tabParam && MOVIE_SECTIONS.some((s) => s.id === tabParam) ? tabParam : 'basic-info';
+  const [activeSection, setActiveSection] = useState<MovieSectionId>(validTab);
   const [addFormOpen, setAddFormOpen] = useState<string | null>(null);
   // @contract tracks pending preview URL from the add-poster form (before gallery confirm)
   const [pendingPreviewPosterUrl, setPendingPreviewPosterUrl] = useState<string | null>(null);

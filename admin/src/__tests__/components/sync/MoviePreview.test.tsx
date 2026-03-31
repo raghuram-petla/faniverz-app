@@ -65,11 +65,13 @@ describe('MoviePreview', () => {
     expect(screen.getByText('Import Movie')).toBeInTheDocument();
   });
 
-  it('shows "Already in database" and "Re-sync from TMDB" when existsInDb=true', () => {
+  it('shows "Already in database" and "Review gaps & sync" link when existsInDb=true', () => {
     const result = makeMovieResult({ existsInDb: true, existingId: 'abc' });
     render(<MoviePreview result={result} isPending={false} onImport={vi.fn()} />);
     expect(screen.getByText('Already in database')).toBeInTheDocument();
-    expect(screen.getByText('Re-sync from TMDB')).toBeInTheDocument();
+    const link = screen.getByText('Review gaps & sync');
+    expect(link).toBeInTheDocument();
+    expect(link.closest('a')).toHaveAttribute('href', '/movies/abc?tab=tmdb-sync');
   });
 
   it('calls onImport when button is clicked', () => {

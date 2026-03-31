@@ -83,7 +83,8 @@ function toExistingMovieData(m: SyncSectionProps['movie']): ExistingMovieData {
   };
 }
 
-/** @contract Maps DB field names from updatedFields to MovieForm-compatible patch */
+/** @contract Maps DB field names from updatedFields to MovieForm-compatible patch.
+ *  @assumes Only fields that exist in BOTH ExistingMovieData and MovieForm are mapped. */
 function buildFormPatch(fields: string[], m: ExistingMovieData): Partial<MovieForm> {
   const patch: Partial<MovieForm> = {};
   for (const f of fields) {
@@ -94,6 +95,8 @@ function buildFormPatch(fields: string[], m: ExistingMovieData): Partial<MovieFo
     else if (f === 'tagline') patch.tagline = m.tagline ?? '';
     else if (f === 'release_date') patch.release_date = m.release_date ?? '';
     else if (f === 'runtime') patch.runtime = m.runtime?.toString() ?? '';
+    else if (f === 'poster_url') patch.poster_url = m.poster_url ?? '';
+    else if (f === 'backdrop_url') patch.backdrop_url = m.backdrop_url ?? '';
   }
   return patch;
 }

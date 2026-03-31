@@ -349,6 +349,29 @@ describe('SyncSection', () => {
     });
   });
 
+  it('includes poster_url and backdrop_url in form patch', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['poster_url', 'backdrop_url'],
+    });
+    const updatedMovie = {
+      ...mockMovie,
+      poster_url: 'new-poster.jpg',
+      backdrop_url: 'new-backdrop.jpg',
+    };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['poster_url', 'backdrop_url'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledWith({
+      poster_url: 'new-poster.jpg',
+      backdrop_url: 'new-backdrop.jpg',
+    });
+  });
+
   it('does not call onFieldsApplied when no form-relevant fields updated', async () => {
     mockLookupState.data = { type: 'movie', data: mockTmdbData };
     const onFieldsApplied = vi.fn();

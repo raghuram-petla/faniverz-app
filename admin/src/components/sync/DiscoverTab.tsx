@@ -218,7 +218,15 @@ export function DiscoverTab({ onImportingChange, isReadOnly }: DiscoverTabProps)
       {resultMode === 'lookup' && lookupResult?.type === 'movie' && (
         <>
           <MoviePreview
-            result={importMovies.isSuccess ? { ...lookupResult, existsInDb: true } : lookupResult}
+            result={
+              importMovies.isSuccess
+                ? {
+                    ...lookupResult,
+                    existsInDb: true,
+                    existingId: importMovies.data?.results?.[0]?.movieId ?? lookupResult.existingId,
+                  }
+                : lookupResult
+            }
             isPending={importMovies.isPending}
             onImport={handleLookupImport}
             isReadOnly={isReadOnly}
