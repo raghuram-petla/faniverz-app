@@ -162,11 +162,13 @@ export function useMovieEditState(id: string) {
     ...pending,
   });
 
-  // @contract Patches form + initialForm in-place so TMDB sync (or other external writes)
-  // don't create a stale-form ≠ initialForm diff that triggers the unsaved-changes dock.
+  // @contract Patches form + initialForm immediately, AND sets isFirstLoadRef so the
+  // subsequent cache-invalidation refetch also overwrites both (keeping references in sync
+  // for the isDirty shallow-equality check on array fields like genres).
   const patchFormFields = (patch: Partial<MovieForm>) => {
     setForm((f) => ({ ...f, ...patch }));
     setInitialForm((f) => (f ? { ...f, ...patch } : f));
+    isFirstLoadRef.current = true;
   };
 
   useUnsavedChangesWarning(derived.isDirty);
