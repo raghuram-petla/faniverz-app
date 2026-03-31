@@ -4,7 +4,7 @@ import type {
   NativeSyntheticEvent,
   NativeScrollEvent,
   LayoutChangeEvent,
-  RefreshControlProps,
+  GestureResponderEvent,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -58,8 +58,17 @@ export interface CollapsibleProfileLayoutProps {
   onScrollEndDrag?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /** Content at the very top of the scroll area (e.g., PullToRefreshIndicator) */
   scrollHeader?: React.ReactNode;
-  /** Native RefreshControl for Android pull-to-refresh (from usePullToRefresh) */
-  refreshControl?: React.ReactElement<RefreshControlProps>;
+  /** Touch handlers for Android custom pull-to-refresh (from usePullToRefresh) */
+  androidPullProps?: {
+    onTouchStart?: (e: GestureResponderEvent) => void;
+    onTouchMove?: (e: GestureResponderEvent) => void;
+    onTouchEnd?: () => void;
+    onTouchCancel?: () => void;
+    onTouchStartCapture?: (e: GestureResponderEvent) => void;
+    onTouchMoveCapture?: (e: GestureResponderEvent) => void;
+    onTouchEndCapture?: () => void;
+    onTouchCancelCapture?: () => void;
+  };
 }
 
 export function CollapsibleProfileLayout({
@@ -74,7 +83,7 @@ export function CollapsibleProfileLayout({
   onScrollBeginDrag,
   onScrollEndDrag,
   scrollHeader,
-  refreshControl,
+  androidPullProps,
 }: CollapsibleProfileLayoutProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -223,6 +232,7 @@ export function CollapsibleProfileLayout({
         ref={scrollRef as React.RefObject<Animated.ScrollView>}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40, minHeight: contentMinHeight }}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         onLayout={onScrollViewLayout}
         onScroll={handleScroll}
@@ -230,7 +240,7 @@ export function CollapsibleProfileLayout({
         onScrollEndDrag={handleScrollEndDrag}
         onMomentumScrollEnd={handleMomentumEnd}
         scrollEventThrottle={16}
-        refreshControl={refreshControl}
+        {...androidPullProps}
       >
         {scrollHeader}
 

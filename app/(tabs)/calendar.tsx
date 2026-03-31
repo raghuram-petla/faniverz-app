@@ -51,8 +51,7 @@ export default function CalendarScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
-    renderScrollComponent,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef(null);
   useScrollToTop(listRef);
@@ -201,48 +200,49 @@ export default function CalendarScreen() {
       )}
 
       {/* Movie List */}
-      <FlashList
-        ref={listRef}
-        data={groupedMovies}
-        keyExtractor={(item) => item.date}
-        drawDistance={500}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        renderScrollComponent={renderScrollComponent}
-        onScroll={handlePullScroll}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onScrollEndDrag={handleScrollEndDrag}
-        scrollEventThrottle={16}
-        refreshControl={refreshControl}
-        ListHeaderComponent={
-          <PullToRefreshIndicator
-            pullDistance={pullDistance}
-            isRefreshing={isRefreshing}
-            refreshing={refreshing}
-          />
-        }
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={onEndReachedThreshold}
-        ListEmptyComponent={
-          <EmptyState
-            icon="calendar-outline"
-            title={t('calendar.noReleasesFound')}
-            subtitle={t('calendar.noReleasesSubtitle')}
-            actionLabel={hasUserFiltered ? t('calendar.clearFilters') : undefined}
-            onAction={hasUserFiltered ? clearFilters : undefined}
-          />
-        }
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View style={styles.footerLoader}>
-              <ActivityIndicator size="small" color={colors.red600} />
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <DateGroupItem item={item} today={today} platformMap={platformMap} />
-        )}
-      />
+      <View style={{ flex: 1 }} {...androidPullProps}>
+        <FlashList
+          ref={listRef}
+          data={groupedMovies}
+          keyExtractor={(item) => item.date}
+          drawDistance={500}
+          overScrollMode="never"
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onScroll={handlePullScroll}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onScrollEndDrag={handleScrollEndDrag}
+          scrollEventThrottle={16}
+          ListHeaderComponent={
+            <PullToRefreshIndicator
+              pullDistance={pullDistance}
+              isRefreshing={isRefreshing}
+              refreshing={refreshing}
+            />
+          }
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={onEndReachedThreshold}
+          ListEmptyComponent={
+            <EmptyState
+              icon="calendar-outline"
+              title={t('calendar.noReleasesFound')}
+              subtitle={t('calendar.noReleasesSubtitle')}
+              actionLabel={hasUserFiltered ? t('calendar.clearFilters') : undefined}
+              onAction={hasUserFiltered ? clearFilters : undefined}
+            />
+          }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.red600} />
+              </View>
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <DateGroupItem item={item} today={today} platformMap={platformMap} />
+          )}
+        />
+      </View>
     </View>
   );
 }

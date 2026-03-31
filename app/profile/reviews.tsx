@@ -46,7 +46,7 @@ export default function MyReviewsScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const [sortKey, setSortKey] = useState<SortKey>('recent');
@@ -134,12 +134,13 @@ export default function MyReviewsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
+      overScrollMode="never"
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
-      refreshControl={refreshControl}
+      {...androidPullProps}
     >
       <PullToRefreshIndicator
         pullDistance={pullDistance}

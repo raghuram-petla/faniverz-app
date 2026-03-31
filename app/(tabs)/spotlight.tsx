@@ -56,7 +56,7 @@ export default function SpotlightScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -138,12 +138,13 @@ export default function SpotlightScreen() {
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
-        refreshControl={refreshControl}
+        {...androidPullProps}
       >
         <PullToRefreshIndicator
           pullDistance={pullDistance}

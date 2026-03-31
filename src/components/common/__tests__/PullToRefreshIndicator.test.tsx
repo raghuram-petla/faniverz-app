@@ -1,7 +1,7 @@
 // Capture animated style callbacks so we can invoke them in tests
 const capturedStyleCallbacks: Array<() => object> = [];
 
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 jest.mock('react-native-reanimated', () => {
   const original = jest.requireActual('react-native-reanimated');
@@ -25,6 +25,7 @@ jest.mock('react-native-reanimated', () => {
         return {};
       }
     }),
+    useAnimatedReaction: jest.fn(),
     interpolate: jest.fn((value: number, inRange: number[], outRange: number[]) => {
       const [i0, i1] = inRange;
       const [o0, o1] = outRange;
@@ -118,6 +119,44 @@ describe('PullToRefreshIndicator', () => {
       />,
     );
     expect(getByTestId('refresh-spinner')).toBeTruthy();
+  });
+
+  it('does not render a grey chip behind the spinner', () => {
+    const { getByTestId } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={makeIsRefreshing(true)}
+        refreshing={true}
+      />,
+    );
+    const spinnerWrap = getByTestId('refresh-spinner-wrap');
+    expect(StyleSheet.flatten(spinnerWrap.props.style)?.backgroundColor).toBeUndefined();
+  });
+
+  it('adds top breathing room when a top gap is provided', () => {
+    const tree = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(80)}
+        isRefreshing={makeIsRefreshing(true)}
+        refreshing={true}
+        topGap={10}
+      />,
+    ).toJSON() as { props: { style: unknown } };
+    const style = StyleSheet.flatten(tree.props.style) as { paddingTop?: number; height?: number };
+    expect(style.paddingTop).toBeUndefined();
+    expect(style.height).toBe(72);
+  });
+
+  it('shows spinner when shared refresh state is true before React catches up', () => {
+    const { getByTestId, queryByTestId } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={makeIsRefreshing(true)}
+        refreshing={false}
+      />,
+    );
+    expect(getByTestId('refresh-spinner')).toBeTruthy();
+    expect(queryByTestId('pull-arrow')).toBeNull();
   });
 
   it('hides arrow and text when refreshing', () => {
@@ -245,7 +284,7 @@ describe('PullToRefreshIndicator', () => {
     }
   });
 
-  it('returns null on Android (native RefreshControl handles the UI there)', () => {
+  it('renders on Android (custom pull-to-refresh indicator, not native RefreshControl)', () => {
     const originalOS = Platform.OS;
     (Platform as unknown as { OS: string }).OS = 'android';
     const { toJSON } = render(
@@ -255,7 +294,7 @@ describe('PullToRefreshIndicator', () => {
         refreshing={false}
       />,
     );
-    expect(toJSON()).toBeNull();
+    expect(toJSON()).toBeTruthy();
     (Platform as unknown as { OS: string }).OS = originalOS;
   });
 

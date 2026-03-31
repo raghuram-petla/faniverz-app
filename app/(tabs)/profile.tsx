@@ -81,7 +81,7 @@ export default function ProfileScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTop(scrollRef);
@@ -164,12 +164,13 @@ export default function ProfileScreen() {
       ref={scrollRef}
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16 }]}
+      overScrollMode="never"
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
-      refreshControl={refreshControl}
+      {...androidPullProps}
     >
       <PullToRefreshIndicator
         pullDistance={pullDistance}

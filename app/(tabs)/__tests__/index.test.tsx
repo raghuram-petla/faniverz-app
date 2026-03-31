@@ -88,15 +88,10 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
-const mockTabPressListeners: Array<(e?: { preventDefault?: () => void }) => void> = [];
-let mockIsFocused = jest.fn(() => true);
+const mockScrollToTopRefs: Array<{ current: { scrollToTop: () => void } }> = [];
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({
-    addListener: jest.fn((_event: string, cb: (e?: { preventDefault?: () => void }) => void) => {
-      mockTabPressListeners.push(cb);
-      return jest.fn();
-    }),
-    isFocused: () => mockIsFocused(),
+  useScrollToTop: jest.fn((ref: { current: { scrollToTop: () => void } }) => {
+    mockScrollToTopRefs.push(ref);
   }),
 }));
 
@@ -221,8 +216,10 @@ jest.mock('@/components/feed/CommentsBottomSheet', () => ({
 }));
 
 import React from 'react';
-import { render as rawRender, screen, fireEvent } from '@testing-library/react-native';
+import { act, render as rawRender, screen, fireEvent } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Platform } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import FeedScreen from '../index';
 
 const queryClient = new QueryClient({
@@ -357,10 +354,9 @@ function setupMocks(
 describe('FeedScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTabPressListeners.length = 0;
+    mockScrollToTopRefs.length = 0;
     mockGetCurrentHeaderTranslateY.mockReturnValue(-18);
     mockUseActiveVideo.mockReturnValue(createActiveVideoState());
-    mockIsFocused.mockReturnValue(true);
     setupMocks();
   });
 
@@ -820,27 +816,85 @@ describe('FeedScreen', () => {
     expect(screen.getByText('No updates yet')).toBeTruthy();
   });
 
-  it('tab press triggers refresh when already at top (scroll offset ≤ 2)', () => {
+  it('active tab press triggers refresh when already at top (scroll offset ≤ 2)', () => {
     const mockRefetch = jest.fn().mockResolvedValue({});
     setupMocks({ feed: { refetch: mockRefetch } });
     render(<FeedScreen />);
 
-    // Listener is registered — scroll offset defaults to 0 (at top)
-    expect(mockTabPressListeners.length).toBeGreaterThan(0);
-    const tabPressHandler = mockTabPressListeners[mockTabPressListeners.length - 1];
-    const mockEvent = { preventDefault: jest.fn() };
-
-    // First tap when already at top should trigger refresh (calls refetch)
-    tabPressHandler(mockEvent);
-    expect(mockEvent.preventDefault).toHaveBeenCalled();
+    expect(mockScrollToTopRefs.length).toBeGreaterThan(0);
+    mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
     expect(mockRefetch).toHaveBeenCalled();
   });
 
-  it('tab press scrolls to top when scrolled down (offset > 2)', () => {
-    setupMocks();
+  it('shows Android spinner when active tab press triggers a refresh at the top', async () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'android';
+
+    let resolveRefetch: (() => void) | undefined;
+    const mockRefetch = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRefetch = resolve;
+        }),
+    );
+
+    try {
+      setupMocks({ feed: { refetch: mockRefetch } });
+      const { UNSAFE_getByType } = render(<FeedScreen />);
+
+      await act(async () => {
+        mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
+      });
+
+      expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
+      const flashList = UNSAFE_getByType(FlashList);
+      expect(flashList.props.extraData.showProgrammaticRefreshIndicator).toBe(true);
+
+      await act(async () => {
+        resolveRefetch?.();
+      });
+    } finally {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    }
+  });
+
+  it('shows iOS spinner when active tab press triggers a refresh at the top', async () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'ios';
+
+    let resolveRefetch: (() => void) | undefined;
+    const mockRefetch = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRefetch = resolve;
+        }),
+    );
+
+    try {
+      setupMocks({ feed: { refetch: mockRefetch } });
+      const { UNSAFE_getByType } = render(<FeedScreen />);
+
+      await act(async () => {
+        mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
+      });
+
+      expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
+      const flashList = UNSAFE_getByType(FlashList);
+      expect(flashList.props.contentContainerStyle.paddingTop).toBe(91);
+
+      await act(async () => {
+        resolveRefetch?.();
+      });
+    } finally {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    }
+  });
+
+  it('active tab press scrolls to top instead of refreshing when scrolled down', () => {
+    const mockRefetch = jest.fn().mockResolvedValue({});
+    setupMocks({ feed: { refetch: mockRefetch } });
     const { UNSAFE_getByType } = render(<FeedScreen />);
 
-    // Simulate scrolling down by firing onScroll with a large offset
     const { FlashList } = require('@shopify/flash-list');
     const flashList = UNSAFE_getByType(FlashList);
     fireEvent(flashList, 'scroll', {
@@ -851,14 +905,8 @@ describe('FeedScreen', () => {
       },
     });
 
-    const tabPressHandler = mockTabPressListeners[mockTabPressListeners.length - 1];
-    const mockEvent = { preventDefault: jest.fn() };
-    tabPressHandler(mockEvent);
-    expect(mockEvent.preventDefault).toHaveBeenCalled();
-
-    // Should NOT have called refetch — only scroll to top
-    // (refetch is internal to useRefresh, so we verify by checking
-    //  the mock refetch was NOT called for a non-top scroll position)
+    mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
+    expect(mockRefetch).not.toHaveBeenCalled();
   });
 
   it('onClose on CommentsBottomSheet clears commentSheetItemId', () => {
@@ -935,19 +983,64 @@ describe('FeedScreen', () => {
     prefetchModule.usePrefetchOnVisibility = orig;
   });
 
-  it('tab press does nothing when screen is not focused (early return branch)', () => {
-    const mockRefetch = jest.fn().mockResolvedValue({});
-    setupMocks({ feed: { refetch: mockRefetch } });
-    mockIsFocused.mockReturnValue(false);
+  it('provides native Android refresh props to the home feed FlashList', () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'android';
+
+    try {
+      const { UNSAFE_root } = render(<FeedScreen />);
+      const flashList = UNSAFE_root.findByType(FlashList);
+      expect(typeof flashList.props.onRefresh).toBe('function');
+      expect(flashList.props.refreshing).toBe(false);
+      expect(flashList.props.progressViewOffset).toBe(99);
+      expect(flashList.props.overScrollMode).toBe('always');
+    } finally {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    }
+  });
+
+  it('registers a useScrollToTop callback for the home tab', () => {
     render(<FeedScreen />);
+    expect(mockScrollToTopRefs).toHaveLength(1);
+    expect(typeof mockScrollToTopRefs[0].current.scrollToTop).toBe('function');
+  });
 
-    expect(mockTabPressListeners.length).toBeGreaterThan(0);
-    const tabPressHandler = mockTabPressListeners[mockTabPressListeners.length - 1];
-    const mockEvent = { preventDefault: jest.fn() };
+  it('adds extra top gap to the iOS pull indicator so it clears the home header', () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'ios';
 
-    // When not focused, should return early — no preventDefault, no refetch
-    tabPressHandler(mockEvent);
-    expect(mockEvent.preventDefault).not.toHaveBeenCalled();
-    expect(mockRefetch).not.toHaveBeenCalled();
+    try {
+      const { UNSAFE_getByType } = render(<FeedScreen />);
+      const flashList = UNSAFE_getByType(FlashList);
+      expect(flashList.props.ListHeaderComponent.props.children[0].props.topGap).toBe(20);
+    } finally {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    }
+  });
+
+  it('keeps neutral pill spacing on iOS at rest', () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'ios';
+
+    try {
+      const { UNSAFE_getByType } = render(<FeedScreen />);
+      const pillsWrap = screen.getByTestId('home-feed-pills-wrap');
+      expect(pillsWrap.props.style).toBeUndefined();
+      expect(UNSAFE_getByType(FlashList).props.contentContainerStyle.paddingTop).toBe(91);
+    } finally {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    }
+  });
+
+  it('keeps neutral pill spacing on Android', () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'android';
+
+    try {
+      render(<FeedScreen />);
+      expect(screen.getByTestId('home-feed-pills-wrap').props.style).toBeUndefined();
+    } finally {
+      (Platform as unknown as { OS: string }).OS = originalOS;
+    }
   });
 });

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, Platform } from 'react-native';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useScrollToTop } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
@@ -33,7 +33,11 @@ import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpe
 import type { NewsFeedItem } from '@shared/types';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
+const PROGRAMMATIC_REFRESH_MIN_MS = 450;
+const IOS_RESTING_CONTENT_LIFT = 8;
+const IOS_REFRESH_SLOT_TOP_GAP = 20;
 export default function FeedScreen() {
+  const isAndroid = Platform.OS === 'android';
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
   const styles = useMemo(() => createFeedStyles(theme), [theme]);
@@ -49,7 +53,7 @@ export default function FeedScreen() {
     useActiveVideo(); // @sync one auto-playing video, but multiple nearby cards can stay mounted for single-tap playback
   const { followSet } = useEntityFollows();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
-
+  const [showProgrammaticRefreshIndicator, setShowProgrammaticRefreshIndicator] = useState(false);
   const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
     totalItems: allItems.length,
     hasNextPage,
@@ -57,7 +61,6 @@ export default function FeedScreen() {
     fetchNextPage,
     config: FEED_PAGINATION,
   });
-
   const commentKeyFactory = useCallback(
     (item: NewsFeedItem) => ['feed-comments', item.id] as const,
     [],
@@ -72,7 +75,6 @@ export default function FeedScreen() {
     queryKeyFactory: commentKeyFactory,
     queryFn: commentPrefetchFn,
   });
-
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   /* istanbul ignore next */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
@@ -80,28 +82,68 @@ export default function FeedScreen() {
   const {
     pullDistance,
     isRefreshing,
+    showRefreshIndicator,
+    hideRefreshIndicator,
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
-    renderScrollComponent,
   } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
-  const navigation = useNavigation();
   const scrollOffsetRef = useRef(0);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const homeTabActionRef = useRef<{ scrollToTop: () => void }>({ scrollToTop: () => {} });
+  // @coupling FlashList can cache header content; extraData forces the pull indicator + filter pills to refresh with programmatic state changes.
+  const listExtraData = useMemo(
+    () => ({ filter, refreshing, showProgrammaticRefreshIndicator }),
+    [filter, refreshing, showProgrammaticRefreshIndicator],
+  );
+  // @edge iOS rests slightly closer to the header, but refresh slot spacing preserves its own breathing room above the bubble.
+  const listTopPadding = totalHeaderHeight - (isAndroid ? 0 : IOS_RESTING_CONTENT_LIFT);
+  const runProgrammaticRefresh = useCallback(() => {
+    if (refreshing || showProgrammaticRefreshIndicator) return;
+    // @sideeffect Mirrors tab-press refreshes into the shared indicator state so iOS can
+    // swap from arrow -> spinner even if FlashList keeps the header tree mounted.
+    showRefreshIndicator();
+    setShowProgrammaticRefreshIndicator(true);
+    const startedAt = Date.now();
 
-  // @edge Only act on tab press when already on home screen; first tap scrolls to top, second tap refreshes
-  useEffect(() => {
-    return navigation.addListener('tabPress' as never, (e: { preventDefault?: () => void }) => {
-      if (!navigation.isFocused()) return; // navigating here from another tab — do nothing
-      e.preventDefault?.(); // prevent default scroll-to-top so we control behavior
-      if (scrollOffsetRef.current <= 2) {
-        onRefresh();
-      } else {
-        listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    void onRefresh().finally(() => {
+      const remainingMs = Math.max(0, PROGRAMMATIC_REFRESH_MIN_MS - (Date.now() - startedAt));
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
       }
+      refreshTimeoutRef.current = setTimeout(() => {
+        hideRefreshIndicator();
+        setShowProgrammaticRefreshIndicator(false);
+        refreshTimeoutRef.current = null;
+      }, remainingMs);
     });
-  }, [navigation, onRefresh]);
+  }, [
+    hideRefreshIndicator,
+    onRefresh,
+    refreshing,
+    showProgrammaticRefreshIndicator,
+    showRefreshIndicator,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      hideRefreshIndicator();
+    };
+  }, [hideRefreshIndicator]);
+
+  // @contract Active-tab presses come through useScrollToTop; at top we refresh, otherwise we reuse the standard scroll-to-top behavior.
+  homeTabActionRef.current.scrollToTop = () => {
+    if (scrollOffsetRef.current <= 2) {
+      runProgrammaticRefresh();
+    } else {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    }
+  };
+  useScrollToTop(homeTabActionRef);
 
   // @coupling useFeedActions owns all user-initiated action handlers; component owns data + scroll + layout
   const {
@@ -124,6 +166,15 @@ export default function FeedScreen() {
     }),
     [getCurrentHeaderTranslateY, insets.top],
   );
+  const homeFeedPills = (
+    <View testID="home-feed-pills-wrap">
+      <FeedFilterPills filter={filter} setFilter={setFilter} />
+    </View>
+  );
+  const shouldRenderRefreshSlot = !isAndroid || showProgrammaticRefreshIndicator;
+  const refreshSlotRefreshing = isAndroid
+    ? showProgrammaticRefreshIndicator
+    : refreshing || showProgrammaticRefreshIndicator;
 
   return (
     <View style={styles.screen}>
@@ -135,8 +186,8 @@ export default function FeedScreen() {
       />
 
       {isLoading ? (
-        <View style={[styles.scroll, { paddingTop: totalHeaderHeight }]}>
-          <FeedFilterPills filter={filter} setFilter={setFilter} />
+        <View style={[styles.scroll, { paddingTop: listTopPadding }]}>
+          {homeFeedPills}
           <FeedContentSkeleton />
         </View>
       ) : (
@@ -144,11 +195,15 @@ export default function FeedScreen() {
           <FlashList
             ref={listRef}
             data={allItems}
+            extraData={listExtraData}
             keyExtractor={(item) => item.id}
             drawDistance={500}
-            contentContainerStyle={{ paddingTop: totalHeaderHeight }}
+            overScrollMode={isAndroid ? 'always' : 'never'}
+            contentContainerStyle={{ paddingTop: listTopPadding }}
             showsVerticalScrollIndicator={false}
-            renderScrollComponent={renderScrollComponent}
+            onRefresh={isAndroid ? onRefresh : undefined}
+            refreshing={isAndroid ? refreshing : undefined}
+            progressViewOffset={isAndroid ? totalHeaderHeight : undefined}
             onLayout={(e) => {
               handleScrollForVideo(scrollOffsetRef.current, e.nativeEvent.layout.height);
             }}
@@ -162,19 +217,21 @@ export default function FeedScreen() {
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}
             scrollEventThrottle={16}
-            refreshControl={refreshControl}
             onEndReached={handleEndReached}
             onEndReachedThreshold={onEndReachedThreshold}
             viewabilityConfig={viewabilityConfig}
             onViewableItemsChanged={onViewableItemsChanged}
             ListHeaderComponent={
               <>
-                <PullToRefreshIndicator
-                  pullDistance={pullDistance}
-                  isRefreshing={isRefreshing}
-                  refreshing={refreshing}
-                />
-                <FeedFilterPills filter={filter} setFilter={setFilter} />
+                {shouldRenderRefreshSlot && (
+                  <PullToRefreshIndicator
+                    pullDistance={pullDistance}
+                    isRefreshing={isRefreshing}
+                    refreshing={refreshSlotRefreshing}
+                    topGap={isAndroid ? 0 : IOS_REFRESH_SLOT_TOP_GAP}
+                  />
+                )}
+                {homeFeedPills}
               </>
             }
             ListEmptyComponent={

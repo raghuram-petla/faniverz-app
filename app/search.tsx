@@ -70,8 +70,7 @@ export default function SearchScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
-    renderScrollComponent,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   useEffect(() => {
@@ -221,71 +220,72 @@ export default function SearchScreen() {
         </Text>
       )}
       {hasQuery && (
-        <FlashList
-          data={filteredMovies}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.resultsList}
-          showsVerticalScrollIndicator={false}
-          renderScrollComponent={renderScrollComponent}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          onScroll={handlePullScroll}
-          onScrollBeginDrag={handleScrollBeginDrag}
-          onScrollEndDrag={handleScrollEndDrag}
-          scrollEventThrottle={16}
-          refreshControl={refreshControl}
-          ListHeaderComponent={
-            <View>
-              <PullToRefreshIndicator
-                pullDistance={pullDistance}
-                isRefreshing={isRefreshing}
-                refreshing={refreshing}
-              />
-              {filteredActors.map((actor) => (
-                <SearchResultActor
-                  key={actor.id}
-                  actor={actor}
-                  onPress={() => {
-                    /* istanbul ignore else */
-                    if (query.length >= 2) saveSearch(query);
-                    router.push(`/actor/${actor.id}`);
-                  }}
+        <View style={{ flex: 1 }} {...androidPullProps}>
+          <FlashList
+            data={filteredMovies}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.resultsList}
+            overScrollMode="never"
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            onScroll={handlePullScroll}
+            onScrollBeginDrag={handleScrollBeginDrag}
+            onScrollEndDrag={handleScrollEndDrag}
+            scrollEventThrottle={16}
+            ListHeaderComponent={
+              <View>
+                <PullToRefreshIndicator
+                  pullDistance={pullDistance}
+                  isRefreshing={isRefreshing}
+                  refreshing={refreshing}
                 />
-              ))}
-              {filteredHouses.map((house) => (
-                <SearchResultProductionHouse
-                  key={house.id}
-                  house={house}
-                  onPress={() => {
-                    /* istanbul ignore else */
-                    if (query.length >= 2) saveSearch(query);
-                    router.push(`/production-house/${house.id}`);
-                  }}
+                {filteredActors.map((actor) => (
+                  <SearchResultActor
+                    key={actor.id}
+                    actor={actor}
+                    onPress={() => {
+                      /* istanbul ignore else */
+                      if (query.length >= 2) saveSearch(query);
+                      router.push(`/actor/${actor.id}`);
+                    }}
+                  />
+                ))}
+                {filteredHouses.map((house) => (
+                  <SearchResultProductionHouse
+                    key={house.id}
+                    house={house}
+                    onPress={() => {
+                      /* istanbul ignore else */
+                      if (query.length >= 2) saveSearch(query);
+                      router.push(`/production-house/${house.id}`);
+                    }}
+                  />
+                ))}
+                {(filteredActors.length > 0 || filteredHouses.length > 0) &&
+                  filteredMovies.length > 0 && <View style={styles.sectionDivider} />}
+              </View>
+            }
+            ListEmptyComponent={
+              filteredActors.length === 0 && filteredHouses.length === 0 ? (
+                <EmptyState
+                  icon="search"
+                  title={t('common.noResults')}
+                  subtitle={t('search.tryDifferent')}
                 />
-              ))}
-              {(filteredActors.length > 0 || filteredHouses.length > 0) &&
-                filteredMovies.length > 0 && <View style={styles.sectionDivider} />}
-            </View>
-          }
-          ListEmptyComponent={
-            filteredActors.length === 0 && filteredHouses.length === 0 ? (
-              <EmptyState
-                icon="search"
-                title={t('common.noResults')}
-                subtitle={t('search.tryDifferent')}
-              />
-            ) : null
-          }
-          renderItem={({ item, index }) => (
-            <AnimatedListItem index={index} direction="right" distance={20} stagger={50}>
-              <SearchResultMovie
-                movie={item}
-                platforms={platformMap[item.id] ?? []}
-                onPress={() => handleMoviePress(item)}
-              />
-            </AnimatedListItem>
-          )}
-        />
+              ) : null
+            }
+            renderItem={({ item, index }) => (
+              <AnimatedListItem index={index} direction="right" distance={20} stagger={50}>
+                <SearchResultMovie
+                  movie={item}
+                  platforms={platformMap[item.id] ?? []}
+                  onPress={() => handleMoviePress(item)}
+                />
+              </AnimatedListItem>
+            )}
+          />
+        </View>
       )}
     </View>
   );

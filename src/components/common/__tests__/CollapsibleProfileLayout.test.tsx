@@ -440,12 +440,18 @@ describe('CollapsibleProfileLayout', () => {
     expect(screen.getByTestId('hero-image-tap')).toBeTruthy();
   });
 
-  it('accepts refreshControl prop without crashing (Android native RefreshControl)', () => {
-    const { RefreshControl } = require('react-native');
-    const refreshControl = (
-      <RefreshControl refreshing={false} onRefresh={jest.fn()} testID="refresh-ctrl" />
-    );
-    render(<CollapsibleProfileLayout {...defaultProps} refreshControl={refreshControl} />);
+  it('accepts androidPullProps without crashing', () => {
+    const androidPullProps = {
+      onTouchStart: jest.fn(),
+      onTouchMove: jest.fn(),
+      onTouchEnd: jest.fn(),
+      onTouchCancel: jest.fn(),
+      onTouchStartCapture: jest.fn(),
+      onTouchMoveCapture: jest.fn(),
+      onTouchEndCapture: jest.fn(),
+      onTouchCancelCapture: jest.fn(),
+    };
+    render(<CollapsibleProfileLayout {...defaultProps} androidPullProps={androidPullProps} />);
     expect(screen.getAllByText('Test Person').length).toBeGreaterThanOrEqual(1);
   });
 });

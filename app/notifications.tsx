@@ -118,7 +118,7 @@ export default function NotificationsScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @sideeffect: marks as read (if unread) then navigates to movie detail
@@ -190,13 +190,14 @@ export default function NotificationsScreen() {
         contentContainerStyle={
           notifications.length === 0 ? styles.listEmptyContent : styles.listContent
         }
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={renderSeparator}
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
-        refreshControl={refreshControl}
+        {...androidPullProps}
         ListHeaderComponent={
           <PullToRefreshIndicator
             pullDistance={pullDistance}

@@ -87,8 +87,7 @@ export default function FeedScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
-    renderScrollComponent,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @coupling useFeedActions owns all user-initiated action handlers; component owns data + scroll + layout
@@ -128,7 +127,7 @@ export default function FeedScreen() {
         </View>
       ) : (
         // @coupling FlashList from @shopify — requires fixed estimatedItemSize or drawDistance for perf
-        <View style={styles.scroll}>
+        <View style={styles.scroll} {...androidPullProps}>
           {/* @invariant maintainVisibleContentPosition disabled — FlashList 2.x enables scroll anchoring
               by default (designed for chat apps). On filter change, applyOffsetCorrection() fires after
               layout stabilizes and scrolls to keep the first visible trailer in view, overriding any
@@ -139,14 +138,13 @@ export default function FeedScreen() {
             keyExtractor={(item) => item.id}
             drawDistance={500}
             maintainVisibleContentPosition={{ disabled: true }}
+            overScrollMode="never"
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
-            renderScrollComponent={renderScrollComponent}
             onScroll={handlePullScroll}
             onScrollBeginDrag={handleScrollBeginDrag}
             onScrollEndDrag={handleScrollEndDrag}
             scrollEventThrottle={16}
-            refreshControl={refreshControl}
             onEndReached={handleEndReached}
             onEndReachedThreshold={onEndReachedThreshold}
             viewabilityConfig={viewabilityConfig}

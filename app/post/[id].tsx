@@ -69,7 +69,7 @@ export default function PostDetailScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
@@ -144,6 +144,7 @@ export default function PostDetailScreen() {
       {/* Content */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
@@ -151,7 +152,7 @@ export default function PostDetailScreen() {
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
-        refreshControl={refreshControl}
+        {...androidPullProps}
       >
         <PullToRefreshIndicator
           pullDistance={pullDistance}

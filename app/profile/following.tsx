@@ -52,7 +52,7 @@ export default function FollowingScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const filtered = useMemo(
@@ -163,13 +163,14 @@ export default function FollowingScreen() {
             />
           }
           contentContainerStyle={filtered.length === 0 ? styles.emptyContent : styles.listContent}
+          overScrollMode="never"
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={renderSeparator}
           onScroll={handlePullScroll}
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
           scrollEventThrottle={16}
-          refreshControl={refreshControl}
+          {...androidPullProps}
           ListHeaderComponent={
             <PullToRefreshIndicator
               pullDistance={pullDistance}

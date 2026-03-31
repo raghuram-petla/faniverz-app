@@ -154,8 +154,15 @@ jest.mock('react-native-reanimated', () => {
       ScrollView: AnimatedScrollView,
       Text: AnimatedText,
     },
-    useSharedValue: jest.fn(() => ({ value: 0 })),
+    useSharedValue: jest.fn((value) => {
+      const ref = React.useRef();
+      if (!ref.current) {
+        ref.current = { value };
+      }
+      return ref.current;
+    }),
     useAnimatedStyle: jest.fn(() => ({})),
+    useAnimatedReaction: jest.fn(),
     useAnimatedRef: jest.fn(() => ({ current: null })),
     measure: jest.fn(() => ({ x: 0, y: 0, width: 200, height: 255, pageX: 16, pageY: 200 })),
     withTiming: jest.fn((value, _config, callback) => {

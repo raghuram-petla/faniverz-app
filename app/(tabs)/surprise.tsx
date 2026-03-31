@@ -119,7 +119,7 @@ export default function SurpriseScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @nullable featured is null when items array is empty
@@ -152,12 +152,13 @@ export default function SurpriseScreen() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
-        refreshControl={refreshControl}
+        {...androidPullProps}
       >
         <PullToRefreshIndicator
           pullDistance={pullDistance}

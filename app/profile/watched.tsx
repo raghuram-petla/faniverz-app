@@ -53,7 +53,7 @@ export default function WatchedMoviesScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @nullable: watched_at, movie.rating, and movie.title may all be null — defaulted for sort stability
@@ -103,12 +103,13 @@ export default function WatchedMoviesScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
+      overScrollMode="never"
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
-      refreshControl={refreshControl}
+      {...androidPullProps}
     >
       <PullToRefreshIndicator
         pullDistance={pullDistance}

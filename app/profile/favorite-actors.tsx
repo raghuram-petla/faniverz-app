@@ -50,7 +50,7 @@ export default function FavoriteActorsScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const actorList = (favorites ?? []) as FavoriteActorWithActor[];
@@ -73,12 +73,13 @@ export default function FavoriteActorsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 12 }]}
+      overScrollMode="never"
       showsVerticalScrollIndicator={false}
       onScroll={handlePullScroll}
       onScrollBeginDrag={handleScrollBeginDrag}
       onScrollEndDrag={handleScrollEndDrag}
       scrollEventThrottle={16}
-      refreshControl={refreshControl}
+      {...androidPullProps}
     >
       <PullToRefreshIndicator
         pullDistance={pullDistance}

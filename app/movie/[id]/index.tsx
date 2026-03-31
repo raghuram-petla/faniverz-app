@@ -56,7 +56,7 @@ export default function MovieDetailScreen() {
     handleScrollBeginDrag,
     handlePullScroll,
     handleScrollEndDrag,
-    refreshControl,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   // @invariant: useMovieAction must be called unconditionally (rules of hooks)
@@ -131,13 +131,14 @@ export default function MovieDetailScreen() {
     <View style={styles.screen}>
       <SafeAreaCover />
       <ScrollView
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top }}
         onScroll={handlePullScroll}
         onScrollBeginDrag={handleScrollBeginDrag}
         onScrollEndDrag={handleScrollEndDrag}
         scrollEventThrottle={16}
-        refreshControl={refreshControl}
+        {...androidPullProps}
       >
         <PullToRefreshIndicator
           pullDistance={pullDistance}
