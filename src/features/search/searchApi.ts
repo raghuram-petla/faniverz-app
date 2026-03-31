@@ -1,6 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import { escapeLike } from '@/utils/escapeLike';
-import { unwrapList } from '@/utils/supabaseQuery';
 import type { Movie, Actor, ProductionHouse } from '@shared/types';
 
 export interface UniversalSearchResult {
@@ -9,59 +7,47 @@ export interface UniversalSearchResult {
   productionHouses: ProductionHouse[];
 }
 
-// @boundary: query string is escaped and wrapped in % wildcards for ILIKE — special chars (%, _) are
-// escaped so they match literally. SQL injection is prevented by Supabase SDK parameterization.
+// @boundary: search_term is passed as a parameterized RPC argument — no ILIKE escaping needed.
+// @contract: single RPC call replaces 3 parallel ILIKE queries; results are ranked by hybrid
+//   score (tsvector ts_rank 60% + pg_trgm similarity 40%) with typo tolerance via trigram fuzzy match.
 export async function searchAll(query: string): Promise<UniversalSearchResult> {
-  const q = `%${escapeLike(query)}%`;
+  // @edge: result_limit applies per entity type (max 30 results total across 3 types)
+  const { data, error } = await supabase.rpc('search_universal', {
+    search_term: query,
+    result_limit: 10,
+  });
 
-  // @edge: .limit(10) per entity type means the UI shows max 30 results total, but there's no "show more"
-  // mechanism. If the user's query matches the 11th movie, it's silently excluded with no indicator.
-  // @contract: uses Promise.allSettled so a single failing query doesn't block results from other entity types
-  const [moviesRes, actorsRes, housesRes] = await Promise.allSettled([
-    supabase
-      .from('movies')
-      .select('*')
-      .ilike('title', q)
-      .order('rating', { ascending: false })
-      .limit(10),
-    supabase.from('actors').select('*').ilike('name', q).limit(10),
-    supabase.from('production_houses').select('*').ilike('name', q).limit(10),
-  ]);
+  if (error) throw error;
+
+  const result = data as {
+    movies: Movie[];
+    actors: Actor[];
+    production_houses: ProductionHouse[];
+  } | null;
 
   return {
-    movies:
-      moviesRes.status === 'fulfilled' && !moviesRes.value.error
-        ? (moviesRes.value.data ?? [])
-        : [],
-    actors:
-      actorsRes.status === 'fulfilled' && !actorsRes.value.error
-        ? (actorsRes.value.data ?? [])
-        : [],
-    productionHouses:
-      housesRes.status === 'fulfilled' && !housesRes.value.error
-        ? (housesRes.value.data ?? [])
-        : [],
+    movies: result?.movies ?? [],
+    actors: result?.actors ?? [],
+    productionHouses: result?.production_houses ?? [],
   };
 }
 
 // --- Paginated search APIs for smart pagination ---
 
 // @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
+// @contract: results ordered by hybrid search score DESC, then rating DESC — not insertion order.
 export async function searchMoviesPaginated(
   query: string,
   offset: number,
   limit: number = 10,
 ): Promise<Movie[]> {
-  const q = `%${escapeLike(query)}%`;
-  const to = offset + limit - 1;
-  return unwrapList(
-    await supabase
-      .from('movies')
-      .select('*')
-      .ilike('title', q)
-      .order('rating', { ascending: false })
-      .range(offset, to),
-  );
+  const { data, error } = await supabase.rpc('search_movies', {
+    search_term: query,
+    result_limit: limit,
+    result_offset: offset,
+  });
+  if (error) throw error;
+  return (data as Movie[]) ?? [];
 }
 
 // @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
@@ -70,9 +56,13 @@ export async function searchActorsPaginated(
   offset: number,
   limit: number = 10,
 ): Promise<Actor[]> {
-  const q = `%${escapeLike(query)}%`;
-  const to = offset + limit - 1;
-  return unwrapList(await supabase.from('actors').select('*').ilike('name', q).range(offset, to));
+  const { data, error } = await supabase.rpc('search_actors', {
+    search_term: query,
+    result_limit: limit,
+    result_offset: offset,
+  });
+  if (error) throw error;
+  return (data as Actor[]) ?? [];
 }
 
 // @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
@@ -81,9 +71,11 @@ export async function searchProductionHousesPaginated(
   offset: number,
   limit: number = 10,
 ): Promise<ProductionHouse[]> {
-  const q = `%${escapeLike(query)}%`;
-  const to = offset + limit - 1;
-  return unwrapList(
-    await supabase.from('production_houses').select('*').ilike('name', q).range(offset, to),
-  );
+  const { data, error } = await supabase.rpc('search_production_houses', {
+    search_term: query,
+    result_limit: limit,
+    result_offset: offset,
+  });
+  if (error) throw error;
+  return (data as ProductionHouse[]) ?? [];
 }

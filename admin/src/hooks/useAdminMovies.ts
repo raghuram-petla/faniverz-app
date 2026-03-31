@@ -99,8 +99,30 @@ export function useAdminMovies(
     staleTime: ADMIN_STALE_1M,
   });
 
+  // @contract: two-phase search — RPC resolves search term → movie IDs, then PostgREST filters by ID.
+  // This preserves all existing filter/sort/pagination logic while adding relevance ranking + typo tolerance.
+  // Fetches up to 1000 matching IDs so the intersection with other filter sets works correctly.
+  const hasSearch = !!search;
+  const { data: searchMovieIds, isSuccess: searchIdsReady } = useQuery({
+    queryKey: ['admin', 'search-movie-ids', search],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('search_movies', {
+        search_term: search,
+        result_limit: 1000,
+        result_offset: 0,
+      });
+      if (error) throw error;
+      /* v8 ignore next */
+      return (data ?? []).map((m: { id: string }) => m.id) as string[];
+    },
+    enabled: hasSearch,
+    staleTime: ADMIN_STALE_30S,
+  });
+
   const joinFiltersReady =
-    (!hasActorSearch || actorIdsReady) && (!hasPlatformFilter || platformFilterReady);
+    (!hasActorSearch || actorIdsReady) &&
+    (!hasPlatformFilter || platformFilterReady) &&
+    (!hasSearch || searchIdsReady);
 
   return useInfiniteQuery({
     queryKey: [
@@ -148,8 +170,6 @@ export function useAdminMovies(
         .order('release_date', { ascending: false })
         .range(from, to);
 
-      if (search) query = query.ilike('title', `%${search}%`);
-
       // @boundary Language scoping — filter movies by selected language code
       if (selectedLanguageCode) {
         query = query.eq('original_language', selectedLanguageCode);
@@ -164,11 +184,14 @@ export function useAdminMovies(
       query = applyColumnFilters(query, advancedFilters);
 
       // @invariant Merge all ID-based include sets into one .in('id', ...) call
+      // search IDs are null when no search term — intersectIdSets treats null as "no constraint"
+      const resolvedSearchIds = hasSearch ? (searchMovieIds ?? []) : null;
       const mergedIds = intersectIdSets(
         phMovieIds,
         statusResult.includeIds,
         resolvedActorIds,
         resolvedPlatformIds,
+        resolvedSearchIds,
       );
       if (mergedIds !== null) {
         if (mergedIds.length === 0) return [] as Movie[];
@@ -190,7 +213,8 @@ export function useAdminMovies(
     enabled:
       (search.length >= 2 || search === '') &&
       (!needsPlatformIds || platformIdsReady) &&
-      joinFiltersReady,
+      joinFiltersReady &&
+      (!hasSearch || searchIdsReady),
   });
 }
 

@@ -52,3 +52,6 @@ admin/.next/
 admin/dist/
 node_modules
 package-lock.json
+
+# local scratch directory
+.entire/

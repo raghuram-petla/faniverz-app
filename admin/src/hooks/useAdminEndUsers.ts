@@ -24,7 +24,11 @@ export interface UseAdminEndUsersOptions {
 const DEFAULT_PAGE_SIZE = 50;
 
 // @boundary Queries 'profiles' table directly — separate from admin_user_roles
-// @edge Search uses raw ilike — special chars in search string are not escaped
+// @contract When search is provided, uses two-phase lookup:
+//   1. search_profiles RPC for fuzzy display_name/username matching (tsvector + pg_trgm)
+//   2. email ILIKE for exact-identifier email search (email is not prose, not in tsvector)
+//   Both sets of IDs are unioned; final query filters by .in('id', ids).
+//   When not searching, returns paginated results with totalCount.
 export function useAdminEndUsers({
   search,
   page,
@@ -36,7 +40,50 @@ export function useAdminEndUsers({
       const from = page * pageSize;
       const to = from + pageSize - 1;
 
-      let query = supabase
+      if (search) {
+        // Phase 1: resolve matching IDs from hybrid search + email ILIKE in parallel
+        const escaped = search.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+        const [rpcRes, emailRes] = await Promise.allSettled([
+          supabase.rpc('search_profiles', {
+            search_term: search,
+            result_limit: 1000,
+            result_offset: 0,
+          }),
+          supabase.from('profiles').select('id').ilike('email', `%${escaped}%`).limit(1000),
+        ]);
+
+        const rpcIds: string[] =
+          rpcRes.status === 'fulfilled' && !rpcRes.value.error
+            ? (rpcRes.value.data ?? []).map((r: { id: string }) => r.id)
+            : [];
+        const emailIds: string[] =
+          emailRes.status === 'fulfilled' && !emailRes.value.error
+            ? (emailRes.value.data ?? []).map((r: { id: string }) => r.id)
+            : [];
+
+        const allIds = [...new Set([...rpcIds, ...emailIds])];
+        if (allIds.length === 0) return { users: [] as EndUserProfile[], totalCount: 0 };
+
+        // Phase 2: fetch full profile rows for matching IDs with pagination
+        const { data, error, count } = await supabase
+          .from('profiles')
+          .select(
+            'id, display_name, username, email, avatar_url, bio, location, preferred_lang, created_at',
+            { count: 'exact' },
+          )
+          .in('id', allIds)
+          .order('created_at', { ascending: false })
+          .range(from, to);
+        if (error) throw error;
+
+        return {
+          users: (data ?? []) as EndUserProfile[],
+          totalCount: count ?? 0,
+        };
+      }
+
+      // No search — regular paginated query with count
+      const { data, error, count } = await supabase
         .from('profiles')
         .select(
           'id, display_name, username, email, avatar_url, bio, location, preferred_lang, created_at',
@@ -44,16 +91,6 @@ export function useAdminEndUsers({
         )
         .order('created_at', { ascending: false })
         .range(from, to);
-
-      if (search) {
-        // @boundary: escape LIKE wildcards (%, _, \) to prevent unintended matches
-        const escaped = search.replace(/[\\%_]/g, (ch) => `\\${ch}`);
-        query = query.or(
-          `display_name.ilike.%${escaped}%,username.ilike.%${escaped}%,email.ilike.%${escaped}%`,
-        );
-      }
-
-      const { data, error, count } = await query;
       if (error) throw error;
 
       return {

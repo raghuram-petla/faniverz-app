@@ -34,6 +34,7 @@ vi.mock('@/hooks/useAdminMoviesFilters', () => ({
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn(),
     auth: { getSession: vi.fn() },
   },
 }));
@@ -54,6 +55,8 @@ import {
 import { supabase } from '@/lib/supabase-browser';
 
 const mockFrom = vi.mocked(supabase.from);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockRpc = vi.mocked((supabase as any).rpc);
 
 function makeWrapper() {
   const qc = new QueryClient({
@@ -110,6 +113,8 @@ describe('useAdminMovies', () => {
     // applyColumnFilters returns the query it receives (passthrough)
     vi.mocked(applyColumnFilters).mockImplementation((q: unknown) => q);
     vi.mocked(intersectIdSets).mockReturnValue(null);
+    // Default: RPC returns no search IDs (no search active)
+    mockRpc.mockResolvedValue({ data: [], error: null });
   });
 
   it('queries movies table with default parameters', async () => {
@@ -154,7 +159,9 @@ describe('useAdminMovies', () => {
     expect(result.current.data?.pages[0]).toEqual([]);
   });
 
-  it('applies ilike search filter when search >= 2 chars', async () => {
+  it('calls search_movies RPC when search >= 2 chars', async () => {
+    // RPC resolves to matching IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'm1' }], error: null });
     const chain = buildResolvingChain({ data: [], error: null });
     mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
     vi.mocked(applyStatusFilter).mockReturnValue({
@@ -167,11 +174,17 @@ describe('useAdminMovies', () => {
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAdminMovies('te'), { wrapper: Wrapper });
 
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(chain.ilike).toHaveBeenCalledWith('title', '%te%');
+    expect(mockRpc).toHaveBeenCalledWith(
+      'search_movies',
+      expect.objectContaining({
+        search_term: 'te',
+        result_limit: 1000,
+      }),
+    );
+    // ilike no longer called on main query
+    expect(chain.ilike).not.toHaveBeenCalledWith('title', '%te%');
   });
 
   it('is disabled when search is exactly 1 character', () => {

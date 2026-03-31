@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase';
 import { Actor, ActorCredit, FavoriteActor } from '@/types';
-import { escapeLike } from '@/utils/escapeLike';
 import { unwrapList, unwrapOne } from '@/utils/supabaseQuery';
 
 // @coupling: returns FavoriteActor with nested actor:actors(*) join. No FK constraint on actor_id,
@@ -35,12 +34,16 @@ export async function removeFavoriteActor(userId: string, actorId: string): Prom
   if (error) throw error;
 }
 
-// @edge: no ordering specified — Supabase returns in insertion order. Results for common names like "Ram" could return 20 results in arbitrary order, with the most relevant match possibly excluded by the limit.
+// @contract: uses search_actors RPC — hybrid tsvector + pg_trgm scoring; ordered by relevance score.
+// Handles typos (e.g. "Mahes" finds "Mahesh") via trigram fuzzy matching; limit 20.
 export async function searchActors(query: string): Promise<Actor[]> {
-  const escaped = escapeLike(query);
-  return unwrapList(
-    await supabase.from('actors').select('*').ilike('name', `%${escaped}%`).limit(20),
-  );
+  const { data, error } = await supabase.rpc('search_actors', {
+    search_term: query,
+    result_limit: 20,
+    result_offset: 0,
+  });
+  if (error) throw error;
+  return (data as Actor[]) ?? [];
 }
 
 // @contract: uses .maybeSingle() — returns null on not-found (unlike fetchMovieById which uses .single() and throws PGRST116). Callers can safely check null without try/catch.

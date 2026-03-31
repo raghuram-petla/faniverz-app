@@ -4,12 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const mockFrom = vi.fn();
+const mockRpc = vi.fn();
 const mockGetSession = vi.fn();
 const mockFetch = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     auth: {
       getSession: (...args: unknown[]) => mockGetSession(...args),
     },
@@ -38,12 +40,10 @@ function makeWrapper() {
 function makeProfilesChain(resolvedValue: unknown) {
   const range = vi.fn().mockResolvedValue(resolvedValue);
   const order = vi.fn().mockReturnValue({ range });
-  const or = vi.fn().mockReturnValue({ order });
-  const select = vi.fn().mockReturnValue({ order, or });
+  const inFn = vi.fn().mockReturnValue({ order });
+  const select = vi.fn().mockReturnValue({ order, in: inFn });
   return { select };
 }
-
-// Build a chain with .or() after select (search path)
 
 describe('useAdminEndUsers', () => {
   beforeEach(() => {
@@ -51,7 +51,7 @@ describe('useAdminEndUsers', () => {
     window.alert = vi.fn();
   });
 
-  it('fetches end users without search', async () => {
+  it('fetches end users without search via paginated query', async () => {
     const users = [{ id: 'u-1', display_name: 'Alice', email: 'alice@test.com' }];
     mockFrom.mockReturnValueOnce(makeProfilesChain({ data: users, error: null, count: 1 }));
 
@@ -63,12 +63,14 @@ describe('useAdminEndUsers', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.users).toHaveLength(1);
     expect(result.current.data?.totalCount).toBe(1);
+    // No RPC call when search is empty
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it('uses default page size of 50', async () => {
+  it('uses default page size of 50 without search', async () => {
     const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock, or: vi.fn() });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
     mockFrom.mockReturnValueOnce({ select: selectMock });
 
     const { Wrapper } = makeWrapper();
@@ -81,7 +83,7 @@ describe('useAdminEndUsers', () => {
   it('uses custom pageSize', async () => {
     const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock, or: vi.fn() });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
     mockFrom.mockReturnValueOnce({ select: selectMock });
 
     const { Wrapper } = makeWrapper();
@@ -96,67 +98,74 @@ describe('useAdminEndUsers', () => {
   it('uses page offset correctly', async () => {
     const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock, or: vi.fn() });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
     mockFrom.mockReturnValueOnce({ select: selectMock });
 
     const { Wrapper } = makeWrapper();
-    renderHook(() => useAdminEndUsers({ search: '', page: 2, pageSize: 10 }), {
-      wrapper: Wrapper,
-    });
+    renderHook(() => useAdminEndUsers({ search: '', page: 2, pageSize: 10 }), { wrapper: Wrapper });
 
     await waitFor(() => expect(rangeMock).toHaveBeenCalled());
     expect(rangeMock).toHaveBeenCalledWith(20, 29);
   });
 
-  it('adds .or() filter when search is non-empty', async () => {
-    // Source: let query = select().order().range(); if (search) query = query.or(...); await query
-    // So range() result must be both awaitable AND have .or() that's also awaitable
-    const finalResult = { data: [], error: null, count: 0 };
-    const orMock = vi.fn().mockResolvedValue(finalResult);
-    const rangeMock = vi
-      .fn()
-      .mockImplementation(() => Object.assign(Promise.resolve(finalResult), { or: orMock }));
+  it('calls search_profiles RPC when search is non-empty', async () => {
+    // Phase 1a: search_profiles RPC
+    mockRpc.mockResolvedValue({ data: [{ id: 'u-1' }], error: null });
+    // Phase 1b: email ILIKE — from('profiles').select('id').ilike().limit()
+    const emailIlikeMock = vi.fn().mockResolvedValue({ data: [], error: null });
+    const emailLimitMock = vi.fn().mockReturnValue(emailIlikeMock);
+    // Phase 2: fetch full profiles — from('profiles').select(...).in().order().range()
+    const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
-    mockFrom.mockReturnValueOnce({ select: selectMock });
+    const inMock = vi.fn().mockReturnValue({ order: orderMock });
+    const selectPhase2Mock = vi.fn().mockReturnValue({ in: inMock });
+    // Email ILIKE chain: select().ilike().limit()
+    const ilikeMock = vi
+      .fn()
+      .mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) });
+    const selectEmailMock = vi.fn().mockReturnValue({ ilike: ilikeMock });
+
+    mockFrom
+      .mockReturnValueOnce({ select: selectEmailMock }) // email ILIKE
+      .mockReturnValueOnce({ select: selectPhase2Mock }); // phase 2
 
     const { Wrapper } = makeWrapper();
     renderHook(() => useAdminEndUsers({ search: 'alice', page: 0 }), { wrapper: Wrapper });
 
-    await waitFor(() => expect(orMock).toHaveBeenCalled());
-    const orArg = orMock.mock.calls[0][0] as string;
-    expect(orArg).toContain('alice');
-    expect(orArg).toContain('display_name.ilike');
+    await waitFor(() => expect(mockRpc).toHaveBeenCalled());
+    expect(mockRpc).toHaveBeenCalledWith(
+      'search_profiles',
+      expect.objectContaining({
+        search_term: 'alice',
+      }),
+    );
   });
 
-  it('escapes LIKE special characters in search', async () => {
-    const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
-    const orOrderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const orMock = vi.fn().mockReturnValue({ order: orOrderMock });
-    const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock, or: orMock });
-    mockFrom.mockReturnValueOnce({ select: selectMock });
+  it('returns empty result when search finds no matches', async () => {
+    // RPC returns no IDs, email ILIKE returns no IDs
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    const ilikeMock = vi
+      .fn()
+      .mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) });
+    const selectEmailMock = vi.fn().mockReturnValue({ ilike: ilikeMock });
+    mockFrom.mockReturnValueOnce({ select: selectEmailMock });
 
     const { Wrapper } = makeWrapper();
-    renderHook(() => useAdminEndUsers({ search: '50%_off', page: 0 }), { wrapper: Wrapper });
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'zzznomatch', page: 0 }), {
+      wrapper: Wrapper,
+    });
 
-    await waitFor(() => expect(rangeMock).toHaveBeenCalled());
-    // Verify the search string with special chars was processed
-    if (orMock.mock.calls.length > 0) {
-      const orArg = orMock.mock.calls[0][0];
-      expect(orArg).toContain('\\%');
-      expect(orArg).toContain('\\_');
-    }
-    // The key thing is the query ran without error
-    expect(rangeMock).toHaveBeenCalled();
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.users).toEqual([]);
+    expect(result.current.data?.totalCount).toBe(0);
   });
 
-  it('throws when query fails', async () => {
+  it('throws when no-search query fails', async () => {
     const rangeMock = vi
       .fn()
       .mockResolvedValue({ data: null, error: { message: 'DB error' }, count: null });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock, or: vi.fn() });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
     mockFrom.mockReturnValueOnce({ select: selectMock });
 
     const { Wrapper } = makeWrapper();
@@ -170,7 +179,7 @@ describe('useAdminEndUsers', () => {
   it('returns totalCount=0 when count is null', async () => {
     const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: null });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
-    const selectMock = vi.fn().mockReturnValue({ order: orderMock, or: vi.fn() });
+    const selectMock = vi.fn().mockReturnValue({ order: orderMock });
     mockFrom.mockReturnValueOnce({ select: selectMock });
 
     const { Wrapper } = makeWrapper();
@@ -194,7 +203,6 @@ describe('useBanUser', () => {
 
   it('calls POST /api/manage-user with action=ban', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
-    // For invalidation
     mockFrom.mockReturnValue(makeProfilesChain({ data: [], error: null, count: 0 }));
 
     const { Wrapper } = makeWrapper();

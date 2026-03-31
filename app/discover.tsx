@@ -10,6 +10,7 @@ import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AnimatedListItem } from '@/components/ui/AnimatedListItem';
 import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
+import { useSearchMoviesPaginated } from '@/features/search/searchHooks';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { useFilterStore } from '@/stores/useFilterStore';
 import { Movie, MovieStatus } from '@/types';
@@ -101,6 +102,12 @@ export default function DiscoverScreen() {
     refetch,
   } = useMoviesPaginated(filters);
 
+  // @contract: server-side search — replaces client-side title filter when query ≥2 chars.
+  // When searchQuery is empty the hook is disabled (no fetch). Genre/platform/PH filters
+  // still apply client-side on top of the search results.
+  const isSearching = searchQuery.length >= 2;
+  const srch = useSearchMoviesPaginated(searchQuery);
+
   const { refreshing, onRefresh } = useRefresh(refetch);
   const {
     pullDistance,
@@ -121,17 +128,11 @@ export default function DiscoverScreen() {
   /* istanbul ignore next */
   const { data: phMovieIds = [] } = useMovieIdsByProductionHouse(selectedProductionHouses);
 
-  // @invariant: all filtering (search, genre, platform, PH) happens client-side on already-fetched pages
-  // @nullable: m.director and m.genres may be null — guarded with ?.toLowerCase() and ?? []
+  // @contract: when isSearching, use server-side RPC results (ranked, fuzzy) instead of client-side filter.
+  // Genre/platform/PH filters still apply on top of search results.
+  // @nullable: m.genres may be null — guarded with ?? []
   const filteredMovies = useMemo(() => {
-    let movies = allMovies;
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      movies = movies.filter(
-        (m) => m.title.toLowerCase().includes(q) || m.director?.toLowerCase().includes(q),
-      );
-    }
+    let movies = isSearching ? (srch.allItems ?? []) : allMovies;
 
     if (selectedGenres.length > 0) {
       movies = movies.filter((m) => selectedGenres.some((g) => (m.genres ?? []).includes(g)));
@@ -150,8 +151,9 @@ export default function DiscoverScreen() {
 
     return movies;
   }, [
+    isSearching,
+    srch.allItems,
     allMovies,
-    searchQuery,
     selectedGenres,
     selectedPlatforms,
     platformMap,
@@ -163,10 +165,10 @@ export default function DiscoverScreen() {
     selectedGenres.length + selectedPlatforms.length + selectedProductionHouses.length;
 
   const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
-    totalItems: allMovies.length,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
+    totalItems: isSearching ? (srch.allItems?.length ?? 0) : allMovies.length,
+    hasNextPage: isSearching ? srch.hasNextPage : hasNextPage,
+    isFetchingNextPage: isSearching ? srch.isFetchingNextPage : isFetchingNextPage,
+    fetchNextPage: isSearching ? srch.fetchNextPage : fetchNextPage,
     config: DISCOVER_PAGINATION,
   });
 
@@ -224,7 +226,7 @@ export default function DiscoverScreen() {
         </View>
       )}
 
-      {isLoading ? (
+      {isLoading || (isSearching && srch.isLoading) ? (
         <DiscoverContentSkeleton />
       ) : (
         <FlatList

@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase';
 import { Movie, MovieWithDetails, MovieStatus } from '@/types';
-import { escapeLike } from '@/utils/escapeLike';
 import { unwrapList } from '@/utils/supabaseQuery';
 
 /** Returns today's date as YYYY-MM-DD in local timezone (avoids UTC offset bug with toISOString). */
@@ -220,17 +219,16 @@ export async function fetchMoviesByMonth(year: number, month: number): Promise<M
   );
 }
 
-// @edge: only searches title and director columns — genres, cast names, and production houses are not searched. Users searching for an actor name get no results here; must use searchActors separately.
+// @contract: uses search_movies RPC — hybrid tsvector + pg_trgm scoring with typo tolerance.
+// Searches title, director, and synopsis with relevance ranking; limit 20.
 export async function searchMovies(query: string): Promise<Movie[]> {
-  const escaped = escapeLike(query);
-  return unwrapList(
-    await supabase
-      .from('movies')
-      .select('*')
-      .or(`title.ilike.%${escaped}%,director.ilike.%${escaped}%`)
-      .order('rating', { ascending: false })
-      .limit(20),
-  );
+  const { data, error } = await supabase.rpc('search_movies', {
+    search_term: query,
+    result_limit: 20,
+    result_offset: 0,
+  });
+  if (error) throw error;
+  return (data as Movie[]) ?? [];
 }
 
 // @sync: shares filter/sort logic with fetchMovies via applyMovieFilters helper — adding a new MovieStatus case or sort option only requires updating applyMovieFilters.

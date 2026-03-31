@@ -138,6 +138,10 @@ jest.mock('@/features/movies/hooks/useMoviesPaginated', () => ({
   useMoviesPaginated: jest.fn(),
 }));
 
+jest.mock('@/features/search/searchHooks', () => ({
+  useSearchMoviesPaginated: jest.fn(),
+}));
+
 jest.mock('@/features/ott/hooks', () => ({
   usePlatforms: jest.fn(() => ({ data: mockPlatforms })),
   useMoviePlatformMap: jest.fn(() => ({ data: {} })),
@@ -150,8 +154,10 @@ jest.mock('@/features/productionHouses/hooks', () => ({
 
 import DiscoverScreen from '../discover';
 import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
+import { useSearchMoviesPaginated } from '@/features/search/searchHooks';
 
 const mockUseMoviesPaginated = useMoviesPaginated as jest.Mock;
+const mockUseSearchMoviesPaginated = useSearchMoviesPaginated as jest.Mock;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setupDefaultMock(overrides: Record<string, any> = {}) {
@@ -168,6 +174,14 @@ function setupDefaultMock(overrides: Record<string, any> = {}) {
     isBackgroundExpanding: false,
     refetch: jest.fn(),
     ...overrides,
+  });
+  // Default: search returns empty (no active search); tests that exercise search override this
+  mockUseSearchMoviesPaginated.mockReturnValue({
+    allItems: [],
+    hasNextPage: false,
+    fetchNextPage: jest.fn(),
+    isFetchingNextPage: false,
+    isLoading: false,
   });
 }
 
@@ -313,10 +327,18 @@ describe('DiscoverScreen', () => {
     expect(useFilterStore.getState().selectedPlatforms).toContain('netflix');
   });
 
-  it('filters movies by search query', () => {
+  it('filters movies by search query via server-side RPC results', () => {
+    // Server-side search returns only "Pushpa 2" for the query "Pushpa"
+    mockUseSearchMoviesPaginated.mockReturnValue({
+      allItems: [mockMovies[0]],
+      hasNextPage: false,
+      fetchNextPage: jest.fn(),
+      isFetchingNextPage: false,
+      isLoading: false,
+    });
+
     const { getByPlaceholderText, getByText, queryByText } = render(<DiscoverScreen />);
     const input = getByPlaceholderText('discover.searchPlaceholder');
-
     fireEvent.changeText(input, 'Pushpa');
 
     expect(getByText('Pushpa 2')).toBeTruthy();
@@ -423,10 +445,18 @@ describe('DiscoverScreen', () => {
     expect(getByText('discover.filters')).toBeTruthy();
   });
 
-  it('filters movies by director name in search', () => {
+  it('filters movies by director name via server-side RPC results', () => {
+    // Server-side search returns only "Pushpa 2" when searching director "Sukumar"
+    mockUseSearchMoviesPaginated.mockReturnValue({
+      allItems: [mockMovies[0]],
+      hasNextPage: false,
+      fetchNextPage: jest.fn(),
+      isFetchingNextPage: false,
+      isLoading: false,
+    });
+
     const { getByPlaceholderText, getByText, queryByText } = render(<DiscoverScreen />);
     const input = getByPlaceholderText('discover.searchPlaceholder');
-
     fireEvent.changeText(input, 'Sukumar');
 
     expect(getByText('Pushpa 2')).toBeTruthy();
@@ -604,10 +634,8 @@ describe('DiscoverScreen', () => {
     expect(queryByText('0')).toBeNull();
   });
 
-  it('filters movies by director when director is null (covers ?. branch)', () => {
-    const movieNoDirector = [{ ...mockMovies[0], director: null }];
-    setupDefaultMock({ data: { pages: [movieNoDirector], pageParams: [0] } });
-
+  it('returns no results when server search finds nothing (nonexistent query)', () => {
+    // Default search mock returns [] — no results for unmatched queries
     const { getByPlaceholderText, queryByText } = render(<DiscoverScreen />);
     const input = getByPlaceholderText('discover.searchPlaceholder');
 

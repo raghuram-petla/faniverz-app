@@ -7,8 +7,8 @@ import type { FeedComment } from '@/lib/types';
 import { sanitizeSearchTerm } from '@/lib/sanitizeSearchTerm';
 
 // @boundary: joins feed_comments with news_feed and profiles via PostgREST foreign-key selects
-// @edge: search filters body via ilike server-side, but profile.display_name is matched client-side
-//        because PostgREST cannot OR across foreign table columns
+// @edge: body is filtered server-side via ILIKE (backed by pg_trgm GIN index for performance);
+//        profile.display_name is matched client-side — PostgREST cannot OR across foreign tables
 // @contract: returns max 200 comments, newest first; query disabled for 1-char searches
 export function useAdminComments(search = '') {
   return useQuery({
