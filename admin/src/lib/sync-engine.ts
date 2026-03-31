@@ -14,6 +14,7 @@ import { syncAllImages } from './sync-images';
 import { syncVideos, syncKeywords, syncProductionCompanies } from './sync-extended';
 import { syncWatchProvidersMultiCountry } from './sync-watch-providers';
 import { syncCastCrewAdditive, syncCastCrew } from './sync-cast';
+import { safeDateOrNull } from './utils';
 
 // ── Result types ──────────────────────────────────────────────────────────────
 
@@ -104,7 +105,7 @@ export async function processMovieFromTmdb(
         tmdb_id: detail.id,
         title: detail.title,
         synopsis: detail.overview || null,
-        release_date: detail.release_date,
+        release_date: safeDateOrNull(detail.release_date),
         runtime: detail.runtime || null,
         genres,
         poster_url: posterUrl,

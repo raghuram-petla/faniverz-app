@@ -8,6 +8,7 @@ import { syncVideos, syncKeywords, syncProductionCompanies } from '@/lib/sync-ex
 import { syncWatchProvidersMultiCountry } from '@/lib/sync-watch-providers';
 import { syncCastCrewAdditive } from '@/lib/sync-cast';
 import { withSyncAdmin } from '@/lib/route-wrappers';
+import { safeDateOrNull } from '@/lib/utils';
 import { randomUUID } from 'crypto';
 
 /**
@@ -64,7 +65,8 @@ export const POST = withSyncAdmin('Fill fields', async ({ req, supabase, apiKey 
     if (fieldSet.has('synopsis')) movieUpdate.synopsis = detail.overview || null;
     /* v8 ignore stop */
     /* v8 ignore start */
-    if (fieldSet.has('release_date')) movieUpdate.release_date = detail.release_date || null;
+    if (fieldSet.has('release_date'))
+      movieUpdate.release_date = safeDateOrNull(detail.release_date);
     /* v8 ignore stop */
     if (fieldSet.has('director')) {
       /* v8 ignore start */

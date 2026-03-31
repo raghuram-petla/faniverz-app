@@ -4,6 +4,16 @@ export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
+// @edge TMDB can return "", " ", or malformed dates — only accept valid YYYY-MM-DD strings.
+export function safeDateOrNull(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const parsed = new Date(trimmed);
+  if (isNaN(parsed.getTime())) return null;
+  return trimmed;
+}
+
 // @edge: hardcoded 'en-US' locale — admin panel dates display in US format regardless of the admin user's browser locale.
 // @edge: new Date(date) with a bare date string "2025-01-15" is parsed as UTC midnight,
 // which in IST (UTC+5:30) shows as Jan 14 — off by one day for Indian admins.
