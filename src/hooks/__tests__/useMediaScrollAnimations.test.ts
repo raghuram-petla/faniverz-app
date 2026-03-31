@@ -16,16 +16,29 @@ jest.mock('@/styles/movieMedia.styles', () => ({
 }));
 
 import { renderHook } from '@testing-library/react-native';
+import type { SharedValue } from 'react-native-reanimated';
 import { useMediaScrollAnimations } from '../useMediaScrollAnimations';
 import type { MediaScrollAnimationsProps } from '../useMediaScrollAnimations';
+
+/** Create a mock SharedValue that satisfies the full interface. */
+function mockSharedValue(v: number): SharedValue<number> {
+  return {
+    value: v,
+    get: () => v,
+    set: (_: number) => {},
+    addListener: () => -1,
+    removeListener: () => {},
+    modify: () => {},
+  } as unknown as SharedValue<number>;
+}
 
 function makeProps(
   overrides: Partial<MediaScrollAnimationsProps> = {},
 ): MediaScrollAnimationsProps {
   return {
-    scrollOffset: { value: 0 },
-    titleWidth: { value: 200 },
-    titleHeight: { value: 24 },
+    scrollOffset: mockSharedValue(0),
+    titleWidth: mockSharedValue(200),
+    titleHeight: mockSharedValue(24),
     screenWidth: 375,
     heroPosterCX: 66,
     heroPosterCY: 230,
@@ -66,7 +79,7 @@ describe('useMediaScrollAnimations', () => {
   });
 
   it('works with non-zero scroll offset', () => {
-    const props = makeProps({ scrollOffset: { value: 200 } });
+    const props = makeProps({ scrollOffset: mockSharedValue(200) });
     const { result } = renderHook(() => useMediaScrollAnimations(props));
     const { transform } = result.current.animatedPosterStyle as { transform: unknown[] };
     expect(transform).toHaveLength(3);
