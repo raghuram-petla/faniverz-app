@@ -2,7 +2,6 @@ const mockSelect = jest.fn();
 const mockOrder = jest.fn();
 const mockEq = jest.fn();
 const mockSingle = jest.fn();
-const mockOr = jest.fn();
 const mockLimit = jest.fn();
 const mockGte = jest.fn();
 const mockLte = jest.fn();
@@ -44,6 +43,7 @@ jest.mock('@/lib/supabase', () => ({
     from: jest.fn(() => ({
       select: mockSelect,
     })),
+    rpc: jest.fn(),
   },
 }));
 
@@ -71,10 +71,6 @@ describe('movies api', () => {
     // Default chain for fetchMovieById
     mockEq.mockReturnValue({ single: mockSingle });
     mockSingle.mockResolvedValue({ data: null, error: null });
-
-    // Default chain for searchMovies
-    mockOr.mockReturnValue({ order: mockOrder });
-    mockLimit.mockResolvedValue({ data: [], error: null });
   });
 
   describe('fetchMovies', () => {
@@ -241,16 +237,21 @@ describe('movies api', () => {
   });
 
   describe('searchMovies', () => {
-    it('searches by title and director', async () => {
-      mockSelect.mockReturnValue({ or: mockOr });
+    it('calls search_movies RPC with correct params', async () => {
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: [], error: null });
       await searchMovies('test');
-      expect(mockOr).toHaveBeenCalledWith('title.ilike.%test%,director.ilike.%test%');
+      expect(supabase.rpc as jest.Mock).toHaveBeenCalledWith('search_movies', {
+        search_term: 'test',
+        result_limit: 20,
+        result_offset: 0,
+      });
     });
 
-    it('limits results to 20', async () => {
-      mockSelect.mockReturnValue({ or: mockOr });
-      await searchMovies('test');
-      expect(mockLimit).toHaveBeenCalledWith(20);
+    it('returns matching movies', async () => {
+      const movies = [{ id: 'm1', title: 'Test Movie' }];
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: movies, error: null });
+      const result = await searchMovies('test');
+      expect(result).toEqual(movies);
     });
   });
 
@@ -297,10 +298,10 @@ describe('movies api', () => {
 
   describe('searchMovies — additional', () => {
     it('throws on error in searchMovies', async () => {
-      mockSelect.mockReturnValue({ or: mockOr });
-      mockOr.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ limit: mockLimit });
-      mockLimit.mockResolvedValue({ data: null, error: new Error('Search failed') });
+      (supabase.rpc as jest.Mock).mockResolvedValue({
+        data: null,
+        error: new Error('Search failed'),
+      });
 
       await expect(searchMovies('test')).rejects.toThrow('Search failed');
     });
@@ -901,10 +902,7 @@ describe('movies api', () => {
 
   describe('searchMovies — null data fallback', () => {
     it('returns empty array when data is null', async () => {
-      mockSelect.mockReturnValue({ or: mockOr });
-      mockOr.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ limit: mockLimit });
-      mockLimit.mockResolvedValue({ data: null, error: null });
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
 
       const result = await searchMovies('test');
       expect(result).toEqual([]);

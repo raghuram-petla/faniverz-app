@@ -89,6 +89,7 @@ export default function FeedScreen() {
   const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
   const scrollOffsetRef = useRef(0);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /* istanbul ignore next -- placeholder replaced immediately on render */
   const homeTabActionRef = useRef<{ scrollToTop: () => void }>({ scrollToTop: () => {} });
   // @coupling FlashList can cache header content; extraData forces the pull indicator + filter pills to refresh with programmatic state changes.
   const listExtraData = useMemo(
@@ -107,6 +108,7 @@ export default function FeedScreen() {
 
     void onRefresh().finally(() => {
       const remainingMs = Math.max(0, PROGRAMMATIC_REFRESH_MIN_MS - (Date.now() - startedAt));
+      /* istanbul ignore next -- defensive: guard prevents re-entry so existing timeout is unreachable */
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
       }

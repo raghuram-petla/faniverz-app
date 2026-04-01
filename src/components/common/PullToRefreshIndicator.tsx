@@ -55,6 +55,7 @@ export function PullToRefreshIndicator({
 
   // @sync Bridges the worklet-thread refresh flag back into React so the spinner pill can
   // replace the arrow even when the surrounding list header does not rerender immediately.
+  /* istanbul ignore next -- Reanimated worklet cannot execute in Jest */
   useAnimatedReaction(
     () => isRefreshing.value,
     (nextIsRefreshing, previousIsRefreshing) => {

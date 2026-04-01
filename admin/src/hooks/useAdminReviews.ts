@@ -25,7 +25,7 @@ export function useAdminReviews(search = '', ratingFilter = 0) {
         });
         if (searchError) throw searchError;
         matchIds = (searchData ?? []).map((r: { id: string }) => r.id);
-        if (matchIds.length === 0) return [] as Review[];
+        if (matchIds!.length === 0) return [] as Review[];
       }
 
       // Phase 2: fetch full rows with joins; apply ID filter + rating filter

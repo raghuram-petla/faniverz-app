@@ -735,4 +735,40 @@ describe('DiscoverScreen', () => {
 
     mod.useAnimationsEnabled = orig;
   });
+
+  it('handles search results with undefined allItems (srch.allItems ?? [] branch)', () => {
+    // When search hook returns allItems as undefined, filteredMovies should fall back to []
+    mockUseSearchMoviesPaginated.mockReturnValue({
+      allItems: undefined,
+      hasNextPage: false,
+      fetchNextPage: jest.fn(),
+      isFetchingNextPage: false,
+      isLoading: false,
+    });
+
+    const { getByPlaceholderText, queryByText } = render(<DiscoverScreen />);
+    const input = getByPlaceholderText('discover.searchPlaceholder');
+    fireEvent.changeText(input, 'search term');
+
+    // With undefined allItems during search, no movies should be displayed
+    expect(queryByText('Pushpa 2')).toBeNull();
+    expect(queryByText('Kalki')).toBeNull();
+  });
+
+  it('uses search pagination when isSearching and srch.allItems is undefined (length ?? 0 branch)', () => {
+    mockUseSearchMoviesPaginated.mockReturnValue({
+      allItems: undefined,
+      hasNextPage: true,
+      fetchNextPage: jest.fn(),
+      isFetchingNextPage: false,
+      isLoading: false,
+    });
+
+    const { getByPlaceholderText } = render(<DiscoverScreen />);
+    const input = getByPlaceholderText('discover.searchPlaceholder');
+    fireEvent.changeText(input, 'ab');
+
+    // Should not crash — the ?? 0 fallback handles undefined length
+    expect(input).toBeTruthy();
+  });
 });

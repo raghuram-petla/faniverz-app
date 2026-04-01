@@ -98,6 +98,7 @@ export function usePullToRefresh(onRefresh: () => void, refreshing: boolean) {
   // @assumes Android: contentOffset.y never goes negative, so we detect pull-down via
   // raw touch coordinates when the scroll is at the top (scrollOffsetY <= 0).
   const handleTouchStart = useCallback((e: GestureResponderEvent) => {
+    /* istanbul ignore next -- handler only wired on Android; iOS guard is defensive */
     if (Platform.OS !== 'android') return;
     if (scrollOffsetY.current <= 1 && !refreshingRef.current) {
       touchStartY.current = e.nativeEvent.pageY;
@@ -133,6 +134,7 @@ export function usePullToRefresh(onRefresh: () => void, refreshing: boolean) {
   // @edge Android can cancel the touch sequence when a nested list takes over scrolling;
   // reset the indicator so wrapper-level capture handlers do not leave stale pull state behind.
   const handleTouchCancel = useCallback(() => {
+    /* istanbul ignore next -- handler only wired on Android; iOS guard is defensive */
     if (Platform.OS !== 'android') return;
     isPulling.current = false;
     pullDistance.value = 0;

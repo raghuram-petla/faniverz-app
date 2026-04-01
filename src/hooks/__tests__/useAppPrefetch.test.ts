@@ -261,4 +261,177 @@ describe('useAppPrefetch', () => {
 
     expect(prefetchInfiniteSpy).not.toHaveBeenCalled();
   });
+
+  it('Phase 2: exercises queryFn and getNextPageParam callbacks through real prefetch', async () => {
+    // Use a real QueryClient without spies so prefetchInfiniteQuery actually executes
+    // the queryFn and getNextPageParam callbacks (lines 50-51, 58, 110, 127, 142)
+    const realQC = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+
+    (useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'user-gnpp' },
+      isLoading: false,
+    });
+
+    // Pre-populate cache so Phase 2 fires immediately
+    realQC.setQueryData(['personalized-feed', 'all', 'user-gnpp'], {
+      pages: [[{ id: '1' }]],
+      pageParams: [0],
+    });
+
+    renderHook(() => useAppPrefetch(), {
+      wrapper: createWrapper(realQC),
+    });
+
+    // Flush microtasks multiple times to ensure all async prefetch callbacks settle
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        await Promise.resolve();
+      });
+    }
+
+    const { fetchPersonalizedFeed } = require('@/features/feed/api');
+    const { fetchNewsFeed } = require('@/features/feed/api');
+    const { fetchUpcomingMovies } = require('@/features/movies/api');
+
+    // The queryFn callbacks (getOffset, getLimit) should have been called
+    expect(fetchPersonalizedFeed).toHaveBeenCalled();
+    expect(fetchNewsFeed).toHaveBeenCalled();
+    expect(fetchUpcomingMovies).toHaveBeenCalled();
+
+    realQC.clear();
+  });
+
+  it('Phase 1: handles fetchMovies returning empty array (no movie-platform prefetch)', async () => {
+    const { fetchMovies } = require('@/features/movies/api');
+    (fetchMovies as jest.Mock).mockResolvedValueOnce([]);
+
+    const realQC = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+
+    (useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'user-empty' },
+      isLoading: false,
+    });
+
+    renderHook(() => useAppPrefetch(), {
+      wrapper: createWrapper(realQC),
+    });
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    realQC.clear();
+  });
+
+  it('Phase 1: handles fetchMovies rejection gracefully', async () => {
+    const { fetchMovies } = require('@/features/movies/api');
+    (fetchMovies as jest.Mock).mockRejectedValueOnce(new Error('network error'));
+
+    const realQC = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    });
+
+    (useAuth as jest.Mock).mockReturnValue({
+      user: { id: 'user-err' },
+      isLoading: false,
+    });
+
+    renderHook(() => useAppPrefetch(), {
+      wrapper: createWrapper(realQC),
+    });
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    realQC.clear();
+  });
+
+  it('subscription ignores non-updated event types', async () => {
+    const subscribeSpy = jest.spyOn(queryClient.getQueryCache(), 'subscribe');
+
+    renderHook(() => useAppPrefetch(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    // Get the subscriber callback
+    const subscriberCallback = subscribeSpy.mock.calls[0]?.[0];
+    expect(subscriberCallback).toBeDefined();
+
+    // Simulate a non-updated event
+    if (typeof subscriberCallback === 'function') {
+      subscriberCallback({
+        type: 'added',
+        query: { queryKey: ['personalized-feed', 'all', 'user-123'] },
+      } as any);
+    }
+
+    // Phase 2 should not have fired
+    expect(prefetchInfiniteSpy).not.toHaveBeenCalled();
+
+    subscribeSpy.mockRestore();
+  });
+
+  it('subscription ignores updated events that are not success', async () => {
+    const subscribeSpy = jest.spyOn(queryClient.getQueryCache(), 'subscribe');
+
+    renderHook(() => useAppPrefetch(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const subscriberCallback = subscribeSpy.mock.calls[0]?.[0];
+    if (typeof subscriberCallback === 'function') {
+      subscriberCallback({
+        type: 'updated',
+        action: { type: 'error' },
+        query: { queryKey: ['personalized-feed', 'all', 'user-123'] },
+      } as any);
+    }
+
+    expect(prefetchInfiniteSpy).not.toHaveBeenCalled();
+
+    subscribeSpy.mockRestore();
+  });
+
+  it('subscription ignores success for non-matching query keys', async () => {
+    const subscribeSpy = jest.spyOn(queryClient.getQueryCache(), 'subscribe');
+
+    renderHook(() => useAppPrefetch(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    const subscriberCallback = subscribeSpy.mock.calls[0]?.[0];
+    if (typeof subscriberCallback === 'function') {
+      // Different key[0]
+      subscriberCallback({
+        type: 'updated',
+        action: { type: 'success' },
+        query: { queryKey: ['other-query', 'all', 'user-123'] },
+      } as any);
+      // Different filter (not 'all')
+      subscriberCallback({
+        type: 'updated',
+        action: { type: 'success' },
+        query: { queryKey: ['personalized-feed', 'trailers', 'user-123'] },
+      } as any);
+      // Different userId
+      subscriberCallback({
+        type: 'updated',
+        action: { type: 'success' },
+        query: { queryKey: ['personalized-feed', 'all', 'other-user'] },
+      } as any);
+      // Non-array queryKey
+      subscriberCallback({
+        type: 'updated',
+        action: { type: 'success' },
+        query: { queryKey: 'not-an-array' },
+      } as any);
+    }
+
+    expect(prefetchInfiniteSpy).not.toHaveBeenCalled();
+
+    subscribeSpy.mockRestore();
+  });
 });

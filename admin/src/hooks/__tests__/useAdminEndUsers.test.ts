@@ -113,7 +113,7 @@ describe('useAdminEndUsers', () => {
     mockRpc.mockResolvedValue({ data: [{ id: 'u-1' }], error: null });
     // Phase 1b: email ILIKE — from('profiles').select('id').ilike().limit()
     const emailIlikeMock = vi.fn().mockResolvedValue({ data: [], error: null });
-    const emailLimitMock = vi.fn().mockReturnValue(emailIlikeMock);
+    const _emailLimitMock = vi.fn().mockReturnValue(emailIlikeMock);
     // Phase 2: fetch full profiles — from('profiles').select(...).in().order().range()
     const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });

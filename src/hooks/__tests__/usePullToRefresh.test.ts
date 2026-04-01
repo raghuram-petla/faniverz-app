@@ -330,4 +330,204 @@ describe('usePullToRefresh — Android platform', () => {
     });
     expect(result.current.pullDistance.value).toBe(0);
   });
+
+  it('renderScrollComponent renders a GestureHandler ScrollView with merged touch handlers', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    expect(result.current.renderScrollComponent).toBeDefined();
+    const scrollComponent = result.current.renderScrollComponent!({
+      onTouchStart: undefined,
+      onTouchMove: undefined,
+      onTouchEnd: undefined,
+      onTouchCancel: undefined,
+      onTouchStartCapture: undefined,
+      onTouchMoveCapture: undefined,
+      onTouchEndCapture: undefined,
+      onTouchCancelCapture: undefined,
+    });
+    expect(scrollComponent).toBeTruthy();
+  });
+
+  it('renderScrollComponent calls original touch handlers alongside pull handlers', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    const mockOriginalTouchStart = jest.fn();
+    const mockOriginalTouchMove = jest.fn();
+    const mockOriginalTouchEnd = jest.fn();
+    const mockOriginalTouchCancel = jest.fn();
+    const mockOriginalStartCapture = jest.fn();
+    const mockOriginalMoveCapture = jest.fn();
+    const mockOriginalEndCapture = jest.fn();
+    const mockOriginalCancelCapture = jest.fn();
+
+    const scrollComponent = result.current.renderScrollComponent!({
+      onTouchStart: mockOriginalTouchStart,
+      onTouchMove: mockOriginalTouchMove,
+      onTouchEnd: mockOriginalTouchEnd,
+      onTouchCancel: mockOriginalTouchCancel,
+      onTouchStartCapture: mockOriginalStartCapture,
+      onTouchMoveCapture: mockOriginalMoveCapture,
+      onTouchEndCapture: mockOriginalEndCapture,
+      onTouchCancelCapture: mockOriginalCancelCapture,
+    });
+
+    const touchEvent = makeTouchEvent(100);
+
+    // Access props from the rendered element
+    const props = scrollComponent.props;
+
+    act(() => {
+      props.onTouchStart!(touchEvent);
+      props.onTouchMove!(touchEvent);
+      props.onTouchEnd!(touchEvent);
+      props.onTouchCancel!(touchEvent);
+      props.onTouchStartCapture!(touchEvent);
+      props.onTouchMoveCapture!(touchEvent);
+      props.onTouchEndCapture!(touchEvent);
+      props.onTouchCancelCapture!(touchEvent);
+    });
+
+    expect(mockOriginalTouchStart).toHaveBeenCalledWith(touchEvent);
+    expect(mockOriginalTouchMove).toHaveBeenCalledWith(touchEvent);
+    expect(mockOriginalTouchEnd).toHaveBeenCalledWith(touchEvent);
+    expect(mockOriginalTouchCancel).toHaveBeenCalledWith(touchEvent);
+    expect(mockOriginalStartCapture).toHaveBeenCalledWith(touchEvent);
+    expect(mockOriginalMoveCapture).toHaveBeenCalledWith(touchEvent);
+    expect(mockOriginalEndCapture).toHaveBeenCalledWith(touchEvent);
+    expect(mockOriginalCancelCapture).toHaveBeenCalledWith(touchEvent);
+  });
+
+  it('handlePullScroll freezes scrollOffsetY when isPulling is true on Android', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    // Set scroll to top
+    act(() => {
+      result.current.handlePullScroll(makeScrollEvent(0));
+    });
+
+    // Start pulling
+    act(() => {
+      result.current.androidPullProps.onTouchStart!(makeTouchEvent(100));
+    });
+
+    // While pulling, scroll events should be ignored (frozen scrollOffsetY)
+    act(() => {
+      result.current.handlePullScroll(makeScrollEvent(50));
+    });
+
+    // Touch move should still track pull since scrollOffsetY is frozen at 0
+    act(() => {
+      result.current.androidPullProps.onTouchMove!(makeTouchEvent(200));
+    });
+    expect(result.current.pullDistance.value).toBe(50); // (200-100)*0.5 = 50
+  });
+
+  it('handleTouchStart does not activate on iOS', () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'ios';
+
+    const { result } = renderHook(() => usePullToRefresh(jest.fn(), false));
+    const touchEvent = makeTouchEvent(100);
+
+    // Direct handler call: should be a no-op on iOS
+    act(() => {
+      result.current.androidPullProps.onTouchStart?.(touchEvent);
+      result.current.androidPullProps.onTouchMove?.(touchEvent);
+      result.current.androidPullProps.onTouchEnd?.();
+      result.current.androidPullProps.onTouchCancel?.();
+    });
+    expect(result.current.pullDistance.value).toBe(0);
+
+    (Platform as unknown as { OS: string }).OS = originalOS;
+  });
+
+  it('handleTouchEnd is a no-op when not pulling', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    // Don't start a pull, just call end
+    act(() => {
+      result.current.androidPullProps.onTouchEnd!();
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(result.current.pullDistance.value).toBe(0);
+  });
+
+  it('handleTouchCancel is a no-op on iOS', () => {
+    const originalOS = Platform.OS;
+    (Platform as unknown as { OS: string }).OS = 'ios';
+
+    const { result } = renderHook(() => usePullToRefresh(jest.fn(), false));
+    act(() => {
+      result.current.androidPullProps.onTouchCancel?.();
+    });
+    expect(result.current.pullDistance.value).toBe(0);
+
+    (Platform as unknown as { OS: string }).OS = originalOS;
+  });
+
+  it('hideRefreshIndicator keeps spinner if React refreshing is still active', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, true));
+
+    act(() => {
+      result.current.showRefreshIndicator();
+    });
+    expect(result.current.isRefreshing.value).toBe(true);
+
+    // hideRefreshIndicator should NOT dismiss because refreshing prop is true
+    act(() => {
+      result.current.hideRefreshIndicator();
+    });
+    expect(result.current.isRefreshing.value).toBe(true);
+  });
+
+  it('handleTouchMove is a no-op when not pulling', () => {
+    const { result } = renderHook(() => usePullToRefresh(jest.fn(), false));
+
+    act(() => {
+      result.current.androidPullProps.onTouchMove!(makeTouchEvent(200));
+    });
+    expect(result.current.pullDistance.value).toBe(0);
+  });
+
+  it('handleTouchEnd does not trigger refresh when already refreshing', () => {
+    const onRefresh = jest.fn();
+    const { result } = renderHook(() => usePullToRefresh(onRefresh, false));
+
+    // Set up a pull that exceeds threshold
+    act(() => {
+      result.current.handlePullScroll(makeScrollEvent(0));
+      result.current.androidPullProps.onTouchStart!(makeTouchEvent(100));
+      result.current.androidPullProps.onTouchMove!(makeTouchEvent(300)); // 200 * 0.5 = 100 > 70
+    });
+
+    // Now trigger the end which fires refresh
+    act(() => {
+      result.current.androidPullProps.onTouchEnd!();
+    });
+    expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('useEffect preserves isRefreshing when isForcedRefreshing is active and refreshing becomes false', () => {
+    const onRefresh = jest.fn();
+    const { result, rerender } = renderHook(
+      ({ refreshing }: { refreshing: boolean }) => usePullToRefresh(onRefresh, refreshing),
+      { initialProps: { refreshing: true } },
+    );
+
+    // Activate forced refreshing while refreshing prop is true
+    act(() => {
+      result.current.showRefreshIndicator();
+    });
+    expect(result.current.isRefreshing.value).toBe(true);
+
+    // Now refreshing becomes false — but isForcedRefreshing is still true
+    // so isRefreshing should NOT be reset (line 59 branch: isForcedRefreshing.current = true)
+    rerender({ refreshing: false });
+    expect(result.current.isRefreshing.value).toBe(true);
+  });
 });

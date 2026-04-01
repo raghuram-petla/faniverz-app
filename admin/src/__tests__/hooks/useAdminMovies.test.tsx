@@ -5,10 +5,12 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
 const mockGetSession = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     auth: { getSession: () => mockGetSession() },
   },
 }));
@@ -96,9 +98,14 @@ describe('useAdminMovies', () => {
     expect(result.current.data?.pages.flat()).toEqual(mockMovies);
   });
 
-  it('applies search filter via ilike', async () => {
-    const mockIlike = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockRange = vi.fn().mockReturnValue({ ilike: mockIlike });
+  it('applies search filter via search_movies RPC', async () => {
+    // RPC returns matching movie IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'm1' }], error: null });
+
+    const mockIn = vi
+      .fn()
+      .mockResolvedValue({ data: [{ id: 'm1', title: 'Test Movie' }], error: null });
+    const mockRange = vi.fn().mockReturnValue({ in: mockIn });
 
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -112,9 +119,13 @@ describe('useAdminMovies', () => {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockIlike).toHaveBeenCalledWith('title', '%test%');
+    expect(mockRpc).toHaveBeenCalledWith('search_movies', {
+      search_term: 'test',
+      result_limit: 1000,
+      result_offset: 0,
+    });
   });
 
   it('applies in_theaters status filter via eq', async () => {
@@ -448,11 +459,14 @@ describe('useAdminMovies - search enabled logic', () => {
   });
 
   it('is enabled when search is 2+ characters', async () => {
-    const mockIlike = vi.fn().mockResolvedValue({ data: [], error: null });
+    // RPC returns matching movie IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'm1' }], error: null });
+
+    const mockIn = vi.fn().mockResolvedValue({ data: [{ id: 'm1' }], error: null });
     mockFrom.mockReturnValue({
       select: vi.fn().mockReturnValue({
         order: vi.fn().mockReturnValue({
-          range: vi.fn().mockReturnValue({ ilike: mockIlike }),
+          range: vi.fn().mockReturnValue({ in: mockIn }),
         }),
       }),
     });
@@ -664,6 +678,35 @@ describe('useAllMovies', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 
+  it('throws when PH-scoped movies query errors (line 248)', async () => {
+    const phJunctions = [{ movie_id: 'm1' }];
+
+    mockFrom.mockImplementation((table: string) => {
+      if (table === 'movie_production_houses') {
+        return {
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({ data: phJunctions, error: null }),
+          }),
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockReturnValue({
+            order: vi
+              .fn()
+              .mockResolvedValue({ data: null, error: new Error('PH movie fetch error') }),
+          }),
+        }),
+      };
+    });
+
+    const { result } = renderHook(() => useAllMovies(['ph-1']), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
   it('throws when PH junction query errors', async () => {
     mockFrom.mockImplementation((table: string) => {
       if (table === 'movie_production_houses') {
@@ -766,6 +809,28 @@ describe('useAdminMovies — platform filter', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockFrom).toHaveBeenCalledWith('movie_platforms');
+  });
+});
+
+describe('useAdminMovies — search RPC error', () => {
+  it('search_movies RPC error throws in its own useQuery', async () => {
+    // When RPC errors, the search IDs query throws, which keeps the infinite query disabled
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'Search RPC failed' } });
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        order: vi.fn().mockReturnValue({
+          range: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }),
+      }),
+    });
+
+    const { result } = renderHook(() => useAdminMovies('test search'), {
+      wrapper: createWrapper(),
+    });
+
+    // The infinite query stays idle because searchIdsReady never becomes true
+    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'));
   });
 });
 
@@ -957,30 +1022,42 @@ describe('useAdminMovies — minRating filter', () => {
 describe('useAdminMovies — excludeIds (released filter)', () => {
   it('applies excludeIds via .not for released status filter', async () => {
     const platformIds = [{ movie_id: 'm1' }];
-    const mockNot = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockEq = vi.fn().mockReturnValue({ not: mockNot });
-    const mockLte = vi.fn().mockReturnValue({ eq: mockEq });
-    const mockNotRD = vi.fn().mockReturnValue({ lte: mockLte });
-    const mockRange = vi.fn().mockReturnValue({ not: mockNotRD });
 
+    // Track .not calls via a spy
+    const notCalls: unknown[][] = [];
     mockFrom.mockImplementation((table: string) => {
       if (table === 'movie_platforms') {
         return {
           select: vi.fn().mockResolvedValue({ data: platformIds, error: null }),
         };
       }
-      return {
-        select: vi.fn().mockReturnValue({
-          order: vi.fn().mockReturnValue({ range: mockRange }),
-        }),
-      };
+      // Proxy-based chain that tracks .not calls
+      const result = { data: [{ id: 'm2' }], error: null };
+      const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+      const self = new Proxy(chain, {
+        get(target, prop) {
+          if (prop === 'then') return (resolve: (v: unknown) => void) => resolve(result);
+          if (prop === 'catch') return () => self;
+          if (!target[prop as string]) {
+            target[prop as string] = vi.fn((...args: unknown[]) => {
+              if (prop === 'not') notCalls.push(args);
+              return self;
+            });
+          }
+          return target[prop as string];
+        },
+      });
+      return { select: vi.fn().mockReturnValue({ order: vi.fn().mockReturnValue(self) }) };
     });
 
     const { result } = renderHook(() => useAdminMovies('', 'released'), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // The released filter should have called .not('id', 'in', '(m1)') to exclude streaming movies
+    expect(notCalls.length).toBeGreaterThan(0);
+    expect(notCalls.some((c) => c[0] === 'id' && c[1] === 'in')).toBe(true);
   });
 });
 

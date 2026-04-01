@@ -5,10 +5,12 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
 const mockGetSession = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     auth: { getSession: () => mockGetSession() },
   },
 }));
@@ -86,6 +88,7 @@ function buildChain(data: unknown[] | null = [], error: { message: string } | nu
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockRpc.mockReset();
   mockGetSession.mockResolvedValue({
     data: { session: { access_token: 'test-token' } },
   });
@@ -179,7 +182,9 @@ describe('useAdminReviews', () => {
     expect(chain.eq).toBeUndefined();
   });
 
-  it('applies .or filter when search is provided', async () => {
+  it('calls search_reviews RPC and applies .in filter when search is provided', async () => {
+    // RPC returns matching review IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'rev-1' }], error: null });
     const { self, chain } = buildChain(mockReviews);
     mockFrom.mockReturnValue(self);
 
@@ -189,11 +194,15 @@ describe('useAdminReviews', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(chain.or).toHaveBeenCalledWith('title.ilike.%Pushpa%,body.ilike.%Pushpa%');
+    expect(mockRpc).toHaveBeenCalledWith('search_reviews', {
+      search_term: 'Pushpa',
+      result_limit: 200,
+    });
+    expect(chain.in).toHaveBeenCalledWith('id', ['rev-1']);
   });
 
-  it('does not apply .or when search is empty', async () => {
-    const { self, chain } = buildChain(mockReviews);
+  it('does not call RPC when search is empty', async () => {
+    const { self } = buildChain(mockReviews);
     mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminReviews(''), {
@@ -202,8 +211,7 @@ describe('useAdminReviews', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // chain.or is undefined when never accessed (Proxy creates lazily)
-    expect(chain.or).toBeUndefined();
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
   it('filters client-side by movie title when searching', async () => {
@@ -223,6 +231,8 @@ describe('useAdminReviews', () => {
         profile: { id: 'usr-2', display_name: 'Other', email: 'c@d.com' },
       },
     ];
+    // RPC returns both review IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'rev-1' }, { id: 'rev-2' }], error: null });
     const { self } = buildChain(reviews);
     mockFrom.mockReturnValue(self);
 
@@ -254,6 +264,8 @@ describe('useAdminReviews', () => {
         profile: { id: 'usr-2', display_name: 'Other', email: 'c@d.com' },
       },
     ];
+    // RPC returns both review IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'rev-1' }, { id: 'rev-2' }], error: null });
     const { self } = buildChain(reviews);
     mockFrom.mockReturnValue(self);
 
@@ -280,6 +292,8 @@ describe('useAdminReviews', () => {
   });
 
   it('includes search and ratingFilter in query key', async () => {
+    // RPC returns matching review IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'rev-1' }, { id: 'rev-2' }], error: null });
     const { self } = buildChain(mockReviews);
     mockFrom.mockReturnValue(self);
 
@@ -446,9 +460,11 @@ describe('useUpdateReview', () => {
   });
 });
 
-describe('useAdminReviews — sanitizeSearchTerm', () => {
-  it('strips special characters from search term', async () => {
-    const { self, chain } = buildChain(mockReviews);
+describe('useAdminReviews — RPC search', () => {
+  it('passes search term directly to RPC (no client-side sanitization)', async () => {
+    // RPC returns matching review IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'rev-1' }], error: null });
+    const { self } = buildChain(mockReviews);
     mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminReviews('test(with"special)'), {
@@ -457,14 +473,16 @@ describe('useAdminReviews — sanitizeSearchTerm', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // The sanitized term should have special chars removed
-    expect(chain.or).toHaveBeenCalledWith(
-      'title.ilike.%testwithspecial%,body.ilike.%testwithspecial%',
-    );
+    expect(mockRpc).toHaveBeenCalledWith('search_reviews', {
+      search_term: 'test(with"special)',
+      result_limit: 200,
+    });
   });
 
-  it('does not apply .or filter when search sanitizes to empty string', async () => {
-    const { self, chain } = buildChain(mockReviews);
+  it('returns empty array when RPC returns no matching IDs', async () => {
+    // RPC returns empty
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    const { self } = buildChain(mockReviews);
     mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminReviews('()'), {
@@ -473,8 +491,65 @@ describe('useAdminReviews — sanitizeSearchTerm', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // Sanitized '()' becomes empty string — no .or call
-    expect(chain.or).toBeUndefined();
+    // When RPC returns empty, queryFn returns [] early
+    expect(result.current.data).toEqual([]);
+  });
+
+  it('throws when search_reviews RPC returns an error', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'RPC failed' } });
+    const { self } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('failing search'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('handles null data from search_reviews RPC', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    const { self } = buildChain(mockReviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('empty search'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // null data falls back to [], which means matchIds = [], returns early with []
+    expect(result.current.data).toEqual([]);
+  });
+
+  it('filters client-side by title text when searching', async () => {
+    const reviews = [
+      {
+        ...mockReviews[0],
+        title: 'Great Movie Review',
+        body: null,
+        movie: { id: 'mov-1', title: 'Movie A', poster_url: null },
+        profile: { id: 'usr-1', display_name: 'Someone', email: 'a@b.com' },
+      },
+      {
+        ...mockReviews[1],
+        title: null,
+        body: null,
+        movie: { id: 'mov-2', title: 'Movie B', poster_url: null },
+        profile: { id: 'usr-2', display_name: 'Other', email: 'c@d.com' },
+      },
+    ];
+    mockRpc.mockResolvedValue({ data: [{ id: 'rev-1' }, { id: 'rev-2' }], error: null });
+    const { self } = buildChain(reviews);
+    mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminReviews('Great Movie'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toHaveLength(1);
+    expect(result.current.data![0].title).toBe('Great Movie Review');
   });
 
   it('filters client-side by body text when searching', async () => {
@@ -494,6 +569,8 @@ describe('useAdminReviews — sanitizeSearchTerm', () => {
         profile: { id: 'usr-2', display_name: 'Other', email: 'c@d.com' },
       },
     ];
+    // RPC returns both review IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'rev-1' }, { id: 'rev-2' }], error: null });
     const { self } = buildChain(reviews);
     mockFrom.mockReturnValue(self);
 

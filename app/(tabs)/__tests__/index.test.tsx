@@ -1018,4 +1018,80 @@ describe('FeedScreen', () => {
     expect(refreshIndicator).toBeTruthy();
     expect(refreshIndicator.props.topGap).toBeUndefined();
   });
+
+  it('programmatic refresh finally handler clears timeout and resets state', async () => {
+    jest.useFakeTimers();
+
+    const mockRefetch = jest.fn().mockResolvedValue({});
+    setupMocks({ feed: { refetch: mockRefetch } });
+    render(<FeedScreen />);
+
+    // Trigger programmatic refresh via tab press at top
+    await act(async () => {
+      mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
+    });
+
+    // Advance timers to fire the setTimeout in the finally handler
+    await act(async () => {
+      jest.runAllTimers();
+    });
+
+    // After timer fires, showProgrammaticRefreshIndicator should be false
+    // Verify by checking that the spinner is gone
+    expect(screen.queryByTestId('refresh-spinner')).toBeNull();
+
+    jest.useRealTimers();
+  });
+
+  it('programmatic refresh does not trigger when already refreshing', async () => {
+    const mockRefetch = jest.fn().mockResolvedValue({});
+    setupMocks({ feed: { refetch: mockRefetch } });
+    render(<FeedScreen />);
+
+    // First trigger
+    await act(async () => {
+      mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
+    });
+
+    // Second trigger while still refreshing — should be a no-op
+    await act(async () => {
+      mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
+    });
+
+    // refetch should only be called once (from initial render setup) + once from first trigger
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('programmatic refresh clears existing timeout before setting new one', async () => {
+    jest.useFakeTimers();
+
+    let resolveRefetch: (() => void) | undefined;
+    const mockRefetch = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRefetch = resolve;
+        }),
+    );
+    setupMocks({ feed: { refetch: mockRefetch } });
+    render(<FeedScreen />);
+
+    // Trigger programmatic refresh
+    await act(async () => {
+      mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
+    });
+
+    // Resolve the refetch, which triggers the finally handler with setTimeout
+    await act(async () => {
+      resolveRefetch?.();
+    });
+
+    // Run all timers to clear the timeout
+    await act(async () => {
+      jest.runAllTimers();
+    });
+
+    expect(screen.queryByTestId('refresh-spinner')).toBeNull();
+
+    jest.useRealTimers();
+  });
 });

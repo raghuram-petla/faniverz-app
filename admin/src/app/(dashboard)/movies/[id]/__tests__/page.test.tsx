@@ -6,10 +6,11 @@ import React from 'react';
 const mockRouterBack = vi.fn();
 const mockUseParams = vi.fn(() => ({ id: 'movie-123' }));
 
+const mockSearchParams = vi.fn(() => new URLSearchParams());
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ back: mockRouterBack }),
   useParams: () => mockUseParams(),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockSearchParams(),
 }));
 
 const mockHandleSubmit = vi.fn();
@@ -68,37 +69,50 @@ const defaultEditState = {
   visibleProductionHouses: [],
   visibleCast: [],
   visibleRuns: [],
-  setPendingPosterAdds: vi.fn(),
+  setPendingPosterAdds: vi.fn((fn: unknown) => {
+    if (typeof fn === 'function') (fn as (p: unknown[]) => unknown)([]);
+  }),
   handlePosterRemove: vi.fn(),
   handleSelectMainPoster: vi.fn(),
   handleSelectMainBackdrop: vi.fn(),
   savedMainPosterId: null as null | string,
-  setPendingVideoAdds: vi.fn(),
+  setPendingVideoAdds: vi.fn((fn: unknown) => {
+    if (typeof fn === 'function') (fn as (p: unknown[]) => unknown)([]);
+  }),
   handleVideoRemove: vi.fn(),
   pendingVideoIds: new Set<string>(),
   phSearchResults: [],
   phSearchQuery: '',
   setPHSearchQuery: vi.fn(),
-  setPendingPHAdds: vi.fn(),
+  setPendingPHAdds: vi.fn((fn: unknown) => {
+    if (typeof fn === 'function') (fn as (p: unknown[]) => unknown)([]);
+  }),
   handlePHRemove: vi.fn(),
   pendingPHAdds: [],
   createProductionHouse: { mutateAsync: vi.fn(), isPending: false },
   actors: [],
   castSearchQuery: '',
   setCastSearchQuery: vi.fn(),
-  setPendingCastAdds: vi.fn(),
+  setPendingCastAdds: vi.fn((fn: unknown) => {
+    if (typeof fn === 'function') (fn as (p: unknown[]) => unknown)([]);
+  }),
   handleCastRemove: vi.fn(),
   setLocalCastOrder: vi.fn(),
   pendingCastIds: new Set<string>(),
-  setPendingRunAdds: vi.fn(),
+  setPendingRunAdds: vi.fn((fn: unknown) => {
+    if (typeof fn === 'function') (fn as (p: unknown[]) => unknown)([]);
+  }),
   handleRunRemove: vi.fn(),
   handleRunEnd: vi.fn(),
   pendingRunEndIds: new Map<string, string>(),
   pendingRunIds: new Set<string>(),
   visibleAvailability: [],
   pendingAvailabilityIds: new Set<string>(),
-  setPendingAvailabilityAdds: vi.fn(),
+  setPendingAvailabilityAdds: vi.fn((fn: unknown) => {
+    if (typeof fn === 'function') (fn as (p: unknown[]) => unknown)([]);
+  }),
   handleAvailabilityRemove: vi.fn(),
+  patchFormFields: vi.fn(),
   changesParams: {},
 };
 
@@ -121,10 +135,21 @@ vi.mock('@/hooks/useMovieEditChanges', () => ({
 }));
 
 vi.mock('@/components/common/FormChangesDock', () => ({
-  FormChangesDock: ({ changeCount, saveStatus }: { changeCount: number; saveStatus: string }) => (
+  FormChangesDock: ({
+    changeCount,
+    saveStatus,
+    onSave,
+  }: {
+    changeCount: number;
+    saveStatus: string;
+    onSave?: () => void;
+  }) => (
     <div data-testid="form-changes-dock">
       <span data-testid="change-count">{changeCount}</span>
       <span data-testid="save-status">{saveStatus}</span>
+      <button data-testid="dock-save-btn" onClick={onSave}>
+        Save
+      </button>
     </div>
   ),
 }));
@@ -165,8 +190,41 @@ vi.mock('@/components/movie-edit', () => ({
     <div data-testid="basic-info-section">BasicInfo: {form.title || '(empty)'}</div>
   ),
   TmdbMetadataSection: () => <div data-testid="tmdb-metadata-section">TMDB Metadata</div>,
-  VideosSection: () => <div data-testid="videos-section">Videos</div>,
-  PostersSection: () => <div data-testid="posters-section">Posters</div>,
+  VideosSection: ({
+    onAdd,
+    onCloseAddForm,
+  }: {
+    onAdd?: (v: Record<string, unknown>) => void;
+    onCloseAddForm?: () => void;
+  }) => (
+    <div data-testid="videos-section">
+      <button data-testid="video-add-btn" onClick={() => onAdd?.({ url: 'test' })}>
+        Add Video
+      </button>
+      <button data-testid="video-close-btn" onClick={onCloseAddForm}>
+        Close
+      </button>
+    </div>
+  ),
+  PostersSection: ({
+    onAdd,
+    onPendingMainChange,
+  }: {
+    onAdd?: (p: Record<string, unknown>) => void;
+    onPendingMainChange?: (url: string | null) => void;
+  }) => (
+    <div data-testid="posters-section">
+      <button data-testid="poster-add-btn" onClick={() => onAdd?.({ url: 'poster.jpg' })}>
+        Add Poster
+      </button>
+      <button
+        data-testid="poster-preview-btn"
+        onClick={() => onPendingMainChange?.('https://preview.jpg')}
+      >
+        Preview
+      </button>
+    </div>
+  ),
   PlatformsSection: ({
     onAdd,
   }: {
@@ -179,9 +237,46 @@ vi.mock('@/components/movie-edit', () => ({
       </button>
     </div>
   ),
-  ProductionHousesSection: () => <div data-testid="ph-section">Production Houses</div>,
-  CastSection: () => <div data-testid="cast-section">Cast</div>,
-  TheatricalRunsSection: () => <div data-testid="runs-section">Runs</div>,
+  ProductionHousesSection: ({
+    onAdd,
+    onQuickAdd,
+  }: {
+    onAdd?: (ph: Record<string, unknown>) => void;
+    onQuickAdd?: (name: string) => void;
+  }) => (
+    <div data-testid="ph-section">
+      <button data-testid="ph-add-btn" onClick={() => onAdd?.({ production_house_id: 'ph1' })}>
+        Add PH
+      </button>
+      <button data-testid="ph-quickadd-btn" onClick={() => onQuickAdd?.('New PH')}>
+        Quick Add
+      </button>
+    </div>
+  ),
+  CastSection: ({
+    onAdd,
+    onReorder,
+  }: {
+    onAdd?: (c: Record<string, unknown>) => void;
+    onReorder?: (order: string[]) => void;
+  }) => (
+    <div data-testid="cast-section">
+      <button data-testid="cast-add-btn" onClick={() => onAdd?.({ actor_id: 'a1' })}>
+        Add Cast
+      </button>
+      <button data-testid="cast-reorder-btn" onClick={() => onReorder?.(['a1', 'a2'])}>
+        Reorder
+      </button>
+    </div>
+  ),
+  TheatricalRunsSection: ({ onAdd }: { onAdd?: (r: Record<string, unknown>) => void }) => (
+    <div data-testid="runs-section">
+      <button data-testid="run-add-btn" onClick={() => onAdd?.({ region: 'US' })}>
+        Add Run
+      </button>
+    </div>
+  ),
+  SyncSection: () => <div data-testid="sync-section">Sync</div>,
   SectionNav: ({
     activeSection,
     onSectionChange,
@@ -190,7 +285,7 @@ vi.mock('@/components/movie-edit', () => ({
     onSectionChange: (s: string) => void;
   }) => (
     <nav data-testid="section-nav">
-      {['basic-info', 'posters', 'videos', 'cast-crew', 'releases'].map((s) => (
+      {['basic-info', 'posters', 'videos', 'cast-crew', 'releases', 'tmdb-sync'].map((s) => (
         <button key={s} onClick={() => onSectionChange(s)} data-testid={`nav-${s}`}>
           {s}
         </button>
@@ -351,6 +446,62 @@ describe('EditMoviePage', () => {
     expect(mockSetAdds).toHaveBeenCalled();
   });
 
+  it('hides add button when add form is already open for that key', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-videos'));
+    // Click the Add button to open the form
+    const addBtn = screen.queryAllByRole('button').find((b) => b.textContent === 'Add');
+    expect(addBtn).toBeDefined();
+    fireEvent.click(addBtn!);
+    // Now the add form is "open" for videos, so addButton('videos') should return undefined
+    // The SectionCard action slot should not contain an Add button
+    const addButtons = screen.queryAllByRole('button').filter((b) => b.textContent === 'Add');
+    // After opening, the add button should be gone for videos
+    expect(addButtons.length).toBe(0);
+  });
+
+  it('renders tmdb-sync section when navigated and movie has tmdb_id', () => {
+    defaultEditState.movie = { tmdb_id: '12345' };
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-tmdb-sync'));
+    expect(screen.getByTestId('sync-section')).toBeInTheDocument();
+  });
+
+  it('does not render tmdb-sync section when movie has no tmdb_id', () => {
+    defaultEditState.movie = null;
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-tmdb-sync'));
+    expect(screen.queryByTestId('sync-section')).not.toBeInTheDocument();
+  });
+
+  it('uses backdrop bucket type for preview when poster has backdrop image_type', () => {
+    defaultEditState.visiblePosters = [
+      {
+        id: 'p1',
+        image_url: 'https://img.test/backdrop.jpg',
+        image_type: 'backdrop',
+        created_at: '2024-01-01',
+      },
+    ];
+    defaultEditState.form.backdrop_url = 'https://img.test/backdrop.jpg';
+    render(<EditMoviePage />);
+    expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
+  });
+
+  it('uses poster bucket type for preview when poster has poster image_type', () => {
+    defaultEditState.visiblePosters = [
+      {
+        id: 'p1',
+        image_url: 'https://img.test/poster.jpg',
+        image_type: 'poster',
+        created_at: '2024-01-01',
+      },
+    ];
+    defaultEditState.form.poster_url = 'https://img.test/poster.jpg';
+    render(<EditMoviePage />);
+    expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
+  });
+
   it('applies opacity class in read-only mode', () => {
     mockUsePermissions.mockReturnValue({ isReadOnly: true, canDeleteTopLevel: () => false });
     const { container } = render(<EditMoviePage />);
@@ -364,5 +515,120 @@ describe('EditMoviePage', () => {
     fireEvent.click(screen.getByTestId('nav-videos'));
     const addButtons = screen.queryAllByRole('button').filter((b) => b.textContent === 'Add');
     expect(addButtons.length).toBeGreaterThan(0);
+  });
+
+  it('calls handleSubmit via dock save button', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('dock-save-btn'));
+    expect(mockHandleSubmit).toHaveBeenCalled();
+  });
+
+  it('invokes poster onAdd callback', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-posters'));
+    fireEvent.click(screen.getByTestId('poster-add-btn'));
+    expect(defaultEditState.setPendingPosterAdds).toHaveBeenCalled();
+  });
+
+  it('invokes poster onPendingMainChange callback for preview', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-posters'));
+    fireEvent.click(screen.getByTestId('poster-preview-btn'));
+    // Preview panel should show the pending preview URL
+    expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
+  });
+
+  it('invokes video onAdd callback', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-videos'));
+    fireEvent.click(screen.getByTestId('video-add-btn'));
+    expect(defaultEditState.setPendingVideoAdds).toHaveBeenCalled();
+  });
+
+  it('invokes PH onAdd callback', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-cast-crew'));
+    fireEvent.click(screen.getByTestId('ph-add-btn'));
+    expect(defaultEditState.setPendingPHAdds).toHaveBeenCalled();
+  });
+
+  it('invokes PH onQuickAdd callback', async () => {
+    defaultEditState.createProductionHouse.mutateAsync = vi
+      .fn()
+      .mockResolvedValue({ id: 'new-ph', name: 'New PH' });
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-cast-crew'));
+    fireEvent.click(screen.getByTestId('ph-quickadd-btn'));
+    // Should call mutateAsync
+    expect(defaultEditState.createProductionHouse.mutateAsync).toHaveBeenCalled();
+  });
+
+  it('invokes cast onAdd callback', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-cast-crew'));
+    fireEvent.click(screen.getByTestId('cast-add-btn'));
+    expect(defaultEditState.setPendingCastAdds).toHaveBeenCalled();
+  });
+
+  it('invokes cast onReorder callback', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-cast-crew'));
+    fireEvent.click(screen.getByTestId('cast-reorder-btn'));
+    expect(defaultEditState.setLocalCastOrder).toHaveBeenCalledWith(['a1', 'a2']);
+  });
+
+  it('invokes run onAdd callback', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-releases'));
+    fireEvent.click(screen.getByTestId('run-add-btn'));
+    expect(defaultEditState.setPendingRunAdds).toHaveBeenCalled();
+  });
+
+  it('uses tab query param to set initial active section', () => {
+    mockSearchParams.mockReturnValue(new URLSearchParams('tab=posters'));
+    render(<EditMoviePage />);
+    expect(screen.getByTestId('active-section')).toHaveTextContent('posters');
+    mockSearchParams.mockReturnValue(new URLSearchParams());
+  });
+
+  it('falls back to basic-info for invalid tab query param', () => {
+    mockSearchParams.mockReturnValue(new URLSearchParams('tab=invalid-tab'));
+    render(<EditMoviePage />);
+    expect(screen.getByTestId('active-section')).toHaveTextContent('basic-info');
+    mockSearchParams.mockReturnValue(new URLSearchParams());
+  });
+
+  it('closeAdd resets addFormOpen to null', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-videos'));
+    // Open add form
+    const addBtn = screen.queryAllByRole('button').find((b) => b.textContent === 'Add');
+    if (addBtn) fireEvent.click(addBtn);
+    // Close it
+    fireEvent.click(screen.getByTestId('video-close-btn'));
+    // After closing, the Add button should reappear
+    const addBtnsAfter = screen.queryAllByRole('button').filter((b) => b.textContent === 'Add');
+    expect(addBtnsAfter.length).toBeGreaterThan(0);
+  });
+
+  it('getBucketForUrl returns fallback when image type is not poster or backdrop', () => {
+    defaultEditState.visiblePosters = [
+      {
+        id: 'p1',
+        image_url: 'https://img.test/unknown.jpg',
+        image_type: 'still',
+        created_at: '2024-01-01',
+      },
+    ];
+    defaultEditState.form.poster_url = 'https://img.test/unknown.jpg';
+    render(<EditMoviePage />);
+    expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
+  });
+
+  it('getBucketForUrl returns fallback when no matching image found', () => {
+    defaultEditState.visiblePosters = [];
+    defaultEditState.form.poster_url = 'https://img.test/nonexistent.jpg';
+    render(<EditMoviePage />);
+    expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
   });
 });

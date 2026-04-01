@@ -152,6 +152,22 @@ describe('searchActorsPaginated', () => {
     mockRpc.mockResolvedValue({ data: null, error: new Error('actors error') });
     await expect(searchActorsPaginated('ram', 0, 10)).rejects.toThrow('actors error');
   });
+
+  it('returns empty array when data is null', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    const result = await searchActorsPaginated('xyz', 0, 10);
+    expect(result).toEqual([]);
+  });
+
+  it('passes correct offset and limit', async () => {
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    await searchActorsPaginated('test', 20, 5);
+    expect(mockRpc).toHaveBeenCalledWith('search_actors', {
+      search_term: 'test',
+      result_limit: 5,
+      result_offset: 20,
+    });
+  });
 });
 
 describe('searchProductionHousesPaginated', () => {
@@ -182,5 +198,21 @@ describe('searchProductionHousesPaginated', () => {
   it('throws when RPC returns an error', async () => {
     mockRpc.mockResolvedValue({ data: null, error: new Error('houses error') });
     await expect(searchProductionHousesPaginated('mythri', 0, 10)).rejects.toThrow('houses error');
+  });
+
+  it('uses default limit of 10', async () => {
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    await searchProductionHousesPaginated('test', 0);
+    expect(mockRpc).toHaveBeenCalledWith('search_production_houses', {
+      search_term: 'test',
+      result_limit: 10,
+      result_offset: 0,
+    });
+  });
+
+  it('returns empty array when data is null', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    const result = await searchProductionHousesPaginated('xyz', 0, 10);
+    expect(result).toEqual([]);
   });
 });

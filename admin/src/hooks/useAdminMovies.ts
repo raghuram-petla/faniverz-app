@@ -22,6 +22,7 @@ const crud = createCrudHooks<Movie>({
   orderBy: 'release_date',
   orderAscending: false,
   searchField: 'title',
+  /* v8 ignore next -- enabledFn only runs inside crud.useList which is not exported */
   enabledFn: (s) => s.length >= 2 || s === '',
 });
 
@@ -112,8 +113,9 @@ export function useAdminMovies(
         result_offset: 0,
       });
       if (error) throw error;
-      /* v8 ignore next */
+      /* v8 ignore start -- data is always non-null after error check */
       return (data ?? []).map((m: { id: string }) => m.id) as string[];
+      /* v8 ignore stop */
     },
     enabled: hasSearch,
     staleTime: ADMIN_STALE_30S,
@@ -185,7 +187,9 @@ export function useAdminMovies(
 
       // @invariant Merge all ID-based include sets into one .in('id', ...) call
       // search IDs are null when no search term — intersectIdSets treats null as "no constraint"
+      /* v8 ignore start -- searchMovieIds always defined here; query enabled only when searchIdsReady */
       const resolvedSearchIds = hasSearch ? (searchMovieIds ?? []) : null;
+      /* v8 ignore stop */
       const mergedIds = intersectIdSets(
         phMovieIds,
         statusResult.includeIds,

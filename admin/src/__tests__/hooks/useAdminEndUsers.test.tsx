@@ -5,10 +5,12 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 
 const mockFrom = vi.fn();
 const mockGetSession = vi.fn();
+const mockRpc = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
     auth: {
       getSession: (...args: unknown[]) => mockGetSession(...args),
     },
@@ -83,6 +85,7 @@ const mockUsers = [
 
 beforeEach(() => {
   mockFrom.mockReset();
+  mockRpc.mockReset();
 });
 
 describe('useAdminEndUsers', () => {
@@ -154,9 +157,21 @@ describe('useAdminEndUsers', () => {
     expect(chain.range).toHaveBeenCalledWith(50, 74);
   });
 
-  it('applies or filter when search is provided', async () => {
-    const { self, chain } = buildChain(mockUsers, null, 2);
-    mockFrom.mockReturnValue(self);
+  it('calls search_profiles RPC and email ILIKE when search is provided', async () => {
+    // RPC returns matching user IDs
+    mockRpc.mockResolvedValue({ data: [{ id: 'usr-1' }], error: null });
+    // Email ILIKE query chain
+    const { self: emailSelf } = buildChain([{ id: 'usr-2' }], null);
+    // Final fetch-by-IDs query chain
+    const { self: fetchSelf } = buildChain(mockUsers, null, 2);
+
+    let fromCallCount = 0;
+    mockFrom.mockImplementation(() => {
+      fromCallCount++;
+      // First call: email ILIKE lookup; second call: fetch by merged IDs
+      if (fromCallCount === 1) return emailSelf;
+      return fetchSelf;
+    });
 
     const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
       wrapper: createWrapper(),
@@ -164,13 +179,15 @@ describe('useAdminEndUsers', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(chain.or).toHaveBeenCalledWith(
-      'display_name.ilike.%john%,username.ilike.%john%,email.ilike.%john%',
-    );
+    expect(mockRpc).toHaveBeenCalledWith('search_profiles', {
+      search_term: 'john',
+      result_limit: 1000,
+      result_offset: 0,
+    });
   });
 
-  it('does not call or filter when search is empty', async () => {
-    const { self, chain } = buildChain(mockUsers, null, 2);
+  it('does not call RPC when search is empty', async () => {
+    const { self } = buildChain(mockUsers, null, 2);
     mockFrom.mockReturnValue(self);
 
     const { result } = renderHook(() => useAdminEndUsers({ search: '', page: 0 }), {
@@ -179,7 +196,7 @@ describe('useAdminEndUsers', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(chain.or).toBeUndefined();
+    expect(mockRpc).not.toHaveBeenCalled();
   });
 
   it('returns users and totalCount', async () => {
@@ -236,9 +253,226 @@ describe('useAdminEndUsers', () => {
     expect(chain.range).toHaveBeenCalledWith(0, 49);
   });
 
-  it('escapes LIKE wildcards in search string', async () => {
-    const { self, chain } = buildChain([], null, 0);
+  it('returns empty when both RPC and email search find no matches', async () => {
+    // RPC returns no results
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    // Email ILIKE returns no results
+    const { self: emailSelf } = buildChain([], null);
+    mockFrom.mockReturnValue(emailSelf);
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'nonexistent', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data?.users).toEqual([]);
+    expect(result.current.data?.totalCount).toBe(0);
+  });
+
+  it('handles RPC rejection gracefully (allSettled)', async () => {
+    // RPC rejects
+    mockRpc.mockRejectedValue(new Error('RPC failed'));
+    // Email ILIKE returns one match
+    const { self: emailSelf } = buildChain([{ id: 'usr-1' }], null);
+    // Final fetch-by-IDs query chain
+    const { self: fetchSelf } = buildChain(mockUsers.slice(0, 1), null, 1);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.users).toHaveLength(1);
+  });
+
+  it('handles email search rejection gracefully (allSettled)', async () => {
+    // RPC returns one match
+    mockRpc.mockResolvedValue({ data: [{ id: 'usr-1' }], error: null });
+    // Email ILIKE rejects (via buildChain with error)
+    const { self: emailSelf } = buildChain(null, { message: 'email search failed' });
+    // Final fetch-by-IDs
+    const { self: fetchSelf } = buildChain(mockUsers.slice(0, 1), null, 1);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.users).toHaveLength(1);
+  });
+
+  it('handles RPC returning error in value (not rejection)', async () => {
+    // RPC resolves but with error
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'RPC error' } });
+    // Email ILIKE returns match
+    const { self: emailSelf } = buildChain([{ id: 'usr-1' }], null);
+    // Final fetch
+    const { self: fetchSelf } = buildChain(mockUsers.slice(0, 1), null, 1);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.users).toHaveLength(1);
+  });
+
+  it('handles search with null count from final query', async () => {
+    // RPC returns match
+    mockRpc.mockResolvedValue({ data: [{ id: 'usr-1' }], error: null });
+    // Email returns no matches
+    const { self: emailSelf } = buildChain([], null);
+    // Final fetch returns null count
+    const { self: fetchSelf } = buildChain(mockUsers.slice(0, 1), null, null);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.totalCount).toBe(0);
+  });
+
+  it('handles null count in non-search path', async () => {
+    const { self } = buildChain(mockUsers, null, null);
     mockFrom.mockReturnValue(self);
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: '', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.totalCount).toBe(0);
+  });
+
+  it('handles null data in search final query', async () => {
+    // RPC returns match
+    mockRpc.mockResolvedValue({ data: [{ id: 'usr-1' }], error: null });
+    // Email returns no matches
+    const { self: emailSelf } = buildChain([], null);
+    // Final fetch returns null data
+    const { self: fetchSelf } = buildChain(null, null, 0);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.users).toEqual([]);
+  });
+
+  it('handles email search returning null data (not error)', async () => {
+    // RPC returns match
+    mockRpc.mockResolvedValue({ data: [{ id: 'usr-1' }], error: null });
+    // Email returns null data (no error) — the ?? [] fallback should kick in
+    const { self: emailSelf } = buildChain(null, null);
+    // Final fetch
+    const { self: fetchSelf } = buildChain(mockUsers.slice(0, 1), null, 1);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.users).toHaveLength(1);
+  });
+
+  it('throws when Phase 2 query returns an error during search', async () => {
+    // RPC returns match
+    mockRpc.mockResolvedValue({ data: [{ id: 'usr-1' }], error: null });
+    // Email returns no matches
+    const { self: emailSelf } = buildChain([], null);
+    // Final fetch returns error
+    const { self: fetchSelf } = buildChain(null, { message: 'Phase 2 error' }, null);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it('handles RPC returning null data (not error)', async () => {
+    // RPC resolves with null data (no error)
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    // Email returns match
+    const { self: emailSelf } = buildChain([{ id: 'usr-1' }], null);
+    // Final fetch
+    const { self: fetchSelf } = buildChain(mockUsers.slice(0, 1), null, 1);
+
+    let callCount = 0;
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return emailSelf;
+      return fetchSelf;
+    });
+
+    const { result } = renderHook(() => useAdminEndUsers({ search: 'john', page: 0 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.users).toHaveLength(1);
+  });
+
+  it('escapes LIKE wildcards in email search string', async () => {
+    // RPC returns no results
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    // Email ILIKE chain — we track the ilike call
+    const { self: emailSelf, chain: emailChain } = buildChain([], null);
+
+    mockFrom.mockReturnValue(emailSelf);
 
     const { result } = renderHook(() => useAdminEndUsers({ search: '50%_off\\test', page: 0 }), {
       wrapper: createWrapper(),
@@ -246,8 +480,8 @@ describe('useAdminEndUsers', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // % _ and \ should be escaped with backslash
-    expect(chain.or).toHaveBeenCalledWith(expect.stringContaining('\\%\\_off\\\\test'));
+    // The email ILIKE should have escaped % _ and \ with backslash
+    expect(emailChain.ilike).toHaveBeenCalledWith('email', '%50\\%\\_off\\\\test%');
   });
 });
 

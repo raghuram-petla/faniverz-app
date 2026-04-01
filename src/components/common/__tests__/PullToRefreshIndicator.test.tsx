@@ -313,4 +313,84 @@ describe('PullToRefreshIndicator', () => {
       expect(result).toBeDefined();
     }
   });
+
+  it('syncRefreshingVisual callback updates showRefreshing state', () => {
+    const { useAnimatedReaction } = require('react-native-reanimated');
+    const mockAnimatedReaction = useAnimatedReaction as jest.Mock;
+
+    // Capture the callback passed to useAnimatedReaction
+    mockAnimatedReaction.mockClear();
+
+    const isRef = makeIsRefreshing(false);
+    const { rerender } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={isRef}
+        refreshing={false}
+      />,
+    );
+
+    // useAnimatedReaction is called with (valueGetter, callback)
+    // The second argument is the callback that calls runOnJS(syncRefreshingVisual)
+    const reactionCalls = mockAnimatedReaction.mock.calls;
+    expect(reactionCalls.length).toBeGreaterThan(0);
+
+    // Get the reaction callback (2nd argument)
+    const reactionCallback = reactionCalls[reactionCalls.length - 1]?.[1];
+    if (reactionCallback) {
+      // Simulate calling the callback with (nextValue, previousValue)
+      // When they differ, it should call syncRefreshingVisual
+      reactionCallback(true, false);
+      // When they are the same, it should skip (early return)
+      reactionCallback(true, true);
+    }
+
+    // Also test the syncRefreshingVisual function when refreshingRef is true
+    rerender(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={isRef}
+        refreshing={true}
+      />,
+    );
+    // This exercises the syncRefreshingVisual(false) path with refreshingRef.current = true
+    const latestReactionCallback =
+      mockAnimatedReaction.mock.calls[mockAnimatedReaction.mock.calls.length - 1]?.[1];
+    if (latestReactionCallback) {
+      latestReactionCallback(false, true);
+    }
+  });
+
+  it('useEffect syncs showRefreshing when refreshing prop changes', () => {
+    const isRef = makeIsRefreshing(false);
+    const { rerender } = render(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={isRef}
+        refreshing={false}
+      />,
+    );
+    // Not refreshing — should show arrow
+    expect(screen.queryByTestId('refresh-spinner')).toBeNull();
+
+    // Change refreshing to true
+    rerender(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={isRef}
+        refreshing={true}
+      />,
+    );
+    expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
+
+    // Change back to false
+    rerender(
+      <PullToRefreshIndicator
+        pullDistance={makePullDistance(0)}
+        isRefreshing={isRef}
+        refreshing={false}
+      />,
+    );
+    expect(screen.queryByTestId('refresh-spinner')).toBeNull();
+  });
 });

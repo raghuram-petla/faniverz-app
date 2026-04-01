@@ -393,4 +393,150 @@ describe('SyncSection', () => {
     renderWithProviders(<SyncSection movie={mockMovie} />);
     expect(capturedDiffPanelProps.isSaving).toBe(true);
   });
+
+  it('builds form patch for title field', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['title'],
+    });
+    const updatedMovie = { ...mockMovie, title: 'New Title' };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['title'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledWith({ title: 'New Title' });
+  });
+
+  it('builds form patch for certification field', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['certification'],
+    });
+    const updatedMovie = { ...mockMovie, certification: 'A' };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['certification'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledWith({ certification: 'A' });
+  });
+
+  it('builds form patch for tagline field', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['tagline'],
+    });
+    const updatedMovie = { ...mockMovie, tagline: 'A great tagline' };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['tagline'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledWith({ tagline: 'A great tagline' });
+  });
+
+  it('builds form patch for release_date field', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['release_date'],
+    });
+    const updatedMovie = { ...mockMovie, release_date: '2026-06-15' };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['release_date'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledWith({ release_date: '2026-06-15' });
+  });
+
+  it('builds form patch for runtime field', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: ['runtime'],
+    });
+    const updatedMovie = { ...mockMovie, runtime: 150 };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(['runtime'], false);
+
+    expect(onFieldsApplied).toHaveBeenCalledWith({ runtime: '150' });
+  });
+
+  it('builds form patch with null fallbacks for missing fields', async () => {
+    mockLookupState.data = { type: 'movie', data: mockTmdbData };
+    const onFieldsApplied = vi.fn();
+    mockFillFieldsMutateAsync.mockResolvedValue({
+      movieId: 'movie-uuid-123',
+      updatedFields: [
+        'title',
+        'synopsis',
+        'genres',
+        'certification',
+        'tagline',
+        'release_date',
+        'runtime',
+        'poster_url',
+        'backdrop_url',
+      ],
+    });
+    const updatedMovie = {
+      ...mockMovie,
+      title: null,
+      synopsis: null,
+      genres: null,
+      certification: null,
+      tagline: null,
+      release_date: null,
+      runtime: null,
+      poster_url: null,
+      backdrop_url: null,
+    };
+    mockApplyTmdbFields.mockReturnValue({ movie: updatedMovie, tmdb: mockTmdbData });
+
+    renderWithProviders(<SyncSection movie={mockMovie} onFieldsApplied={onFieldsApplied} />);
+    await capturedDiffPanelProps.onApply(
+      [
+        'title',
+        'synopsis',
+        'genres',
+        'certification',
+        'tagline',
+        'release_date',
+        'runtime',
+        'poster_url',
+        'backdrop_url',
+      ],
+      false,
+    );
+
+    expect(onFieldsApplied).toHaveBeenCalledWith({
+      title: '',
+      synopsis: '',
+      genres: [],
+      certification: '',
+      tagline: '',
+      release_date: '',
+      runtime: '',
+      poster_url: '',
+      backdrop_url: '',
+    });
+  });
+
+  it('does not render anything when lookup data type is not movie', () => {
+    mockLookupState.data = { type: 'person', data: {} };
+    renderWithProviders(<SyncSection movie={mockMovie} />);
+    expect(screen.queryByTestId('field-diff-panel')).not.toBeInTheDocument();
+  });
 });

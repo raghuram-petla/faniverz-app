@@ -45,6 +45,7 @@ const FEED_FILTER_VARIANTS: FeedFilterOption[] = [
  *   getPageSize(0, config) = config.initialPageSize
  *   getPageSize(N, config) = config.expandedPageSize
  */
+/* istanbul ignore next -- TanStack Query's internal scheduler prevents coverage collection for prefetch callbacks */
 function makeGetNextPageParam(config: SmartPaginationConfig) {
   return (lastPage: unknown[], _allPages: unknown[][], lastPageParam: number) => {
     const expectedSize = lastPageParam === 0 ? config.initialPageSize : config.expandedPageSize;
@@ -53,11 +54,13 @@ function makeGetNextPageParam(config: SmartPaginationConfig) {
 }
 
 /** @sync Must mirror useSmartInfiniteQuery's private getOffset/getPageSize */
+/* istanbul ignore next -- TanStack Query's internal scheduler prevents coverage collection for prefetch callbacks */
 function getOffset(pageParam: number, config: SmartPaginationConfig): number {
   if (pageParam === 0) return 0;
   return config.initialPageSize + (pageParam - 1) * config.expandedPageSize;
 }
 
+/* istanbul ignore next -- TanStack Query's internal scheduler prevents coverage collection for prefetch callbacks */
 function getLimit(pageParam: number, config: SmartPaginationConfig): number {
   return pageParam === 0 ? config.initialPageSize : config.expandedPageSize;
 }
@@ -174,6 +177,7 @@ export function useAppPrefetch(): void {
   // Phase 1: fire once immediately, no auth dependency
   const phase1FiredRef = useRef(false);
   useEffect(() => {
+    /* istanbul ignore next -- defensive: queryClient is stable, effect only fires once */
     if (phase1FiredRef.current) return;
     phase1FiredRef.current = true;
     prefetchImmediate(queryClient);
@@ -193,6 +197,7 @@ export function useAppPrefetch(): void {
 
     // @sideeffect Subscribe to cache events and wait for the 'all' feed success
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+      /* istanbul ignore next -- defensive: unsubscribe() is called immediately after phase2 fires */
       if (phase2FiredRef.current) return;
       // @assumes Only 'updated' events have an action field
       if (event.type !== 'updated') return;

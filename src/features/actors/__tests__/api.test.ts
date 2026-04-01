@@ -3,8 +3,6 @@ const mockEq = jest.fn();
 const mockOrder = jest.fn();
 const mockUpsert = jest.fn();
 const mockDelete = jest.fn();
-const mockIlike = jest.fn();
-const mockLimit = jest.fn();
 const mockMaybeSingle = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
@@ -14,6 +12,7 @@ jest.mock('@/lib/supabase', () => ({
       upsert: mockUpsert,
       delete: mockDelete,
     })),
+    rpc: jest.fn(),
   },
 }));
 
@@ -116,41 +115,34 @@ describe('actors api', () => {
   });
 
   describe('searchActors', () => {
-    it('searches actors by name with ilike', async () => {
-      mockSelect.mockReturnValue({ ilike: mockIlike });
-      mockIlike.mockReturnValue({ limit: mockLimit });
-      mockLimit.mockResolvedValue({ data: [], error: null });
+    it('calls search_actors RPC with correct params', async () => {
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: [], error: null });
 
       await searchActors('mahesh');
-      expect(supabase.from).toHaveBeenCalledWith('actors');
-      expect(mockSelect).toHaveBeenCalledWith('*');
-      expect(mockIlike).toHaveBeenCalledWith('name', '%mahesh%');
-      expect(mockLimit).toHaveBeenCalledWith(20);
+      expect(supabase.rpc as jest.Mock).toHaveBeenCalledWith('search_actors', {
+        search_term: 'mahesh',
+        result_limit: 20,
+        result_offset: 0,
+      });
     });
 
     it('returns matching actors', async () => {
       const actors = [{ id: 'a1', name: 'Mahesh Babu' }];
-      mockSelect.mockReturnValue({ ilike: mockIlike });
-      mockIlike.mockReturnValue({ limit: mockLimit });
-      mockLimit.mockResolvedValue({ data: actors, error: null });
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: actors, error: null });
 
       const result = await searchActors('mahesh');
       expect(result).toEqual(actors);
     });
 
     it('returns empty array when data is null', async () => {
-      mockSelect.mockReturnValue({ ilike: mockIlike });
-      mockIlike.mockReturnValue({ limit: mockLimit });
-      mockLimit.mockResolvedValue({ data: null, error: null });
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
 
       const result = await searchActors('unknown');
       expect(result).toEqual([]);
     });
 
     it('throws on error', async () => {
-      mockSelect.mockReturnValue({ ilike: mockIlike });
-      mockIlike.mockReturnValue({ limit: mockLimit });
-      mockLimit.mockResolvedValue({ data: null, error: new Error('DB error') });
+      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: new Error('DB error') });
 
       await expect(searchActors('test')).rejects.toThrow('DB error');
     });
