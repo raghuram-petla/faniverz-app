@@ -70,6 +70,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     ...config,
     name: getAppName(),
     slug: 'faniverz',
+    owner: 'faniverz',
     version: '1.0.0',
     orientation: 'portrait',
     icon: IS_DEV
