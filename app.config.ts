@@ -149,6 +149,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       // app does not use. Omitting the plugin keeps EXMotionPermissionRequester compiled
       // and keeps NSMotionUsageDescription out of Info.plist.
       ['@react-native-google-signin/google-signin', { iosUrlScheme: getGoogleIosUrlScheme() }],
+      'expo-apple-authentication',
     ],
     extra: {
       router: {},
