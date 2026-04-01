@@ -13,7 +13,6 @@ describe('SocialSignInButtons', () => {
   const defaultProps = {
     onGoogle: jest.fn(),
     onApple: jest.fn(),
-    onPhone: jest.fn(),
   };
 
   beforeEach(() => jest.clearAllMocks());
@@ -33,11 +32,6 @@ describe('SocialSignInButtons', () => {
     expect(screen.queryByLabelText('Sign in with Apple')).toBeNull();
   });
 
-  it('renders Phone button', () => {
-    render(<SocialSignInButtons {...defaultProps} />);
-    expect(screen.getByLabelText('Sign in with Phone')).toBeTruthy();
-  });
-
   it('calls onGoogle on Google button press', () => {
     render(<SocialSignInButtons {...defaultProps} />);
     fireEvent.press(screen.getByLabelText('Sign in with Google'));
@@ -50,26 +44,18 @@ describe('SocialSignInButtons', () => {
     expect(defaultProps.onApple).toHaveBeenCalled();
   });
 
-  it('calls onPhone on Phone button press', () => {
-    render(<SocialSignInButtons {...defaultProps} />);
-    fireEvent.press(screen.getByLabelText('Sign in with Phone'));
-    expect(defaultProps.onPhone).toHaveBeenCalled();
-  });
-
   it('shows Apple button by default when showApple is not provided and onApple is set', () => {
     render(<SocialSignInButtons {...defaultProps} />);
-    // showApple defaults to true
     expect(screen.getByLabelText('Sign in with Apple')).toBeTruthy();
   });
 
   it('hides Apple button when onApple is not provided even if showApple is true', () => {
-    render(<SocialSignInButtons onGoogle={jest.fn()} onPhone={jest.fn()} showApple={true} />);
+    render(<SocialSignInButtons onGoogle={jest.fn()} showApple={true} />);
     expect(screen.queryByLabelText('Sign in with Apple')).toBeNull();
   });
 
   it('disables Google button when isGoogleLoading is true', () => {
     render(<SocialSignInButtons {...defaultProps} isGoogleLoading={true} />);
-    // When loading, the text is replaced by ActivityIndicator
     expect(screen.queryByText('auth.google')).toBeNull();
   });
 

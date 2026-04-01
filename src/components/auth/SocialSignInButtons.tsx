@@ -1,27 +1,25 @@
 import { View, TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
-import { colors as palette } from '@/theme/colors';
 
 /**
- * @contract All three auth methods (Google, Apple, Phone) rendered as equal-width buttons in a row.
+ * @contract Google and Apple auth buttons rendered as full-width stacked buttons.
  * @assumes showApple should be false on Android — caller must check Platform.OS before passing.
  */
 export interface SocialSignInButtonsProps {
   onGoogle: () => void;
   onApple?: () => void;
-  onPhone: () => void;
   isGoogleLoading?: boolean;
   isAppleLoading?: boolean;
   showApple?: boolean;
 }
 
-/** @coupling parent must supply async handlers that trigger OAuth/OTP flows */
+/** @coupling parent must supply async handlers that trigger OAuth flows */
 export function SocialSignInButtons({
   onGoogle,
   onApple,
-  onPhone,
   isGoogleLoading = false,
   isAppleLoading = false,
   showApple = true,
@@ -43,7 +41,7 @@ export function SocialSignInButtons({
           <ActivityIndicator size="small" color={theme.textPrimary} />
         ) : (
           <>
-            <Ionicons name="logo-google" size={20} color={palette.red500} />
+            <Image source={require('../../../assets/google-logo.svg')} style={styles.googleIcon} />
             <Text style={[styles.buttonText, { color: theme.textPrimary }]}>
               {t('auth.google')}
             </Text>
@@ -72,37 +70,28 @@ export function SocialSignInButtons({
           )}
         </TouchableOpacity>
       ) : null}
-
-      {/* Phone */}
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.input }]}
-        onPress={onPhone}
-        activeOpacity={0.7}
-        accessibilityLabel="Sign in with Phone"
-      >
-        <Ionicons name="call-outline" size={20} color={palette.green500} />
-        <Text style={[styles.buttonText, { color: theme.textPrimary }]}>{t('auth.phone')}</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   button: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    height: 48,
+    gap: 8,
+    height: 52,
     borderRadius: 12,
   },
+  googleIcon: {
+    width: 20,
+    height: 20,
+  },
   buttonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

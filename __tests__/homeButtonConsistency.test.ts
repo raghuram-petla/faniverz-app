@@ -14,7 +14,6 @@ const EXEMPT_PATTERNS = [
   '__tests__/',
   '(tabs)/',
   '(auth)/login.tsx',
-  '(auth)/register.tsx',
   'post/',
 ];
 

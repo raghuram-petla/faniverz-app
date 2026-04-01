@@ -51,6 +51,24 @@ describe('useGoogleAuth', () => {
     });
   });
 
+  it('configures with webClientId and iosClientId', async () => {
+    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = 'test-ios-id';
+    (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({
+      data: { idToken: 'test-token' },
+    });
+    (supabase.auth.signInWithIdToken as jest.Mock).mockResolvedValueOnce({ error: null });
+
+    const { result } = renderHook(() => useGoogleAuth());
+    await act(async () => {
+      await result.current.signInWithGoogle();
+    });
+    expect(GoogleSignin.configure).toHaveBeenCalledWith({
+      webClientId: 'test-client-id',
+      iosClientId: 'test-ios-id',
+    });
+    delete process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  });
+
   it('sets error on failure', async () => {
     (GoogleSignin.signIn as jest.Mock).mockRejectedValueOnce(new Error('cancelled'));
 
@@ -135,13 +153,11 @@ describe('useGoogleAuth', () => {
 
     const { result } = renderHook(() => useGoogleAuth());
 
-    // First call — configures
     await act(async () => {
       await result.current.signInWithGoogle();
     });
     expect(GoogleSignin.configure).toHaveBeenCalledTimes(1);
 
-    // Second call — should skip configure
     (GoogleSignin.signIn as jest.Mock).mockResolvedValue({
       data: { idToken: 'token-2' },
     });

@@ -29,6 +29,14 @@ const getScheme = () => {
   return 'faniverz';
 };
 
+// @contract Reversed iOS client ID is required as a URL scheme for Google Sign-In OAuth redirect.
+// Format: take the iOS client ID and reverse the dot-separated components.
+const getGoogleIosUrlScheme = () => {
+  if (IS_DEV || IS_PREVIEW)
+    return 'com.googleusercontent.apps.753020744218-dbjabcv09h78k63rrerksv43m3uegto5';
+  return 'com.googleusercontent.apps.753020744218-7e8g8ljptunu5shfpct2siekdm93j2eh';
+};
+
 // @boundary Xcode 26+ added allowable-clients restriction on SwiftUICore.
 // expo prebuild regenerates /ios/ (gitignored), so the fix must live here as a
 // config plugin — manually editing ios/Podfile is wiped on every EAS build.
@@ -133,7 +141,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       // dialog — that only fires for CMMotionActivityManager (step counting), which this
       // app does not use. Omitting the plugin keeps EXMotionPermissionRequester compiled
       // and keeps NSMotionUsageDescription out of Info.plist.
-      '@react-native-google-signin/google-signin',
+      ['@react-native-google-signin/google-signin', { iosUrlScheme: getGoogleIosUrlScheme() }],
     ],
     extra: {
       router: {},
