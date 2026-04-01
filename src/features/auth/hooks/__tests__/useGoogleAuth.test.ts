@@ -6,6 +6,11 @@ jest.mock('@react-native-google-signin/google-signin', () => ({
   },
 }));
 
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: { expoConfig: { extra: { googleIosClientId: 'test-ios-id' } } },
+}));
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
@@ -51,8 +56,7 @@ describe('useGoogleAuth', () => {
     });
   });
 
-  it('configures with webClientId and iosClientId', async () => {
-    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID = 'test-ios-id';
+  it('configures with webClientId and iosClientId from expo config', async () => {
     (GoogleSignin.signIn as jest.Mock).mockResolvedValueOnce({
       data: { idToken: 'test-token' },
     });
@@ -66,7 +70,6 @@ describe('useGoogleAuth', () => {
       webClientId: 'test-client-id',
       iosClientId: 'test-ios-id',
     });
-    delete process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   });
 
   it('sets error on failure', async () => {

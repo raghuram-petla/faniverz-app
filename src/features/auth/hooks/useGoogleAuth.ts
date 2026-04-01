@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
 import { supabase } from '@/lib/supabase';
 
 // @boundary Native Google Sign-In SDK flow — presents native sign-in sheet, gets ID token,
@@ -18,7 +19,8 @@ export function useGoogleAuth() {
           'Google Sign-In is not configured: missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID',
         );
       }
-      const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+      // @boundary iOS client ID comes from app.config.ts extra (varies per build variant)
+      const iosClientId = Constants.expoConfig?.extra?.googleIosClientId;
       GoogleSignin.configure({ webClientId, iosClientId });
       configured.current = true;
     }

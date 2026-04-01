@@ -31,10 +31,17 @@ const getScheme = () => {
 
 // @contract Reversed iOS client ID is required as a URL scheme for Google Sign-In OAuth redirect.
 // Format: take the iOS client ID and reverse the dot-separated components.
+const getGoogleIosClientId = () => {
+  if (IS_DEV) return '753020744218-dbjabcv09h78k63rrerksv43m3uegto5.apps.googleusercontent.com';
+  if (IS_PREVIEW) return '753020744218-5u586ggfsbshueasdc75m2sbsq9p61rs.apps.googleusercontent.com';
+  return '753020744218-7e8g8ljptunu5shfpct2siekdm93j2eh.apps.googleusercontent.com';
+};
+
+// @contract Reversed iOS client ID is required as a URL scheme for Google Sign-In OAuth redirect.
 const getGoogleIosUrlScheme = () => {
-  if (IS_DEV || IS_PREVIEW)
-    return 'com.googleusercontent.apps.753020744218-dbjabcv09h78k63rrerksv43m3uegto5';
-  return 'com.googleusercontent.apps.753020744218-7e8g8ljptunu5shfpct2siekdm93j2eh';
+  const clientId = getGoogleIosClientId();
+  const parts = clientId.split('.').reverse();
+  return parts.join('.');
 };
 
 // @boundary Xcode 26+ added allowable-clients restriction on SwiftUICore.
@@ -145,6 +152,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     ],
     extra: {
       router: {},
+      googleIosClientId: getGoogleIosClientId(),
       eas: {
         projectId: '40b03e0e-9fe5-4eda-9848-4af9a0458e73',
       },
