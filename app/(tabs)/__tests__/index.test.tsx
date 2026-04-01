@@ -846,7 +846,9 @@ describe('FeedScreen', () => {
         mockScrollToTopRefs[mockScrollToTopRefs.length - 1].current.scrollToTop();
       });
 
+      // In-list pill renders for layout; overlay renders as visual insurance
       expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
+      expect(screen.getByTestId('refresh-pill-overlay')).toBeTruthy();
       const flashList = UNSAFE_getByType(FlashList);
       expect(flashList.props.extraData.showProgrammaticRefreshIndicator).toBe(true);
 
@@ -983,7 +985,7 @@ describe('FeedScreen', () => {
     prefetchModule.usePrefetchOnVisibility = orig;
   });
 
-  it('provides theme-aware native RefreshControl on Android', () => {
+  it('provides native RefreshControl and overlay pill on Android', () => {
     const originalOS = Platform.OS;
     (Platform as unknown as { OS: string }).OS = 'android';
     try {

@@ -14,7 +14,7 @@ import type { SharedValue } from 'react-native-reanimated';
 
 const INDICATOR_BOTTOM_GAP = 20;
 const INDICATOR_PILL_HEIGHT = 42;
-const INDICATOR_HEIGHT = INDICATOR_PILL_HEIGHT + INDICATOR_BOTTOM_GAP;
+export const INDICATOR_HEIGHT = INDICATOR_PILL_HEIGHT + INDICATOR_BOTTOM_GAP;
 
 /**
  * @contract Renders pull-to-refresh visual feedback above scroll content on both platforms.
@@ -177,6 +177,38 @@ function PullArrowIndicator({
   );
 }
 
+/**
+ * @contract Android-only overlay that renders the "Refreshing" pill absolutely positioned
+ * outside FlashList. FlashList on Android production builds does not reliably re-measure
+ * ListHeaderComponent when its height changes dynamically, so the pill must live outside
+ * the list to guarantee visibility.
+ */
+export interface RefreshingPillOverlayProps {
+  visible: boolean;
+  topOffset: number;
+}
+
+export function RefreshingPillOverlay({ visible, topOffset }: RefreshingPillOverlayProps) {
+  const { theme } = useTheme();
+  if (!visible) return null;
+  return (
+    <View
+      style={[styles.overlayContainer, { top: topOffset }]}
+      pointerEvents="none"
+      testID="refresh-pill-overlay"
+    >
+      <View
+        style={[styles.pill, { backgroundColor: theme.surfaceElevated, borderColor: theme.input }]}
+      >
+        <View style={styles.spinnerWrap}>
+          <ActivityIndicator size="small" color={theme.textPrimary} />
+        </View>
+        <Text style={[styles.text, { color: theme.textPrimary }]}>Refreshing</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
@@ -210,5 +242,13 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  overlayContainer: {
+    position: 'absolute' as const,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    alignItems: 'center' as const,
+    paddingBottom: INDICATOR_BOTTOM_GAP,
   },
 });

@@ -22,7 +22,10 @@ import {
 } from '@/components/feed/FeedHeader';
 import { FeedFilterPills } from '@/components/feed/FeedFilterPills';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
-import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
+import {
+  PullToRefreshIndicator,
+  RefreshingPillOverlay,
+} from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useFeedActions } from '@/hooks/useFeedActions';
@@ -190,6 +193,10 @@ export default function FeedScreen() {
         </View>
       ) : (
         <View style={styles.scroll}>
+          {/* @edge Android: FlashList doesn't re-measure ListHeaderComponent in production builds */}
+          {isAndroid && (
+            <RefreshingPillOverlay visible={refreshSlotRefreshing} topOffset={listTopPadding} />
+          )}
           <FlashList
             ref={listRef}
             data={allItems}

@@ -58,7 +58,7 @@ jest.mock('@/hooks/usePullToRefresh', () => ({
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import type { SharedValue } from 'react-native-reanimated';
-import { PullToRefreshIndicator } from '../PullToRefreshIndicator';
+import { PullToRefreshIndicator, RefreshingPillOverlay } from '../PullToRefreshIndicator';
 
 describe('PullToRefreshIndicator', () => {
   const makePullDistance = (value = 0) => ({ value }) as SharedValue<number>;
@@ -392,5 +392,32 @@ describe('PullToRefreshIndicator', () => {
       />,
     );
     expect(screen.queryByTestId('refresh-spinner')).toBeNull();
+  });
+});
+
+describe('RefreshingPillOverlay', () => {
+  it('renders nothing when visible is false', () => {
+    const { toJSON } = render(<RefreshingPillOverlay visible={false} topOffset={99} />);
+    expect(toJSON()).toBeNull();
+  });
+
+  it('renders the pill when visible is true', () => {
+    const { getByTestId, getByText } = render(
+      <RefreshingPillOverlay visible={true} topOffset={99} />,
+    );
+    expect(getByTestId('refresh-pill-overlay')).toBeTruthy();
+    expect(getByText('Refreshing')).toBeTruthy();
+  });
+
+  it('positions the overlay at the given topOffset', () => {
+    const { getByTestId } = render(<RefreshingPillOverlay visible={true} topOffset={120} />);
+    const overlay = getByTestId('refresh-pill-overlay');
+    const flatStyle = StyleSheet.flatten(overlay.props.style);
+    expect(flatStyle.top).toBe(120);
+  });
+
+  it('has pointerEvents none so it does not block touches', () => {
+    const { getByTestId } = render(<RefreshingPillOverlay visible={true} topOffset={99} />);
+    expect(getByTestId('refresh-pill-overlay').props.pointerEvents).toBe('none');
   });
 });
