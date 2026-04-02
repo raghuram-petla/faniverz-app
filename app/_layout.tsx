@@ -21,6 +21,7 @@ const SPLASH_MIN_MS = 500;
 // inside RootLayout, the splash screen flickers because the component mounts after
 // React renders a blank frame. Expo docs require this at the top level.
 SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ fade: true, duration: 400 });
 
 const ROOT_STYLE = { flex: 1 } as const;
 

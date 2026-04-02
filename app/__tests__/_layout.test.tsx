@@ -20,6 +20,7 @@ jest.mock('expo-status-bar', () => ({
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(),
   hideAsync: jest.fn(),
+  setOptions: jest.fn(),
 }));
 
 jest.mock('@tanstack/react-query', () => ({
