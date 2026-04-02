@@ -10,7 +10,7 @@
  *   The queryFn receives (offset, limit) — API functions use these for .range(offset, offset+limit-1)
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
 import type { SmartPaginationConfig } from '@/constants/paginationConfig';
 import type { SmartInfiniteQueryResult, SmartInfiniteQueryOptions } from './smartPaginationTypes';
 
@@ -31,6 +31,7 @@ export function useSmartInfiniteQuery<TData extends { id: string }>({
   config,
   staleTime,
   enabled = true,
+  keepPreviousData: shouldKeepPreviousData = false,
 }: SmartInfiniteQueryOptions<TData>): SmartInfiniteQueryResult<TData> {
   const [isBackgroundExpanding, setIsBackgroundExpanding] = useState(false);
   const hasExpandedRef = useRef(false);
@@ -56,6 +57,9 @@ export function useSmartInfiniteQuery<TData extends { id: string }>({
     },
     staleTime,
     enabled,
+    // @sideeffect keepPreviousData shows stale data from the previous query key while the
+    // new key fetches, preventing skeleton flash (e.g., when auth resolve changes userId)
+    ...(shouldKeepPreviousData ? { placeholderData: keepPreviousData } : {}),
   });
 
   const { isSuccess, data, fetchNextPage, hasNextPage, isFetchingNextPage } = query;

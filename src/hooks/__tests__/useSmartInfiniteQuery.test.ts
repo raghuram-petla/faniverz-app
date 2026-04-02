@@ -212,6 +212,43 @@ describe('useSmartInfiniteQuery', () => {
     // No assertion needed — test passes if no "state update on unmounted component" error
   });
 
+  it('keeps previous data visible when query key changes and keepPreviousData is true', async () => {
+    const page0NewKey = makeItems(3, 100);
+    const queryFn = jest
+      .fn()
+      .mockResolvedValueOnce(makeItems(5)) // page 0 for key A
+      .mockResolvedValueOnce(makeItems(10, 6)) // page 1 bg expand for key A
+      .mockResolvedValueOnce(page0NewKey); // page 0 for key B (short page, no bg expand)
+
+    let keyValue = 'key-a';
+    const { result, rerender } = renderHook(
+      () =>
+        useSmartInfiniteQuery({
+          queryKey: ['test-keep', keyValue],
+          queryFn,
+          config: defaultConfig,
+          keepPreviousData: true,
+        }),
+      { wrapper: createWrapper() },
+    );
+
+    // Wait for initial load + background expand to settle
+    await waitFor(() => expect(result.current.allItems).toHaveLength(15));
+
+    // Change key — with keepPreviousData, old data should stay visible (isLoading stays false)
+    keyValue = 'key-b';
+    rerender({});
+
+    // isLoading should remain false because keepPreviousData provides placeholder
+    expect(result.current.isLoading).toBe(false);
+    // Old items stay visible while new key fetches
+    expect(result.current.allItems.length).toBeGreaterThan(0);
+
+    // Wait for new data to arrive
+    await waitFor(() => expect(result.current.allItems[0].id).toBe('100'));
+    expect(result.current.allItems).toHaveLength(3);
+  });
+
   it('resets hasExpandedRef when refetch is called so background expansion can re-trigger', async () => {
     const queryFn = jest
       .fn()

@@ -39,4 +39,7 @@ export interface SmartInfiniteQueryOptions<TData> {
   config: SmartPaginationConfig;
   staleTime?: number;
   enabled?: boolean;
+  /** @sideeffect When true, keeps previous query key's data visible while the new key fetches.
+   * Prevents skeleton flash on key changes (e.g., auth resolve changing userId). */
+  keepPreviousData?: boolean;
 }

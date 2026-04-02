@@ -52,6 +52,11 @@ export function usePersonalizedFeed(filter: FeedFilterOption = 'all') {
     queryFn: (offset, limit) => fetchPersonalizedFeed(userId, filter, offset, limit),
     config: FEED_PAGINATION,
     staleTime: STALE_5M,
+    // @sideeffect On cold launch, the feed fires immediately with userId=null (unpersonalized).
+    // When auth resolves (~200ms later), the key changes to include the real userId.
+    // keepPreviousData shows the unpersonalized feed while personalized results load,
+    // preventing a skeleton flash. First paint stays at ~100ms.
+    keepPreviousData: true,
   });
 }
 
