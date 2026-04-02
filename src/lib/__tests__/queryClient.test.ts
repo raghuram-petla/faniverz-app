@@ -8,7 +8,7 @@ describe('queryClient', () => {
 
   it('has correct default gcTime', () => {
     const defaults = queryClient.getDefaultOptions();
-    expect(defaults.queries?.gcTime).toBe(10 * 60 * 1000);
+    expect(defaults.queries?.gcTime).toBe(24 * 60 * 60 * 1000);
   });
 
   it('has retry set to 1', () => {

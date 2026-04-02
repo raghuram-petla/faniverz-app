@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Exo2_800ExtraBold_Italic } from '@expo-google-fonts/exo-2';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, queryPersister } from '@/lib/queryClient';
 import { AuthProvider } from '@/features/auth/providers/AuthProvider';
 import { ImageViewerProvider } from '@/providers/ImageViewerProvider';
 import { ThemeProvider, useTheme } from '@/theme';
@@ -89,13 +89,16 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={ROOT_STYLE}>
       <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{ persister: queryPersister }}
+        >
           <AuthProvider>
             <ImageViewerProvider>
               <ThemedStack />
             </ImageViewerProvider>
           </AuthProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

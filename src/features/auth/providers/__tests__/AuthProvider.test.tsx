@@ -21,6 +21,7 @@ jest.mock('@/lib/supabase', () => {
 
 jest.mock('@/lib/queryClient', () => ({
   queryClient: { clear: jest.fn() },
+  clearPersistedCache: jest.fn(),
 }));
 
 jest.mock('@/stores/useCalendarStore', () => ({

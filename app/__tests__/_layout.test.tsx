@@ -26,12 +26,17 @@ jest.mock('@tanstack/react-query', () => ({
   QueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+jest.mock('@tanstack/react-query-persist-client', () => ({
+  PersistQueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('react-native-gesture-handler', () => ({
   GestureHandlerRootView: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 jest.mock('@/lib/queryClient', () => ({
   queryClient: {},
+  queryPersister: {},
 }));
 
 jest.mock('@/features/auth/providers/AuthProvider', () => ({

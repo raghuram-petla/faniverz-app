@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, clearPersistedCache } from '@/lib/queryClient';
 import { useCalendarStore } from '@/stores/useCalendarStore';
 import { useFilterStore } from '@/stores/useFilterStore';
 import { useFeedStore } from '@/stores/useFeedStore';
@@ -54,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // @coupling: directly references useCalendarStore, useFilterStore, useFeedStore — any new user-scoped store must be added here manually.
       if (event === 'SIGNED_OUT') {
         queryClient.clear();
+        // @sideeffect Wipe persisted cache so next sign-in doesn't show previous user's data
+        clearPersistedCache();
         useCalendarStore.getState().clearFilters();
         useFilterStore.getState().clearAll();
         useFeedStore.setState({ filter: 'all' });
