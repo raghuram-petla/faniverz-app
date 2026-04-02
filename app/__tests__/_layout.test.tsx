@@ -27,7 +27,17 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@tanstack/react-query-persist-client', () => ({
-  PersistQueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
+  PersistQueryClientProvider: ({
+    children,
+    onSuccess,
+  }: {
+    children: React.ReactNode;
+    onSuccess?: () => void;
+  }) => {
+    // Simulate immediate cache restoration in tests
+    if (onSuccess) setTimeout(onSuccess, 0);
+    return children;
+  },
 }));
 
 jest.mock('react-native-gesture-handler', () => ({
@@ -35,7 +45,7 @@ jest.mock('react-native-gesture-handler', () => ({
 }));
 
 jest.mock('@/lib/queryClient', () => ({
-  queryClient: {},
+  queryClient: { invalidateQueries: jest.fn() },
   queryPersister: {},
 }));
 
@@ -91,12 +101,20 @@ describe('RootLayout', () => {
     });
   });
 
-  it('calls SplashScreen.hideAsync when fonts and i18n are ready', async () => {
+  it('calls SplashScreen.hideAsync after fonts, i18n, cache restore, and min time', async () => {
+    jest.useFakeTimers();
     mockUseFonts.mockReturnValue([true]);
     render(<RootLayout />);
+
+    // Splash should NOT be hidden yet (min 500ms timer hasn't elapsed)
+    expect(SplashScreen.hideAsync).not.toHaveBeenCalled();
+
+    // Advance past the 500ms minimum + allow cache restoration callback
+    jest.advanceTimersByTime(600);
     await waitFor(() => {
       expect(SplashScreen.hideAsync).toHaveBeenCalled();
     });
+    jest.useRealTimers();
   });
 
   it('does not call SplashScreen.hideAsync when fonts are not loaded', () => {

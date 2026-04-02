@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -14,6 +14,8 @@ import { useNotificationHandler } from '@/features/notifications/useNotification
 import { useAnimationStore } from '@/stores/useAnimationStore';
 import { useFilmStripStore } from '@/stores/useFilmStripStore';
 import { languageReady } from '@/i18n';
+
+const SPLASH_MIN_MS = 500;
 
 // @invariant: must be called at module scope (not inside a component) — if called
 // inside RootLayout, the splash screen flickers because the component mounts after
@@ -56,6 +58,9 @@ function ThemedStack() {
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Exo2_800ExtraBold_Italic });
   const [i18nReady, setI18nReady] = useState(false);
+  const [cacheRestored, setCacheRestored] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const splashHiddenRef = useRef(false);
 
   // @sync: wait for i18n to load stored language preference before rendering,
   // otherwise translation keys (e.g. "tabs.home") appear as raw strings.
@@ -63,39 +68,52 @@ export default function RootLayout() {
     languageReady.then(() => setI18nReady(true));
   }, []);
 
-  // @edge: loadFromStorage() runs on every fontsLoaded change, including the initial
-  // false->true transition. It reads the user's animation preferences from AsyncStorage.
-  // If AsyncStorage is slow (cold launch), animations may briefly use defaults before
-  // the stored preferences load. This is a visual-only race, not a data issue.
-  // @sideeffect: SplashScreen.hideAsync() is idempotent — calling it when already
-  // hidden is a no-op. But if fontsLoaded is false and this effect runs, hideAsync
-  // is NOT called (guarded by if), keeping the splash screen visible.
+  // @contract Enforce 500ms minimum splash so it feels intentional, not glitchy.
+  // Behind the splash: fonts load, i18n resolves, cache restores, auth checks session.
   useEffect(() => {
-    if (fontsLoaded && i18nReady) SplashScreen.hideAsync();
+    const timer = setTimeout(() => setMinTimeElapsed(true), SPLASH_MIN_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // @sideeffect Load animation/filmstrip preferences from AsyncStorage on mount.
+  useEffect(() => {
     useAnimationStore.getState().loadFromStorage();
     useFilmStripStore.getState().loadFromStorage();
-  }, [fontsLoaded, i18nReady]);
+  }, []);
 
-  if (!fontsLoaded || !i18nReady) return null;
+  // @contract Hide splash only when ALL conditions are met: fonts loaded, i18n ready,
+  // cache restored from disk, and minimum display time elapsed. This ensures the user
+  // transitions from splash directly to a fully rendered feed — no skeleton, no empty state.
+  const allReady = fontsLoaded && i18nReady && cacheRestored && minTimeElapsed;
+  useEffect(() => {
+    if (allReady && !splashHiddenRef.current) {
+      splashHiddenRef.current = true;
+      SplashScreen.hideAsync();
+    }
+  }, [allReady]);
 
-  // @invariant: provider ordering matters — ImageViewerProvider must be INSIDE
-  // AuthProvider (it may need auth state for image URLs) and QueryClientProvider
-  // (image viewer may trigger queries). GestureHandlerRootView must be the outermost
-  // wrapper or gesture-based interactions (swipe to dismiss, pinch to zoom) fail
-  // silently on Android.
-  // @coupling: queryClient is a module-level singleton from @/lib/queryClient — same
-  // instance is shared across hot reloads in development. In production, a new instance
-  // is created per app launch.
+  // @sideeffect Called by PersistQueryClientProvider after cache restoration completes.
+  // Invalidates all restored queries to trigger background refetch for stale data.
+  const handleCacheRestored = useCallback(() => {
+    setCacheRestored(true);
+    queryClient.invalidateQueries();
+  }, []);
+
+  // @contract No early return — all providers mount immediately so cache restoration,
+  // auth session check, and feed queries all start at t=0 behind the splash screen.
+  // The splash covers any rendering with missing fonts or raw i18n keys.
+  // SplashScreen.hideAsync() only fires after allReady (fonts + i18n + cache + 500ms).
   return (
     <GestureHandlerRootView style={ROOT_STYLE}>
       <ThemeProvider>
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={{ persister: queryPersister }}
+          onSuccess={handleCacheRestored}
         >
           <AuthProvider>
             <ImageViewerProvider>
-              <ThemedStack />
+              {fontsLoaded && i18nReady ? <ThemedStack /> : null}
             </ImageViewerProvider>
           </AuthProvider>
         </PersistQueryClientProvider>

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useScrollToTop } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import { useTheme } from '@/theme';
 import { usePersonalizedFeed, useUserVotes, useEntityFollows } from '@/features/feed';
 import { fetchComments } from '@/features/feed/commentsApi';
@@ -48,8 +48,16 @@ export default function FeedScreen() {
   const { headerTranslateY, totalHeaderHeight, handleScroll, getCurrentHeaderTranslateY } =
     useCollapsibleHeader(insets.top); // @sideeffect attaches animated translateY to scroll position
   const queryClient = useQueryClient();
-  const { allItems, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
-    usePersonalizedFeed(filter);
+  const isRestoring = useIsRestoring();
+  const {
+    allItems,
+    isLoading,
+    isRefetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = usePersonalizedFeed(filter);
   const { activeVideoId, mountedVideoIds, registerVideoLayout, handleScrollForVideo } =
     useActiveVideo(); // @sync one auto-playing video, but multiple nearby cards can stay mounted for single-tap playback
   const { followSet } = useEntityFollows();
@@ -94,17 +102,13 @@ export default function FeedScreen() {
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /* istanbul ignore next -- placeholder replaced immediately on render */
   const homeTabActionRef = useRef<{ scrollToTop: () => void }>({ scrollToTop: () => {} });
-  // @coupling FlashList can cache header content; extraData forces the pull indicator + filter pills to refresh with programmatic state changes.
   const listExtraData = useMemo(
-    () => ({ filter, refreshing, showProgrammaticRefreshIndicator }),
-    [filter, refreshing, showProgrammaticRefreshIndicator],
+    () => ({ filter, refreshing, showProgrammaticRefreshIndicator, isRefetching }),
+    [filter, refreshing, showProgrammaticRefreshIndicator, isRefetching],
   );
-  // @sync Both platforms use the same top padding — content starts right below the collapsible header.
   const listTopPadding = totalHeaderHeight;
   const runProgrammaticRefresh = useCallback(() => {
     if (refreshing || showProgrammaticRefreshIndicator) return;
-    // @sideeffect Mirrors tab-press refreshes into the shared indicator state so iOS can
-    // swap from arrow -> spinner even if FlashList keeps the header tree mounted.
     showRefreshIndicator();
     setShowProgrammaticRefreshIndicator(true);
     const startedAt = Date.now();
@@ -174,8 +178,8 @@ export default function FeedScreen() {
       <FeedFilterPills filter={filter} setFilter={setFilter} />
     </View>
   );
-  // @sync Both platforms show the custom PullToRefreshIndicator pill; Android also uses native RefreshControl for pull gesture.
-  const refreshSlotRefreshing = refreshing || showProgrammaticRefreshIndicator;
+  // @sideeffect isRefetching covers background refetches (e.g., cache restore invalidation)
+  const refreshSlotRefreshing = refreshing || showProgrammaticRefreshIndicator || isRefetching;
 
   return (
     <View style={styles.screen}>
@@ -186,7 +190,7 @@ export default function FeedScreen() {
         totalHeaderHeight={totalHeaderHeight}
       />
 
-      {isLoading ? (
+      {isLoading || isRestoring ? (
         <View style={[styles.scroll, { paddingTop: listTopPadding }]}>
           {homeFeedPills}
           <FeedContentSkeleton />
