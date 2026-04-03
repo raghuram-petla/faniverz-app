@@ -24,7 +24,29 @@ export function formatRelativeTime(dateStr: string | null | undefined): string {
   const diffWeeks = Math.floor(diffDays / 7);
   if (diffWeeks < 4) return `${diffWeeks}w ago`;
 
-  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  // @edge include year when the post is from a different year
+  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+  if (date.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+  return date.toLocaleDateString('en-IN', opts);
+}
+
+/**
+ * Format a date string as full timestamp (e.g., "15 Jan 2025, 3:30 PM").
+ * Used on post detail screens to show exact publish time.
+ */
+// @nullable dateStr — returns 'Unknown' for null/undefined/unparseable input
+export function formatFullTimestamp(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'Unknown';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return 'Unknown';
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
 }
 
 /**

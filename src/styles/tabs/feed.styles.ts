@@ -172,6 +172,18 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       paddingBottom: 4,
       paddingHorizontal: 12,
     },
+    fullTimestampRow: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingTop: 4,
+      paddingBottom: 10,
+    },
+    fullTimestampText: {
+      fontSize: 15,
+      color: t.textTertiary,
+    },
     separator: {
       height: 2,
       backgroundColor: t.input,

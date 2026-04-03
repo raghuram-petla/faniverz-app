@@ -15,6 +15,7 @@ import { FollowButton } from './FollowButton';
 import { FilmStripFrame } from './FilmStripFrame';
 import { FilmStripFrameDivider } from './FilmStripFrameDivider';
 import { useRelativeTime } from '@/hooks/useRelativeTime';
+import { formatFullTimestamp } from '@/utils/formatDate';
 import {
   getFeedTypeLabel,
   deriveEntityType,
@@ -45,11 +46,11 @@ export interface FeedCardProps {
   onFollow?: (entityType: FeedEntityType, entityId: string) => void;
   onUnfollow?: (entityType: FeedEntityType, entityId: string) => void;
   getImageViewerTopChrome?: () => ImageViewerTopChrome | undefined;
-  /** @contract when true, renders a film strip divider above the card (first item in list) */
   isFirst?: boolean;
+  showFullTimestamp?: boolean;
 }
 
-/** @coupling FeedAvatar, FeedActionBar, FeedContentBadge, FeedVideoPlayer, FollowButton — composes all feed sub-components */
+// @coupling FeedAvatar, FeedActionBar, FeedContentBadge, FeedVideoPlayer, FollowButton
 function FeedCardInner({
   item,
   onPress,
@@ -69,6 +70,7 @@ function FeedCardInner({
   onUnfollow,
   getImageViewerTopChrome,
   isFirst,
+  showFullTimestamp,
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = useMemo(() => createFeedCardStyles(theme), [theme]);
@@ -78,21 +80,18 @@ function FeedCardInner({
   const [posterHidden, setPosterHidden] = useState(false);
   const hasVideo = !!item.youtube_id;
   const isBackdrop = item.feed_type === 'backdrop';
-  // @nullable thumbnail_url and movie?.poster_url may both be null; falls back gracefully
-  const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
+  const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null; // @nullable both may be null
   const hasThumbnail = !!imageUrl;
-  const isPosterImage = hasThumbnail && !hasVideo; // @invariant poster only when thumbnail + no video
+  const isPosterImage = hasThumbnail && !hasVideo;
   const label = getFeedTypeLabel(item.content_type);
   const relativeTime = useRelativeTime(item.published_at);
 
   const entityType = deriveEntityType(item);
   const entityAvatarUrl = getEntityAvatarUrl(item);
-  // @contract avatarBucket: backdrop-as-poster movies use BACKDROPS bucket
   const avatarBucket =
     entityType === 'movie' ? posterBucket(item.movie?.poster_image_type) : undefined;
   const entityName = getEntityName(item);
   const entityId = getEntityId(item);
-
   const handleLayout = useCallback(
     (e: LayoutChangeEvent) => {
       if (onVideoLayout) {
@@ -102,9 +101,6 @@ function FeedCardInner({
     },
     [item.id, onVideoLayout],
   );
-
-  // @sideeffect opens full-screen image viewer with animated transition from poster position
-  // @contract imageBucket: backdrop→BACKDROPS, poster→POSTERS, other→posterBucket(poster_image_type)
   const imageBucket = isBackdrop
     ? ('BACKDROPS' as const)
     : item.feed_type === 'poster'
@@ -122,14 +118,12 @@ function FeedCardInner({
         sourceRef: posterRef,
         borderRadius: 0,
         isLandscape: isBackdrop,
-        // @coupling Home feed can supply a header snapshot so the close animation masks under the same chrome.
-        topChrome,
+        topChrome, // @coupling Home feed supplies header snapshot for close animation
         onSourceHide: () => setPosterHidden(true),
         onSourceShow: () => setPosterHidden(false),
       });
     });
   }, [getImageViewerTopChrome, imageBucket, imageUrl, isBackdrop, openImage]);
-
   return (
     <View onLayout={hasVideo ? handleLayout : undefined}>
       {isFirst ? <FilmStripFrameDivider isEdge /> : null}
@@ -253,7 +247,6 @@ function FeedCardInner({
             </TouchableOpacity>
           )}
 
-          {/* @edge Video player outside TouchableOpacity so taps reach YouTube WebView */}
           {hasVideo ? (
             <View style={styles.mediaContainer}>
               <FeedVideoPlayer
@@ -283,6 +276,12 @@ function FeedCardInner({
               onShare={onShare ? () => onShare(item.id) : undefined}
             />
           </View>
+          {showFullTimestamp ? (
+            <View style={styles.fullTimestampRow}>
+              <Ionicons name="time-outline" size={15} color={colors.gray500} />
+              <Text style={styles.fullTimestampText}>{formatFullTimestamp(item.published_at)}</Text>
+            </View>
+          ) : null}
         </View>
       </FilmStripFrame>
       <FilmStripFrameDivider />

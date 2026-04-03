@@ -191,6 +191,7 @@ export default function PostDetailScreen() {
               onUpvote={gate(handleUpvote)}
               onDownvote={gate(handleDownvote)}
               onBookmark={gate(handleBookmark)}
+              showFullTimestamp
             />
 
             {/* Comments */}

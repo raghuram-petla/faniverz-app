@@ -116,6 +116,7 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onUpvote,
     onDownvote,
     onBookmark,
+    showFullTimestamp,
   }: {
     item: { id: string; title: string };
     onPress?: (item: { id: string; title: string }) => void;
@@ -123,11 +124,13 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onUpvote?: (id: string) => void;
     onDownvote?: (id: string) => void;
     onBookmark?: (id: string) => void;
+    showFullTimestamp?: boolean;
   }) => {
     const { Text, TouchableOpacity } = require('react-native');
     return (
       <>
         <Text testID="feed-card">{item.title}</Text>
+        {showFullTimestamp && <Text testID="full-timestamp">full-timestamp</Text>}
         {onPress && <TouchableOpacity testID="press-btn" onPress={() => onPress(item)} />}
         {onEntityPress && (
           <>
@@ -227,6 +230,11 @@ describe('PostDetailScreen', () => {
     render(<PostDetailScreen />);
     expect(screen.getByTestId('feed-card')).toBeTruthy();
     expect(screen.getByText('Test Post')).toBeTruthy();
+  });
+
+  it('passes showFullTimestamp to FeedCard', () => {
+    render(<PostDetailScreen />);
+    expect(screen.getByTestId('full-timestamp')).toBeTruthy();
   });
 
   it('renders comments count header', () => {

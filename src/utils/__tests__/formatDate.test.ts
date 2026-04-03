@@ -1,5 +1,6 @@
 import {
   formatRelativeTime,
+  formatFullTimestamp,
   formatDate,
   formatMemberSince,
   formatWatchTime,
@@ -79,10 +80,19 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(twoWeeksAgo)).toBe('2w ago');
   });
 
-  it('returns short date for timestamps 4+ weeks ago', () => {
+  it('returns short date for timestamps 4+ weeks ago (same year)', () => {
     const monthsAgo = new Date('2025-01-15T12:00:00Z').toISOString();
     const result = formatRelativeTime(monthsAgo);
     expect(result).toMatch(/15.*Jan|Jan.*15/);
+    // Same year — should NOT include year
+    expect(result).not.toMatch(/2025/);
+  });
+
+  it('includes year for timestamps from a different year', () => {
+    const lastYear = new Date('2024-03-10T12:00:00Z').toISOString();
+    const result = formatRelativeTime(lastYear);
+    expect(result).toMatch(/10.*Mar|Mar.*10/);
+    expect(result).toMatch(/2024/);
   });
 });
 
@@ -193,6 +203,28 @@ describe('formatRelativeTime — future dates', () => {
   it('returns "Just now" for future dates (negative diff)', () => {
     const futureDate = new Date('2025-06-15T13:00:00Z').toISOString();
     expect(formatRelativeTime(futureDate)).toBe('Just now');
+  });
+});
+
+describe('formatFullTimestamp', () => {
+  it('returns full date and time', () => {
+    const result = formatFullTimestamp('2025-06-15T15:30:00Z');
+    // Should contain day, month, year, and time parts
+    expect(result).toMatch(/15/);
+    expect(result).toMatch(/Jun/);
+    expect(result).toMatch(/2025/);
+  });
+
+  it('returns "Unknown" for null', () => {
+    expect(formatFullTimestamp(null)).toBe('Unknown');
+  });
+
+  it('returns "Unknown" for undefined', () => {
+    expect(formatFullTimestamp(undefined)).toBe('Unknown');
+  });
+
+  it('returns "Unknown" for invalid date', () => {
+    expect(formatFullTimestamp('not-a-date')).toBe('Unknown');
   });
 });
 
