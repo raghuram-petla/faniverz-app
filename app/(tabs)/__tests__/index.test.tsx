@@ -319,7 +319,7 @@ function setupMocks(
     store?: Partial<ReturnType<typeof useFeedStore>>;
     feed?: Record<string, any>;
     votes?: Record<string, 'up' | 'down'>;
-    bookmarks?: Set<string>;
+    bookmarks?: Record<string, true>;
   } = {},
 ) {
   mockUseFeedStore.mockReturnValue({
