@@ -20,10 +20,12 @@ eas build --platform ios --profile production --non-interactive
 
 3. Wait for the build to complete. EAS will output the build URL and status.
 
-4. Once the build succeeds, submit to TestFlight:
+4. Once the build succeeds, submit to TestFlight **with email notifications suppressed** (testers can still update from the TestFlight app):
 
 ```bash
-eas submit --platform ios --latest --non-interactive
+fastlane pilot upload \
+  --ipa <path-to-ipa> \
+  --notify_external_testers false
 ```
 
 5. Report to the user:
@@ -31,6 +33,7 @@ eas submit --platform ios --latest --non-interactive
    - Build URL from EAS
    - Submit status
    - New version/build number (from EAS auto-increment)
+   - Note: testers were NOT emailed but can update from the TestFlight app
 
 ## Rules
 

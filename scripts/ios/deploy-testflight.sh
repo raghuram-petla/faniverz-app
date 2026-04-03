@@ -17,7 +17,7 @@ echo "▸ Building iOS production..."
 # Builds locally — no EAS cloud credits needed
 eas build --platform ios --profile production --local
 
-# 3. Submit the most recent .ipa to TestFlight
+# 3. Submit the most recent .ipa to TestFlight (without notifying testers)
 IPA_FILE=$(ls -t build-*.ipa 2>/dev/null | head -1)
 if [ -z "$IPA_FILE" ]; then
   echo "  ✗ No .ipa file found"
@@ -25,8 +25,11 @@ if [ -z "$IPA_FILE" ]; then
 fi
 echo ""
 echo "▸ Submitting $IPA_FILE to TestFlight..."
-eas submit --platform ios --path "$IPA_FILE" --non-interactive
+fastlane pilot upload \
+  --ipa "$IPA_FILE" \
+  --notify_external_testers false
 
 echo ""
 echo "================================"
-echo "✓ Deployed to TestFlight!"
+echo "✓ Deployed to TestFlight (email notifications suppressed)"
+echo "  Testers can update from the TestFlight app — no email was sent."
