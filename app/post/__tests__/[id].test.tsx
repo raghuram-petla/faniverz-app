@@ -47,7 +47,7 @@ const mockRemoveMutate = jest.fn();
 const mockBookmarkMutate = jest.fn();
 const mockUnbookmarkMutate = jest.fn();
 const mockUserVotesData: Record<string, string> = {};
-let mockUserBookmarksData: Set<string> = new Set<string>();
+let mockUserBookmarksData: Record<string, true> = {};
 
 jest.mock('@/features/feed', () => ({
   useFeedItem: () => ({
@@ -220,7 +220,7 @@ jest.spyOn(Alert, 'alert');
 describe('PostDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUserBookmarksData = new Set<string>();
+    mockUserBookmarksData = {};
   });
 
   it('renders post via FeedCard', () => {
@@ -586,7 +586,7 @@ describe('PostDetailScreen', () => {
   });
 
   it('calls bookmarkMutation when post is not bookmarked', () => {
-    mockUserBookmarksData = new Set<string>();
+    mockUserBookmarksData = {};
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('bookmark-btn'));
     expect(mockBookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'post-1' });
@@ -594,7 +594,7 @@ describe('PostDetailScreen', () => {
   });
 
   it('calls unbookmarkMutation when post is already bookmarked', () => {
-    mockUserBookmarksData = new Set<string>(['post-1']);
+    mockUserBookmarksData = { 'post-1': true as const };
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('bookmark-btn'));
     expect(mockUnbookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'post-1' });

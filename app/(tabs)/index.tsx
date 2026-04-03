@@ -99,8 +99,7 @@ export default function FeedScreen() {
   /* istanbul ignore next */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
   /* istanbul ignore next */
-  const { data: userBookmarks = new Set<string>(), refetch: refetchBookmarks } =
-    useUserBookmarks(feedItemIds);
+  const { data: userBookmarks = {}, refetch: refetchBookmarks } = useUserBookmarks(feedItemIds);
   const { refreshing, onRefresh: baseOnRefresh } = useRefresh(
     refetch,
     refetchVotes,
@@ -187,7 +186,7 @@ export default function FeedScreen() {
   const { gate } = useAuthGate();
   const handleBookmark = useCallback(
     (itemId: string) => {
-      (userBookmarks.has(itemId) ? unbookmarkMutation : bookmarkMutation).mutate({
+      (userBookmarks[itemId] ? unbookmarkMutation : bookmarkMutation).mutate({
         feedItemId: itemId,
       });
     },
@@ -303,7 +302,7 @@ export default function FeedScreen() {
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
-                isBookmarked={userBookmarks.has(item.id)}
+                isBookmarked={!!userBookmarks[item.id]}
                 onUpvote={gatedUpvote} /* @boundary gate wraps — guests see login prompt */
                 onDownvote={gatedDownvote}
                 onBookmark={gatedBookmark}

@@ -49,7 +49,7 @@ jest.mock('@/features/feed', () => ({
   useUserVotes: jest.fn(),
   useBookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   useUnbookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
-  useUserBookmarks: jest.fn(() => ({ data: new Set(), refetch: jest.fn() })),
+  useUserBookmarks: jest.fn(() => ({ data: {}, refetch: jest.fn() })),
   useEntityFollows: jest.fn(),
   useFollowEntity: jest.fn(),
   useUnfollowEntity: jest.fn(),
@@ -367,7 +367,7 @@ function setupMocks(
   mockUseBookmarkFeedItem.mockReturnValue({ mutate: mockBookmarkMutate } as any);
   mockUseUnbookmarkFeedItem.mockReturnValue({ mutate: mockUnbookmarkMutate } as any);
   mockUseUserBookmarks.mockReturnValue({
-    data: overrides.bookmarks ?? new Set<string>(),
+    data: overrides.bookmarks ?? {},
     refetch: jest.fn(),
   } as any);
 
@@ -1134,7 +1134,7 @@ describe('FeedScreen', () => {
     const item = makeItem({ id: 'item-1', title: 'Bookmarkable' });
     setupMocks({
       feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false },
-      bookmarks: new Set<string>(),
+      bookmarks: {},
     });
     render(<FeedScreen />);
 
@@ -1147,7 +1147,7 @@ describe('FeedScreen', () => {
     const item = makeItem({ id: 'item-1', title: 'Already Bookmarked' });
     setupMocks({
       feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false },
-      bookmarks: new Set<string>(['item-1']),
+      bookmarks: { 'item-1': true as const },
     });
     render(<FeedScreen />);
 

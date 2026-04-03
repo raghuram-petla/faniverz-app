@@ -14,6 +14,10 @@ import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import type { NewsFeedItem } from '@shared/types';
 
+// @coupling: bookmark data uses Record<string, true> instead of Set because TanStack Query's
+// structuralSharing converts Set to plain objects, breaking .has() calls.
+type BookmarkMap = Record<string, true>;
+
 // @invariant: must list every top-level feed query key so bookmark mutations cancel/rollback/invalidate
 // ALL feed caches when bookmark_count changes. If a new feed query key is added (e.g., 'trending-feed')
 // it must be added here or its bookmark_count will be stale after bookmarking.
@@ -80,15 +84,14 @@ export function useBookmarkFeedItem() {
       }
       // @sync: optimistically update feed-bookmarks-set so icon state changes instantly
       await queryClient.cancelQueries({ queryKey: ['feed-bookmarks-set'] });
-      const previousBookmarkData: { queryKey: readonly unknown[]; data: Set<string> }[] = [];
+      const previousBookmarkData: { queryKey: readonly unknown[]; data: BookmarkMap }[] = [];
       queryClient
-        .getQueriesData<Set<string>>({ queryKey: ['feed-bookmarks-set'] })
+        .getQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] })
         .forEach(([queryKey, data]) => {
           if (data) previousBookmarkData.push({ queryKey, data });
         });
-      queryClient.setQueriesData<Set<string>>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
-        if (!old) return old;
-        return new Set([...old, feedItemId]);
+      queryClient.setQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
+        return { ...(old ?? {}), [feedItemId]: true as const };
       });
       return { previousFeedData, previousBookmarkData };
     },
@@ -115,7 +118,7 @@ export function useBookmarkFeedItem() {
 }
 
 // @sync: mirrors the same optimistic update pattern as useBookmarkFeedItem above.
-// Decrements bookmark_count (matching DB trigger on DELETE) and removes feedItemId from Set.
+// Decrements bookmark_count (matching DB trigger on DELETE) and removes feedItemId from record.
 export function useUnbookmarkFeedItem() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -154,17 +157,16 @@ export function useUnbookmarkFeedItem() {
         });
       }
       await queryClient.cancelQueries({ queryKey: ['feed-bookmarks-set'] });
-      const previousBookmarkData: { queryKey: readonly unknown[]; data: Set<string> }[] = [];
+      const previousBookmarkData: { queryKey: readonly unknown[]; data: BookmarkMap }[] = [];
       queryClient
-        .getQueriesData<Set<string>>({ queryKey: ['feed-bookmarks-set'] })
+        .getQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] })
         .forEach(([queryKey, data]) => {
           if (data) previousBookmarkData.push({ queryKey, data });
         });
-      queryClient.setQueriesData<Set<string>>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
-        if (!old) return old;
-        const updated = new Set(old);
-        updated.delete(feedItemId);
-        return updated;
+      queryClient.setQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
+        if (!old) return {};
+        const { [feedItemId]: _, ...rest } = old;
+        return rest;
       });
       return { previousFeedData, previousBookmarkData };
     },
@@ -191,7 +193,7 @@ export function useUnbookmarkFeedItem() {
 }
 
 // @invariant: query key uses sorted feedItemIds to prevent redundant refetches when array order changes.
-// @coupling: returned Set<string> drives isBookmarked per FeedCard. Optimistic updates above
+// @coupling: returned Record<string, true> drives isBookmarked per FeedCard. Optimistic updates above
 // keep this cache in sync so icon state changes before the server confirms.
 export function useUserBookmarks(feedItemIds: string[]) {
   const { user } = useAuth();

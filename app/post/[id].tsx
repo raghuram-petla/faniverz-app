@@ -53,7 +53,7 @@ export default function PostDetailScreen() {
   // @contract: userVotes map is keyed by feed item ID; value is 'up' | 'down' | null
   const feedItemIds = useMemo(() => (post ? [post.id] : []), [post]);
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
-  const { data: userBookmarks = new Set<string>() } = useUserBookmarks(feedItemIds);
+  const { data: userBookmarks = {} } = useUserBookmarks(feedItemIds);
   const { gate } = useAuthGate();
 
   const {
@@ -112,7 +112,7 @@ export default function PostDetailScreen() {
   // @contract Toggle: if already bookmarked, removes; otherwise bookmarks
   const handleBookmark = useCallback(
     (itemId: string) => {
-      if (userBookmarks.has(itemId)) {
+      if (userBookmarks[itemId]) {
         unbookmarkMutation.mutate({ feedItemId: itemId });
       } else {
         bookmarkMutation.mutate({ feedItemId: itemId });
@@ -186,7 +186,7 @@ export default function PostDetailScreen() {
               onPress={handleNoOp}
               onEntityPress={handleEntityPress}
               userVote={userVotes[post.id] ?? null}
-              isBookmarked={userBookmarks.has(post.id)}
+              isBookmarked={!!userBookmarks[post.id]}
               onUpvote={gate(handleUpvote)}
               onDownvote={gate(handleDownvote)}
               onBookmark={gate(handleBookmark)}

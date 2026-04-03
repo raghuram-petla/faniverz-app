@@ -113,13 +113,13 @@ describe('unbookmarkFeedItem', () => {
 describe('fetchUserBookmarks', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('returns empty Set when feedItemIds is empty', async () => {
+  it('returns empty record when feedItemIds is empty', async () => {
     const result = await fetchUserBookmarks('user-123', []);
-    expect(result).toEqual(new Set());
+    expect(result).toEqual({});
     expect(mocks.mockFrom).not.toHaveBeenCalled();
   });
 
-  it('returns Set of bookmarked feed item IDs', async () => {
+  it('returns record of bookmarked feed item IDs', async () => {
     mocks.mockBmIn.mockResolvedValue({
       data: [{ feed_item_id: 'item-1' }, { feed_item_id: 'item-3' }],
       error: null,
@@ -128,19 +128,19 @@ describe('fetchUserBookmarks', () => {
     expect(mocks.mockFrom).toHaveBeenCalledWith('feed_bookmarks');
     expect(mocks.mockBmSelectEq).toHaveBeenCalledWith('user_id', 'user-123');
     expect(mocks.mockBmIn).toHaveBeenCalledWith('feed_item_id', ['item-1', 'item-2', 'item-3']);
-    expect(result).toEqual(new Set(['item-1', 'item-3']));
+    expect(result).toEqual({ 'item-1': true, 'item-3': true });
   });
 
-  it('returns empty Set when no bookmarks found', async () => {
+  it('returns empty record when no bookmarks found', async () => {
     mocks.mockBmIn.mockResolvedValue({ data: [], error: null });
     const result = await fetchUserBookmarks('user-123', ['item-1']);
-    expect(result).toEqual(new Set());
+    expect(result).toEqual({});
   });
 
-  it('returns empty Set when data is null', async () => {
+  it('returns empty record when data is null', async () => {
     mocks.mockBmIn.mockResolvedValue({ data: null, error: null });
     const result = await fetchUserBookmarks('user-123', ['item-1']);
-    expect(result).toEqual(new Set());
+    expect(result).toEqual({});
   });
 
   it('throws on supabase error', async () => {
@@ -156,7 +156,7 @@ describe('fetchUserBookmarks', () => {
     });
     const result = await fetchUserBookmarks('user-123', ids);
     expect(mocks.mockBmIn).toHaveBeenCalledTimes(2);
-    expect(result.has('item-0')).toBe(true);
+    expect(result['item-0']).toBe(true);
   });
 });
 

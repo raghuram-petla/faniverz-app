@@ -60,8 +60,7 @@ export default function BookmarkedFeedScreen() {
   // @nullable userVotes defaults to {} when query is disabled (unauthenticated)
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
   // @invariant All items are bookmarked by definition — set still needed for optimistic unbookmark UI
-  const { data: userBookmarks = new Set<string>(), refetch: refetchBookmarks } =
-    useUserBookmarks(feedItemIds);
+  const { data: userBookmarks = {}, refetch: refetchBookmarks } = useUserBookmarks(feedItemIds);
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchBookmarks);
   const {
     pullDistance,
@@ -112,7 +111,7 @@ export default function BookmarkedFeedScreen() {
   // @contract Toggle: if already bookmarked, removes; otherwise bookmarks
   const handleBookmark = useCallback(
     (itemId: string) => {
-      if (userBookmarks.has(itemId)) {
+      if (userBookmarks[itemId]) {
         unbookmarkMutation.mutate({ feedItemId: itemId });
       } else {
         bookmarkMutation.mutate({ feedItemId: itemId });
@@ -202,7 +201,7 @@ export default function BookmarkedFeedScreen() {
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
-                isBookmarked={userBookmarks.has(item.id)}
+                isBookmarked={!!userBookmarks[item.id]}
                 onUpvote={gatedUpvote}
                 onDownvote={gatedDownvote}
                 onBookmark={gatedBookmark}

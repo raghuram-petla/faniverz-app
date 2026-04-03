@@ -28,8 +28,8 @@ export async function unbookmarkFeedItem(feedItemId: string, userId: string): Pr
 export async function fetchUserBookmarks(
   userId: string,
   feedItemIds: string[],
-): Promise<Set<string>> {
-  if (feedItemIds.length === 0) return new Set();
+): Promise<Record<string, true>> {
+  if (feedItemIds.length === 0) return {};
 
   const BATCH_SIZE = 40;
   const batches: string[][] = [];
@@ -49,10 +49,10 @@ export async function fetchUserBookmarks(
     }),
   );
 
-  const bookmarked = new Set<string>();
+  const bookmarked: Record<string, true> = {};
   for (const rows of results) {
     for (const row of rows) {
-      bookmarked.add(row.feed_item_id as string);
+      bookmarked[row.feed_item_id as string] = true;
     }
   }
   return bookmarked;

@@ -43,7 +43,7 @@ const mockBookmarkMutate = jest.fn();
 const mockUnbookmarkMutate = jest.fn();
 let mockBookmarkedItems: NewsFeedItem[] = [];
 let mockUserVotesData: Record<string, string> = {};
-let mockUserBookmarksData: Set<string> = new Set<string>();
+let mockUserBookmarksData: Record<string, true> = {};
 
 jest.mock('@/features/feed', () => ({
   useBookmarkedFeed: () => ({
@@ -263,7 +263,7 @@ describe('BookmarkedFeedScreen', () => {
     jest.clearAllMocks();
     mockBookmarkedItems = [makeItem()];
     mockUserVotesData = {};
-    mockUserBookmarksData = new Set<string>(['item-1']);
+    mockUserBookmarksData = { 'item-1': true as const };
   });
 
   it('renders title header', () => {
@@ -317,7 +317,7 @@ describe('BookmarkedFeedScreen', () => {
   });
 
   it('calls unbookmarkMutation when item is already bookmarked', () => {
-    mockUserBookmarksData = new Set<string>(['item-1']);
+    mockUserBookmarksData = { 'item-1': true as const };
     renderScreen();
     fireEvent.press(screen.getByLabelText('Bookmark Saved Item'));
     expect(mockUnbookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'item-1' });
@@ -325,7 +325,7 @@ describe('BookmarkedFeedScreen', () => {
   });
 
   it('calls bookmarkMutation when item is not bookmarked', () => {
-    mockUserBookmarksData = new Set<string>();
+    mockUserBookmarksData = {};
     renderScreen();
     fireEvent.press(screen.getByLabelText('Bookmark Saved Item'));
     expect(mockBookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'item-1' });

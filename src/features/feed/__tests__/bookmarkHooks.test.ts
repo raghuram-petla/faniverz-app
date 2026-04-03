@@ -157,13 +157,13 @@ describe('useUnbookmarkFeedItem', () => {
 describe('useUserBookmarks', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('returns bookmark Set for visible items', async () => {
-    mockFetchUserBookmarks.mockResolvedValue(new Set(['item-1', 'item-3']));
+  it('returns bookmark record for visible items', async () => {
+    mockFetchUserBookmarks.mockResolvedValue({ 'item-1': true, 'item-3': true });
     const { result } = renderHook(() => useUserBookmarks(['item-1', 'item-2', 'item-3']), {
       wrapper: createWrapper(),
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(new Set(['item-1', 'item-3']));
+    expect(result.current.data).toEqual({ 'item-1': true, 'item-3': true });
   });
 
   it('is disabled when userId is absent', async () => {

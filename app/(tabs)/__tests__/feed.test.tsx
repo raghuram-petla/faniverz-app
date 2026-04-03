@@ -21,7 +21,7 @@ jest.mock('@/features/feed', () => ({
   useUserVotes: jest.fn(),
   useBookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
   useUnbookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
-  useUserBookmarks: jest.fn(() => ({ data: new Set(), refetch: jest.fn() })),
+  useUserBookmarks: jest.fn(() => ({ data: {}, refetch: jest.fn() })),
   useEntityFollows: jest.fn(() => ({ followSet: new Set(), data: [], isSuccess: true })),
   useFollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
   useUnfollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
@@ -271,7 +271,7 @@ function setupMocks(overrides: Record<string, any> = {}) {
   mockUseBookmarkFeedItem.mockReturnValue({ mutate: mockBookmarkMutate } as any);
   mockUseUnbookmarkFeedItem.mockReturnValue({ mutate: mockUnbookmarkMutate } as any);
   mockUseUserBookmarks.mockReturnValue({
-    data: overrides.bookmarks ?? new Set<string>(),
+    data: overrides.bookmarks ?? {},
     refetch: jest.fn(),
   } as any);
 }
