@@ -3,9 +3,11 @@ import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_GAP = 4;
-const NUM_COLUMNS = 3;
-const CARD_WIDTH = (SCREEN_WIDTH - 32 - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+export const GRID_GAP = 4;
+export const NUM_COLUMNS = 3;
+export const CARD_WIDTH = (SCREEN_WIDTH - 32 - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+/** Full content width inside the 16px horizontal padding */
+export const CONTENT_WIDTH = SCREEN_WIDTH - 32;
 
 /** @contract Hero height defines the scroll distance over which the collapse animation runs */
 export const HERO_HEIGHT = 200;

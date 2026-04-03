@@ -53,6 +53,7 @@ export default function MediaScreen() {
   const scrollOffset = useSharedValue(0);
   const titleWidth = useSharedValue(200);
   const titleHeight = useSharedValue(24);
+  const navLeftWidth = useSharedValue(0);
   const {
     scrollRef,
     contentMinHeight,
@@ -119,18 +120,31 @@ export default function MediaScreen() {
   const heroPosterCY = insets.top + HERO_HEIGHT - 16 - POSTER_EXPANDED_H / 2;
   const navCenterY = insets.top + NAV_ROW_HEIGHT / 2;
 
-  const { animatedPosterStyle, animatedTitleStyle, titleColorStyle, subtitleFadeStyle } =
-    useMediaScrollAnimations({
-      scrollOffset,
-      titleWidth,
-      titleHeight,
-      screenWidth,
-      heroPosterCX,
-      heroPosterCY,
-      navCenterY,
-      textPrimaryColor: theme.textPrimary,
-      textSecondaryColor: theme.textSecondary,
-    });
+  const onNavLeftLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      navLeftWidth.value = e.nativeEvent.layout.width;
+    },
+    [navLeftWidth],
+  );
+
+  const {
+    animatedPosterStyle,
+    animatedTitleStyle,
+    titleColorStyle,
+    subtitleFadeStyle,
+    titleMaxWidthStyle,
+  } = useMediaScrollAnimations({
+    scrollOffset,
+    titleWidth,
+    titleHeight,
+    navLeftWidth,
+    screenWidth,
+    heroPosterCX,
+    heroPosterCY,
+    navCenterY,
+    textPrimaryColor: theme.textPrimary,
+    textSecondaryColor: theme.textSecondary,
+  });
 
   if (isLoading) {
     return (
@@ -189,7 +203,7 @@ export default function MediaScreen() {
         testID="floating-title"
       >
         <Animated.Text
-          style={[styles.floatingTitleText, titleColorStyle]}
+          style={[styles.floatingTitleText, titleColorStyle, titleMaxWidthStyle]}
           numberOfLines={1}
           onLayout={onTitleLayout}
         >
@@ -216,7 +230,7 @@ export default function MediaScreen() {
 
         <View style={styles.stickyContainer}>
           <View style={styles.stickyNavRow}>
-            <View style={styles.stickyNavLeft}>
+            <View style={styles.stickyNavLeft} onLayout={onNavLeftLayout}>
               <TouchableOpacity
                 style={styles.stickyNavButton}
                 onPress={() => router.back()}
@@ -254,7 +268,11 @@ export default function MediaScreen() {
           {activeTab === 'videos' ? (
             <MediaVideosTab videosByType={videosByType} activeCategory={activeCategoryLabel} />
           ) : (
-            <MediaPhotosTab posters={movie.posters} onCategoryChange={scrollToTop} />
+            <MediaPhotosTab
+              posters={movie.posters}
+              onCategoryChange={scrollToTop}
+              scrollOffset={scrollOffset}
+            />
           )}
         </View>
       </Animated.ScrollView>
