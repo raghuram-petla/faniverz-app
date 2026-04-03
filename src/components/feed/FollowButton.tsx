@@ -45,7 +45,7 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
     <TouchableOpacity
       style={[
         styles.button,
-        isFollowing ? { borderColor: colors.green500 } : { borderColor: theme.textSecondary },
+        isFollowing ? { borderColor: colors.red500 } : { borderColor: theme.textSecondary },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -60,10 +60,10 @@ export function FollowButton({ isFollowing, onPress, entityName }: FollowButtonP
         <Ionicons
           name={isFollowing ? 'heart' : 'heart-outline'}
           size={14}
-          color={isFollowing ? colors.green500 : theme.textSecondary}
+          color={isFollowing ? colors.red500 : theme.textSecondary}
         />
       </Animated.View>
-      <Text style={[styles.text, { color: isFollowing ? colors.green500 : theme.textSecondary }]}>
+      <Text style={[styles.text, { color: isFollowing ? colors.red500 : theme.textSecondary }]}>
         {isFollowing ? t('common.following') : t('common.follow')}
       </Text>
     </TouchableOpacity>

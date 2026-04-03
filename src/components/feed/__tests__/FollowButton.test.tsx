@@ -1,5 +1,5 @@
 jest.mock('@/theme/colors', () => ({
-  colors: { green500: '#22c55e', gray500: '#6b7280' },
+  colors: { red500: '#ef4444', gray500: '#6b7280' },
 }));
 
 import React from 'react';

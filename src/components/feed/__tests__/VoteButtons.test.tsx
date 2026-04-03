@@ -68,9 +68,9 @@ describe('VoteButtons', () => {
   it('shows active state when userVote is up', () => {
     const { getByLabelText } = renderVoteButtons({ userVote: 'up' });
     const upvoteBtn = getByLabelText('Upvote, 5 upvotes');
-    // Active upvote button gets green background (style may be flattened)
+    // Active upvote button gets red background (style may be flattened)
     expect(upvoteBtn.props.style).toEqual(
-      expect.objectContaining({ backgroundColor: 'rgba(22,163,74,0.2)' }),
+      expect.objectContaining({ backgroundColor: 'rgba(220,38,38,0.2)' }),
     );
   });
 
@@ -88,7 +88,7 @@ describe('VoteButtons', () => {
     const downvoteBtn = getByLabelText('Downvote, 1 downvotes');
     // No active background color when neutral
     expect(upvoteBtn.props.style).not.toEqual(
-      expect.objectContaining({ backgroundColor: 'rgba(22,163,74,0.2)' }),
+      expect.objectContaining({ backgroundColor: 'rgba(220,38,38,0.2)' }),
     );
     expect(downvoteBtn.props.style).not.toEqual(
       expect.objectContaining({ backgroundColor: 'rgba(220,38,38,0.2)' }),

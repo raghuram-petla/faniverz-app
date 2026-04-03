@@ -94,8 +94,8 @@ describe('MovieQuickAction', () => {
     expect(btn).toBeTruthy();
   });
 
-  it('uses green color for active state icon (overlayActive style applied)', () => {
-    // Active state applies overlayActive style — the background changes to green tint
+  it('uses red color for active state icon (overlayActive style applied)', () => {
+    // Active state applies overlayActive style — the background changes to red tint
     // Color is passed to Ionicons but the mock doesn't render it in JSON
     // Verify by checking the accessibility label matches active state
     const { getByLabelText } = render(<MovieQuickAction {...baseProps} isActive />);

@@ -173,12 +173,12 @@ export function HeroSlide({
                     : 'bookmark-outline'
               }
               size={16}
-              color={isActionActive ? palette.green500 : palette.black}
+              color={isActionActive ? palette.red500 : palette.black}
             />
             <Text
               style={[
                 styles.actionButtonText,
-                { color: isActionActive ? palette.green500 : palette.black },
+                { color: isActionActive ? palette.red500 : palette.black },
               ]}
             >
               {isActionActive

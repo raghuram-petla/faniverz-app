@@ -84,7 +84,7 @@ export function MovieQuickAction({
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       <Animated.View style={animatedIconStyle}>
-        <Ionicons name={icon} size={14} color={isActive ? palette.green500 : palette.white} />
+        <Ionicons name={icon} size={14} color={isActive ? palette.red500 : palette.white} />
       </Animated.View>
     </TouchableOpacity>
   );
@@ -103,6 +103,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   overlayActive: {
-    backgroundColor: 'rgba(34,197,94,0.25)',
+    backgroundColor: 'rgba(239,68,68,0.25)',
   },
 });

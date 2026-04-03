@@ -66,7 +66,7 @@ export function VoteButtons({
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.voteBtn, userVote === 'up' && { backgroundColor: colors.green600_20 }]}
+        style={[styles.voteBtn, userVote === 'up' && { backgroundColor: colors.red600_20 }]}
         onPress={onUpvote}
         activeOpacity={0.7}
         accessibilityRole="button"
@@ -76,13 +76,13 @@ export function VoteButtons({
           <Ionicons
             name={userVote === 'up' ? 'heart' : 'heart-outline'}
             size={16}
-            color={userVote === 'up' ? colors.green500 : theme.textSecondary}
+            color={userVote === 'up' ? colors.red500 : theme.textSecondary}
           />
         </Animated.View>
         <Text
           style={[
             styles.voteCount,
-            { color: userVote === 'up' ? colors.green500 : theme.textSecondary },
+            { color: userVote === 'up' ? colors.red500 : theme.textSecondary },
           ]}
         >
           {upvoteCount}

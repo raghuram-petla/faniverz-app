@@ -65,7 +65,7 @@ export function MovieDetailHeader({
           <Ionicons
             name={iconName}
             size={22}
-            color={isActionActive ? palette.green500 : colors.white}
+            color={isActionActive ? palette.red500 : colors.white}
           />
         </TouchableOpacity>
         <TouchableOpacity style={styles.heroButton} onPress={onShare} accessibilityLabel="Share">

@@ -35,8 +35,8 @@ export function FeedActionBar({
   const safeDownvotes = downvoteCount ?? 0;
   const safeViews = viewCount ?? 0;
 
-  // @contract active vote highlights in green (up) or red (down); null = tertiary
-  const upColor = userVote === 'up' ? colors.green500 : defaultColor;
+  // @contract active vote highlights in red (up) or red (down); null = tertiary
+  const upColor = userVote === 'up' ? colors.red500 : defaultColor;
   const downColor = userVote === 'down' ? colors.red500 : defaultColor;
 
   return (
