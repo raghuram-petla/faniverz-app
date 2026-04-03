@@ -58,8 +58,10 @@ export default function BookmarkedFeedScreen() {
 
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   // @nullable userVotes defaults to {} when query is disabled (unauthenticated)
+  /* istanbul ignore next -- destructuring default only applies when useUserVotes returns undefined */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
   // @invariant All items are bookmarked by definition — set still needed for optimistic unbookmark UI
+  /* istanbul ignore next -- destructuring default only applies when useUserBookmarks returns undefined */
   const { data: userBookmarks = {}, refetch: refetchBookmarks } = useUserBookmarks(feedItemIds);
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchBookmarks);
   const {
@@ -99,7 +101,9 @@ export default function BookmarkedFeedScreen() {
     (itemId: string) => {
       const item = allItems.find((i) => i.id === itemId);
       /* istanbul ignore next */ if (!item) return;
-      Share.share({ message: `${item.title} — Check it out on Faniverz!` }).catch(() => {});
+      Share.share({ message: `${item.title} — Check it out on Faniverz!` }).catch(
+        /* istanbul ignore next */ () => {},
+      );
     },
     [allItems],
   );

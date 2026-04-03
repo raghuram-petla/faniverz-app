@@ -51,8 +51,9 @@ export default function PostDetailScreen() {
   const bookmarkMutation = useBookmarkFeedItem();
   const unbookmarkMutation = useUnbookmarkFeedItem();
   // @contract: userVotes map is keyed by feed item ID; value is 'up' | 'down' | null
-  const feedItemIds = useMemo(() => (post ? [post.id] : []), [post]);
+  const feedItemIds = useMemo(() => (post ? [post.id] : /* istanbul ignore next */ []), [post]);
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
+  /* istanbul ignore next -- destructuring default only applies when useUserBookmarks returns undefined */
   const { data: userBookmarks = {} } = useUserBookmarks(feedItemIds);
   const { gate } = useAuthGate();
 

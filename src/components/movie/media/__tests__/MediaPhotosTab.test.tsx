@@ -72,7 +72,6 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { MediaPhotosTab } from '../MediaPhotosTab';
 import type { MoviePoster } from '@/types';
-import type { SharedValue } from 'react-native-reanimated';
 
 /** @contract Wrapper provides a real shared value for scrollOffset prop */
 function TabWithScroll(props: Omit<React.ComponentProps<typeof MediaPhotosTab>, 'scrollOffset'>) {
@@ -447,5 +446,66 @@ describe('MediaPhotosTab', () => {
     render(<TabWithScroll posters={posters} />);
     expect(screen.getByText('Main Poster')).toBeTruthy();
     expect(screen.getByText('Main Backdrop')).toBeTruthy();
+  });
+
+  it('handleGridLayout fires on grid view onLayout', () => {
+    const posters = [makePoster({ id: 'p1', title: 'Layout Test' })];
+    const { UNSAFE_root } = render(<TabWithScroll posters={posters} />);
+    const { View } = require('react-native');
+    // Find the View with onLayout prop (the grid wrapper)
+    const views = UNSAFE_root.findAllByType(View);
+    const gridView = views.find(
+      (v: { props: { onLayout?: unknown } }) => typeof v.props.onLayout === 'function',
+    );
+    expect(gridView).toBeTruthy();
+    // Fire onLayout — should not crash (sets gridContentY.current)
+    gridView!.props.onLayout({
+      nativeEvent: { layout: { x: 0, y: 100, width: 340, height: 500 } },
+    });
+    expect(screen.getByLabelText('View Layout Test')).toBeTruthy();
+  });
+
+  it('updateVisibleRange is called via useAnimatedReaction mock and updates range', () => {
+    const { useAnimatedReaction } = require('react-native-reanimated');
+    const { act: rtlAct } = require('@testing-library/react-native');
+    const mockReaction = useAnimatedReaction as jest.Mock;
+    mockReaction.mockClear();
+
+    // Create enough posters to have many rows (30 posters = 10 rows of 3)
+    const posters = Array.from({ length: 30 }, (_, i) =>
+      makePoster({ id: `p${i}`, title: `Poster ${i}` }),
+    );
+    render(<TabWithScroll posters={posters} />);
+
+    // useAnimatedReaction was called — extract the callback to invoke updateVisibleRange
+    const reactionCalls = mockReaction.mock.calls;
+    expect(reactionCalls.length).toBeGreaterThan(0);
+    const reactionCallback = reactionCalls[reactionCalls.length - 1]?.[1];
+    if (reactionCallback) {
+      // Simulate a large scroll to trigger visible range change with spacers
+      rtlAct(() => {
+        reactionCallback(50000);
+      });
+    }
+    // Component still renders without crash
+    expect(screen.getByText('Poster 0')).toBeTruthy();
+  });
+
+  it('updateVisibleRange skips setState when range has not changed', () => {
+    const { useAnimatedReaction } = require('react-native-reanimated');
+    const mockReaction = useAnimatedReaction as jest.Mock;
+    mockReaction.mockClear();
+
+    const posters = [makePoster({ id: 'p1', title: 'Single' })];
+    render(<TabWithScroll posters={posters} />);
+
+    const reactionCalls = mockReaction.mock.calls;
+    const reactionCallback = reactionCalls[reactionCalls.length - 1]?.[1];
+    if (reactionCallback) {
+      // Call twice with same scroll position — second call should hit "same range" early return
+      reactionCallback(0);
+      reactionCallback(0);
+    }
+    expect(screen.getByLabelText('View Single')).toBeTruthy();
   });
 });

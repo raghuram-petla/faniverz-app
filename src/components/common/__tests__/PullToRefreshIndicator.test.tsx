@@ -361,6 +361,75 @@ describe('PullToRefreshIndicator', () => {
     }
   });
 
+  it('shows "You\'re all caught up" pill when refresh ends with no new data', () => {
+    const { act: rtlAct } = require('@testing-library/react-native');
+    const pullDist = makePullDistance(0);
+    const isRef = makeIsRefreshing(false);
+
+    // Start refreshing
+    const { rerender } = render(
+      <PullToRefreshIndicator
+        pullDistance={pullDist}
+        isRefreshing={isRef}
+        refreshing={true}
+        noNewData={false}
+      />,
+    );
+    expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
+
+    // Refresh ends with noNewData=true — should show "caught up"
+    rtlAct(() => {
+      rerender(
+        <PullToRefreshIndicator
+          pullDistance={pullDist}
+          isRefreshing={isRef}
+          refreshing={false}
+          noNewData={true}
+        />,
+      );
+    });
+
+    expect(screen.getByTestId('caught-up-pill')).toBeTruthy();
+    expect(screen.getByText("You're all caught up")).toBeTruthy();
+  });
+
+  it('caught-up pill hides after timeout', async () => {
+    jest.useFakeTimers();
+    const pullDist = makePullDistance(0);
+    const isRef = makeIsRefreshing(false);
+    const { act: rtlAct } = require('@testing-library/react-native');
+
+    const { rerender } = render(
+      <PullToRefreshIndicator
+        pullDistance={pullDist}
+        isRefreshing={isRef}
+        refreshing={true}
+        noNewData={false}
+      />,
+    );
+
+    rtlAct(() => {
+      rerender(
+        <PullToRefreshIndicator
+          pullDistance={pullDist}
+          isRefreshing={isRef}
+          refreshing={false}
+          noNewData={true}
+        />,
+      );
+    });
+
+    expect(screen.getByTestId('caught-up-pill')).toBeTruthy();
+
+    // Advance timer past CAUGHT_UP_DURATION_MS (500ms)
+    rtlAct(() => {
+      jest.advanceTimersByTime(600);
+    });
+
+    expect(screen.queryByTestId('caught-up-pill')).toBeNull();
+    jest.useRealTimers();
+  });
+
   it('useEffect syncs showRefreshing when refreshing prop changes', () => {
     const isRef = makeIsRefreshing(false);
     const { rerender } = render(

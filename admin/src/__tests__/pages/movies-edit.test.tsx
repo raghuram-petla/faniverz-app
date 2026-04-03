@@ -567,6 +567,17 @@ describe('EditMoviePage', () => {
       expect(mockEditState.setPHSearchQuery).toHaveBeenCalledWith('');
     });
 
+    it('ProductionHousesSection onQuickAdd alerts on error', async () => {
+      window.alert = vi.fn();
+      mockEditState.createProductionHouse.mutateAsync.mockRejectedValue(
+        new Error('PH create failed'),
+      );
+      renderWithProviders(<EditMoviePage />);
+      fireEvent.click(screen.getByText('Cast & Crew'));
+      await capturedProps.ProductionHousesSection.onQuickAdd('Bad PH');
+      expect(window.alert).toHaveBeenCalledWith('PH create failed');
+    });
+
     it('ProductionHousesSection onCloseAddForm resets addFormOpen', () => {
       renderWithProviders(<EditMoviePage />);
       fireEvent.click(screen.getByText('Cast & Crew'));

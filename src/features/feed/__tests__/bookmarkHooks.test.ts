@@ -13,8 +13,10 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
   })),
 }));
 
+import React from 'react';
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useBookmarkFeedItem,
@@ -29,6 +31,17 @@ import {
   fetchBookmarkedFeed,
 } from '../bookmarkApi';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
+
+/** Creates a wrapper that also returns the QueryClient for cache pre-population */
+function createWrapperWithClient() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return React.createElement(QueryClientProvider, { client: queryClient }, children);
+  }
+  return { queryClient, Wrapper };
+}
 
 const mockBookmarkFeedItem = bookmarkFeedItem as jest.MockedFunction<typeof bookmarkFeedItem>;
 const mockUnbookmarkFeedItem = unbookmarkFeedItem as jest.MockedFunction<typeof unbookmarkFeedItem>;
@@ -146,6 +159,114 @@ describe('useUnbookmarkFeedItem', () => {
     const alertSpy = jest.spyOn(Alert, 'alert');
     mockUnbookmarkFeedItem.mockRejectedValue(new Error('network error'));
     const { result } = renderHook(() => useUnbookmarkFeedItem(), { wrapper: createWrapper() });
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalledWith('common.error', 'common.failedToBookmark');
+  });
+});
+
+describe('useBookmarkFeedItem optimistic updates', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('optimistically increments bookmark_count only for matching item and skips non-matching', async () => {
+    mockBookmarkFeedItem.mockResolvedValue(undefined);
+    const { queryClient, Wrapper } = createWrapperWithClient();
+
+    const otherItem = { ...mockItem, id: 'item-2', bookmark_count: 10 };
+    // Pre-populate feed caches with two items so the "item doesn't match" branch executes
+    queryClient.setQueryData(['news-feed'], { pages: [[mockItem, otherItem]], pageParams: [0] });
+    queryClient.setQueryData(
+      ['feed-bookmarks-set', 'user-123', ['item-1']],
+      {} as Record<string, true>,
+    );
+
+    const { result } = renderHook(() => useBookmarkFeedItem(), { wrapper: Wrapper });
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockBookmarkFeedItem).toHaveBeenCalledWith('item-1', 'user-123');
+  });
+
+  it('rolls back feed and bookmark caches on mutation error', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    mockBookmarkFeedItem.mockRejectedValue(new Error('fail'));
+    const { queryClient, Wrapper } = createWrapperWithClient();
+
+    // Pre-populate feed caches
+    queryClient.setQueryData(['news-feed'], { pages: [[mockItem]], pageParams: [0] });
+    queryClient.setQueryData(['personalized-feed'], { pages: [[mockItem]], pageParams: [0] });
+    queryClient.setQueryData(['bookmarked-feed'], { pages: [[mockItem]], pageParams: [0] });
+    queryClient.setQueryData(
+      ['feed-bookmarks-set', 'user-123', ['item-1']],
+      {} as Record<string, true>,
+    );
+
+    const { result } = renderHook(() => useBookmarkFeedItem(), { wrapper: Wrapper });
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(alertSpy).toHaveBeenCalledWith('common.error', 'common.failedToBookmark');
+  });
+});
+
+describe('useUnbookmarkFeedItem optimistic updates', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('optimistically decrements bookmark_count only for matching item and skips non-matching', async () => {
+    mockUnbookmarkFeedItem.mockResolvedValue(undefined);
+    const { queryClient, Wrapper } = createWrapperWithClient();
+
+    const itemWithBookmark = { ...mockItem, bookmark_count: 3 };
+    const otherItem = { ...mockItem, id: 'item-2', bookmark_count: 10 };
+    queryClient.setQueryData(['news-feed'], {
+      pages: [[itemWithBookmark, otherItem]],
+      pageParams: [0],
+    });
+    queryClient.setQueryData(['feed-bookmarks-set', 'user-123', ['item-1']], {
+      'item-1': true as const,
+    });
+
+    const { result } = renderHook(() => useUnbookmarkFeedItem(), { wrapper: Wrapper });
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockUnbookmarkFeedItem).toHaveBeenCalledWith('item-1', 'user-123');
+  });
+
+  it('handles unbookmark with empty bookmark set (old is undefined)', async () => {
+    mockUnbookmarkFeedItem.mockResolvedValue(undefined);
+    const { queryClient, Wrapper } = createWrapperWithClient();
+
+    queryClient.setQueryData(['news-feed'], { pages: [[mockItem]], pageParams: [0] });
+    // Set bookmark data to trigger the setQueriesData path
+    queryClient.setQueryData(['feed-bookmarks-set', 'user-123', []], undefined);
+
+    const { result } = renderHook(() => useUnbookmarkFeedItem(), { wrapper: Wrapper });
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('rolls back feed and bookmark caches on unbookmark error', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert');
+    mockUnbookmarkFeedItem.mockRejectedValue(new Error('fail'));
+    const { queryClient, Wrapper } = createWrapperWithClient();
+
+    queryClient.setQueryData(['news-feed'], { pages: [[mockItem]], pageParams: [0] });
+    queryClient.setQueryData(['personalized-feed'], { pages: [[mockItem]], pageParams: [0] });
+    queryClient.setQueryData(['bookmarked-feed'], { pages: [[mockItem]], pageParams: [0] });
+    queryClient.setQueryData(['feed-bookmarks-set', 'user-123', ['item-1']], {
+      'item-1': true as const,
+    });
+
+    const { result } = renderHook(() => useUnbookmarkFeedItem(), { wrapper: Wrapper });
     await act(async () => {
       result.current.mutate({ feedItemId: 'item-1' });
     });

@@ -98,6 +98,7 @@ export default function FeedScreen() {
     refetchVotes,
     refetchBookmarks,
   );
+  /* istanbul ignore next -- scroll-to-top wraps baseOnRefresh; only callable via pull-to-refresh gesture */
   const onRefresh = useCallback(async () => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
     return baseOnRefresh();

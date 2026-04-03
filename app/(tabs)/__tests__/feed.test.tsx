@@ -678,6 +678,22 @@ describe('FeedScreen', () => {
     prefetchModule.usePrefetchOnVisibility = orig;
   });
 
+  it('bookmark calls bookmarkMutation.mutate when item is not bookmarked', () => {
+    setupMocks({ bookmarks: {} });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Bookmark Test Trailer'));
+    expect(mockBookmarkMutate).toHaveBeenCalledWith({ feedItemId: '1' });
+    expect(mockUnbookmarkMutate).not.toHaveBeenCalled();
+  });
+
+  it('bookmark calls unbookmarkMutation.mutate when item is already bookmarked', () => {
+    setupMocks({ bookmarks: { '1': true } });
+    render(<FeedScreen />);
+    fireEvent.press(screen.getByLabelText('Bookmark Test Trailer'));
+    expect(mockUnbookmarkMutate).toHaveBeenCalledWith({ feedItemId: '1' });
+    expect(mockBookmarkMutate).not.toHaveBeenCalled();
+  });
+
   it('commentPrefetchFn calls fetchComments with correct args', () => {
     let capturedPrefetchFn: ((item: { id: string }) => unknown) | undefined;
     const prefetchModule = require('@/hooks/usePrefetchOnVisibility');

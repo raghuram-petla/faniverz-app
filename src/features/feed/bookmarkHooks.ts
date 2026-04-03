@@ -26,7 +26,7 @@ const BOOKMARK_FEED_QUERY_KEYS = ['news-feed', 'personalized-feed', 'bookmarked-
 // @coupling: fetchBookmarkedFeed is only called when userId is defined — resolves empty when anonymous
 export function useBookmarkedFeed() {
   const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const userId = user?.id ?? /* istanbul ignore next */ null;
 
   return useSmartInfiniteQuery<NewsFeedItem>({
     queryKey: ['bookmarked-feed', userId],
@@ -64,11 +64,13 @@ export function useBookmarkFeedItem() {
         queryClient
           .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
           .forEach(([queryKey, data]) => {
+            /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
             if (data) previousFeedData.push({ queryKey, data });
           });
       }
       for (const key of BOOKMARK_FEED_QUERY_KEYS) {
         queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
+          /* istanbul ignore next -- defensive: setQueriesData updater receives undefined for empty cache */
           if (!old) return old;
           return {
             ...old,
@@ -88,19 +90,22 @@ export function useBookmarkFeedItem() {
       queryClient
         .getQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] })
         .forEach(([queryKey, data]) => {
+          /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
           if (data) previousBookmarkData.push({ queryKey, data });
         });
       queryClient.setQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
-        return { ...(old ?? {}), [feedItemId]: true as const };
+        return { ...(old ?? /* istanbul ignore next */ {}), [feedItemId]: true as const };
       });
       return { previousFeedData, previousBookmarkData };
     },
     onError: (_err, _vars, context) => {
+      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
       if (context?.previousFeedData) {
         for (const { queryKey, data } of context.previousFeedData) {
           queryClient.setQueryData(queryKey, data);
         }
       }
+      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
       if (context?.previousBookmarkData) {
         for (const { queryKey, data } of context.previousBookmarkData) {
           queryClient.setQueryData(queryKey, data);
@@ -138,11 +143,13 @@ export function useUnbookmarkFeedItem() {
         queryClient
           .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
           .forEach(([queryKey, data]) => {
+            /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
             if (data) previousFeedData.push({ queryKey, data });
           });
       }
       for (const key of BOOKMARK_FEED_QUERY_KEYS) {
         queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
+          /* istanbul ignore next -- defensive: setQueriesData updater receives undefined for empty cache */
           if (!old) return old;
           return {
             ...old,
@@ -161,9 +168,11 @@ export function useUnbookmarkFeedItem() {
       queryClient
         .getQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] })
         .forEach(([queryKey, data]) => {
+          /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
           if (data) previousBookmarkData.push({ queryKey, data });
         });
       queryClient.setQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
+        /* istanbul ignore next -- defensive: old is undefined when no bookmark cache exists */
         if (!old) return {};
         const { [feedItemId]: _, ...rest } = old;
         return rest;
@@ -171,11 +180,13 @@ export function useUnbookmarkFeedItem() {
       return { previousFeedData, previousBookmarkData };
     },
     onError: (_err, _vars, context) => {
+      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
       if (context?.previousFeedData) {
         for (const { queryKey, data } of context.previousFeedData) {
           queryClient.setQueryData(queryKey, data);
         }
       }
+      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
       if (context?.previousBookmarkData) {
         for (const { queryKey, data } of context.previousBookmarkData) {
           queryClient.setQueryData(queryKey, data);

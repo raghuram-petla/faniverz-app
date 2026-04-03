@@ -117,16 +117,18 @@ jest.mock('@/components/feed/CommentsBottomSheet', () => ({
   CommentsBottomSheet: ({
     visible,
     feedItemId,
+    onClose,
   }: {
     visible: boolean;
     feedItemId: string;
     onClose?: () => void;
   }) => {
     if (!visible) return null;
-    const { View, Text } = require('react-native');
+    const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View testID="comments-sheet">
         <Text testID="comments-sheet-item-id">{feedItemId}</Text>
+        {onClose && <TouchableOpacity testID="comments-sheet-close" onPress={onClose} />}
       </View>
     );
   },
@@ -419,6 +421,34 @@ describe('BookmarkedFeedScreen', () => {
     capturedOnEntityPress?.('user', 'u2');
     expect(mockPush).toHaveBeenCalledWith('/user/u2');
     FeedCardModule.FeedCard = origFeedCard;
+  });
+
+  it('closes comments sheet via onClose callback', () => {
+    renderScreen();
+    // Open the sheet
+    fireEvent.press(screen.getByLabelText('Comment Saved Item'));
+    expect(screen.getByTestId('comments-sheet')).toBeTruthy();
+    // Close the sheet
+    fireEvent.press(screen.getByTestId('comments-sheet-close'));
+    expect(screen.queryByTestId('comments-sheet')).toBeNull();
+  });
+
+  it('shows loading indicator when fetching next page', () => {
+    const feedModule = jest.requireMock('@/features/feed');
+    const orig = feedModule.useBookmarkedFeed;
+    feedModule.useBookmarkedFeed = () => ({
+      allItems: [makeItem()],
+      isLoading: false,
+      hasNextPage: true,
+      fetchNextPage: jest.fn(),
+      isFetchingNextPage: true,
+      refetch: jest.fn(),
+    });
+    const { UNSAFE_root } = renderScreen();
+    const { ActivityIndicator } = require('react-native');
+    const indicators = UNSAFE_root.findAllByType(ActivityIndicator);
+    expect(indicators.length).toBeGreaterThanOrEqual(1);
+    feedModule.useBookmarkedFeed = orig;
   });
 
   it('renders multiple items', () => {

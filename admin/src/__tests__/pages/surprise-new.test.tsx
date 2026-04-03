@@ -329,6 +329,29 @@ describe('NewSurpriseContentPage', () => {
     });
   });
 
+  it('alerts on create error via onError callback', async () => {
+    window.alert = vi.fn();
+    renderWithProviders(<NewSurpriseContentPage />);
+
+    fireEvent.change(screen.getByPlaceholderText('Enter title'), {
+      target: { value: 'Test' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('e.g. dQw4w9WgXcQ'), {
+      target: { value: 'abc' },
+    });
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'song' } });
+
+    const form = document.querySelector('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+    });
+    const { onError } = mockMutate.mock.calls[0][1];
+    onError(new Error('create failed'));
+    expect(window.alert).toHaveBeenCalledWith('create failed');
+  });
+
   it('isDirty becomes true when category is selected', () => {
     renderWithProviders(<NewSurpriseContentPage />);
     fireEvent.change(screen.getByLabelText('Category'), {

@@ -320,6 +320,25 @@ describe('MediaScreen', () => {
     expect(screen.getByTestId('floating-poster')).toBeTruthy();
   });
 
+  it('onNavLeftLayout fires and updates navLeftWidth without crashing', () => {
+    const { UNSAFE_root } = render(<MediaScreen />);
+    const { View } = require('react-native');
+    // Find the View with onLayout inside the sticky nav (the stickyNavLeft view)
+    const views = UNSAFE_root.findAllByType(View);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const layoutViews = views.filter((v: any) => typeof v.props.onLayout === 'function');
+    // There are multiple onLayout views: the scroll layout and the navLeft layout
+    // Fire all of them to ensure onNavLeftLayout is covered
+    for (const v of layoutViews) {
+      expect(() =>
+        v.props.onLayout({
+          nativeEvent: { layout: { x: 0, y: 0, width: 80, height: 56 } },
+        }),
+      ).not.toThrow();
+    }
+    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+  });
+
   it('shows singular video/photo labels when counts are 1', () => {
     (useMovieDetail as jest.Mock).mockReturnValue({
       data: {

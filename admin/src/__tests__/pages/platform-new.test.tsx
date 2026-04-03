@@ -384,6 +384,34 @@ describe('NewPlatformPage', () => {
     alertSpy.mockRestore();
   });
 
+  it('alerts on create platform error via onError callback', () => {
+    window.alert = vi.fn();
+    renderWithProviders(<NewPlatformPage />);
+    fireEvent.change(screen.getByPlaceholderText('e.g. Netflix'), {
+      target: { value: 'Test' },
+    });
+    fireEvent.submit(screen.getByText('Create').closest('form')!);
+    const { onError } = mockMutate.mock.calls[0][1];
+    onError(new Error('create failed'));
+    expect(window.alert).toHaveBeenCalledWith('create failed');
+  });
+
+  it('clears logoUrl when remove button is clicked', async () => {
+    mockUploadFn.mockResolvedValueOnce('https://cdn.test/logo.png');
+    renderWithProviders(<NewPlatformPage />);
+    // First upload a logo
+    fireEvent.click(screen.getByTestId('upload-logo'));
+    await vi.waitFor(() => expect(mockUploadFn).toHaveBeenCalled());
+    // Then remove it
+    fireEvent.click(screen.getByTestId('remove-logo'));
+    // After removing, submit should have null logo_url
+    fireEvent.change(screen.getByPlaceholderText('e.g. Netflix'), {
+      target: { value: 'Test' },
+    });
+    fireEvent.submit(screen.getByText('Create').closest('form')!);
+    expect(mockMutate.mock.calls[0][0]).toMatchObject({ logo_url: null });
+  });
+
   it('uses country code when country name not found', () => {
     // Default country is IN which is in our mock, so it shows "India"
     // This test verifies the ?? code fallback would work

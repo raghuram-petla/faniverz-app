@@ -427,6 +427,15 @@ describe('NewMoviePage', () => {
     expect(result).toEqual([{ production_house_id: 'ph-1', _ph: { id: 'ph-1', name: 'Test PH' } }]);
   });
 
+  it('ProductionHousesSection onQuickAdd alerts on error', async () => {
+    window.alert = vi.fn();
+    mockMutateAsync.mockRejectedValueOnce(new Error('PH create failed'));
+    renderPage();
+    fireEvent.click(screen.getByText('Cast & Crew'));
+    await act(() => capturedProps.ProductionHousesSection.onQuickAdd('Bad PH'));
+    expect(window.alert).toHaveBeenCalledWith('PH create failed');
+  });
+
   it('CastSection onAdd calls setPendingCastAdds', () => {
     renderPage();
     fireEvent.click(screen.getByText('Cast & Crew'));
