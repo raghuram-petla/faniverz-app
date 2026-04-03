@@ -45,14 +45,26 @@ export function useMediaScrollAnimations({
   textPrimaryColor,
   textSecondaryColor,
 }: MediaScrollAnimationsProps) {
+  /**
+   * @contract Computes the left edge of the available area for the collapsed group.
+   * Centers the poster+title group between the nav buttons and the right screen edge.
+   */
+  const getCollapsedGroupLeft = (titleVisualW: number, navW: number) => {
+    'worklet';
+    const groupW = POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW;
+    if (navW === 0) return (screenWidth - groupW) / 2; // fallback: center in screen
+    const areaLeft = navW + 16 + 6; // right edge of buttons + row padding + gap
+    const areaRight = screenWidth - 16; // right padding
+    return Math.max(areaLeft + (areaRight - areaLeft - groupW) / 2, areaLeft);
+  };
+
   // @boundary: p interpolates [0,1] over HERO_HEIGHT; clamped so over-scroll has no effect
   const animatedPosterStyle = useAnimatedStyle(() => {
     const s = scrollOffset.value;
     const p = interpolate(s, [0, HERO_HEIGHT], [0, 1], Extrapolation.CLAMP);
 
     const titleVisualW = titleWidth.value * TITLE_SCALE;
-    const groupW = POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW;
-    const groupLeft = (screenWidth - groupW) / 2;
+    const groupLeft = getCollapsedGroupLeft(titleVisualW, navLeftWidth.value);
     const collapsedCX = groupLeft + POSTER_COLLAPSED_W / 2;
 
     const cy = (heroPosterCY - s) * (1 - p) + navCenterY * p;
@@ -77,8 +89,7 @@ export function useMediaScrollAnimations({
     const scale = interpolate(p, [0, 1], [1, TITLE_SCALE]);
 
     const titleVisualW = W * TITLE_SCALE;
-    const groupW = POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW;
-    const groupLeft = (screenWidth - groupW) / 2;
+    const groupLeft = getCollapsedGroupLeft(titleVisualW, navLeftWidth.value);
     const collapsedNameCX = groupLeft + POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW / 2;
 
     // Hero: to the right of poster, vertically centered with poster bottom half
@@ -113,13 +124,17 @@ export function useMediaScrollAnimations({
     };
   });
 
-  // @contract: dynamically constrains title width so collapsed group doesn't overlap nav buttons
+  // @contract: animates maxWidth from generous (hero) to constrained (collapsed) on scroll
   const titleMaxWidthStyle = useAnimatedStyle(() => {
     const navW = navLeftWidth.value;
-    if (navW === 0) return {}; // not measured yet — no constraint
-    // Available center = screen - 2*(navLeft + horizontalPadding + safetyGap) - poster - gap
-    const available = screenWidth - 2 * (navW + 16 + 8) - POSTER_COLLAPSED_W - COLLAPSED_GAP;
-    return { maxWidth: available / TITLE_SCALE };
+    if (navW === 0) return {};
+    const p = interpolate(scrollOffset.value, [0, HERO_HEIGHT], [0, 1], Extrapolation.CLAMP);
+    // Hero: title starts after expanded poster, extends to right edge
+    const heroMax = screenWidth - (heroPosterCX + POSTER_EXPANDED_W / 2 + 12) - 16;
+    // Collapsed: available area between nav buttons and right edge
+    const collapsedMax =
+      (screenWidth - 16 - (navW + 16 + 6) - POSTER_COLLAPSED_W - COLLAPSED_GAP) / TITLE_SCALE;
+    return { maxWidth: interpolate(p, [0, 1], [heroMax, collapsedMax]) };
   });
 
   return {
