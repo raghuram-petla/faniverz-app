@@ -109,7 +109,12 @@ When work was done in a worktree (via `isolation: "worktree"` Agent), the change
 
 7. **Push master** and report the merge commit hash.
 
-8. **Clean up** (optional): The worktree can be removed later with `git worktree remove <path>`.
+8. **Clean up**: Remove the worktree and delete the branch after merge:
+   ```bash
+   git worktree remove <worktree-path>
+   git branch -d <worktree-branch>
+   git push origin --delete <worktree-branch>
+   ```
 
 ## Rules
 
