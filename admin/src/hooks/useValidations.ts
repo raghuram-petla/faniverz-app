@@ -151,6 +151,8 @@ export function useValidations() {
   return {
     summary: summaryQuery.data,
     isSummaryLoading: summaryQuery.isLoading,
+    isSummaryError: summaryQuery.isError,
+    summaryError: summaryQuery.error,
     refetchSummary: summaryQuery.refetch,
     scanResults: filteredResults,
     allScanResults: scanResults,

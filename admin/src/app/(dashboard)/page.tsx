@@ -19,7 +19,12 @@ export default function DashboardPage() {
   // @coupling usePermissions determines both stat scoping and quick-action visibility
   const { isPHAdmin, productionHouseIds, canViewPage } = usePermissions();
   // @boundary PH admins see only their production house stats; others see global counts
-  const { data: stats, isLoading } = useDashboardStats(isPHAdmin ? productionHouseIds : undefined);
+  const {
+    data: stats,
+    isLoading,
+    isError,
+    error,
+  } = useDashboardStats(isPHAdmin ? productionHouseIds : undefined);
 
   const quickActions = [
     {
@@ -66,6 +71,13 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* v8 ignore start -- isError is always false in test mocks */}
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading stats: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {[
           {

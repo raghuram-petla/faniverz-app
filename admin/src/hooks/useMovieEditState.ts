@@ -31,6 +31,8 @@ export function useMovieEditState(id: string) {
   const {
     movie,
     isLoading,
+    isError,
+    error: loadError,
     updateMovie,
     deleteMovie,
     castData,
@@ -178,6 +180,8 @@ export function useMovieEditState(id: string) {
       savedMainPosterId: derived.savedMainPosterId,
     },
     isLoading,
+    isError,
+    loadError,
     movie,
     form,
     setForm,

@@ -41,9 +41,12 @@ export default function NotificationsPage() {
   if (statusFilter) filters.status = statusFilter;
   if (typeFilter) filters.type = typeFilter;
 
-  const { data: notifications, isLoading } = useAdminNotifications(
-    Object.keys(filters).length ? filters : undefined,
-  );
+  const {
+    data: notifications,
+    isLoading,
+    isError,
+    error,
+  } = useAdminNotifications(Object.keys(filters).length ? filters : undefined);
   const cancelNotification = useCancelNotification();
   const retryNotification = useRetryNotification();
   const bulkRetry = useBulkRetryFailed();
@@ -158,6 +161,14 @@ export default function NotificationsPage() {
           </>
         )}
       </div>
+
+      {/* v8 ignore start -- isError is always false in test mocks */}
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading notifications: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

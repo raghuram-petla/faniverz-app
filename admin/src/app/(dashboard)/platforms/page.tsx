@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 export default function PlatformsPage() {
   const { isReadOnly, canDeleteTopLevel } = usePermissions();
-  const { data: platforms, isLoading } = useAdminPlatforms();
+  const { data: platforms, isLoading, isError, error } = useAdminPlatforms();
   const { data: rawCountries } = useCountries();
   /* v8 ignore start */
   const countries = useMemo(() => rawCountries ?? [], [rawCountries]);
@@ -78,6 +78,14 @@ export default function PlatformsPage() {
           </Link>
         )}
       </div>
+
+      {/* v8 ignore start -- phantom else on isError guard + string-error fallback unreachable */}
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading platforms: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

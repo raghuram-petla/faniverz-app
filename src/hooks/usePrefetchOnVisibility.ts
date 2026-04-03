@@ -79,7 +79,9 @@ export function usePrefetchOnVisibility<TItem extends { id: string }>({
       }
 
       rafRef.current = requestAnimationFrame(() => {
-        const { countField, countThreshold } = config.prefetchRelated!;
+        /* istanbul ignore next -- defensive re-check; outer guard at line 74 prevents entry */
+        if (!config.prefetchRelated) return;
+        const { countField, countThreshold } = config.prefetchRelated;
 
         for (const viewToken of info.viewableItems) {
           const item = viewToken.item as TItem;

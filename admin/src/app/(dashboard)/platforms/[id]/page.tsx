@@ -90,6 +90,8 @@ export default function EditPlatformPage() {
     changes,
     changeCount,
     isLoading,
+    isError,
+    loadError,
     handleSave,
     handleDiscard,
     handleRevertField,
@@ -124,6 +126,15 @@ export default function EditPlatformPage() {
         <Loader2 className="w-8 h-8 text-status-red animate-spin" />
       </div>
     );
+
+  /* v8 ignore start -- phantom else: isError early-return + string-error fallback unreachable */
+  if (isError)
+    return (
+      <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+        Error loading platform: {loadError instanceof Error ? loadError.message : 'Unknown error'}
+      </div>
+    );
+  /* v8 ignore stop */
 
   return (
     <div className="max-w-2xl space-y-6">

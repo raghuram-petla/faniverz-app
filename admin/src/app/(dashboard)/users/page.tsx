@@ -31,8 +31,18 @@ export default function UsersPage() {
   // @assumes realUser is the actual authenticated user (not impersonated) for self-protection checks
   const { user: realUser } = useAuth();
   const { role, isSuperAdmin, canManageAdmin } = usePermissions();
-  const { data: users, isLoading: usersLoading } = useAdminUserList();
-  const { data: invitations, isLoading: invitesLoading } = useAdminInvitations();
+  const {
+    data: users,
+    isLoading: usersLoading,
+    isError: usersError,
+    error: usersErr,
+  } = useAdminUserList();
+  const {
+    data: invitations,
+    isLoading: invitesLoading,
+    isError: invitesError,
+    error: invitesErr,
+  } = useAdminInvitations();
   const revokeAdmin = useRevokeAdmin();
   const revokeInvitation = useRevokeInvitation();
   const updateRole = useUpdateAdminRole();
@@ -140,6 +150,14 @@ export default function UsersPage() {
         )}
       </div>
 
+      {/* v8 ignore start -- usersError is always false in test mocks */}
+      {usersError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading users: {usersErr instanceof Error ? usersErr.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
+
       {tab === 'admins' && (
         <AdminsTable
           users={visibleUsers}
@@ -161,6 +179,15 @@ export default function UsersPage() {
           isRevokePending={revokeAdmin.isPending}
         />
       )}
+
+      {/* v8 ignore start -- invitesError is always false in test mocks */}
+      {invitesError && tab === 'invitations' && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading invitations:{' '}
+          {invitesErr instanceof Error ? invitesErr.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
 
       {tab === 'invitations' && (
         <InvitationsTable

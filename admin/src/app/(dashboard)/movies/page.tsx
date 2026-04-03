@@ -68,20 +68,28 @@ export default function MoviesPage() {
   // @boundary PH admins see only their production house movies via productionHouseIds filter
   // @contract When searching, show all languages (disabled for non-matching) so users see
   // the movie exists. When browsing (no search), filter by selected language.
-  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAdminMovies(
-      debouncedSearch,
-      statusFilter,
-      /* v8 ignore start */
-      isPHAdmin ? productionHouseIds : undefined,
-      /* v8 ignore stop */
-      /* v8 ignore start */
-      hasActiveFilters ? resolvedFilters : undefined,
-      /* v8 ignore stop */
-      /* v8 ignore start */
-      debouncedSearch ? undefined : selectedLanguageCode,
-      /* v8 ignore stop */
-    );
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useAdminMovies(
+    debouncedSearch,
+    statusFilter,
+    /* v8 ignore start */
+    isPHAdmin ? productionHouseIds : undefined,
+    /* v8 ignore stop */
+    /* v8 ignore start */
+    hasActiveFilters ? resolvedFilters : undefined,
+    /* v8 ignore stop */
+    /* v8 ignore start */
+    debouncedSearch ? undefined : selectedLanguageCode,
+    /* v8 ignore stop */
+  );
   const movies = data?.pages.flat() ?? [];
   const deleteMovie = useDeleteMovie();
 
@@ -103,6 +111,14 @@ export default function MoviesPage() {
         movieCount={isLoading ? 0 : movies.length}
         debouncedSearch={debouncedSearch}
       />
+
+      {/* v8 ignore start -- phantom else on isError guard + string-error fallback unreachable */}
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading movies: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

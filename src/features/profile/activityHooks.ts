@@ -14,7 +14,13 @@ export function useUserActivity(filter: ActivityFilter = 'all') {
   // its staleTime expires or a full refetch.
   return useSmartInfiniteQuery<UserActivity>({
     queryKey: ['user-activity', userId, filter],
-    queryFn: (offset, limit) => fetchUserActivity(userId!, filter, offset, limit),
+    queryFn: (offset, limit) =>
+      fetchUserActivity(
+        userId ?? /* istanbul ignore next -- queryFn never runs when enabled is false */ '',
+        filter,
+        offset,
+        limit,
+      ),
     config: ACTIVITY_PAGINATION,
     enabled: !!userId,
   });

@@ -47,7 +47,7 @@ import {
 // @contract Centralizes all data-fetching hooks for the movie edit page
 // @coupling Each hook maps 1:1 to a Supabase table or RPC; composed by useMovieEditState
 export function useMovieEditData(id: string) {
-  const { data: movie, isLoading } = useAdminMovie(id);
+  const { data: movie, isLoading, isError, error } = useAdminMovie(id);
   const updateMovie = useUpdateMovie();
   const deleteMovie = useDeleteMovie();
 
@@ -123,6 +123,8 @@ export function useMovieEditData(id: string) {
   return {
     movie,
     isLoading,
+    isError,
+    error,
     updateMovie,
     deleteMovie,
     castData,

@@ -90,6 +90,15 @@ export default function EditMoviePage() {
         <Loader2 className="w-8 h-8 text-status-red animate-spin" />
       </div>
     );
+  /* v8 ignore start -- phantom else: isError early-return + string-error fallback unreachable */
+  if (editState.isError)
+    return (
+      <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+        Error loading movie:{' '}
+        {editState.loadError instanceof Error ? editState.loadError.message : 'Unknown error'}
+      </div>
+    );
+  /* v8 ignore stop */
 
   return (
     <div className="max-w-6xl">

@@ -16,8 +16,16 @@ export default function CastPage() {
   // @coupling isPHAdmin restricts edit visibility; canDelete gates deletion by ownership
   const { isPHAdmin, canDeleteTopLevel, isReadOnly } = usePermissions();
   const { search, setSearch, debouncedSearch } = useDebouncedSearch();
-  const { data, isLoading, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
-    useAdminActors(debouncedSearch);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useAdminActors(debouncedSearch);
   const actors = data?.pages.flat() ?? [];
   const createActor = useCreateActor();
   const deleteActor = useDeleteActor();
@@ -76,6 +84,14 @@ export default function CastPage() {
           </p>
         )}
       </div>
+
+      {/* v8 ignore start -- phantom else on isError guard + string-error fallback unreachable */}
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading cast: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

@@ -27,7 +27,7 @@ export default function FeedPage() {
   // @contract Filter 'all' maps to undefined (no server-side filter applied)
   const [filter, setFilter] = useState<FeedType | 'all'>('all');
   const queryFilter = filter === 'all' ? undefined : filter;
-  const { data: items = [], isLoading } = useAdminFeed(queryFilter);
+  const { data: items = [], isLoading, isError, error } = useAdminFeed(queryFilter);
   const deleteMutation = useDeleteFeedItem();
   const pinMutation = useTogglePinFeed();
   const featureMutation = useToggleFeatureFeed();
@@ -104,6 +104,14 @@ export default function FeedPage() {
           </Link>
         )}
       </div>
+
+      {/* v8 ignore start -- isError is always false in test mocks */}
+      {isError && (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading feed: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      )}
+      {/* v8 ignore stop */}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">

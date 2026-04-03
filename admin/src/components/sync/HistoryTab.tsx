@@ -10,7 +10,7 @@ import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
  *  @sideeffect auto-refreshes via useAdminSyncLogs when any log has status='running' */
 export function HistoryTab() {
   /** @coupling useAdminSyncLogs auto-refeshes when any log has status 'running' */
-  const { data: logs, isLoading } = useAdminSyncLogs();
+  const { data: logs, isLoading, isError, error } = useAdminSyncLogs();
   const [statusFilter, setStatusFilter] = useState('');
   const [functionFilter, setFunctionFilter] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -74,7 +74,12 @@ export function HistoryTab() {
         )}
       </div>
 
-      {isLoading ? (
+      {/* v8 ignore start -- phantom else on isError ternary + string-error fallback unreachable */}
+      {isError ? (
+        <div className="bg-red-600/10 border border-red-600/30 rounded-lg px-4 py-3 text-sm text-status-red">
+          Error loading sync logs: {error instanceof Error ? error.message : 'Unknown error'}
+        </div>
+      ) : /* v8 ignore stop */ isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>

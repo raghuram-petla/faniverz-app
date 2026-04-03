@@ -14,7 +14,7 @@ import { FeedVideoPlayer } from './FeedVideoPlayer';
 import { FollowButton } from './FollowButton';
 import { FilmStripFrame } from './FilmStripFrame';
 import { FilmStripFrameDivider } from './FilmStripFrameDivider';
-import { formatRelativeTime } from '@/utils/formatDate';
+import { useRelativeTime } from '@/hooks/useRelativeTime';
 import {
   getFeedTypeLabel,
   deriveEntityType,
@@ -83,6 +83,7 @@ function FeedCardInner({
   const hasThumbnail = !!imageUrl;
   const isPosterImage = hasThumbnail && !hasVideo; // @invariant poster only when thumbnail + no video
   const label = getFeedTypeLabel(item.content_type);
+  const relativeTime = useRelativeTime(item.published_at);
 
   const entityType = deriveEntityType(item);
   const entityAvatarUrl = getEntityAvatarUrl(item);
@@ -194,7 +195,7 @@ function FeedCardInner({
               >
                 <View style={styles.badgeTimestampRow}>
                   <FeedContentBadge contentType={item.content_type} />
-                  <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
+                  <Text style={styles.timestamp}>{relativeTime}</Text>
                 </View>
                 <Text style={styles.headerTitle} numberOfLines={2}>
                   {item.title}
@@ -256,7 +257,10 @@ function FeedCardInner({
           {hasVideo ? (
             <View style={styles.mediaContainer}>
               <FeedVideoPlayer
-                youtubeId={item.youtube_id!}
+                youtubeId={
+                  item.youtube_id ??
+                  /* istanbul ignore next -- youtube_id always present when hasVideo is true */ ''
+                }
                 thumbnailUrl={item.thumbnail_url}
                 isActive={isVideoActive ?? false}
                 shouldMount={shouldMountVideo ?? isVideoActive ?? false}
@@ -287,19 +291,21 @@ function FeedCardInner({
 }
 
 // @sync custom memo — callback props excluded; parent must stabilize them
-export const FeedCard = React.memo(
-  FeedCardInner,
-  (prev, next) =>
-    prev.item.id === next.item.id &&
+export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
+  const p = prev.item,
+    n = next.item;
+  return (
+    p.id === n.id &&
     prev.userVote === next.userVote &&
     prev.isBookmarked === next.isBookmarked &&
     prev.isVideoActive === next.isVideoActive &&
     prev.shouldMountVideo === next.shouldMountVideo &&
     prev.isFollowing === next.isFollowing &&
-    prev.item.upvote_count === next.item.upvote_count &&
-    prev.item.downvote_count === next.item.downvote_count &&
-    prev.item.view_count === next.item.view_count &&
-    prev.item.comment_count === next.item.comment_count &&
-    prev.item.bookmark_count === next.item.bookmark_count &&
-    prev.item.movie?.poster_image_type === next.item.movie?.poster_image_type,
-);
+    p.upvote_count === n.upvote_count &&
+    p.downvote_count === n.downvote_count &&
+    p.view_count === n.view_count &&
+    p.comment_count === n.comment_count &&
+    p.bookmark_count === n.bookmark_count &&
+    p.movie?.poster_image_type === n.movie?.poster_image_type
+  );
+});

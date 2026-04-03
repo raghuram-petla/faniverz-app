@@ -27,7 +27,7 @@ export interface EditPageConfig<TForm extends object> {
 
 export interface EditPageHooks {
   /** The data fetching hook result */
-  dataResult: { data: unknown; isLoading: boolean };
+  dataResult: { data: unknown; isLoading: boolean; isError?: boolean; error?: unknown };
   /** The update mutation result */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateMutation: { mutateAsync: (payload: any) => Promise<any> };
@@ -45,6 +45,8 @@ export interface EditPageStateReturn<TForm extends object> {
   changes: FieldChange[];
   changeCount: number;
   isLoading: boolean;
+  isError: boolean;
+  loadError: unknown;
   handleSave: () => Promise<void>;
   handleDiscard: () => void;
   handleRevertField: (key: string) => void;
@@ -167,6 +169,8 @@ export function useEditPageState<TForm extends object>(
     changes,
     changeCount,
     isLoading: dataResult.isLoading,
+    isError: dataResult.isError ?? false,
+    loadError: dataResult.error,
     handleSave,
     handleDiscard,
     handleRevertField,

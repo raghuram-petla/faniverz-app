@@ -1,3 +1,5 @@
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(),
 }));

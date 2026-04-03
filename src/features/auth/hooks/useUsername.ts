@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { checkUsernameAvailable, setUsername, validateUsername } from '../usernameApi';
+import i18n from '@/i18n';
 
 export function useCheckUsername(username: string) {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -34,10 +35,10 @@ export function useCheckUsername(username: string) {
         // Only apply result if this is still the latest request
         if (currentRequestId !== requestIdRef.current) return;
         setIsAvailable(available);
-        if (!available) setError('Username is taken');
+        if (!available) setError(i18n.t('common.usernameTaken'));
       } catch {
         if (currentRequestId !== requestIdRef.current) return;
-        setError('Failed to check availability');
+        setError(i18n.t('common.failedToCheckAvailability'));
         setIsAvailable(null);
       } finally {
         if (currentRequestId === requestIdRef.current) setIsChecking(false);
@@ -64,7 +65,7 @@ export function useSetUsername() {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
     onError: (error: Error) => {
-      Alert.alert('Error', error.message || 'Failed to set username');
+      Alert.alert(i18n.t('common.error'), error.message || i18n.t('common.failedToSetUsername'));
     },
   });
 }

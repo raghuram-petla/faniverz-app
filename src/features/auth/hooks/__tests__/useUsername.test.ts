@@ -1,3 +1,5 @@
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(() => ({ user: { id: 'u1' } })),
 }));
@@ -59,7 +61,7 @@ describe('useCheckUsername', () => {
       jest.advanceTimersByTime(500);
     });
 
-    await waitFor(() => expect(result.current.error).toBe('Username is taken'));
+    await waitFor(() => expect(result.current.error).toBe('common.usernameTaken'));
   });
 
   it('sets error when availability check throws', async () => {
@@ -72,7 +74,7 @@ describe('useCheckUsername', () => {
       jest.advanceTimersByTime(500);
     });
 
-    await waitFor(() => expect(result.current.error).toBe('Failed to check availability'));
+    await waitFor(() => expect(result.current.error).toBe('common.failedToCheckAvailability'));
     expect(result.current.isAvailable).toBeNull();
   });
 
@@ -255,7 +257,9 @@ describe('useSetUsername', () => {
       }
     });
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Error', 'Failed to set username'));
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith('common.error', 'common.failedToSetUsername'),
+    );
     alertSpy.mockRestore();
   });
 });

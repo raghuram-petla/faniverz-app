@@ -1,3 +1,5 @@
+jest.mock('@/i18n', () => ({ t: (key: string) => key }));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: jest.fn(),
 }));
@@ -226,7 +228,7 @@ describe('useUpdateProfile', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Network error');
+    expect(Alert.alert).toHaveBeenCalledWith('common.error', 'Network error');
   });
 
   it('shows fallback Alert message when error has no message', async () => {
@@ -247,7 +249,7 @@ describe('useUpdateProfile', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to update profile');
+    expect(Alert.alert).toHaveBeenCalledWith('common.error', 'common.failedToUpdateProfile');
   });
 
   it('does not invalidate queries on error', async () => {

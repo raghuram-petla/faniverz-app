@@ -42,7 +42,11 @@
     "unfollowName": "Unfollow {{name}}",
     "entityTypeMovie": "Movie",
     "entityTypeActor": "Actor",
-    "entityTypeProductionHouse": "Production House"
+    "entityTypeProductionHouse": "Production House",
+    "failedToUpdateProfile": "Failed to update profile. Please try again.",
+    "failedToSetUsername": "Failed to set username. Please try again.",
+    "usernameTaken": "Username is taken",
+    "failedToCheckAvailability": "Failed to check availability"
   },
   "tabs": {
     "home": "Home",
