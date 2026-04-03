@@ -3,6 +3,7 @@ jest.mock('react-native-reanimated', () => {
   return {
     ...actual,
     useAnimatedStyle: (fn: () => Record<string, unknown>) => fn(),
+    interpolateColor: (_v: number, _input: number[], output: string[]) => output[0],
   };
 });
 
@@ -43,15 +44,18 @@ function makeProps(
     heroPosterCX: 66,
     heroPosterCY: 230,
     navCenterY: 70,
+    textPrimaryColor: '#000000',
+    textSecondaryColor: '#666666',
     ...overrides,
   };
 }
 
 describe('useMediaScrollAnimations', () => {
-  it('returns animatedPosterStyle, animatedTitleStyle, and subtitleFadeStyle', () => {
+  it('returns animatedPosterStyle, animatedTitleStyle, titleColorStyle, and subtitleFadeStyle', () => {
     const { result } = renderHook(() => useMediaScrollAnimations(makeProps()));
     expect(result.current.animatedPosterStyle).toBeDefined();
     expect(result.current.animatedTitleStyle).toBeDefined();
+    expect(result.current.titleColorStyle).toBeDefined();
     expect(result.current.subtitleFadeStyle).toBeDefined();
   });
 
@@ -73,9 +77,15 @@ describe('useMediaScrollAnimations', () => {
     expect(transform[2]).toHaveProperty('scale');
   });
 
-  it('subtitle fade style has opacity property', () => {
+  it('titleColorStyle has color property', () => {
+    const { result } = renderHook(() => useMediaScrollAnimations(makeProps()));
+    expect(result.current.titleColorStyle).toHaveProperty('color');
+  });
+
+  it('subtitle fade style has opacity and color properties', () => {
     const { result } = renderHook(() => useMediaScrollAnimations(makeProps()));
     expect(result.current.subtitleFadeStyle).toHaveProperty('opacity');
+    expect(result.current.subtitleFadeStyle).toHaveProperty('color');
   });
 
   it('works with non-zero scroll offset', () => {

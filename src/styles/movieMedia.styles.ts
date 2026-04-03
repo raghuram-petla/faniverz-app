@@ -49,11 +49,9 @@ export const createStyles = (t: SemanticTheme) =>
     floatingTitleText: {
       fontSize: 20,
       fontWeight: '700',
-      color: t.textPrimary,
     },
     floatingSubtitle: {
       fontSize: 14,
-      color: t.textSecondary,
       marginTop: 2,
     },
 

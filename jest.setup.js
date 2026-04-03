@@ -193,6 +193,7 @@ jest.mock('react-native-reanimated', () => {
     runOnJS: jest.fn((fn) => fn),
     useAnimatedScrollHandler: jest.fn(() => jest.fn()),
     interpolate: jest.fn(),
+    interpolateColor: jest.fn((_v, _input, output) => output[0]),
     Extrapolation: { CLAMP: 'clamp', EXTEND: 'extend', IDENTITY: 'identity' },
   };
 });

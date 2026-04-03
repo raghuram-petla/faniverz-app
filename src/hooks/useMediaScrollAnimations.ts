@@ -1,4 +1,9 @@
-import { useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
+import {
+  useAnimatedStyle,
+  interpolate,
+  interpolateColor,
+  Extrapolation,
+} from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import {
   HERO_HEIGHT,
@@ -18,6 +23,8 @@ export interface MediaScrollAnimationsProps {
   heroPosterCX: number;
   heroPosterCY: number;
   navCenterY: number;
+  textPrimaryColor: string;
+  textSecondaryColor: string;
 }
 
 /**
@@ -33,6 +40,8 @@ export function useMediaScrollAnimations({
   heroPosterCX,
   heroPosterCY,
   navCenterY,
+  textPrimaryColor,
+  textSecondaryColor,
 }: MediaScrollAnimationsProps) {
   // @boundary: p interpolates [0,1] over HERO_HEIGHT; clamped so over-scroll has no effect
   const animatedPosterStyle = useAnimatedStyle(() => {
@@ -86,10 +95,21 @@ export function useMediaScrollAnimations({
     };
   });
 
-  /** @sideeffect Subtitle fades out in first half of scroll transition */
-  const subtitleFadeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollOffset.value, [0, HERO_HEIGHT * 0.4], [1, 0], Extrapolation.CLAMP),
-  }));
+  /** @sideeffect Title color transitions from white (over backdrop) to theme color (in nav bar) */
+  const titleColorStyle = useAnimatedStyle(() => {
+    const p = interpolate(scrollOffset.value, [0, HERO_HEIGHT], [0, 1], Extrapolation.CLAMP);
+    return { color: interpolateColor(p, [0, 1], ['#FFFFFF', textPrimaryColor]) };
+  });
 
-  return { animatedPosterStyle, animatedTitleStyle, subtitleFadeStyle };
+  /** @sideeffect Subtitle fades out and transitions color during scroll */
+  const subtitleFadeStyle = useAnimatedStyle(() => {
+    const s = scrollOffset.value;
+    const p = interpolate(s, [0, HERO_HEIGHT], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: interpolate(s, [0, HERO_HEIGHT * 0.4], [1, 0], Extrapolation.CLAMP),
+      color: interpolateColor(p, [0, 1], ['#FFFFFF', textSecondaryColor]),
+    };
+  });
+
+  return { animatedPosterStyle, animatedTitleStyle, titleColorStyle, subtitleFadeStyle };
 }

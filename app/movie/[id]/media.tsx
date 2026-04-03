@@ -119,15 +119,18 @@ export default function MediaScreen() {
   const heroPosterCY = insets.top + HERO_HEIGHT - 16 - POSTER_EXPANDED_H / 2;
   const navCenterY = insets.top + NAV_ROW_HEIGHT / 2;
 
-  const { animatedPosterStyle, animatedTitleStyle, subtitleFadeStyle } = useMediaScrollAnimations({
-    scrollOffset,
-    titleWidth,
-    titleHeight,
-    screenWidth,
-    heroPosterCX,
-    heroPosterCY,
-    navCenterY,
-  });
+  const { animatedPosterStyle, animatedTitleStyle, titleColorStyle, subtitleFadeStyle } =
+    useMediaScrollAnimations({
+      scrollOffset,
+      titleWidth,
+      titleHeight,
+      screenWidth,
+      heroPosterCX,
+      heroPosterCY,
+      navCenterY,
+      textPrimaryColor: theme.textPrimary,
+      textSecondaryColor: theme.textSecondary,
+    });
 
   if (isLoading) {
     return (
@@ -185,9 +188,13 @@ export default function MediaScreen() {
         pointerEvents="none"
         testID="floating-title"
       >
-        <Text style={styles.floatingTitleText} numberOfLines={1} onLayout={onTitleLayout}>
+        <Animated.Text
+          style={[styles.floatingTitleText, titleColorStyle]}
+          numberOfLines={1}
+          onLayout={onTitleLayout}
+        >
           {movie.title}
-        </Text>
+        </Animated.Text>
         <Animated.Text style={[styles.floatingSubtitle, subtitleFadeStyle]}>
           {videoCount} {videoCount !== 1 ? t('movieDetail.videos') : t('movieDetail.video')} ·{' '}
           {photoCount} {photoCount !== 1 ? t('movieDetail.photos') : t('movieDetail.photo')}
