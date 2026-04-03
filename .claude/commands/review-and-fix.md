@@ -2,11 +2,29 @@
 
 Code review and fix cycle that operates **only on uncommitted changes**. Scans staged and unstaged modifications for bugs, anti-patterns, logic errors, and code quality issues — then fixes them.
 
-## Scope — Uncommitted Changes Only
+## Scope — Changed Files Only
 
-Before starting, run `git diff --name-only` and `git diff --cached --name-only` to get the list of modified files. **Only review and fix these files.** Ignore all other files in the codebase. If there are no uncommitted changes, print `### No uncommitted changes found — nothing to review` and stop.
+### Determining the diff target
 
-For each modified file, also run `git diff <file>` and `git diff --cached <file>` to get the actual diff. Focus your review on the **changed lines and their immediate context** (surrounding function/block), not the entire file.
+Before scanning, determine whether the changes live in the **current working directory** or in a **worktree branch**:
+
+1. **If the user explicitly says to review a worktree** (or the feature was built in one), use `isolation: "worktree"` with the Agent tool, checkout the worktree branch, and diff against the base branch:
+   ```
+   git checkout <worktree-branch>
+   git diff main --name-only          # list changed files
+   git diff main -- <file>            # per-file diff
+   ```
+2. **Otherwise (default)**, diff uncommitted changes in the current working directory:
+   ```
+   git diff --name-only               # unstaged
+   git diff --cached --name-only      # staged
+   git diff <file>                    # per-file diff
+   git diff --cached <file>
+   ```
+
+**Only review and fix the files in the diff.** Ignore all other files in the codebase. If there are no changes, print `### No changes found — nothing to review` and stop.
+
+Focus your review on the **changed lines and their immediate context** (surrounding function/block), not the entire file.
 
 ## Loop Mode
 
