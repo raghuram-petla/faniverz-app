@@ -42,8 +42,8 @@ export function FeedActionBar({
   // @contract active vote highlights in red (up) or red (down); null = tertiary
   const upColor = userVote === 'up' ? colors.red500 : defaultColor;
   const downColor = userVote === 'down' ? colors.red500 : defaultColor;
-  // @contract bookmarked state uses yellow400 (gold accent); unbookmarked uses tertiary
-  const bookmarkColor = isBookmarked ? colors.yellow400 : defaultColor;
+  // @contract bookmarked state uses red500 accent; unbookmarked uses tertiary
+  const bookmarkColor = isBookmarked ? colors.red500 : defaultColor;
 
   return (
     <View style={styles.container}>
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   actionItem: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
