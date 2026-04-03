@@ -2,27 +2,23 @@
 
 ## Worktree-First Workflow
 
-**At the very start of every conversation, before doing any work, create a new git worktree and perform all work there.** This keeps the main working directory clean and prevents uncommitted changes from colliding across sessions.
+**All feature work must happen in an isolated git worktree.** This keeps the main working directory clean and prevents uncommitted changes from colliding across sessions.
 
-### Steps
+### How to create worktrees
 
-1. **Create a worktree** at the start of the conversation:
-   ```bash
-   git worktree add .claude/worktrees/<branch-name> -b <branch-name>
-   ```
-   Use a short, descriptive branch name based on the task (e.g., `fix-avatar-size`, `add-search-filter`, `refactor-comments`).
+Use `isolation: "worktree"` when launching Agents. This automatically creates a worktree branch, runs all work there, and returns the branch name. For direct (non-Agent) work, create manually:
 
-2. **Change into the worktree directory** and do ALL work there — edits, tests, quality gates, commits.
-
-3. **Run quality gates inside the worktree**, not the main directory.
-
-4. **When finished**, inform the user that the work is on branch `<branch-name>` in `.claude/worktrees/<branch-name>` so they can review, merge, or discard.
+```bash
+git worktree add .claude/worktrees/<branch-name> -b <branch-name>
+```
 
 ### Rules
 
-- Never modify files in the main working directory — always use the worktree.
+- Never modify source files in the main working directory — always use a worktree.
 - If the user explicitly says to work in the main directory, skip this rule.
 - Skills (`/review-and-fix`, `/bug-hunt`, etc.) must also run against the worktree, not the main directory.
+- Run quality gates inside the worktree, not the main directory.
+- **Shipping**: Use `/ship` to commit in the worktree, merge into master, push, and clean up (remove worktree, delete branch). Do not leave orphaned worktree branches.
 
 ## Protected Files — DO NOT MODIFY
 
