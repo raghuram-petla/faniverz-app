@@ -46,8 +46,9 @@ jest.mock('react-native-gesture-handler', () => ({
 }));
 
 jest.mock('@/lib/queryClient', () => ({
-  queryClient: { invalidateQueries: jest.fn() },
+  queryClient: {},
   queryPersister: {},
+  markCacheRestored: jest.fn(),
 }));
 
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
@@ -114,6 +115,19 @@ describe('RootLayout', () => {
     jest.advanceTimersByTime(600);
     await waitFor(() => {
       expect(SplashScreen.hideAsync).toHaveBeenCalled();
+    });
+    jest.useRealTimers();
+  });
+
+  it('calls markCacheRestored on cache restore', async () => {
+    jest.useFakeTimers();
+    const { markCacheRestored } = jest.requireMock('@/lib/queryClient');
+    mockUseFonts.mockReturnValue([true]);
+    render(<RootLayout />);
+    // Allow PersistQueryClientProvider onSuccess to fire
+    jest.advanceTimersByTime(600);
+    await waitFor(() => {
+      expect(markCacheRestored).toHaveBeenCalled();
     });
     jest.useRealTimers();
   });

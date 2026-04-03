@@ -52,7 +52,7 @@ export default function FeedScreen() {
   const {
     allItems,
     isLoading,
-    isRefetching,
+    isRefreshingFirstPage,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
@@ -103,8 +103,8 @@ export default function FeedScreen() {
   /* istanbul ignore next -- placeholder replaced immediately on render */
   const homeTabActionRef = useRef<{ scrollToTop: () => void }>({ scrollToTop: () => {} });
   const listExtraData = useMemo(
-    () => ({ filter, refreshing, showProgrammaticRefreshIndicator, isRefetching }),
-    [filter, refreshing, showProgrammaticRefreshIndicator, isRefetching],
+    () => ({ filter, refreshing, showProgrammaticRefreshIndicator, isRefreshingFirstPage }),
+    [filter, refreshing, showProgrammaticRefreshIndicator, isRefreshingFirstPage],
   );
   const listTopPadding = totalHeaderHeight;
   const runProgrammaticRefresh = useCallback(() => {
@@ -178,8 +178,9 @@ export default function FeedScreen() {
       <FeedFilterPills filter={filter} setFilter={setFilter} />
     </View>
   );
-  // @sideeffect isRefetching covers background refetches (e.g., cache restore invalidation)
-  const refreshSlotRefreshing = refreshing || showProgrammaticRefreshIndicator || isRefetching;
+  // @sideeffect pill shows for foreground phase (page 0) only — background page refreshes are silent
+  const refreshSlotRefreshing =
+    refreshing || showProgrammaticRefreshIndicator || isRefreshingFirstPage;
 
   return (
     <View style={styles.screen}>

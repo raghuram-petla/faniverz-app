@@ -25,6 +25,8 @@ export interface SmartInfiniteQueryResult<TData> {
   ) => Promise<InfiniteQueryObserverResult<InfiniteData<TData[]>, Error>>;
   refetch: () => Promise<unknown>;
   isRefetching: boolean;
+  /** Whether the foreground phase of a phased refetch is in progress (page 0 only) */
+  isRefreshingFirstPage: boolean;
   /** All items flattened from all pages, deduplicated by id */
   allItems: TData[];
   /** Whether background expansion is in progress (page 2 auto-loading) */

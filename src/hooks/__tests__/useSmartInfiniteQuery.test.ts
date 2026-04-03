@@ -4,6 +4,15 @@ import React from 'react';
 import { useSmartInfiniteQuery } from '../useSmartInfiniteQuery';
 import type { SmartPaginationConfig } from '@/constants/paginationConfig';
 
+// @sync Mock the cache-restored signal. Tests that need it call setMockCacheRestored(true).
+let mockCacheRestoredValue = false;
+jest.mock('@/lib/queryClient', () => ({
+  wasCacheRestored: () => mockCacheRestoredValue,
+}));
+function setMockCacheRestored(value: boolean) {
+  mockCacheRestoredValue = value;
+}
+
 const makeItem = (id: string) => ({ id, name: `Item ${id}` });
 
 const makeItems = (count: number, startId = 1) =>
@@ -13,8 +22,11 @@ function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
-  return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient }, children);
+  return {
+    queryClient,
+    wrapper: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children),
+  };
 }
 
 const defaultConfig: SmartPaginationConfig = {
@@ -25,8 +37,13 @@ const defaultConfig: SmartPaginationConfig = {
 };
 
 describe('useSmartInfiniteQuery', () => {
+  beforeEach(() => {
+    setMockCacheRestored(false);
+  });
+
   it('fetches initial page with initialPageSize', async () => {
     const queryFn = jest.fn().mockResolvedValue(makeItems(5));
+    const { wrapper } = createWrapper();
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -34,12 +51,10 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    // First call should use offset=0, limit=initialPageSize
     expect(queryFn).toHaveBeenCalledWith(0, 5);
     expect(result.current.allItems).toHaveLength(5);
   });
@@ -47,9 +62,10 @@ describe('useSmartInfiniteQuery', () => {
   it('background-expands to page 2 after page 1 settles', async () => {
     const queryFn = jest
       .fn()
-      .mockResolvedValueOnce(makeItems(5)) // page 0
-      .mockResolvedValueOnce(makeItems(10, 6)); // page 1 (background expand)
+      .mockResolvedValueOnce(makeItems(5))
+      .mockResolvedValueOnce(makeItems(10, 6));
 
+    const { wrapper } = createWrapper();
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -57,12 +73,12 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
-    expect(queryFn).toHaveBeenCalledWith(0, 5); // page 0: offset=0, limit=5
-    expect(queryFn).toHaveBeenCalledWith(5, 10); // page 1: offset=5, limit=10
+    expect(queryFn).toHaveBeenCalledWith(0, 5);
+    expect(queryFn).toHaveBeenCalledWith(5, 10);
     expect(result.current.allItems).toHaveLength(15);
   });
 
@@ -70,6 +86,7 @@ describe('useSmartInfiniteQuery', () => {
     const queryFn = jest.fn().mockResolvedValue(makeItems(5));
     const config: SmartPaginationConfig = { ...defaultConfig, backgroundExpand: false };
 
+    const { wrapper } = createWrapper();
     renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -77,18 +94,18 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
-    // Wait a bit to make sure no second call happens
     await new Promise((r) => setTimeout(r, 100));
     expect(queryFn).toHaveBeenCalledTimes(1);
   });
 
   it('detects end of data when page returns fewer items than expected', async () => {
-    const queryFn = jest.fn().mockResolvedValueOnce(makeItems(3)); // < initialPageSize
+    const queryFn = jest.fn().mockResolvedValueOnce(makeItems(3));
 
+    const { wrapper } = createWrapper();
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -96,7 +113,7 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -106,10 +123,11 @@ describe('useSmartInfiniteQuery', () => {
 
   it('deduplicates items by id across pages', async () => {
     const page0 = [makeItem('1'), makeItem('2'), makeItem('3'), makeItem('4'), makeItem('5')];
-    const page1 = [makeItem('5'), makeItem('6'), makeItem('7')]; // item '5' duplicated
+    const page1 = [makeItem('5'), makeItem('6'), makeItem('7')];
 
     const queryFn = jest.fn().mockResolvedValueOnce(page0).mockResolvedValueOnce(page1);
 
+    const { wrapper } = createWrapper();
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -117,16 +135,17 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.allItems.length).toBe(7));
     const ids = result.current.allItems.map((i) => i.id);
-    expect(new Set(ids).size).toBe(7); // all unique
+    expect(new Set(ids).size).toBe(7);
   });
 
   it('returns empty allItems when no data', async () => {
     const queryFn = jest.fn().mockResolvedValue([]);
+    const { wrapper } = createWrapper();
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -134,7 +153,7 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -144,6 +163,7 @@ describe('useSmartInfiniteQuery', () => {
 
   it('respects enabled flag', async () => {
     const queryFn = jest.fn().mockResolvedValue(makeItems(5));
+    const { wrapper } = createWrapper();
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -152,7 +172,7 @@ describe('useSmartInfiniteQuery', () => {
           config: defaultConfig,
           enabled: false,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await new Promise((r) => setTimeout(r, 100));
@@ -163,6 +183,7 @@ describe('useSmartInfiniteQuery', () => {
 
   it('handles query error', async () => {
     const queryFn = jest.fn().mockRejectedValue(new Error('Network error'));
+    const { wrapper } = createWrapper();
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -170,7 +191,7 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -183,11 +204,9 @@ describe('useSmartInfiniteQuery', () => {
       resolvePage1 = resolve;
     });
 
-    const queryFn = jest
-      .fn()
-      .mockResolvedValueOnce(makeItems(5)) // page 0 resolves immediately
-      .mockReturnValueOnce(page1Promise); // page 1 (background expand) — held pending
+    const queryFn = jest.fn().mockResolvedValueOnce(makeItems(5)).mockReturnValueOnce(page1Promise);
 
+    const { wrapper } = createWrapper();
     const { result, unmount } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -195,20 +214,15 @@ describe('useSmartInfiniteQuery', () => {
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
-    // Wait for page 0 to load and background expansion to start
     await waitFor(() => expect(result.current.isBackgroundExpanding).toBe(true));
-
-    // Unmount the hook while background expansion is in progress — sets cancelled=true
     unmount();
 
-    // Now resolve page 1 — the finally() block runs but should NOT crash since cancelled=true
     act(() => {
       resolvePage1!(makeItems(10, 6));
     });
-
     // No assertion needed — test passes if no "state update on unmounted component" error
   });
 
@@ -216,11 +230,12 @@ describe('useSmartInfiniteQuery', () => {
     const page0NewKey = makeItems(3, 100);
     const queryFn = jest
       .fn()
-      .mockResolvedValueOnce(makeItems(5)) // page 0 for key A
-      .mockResolvedValueOnce(makeItems(10, 6)) // page 1 bg expand for key A
-      .mockResolvedValueOnce(page0NewKey); // page 0 for key B (short page, no bg expand)
+      .mockResolvedValueOnce(makeItems(5))
+      .mockResolvedValueOnce(makeItems(10, 6))
+      .mockResolvedValueOnce(page0NewKey);
 
     let keyValue = 'key-a';
+    const { wrapper } = createWrapper();
     const { result, rerender } = renderHook(
       () =>
         useSmartInfiniteQuery({
@@ -229,53 +244,185 @@ describe('useSmartInfiniteQuery', () => {
           config: defaultConfig,
           keepPreviousData: true,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
-    // Wait for initial load + background expand to settle
     await waitFor(() => expect(result.current.allItems).toHaveLength(15));
 
-    // Change key — with keepPreviousData, old data should stay visible (isLoading stays false)
     keyValue = 'key-b';
     rerender({});
 
-    // isLoading should remain false because keepPreviousData provides placeholder
     expect(result.current.isLoading).toBe(false);
-    // Old items stay visible while new key fetches
     expect(result.current.allItems.length).toBeGreaterThan(0);
 
-    // Wait for new data to arrive
     await waitFor(() => expect(result.current.allItems[0].id).toBe('100'));
     expect(result.current.allItems).toHaveLength(3);
   });
 
-  it('resets hasExpandedRef when refetch is called so background expansion can re-trigger', async () => {
+  it('phased refetch: resolves after page 0, then refreshes remaining pages in background', async () => {
     const queryFn = jest
       .fn()
-      .mockResolvedValueOnce(makeItems(5)) // page 0
-      .mockResolvedValueOnce(makeItems(10, 6)) // page 1 (background expand)
-      .mockResolvedValueOnce(makeItems(5)) // page 0 after refetch
-      .mockResolvedValueOnce(makeItems(10, 6)); // page 1 (background expand again)
+      .mockResolvedValueOnce(makeItems(5))
+      .mockResolvedValueOnce(makeItems(10, 6))
+      .mockResolvedValueOnce(makeItems(5, 100)) // page 0 phased refetch
+      .mockResolvedValueOnce(makeItems(10, 200)); // page 1 background refresh
+
+    const { wrapper } = createWrapper();
+    const { result } = renderHook(
+      () =>
+        useSmartInfiniteQuery({
+          queryKey: ['test-phased-refetch'],
+          queryFn,
+          config: defaultConfig,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.allItems).toHaveLength(15));
+    expect(queryFn).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await result.current.refetch();
+    });
+
+    // Phase 1 completed — page 0 is now fresh
+    expect(result.current.allItems[0].id).toBe('100');
+    expect(result.current.isRefreshingFirstPage).toBe(false);
+
+    // Phase 2 runs in background
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(4));
+    await waitFor(() => {
+      const ids = result.current.allItems.map((i) => i.id);
+      expect(ids).toContain('200');
+    });
+  });
+
+  it('isRefreshingFirstPage is true during page 0 fetch and false after', async () => {
+    let resolvePage0Refetch: (value: ReturnType<typeof makeItems>) => void;
+    const page0RefetchPromise = new Promise<ReturnType<typeof makeItems>>((resolve) => {
+      resolvePage0Refetch = resolve;
+    });
+
+    const queryFn = jest
+      .fn()
+      .mockResolvedValueOnce(makeItems(3)) // page 0 initial (short, no bg expand)
+      .mockReturnValueOnce(page0RefetchPromise); // page 0 refetch — held pending
+
+    const { wrapper } = createWrapper();
+    const { result } = renderHook(
+      () =>
+        useSmartInfiniteQuery({
+          queryKey: ['test-refreshing-flag'],
+          queryFn,
+          config: { ...defaultConfig, backgroundExpand: false },
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.isRefreshingFirstPage).toBe(false);
+
+    let refetchPromise: Promise<unknown>;
+    act(() => {
+      refetchPromise = result.current.refetch();
+    });
+
+    await waitFor(() => expect(result.current.isRefreshingFirstPage).toBe(true));
+
+    await act(async () => {
+      resolvePage0Refetch!(makeItems(3, 10));
+      await refetchPromise!;
+    });
+
+    expect(result.current.isRefreshingFirstPage).toBe(false);
+  });
+
+  it('auto-triggers phased refetch when cache-restored data is detected', async () => {
+    // Simulate cache restore: pre-populate cache and set the cacheRestored flag
+    const queryFn = jest.fn().mockResolvedValueOnce(makeItems(3, 10)); // page 0 phased refetch
+
+    const { queryClient, wrapper } = createWrapper();
+    const queryKey = ['test-cache-restore'];
+
+    // Pre-populate the infinite query cache (simulates restored persisted cache)
+    queryClient.setQueryData(queryKey, {
+      pages: [makeItems(3)],
+      pageParams: [0],
+    });
+    // Set the cache-restored signal
+    setMockCacheRestored(true);
 
     const { result } = renderHook(
       () =>
         useSmartInfiniteQuery({
-          queryKey: ['test-refetch'],
+          queryKey,
+          queryFn,
+          config: { ...defaultConfig, backgroundExpand: false },
+          staleTime: 60_000,
+        }),
+      { wrapper },
+    );
+
+    // Hook mounts with cached data
+    expect(result.current.allItems[0].id).toBe('1');
+
+    // The cache-restore effect triggers phased refetch
+    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.allItems[0].id).toBe('10'));
+  });
+
+  it('does NOT auto-trigger phased refetch when cache was not restored', async () => {
+    const queryFn = jest.fn().mockResolvedValueOnce(makeItems(3));
+
+    setMockCacheRestored(false);
+    const { wrapper } = createWrapper();
+    const { result } = renderHook(
+      () =>
+        useSmartInfiniteQuery({
+          queryKey: ['test-no-cache-restore'],
+          queryFn,
+          config: { ...defaultConfig, backgroundExpand: false },
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    // Only the initial TanStack fetch — no extra phased refetch
+    expect(queryFn).toHaveBeenCalledTimes(1);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(queryFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('background phase silently ignores errors without crashing', async () => {
+    const queryFn = jest
+      .fn()
+      .mockResolvedValueOnce(makeItems(5))
+      .mockResolvedValueOnce(makeItems(10, 6))
+      .mockResolvedValueOnce(makeItems(5, 100)) // page 0 phased refetch
+      .mockRejectedValueOnce(new Error('Network error')); // page 1 background — fails
+
+    const { wrapper } = createWrapper();
+    const { result } = renderHook(
+      () =>
+        useSmartInfiniteQuery({
+          queryKey: ['test-bg-error'],
           queryFn,
           config: defaultConfig,
         }),
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
-    // Wait for initial load + background expand
-    await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.allItems).toHaveLength(15));
 
-    // Trigger refetch — this should reset hasExpandedRef.current
     await act(async () => {
-      result.current.refetch();
+      await result.current.refetch();
     });
 
-    // After refetch, background expansion should re-trigger for the fresh page 0
+    // Phase 1 completed
+    expect(result.current.allItems[0].id).toBe('100');
+
+    // Phase 2 attempts and fails silently
     await waitFor(() => expect(queryFn).toHaveBeenCalledTimes(4));
+    expect(result.current.allItems).toHaveLength(15);
   });
 });

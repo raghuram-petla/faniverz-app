@@ -1,4 +1,4 @@
-import { queryClient } from '../queryClient';
+import { queryClient, markCacheRestored, wasCacheRestored } from '../queryClient';
 
 describe('queryClient', () => {
   it('has correct default staleTime', () => {
@@ -19,5 +19,11 @@ describe('queryClient', () => {
   it('has refetchOnWindowFocus disabled', () => {
     const defaults = queryClient.getDefaultOptions();
     expect(defaults.queries?.refetchOnWindowFocus).toBe(false);
+  });
+
+  it('markCacheRestored sets the flag and wasCacheRestored reads it', () => {
+    // Note: module-level flag persists across tests in the same suite
+    markCacheRestored();
+    expect(wasCacheRestored()).toBe(true);
   });
 });

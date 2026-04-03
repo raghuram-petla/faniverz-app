@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Exo2_800ExtraBold_Italic } from '@expo-google-fonts/exo-2';
-import { queryClient, queryPersister } from '@/lib/queryClient';
+import { queryClient, queryPersister, markCacheRestored } from '@/lib/queryClient';
 import { AuthProvider } from '@/features/auth/providers/AuthProvider';
 import { ImageViewerProvider } from '@/providers/ImageViewerProvider';
 import { ThemeProvider, useTheme } from '@/theme';
@@ -94,10 +94,13 @@ export default function RootLayout() {
   }, [allReady]);
 
   // @sideeffect Called by PersistQueryClientProvider after cache restoration completes.
-  // Invalidates all restored queries to trigger background refetch for stale data.
+  // Sets a module-level flag that useSmartInfiniteQuery reads to trigger phased refresh
+  // (page 0 foreground with Refreshing pill, remaining pages silently in background).
+  // @edge Does NOT call invalidateQueries — that would make TanStack auto-refetch ALL
+  // cached pages sequentially, which is exactly the slow path we're trying to avoid.
   const handleCacheRestored = useCallback(() => {
     setCacheRestored(true);
-    queryClient.invalidateQueries();
+    markCacheRestored();
   }, []);
 
   // @contract No early return — all providers mount immediately so cache restoration,

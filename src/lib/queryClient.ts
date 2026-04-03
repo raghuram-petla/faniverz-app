@@ -30,6 +30,18 @@ export const queryPersister = createAsyncStoragePersister({
   throttleTime: 1000,
 });
 
+// @contract Module-level flag set once when PersistQueryClientProvider finishes restoring
+// the cache from AsyncStorage. useSmartInfiniteQuery reads this to trigger a phased
+// refresh (page 0 foreground, rest background) instead of TanStack's default all-pages refetch.
+// @sync Set by _layout.tsx handleCacheRestored; consumed by useSmartInfiniteQuery on mount.
+let _cacheRestored = false;
+export function markCacheRestored(): void {
+  _cacheRestored = true;
+}
+export function wasCacheRestored(): boolean {
+  return _cacheRestored;
+}
+
 // @sideeffect Called on sign-out to wipe persisted cache alongside queryClient.clear().
 // Without this, the next user who signs in would briefly see the previous user's feed data.
 export async function clearPersistedCache(): Promise<void> {
