@@ -87,7 +87,12 @@ Deno.serve(async (req) => {
       to: t.token,
       title: notification.title,
       body: notification.message,
-      data: { notification_id: notification.id, movie_id: notification.movie_id },
+      data: {
+        notification_id: notification.id,
+        movie_id: notification.movie_id,
+        feed_item_id: notification.feed_item_id,
+        comment_id: notification.comment_id,
+      },
       sound: 'default',
     }));
 

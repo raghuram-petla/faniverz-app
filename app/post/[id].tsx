@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -18,21 +18,23 @@ import {
   useBookmarkFeedItem,
   useUnbookmarkFeedItem,
   useUserBookmarks,
+  useUserCommentLikes,
+  useLikeComment,
+  useUnlikeComment,
 } from '@/features/feed';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { FeedCard } from '@/components/feed/FeedCard';
 import { CommentsList } from '@/components/feed/CommentsList';
-import { CommentInput } from '@/components/feed/CommentInput';
+import { CommentInput, type ReplyTarget } from '@/components/feed/CommentInput';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import { PostContentSkeleton } from '@/components/feed/PostContentSkeleton';
-import type { NewsFeedItem, FeedEntityType } from '@shared/types';
+import type { NewsFeedItem, FeedEntityType, FeedComment } from '@shared/types';
 
-// @boundary: Post detail — single feed item with comments, voting, and reply input
-// @coupling: useFeedItem, useComments, useAddComment, useDeleteComment — five data hooks
+// @boundary: Post detail — single feed item with comments, voting, likes, and reply input
 export default function PostDetailScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -43,49 +45,54 @@ export default function PostDetailScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  // @boundary: useFeedItem fetches a single feed item by ID from Supabase
   const { data: post, isLoading: feedLoading, refetch } = useFeedItem(id ?? '');
-  // @sideeffect: vote mutations trigger optimistic updates on the feed item's vote counts
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
   const bookmarkMutation = useBookmarkFeedItem();
   const unbookmarkMutation = useUnbookmarkFeedItem();
-  // @contract: userVotes map is keyed by feed item ID; value is 'up' | 'down' | null
   const feedItemIds = useMemo(() => (post ? [post.id] : /* istanbul ignore next */ []), [post]);
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
-  /* istanbul ignore next -- destructuring default only applies when useUserBookmarks returns undefined */
+  /* istanbul ignore next */
   const { data: userBookmarks = {} } = useUserBookmarks(feedItemIds);
   const { gate } = useAuthGate();
 
   const {
-    data: commentsData,
-    isLoading: commentsLoading,
-    hasNextPage,
-    fetchNextPage,
-    refetch: refetchComments,
+    data: commentsData, isLoading: commentsLoading,
+    hasNextPage, fetchNextPage, refetch: refetchComments,
   } = useComments(id ?? '');
-  // @sideeffect: addMutation invalidates comments query cache + increments post.comment_count optimistically
   const addMutation = useAddComment(id ?? '');
-  // @sideeffect: deleteMutation decrements post.comment_count optimistically
   const deleteMutation = useDeleteComment(id ?? '');
 
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchComments);
   const {
-    pullDistance,
-    isRefreshing,
-    handleScrollBeginDrag,
-    handlePullScroll,
-    handleScrollEndDrag,
-    androidPullProps,
+    pullDistance, isRefreshing, handleScrollBeginDrag,
+    handlePullScroll, handleScrollEndDrag, androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
 
-  // @edge: intentional no-op — FeedCard requires onPress but we're already on post detail
+  // --- Comment likes ---
+  const commentIds = useMemo(() => comments.map((c) => c.id), [comments]);
+  const { data: likedCommentIds = {} } = useUserCommentLikes(commentIds);
+  const likeMutation = useLikeComment(id ?? '');
+  const unlikeMutation = useUnlikeComment(id ?? '');
+
+  // --- Reply state ---
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+
+  /** @contract Resolve parentCommentId: nested replies go under top-level parent */
+  const handleReply = useCallback((comment: FeedComment) => {
+    const parentId = comment.parent_comment_id ?? comment.id;
+    setReplyTarget({
+      commentId: comment.id,
+      parentCommentId: parentId,
+      displayName: comment.profile?.display_name ?? t('feed.anonymous'),
+    });
+  }, [t]);
+
   /* istanbul ignore next -- no-op handler body is intentionally empty */
   const handleNoOp = (_item: NewsFeedItem) => {};
 
-  // @contract: toggling the same vote direction removes it; switching directions replaces it
   const handleUpvote = useCallback(
     (itemId: string) => {
       const prev = userVotes[itemId] ?? null;
@@ -110,7 +117,6 @@ export default function PostDetailScreen() {
     [userVotes, voteMutation, removeMutation],
   );
 
-  // @contract Toggle: if already bookmarked, removes; otherwise bookmarks
   const handleBookmark = useCallback(
     (itemId: string) => {
       if (userBookmarks[itemId]) {
@@ -122,7 +128,6 @@ export default function PostDetailScreen() {
     [userBookmarks, bookmarkMutation, unbookmarkMutation],
   );
 
-  // @edge: tapping own avatar navigates to /profile; other users go to /user/[id]
   const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
     if (entityType === 'user') {
       if (entityId === user?.id) {
@@ -133,8 +138,7 @@ export default function PostDetailScreen() {
       return;
     }
     const routes: Record<string, string> = {
-      movie: `/movie/${entityId}`,
-      actor: `/actor/${entityId}`,
+      movie: `/movie/${entityId}`, actor: `/actor/${entityId}`,
       production_house: `/production-house/${entityId}`,
     };
     router.push(routes[entityType] as Parameters<typeof router.push>[0]);
@@ -148,20 +152,16 @@ export default function PostDetailScreen() {
     >
       <SafeAreaCover />
 
-      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-          accessibilityLabel="Go back"
-        >
+        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()} accessibilityLabel="Go back">
           <Ionicons name="arrow-back" size={20} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('postDetail.title')}</Text>
       </View>
 
-      {/* Content */}
+      {/* @contract ScrollView flex:1; CommentInput below in flex column for keyboard avoidance */}
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         overScrollMode="never"
         showsVerticalScrollIndicator={false}
@@ -173,11 +173,7 @@ export default function PostDetailScreen() {
         scrollEventThrottle={16}
         {...androidPullProps}
       >
-        <PullToRefreshIndicator
-          pullDistance={pullDistance}
-          isRefreshing={isRefreshing}
-          refreshing={refreshing}
-        />
+        <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} refreshing={refreshing} />
         {feedLoading ? (
           <PostContentSkeleton />
         ) : post ? (
@@ -193,8 +189,6 @@ export default function PostDetailScreen() {
               onBookmark={gate(handleBookmark)}
               showFullTimestamp
             />
-
-            {/* Comments */}
             <View style={styles.commentsList}>
               <Text style={styles.commentsHeader}>
                 {t('postDetail.comments')} ({post.comment_count})
@@ -202,15 +196,19 @@ export default function PostDetailScreen() {
               <CommentsList
                 comments={comments}
                 userId={userId}
+                likedCommentIds={likedCommentIds}
                 isLoading={commentsLoading}
                 hasNextPage={hasNextPage}
                 onLoadMore={fetchNextPage}
-                onDelete={(commentId) =>
-                  deleteMutation.mutate(commentId, {
-                    onError: () =>
-                      Alert.alert(t('common.error'), t('common.failedToDeleteComment')),
-                  })
+                onDelete={(commentId, parentCommentId) =>
+                  deleteMutation.mutate(
+                    { commentId, parentCommentId },
+                    { onError: () => Alert.alert(t('common.error'), t('common.failedToDeleteComment')) },
+                  )
                 }
+                onReply={gate(handleReply)}
+                onLike={gate((commentId: string) => likeMutation.mutate({ commentId }))}
+                onUnlike={gate((commentId: string) => unlikeMutation.mutate({ commentId }))}
               />
             </View>
           </>
@@ -222,16 +220,18 @@ export default function PostDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Comment input */}
       <CommentInput
         isAuthenticated={!!user}
-        onSubmit={(body) =>
-          addMutation.mutate(body, {
-            onError: () => Alert.alert(t('common.error'), t('common.failedToAddComment')),
-          })
+        onSubmit={(body, parentCommentId) =>
+          addMutation.mutate(
+            { body, parentCommentId },
+            { onError: () => Alert.alert(t('common.error'), t('common.failedToAddComment')) },
+          )
         }
         onLoginPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
         bottomInset={insets.bottom}
+        replyTarget={replyTarget}
+        onCancelReply={() => setReplyTarget(null)}
       />
     </KeyboardAvoidingView>
   );

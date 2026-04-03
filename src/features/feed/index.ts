@@ -13,7 +13,8 @@ export {
   useFollowEntity,
   useUnfollowEntity,
 } from './followHooks';
-export { useComments, useAddComment, useDeleteComment } from './commentsHooks';
+export { useComments, useReplies, useAddComment, useDeleteComment } from './commentsHooks';
+export { useLikeComment, useUnlikeComment, useUserCommentLikes } from './commentLikesHooks';
 export {
   useBookmarkFeedItem,
   useUnbookmarkFeedItem,

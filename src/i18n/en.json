@@ -36,6 +36,7 @@
     "failedToBookmark": "Failed to save post. Please try again.",
     "failedToAddComment": "Failed to add comment. Please try again.",
     "failedToDeleteComment": "Failed to delete comment. Please try again.",
+    "failedToLikeComment": "Failed to like comment. Please try again.",
     "playVideo": "Play video",
     "shareVideo": "Share video",
     "playTitle": "Play {{title}}",
@@ -82,7 +83,12 @@
     "latestUpdates": "Latest Updates & Content",
     "noComments": "No comments yet. Be the first!",
     "loadMore": "Load more",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "reply": "Reply",
+    "replyingTo": "Replying to @{{name}}",
+    "viewReplies": "View {{count}} replies",
+    "viewReply": "View 1 reply",
+    "hideReplies": "Hide replies"
   },
   "spotlight": {
     "title": "Spotlight",
@@ -369,7 +375,9 @@
     "title": "Notifications",
     "markAllRead": "Mark all read",
     "empty": "No notifications yet",
-    "emptySubtitle": "You'll be notified about releases and updates"
+    "emptySubtitle": "You'll be notified about releases and updates",
+    "commentReply": "{{name}} replied to your comment",
+    "commentLike": "{{name}} liked your comment"
   },
   "search": {
     "placeholder": "Search movies, actors, studios...",

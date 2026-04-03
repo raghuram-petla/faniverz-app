@@ -31,7 +31,7 @@ describe('notifications api', () => {
       await fetchNotifications('user-1');
       expect(supabase.from).toHaveBeenCalledWith('notifications');
       expect(mockSelect).toHaveBeenCalledWith(
-        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color)',
+        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color), actor_profile:profiles!notifications_actor_user_id_fkey(display_name, avatar_url)',
       );
       expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
       expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false });
@@ -124,7 +124,7 @@ describe('notifications api', () => {
       await fetchNotificationsPaginated('user-1', 0, 20);
       expect(supabase.from).toHaveBeenCalledWith('notifications');
       expect(mockSelect).toHaveBeenCalledWith(
-        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color)',
+        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color), actor_profile:profiles!notifications_actor_user_id_fkey(display_name, avatar_url)',
       );
       expect(mockEq).toHaveBeenCalledWith('user_id', 'user-1');
       expect(mockRange).toHaveBeenCalledWith(0, 19);

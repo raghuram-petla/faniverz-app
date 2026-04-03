@@ -12,30 +12,33 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
-import { fetchComments, addComment, deleteComment } from '../commentsApi';
+import { fetchComments, fetchReplies, addComment, deleteComment } from '../commentsApi';
 
 describe('fetchComments', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('fetches comments for a feed item with pagination', async () => {
+  it('fetches top-level comments with parent_comment_id IS NULL filter', async () => {
     const mockComments = [
-      { id: 'c1', feed_item_id: 'f1', user_id: 'u1', body: 'Great!', created_at: '2024-01-01' },
+      { id: 'c1', feed_item_id: 'f1', user_id: 'u1', body: 'Great!', parent_comment_id: null },
     ];
     const mockRange = jest.fn().mockResolvedValue({ data: mockComments, error: null });
     const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
-    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockIs = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockEq = jest.fn().mockReturnValue({ is: mockIs });
     mockSelect.mockReturnValue({ eq: mockEq });
 
     const result = await fetchComments('f1', 0, 20);
     expect(result).toEqual(mockComments);
     expect(mockEq).toHaveBeenCalledWith('feed_item_id', 'f1');
+    expect(mockIs).toHaveBeenCalledWith('parent_comment_id', null);
     expect(mockRange).toHaveBeenCalledWith(0, 19);
   });
 
   it('handles offset correctly', async () => {
     const mockRange = jest.fn().mockResolvedValue({ data: [], error: null });
     const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
-    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockIs = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockEq = jest.fn().mockReturnValue({ is: mockIs });
     mockSelect.mockReturnValue({ eq: mockEq });
 
     await fetchComments('f1', 20, 10);
@@ -45,39 +48,64 @@ describe('fetchComments', () => {
   it('throws on error', async () => {
     const mockRange = jest.fn().mockResolvedValue({ data: null, error: new Error('DB error') });
     const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
-    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockIs = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockEq = jest.fn().mockReturnValue({ is: mockIs });
     mockSelect.mockReturnValue({ eq: mockEq });
 
     await expect(fetchComments('f1', 0)).rejects.toThrow('DB error');
   });
 
-  it('uses default pageSize of 20 when not provided', async () => {
-    const mockRange = jest.fn().mockResolvedValue({ data: [], error: null });
+  it('returns empty array when data is null', async () => {
+    const mockRange = jest.fn().mockResolvedValue({ data: null, error: null });
     const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
-    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockIs = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockEq = jest.fn().mockReturnValue({ is: mockIs });
     mockSelect.mockReturnValue({ eq: mockEq });
 
-    await fetchComments('f1', 0);
-    expect(mockRange).toHaveBeenCalledWith(0, 19);
+    const result = await fetchComments('f1', 0);
+    expect(result).toEqual([]);
   });
 
-  it('uses default offset of 0 when only feedItemId is provided', async () => {
+  it('uses default offset and limit', async () => {
     const mockRange = jest.fn().mockResolvedValue({ data: [], error: null });
     const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
-    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockIs = jest.fn().mockReturnValue({ order: mockOrder });
+    const mockEq = jest.fn().mockReturnValue({ is: mockIs });
     mockSelect.mockReturnValue({ eq: mockEq });
 
     await fetchComments('f1');
     expect(mockRange).toHaveBeenCalledWith(0, 19);
   });
+});
 
-  it('returns empty array when data is null', async () => {
-    const mockRange = jest.fn().mockResolvedValue({ data: null, error: null });
-    const mockOrder = jest.fn().mockReturnValue({ range: mockRange });
+describe('fetchReplies', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('fetches replies for a parent comment', async () => {
+    const replies = [{ id: 'r1', parent_comment_id: 'c1', body: 'reply' }];
+    const mockOrder = jest.fn().mockResolvedValue({ data: replies, error: null });
     const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
     mockSelect.mockReturnValue({ eq: mockEq });
 
-    const result = await fetchComments('f1', 0);
+    const result = await fetchReplies('c1');
+    expect(result).toEqual(replies);
+    expect(mockEq).toHaveBeenCalledWith('parent_comment_id', 'c1');
+  });
+
+  it('throws on error', async () => {
+    const mockOrder = jest.fn().mockResolvedValue({ data: null, error: new Error('fail') });
+    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    mockSelect.mockReturnValue({ eq: mockEq });
+
+    await expect(fetchReplies('c1')).rejects.toThrow('fail');
+  });
+
+  it('returns empty array when data is null', async () => {
+    const mockOrder = jest.fn().mockResolvedValue({ data: null, error: null });
+    const mockEq = jest.fn().mockReturnValue({ order: mockOrder });
+    mockSelect.mockReturnValue({ eq: mockEq });
+
+    const result = await fetchReplies('c1');
     expect(result).toEqual([]);
   });
 });
@@ -85,14 +113,8 @@ describe('fetchComments', () => {
 describe('addComment', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('inserts a comment and returns it', async () => {
-    const newComment = {
-      id: 'c2',
-      feed_item_id: 'f1',
-      user_id: 'u1',
-      body: 'Nice!',
-      created_at: '2024-01-01',
-    };
+  it('inserts a top-level comment', async () => {
+    const newComment = { id: 'c2', body: 'Nice!', parent_comment_id: null };
     const mockSingle = jest.fn().mockResolvedValue({ data: newComment, error: null });
     const mockCommentSelect = jest.fn().mockReturnValue({ single: mockSingle });
     mockInsert.mockReturnValue({ select: mockCommentSelect });
@@ -103,13 +125,28 @@ describe('addComment', () => {
       feed_item_id: 'f1',
       user_id: 'u1',
       body: 'Nice!',
+      parent_comment_id: null,
+    });
+  });
+
+  it('inserts a reply with parentCommentId', async () => {
+    const reply = { id: 'r1', body: '@User reply', parent_comment_id: 'c1' };
+    const mockSingle = jest.fn().mockResolvedValue({ data: reply, error: null });
+    const mockCommentSelect = jest.fn().mockReturnValue({ single: mockSingle });
+    mockInsert.mockReturnValue({ select: mockCommentSelect });
+
+    const result = await addComment('f1', 'u1', '@User reply', 'c1');
+    expect(result).toEqual(reply);
+    expect(mockInsert).toHaveBeenCalledWith({
+      feed_item_id: 'f1',
+      user_id: 'u1',
+      body: '@User reply',
+      parent_comment_id: 'c1',
     });
   });
 
   it('throws on error', async () => {
-    const mockSingle = jest
-      .fn()
-      .mockResolvedValue({ data: null, error: new Error('Insert error') });
+    const mockSingle = jest.fn().mockResolvedValue({ data: null, error: new Error('Insert error') });
     const mockCommentSelect = jest.fn().mockReturnValue({ single: mockSingle });
     mockInsert.mockReturnValue({ select: mockCommentSelect });
 

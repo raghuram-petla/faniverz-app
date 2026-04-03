@@ -42,6 +42,8 @@ jest.mock('react-native-safe-area-context', () => ({
 const mockMutate = jest.fn();
 const mockDeleteMutate = jest.fn();
 const mockFetchNextPage = jest.fn();
+const mockLikeMutate = jest.fn();
+const mockUnlikeMutate = jest.fn();
 
 jest.mock('@/features/feed', () => ({
   useComments: jest.fn(() => ({
@@ -53,16 +55,20 @@ jest.mock('@/features/feed', () => ({
             user_id: 'user-1',
             body: 'Great movie!',
             created_at: '2024-01-01T00:00:00Z',
-            username: 'testuser',
-            avatar_url: null,
+            parent_comment_id: null,
+            like_count: 0,
+            reply_count: 0,
+            profile: { display_name: 'testuser', avatar_url: null },
           },
           {
             id: 'c2',
             user_id: 'user-2',
             body: 'Amazing trailer',
             created_at: '2024-01-01T01:00:00Z',
-            username: 'otheruser',
-            avatar_url: null,
+            parent_comment_id: null,
+            like_count: 0,
+            reply_count: 0,
+            profile: { display_name: 'otheruser', avatar_url: null },
           },
         ],
       ],
@@ -73,6 +79,9 @@ jest.mock('@/features/feed', () => ({
   })),
   useAddComment: jest.fn(() => ({ mutate: mockMutate })),
   useDeleteComment: jest.fn(() => ({ mutate: mockDeleteMutate })),
+  useUserCommentLikes: jest.fn(() => ({ data: {} })),
+  useLikeComment: jest.fn(() => ({ mutate: mockLikeMutate })),
+  useUnlikeComment: jest.fn(() => ({ mutate: mockUnlikeMutate })),
 }));
 
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
@@ -90,7 +99,7 @@ jest.mock('../CommentsList', () => ({
             <Text>{c.body}</Text>
             {onDelete && (
               <TouchableOpacity
-                onPress={() => onDelete(c.id)}
+                onPress={() => onDelete(c.id, null)}
                 accessibilityLabel={`Delete ${c.id}`}
               >
                 <Text>Delete</Text>
@@ -164,13 +173,19 @@ describe('CommentsBottomSheet', () => {
   it('submits a comment via addMutation', () => {
     render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
     fireEvent.press(screen.getByLabelText('Submit comment'));
-    expect(mockMutate).toHaveBeenCalledWith('test comment');
+    expect(mockMutate).toHaveBeenCalledWith(
+      { body: 'test comment', parentCommentId: undefined },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 
   it('deletes a comment via deleteMutation', () => {
     render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
     fireEvent.press(screen.getByLabelText('Delete c1'));
-    expect(mockDeleteMutate).toHaveBeenCalledWith('c1');
+    expect(mockDeleteMutate).toHaveBeenCalledWith(
+      { commentId: 'c1', parentCommentId: null },
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 
   it('renders with loading state', () => {
@@ -201,8 +216,10 @@ describe('CommentsBottomSheet', () => {
               user_id: 'user-1',
               body: 'Comment 1',
               created_at: '2024-01-01T00:00:00Z',
-              username: 'user',
-              avatar_url: null,
+              parent_comment_id: null,
+              like_count: 0,
+              reply_count: 0,
+              profile: { display_name: 'user', avatar_url: null },
             },
           ],
         ],
@@ -235,9 +252,8 @@ describe('CommentsBottomSheet', () => {
     authModule.useAuth = orig;
   });
 
-  it('renders the sheet content area (inner Pressable that stops propagation)', () => {
+  it('renders the sheet content area', () => {
     render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
-    // Verify the inner sheet content area renders — it uses stopPropagation to prevent overlay dismissal
     expect(screen.getByTestId('sheet-content-area')).toBeTruthy();
   });
 
@@ -245,12 +261,11 @@ describe('CommentsBottomSheet', () => {
     const { getByTestId } = render(
       <CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />,
     );
-    // Simulate Android back button (onRequestClose on Modal)
     fireEvent(getByTestId('comments-bottom-sheet'), 'requestClose');
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('renders correctly on Android (KeyboardAvoidingView behavior is undefined)', () => {
+  it('renders correctly on Android', () => {
     const { Platform } = require('react-native');
     const origOS = Platform.OS;
     Platform.OS = 'android';

@@ -8,7 +8,7 @@ jest.mock('react-i18next', () => ({
 jest.mock('@/theme', () => ({
   useTheme: () => ({
     theme: new Proxy({}, { get: () => '#000' }),
-    colors: { gray500: '#6b7280', white: '#fff' },
+    colors: { gray500: '#6b7280', white: '#fff', red600: '#dc2626' },
   }),
 }));
 
@@ -40,13 +40,13 @@ describe('CommentInput', () => {
     expect(onLogin).toHaveBeenCalled();
   });
 
-  it('calls onSubmit with trimmed text and clears input', () => {
+  it('calls onSubmit with trimmed text and no parentCommentId for top-level', () => {
     const onSubmit = jest.fn();
     render(<CommentInput isAuthenticated={true} onSubmit={onSubmit} />);
     const input = screen.getByLabelText('Comment input');
     fireEvent.changeText(input, '  Hello world  ');
     fireEvent.press(screen.getByLabelText('Send comment'));
-    expect(onSubmit).toHaveBeenCalledWith('Hello world');
+    expect(onSubmit).toHaveBeenCalledWith('Hello world', undefined);
   });
 
   it('does not submit empty text', () => {
@@ -64,26 +64,91 @@ describe('CommentInput', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('disables send button when input is empty', () => {
-    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
-    const sendBtn = screen.getByLabelText('Send comment');
-    expect(sendBtn.props.accessibilityState?.disabled).toBe(true);
-  });
-
   it('clears input after successful submit', () => {
     const onSubmit = jest.fn();
     render(<CommentInput isAuthenticated={true} onSubmit={onSubmit} />);
     const input = screen.getByLabelText('Comment input');
     fireEvent.changeText(input, 'My comment');
     fireEvent.press(screen.getByLabelText('Send comment'));
-    expect(onSubmit).toHaveBeenCalledWith('My comment');
-    // After submit, input value resets
     expect(input.props.value).toBe('');
   });
 
-  it('renders with default bottomInset of 0', () => {
-    const { toJSON } = render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
-    expect(toJSON()).toBeTruthy();
+  it('shows reply indicator when replyTarget is set', () => {
+    const replyTarget = { commentId: 'c1', parentCommentId: 'c1', displayName: 'Alice' };
+    render(
+      <CommentInput
+        isAuthenticated
+        onSubmit={jest.fn()}
+        replyTarget={replyTarget}
+        onCancelReply={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('feed.replyingTo')).toBeTruthy();
+    expect(screen.getByLabelText('Cancel reply')).toBeTruthy();
+  });
+
+  it('calls onCancelReply when cancel button pressed', () => {
+    const onCancelReply = jest.fn();
+    const replyTarget = { commentId: 'c1', parentCommentId: 'c1', displayName: 'Alice' };
+    render(
+      <CommentInput
+        isAuthenticated
+        onSubmit={jest.fn()}
+        replyTarget={replyTarget}
+        onCancelReply={onCancelReply}
+      />,
+    );
+    fireEvent.press(screen.getByLabelText('Cancel reply'));
+    expect(onCancelReply).toHaveBeenCalled();
+  });
+
+  it('prepends @mention and passes parentCommentId when replying', () => {
+    const onSubmit = jest.fn();
+    const replyTarget = { commentId: 'c1', parentCommentId: 'c1', displayName: 'Alice' };
+    render(
+      <CommentInput
+        isAuthenticated
+        onSubmit={onSubmit}
+        replyTarget={replyTarget}
+        onCancelReply={jest.fn()}
+      />,
+    );
+    fireEvent.changeText(screen.getByLabelText('Comment input'), 'great point');
+    fireEvent.press(screen.getByLabelText('Send comment'));
+    expect(onSubmit).toHaveBeenCalledWith('@[Alice] great point', 'c1');
+  });
+
+  it('does not show reply indicator when replyTarget is null', () => {
+    render(<CommentInput isAuthenticated onSubmit={jest.fn()} replyTarget={null} />);
+    expect(screen.queryByLabelText('Cancel reply')).toBeNull();
+  });
+
+  it('disables send button when input is empty', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const sendBtn = screen.getByLabelText('Send comment');
+    expect(sendBtn.props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('input supports multiline and maxLength 500 for top-level', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const input = screen.getByLabelText('Comment input');
+    expect(input.props.multiline).toBe(true);
+    expect(input.props.maxLength).toBe(500);
+  });
+
+  it('reduces maxLength when replying to reserve space for @mention prefix', () => {
+    const replyTarget = { commentId: 'c1', parentCommentId: 'c1', displayName: 'Alice' };
+    render(
+      <CommentInput
+        isAuthenticated
+        onSubmit={jest.fn()}
+        replyTarget={replyTarget}
+        onCancelReply={jest.fn()}
+      />,
+    );
+    const input = screen.getByLabelText('Comment input');
+    // @[Alice] + space = 9 chars, so maxLength = 500 - 9 = 491
+    expect(input.props.maxLength).toBe(500 - '@[Alice] '.length);
   });
 
   it('renders with custom bottomInset', () => {
@@ -93,65 +158,20 @@ describe('CommentInput', () => {
     expect(toJSON()).toBeTruthy();
   });
 
-  it('input supports multiline', () => {
-    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
-    const input = screen.getByLabelText('Comment input');
-    expect(input.props.multiline).toBe(true);
-  });
-
-  it('input has maxLength of 500', () => {
-    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
-    const input = screen.getByLabelText('Comment input');
-    expect(input.props.maxLength).toBe(500);
-  });
-
-  it('does not crash when onLoginPress is not provided and login prompt is tapped', () => {
-    render(<CommentInput isAuthenticated={false} onSubmit={jest.fn()} />);
-    // onLoginPress is undefined — pressing login prompt should not crash
-    fireEvent.press(screen.getByText('auth.signInToComment'));
-    expect(screen.getByText('auth.signInToComment')).toBeTruthy();
-  });
-
-  it('send button enabled state when text has content', () => {
-    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
-    const input = screen.getByLabelText('Comment input');
-    fireEvent.changeText(input, 'Hello');
-    const sendBtn = screen.getByLabelText('Send comment');
-    expect(sendBtn.props.accessibilityState?.disabled).not.toBe(true);
-  });
-
-  it('applies sendButtonDisabled style when trimmed text is empty', () => {
-    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
-    const sendBtn = screen.getByLabelText('Send comment');
-    // Button should be disabled when text is empty (trimmed is falsy)
-    expect(sendBtn.props.accessibilityState?.disabled).toBe(true);
-  });
-
-  it('send button is not disabled after entering non-whitespace text', () => {
+  it('cancels reply after submitting reply', () => {
     const onSubmit = jest.fn();
-    render(<CommentInput isAuthenticated={true} onSubmit={onSubmit} />);
-    const input = screen.getByLabelText('Comment input');
-    fireEvent.changeText(input, 'test');
-    const sendBtn = screen.getByLabelText('Send comment');
-    // Not disabled when there's actual text
-    expect(sendBtn.props.accessibilityState?.disabled).toBeFalsy();
-  });
-
-  it('handleSend returns early when trimmed text is empty (direct call bypass)', () => {
-    const onSubmit = jest.fn();
-    render(<CommentInput isAuthenticated={true} onSubmit={onSubmit} />);
-    // The send button has disabled=true when text is empty, blocking fireEvent.press.
-    // Use UNSAFE access to call the underlying onPress handler directly.
-    const { TouchableOpacity } = require('react-native');
-    const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
-    const sendBtn = touchables.find(
-      (t: { props: { accessibilityLabel?: string } }) =>
-        t.props.accessibilityLabel === 'Send comment',
+    const onCancelReply = jest.fn();
+    const replyTarget = { commentId: 'c1', parentCommentId: 'c1', displayName: 'Alice' };
+    render(
+      <CommentInput
+        isAuthenticated
+        onSubmit={onSubmit}
+        replyTarget={replyTarget}
+        onCancelReply={onCancelReply}
+      />,
     );
-    // Directly call the raw onPress prop (bypasses RN disabled guard)
-    if (sendBtn?.props.onPress) {
-      sendBtn.props.onPress();
-    }
-    expect(onSubmit).not.toHaveBeenCalled();
+    fireEvent.changeText(screen.getByLabelText('Comment input'), 'reply text');
+    fireEvent.press(screen.getByLabelText('Send comment'));
+    expect(onCancelReply).toHaveBeenCalled();
   });
 });

@@ -10,7 +10,7 @@ export async function fetchNotifications(userId: string): Promise<Notification[]
     await supabase
       .from('notifications')
       .select(
-        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color)',
+        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color), actor_profile:profiles!notifications_actor_user_id_fkey(display_name, avatar_url)',
       )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -29,7 +29,7 @@ export async function fetchNotificationsPaginated(
     await supabase
       .from('notifications')
       .select(
-        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color)',
+        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color), actor_profile:profiles!notifications_actor_user_id_fkey(display_name, avatar_url)',
       )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })

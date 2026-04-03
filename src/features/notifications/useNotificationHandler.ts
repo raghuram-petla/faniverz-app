@@ -34,7 +34,10 @@ export function useNotificationHandler() {
 
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
-        if (data?.movie_id && typeof data.movie_id === 'string') {
+        if (data?.feed_item_id && typeof data.feed_item_id === 'string') {
+          // @contract: comment reply/like notifications deep-link to the post detail
+          router.push(`/post/${data.feed_item_id}`);
+        } else if (data?.movie_id && typeof data.movie_id === 'string') {
           router.push(`/movie/${data.movie_id}`);
         } else if (data?.actor_id && typeof data.actor_id === 'string') {
           router.push(`/actor/${data.actor_id}`);

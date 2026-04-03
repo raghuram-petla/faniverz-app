@@ -285,5 +285,8 @@ export interface FeedComment {
   user_id: string;
   body: string;
   created_at: string;
-  profile?: { display_name: string | null };
+  parent_comment_id: string | null;
+  like_count: number;
+  reply_count: number;
+  profile?: { display_name: string | null; avatar_url: string | null };
 }

@@ -33,7 +33,7 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       marginLeft: 12,
     },
     scrollContent: {
-      paddingBottom: 80,
+      paddingBottom: 16,
     },
     commentsList: {
       paddingHorizontal: 16,
@@ -45,10 +45,17 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       color: t.textPrimary,
       marginBottom: 12,
     },
+    // --- Comment item ---
     commentItem: {
       flexDirection: 'row',
       gap: 10,
-      marginBottom: 16,
+      marginBottom: 12,
+    },
+    commentItemNested: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 12,
+      marginLeft: 42,
     },
     commentAvatar: {
       width: 32,
@@ -57,6 +64,12 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       backgroundColor: t.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    avatarImage: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
     },
     commentContent: {
       flex: 1,
@@ -77,13 +90,64 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       marginTop: 2,
       lineHeight: 20,
     },
-    commentDeleteBtn: {
+    mentionText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.red600,
+    },
+    // --- Comment actions row (reply, like, delete) ---
+    commentActionsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
       marginTop: 4,
+      gap: 16,
+    },
+    commentReplyButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    commentReplyText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: t.textTertiary,
+    },
+    commentLikeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    commentLikeCount: {
+      fontSize: 12,
+      color: t.textTertiary,
+    },
+    commentDeleteBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     commentDeleteText: {
       fontSize: 12,
       color: colors.red500,
     },
+    // --- View replies toggle ---
+    viewRepliesButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginLeft: 42,
+      marginBottom: 12,
+      gap: 8,
+    },
+    viewRepliesDash: {
+      width: 24,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: t.textTertiary,
+    },
+    viewRepliesText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: t.textTertiary,
+    },
+    // --- Empty state ---
     emptyComments: {
       alignItems: 'center',
       paddingVertical: 32,
@@ -93,11 +157,8 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       color: t.textTertiary,
       marginTop: 8,
     },
+    // --- Input bar (NO absolute positioning — flex layout for keyboard avoidance) ---
     inputBar: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 16,
@@ -141,5 +202,23 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       color: colors.red600,
       textAlign: 'center',
       paddingVertical: 8,
+    },
+    // --- Reply indicator banner ---
+    replyIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      backgroundColor: t.surfaceElevated,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.border,
+    },
+    replyIndicatorText: {
+      fontSize: 12,
+      color: t.textTertiary,
+    },
+    replyIndicatorCancel: {
+      padding: 4,
     },
   });

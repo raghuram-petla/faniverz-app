@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
 import { CommentItem } from './CommentItem';
+import { CommentReplies } from './CommentReplies';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import type { FeedComment } from '@shared/types';
 
@@ -10,21 +11,29 @@ export interface CommentsListProps {
   comments: FeedComment[];
   /** @nullable null when user is not authenticated — all comments show as non-owned */
   userId: string | null;
+  likedCommentIds: Record<string, true>;
   isLoading: boolean;
   hasNextPage?: boolean;
   onLoadMore?: () => void;
-  /** @sideeffect Fires delete mutation — caller must handle optimistic update and rollback */
-  onDelete?: (commentId: string) => void;
+  /** @sideeffect Fires delete mutation — caller handles optimistic update */
+  onDelete?: (commentId: string, parentCommentId?: string | null) => void;
+  onReply?: (comment: FeedComment) => void;
+  onLike?: (commentId: string) => void;
+  onUnlike?: (commentId: string) => void;
 }
 
-/** @contract three states: loading spinner, empty state, or comment list with optional pagination */
+/** @contract three states: loading spinner, empty state, or comment list with replies + pagination */
 export function CommentsList({
   comments,
   userId,
+  likedCommentIds,
   isLoading,
   hasNextPage,
   onLoadMore,
   onDelete,
+  onReply,
+  onLike,
+  onUnlike,
 }: CommentsListProps) {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -50,13 +59,27 @@ export function CommentsList({
   return (
     <View>
       {comments.map((comment) => (
-        <CommentItem
-          key={comment.id}
-          comment={comment}
-          /** @nullable userId can be null for unauthenticated users — isOwn will be false */
-          isOwn={comment.user_id === userId}
-          onDelete={onDelete}
-        />
+        <View key={comment.id}>
+          <CommentItem
+            comment={comment}
+            isOwn={comment.user_id === userId}
+            isLiked={!!likedCommentIds[comment.id]}
+            onDelete={onDelete ? (id) => onDelete(id, null) : undefined}
+            onReply={onReply}
+            onLike={onLike ? () => onLike(comment.id) : undefined}
+            onUnlike={onUnlike ? () => onUnlike(comment.id) : undefined}
+          />
+          {comment.reply_count > 0 ? (
+            <CommentReplies
+              parentComment={comment}
+              userId={userId}
+              onReply={onReply ?? (() => {})}
+              onLike={onLike ?? (() => {})}
+              onUnlike={onUnlike ?? (() => {})}
+              onDelete={onDelete ? (id, parentId) => onDelete(id, parentId) : () => {}}
+            />
+          ) : null}
+        </View>
       ))}
       {hasNextPage && onLoadMore ? (
         <TouchableOpacity onPress={onLoadMore} accessibilityLabel="Load more comments">

@@ -106,6 +106,9 @@ jest.mock('@/features/feed', () => ({
   useBookmarkFeedItem: () => ({ mutate: mockBookmarkMutate }),
   useUnbookmarkFeedItem: () => ({ mutate: mockUnbookmarkMutate }),
   useUserBookmarks: () => ({ data: mockUserBookmarksData }),
+  useUserCommentLikes: () => ({ data: {} }),
+  useLikeComment: () => ({ mutate: jest.fn() }),
+  useUnlikeComment: () => ({ mutate: jest.fn() }),
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
@@ -166,14 +169,14 @@ jest.mock('@/components/feed/CommentsList', () => ({
     onDelete,
   }: {
     comments: { id: string }[];
-    onDelete?: (commentId: string) => void;
+    onDelete?: (commentId: string, parentCommentId?: string | null) => void;
   }) => {
     const { Text, TouchableOpacity } = require('react-native');
     return (
       <>
         <Text testID="comments-list">{comments.length} comments</Text>
         {onDelete && (
-          <TouchableOpacity testID="delete-comment-btn" onPress={() => onDelete('c1')}>
+          <TouchableOpacity testID="delete-comment-btn" onPress={() => onDelete('c1', null)}>
             <Text>Delete</Text>
           </TouchableOpacity>
         )}
@@ -189,7 +192,7 @@ jest.mock('@/components/feed/CommentInput', () => ({
     onLoginPress,
   }: {
     isAuthenticated: boolean;
-    onSubmit: (b: string) => void;
+    onSubmit: (b: string, parentCommentId?: string) => void;
     onLoginPress?: () => void;
   }) => {
     const { TouchableOpacity, Text } = require('react-native');
@@ -263,7 +266,7 @@ describe('PostDetailScreen', () => {
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('submit-btn'));
     expect(mockMutate).toHaveBeenCalledWith(
-      'hello',
+      { body: 'hello', parentCommentId: undefined },
       expect.objectContaining({ onError: expect.any(Function) }),
     );
   });
@@ -402,7 +405,7 @@ describe('PostDetailScreen', () => {
     render(<PostDetailScreen />);
     fireEvent.press(screen.getByTestId('delete-comment-btn'));
     expect(mockDeleteMutate).toHaveBeenCalledWith(
-      'c1',
+      { commentId: 'c1', parentCommentId: null },
       expect.objectContaining({
         onError: expect.any(Function),
       }),
