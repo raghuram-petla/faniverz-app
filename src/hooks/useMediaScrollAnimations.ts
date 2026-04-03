@@ -19,6 +19,7 @@ export interface MediaScrollAnimationsProps {
   scrollOffset: SharedValue<number>;
   titleWidth: SharedValue<number>;
   titleHeight: SharedValue<number>;
+  navLeftWidth: SharedValue<number>;
   screenWidth: number;
   heroPosterCX: number;
   heroPosterCY: number;
@@ -36,6 +37,7 @@ export function useMediaScrollAnimations({
   scrollOffset,
   titleWidth,
   titleHeight,
+  navLeftWidth,
   screenWidth,
   heroPosterCX,
   heroPosterCY,
@@ -111,5 +113,20 @@ export function useMediaScrollAnimations({
     };
   });
 
-  return { animatedPosterStyle, animatedTitleStyle, titleColorStyle, subtitleFadeStyle };
+  // @contract: dynamically constrains title width so collapsed group doesn't overlap nav buttons
+  const titleMaxWidthStyle = useAnimatedStyle(() => {
+    const navW = navLeftWidth.value;
+    if (navW === 0) return {}; // not measured yet — no constraint
+    // Available center = screen - 2*(navLeft + horizontalPadding + safetyGap) - poster - gap
+    const available = screenWidth - 2 * (navW + 16 + 8) - POSTER_COLLAPSED_W - COLLAPSED_GAP;
+    return { maxWidth: available / TITLE_SCALE };
+  });
+
+  return {
+    animatedPosterStyle,
+    animatedTitleStyle,
+    titleColorStyle,
+    subtitleFadeStyle,
+    titleMaxWidthStyle,
+  };
 }

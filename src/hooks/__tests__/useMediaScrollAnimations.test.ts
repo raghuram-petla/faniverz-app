@@ -40,6 +40,7 @@ function makeProps(
     scrollOffset: mockSharedValue(0),
     titleWidth: mockSharedValue(200),
     titleHeight: mockSharedValue(24),
+    navLeftWidth: mockSharedValue(88),
     screenWidth: 375,
     heroPosterCX: 66,
     heroPosterCY: 230,
