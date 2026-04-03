@@ -3,6 +3,7 @@ node_modules/
 
 # Expo
 .expo/
+.next/
 dist/
 web-build/
 /ios/
