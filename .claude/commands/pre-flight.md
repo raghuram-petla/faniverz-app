@@ -2,6 +2,10 @@
 
 Run this automated checklist before committing any changes. This catches the most common issues found across 60+ sessions.
 
+## Worktree Awareness
+
+If the current working directory is inside a worktree (path contains `.claude/worktrees/`), run all commands and quality gates from that worktree directory. Do not switch to the main working directory.
+
 ## Critical: Scope Control
 
 **Only check files modified in the CURRENT Claude session.** The user works with multiple Claude sessions on a single branch, so there may be uncommitted changes from other sessions that do NOT belong to this session's scope.

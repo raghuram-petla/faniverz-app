@@ -2,6 +2,19 @@
 
 Deep-scan the entire codebase for functional gaps, incomplete features, non-functional code, and code quality issues. Finds and fixes everything in a loop until clean.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/gap-audit-$(date +%s) -b gap-audit-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Loop Mode
 
 This skill runs in a **loop until clean**. After completing a full scan-fix-verify cycle, immediately start a new scan from Phase 1. Keep looping until **3 consecutive runs find zero gap issues worth fixing**. Track the run counter:

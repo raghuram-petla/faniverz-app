@@ -2,6 +2,19 @@
 
 Audit the codebase for files exceeding 300 lines and enforce decomposition standards.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/refactor-check-$(date +%s) -b refactor-check-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Steps
 
 1. **Line count audit** — Find all source files over 300 lines (excluding `node_modules`, `__tests__`, `.test.`, `.styles.ts`, `.config.`, `jest.setup`, `.next`, `scripts/`, `.d.ts`):

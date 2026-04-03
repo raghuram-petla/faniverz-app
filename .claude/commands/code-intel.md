@@ -2,6 +2,19 @@
 
 Add structured comments to source files that give future bug-hunting agents rich context for spotting inconsistencies, implicit assumptions, and latent bugs. **This skill ONLY adds comments. It MUST NOT make any functional changes, refactors, or 300-line fixes.**
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/code-intel-$(date +%s) -b code-intel-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Loop Mode
 
 This skill runs in a **loop until clean**. After completing a full scan-annotate-verify cycle, immediately start a new scan from Phase 1. Keep looping until **2 consecutive runs find zero files needing new annotations**. Track the run counter:

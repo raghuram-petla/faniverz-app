@@ -2,6 +2,19 @@
 
 Find and fix test coverage gaps in a loop across mobile (`app/`, `src/`) and admin (`admin/src/`). Runs until **3 consecutive cycles find 0 gaps**.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/test-coverage-$(date +%s) -b test-coverage-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Loop Mode
 
 Each "cycle" consists of: scan → report → write tests → add ignore comments for unreachable branches → verify. Keep looping until **3 consecutive cycles find zero coverage gaps**.

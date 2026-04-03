@@ -2,6 +2,19 @@
 
 Scan the codebase and update all documentation files to accurately reflect the current state of the project.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/update-readme-$(date +%s) -b update-readme-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Scope
 
 Update these documentation files:

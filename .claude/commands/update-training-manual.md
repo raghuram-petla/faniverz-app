@@ -5,6 +5,19 @@ Update `docs/ADMIN_TRAINING_MANUAL.md` to reflect the current state of the admin
 - **Incremental** (default): Update only sections affected by changes since the file was last modified
 - **Full refresh** (`$ARGUMENTS` contains "full"): Regenerate the entire document by auditing the full admin codebase
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/training-manual-$(date +%s) -b training-manual-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Mode Detection
 
 1. Check if `$ARGUMENTS` contains the word "full" (case-insensitive).

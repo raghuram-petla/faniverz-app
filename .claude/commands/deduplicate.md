@@ -2,6 +2,19 @@
 
 Systematically find and eliminate duplicate code and repeated behavioral patterns across the codebase, then consolidate shared logic into reusable abstractions. Covers both code-level duplication (identical logic copy-pasted) and UX-pattern duplication (same user-facing behavior re-implemented instead of centralized). Scans mobile (`app/`, `src/`), admin (`admin/src/`), and shared (`shared/`) directories.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/deduplicate-$(date +%s) -b deduplicate-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Loop Mode
 
 This skill runs in a **loop until clean**. After completing a full scan-fix-verify cycle, immediately start a new scan from Phase 1. Keep looping until **3 consecutive runs find zero duplication issues worth fixing**. Track the run counter:

@@ -2,6 +2,19 @@
 
 Ensure every database table that holds admin-managed or user-facing data has a corresponding audit trigger, and that the audit UI (admin panel) can display/revert those changes.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/db-audit-$(date +%s) -b db-audit-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Loop Mode
 
 This skill runs in a **loop until clean**. After completing a full scan-report-fix cycle, immediately start a new scan from Phase 1. Keep looping until **2 consecutive runs find zero issues**. Track the run counter:

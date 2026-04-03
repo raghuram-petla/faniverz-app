@@ -2,6 +2,10 @@
 
 Smart commit-and-push that handles all scenarios: uncommitted changes, already-committed-but-unpushed changes, or both.
 
+## Worktree Awareness
+
+If the current working directory is inside a worktree (path contains `.claude/worktrees/`), run all commands from that worktree directory. After committing, the branch must be merged into master (see step 9).
+
 ## Critical: Scope Control
 
 **NEVER stage all uncommitted changes.** The user works with multiple Claude sessions on a single branch, so there may be uncommitted changes from other sessions that do NOT belong in this commit.

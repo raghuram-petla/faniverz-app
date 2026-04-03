@@ -2,6 +2,19 @@
 
 Orchestrator that runs `/bug-hunt` and `/review-and-fix` back-to-back in a loop until **both produce 0 findings for 3 consecutive combined cycles**.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/bh-rf-$(date +%s) -b bh-rf-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## How It Works
 
 Each "cycle" consists of two steps run sequentially:

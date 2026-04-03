@@ -2,19 +2,31 @@
 
 Code review and fix cycle that operates **only on uncommitted changes**. Scans staged and unstaged modifications for bugs, anti-patterns, logic errors, and code quality issues — then fixes them.
 
+## Worktree Setup
+
+Before starting any work, ensure you are operating in a git worktree:
+
+1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+2. **If NOT in a worktree**: Create one:
+   ```bash
+   git worktree add .claude/worktrees/review-fix-$(date +%s) -b review-fix-$(date +%s)
+   ```
+   Then `cd` into the worktree directory before proceeding.
+
+**All file reads, edits, quality gates, and commits must happen inside the worktree.** Never modify files in the main working directory.
+
 ## Scope — Changed Files Only
 
 ### Determining the diff target
 
-Before scanning, determine whether the changes live in the **current working directory** or in a **worktree branch**:
+Determine whether to review uncommitted changes or branch changes:
 
-1. **If the user explicitly says to review a worktree** (or the feature was built in one), use `isolation: "worktree"` with the Agent tool, checkout the worktree branch, and diff against the base branch:
+1. **If in a worktree with commits ahead of the base branch**, diff against the base branch:
    ```
-   git checkout <worktree-branch>
    git diff main --name-only          # list changed files
    git diff main -- <file>            # per-file diff
    ```
-2. **Otherwise (default)**, diff uncommitted changes in the current working directory:
+2. **If there are uncommitted changes**, diff those:
    ```
    git diff --name-only               # unstaged
    git diff --cached --name-only      # staged
