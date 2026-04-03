@@ -15,9 +15,10 @@ You MUST:
 
 ## Steps
 
-1. Run `git status` and `git log --oneline -5 @{u}..HEAD 2>/dev/null || echo "NO_UPSTREAM"` in parallel to determine the current state.
+1. Run `git status`, `git log --oneline -5 @{u}..HEAD 2>/dev/null || echo "NO_UPSTREAM"`, and `git worktree list` in parallel to determine the current state.
 
 2. **Determine the scenario:**
+   - **Scenario W — Work was done in a worktree during this session:** Go to the Worktree Ship Flow below.
    - **Scenario A — Uncommitted changes from this session exist:** Go to step 3 (commit flow).
    - **Scenario B — No uncommitted changes from this session, but unpushed commits exist:** Skip to step 8 (push only).
    - **Scenario C — No uncommitted changes and no unpushed commits:** Report "Nothing to ship" and stop.
@@ -78,6 +79,37 @@ git push -u origin HEAD
     - If committed: the commit hash and summary
     - Push status (success/failure)
     - Any remaining uncommitted changes (from other sessions)
+
+## Worktree Ship Flow
+
+When work was done in a worktree (via `isolation: "worktree"` Agent), the changes live on a separate branch with uncommitted files in a worktree directory. You must commit there, then merge into the main branch.
+
+1. **Identify the worktree branch and directory** from the conversation history (look for `worktreeBranch:` and `worktreePath:` in agent results).
+
+2. **Navigate to the worktree directory** and check status:
+   ```bash
+   cd <worktree-path>
+   git status
+   ```
+
+3. **Fast-forward the worktree branch** if it's behind the main branch:
+   ```bash
+   git pull --ff-only
+   ```
+
+4. **Check for migration or file conflicts** introduced by the fast-forward (e.g., duplicate migration numbers). Renumber if needed.
+
+5. **Stage, commit, and verify** in the worktree — follow steps 3-8 from the normal flow above, running from within the worktree directory.
+
+6. **Switch back to the main branch directory** and merge:
+   ```bash
+   cd <original-repo-path>
+   git merge <worktree-branch> --no-edit
+   ```
+
+7. **Push master** and report the merge commit hash.
+
+8. **Clean up** (optional): The worktree can be removed later with `git worktree remove <path>`.
 
 ## Rules
 
