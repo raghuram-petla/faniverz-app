@@ -32,8 +32,10 @@ export interface FeedCardProps {
   onPress: (item: NewsFeedItem) => void;
   onEntityPress?: (entityType: FeedEntityType, entityId: string) => void;
   userVote?: 'up' | 'down' | null;
+  isBookmarked?: boolean;
   onUpvote?: (itemId: string) => void;
   onDownvote?: (itemId: string) => void;
+  onBookmark?: (itemId: string) => void;
   onComment?: (itemId: string) => void;
   onShare?: (itemId: string) => void;
   isVideoActive?: boolean;
@@ -53,8 +55,10 @@ function FeedCardInner({
   onPress,
   onEntityPress,
   userVote,
+  isBookmarked,
   onUpvote,
   onDownvote,
+  onBookmark,
   onComment,
   onShare,
   isVideoActive,
@@ -270,9 +274,11 @@ function FeedCardInner({
               downvoteCount={item.downvote_count}
               viewCount={item.view_count}
               userVote={userVote ?? null}
+              isBookmarked={isBookmarked ?? false}
               onComment={onComment ? () => onComment(item.id) : undefined}
               onUpvote={onUpvote ? () => onUpvote(item.id) : undefined}
               onDownvote={onDownvote ? () => onDownvote(item.id) : undefined}
+              onBookmark={onBookmark ? () => onBookmark(item.id) : undefined}
               onShare={onShare ? () => onShare(item.id) : undefined}
             />
           </View>
@@ -289,6 +295,7 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
   return (
     prev.item.id === next.item.id &&
     prev.userVote === next.userVote &&
+    prev.isBookmarked === next.isBookmarked &&
     prev.isVideoActive === next.isVideoActive &&
     prev.shouldMountVideo === next.shouldMountVideo &&
     prev.isFollowing === next.isFollowing &&
@@ -296,6 +303,7 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
     prev.item.downvote_count === next.item.downvote_count &&
     prev.item.view_count === next.item.view_count &&
     prev.item.comment_count === next.item.comment_count &&
+    prev.item.bookmark_count === next.item.bookmark_count &&
     prev.item.movie?.poster_image_type === next.item.movie?.poster_image_type
   );
 });

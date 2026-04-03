@@ -3,16 +3,18 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { formatCompactNumber } from '@/utils/formatNumber';
 
-/** @contract Horizontal action bar: comments | upvote | downvote | views | share */
+/** @contract Horizontal action bar: comments | upvote | downvote | views | bookmark | share */
 export interface FeedActionBarProps {
   commentCount: number;
   upvoteCount: number;
   downvoteCount: number;
   viewCount: number;
   userVote: 'up' | 'down' | null;
+  isBookmarked: boolean;
   onComment?: () => void;
   onUpvote?: () => void;
   onDownvote?: () => void;
+  onBookmark?: () => void;
   onShare?: () => void;
 }
 
@@ -22,9 +24,11 @@ export function FeedActionBar({
   downvoteCount,
   viewCount,
   userVote,
+  isBookmarked,
   onComment,
   onUpvote,
   onDownvote,
+  onBookmark,
   onShare,
 }: FeedActionBarProps) {
   const { theme, colors } = useTheme();
@@ -38,6 +42,8 @@ export function FeedActionBar({
   // @contract active vote highlights in red (up) or red (down); null = tertiary
   const upColor = userVote === 'up' ? colors.red500 : defaultColor;
   const downColor = userVote === 'down' ? colors.red500 : defaultColor;
+  // @contract bookmarked state uses yellow400 (gold accent); unbookmarked uses tertiary
+  const bookmarkColor = isBookmarked ? colors.yellow400 : defaultColor;
 
   return (
     <View style={styles.container}>
@@ -95,6 +101,22 @@ export function FeedActionBar({
           {formatCompactNumber(safeViews)}
         </Text>
       </View>
+
+      {/* Bookmark */}
+      <TouchableOpacity
+        style={styles.actionItem}
+        onPress={onBookmark}
+        disabled={!onBookmark}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+      >
+        <Ionicons
+          name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+          size={22}
+          color={bookmarkColor}
+        />
+      </TouchableOpacity>
 
       {/* Share */}
       <TouchableOpacity

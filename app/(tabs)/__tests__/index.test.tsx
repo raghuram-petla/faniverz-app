@@ -47,6 +47,9 @@ jest.mock('@/features/feed', () => ({
   useVoteFeedItem: jest.fn(),
   useRemoveFeedVote: jest.fn(),
   useUserVotes: jest.fn(),
+  useBookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUnbookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUserBookmarks: jest.fn(() => ({ data: new Set(), refetch: jest.fn() })),
   useEntityFollows: jest.fn(),
   useFollowEntity: jest.fn(),
   useUnfollowEntity: jest.fn(),
@@ -118,6 +121,7 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onEntityPress,
     onFollow,
     onUnfollow,
+    onBookmark,
     getImageViewerTopChrome,
     isVideoActive,
     shouldMountVideo,
@@ -197,6 +201,14 @@ jest.mock('@/components/feed/FeedCard', () => ({
             <Text>Unfollow</Text>
           </TouchableOpacity>
         )}
+        {onBookmark && (
+          <TouchableOpacity
+            onPress={() => onBookmark(item.id)}
+            accessibilityLabel={`Bookmark ${item.title}`}
+          >
+            <Text>Bookmark</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   },
@@ -237,6 +249,9 @@ import {
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
+  useBookmarkFeedItem,
+  useUnbookmarkFeedItem,
+  useUserBookmarks,
   useEntityFollows,
   useFollowEntity,
   useUnfollowEntity,
@@ -248,9 +263,18 @@ const mockSetFilter = jest.fn();
 const mockFetchNextPage = jest.fn();
 const mockVoteMutate = jest.fn();
 const mockRemoveMutate = jest.fn();
+const mockBookmarkMutate = jest.fn();
+const mockUnbookmarkMutate = jest.fn();
 const mockFollowMutate = jest.fn();
 const mockUnfollowMutate = jest.fn();
 
+const mockUseBookmarkFeedItem = useBookmarkFeedItem as jest.MockedFunction<
+  typeof useBookmarkFeedItem
+>;
+const mockUseUnbookmarkFeedItem = useUnbookmarkFeedItem as jest.MockedFunction<
+  typeof useUnbookmarkFeedItem
+>;
+const mockUseUserBookmarks = useUserBookmarks as jest.MockedFunction<typeof useUserBookmarks>;
 const mockUseEntityFollows = useEntityFollows as jest.MockedFunction<typeof useEntityFollows>;
 const mockUseFollowEntity = useFollowEntity as jest.MockedFunction<typeof useFollowEntity>;
 const mockUseUnfollowEntity = useUnfollowEntity as jest.MockedFunction<typeof useUnfollowEntity>;
@@ -282,6 +306,7 @@ function makeItem(overrides: Partial<NewsFeedItem> = {}): NewsFeedItem {
     downvote_count: 1,
     view_count: 0,
     comment_count: 0,
+    bookmark_count: 0,
     published_at: '2024-01-01T00:00:00Z',
     created_at: '2024-01-01T00:00:00Z',
     movie: { id: 'movie-1', title: 'Test Movie', poster_url: null, release_date: null },
@@ -294,6 +319,7 @@ function setupMocks(
     store?: Partial<ReturnType<typeof useFeedStore>>;
     feed?: Record<string, any>;
     votes?: Record<string, 'up' | 'down'>;
+    bookmarks?: Set<string>;
   } = {},
 ) {
   mockUseFeedStore.mockReturnValue({
@@ -336,6 +362,13 @@ function setupMocks(
   mockUseUserVotes.mockReturnValue({
     data: overrides.votes ?? {},
     refetch: jest.fn().mockResolvedValue({}),
+  } as any);
+
+  mockUseBookmarkFeedItem.mockReturnValue({ mutate: mockBookmarkMutate } as any);
+  mockUseUnbookmarkFeedItem.mockReturnValue({ mutate: mockUnbookmarkMutate } as any);
+  mockUseUserBookmarks.mockReturnValue({
+    data: overrides.bookmarks ?? new Set<string>(),
+    refetch: jest.fn(),
   } as any);
 
   mockUseEntityFollows.mockReturnValue({
@@ -1095,5 +1128,31 @@ describe('FeedScreen', () => {
     expect(screen.queryByTestId('refresh-spinner')).toBeNull();
 
     jest.useRealTimers();
+  });
+
+  it('bookmark button calls bookmarkMutation when item is not bookmarked', () => {
+    const item = makeItem({ id: 'item-1', title: 'Bookmarkable' });
+    setupMocks({
+      feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false },
+      bookmarks: new Set<string>(),
+    });
+    render(<FeedScreen />);
+
+    fireEvent.press(screen.getByLabelText('Bookmark Bookmarkable'));
+    expect(mockBookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'item-1' });
+    expect(mockUnbookmarkMutate).not.toHaveBeenCalled();
+  });
+
+  it('bookmark button calls unbookmarkMutation when item is already bookmarked', () => {
+    const item = makeItem({ id: 'item-1', title: 'Already Bookmarked' });
+    setupMocks({
+      feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false },
+      bookmarks: new Set<string>(['item-1']),
+    });
+    render(<FeedScreen />);
+
+    fireEvent.press(screen.getByLabelText('Bookmark Already Bookmarked'));
+    expect(mockUnbookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'item-1' });
+    expect(mockBookmarkMutate).not.toHaveBeenCalled();
   });
 });

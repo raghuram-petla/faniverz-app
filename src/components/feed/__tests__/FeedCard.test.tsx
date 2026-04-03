@@ -67,9 +67,11 @@ jest.mock('../FeedActionBar', () => ({
     downvoteCount: number;
     viewCount: number;
     userVote: 'up' | 'down' | null;
+    isBookmarked: boolean;
     onComment?: () => void;
     onUpvote?: () => void;
     onDownvote?: () => void;
+    onBookmark?: () => void;
     onShare?: () => void;
   }) => {
     const { View, Text, TouchableOpacity } = require('react-native');
@@ -80,6 +82,9 @@ jest.mock('../FeedActionBar', () => ({
         <Text testID="action-downvote-count">{props.downvoteCount}</Text>
         <Text testID="action-view-count">{props.viewCount}</Text>
         <Text testID="action-user-vote">{props.userVote ?? 'none'}</Text>
+        <Text testID="action-is-bookmarked">
+          {props.isBookmarked ? 'bookmarked' : 'not-bookmarked'}
+        </Text>
         {props.onComment ? (
           <TouchableOpacity testID="action-comment-btn" onPress={props.onComment} />
         ) : null}
@@ -88,6 +93,9 @@ jest.mock('../FeedActionBar', () => ({
         ) : null}
         {props.onDownvote ? (
           <TouchableOpacity testID="action-downvote-btn" onPress={props.onDownvote} />
+        ) : null}
+        {props.onBookmark ? (
+          <TouchableOpacity testID="action-bookmark-btn" onPress={props.onBookmark} />
         ) : null}
         {props.onShare ? (
           <TouchableOpacity testID="action-share-btn" onPress={props.onShare} />
@@ -167,6 +175,7 @@ const makeItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   downvote_count: 1,
   view_count: 100,
   comment_count: 3,
+  bookmark_count: 0,
   published_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
   movie: { id: 'm1', title: 'Test Movie', poster_url: 'poster.jpg', release_date: '2024-03-01' },
@@ -330,6 +339,29 @@ describe('FeedCard', () => {
     render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
     expect(screen.queryByTestId('action-comment-btn')).toBeNull();
     expect(screen.queryByTestId('action-share-btn')).toBeNull();
+  });
+
+  it('passes isBookmarked false to FeedActionBar when not provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.getByTestId('action-is-bookmarked').props.children).toBe('not-bookmarked');
+  });
+
+  it('passes isBookmarked true to FeedActionBar when provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} isBookmarked={true} />);
+    expect(screen.getByTestId('action-is-bookmarked').props.children).toBe('bookmarked');
+  });
+
+  it('passes onBookmark callback to FeedActionBar and calls it with item id', () => {
+    const onBookmark = jest.fn();
+    const item = makeItem({ id: 'feed-55' });
+    render(<FeedCard item={item} onPress={jest.fn()} onBookmark={onBookmark} />);
+    fireEvent.press(screen.getByTestId('action-bookmark-btn'));
+    expect(onBookmark).toHaveBeenCalledWith('feed-55');
+  });
+
+  it('does not pass onBookmark when not provided', () => {
+    render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('action-bookmark-btn')).toBeNull();
   });
 
   // Video autoplay tests

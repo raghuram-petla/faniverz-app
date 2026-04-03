@@ -5,7 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/theme';
-import { useNewsFeed, useUserVotes, useEntityFollows } from '@/features/feed';
+import {
+  useNewsFeed,
+  useUserVotes,
+  useEntityFollows,
+  useBookmarkFeedItem,
+  useUnbookmarkFeedItem,
+  useUserBookmarks,
+} from '@/features/feed';
 import { fetchComments } from '@/features/feed/commentsApi';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { useSmartPagination } from '@/hooks/useSmartPagination';
@@ -19,6 +26,7 @@ import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicat
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useFeedActions } from '@/hooks/useFeedActions';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { useTranslation } from 'react-i18next';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
@@ -36,6 +44,8 @@ export default function FeedScreen() {
   const queryClient = useQueryClient();
   const { allItems, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     useNewsFeed(filter);
+  const bookmarkMutation = useBookmarkFeedItem();
+  const unbookmarkMutation = useUnbookmarkFeedItem();
   const { followSet } = useEntityFollows();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
   const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
@@ -80,7 +90,10 @@ export default function FeedScreen() {
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   /* istanbul ignore next */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
-  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes);
+  /* istanbul ignore next */
+  const { data: userBookmarks = new Set<string>(), refetch: refetchBookmarks } =
+    useUserBookmarks(feedItemIds);
+  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchBookmarks);
   const {
     pullDistance,
     isRefreshing,
@@ -101,6 +114,20 @@ export default function FeedScreen() {
     gatedFollow,
     gatedUnfollow,
   } = useFeedActions({ allItems, userVotes, setCommentSheetItemId });
+
+  const { gate } = useAuthGate();
+  // @contract Toggle: if already bookmarked, removes; otherwise bookmarks
+  const handleBookmark = useCallback(
+    (itemId: string) => {
+      if (userBookmarks.has(itemId)) {
+        unbookmarkMutation.mutate({ feedItemId: itemId });
+      } else {
+        bookmarkMutation.mutate({ feedItemId: itemId });
+      }
+    },
+    [userBookmarks, bookmarkMutation, unbookmarkMutation],
+  );
+  const gatedBookmark = useMemo(() => gate(handleBookmark), [gate, handleBookmark]);
 
   return (
     <View style={styles.screen}>
@@ -180,8 +207,10 @@ export default function FeedScreen() {
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
+                isBookmarked={userBookmarks.has(item.id)}
                 onUpvote={gatedUpvote} /* @boundary gate wraps — guests see login prompt */
                 onDownvote={gatedDownvote}
+                onBookmark={gatedBookmark}
                 onComment={handleComment}
                 onShare={handleShare}
                 isFollowing={followSet.has(`${deriveEntityType(item)}:${getEntityId(item)}`)}

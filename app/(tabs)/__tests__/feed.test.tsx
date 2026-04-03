@@ -19,6 +19,9 @@ jest.mock('@/features/feed', () => ({
   useVoteFeedItem: jest.fn(),
   useRemoveFeedVote: jest.fn(),
   useUserVotes: jest.fn(),
+  useBookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUnbookmarkFeedItem: jest.fn(() => ({ mutate: jest.fn(), isPending: false })),
+  useUserBookmarks: jest.fn(() => ({ data: new Set(), refetch: jest.fn() })),
   useEntityFollows: jest.fn(() => ({ followSet: new Set(), data: [], isSuccess: true })),
   useFollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
   useUnfollowEntity: jest.fn(() => ({ mutate: jest.fn() })),
@@ -45,6 +48,7 @@ jest.mock('@/components/feed/FeedCard', () => ({
     item,
     onUpvote,
     onDownvote,
+    onBookmark,
     onShare,
     onComment,
     onPress,
@@ -70,6 +74,14 @@ jest.mock('@/components/feed/FeedCard', () => ({
             accessibilityLabel={`Downvote ${item.title}`}
           >
             <Text>Downvote</Text>
+          </TouchableOpacity>
+        )}
+        {onBookmark && (
+          <TouchableOpacity
+            onPress={() => onBookmark(item.id)}
+            accessibilityLabel={`Bookmark ${item.title}`}
+          >
+            <Text>Bookmark</Text>
           </TouchableOpacity>
         )}
         {onShare && (
@@ -179,16 +191,33 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 function render(ui: React.ReactElement, options?: any) {
   return rawRender(ui, { wrapper: Wrapper, ...options });
 }
-import { useNewsFeed, useVoteFeedItem, useRemoveFeedVote, useUserVotes } from '@/features/feed';
+import {
+  useNewsFeed,
+  useVoteFeedItem,
+  useRemoveFeedVote,
+  useUserVotes,
+  useBookmarkFeedItem,
+  useUnbookmarkFeedItem,
+  useUserBookmarks,
+} from '@/features/feed';
 import { useFeedStore } from '@/stores/useFeedStore';
 
 const mockSetFilter = jest.fn();
 const mockVoteMutate = jest.fn();
 const mockRemoveMutate = jest.fn();
+const mockBookmarkMutate = jest.fn();
+const mockUnbookmarkMutate = jest.fn();
 const mockUseNewsFeed = useNewsFeed as jest.MockedFunction<typeof useNewsFeed>;
 const mockUseVoteFeedItem = useVoteFeedItem as jest.MockedFunction<typeof useVoteFeedItem>;
 const mockUseRemoveFeedVote = useRemoveFeedVote as jest.MockedFunction<typeof useRemoveFeedVote>;
 const mockUseUserVotes = useUserVotes as jest.MockedFunction<typeof useUserVotes>;
+const mockUseBookmarkFeedItem = useBookmarkFeedItem as jest.MockedFunction<
+  typeof useBookmarkFeedItem
+>;
+const mockUseUnbookmarkFeedItem = useUnbookmarkFeedItem as jest.MockedFunction<
+  typeof useUnbookmarkFeedItem
+>;
+const mockUseUserBookmarks = useUserBookmarks as jest.MockedFunction<typeof useUserBookmarks>;
 const mockUseFeedStore = useFeedStore as jest.MockedFunction<typeof useFeedStore>;
 
 const mockItem = {
@@ -210,6 +239,7 @@ const mockItem = {
   downvote_count: 0,
   view_count: 0,
   comment_count: 0,
+  bookmark_count: 0,
   published_at: '2024-01-01T00:00:00Z',
   created_at: '2024-01-01T00:00:00Z',
 };
@@ -237,7 +267,13 @@ function setupMocks(overrides: Record<string, any> = {}) {
   } as any);
   mockUseVoteFeedItem.mockReturnValue({ mutate: mockVoteMutate } as any);
   mockUseRemoveFeedVote.mockReturnValue({ mutate: mockRemoveMutate } as any);
-  mockUseUserVotes.mockReturnValue({ data: overrides.votes ?? {} } as any);
+  mockUseUserVotes.mockReturnValue({ data: overrides.votes ?? {}, refetch: jest.fn() } as any);
+  mockUseBookmarkFeedItem.mockReturnValue({ mutate: mockBookmarkMutate } as any);
+  mockUseUnbookmarkFeedItem.mockReturnValue({ mutate: mockUnbookmarkMutate } as any);
+  mockUseUserBookmarks.mockReturnValue({
+    data: overrides.bookmarks ?? new Set<string>(),
+    refetch: jest.fn(),
+  } as any);
 }
 
 describe('FeedScreen', () => {

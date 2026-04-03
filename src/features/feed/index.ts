@@ -14,3 +14,9 @@ export {
   useUnfollowEntity,
 } from './followHooks';
 export { useComments, useAddComment, useDeleteComment } from './commentsHooks';
+export {
+  useBookmarkFeedItem,
+  useUnbookmarkFeedItem,
+  useUserBookmarks,
+  useBookmarkedFeed,
+} from './bookmarkHooks';

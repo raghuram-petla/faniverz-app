@@ -32,6 +32,7 @@ const makeFeedItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
   downvote_count: 0,
   view_count: 0,
   comment_count: 0,
+  bookmark_count: 0,
   published_at: new Date().toISOString(),
   created_at: new Date().toISOString(),
   movie: { id: 'm1', title: 'Test Movie', poster_url: 'poster.jpg', release_date: null },

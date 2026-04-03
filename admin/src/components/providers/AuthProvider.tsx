@@ -183,7 +183,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // ignore — invitation acceptance is best-effort
       }
     }
-
     /**
      * @boundary reads Supabase auth token directly from localStorage for fast session restore
      * @assumes localStorage key format: sb-{projectRef}-auth-token
@@ -243,7 +242,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (error) throw error;
   }, []);
-
   const refreshUser = useCallback(async () => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

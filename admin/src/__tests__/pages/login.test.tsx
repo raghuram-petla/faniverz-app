@@ -48,11 +48,16 @@ describe('LoginPage', () => {
 
   it('does not render email or password inputs', () => {
     render(<LoginPage />);
-    expect(screen.queryByPlaceholderText('Email')).not.toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Password')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Email')).toBeNull();
+    expect(screen.queryByPlaceholderText('Password')).toBeNull();
   });
 
-  it('calls signInWithGoogle when button is clicked', async () => {
+  it('does not render "or" divider', () => {
+    render(<LoginPage />);
+    expect(screen.queryByText('or')).toBeNull();
+  });
+
+  it('calls signInWithGoogle when Google button is clicked', async () => {
     render(<LoginPage />);
     fireEvent.click(screen.getByRole('button', { name: /sign in with google/i }));
     await waitFor(() => {
@@ -69,7 +74,7 @@ describe('LoginPage', () => {
     });
   });
 
-  it('shows generic error message for non-Error failures', async () => {
+  it('shows generic error message for non-Error Google failures', async () => {
     mockSignInWithGoogle.mockRejectedValue('unknown error');
     render(<LoginPage />);
     fireEvent.click(screen.getByRole('button', { name: /sign in with google/i }));
@@ -87,7 +92,6 @@ describe('LoginPage', () => {
 describe('LoginPage - layout', () => {
   it('does not redirect when user is not authenticated', () => {
     render(<LoginPage />);
-    // mockReplace should NOT be called when user is null
     expect(mockReplace).not.toHaveBeenCalled();
   });
 });

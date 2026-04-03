@@ -60,6 +60,7 @@ function makeItem(overrides: Partial<NewsFeedItem> = {}): NewsFeedItem {
     downvote_count: 0,
     view_count: 0,
     comment_count: 0,
+    bookmark_count: 0,
     published_at: '2024-01-01T00:00:00Z',
     created_at: '2024-01-01T00:00:00Z',
     movie: { id: 'movie-1', title: 'Test Movie', poster_url: null, release_date: null },

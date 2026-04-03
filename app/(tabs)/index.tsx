@@ -7,7 +7,14 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import { useTheme } from '@/theme';
-import { usePersonalizedFeed, useUserVotes, useEntityFollows } from '@/features/feed';
+import {
+  usePersonalizedFeed,
+  useUserVotes,
+  useEntityFollows,
+  useBookmarkFeedItem,
+  useUnbookmarkFeedItem,
+  useUserBookmarks,
+} from '@/features/feed';
 import { fetchComments } from '@/features/feed/commentsApi';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { useActiveVideo } from '@/hooks/useActiveVideo';
@@ -29,6 +36,7 @@ import {
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useFeedActions } from '@/hooks/useFeedActions';
+import { useAuthGate } from '@/hooks/useAuthGate';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
 import { CommentsBottomSheet } from '@/components/feed/CommentsBottomSheet';
@@ -58,6 +66,8 @@ export default function FeedScreen() {
     isFetchingNextPage,
     refetch,
   } = usePersonalizedFeed(filter);
+  const bookmarkMutation = useBookmarkFeedItem();
+  const unbookmarkMutation = useUnbookmarkFeedItem();
   const { activeVideoId, mountedVideoIds, registerVideoLayout, handleScrollForVideo } =
     useActiveVideo(); // @sync one auto-playing video, but multiple nearby cards can stay mounted for single-tap playback
   const { followSet } = useEntityFollows();
@@ -87,7 +97,10 @@ export default function FeedScreen() {
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   /* istanbul ignore next */
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
-  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes);
+  /* istanbul ignore next */
+  const { data: userBookmarks = new Set<string>(), refetch: refetchBookmarks } =
+    useUserBookmarks(feedItemIds);
+  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchBookmarks);
   const {
     pullDistance,
     isRefreshing,
@@ -163,6 +176,20 @@ export default function FeedScreen() {
     gatedFollow,
     gatedUnfollow,
   } = useFeedActions({ allItems, userVotes, setCommentSheetItemId });
+
+  const { gate } = useAuthGate();
+  // @contract Toggle: if already bookmarked, removes; otherwise bookmarks
+  const handleBookmark = useCallback(
+    (itemId: string) => {
+      if (userBookmarks.has(itemId)) {
+        unbookmarkMutation.mutate({ feedItemId: itemId });
+      } else {
+        bookmarkMutation.mutate({ feedItemId: itemId });
+      }
+    },
+    [userBookmarks, bookmarkMutation, unbookmarkMutation],
+  );
+  const gatedBookmark = useMemo(() => gate(handleBookmark), [gate, handleBookmark]);
 
   const getImageViewerTopChrome = useCallback(
     (): ImageViewerTopChrome => ({
@@ -271,8 +298,10 @@ export default function FeedScreen() {
                 onPress={handleFeedItemPress}
                 onEntityPress={handleEntityPress}
                 userVote={userVotes[item.id] ?? null}
+                isBookmarked={userBookmarks.has(item.id)}
                 onUpvote={gatedUpvote} /* @boundary gate wraps — guests see login prompt */
                 onDownvote={gatedDownvote}
+                onBookmark={gatedBookmark}
                 onComment={handleComment}
                 onShare={handleShare}
                 isVideoActive={activeVideoId === item.id}

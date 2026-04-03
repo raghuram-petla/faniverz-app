@@ -33,6 +33,7 @@
     "failedToFollow": "Failed to follow. Please try again.",
     "failedToUnfollow": "Failed to unfollow. Please try again.",
     "failedToVote": "Failed to vote. Please try again.",
+    "failedToBookmark": "Failed to save post. Please try again.",
     "failedToAddComment": "Failed to add comment. Please try again.",
     "failedToDeleteComment": "Failed to delete comment. Please try again.",
     "playVideo": "Play video",
@@ -239,6 +240,7 @@
     "username": "Username",
     "following": "Following",
     "activity": "Activity",
+    "savedPosts": "Saved Posts",
     "accountDetails": "Account Details",
     "avgRating": "Avg Rating",
     "watchlistStat": "Watchlist",
@@ -379,6 +381,11 @@
     "reviews": "reviews",
     "actor": "Actor",
     "productionHouse": "Production House"
+  },
+  "bookmarks": {
+    "title": "Saved Posts",
+    "empty": "No saved posts yet",
+    "emptySubtitle": "Bookmark posts from the feed to revisit them here."
   },
   "settings": {
     "title": "Settings",

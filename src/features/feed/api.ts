@@ -104,6 +104,7 @@ export async function fetchPersonalizedFeed(
     downvote_count: row.downvote_count as number,
     view_count: row.view_count as number,
     comment_count: row.comment_count as number,
+    bookmark_count: (row.bookmark_count as number) ?? 0,
     published_at: row.published_at as string,
     created_at: row.created_at as string,
     score: row.score as number,

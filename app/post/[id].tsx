@@ -15,6 +15,9 @@ import {
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
+  useBookmarkFeedItem,
+  useUnbookmarkFeedItem,
+  useUserBookmarks,
 } from '@/features/feed';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { FeedCard } from '@/components/feed/FeedCard';
@@ -45,9 +48,12 @@ export default function PostDetailScreen() {
   // @sideeffect: vote mutations trigger optimistic updates on the feed item's vote counts
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
+  const bookmarkMutation = useBookmarkFeedItem();
+  const unbookmarkMutation = useUnbookmarkFeedItem();
   // @contract: userVotes map is keyed by feed item ID; value is 'up' | 'down' | null
   const feedItemIds = useMemo(() => (post ? [post.id] : []), [post]);
   const { data: userVotes = {}, refetch: refetchVotes } = useUserVotes(feedItemIds);
+  const { data: userBookmarks = new Set<string>() } = useUserBookmarks(feedItemIds);
   const { gate } = useAuthGate();
 
   const {
@@ -101,6 +107,18 @@ export default function PostDetailScreen() {
       }
     },
     [userVotes, voteMutation, removeMutation],
+  );
+
+  // @contract Toggle: if already bookmarked, removes; otherwise bookmarks
+  const handleBookmark = useCallback(
+    (itemId: string) => {
+      if (userBookmarks.has(itemId)) {
+        unbookmarkMutation.mutate({ feedItemId: itemId });
+      } else {
+        bookmarkMutation.mutate({ feedItemId: itemId });
+      }
+    },
+    [userBookmarks, bookmarkMutation, unbookmarkMutation],
   );
 
   // @edge: tapping own avatar navigates to /profile; other users go to /user/[id]
@@ -168,8 +186,10 @@ export default function PostDetailScreen() {
               onPress={handleNoOp}
               onEntityPress={handleEntityPress}
               userVote={userVotes[post.id] ?? null}
+              isBookmarked={userBookmarks.has(post.id)}
               onUpvote={gate(handleUpvote)}
               onDownvote={gate(handleDownvote)}
+              onBookmark={gate(handleBookmark)}
             />
 
             {/* Comments */}

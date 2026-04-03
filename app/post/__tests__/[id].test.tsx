@@ -44,7 +44,10 @@ const mockDeleteMutate = jest.fn();
 const mockFetchNextPage = jest.fn();
 const mockVoteMutate = jest.fn();
 const mockRemoveMutate = jest.fn();
+const mockBookmarkMutate = jest.fn();
+const mockUnbookmarkMutate = jest.fn();
 const mockUserVotesData: Record<string, string> = {};
+let mockUserBookmarksData: Set<string> = new Set<string>();
 
 jest.mock('@/features/feed', () => ({
   useFeedItem: () => ({
@@ -67,6 +70,7 @@ jest.mock('@/features/feed', () => ({
       upvote_count: 5,
       downvote_count: 1,
       view_count: 100,
+      bookmark_count: 0,
       published_at: '2026-03-10T00:00:00Z',
       created_at: '2026-03-10T00:00:00Z',
       movie: { id: 'm1', title: 'Movie', poster_url: null, release_date: null },
@@ -99,6 +103,9 @@ jest.mock('@/features/feed', () => ({
   useVoteFeedItem: () => ({ mutate: mockVoteMutate }),
   useRemoveFeedVote: () => ({ mutate: mockRemoveMutate }),
   useUserVotes: () => ({ data: mockUserVotesData, refetch: jest.fn() }),
+  useBookmarkFeedItem: () => ({ mutate: mockBookmarkMutate }),
+  useUnbookmarkFeedItem: () => ({ mutate: mockUnbookmarkMutate }),
+  useUserBookmarks: () => ({ data: mockUserBookmarksData }),
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
@@ -108,12 +115,14 @@ jest.mock('@/components/feed/FeedCard', () => ({
     onEntityPress,
     onUpvote,
     onDownvote,
+    onBookmark,
   }: {
     item: { id: string; title: string };
     onPress?: (item: { id: string; title: string }) => void;
     onEntityPress?: (type: string, id: string) => void;
     onUpvote?: (id: string) => void;
     onDownvote?: (id: string) => void;
+    onBookmark?: (id: string) => void;
   }) => {
     const { Text, TouchableOpacity } = require('react-native');
     return (
@@ -139,6 +148,9 @@ jest.mock('@/components/feed/FeedCard', () => ({
         {onUpvote && <TouchableOpacity testID="upvote-btn" onPress={() => onUpvote(item.id)} />}
         {onDownvote && (
           <TouchableOpacity testID="downvote-btn" onPress={() => onDownvote(item.id)} />
+        )}
+        {onBookmark && (
+          <TouchableOpacity testID="bookmark-btn" onPress={() => onBookmark(item.id)} />
         )}
       </>
     );
@@ -208,6 +220,7 @@ jest.spyOn(Alert, 'alert');
 describe('PostDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUserBookmarksData = new Set<string>();
   });
 
   it('renders post via FeedCard', () => {
@@ -570,5 +583,21 @@ describe('PostDetailScreen', () => {
   it('renders with post.comment_count displayed', () => {
     render(<PostDetailScreen />);
     expect(screen.getByText('postDetail.comments (3)')).toBeTruthy();
+  });
+
+  it('calls bookmarkMutation when post is not bookmarked', () => {
+    mockUserBookmarksData = new Set<string>();
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('bookmark-btn'));
+    expect(mockBookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'post-1' });
+    expect(mockUnbookmarkMutate).not.toHaveBeenCalled();
+  });
+
+  it('calls unbookmarkMutation when post is already bookmarked', () => {
+    mockUserBookmarksData = new Set<string>(['post-1']);
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('bookmark-btn'));
+    expect(mockUnbookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'post-1' });
+    expect(mockBookmarkMutate).not.toHaveBeenCalled();
   });
 });

@@ -235,6 +235,7 @@ export interface NewsFeedItem {
   downvote_count: number;
   view_count: number;
   comment_count: number;
+  bookmark_count: number;
   published_at: string;
   created_at: string;
   score?: number;
@@ -245,6 +246,13 @@ export interface NewsFeedItem {
     poster_image_type?: 'poster' | 'backdrop' | null;
     release_date: string | null;
   };
+}
+
+export interface FeedBookmark {
+  id: string;
+  feed_item_id: string;
+  user_id: string;
+  created_at: string;
 }
 
 export interface FeedVote {

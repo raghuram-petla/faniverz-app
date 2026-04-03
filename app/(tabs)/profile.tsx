@@ -41,6 +41,7 @@ const MENU_ITEM_DEFS: Omit<MenuItem, 'badge'>[] = [
   { icon: 'star-outline', labelKey: 'profile.myReviews', route: '/profile/reviews' },
   { icon: 'settings-outline', labelKey: 'profile.settings', route: '/profile/settings' },
   { icon: 'people-outline', labelKey: 'profile.following', route: '/profile/following' },
+  { icon: 'bookmark-outline', labelKey: 'profile.savedPosts', route: '/bookmarks' },
   { icon: 'time-outline', labelKey: 'profile.activity', route: '/profile/activity' },
   { icon: 'heart-outline', labelKey: 'profile.favoriteActors', route: '/profile/favorite-actors' },
   { icon: 'eye-outline', labelKey: 'profile.watchedMovies', route: '/profile/watched' },

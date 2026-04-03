@@ -24,6 +24,7 @@ const defaultProps = {
   downvoteCount: 3,
   viewCount: 1500,
   userVote: null as 'up' | 'down' | null,
+  isBookmarked: false,
 };
 
 describe('FeedActionBar', () => {
@@ -134,6 +135,7 @@ describe('FeedActionBar', () => {
         downvoteCount={undefined as unknown as number}
         viewCount={undefined as unknown as number}
         userVote={null}
+        isBookmarked={false}
       />,
     );
     // Should not crash and default to 0
@@ -172,5 +174,42 @@ describe('FeedActionBar', () => {
   it('renders 1K for counts around 1000', () => {
     render(<FeedActionBar {...defaultProps} commentCount={1000} />);
     expect(screen.getByText('1K')).toBeTruthy();
+  });
+
+  it('renders bookmark button with outline icon when not bookmarked', () => {
+    render(<FeedActionBar {...defaultProps} isBookmarked={false} />);
+    expect(screen.getByLabelText('Bookmark')).toBeTruthy();
+    const json = JSON.stringify(
+      render(<FeedActionBar {...defaultProps} isBookmarked={false} />).toJSON(),
+    );
+    expect(json).toContain('"bookmark-outline"');
+  });
+
+  it('renders bookmark button with filled icon when bookmarked', () => {
+    const { toJSON } = render(<FeedActionBar {...defaultProps} isBookmarked={true} />);
+    expect(screen.getByLabelText('Remove bookmark')).toBeTruthy();
+    const json = JSON.stringify(toJSON());
+    expect(json).toContain('"bookmark"');
+    expect(json.toLowerCase()).toContain('#facc15');
+  });
+
+  it('calls onBookmark when bookmark button pressed', () => {
+    const onBookmark = jest.fn();
+    render(<FeedActionBar {...defaultProps} onBookmark={onBookmark} />);
+    fireEvent.press(screen.getByLabelText('Bookmark'));
+    expect(onBookmark).toHaveBeenCalled();
+  });
+
+  it('disables bookmark button when no callback', () => {
+    render(<FeedActionBar {...defaultProps} />);
+    const btn = screen.getByLabelText('Bookmark');
+    expect(btn.props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('does not disable bookmark button when callback is provided', () => {
+    const onBookmark = jest.fn();
+    render(<FeedActionBar {...defaultProps} onBookmark={onBookmark} />);
+    const btn = screen.getByLabelText('Bookmark');
+    expect(btn.props.accessibilityState?.disabled).toBeFalsy();
   });
 });
