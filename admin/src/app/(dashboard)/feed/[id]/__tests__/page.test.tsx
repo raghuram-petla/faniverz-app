@@ -264,4 +264,32 @@ describe('EditFeedItemPage', () => {
     const form = container.querySelector('.pointer-events-none');
     expect(form).toBeInTheDocument();
   });
+
+  it('updates title via onChange', () => {
+    render(<EditFeedItemPage />);
+    const input = screen.getByDisplayValue('Test Feed Item');
+    fireEvent.change(input, { target: { value: 'New Title' } });
+    expect(screen.getByDisplayValue('New Title')).toBeInTheDocument();
+  });
+
+  it('updates description via onChange', () => {
+    render(<EditFeedItemPage />);
+    const textarea = screen.getByDisplayValue('Some description');
+    fireEvent.change(textarea, { target: { value: 'Updated desc' } });
+    expect(screen.getByDisplayValue('Updated desc')).toBeInTheDocument();
+  });
+
+  it('toggles isPinned checkbox', () => {
+    render(<EditFeedItemPage />);
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
+    expect(checkboxes[0]).toBeChecked();
+  });
+
+  it('toggles isFeatured checkbox', () => {
+    render(<EditFeedItemPage />);
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[1]);
+    expect(checkboxes[1]).not.toBeChecked();
+  });
 });

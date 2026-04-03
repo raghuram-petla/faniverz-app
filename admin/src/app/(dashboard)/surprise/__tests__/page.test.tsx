@@ -228,4 +228,17 @@ describe('SurpriseContentPage', () => {
     const addLink = screen.getByText('Add Content').closest('a');
     expect(addLink?.getAttribute('href')).toBe('/surprise/new');
   });
+
+  it('calls alert when delete onError fires', () => {
+    mockDeleteMutate.mockImplementation((_id: string, opts: { onError: (err: Error) => void }) => {
+      opts.onError(new Error('Delete failed'));
+    });
+    mockUseAdminSurprise.mockReturnValue({
+      data: [makeItem('s1', 'A Song', 'song')],
+      isLoading: false,
+    });
+    render(<SurpriseContentPage />);
+    fireEvent.click(screen.getByTitle('Delete'));
+    expect(window.alert).toHaveBeenCalledWith('Error: Delete failed');
+  });
 });
