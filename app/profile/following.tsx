@@ -75,10 +75,10 @@ export default function FollowingScreen() {
   );
 
   // @edge: no-op when user is not authenticated (guard against stale session)
-  // @contract: isPending guard prevents duplicate unfollow calls from rapid taps
+  // @contract: mutation is idempotent (delete) so no isPending guard needed
   const handleUnfollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
-      if (!user?.id || unfollowMutation.isPending) return;
+      if (!user?.id) return;
       unfollowMutation.mutate({ entityType, entityId });
     },
     [user?.id, unfollowMutation],

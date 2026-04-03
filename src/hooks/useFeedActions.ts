@@ -78,18 +78,16 @@ export function useFeedActions({
 
   const handleFollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
-      if (followMutation.isPending || unfollowMutation.isPending) return;
       followMutation.mutate({ entityType, entityId });
     },
-    [followMutation, unfollowMutation],
+    [followMutation],
   );
 
   const handleUnfollow = useCallback(
     (entityType: FeedEntityType, entityId: string) => {
-      if (followMutation.isPending || unfollowMutation.isPending) return;
       unfollowMutation.mutate({ entityType, entityId });
     },
-    [followMutation, unfollowMutation],
+    [unfollowMutation],
   );
 
   const handleEntityPress = useCallback(

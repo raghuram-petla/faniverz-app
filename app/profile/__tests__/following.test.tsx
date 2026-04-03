@@ -173,14 +173,14 @@ describe('FollowingScreen', () => {
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
-  it('does not call unfollow when mutation is already pending', () => {
+  it('calls unfollow even when mutation is pending (idempotent)', () => {
     const mockMutate = jest.fn();
     const { useUnfollowEntity } = require('@/features/feed');
     useUnfollowEntity.mockReturnValueOnce({ mutate: mockMutate, isPending: true });
     render(<FollowingScreen />);
     const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
     fireEvent.press(unfollowButtons[0]);
-    expect(mockMutate).not.toHaveBeenCalled();
+    expect(mockMutate).toHaveBeenCalled();
   });
 
   it('renders production_house entity type label', () => {

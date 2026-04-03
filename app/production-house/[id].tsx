@@ -53,9 +53,8 @@ export default function ProductionHouseDetailScreen() {
   const isFollowing = followSet.has(`production_house:${id}`);
 
   // @contract: gate() redirects to login if unauthenticated; otherwise toggles follow state
-  // @contract: isPending guard prevents duplicate follow/unfollow calls from rapid taps
+  // @contract: mutations are idempotent (upsert + delete) so no isPending guard needed
   const handleFollowToggle = gate(() => {
-    if (followMutation.isPending || unfollowMutation.isPending) return;
     if (isFollowing) {
       unfollowMutation.mutate({
         entityType: 'production_house',

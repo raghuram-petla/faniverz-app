@@ -74,9 +74,8 @@ export default function ActorDetailScreen() {
 
   // @coupling: followSet key format = "entityType:entityId"
   const isFollowing = followSet.has(`actor:${id}`);
-  // @contract: gate() = auth check; isPending guard = duplicate-tap prevention
+  // @contract: gate() = auth check; mutations are idempotent (upsert + delete)
   const handleFollowToggle = gate(() => {
-    if (followMutation.isPending || unfollowMutation.isPending) return;
     if (isFollowing) {
       unfollowMutation.mutate({
         entityType: 'actor',

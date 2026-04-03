@@ -193,34 +193,22 @@ describe('useFeedActions', () => {
       expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
     });
 
-    it('guards when follow is already pending', () => {
+    it('calls follow even when another mutation is pending (idempotent)', () => {
       const actions = setup({ followPending: true });
       act(() => actions.gatedFollow('movie', 'movie-1'));
-      expect(mockFollowMutate).not.toHaveBeenCalled();
+      expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
     });
 
-    it('guards when unfollow is pending', () => {
-      const actions = setup({ unfollowPending: true });
-      act(() => actions.gatedFollow('movie', 'movie-1'));
-      expect(mockFollowMutate).not.toHaveBeenCalled();
-    });
-
-    it('calls unfollowMutation when not pending', () => {
+    it('calls unfollowMutation', () => {
       const actions = setup({ followPending: false, unfollowPending: false });
       act(() => actions.gatedUnfollow('movie', 'movie-1'));
       expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
     });
 
-    it('guards unfollow when follow is pending', () => {
-      const actions = setup({ followPending: true });
-      act(() => actions.gatedUnfollow('movie', 'movie-1'));
-      expect(mockUnfollowMutate).not.toHaveBeenCalled();
-    });
-
-    it('guards unfollow when unfollow is pending', () => {
+    it('calls unfollow even when another mutation is pending (idempotent)', () => {
       const actions = setup({ unfollowPending: true });
       act(() => actions.gatedUnfollow('movie', 'movie-1'));
-      expect(mockUnfollowMutate).not.toHaveBeenCalled();
+      expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
     });
   });
 
