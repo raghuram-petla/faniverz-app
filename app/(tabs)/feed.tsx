@@ -13,11 +13,10 @@ import {
   useUnbookmarkFeedItem,
   useUserBookmarks,
 } from '@/features/feed';
-import { fetchComments } from '@/features/feed/commentsApi';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { useSmartPagination } from '@/hooks/useSmartPagination';
-import { usePrefetchOnVisibility } from '@/hooks/usePrefetchOnVisibility';
-import { NEWS_FEED_PAGINATION, COMMENTS_PAGINATION } from '@/constants/paginationConfig';
+import { useFeedCommentPrefetch } from '@/hooks/useFeedCommentPrefetch';
+import { NEWS_FEED_PAGINATION } from '@/constants/paginationConfig';
 import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpers';
 import { FeedCard } from '@/components/feed/FeedCard';
 import { FeedFilterPills } from '@/components/feed/FeedFilterPills';
@@ -73,19 +72,10 @@ export default function FeedScreen() {
     config: NEWS_FEED_PAGINATION,
   });
 
-  const commentKeyFactory = useCallback(
-    (item: NewsFeedItem) => ['feed-comments', item.id] as const,
-    [],
-  );
-  const commentPrefetchFn = useCallback(
-    (item: NewsFeedItem) => fetchComments(item.id, 0, COMMENTS_PAGINATION.initialPageSize),
-    [],
-  );
-  const { viewabilityConfig, onViewableItemsChanged } = usePrefetchOnVisibility<NewsFeedItem>({
+  // @coupling useFeedCommentPrefetch composes comment prefetching + view tracking into one callback
+  const { viewabilityConfig, onViewableItemsChanged, resetViewDedup } = useFeedCommentPrefetch({
     config: NEWS_FEED_PAGINATION,
     queryClient,
-    queryKeyFactory: commentKeyFactory,
-    queryFn: commentPrefetchFn,
   });
 
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
@@ -100,9 +90,10 @@ export default function FeedScreen() {
   );
   /* istanbul ignore next -- scroll-to-top wraps baseOnRefresh; only callable via pull-to-refresh gesture */
   const onRefresh = useCallback(async () => {
+    resetViewDedup();
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
     return baseOnRefresh();
-  }, [baseOnRefresh]);
+  }, [baseOnRefresh, resetViewDedup]);
   const {
     pullDistance,
     isRefreshing,

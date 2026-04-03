@@ -15,12 +15,11 @@ import {
   useUnbookmarkFeedItem,
   useUserBookmarks,
 } from '@/features/feed';
-import { fetchComments } from '@/features/feed/commentsApi';
 import { useFeedStore } from '@/stores/useFeedStore';
 import { useActiveVideo } from '@/hooks/useActiveVideo';
 import { useSmartPagination } from '@/hooks/useSmartPagination';
-import { usePrefetchOnVisibility } from '@/hooks/usePrefetchOnVisibility';
-import { FEED_PAGINATION, COMMENTS_PAGINATION } from '@/constants/paginationConfig';
+import { useFeedCommentPrefetch } from '@/hooks/useFeedCommentPrefetch';
+import { FEED_PAGINATION } from '@/constants/paginationConfig';
 import { FeedCard } from '@/components/feed/FeedCard';
 import {
   FeedHeader,
@@ -80,19 +79,10 @@ export default function FeedScreen() {
     fetchNextPage,
     config: FEED_PAGINATION,
   });
-  const commentKeyFactory = useCallback(
-    (item: NewsFeedItem) => ['feed-comments', item.id] as const,
-    [],
-  );
-  const commentPrefetchFn = useCallback(
-    (item: NewsFeedItem) => fetchComments(item.id, 0, COMMENTS_PAGINATION.initialPageSize),
-    [],
-  );
-  const { viewabilityConfig, onViewableItemsChanged } = usePrefetchOnVisibility<NewsFeedItem>({
+  // @coupling useFeedCommentPrefetch composes comment prefetching + view tracking into one callback
+  const { viewabilityConfig, onViewableItemsChanged, resetViewDedup } = useFeedCommentPrefetch({
     config: FEED_PAGINATION,
     queryClient,
-    queryKeyFactory: commentKeyFactory,
-    queryFn: commentPrefetchFn,
   });
   const feedItemIds = useMemo(() => allItems.map((i) => i.id), [allItems]);
   /* istanbul ignore next */
@@ -106,8 +96,12 @@ export default function FeedScreen() {
   );
   // @sideeffect Scroll to top at the start of any refresh so new content is visible
   const onRefresh = useCallback(
-    () => (listRef.current?.scrollToOffset({ offset: 0, animated: true }), baseOnRefresh()),
-    [baseOnRefresh],
+    () => (
+      resetViewDedup(),
+      listRef.current?.scrollToOffset({ offset: 0, animated: true }),
+      baseOnRefresh()
+    ),
+    [baseOnRefresh, resetViewDedup],
   );
   const {
     pullDistance,
