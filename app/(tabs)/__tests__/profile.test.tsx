@@ -2,6 +2,13 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
 }));
 
+jest.mock('@/components/common/SafeAreaCover', () => ({
+  SafeAreaCover: () => {
+    const { View } = require('react-native');
+    return <View testID="safe-area-cover" />;
+  },
+}));
+
 jest.mock('@/components/ui/AnimatedNumber', () => {
   const { Text } = require('react-native');
   return {

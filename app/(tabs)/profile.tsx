@@ -22,6 +22,7 @@ import { formatMemberSince } from '@/utils/formatDate';
 import { useEnrichedFollows } from '@/features/feed';
 import { FollowingSection } from '@/components/profile/FollowingSection';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
+import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { createStyles } from '@/styles/tabs/profile.styles';
 import { getImageUrl } from '@shared/imageUrl';
 import type { FeedEntityType } from '@shared/types';
@@ -120,6 +121,7 @@ export default function ProfileScreen() {
   if (!isLoggedIn) {
     return (
       <View style={[styles.container, styles.guestContainer, { paddingTop: insets.top + 16 }]}>
+        <SafeAreaCover />
         <View style={styles.guestContent}>
           <Ionicons name="person-circle-outline" size={100} color={theme.textDisabled} />
           <Text style={styles.guestTitle}>{t('profile.signInTitle')}</Text>
@@ -160,117 +162,122 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView
-      ref={scrollRef}
-      style={styles.container}
-      contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16 }]}
-      overScrollMode="never"
-      showsVerticalScrollIndicator={false}
-      onScroll={handlePullScroll}
-      onScrollBeginDrag={handleScrollBeginDrag}
-      onScrollEndDrag={handleScrollEndDrag}
-      scrollEventThrottle={16}
-      {...androidPullProps}
-    >
-      <PullToRefreshIndicator
-        pullDistance={pullDistance}
-        isRefreshing={isRefreshing}
-        refreshing={refreshing}
-      />
-      {/* Profile Card */}
-      <View style={styles.profileCard}>
-        <View style={styles.profileTop}>
-          {/* Avatar with camera button */}
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={{ uri: avatarUrl }}
-              style={styles.avatar}
-              contentFit="cover"
-              transition={200}
-            />
-            <TouchableOpacity
-              style={styles.cameraButton}
-              activeOpacity={0.8}
-              onPress={() => router.push('/profile/edit')}
-            >
-              <Ionicons name="camera-outline" size={14} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Stats row */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <AnimatedNumber style={styles.statValue} value={watchlistCount} />
-              <Text style={styles.statLabel}>{t('profile.watchlistStat')}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <AnimatedNumber style={styles.statValue} value={reviewsCount} />
-              <Text style={styles.statLabel}>{t('profile.reviewsStat')}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={14} color={colors.yellow400} />
-                <AnimatedNumber style={styles.statValue} value={avgRating} decimals={1} />
-              </View>
-              <Text style={styles.statLabel}>{t('profile.avgRating')}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* User info */}
-        <View style={styles.userInfo}>
-          <Text style={styles.displayName} numberOfLines={1}>
-            {displayName}
-          </Text>
-          {usernameDisplay && <Text style={styles.usernameText}>{usernameDisplay}</Text>}
-          <Text style={styles.emailText}>{email}</Text>
-          <Text style={styles.memberSince}>{t('profile.memberSince', { date: memberSince })}</Text>
-        </View>
-      </View>
-
-      {/* @edge Following section only renders when user has at least one follow */}
-      {enrichedFollows.length > 0 && (
-        <FollowingSection
-          follows={enrichedFollows}
-          onEntityPress={handleEntityPress}
-          onViewAll={() => router.push('/profile/following' as Parameters<typeof router.push>[0])}
+    <View style={styles.container}>
+      <SafeAreaCover />
+      <ScrollView
+        ref={scrollRef}
+        style={styles.container}
+        contentContainerStyle={[styles.contentContainer, { paddingTop: insets.top + 16 }]}
+        overScrollMode="never"
+        showsVerticalScrollIndicator={false}
+        onScroll={handlePullScroll}
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onScrollEndDrag={handleScrollEndDrag}
+        scrollEventThrottle={16}
+        {...androidPullProps}
+      >
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          refreshing={refreshing}
         />
-      )}
-
-      {/* Menu Items */}
-      <View style={styles.menuCard}>
-        {menuItems.map((item) => (
-          <TouchableOpacity
-            key={item.route}
-            style={[styles.menuItem, styles.menuItemBorder]}
-            activeOpacity={0.7}
-            onPress={() => router.push(item.route as Parameters<typeof router.push>[0])}
-          >
-            <View style={styles.menuItemLeft}>
-              <Ionicons name={item.icon} size={20} color={theme.textSecondary} />
-              <Text style={styles.menuItemLabel}>{t(item.labelKey)}</Text>
+        {/* Profile Card */}
+        <View style={styles.profileCard}>
+          <View style={styles.profileTop}>
+            {/* Avatar with camera button */}
+            <View style={styles.avatarWrapper}>
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatar}
+                contentFit="cover"
+                transition={200}
+              />
+              <TouchableOpacity
+                style={styles.cameraButton}
+                activeOpacity={0.8}
+                onPress={() => router.push('/profile/edit')}
+              >
+                <Ionicons name="camera-outline" size={14} color={colors.white} />
+              </TouchableOpacity>
             </View>
-            <View style={styles.menuItemRight}>
-              {item.badge ? (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{item.badge}</Text>
+
+            {/* Stats row */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <AnimatedNumber style={styles.statValue} value={watchlistCount} />
+                <Text style={styles.statLabel}>{t('profile.watchlistStat')}</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <AnimatedNumber style={styles.statValue} value={reviewsCount} />
+                <Text style={styles.statLabel}>{t('profile.reviewsStat')}</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <View style={styles.ratingRow}>
+                  <Ionicons name="star" size={14} color={colors.yellow400} />
+                  <AnimatedNumber style={styles.statValue} value={avgRating} decimals={1} />
                 </View>
-              ) : null}
-              <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+                <Text style={styles.statLabel}>{t('profile.avgRating')}</Text>
+              </View>
             </View>
-          </TouchableOpacity>
-        ))}
-      </View>
+          </View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerVersion}>
-          {t('profile.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}
-        </Text>
-        <Text style={styles.footerTagline}>{t('profile.tagline')}</Text>
-      </View>
-    </ScrollView>
+          {/* User info */}
+          <View style={styles.userInfo}>
+            <Text style={styles.displayName} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {usernameDisplay && <Text style={styles.usernameText}>{usernameDisplay}</Text>}
+            <Text style={styles.emailText}>{email}</Text>
+            <Text style={styles.memberSince}>
+              {t('profile.memberSince', { date: memberSince })}
+            </Text>
+          </View>
+        </View>
+
+        {/* @edge Following section only renders when user has at least one follow */}
+        {enrichedFollows.length > 0 && (
+          <FollowingSection
+            follows={enrichedFollows}
+            onEntityPress={handleEntityPress}
+            onViewAll={() => router.push('/profile/following' as Parameters<typeof router.push>[0])}
+          />
+        )}
+
+        {/* Menu Items */}
+        <View style={styles.menuCard}>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.route}
+              style={[styles.menuItem, styles.menuItemBorder]}
+              activeOpacity={0.7}
+              onPress={() => router.push(item.route as Parameters<typeof router.push>[0])}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name={item.icon} size={20} color={theme.textSecondary} />
+                <Text style={styles.menuItemLabel}>{t(item.labelKey)}</Text>
+              </View>
+              <View style={styles.menuItemRight}>
+                {item.badge ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{item.badge}</Text>
+                  </View>
+                ) : null}
+                <Ionicons name="chevron-forward" size={18} color={theme.textTertiary} />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerVersion}>
+            {t('profile.version', { version: Constants.expoConfig?.version ?? '1.0.0' })}
+          </Text>
+          <Text style={styles.footerTagline}>{t('profile.tagline')}</Text>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
