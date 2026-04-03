@@ -9,6 +9,8 @@ export const colors = {
   zinc800: '#27272A',
   zinc200: '#E4E4E7',
   zinc900: '#18181B',
+  neutral900: '#1A1A1A',
+  neutral100: '#F2F2F2',
 
   // Primary
   red600: '#DC2626',

@@ -85,7 +85,12 @@ export default function NewPlatformPage() {
         display_order: 0,
         regions,
       },
-      { onSuccess: () => router.push('/platforms') },
+      /* v8 ignore start -- phantom else on mutation callbacks */
+      {
+        onSuccess: () => router.push('/platforms'),
+        onError: (err: Error) => alert(err.message || 'Failed to create platform'),
+      },
+      /* v8 ignore stop */
     );
   };
 

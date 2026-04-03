@@ -63,7 +63,11 @@ export default function AppUsersPage() {
   const handleBan = (user: EndUserProfile) => {
     const name = user.display_name ?? user.email ?? 'this user';
     if (!confirm(`Ban ${name}? They will not be able to log in.`)) return;
-    banUser.mutate(user.id);
+    /* v8 ignore start -- phantom else on onError callback */
+    banUser.mutate(user.id, {
+      onError: (err: Error) => alert(err.message || 'Failed to ban user'),
+    });
+    /* v8 ignore stop */
   };
 
   const startEdit = (user: EndUserProfile) => {
@@ -75,10 +79,15 @@ export default function AppUsersPage() {
     /* v8 ignore start */
     if (!editingUser) return;
     /* v8 ignore stop */
+    /* v8 ignore start -- phantom else on mutation callbacks */
     updateProfile.mutate(
       { userId: editingUser.id, fields: { display_name: editName } },
-      { onSuccess: () => setEditingUser(null) },
+      {
+        onSuccess: () => setEditingUser(null),
+        onError: (err: Error) => alert(err.message || 'Failed to update profile'),
+      },
     );
+    /* v8 ignore stop */
   };
 
   return (

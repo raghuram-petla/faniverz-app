@@ -33,7 +33,10 @@ export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
           </Text>
           <Text style={styles.commentTime}>{formatRelativeTime(comment.created_at)}</Text>
         </View>
-        <Text style={styles.commentBody}>{comment.body}</Text>
+        {/* @edge User-generated comment text; cap to prevent unbounded expansion */}
+        <Text style={styles.commentBody} numberOfLines={8}>
+          {comment.body}
+        </Text>
         {/* @contract delete button only shown when isOwn=true AND onDelete provided */}
         {isOwn && onDelete ? (
           <TouchableOpacity

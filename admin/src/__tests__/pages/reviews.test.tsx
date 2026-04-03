@@ -394,7 +394,10 @@ describe('ReviewsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete review');
       fireEvent.click(deleteButtons[0]);
 
-      expect(mockMutate).toHaveBeenCalledWith('rev-1');
+      expect(mockMutate).toHaveBeenCalledWith(
+        'rev-1',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
     });
 
     it('calls deleteReview.mutate with correct id for second review', () => {
@@ -404,7 +407,10 @@ describe('ReviewsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete review');
       fireEvent.click(deleteButtons[1]);
 
-      expect(mockMutate).toHaveBeenCalledWith('rev-2');
+      expect(mockMutate).toHaveBeenCalledWith(
+        'rev-2',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
     });
 
     it('disables delete buttons when mutation is pending', () => {

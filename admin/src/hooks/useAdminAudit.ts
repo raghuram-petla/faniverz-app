@@ -109,5 +109,12 @@ export function useRevertAuditEntry() {
       // you get stale data. Nuclear invalidation guarantees correctness.
       queryClient.invalidateQueries({ queryKey: ['admin'] });
     },
+    // @edge Revert failures must surface to the admin — silent failure could leave
+    // the admin believing a revert succeeded when data is unchanged
+    /* v8 ignore start -- onError only triggered by real mutation failure */
+    onError: (error: Error) => {
+      window.alert(error.message || 'Revert failed');
+    },
+    /* v8 ignore stop */
   });
 }

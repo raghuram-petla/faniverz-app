@@ -206,7 +206,20 @@ describe('ReviewsPage', () => {
       render(<ReviewsPage />);
       fireEvent.click(screen.getByTitle('Delete review'));
       expect(window.confirm).toHaveBeenCalled();
-      expect(mockDeleteMutate).toHaveBeenCalledWith('rev-1');
+      expect(mockDeleteMutate).toHaveBeenCalledWith(
+        'rev-1',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
+    });
+
+    it('alerts on delete error via onError callback', () => {
+      window.alert = vi.fn();
+      setup();
+      render(<ReviewsPage />);
+      fireEvent.click(screen.getByTitle('Delete review'));
+      const { onError } = mockDeleteMutate.mock.calls[0][1];
+      onError(new Error('delete failed'));
+      expect(window.alert).toHaveBeenCalledWith('delete failed');
     });
 
     it('does not call mutate when confirm returns false', () => {

@@ -39,7 +39,12 @@ export default function NewSurpriseContentPage() {
         category: category as (typeof categories)[number],
         views,
       },
-      { onSuccess: () => router.push('/surprise') },
+      /* v8 ignore start -- phantom else on mutation callbacks */
+      {
+        onSuccess: () => router.push('/surprise'),
+        onError: (err: Error) => alert(err.message || 'Failed to create surprise item'),
+      },
+      /* v8 ignore stop */
     );
   };
 

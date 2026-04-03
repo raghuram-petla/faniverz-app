@@ -78,16 +78,15 @@ function FeedCardInner({
   const [posterHidden, setPosterHidden] = useState(false);
   const hasVideo = !!item.youtube_id;
   const isBackdrop = item.feed_type === 'backdrop';
-  /** @nullable thumbnail_url and movie?.poster_url may both be null; falls back gracefully */
+  // @nullable thumbnail_url and movie?.poster_url may both be null; falls back gracefully
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null;
   const hasThumbnail = !!imageUrl;
-  /** @invariant poster image only renders when there is a thumbnail but no video */
-  const isPosterImage = hasThumbnail && !hasVideo;
+  const isPosterImage = hasThumbnail && !hasVideo; // @invariant poster only when thumbnail + no video
   const label = getFeedTypeLabel(item.content_type);
 
   const entityType = deriveEntityType(item);
   const entityAvatarUrl = getEntityAvatarUrl(item);
-  /** @contract avatarBucket resolves from poster_image_type so backdrop-as-poster movies use BACKDROPS */
+  // @contract avatarBucket: backdrop-as-poster movies use BACKDROPS bucket
   const avatarBucket =
     entityType === 'movie' ? posterBucket(item.movie?.poster_image_type) : undefined;
   const entityName = getEntityName(item);
@@ -103,9 +102,8 @@ function FeedCardInner({
     [item.id, onVideoLayout],
   );
 
-  /** @sideeffect opens full-screen image viewer with animated transition from poster position */
-  /** @contract imageBucket: backdrop feed→BACKDROPS, poster feed→POSTERS (thumbnail is always a poster-bucket key),
-   *  other feed types (update, surprise)→posterBucket(movie.poster_image_type) because thumbnail IS the movie's poster */
+  // @sideeffect opens full-screen image viewer with animated transition from poster position
+  // @contract imageBucket: backdrop→BACKDROPS, poster→POSTERS, other→posterBucket(poster_image_type)
   const imageBucket = isBackdrop
     ? ('BACKDROPS' as const)
     : item.feed_type === 'poster'
@@ -136,7 +134,6 @@ function FeedCardInner({
       {isFirst ? <FilmStripFrameDivider isEdge /> : null}
       <FilmStripFrame>
         <View style={styles.post}>
-          {/* Header row: avatar + name/timestamp/badge stacked */}
           <View style={styles.headerRow}>
             <View>
               <FeedAvatar
@@ -199,12 +196,13 @@ function FeedCardInner({
                   <FeedContentBadge contentType={item.content_type} />
                   <Text style={styles.timestamp}>{formatRelativeTime(item.published_at)}</Text>
                 </View>
-                <Text style={styles.headerTitle}>{item.title}</Text>
+                <Text style={styles.headerTitle} numberOfLines={2}>
+                  {item.title}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Description (non-video) + poster media — tappable to navigate */}
           {!hasVideo && (
             <TouchableOpacity
               activeOpacity={0.7}
@@ -254,7 +252,7 @@ function FeedCardInner({
             </TouchableOpacity>
           )}
 
-          {/* @edge Video player rendered OUTSIDE TouchableOpacity so taps reach the YouTube WebView */}
+          {/* @edge Video player outside TouchableOpacity so taps reach YouTube WebView */}
           {hasVideo ? (
             <View style={styles.mediaContainer}>
               <FeedVideoPlayer
@@ -266,7 +264,6 @@ function FeedCardInner({
             </View>
           ) : null}
 
-          {/* Action bar (padded via styles) */}
           <View style={styles.actionBar}>
             <FeedActionBar
               commentCount={item.comment_count}
@@ -289,10 +286,10 @@ function FeedCardInner({
   );
 }
 
-/** @sync custom memo comparator — must include every prop/field that affects render output */
-/** @edge callback props (onPress, onUpvote, etc.) are intentionally excluded; parent must stabilize them */
-export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
-  return (
+// @sync custom memo — callback props excluded; parent must stabilize them
+export const FeedCard = React.memo(
+  FeedCardInner,
+  (prev, next) =>
     prev.item.id === next.item.id &&
     prev.userVote === next.userVote &&
     prev.isBookmarked === next.isBookmarked &&
@@ -304,6 +301,5 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
     prev.item.view_count === next.item.view_count &&
     prev.item.comment_count === next.item.comment_count &&
     prev.item.bookmark_count === next.item.bookmark_count &&
-    prev.item.movie?.poster_image_type === next.item.movie?.poster_image_type
-  );
-});
+    prev.item.movie?.poster_image_type === next.item.movie?.poster_image_type,
+);

@@ -27,6 +27,11 @@ vi.mock('@/hooks/useUnsavedChangesWarning', () => ({
   useUnsavedChangesWarning: (...args: unknown[]) => mockUseUnsavedChangesWarning(...args),
 }));
 
+// Let useMovieEditFormSync run with real implementation (it's pure React state)
+vi.mock('@/hooks/useMovieEditFormSync', async (importOriginal) => {
+  return importOriginal();
+});
+
 vi.mock('next/navigation', () => ({
   useRouter: () => mockUseRouter(),
 }));

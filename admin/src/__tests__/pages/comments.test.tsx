@@ -384,7 +384,10 @@ describe('CommentsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete comment');
       fireEvent.click(deleteButtons[0]);
 
-      expect(mockMutate).toHaveBeenCalledWith('com-1');
+      expect(mockMutate).toHaveBeenCalledWith(
+        'com-1',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
     });
 
     it('does not call mutate when confirm returns false', () => {
@@ -406,7 +409,10 @@ describe('CommentsPage', () => {
       const deleteButtons = screen.getAllByTitle('Delete comment');
       fireEvent.click(deleteButtons[1]);
 
-      expect(mockMutate).toHaveBeenCalledWith('com-2');
+      expect(mockMutate).toHaveBeenCalledWith(
+        'com-2',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
     });
   });
 

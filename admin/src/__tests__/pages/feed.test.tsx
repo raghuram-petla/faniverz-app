@@ -255,7 +255,10 @@ describe('FeedPage', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
       renderWithProviders(<FeedPage />);
       fireEvent.click(screen.getByText('Delete feed-1'));
-      expect(mockDeleteMutate).toHaveBeenCalledWith('feed-1');
+      expect(mockDeleteMutate).toHaveBeenCalledWith(
+        'feed-1',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
     });
 
     it('does not call delete mutation when confirm returns false', () => {
@@ -264,13 +267,35 @@ describe('FeedPage', () => {
       fireEvent.click(screen.getByText('Delete feed-1'));
       expect(mockDeleteMutate).not.toHaveBeenCalled();
     });
+
+    it('alerts on delete error', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<FeedPage />);
+      fireEvent.click(screen.getByText('Delete feed-1'));
+      const { onError } = mockDeleteMutate.mock.calls[0][1];
+      onError(new Error('delete failed'));
+      expect(window.alert).toHaveBeenCalledWith('delete failed');
+    });
   });
 
   describe('handleTogglePin', () => {
     it('calls pin mutation with id and is_pinned', () => {
       renderWithProviders(<FeedPage />);
       fireEvent.click(screen.getByText('Pin feed-1'));
-      expect(mockPinMutate).toHaveBeenCalledWith({ id: 'feed-1', is_pinned: true });
+      expect(mockPinMutate).toHaveBeenCalledWith(
+        { id: 'feed-1', is_pinned: true },
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
+    });
+
+    it('alerts on pin error', () => {
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<FeedPage />);
+      fireEvent.click(screen.getByText('Pin feed-1'));
+      const { onError } = mockPinMutate.mock.calls[0][1];
+      onError(new Error('pin failed'));
+      expect(window.alert).toHaveBeenCalledWith('pin failed');
     });
   });
 
@@ -278,7 +303,19 @@ describe('FeedPage', () => {
     it('calls feature mutation with id and is_featured', () => {
       renderWithProviders(<FeedPage />);
       fireEvent.click(screen.getByText('Feature feed-1'));
-      expect(mockFeatureMutate).toHaveBeenCalledWith({ id: 'feed-1', is_featured: true });
+      expect(mockFeatureMutate).toHaveBeenCalledWith(
+        { id: 'feed-1', is_featured: true },
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
+    });
+
+    it('alerts on feature error', () => {
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<FeedPage />);
+      fireEvent.click(screen.getByText('Feature feed-1'));
+      const { onError } = mockFeatureMutate.mock.calls[0][1];
+      onError(new Error('feature failed'));
+      expect(window.alert).toHaveBeenCalledWith('feature failed');
     });
   });
 
@@ -307,6 +344,15 @@ describe('FeedPage', () => {
       renderWithProviders(<FeedPage />);
       fireEvent.click(screen.getByTestId('trigger-drag-no-over'));
       expect(mockReorderMutate).not.toHaveBeenCalled();
+    });
+
+    it('alerts on reorder error', () => {
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<FeedPage />);
+      fireEvent.click(screen.getByTestId('trigger-drag'));
+      const { onError } = mockReorderMutate.mock.calls[0][1];
+      onError(new Error('reorder failed'));
+      expect(window.alert).toHaveBeenCalledWith('reorder failed');
     });
 
     it('does not call reorder mutation when item IDs are not found in list', () => {

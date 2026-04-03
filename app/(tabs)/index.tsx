@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, ActivityIndicator, Platform, RefreshControl } from 'react-native';
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +37,7 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useFeedRefreshBuffer } from '@/hooks/useFeedRefreshBuffer';
 import { useFeedActions } from '@/hooks/useFeedActions';
+import { useProgrammaticRefresh } from '@/hooks/useProgrammaticRefresh';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
 import { FeedContentSkeleton } from '@/components/feed/FeedContentSkeleton';
@@ -45,7 +46,6 @@ import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpe
 import type { NewsFeedItem } from '@shared/types';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
-const PROGRAMMATIC_REFRESH_MIN_MS = 450;
 export default function FeedScreen() {
   const isAndroid = Platform.OS === 'android';
   const { theme, colors } = useTheme();
@@ -73,7 +73,6 @@ export default function FeedScreen() {
     useActiveVideo();
   const { followSet } = useEntityFollows();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
-  const [showProgrammaticRefreshIndicator, setShowProgrammaticRefreshIndicator] = useState(false);
   const { handleEndReached, onEndReachedThreshold } = useSmartPagination({
     totalItems: allItems.length,
     hasNextPage,
@@ -121,45 +120,17 @@ export default function FeedScreen() {
   } = usePullToRefresh(onRefresh, refreshing);
   const listRef = useRef<FlashListRef<NewsFeedItem>>(null);
   const scrollOffsetRef = useRef(0);
-  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /* istanbul ignore next -- placeholder replaced immediately on render */
   const homeTabActionRef = useRef<{ scrollToTop: () => void }>({ scrollToTop: () => {} });
+  const { showProgrammaticRefreshIndicator, runProgrammaticRefresh } = useProgrammaticRefresh({
+    refreshing,
+    onRefresh,
+    showRefreshIndicator,
+    hideRefreshIndicator,
+  });
   const listExtraData = useMemo(
     () => ({ filter, refreshing, showProgrammaticRefreshIndicator, isRefreshingFirstPage }),
     [filter, refreshing, showProgrammaticRefreshIndicator, isRefreshingFirstPage],
-  );
-  const runProgrammaticRefresh = useCallback(() => {
-    if (refreshing || showProgrammaticRefreshIndicator) return;
-    showRefreshIndicator();
-    setShowProgrammaticRefreshIndicator(true);
-    const startedAt = Date.now();
-
-    void onRefresh().finally(() => {
-      const remainingMs = Math.max(0, PROGRAMMATIC_REFRESH_MIN_MS - (Date.now() - startedAt));
-      /* istanbul ignore next -- defensive: guard prevents re-entry so existing timeout is unreachable */
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-      refreshTimeoutRef.current = setTimeout(() => {
-        hideRefreshIndicator();
-        setShowProgrammaticRefreshIndicator(false);
-        refreshTimeoutRef.current = null;
-      }, remainingMs);
-    });
-  }, [
-    hideRefreshIndicator,
-    onRefresh,
-    refreshing,
-    showProgrammaticRefreshIndicator,
-    showRefreshIndicator,
-  ]);
-
-  useEffect(
-    () => () => {
-      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
-      hideRefreshIndicator();
-    },
-    [hideRefreshIndicator],
   );
 
   // @contract Active-tab presses come through useScrollToTop; at top we refresh, otherwise we reuse the standard scroll-to-top behavior.

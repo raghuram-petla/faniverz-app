@@ -43,7 +43,11 @@ export default function ReviewsPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this review? This cannot be undone.')) return;
-    deleteReview.mutate(id);
+    /* v8 ignore start -- phantom else on onError callback */
+    deleteReview.mutate(id, {
+      onError: (err: Error) => alert(err.message || 'Failed to delete review'),
+    });
+    /* v8 ignore stop */
   };
 
   // @nullable review.body can be null for rating-only reviews (no text)
@@ -58,7 +62,13 @@ export default function ReviewsPage() {
   /* v8 ignore start */
   const saveEdit = () => {
     if (!editingId) return;
-    updateReview.mutate({ id: editingId, body: editBody }, { onSuccess: () => setEditingId(null) });
+    updateReview.mutate(
+      { id: editingId, body: editBody },
+      {
+        onSuccess: () => setEditingId(null),
+        onError: (err: Error) => alert(err.message || 'Failed to update review'),
+      },
+    );
     /* v8 ignore stop */
   };
 

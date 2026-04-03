@@ -240,7 +240,10 @@ describe('NotificationsPage', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(true);
       renderWithProviders(<NotificationsPage />);
       fireEvent.click(screen.getByTitle('Cancel'));
-      expect(mockCancelMutate).toHaveBeenCalledWith('notif-1');
+      expect(mockCancelMutate).toHaveBeenCalledWith(
+        'notif-1',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
     });
 
     it('does not call cancelNotification.mutate when confirm returns false', () => {
@@ -249,13 +252,35 @@ describe('NotificationsPage', () => {
       fireEvent.click(screen.getByTitle('Cancel'));
       expect(mockCancelMutate).not.toHaveBeenCalled();
     });
+
+    it('alerts on cancel error', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByTitle('Cancel'));
+      const { onError } = mockCancelMutate.mock.calls[0][1];
+      onError(new Error('cancel failed'));
+      expect(window.alert).toHaveBeenCalledWith('cancel failed');
+    });
   });
 
   describe('handleRetry', () => {
     it('calls retryNotification.mutate on retry button click', () => {
       renderWithProviders(<NotificationsPage />);
       fireEvent.click(screen.getByTitle('Retry'));
-      expect(mockRetryMutate).toHaveBeenCalledWith('notif-3');
+      expect(mockRetryMutate).toHaveBeenCalledWith(
+        'notif-3',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
+    });
+
+    it('alerts on retry error', () => {
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByTitle('Retry'));
+      const { onError } = mockRetryMutate.mock.calls[0][1];
+      onError(new Error('retry failed'));
+      expect(window.alert).toHaveBeenCalledWith('retry failed');
     });
   });
 
@@ -273,6 +298,16 @@ describe('NotificationsPage', () => {
       fireEvent.click(screen.getByText('Retry All Failed'));
       expect(mockBulkRetryMutate).not.toHaveBeenCalled();
     });
+
+    it('alerts on bulk retry error', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByText('Retry All Failed'));
+      const { onError } = mockBulkRetryMutate.mock.calls[0][1];
+      onError(new Error('bulk retry failed'));
+      expect(window.alert).toHaveBeenCalledWith('bulk retry failed');
+    });
   });
 
   describe('handleBulkCancel', () => {
@@ -288,6 +323,16 @@ describe('NotificationsPage', () => {
       renderWithProviders(<NotificationsPage />);
       fireEvent.click(screen.getByText('Cancel All Pending'));
       expect(mockBulkCancelMutate).not.toHaveBeenCalled();
+    });
+
+    it('alerts on bulk cancel error', () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(window, 'alert').mockImplementation(() => {});
+      renderWithProviders(<NotificationsPage />);
+      fireEvent.click(screen.getByText('Cancel All Pending'));
+      const { onError } = mockBulkCancelMutate.mock.calls[0][1];
+      onError(new Error('bulk cancel failed'));
+      expect(window.alert).toHaveBeenCalledWith('bulk cancel failed');
     });
   });
 

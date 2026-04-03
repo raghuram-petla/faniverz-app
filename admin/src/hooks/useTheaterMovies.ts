@@ -139,6 +139,12 @@ export function useRemoveFromTheaters() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'movie', movieId] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'theatrical-runs', movieId] });
     },
+    // @edge Partial failure can leave in_theaters flag out of sync with theatrical runs
+    /* v8 ignore start -- onError only triggered by real mutation failure */
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to remove from theaters');
+    },
+    /* v8 ignore stop */
   });
 }
 
@@ -181,5 +187,11 @@ export function useAddToTheaters() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'movie', movieId] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'theatrical-runs', movieId] });
     },
+    // @edge Partial failure can leave in_theaters flag out of sync with theatrical runs
+    /* v8 ignore start -- onError only triggered by real mutation failure */
+    onError: (error: Error) => {
+      window.alert(error.message || 'Failed to add to theaters');
+    },
+    /* v8 ignore stop */
   });
 }

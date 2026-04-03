@@ -38,6 +38,7 @@ function makeItem(overrides: Partial<NewsFeedItem> = {}): NewsFeedItem {
     youtube_id: null,
     view_count: 0,
     comment_count: 0,
+    bookmark_count: 0,
     thumbnail_url: 'https://cdn/thumb.jpg',
     movie_id: 'movie-1',
     movie: { id: 'movie-1', title: 'Pushpa 2', poster_url: null, release_date: null },

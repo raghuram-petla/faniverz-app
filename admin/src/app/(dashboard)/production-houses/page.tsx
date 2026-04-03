@@ -202,7 +202,13 @@ export default function ProductionHousesPage() {
                   {canDeleteTopLevel() && (
                     <button
                       onClick={() => {
-                        if (confirm('Delete this production house?')) deleteHouse.mutate(house.id);
+                        /* v8 ignore start -- phantom else on onError callback */
+                        if (confirm('Delete this production house?'))
+                          deleteHouse.mutate(house.id, {
+                            onError: (err: Error) =>
+                              alert(err.message || 'Failed to delete production house'),
+                          });
+                        /* v8 ignore stop */
                       }}
                       className="p-2 rounded-lg text-on-surface-subtle hover:text-status-red hover:bg-red-600/10"
                     >

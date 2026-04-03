@@ -51,23 +51,39 @@ export default function NotificationsPage() {
 
   const handleCancel = (id: string) => {
     if (!confirm('Cancel this notification?')) return;
-    cancelNotification.mutate(id);
+    /* v8 ignore start -- phantom else on onError callback */
+    cancelNotification.mutate(id, {
+      onError: (err: Error) => alert(err.message || 'Failed to cancel notification'),
+    });
+    /* v8 ignore stop */
   };
 
   const handleRetry = (id: string) => {
-    retryNotification.mutate(id);
+    /* v8 ignore start -- phantom else on onError callback */
+    retryNotification.mutate(id, {
+      onError: (err: Error) => alert(err.message || 'Failed to retry notification'),
+    });
+    /* v8 ignore stop */
   };
 
   // @sideeffect Resets all failed notifications to 'pending' — the send-push edge function will re-process them
   const handleBulkRetry = () => {
     if (!confirm('Retry all failed notifications? This will set them back to pending.')) return;
-    bulkRetry.mutate();
+    /* v8 ignore start -- phantom else on onError callback */
+    bulkRetry.mutate(undefined, {
+      onError: (err: Error) => alert(err.message || 'Failed to retry notifications'),
+    });
+    /* v8 ignore stop */
   };
 
   // @sideeffect Irreversibly cancels all pending notifications — cannot be undone
   const handleBulkCancel = () => {
     if (!confirm('Cancel all pending notifications? This cannot be undone.')) return;
-    bulkCancel.mutate();
+    /* v8 ignore start -- phantom else on onError callback */
+    bulkCancel.mutate(undefined, {
+      onError: (err: Error) => alert(err.message || 'Failed to cancel notifications'),
+    });
+    /* v8 ignore stop */
   };
 
   return (

@@ -258,11 +258,33 @@ describe('ProductionHousesPage', () => {
     // Find the delete button (last button in the house card)
     const buttons = screen.getAllByRole('button');
     const deleteBtn = buttons.find((b) => b.classList.toString().includes('hover:text-status-red'));
-    if (deleteBtn) {
-      fireEvent.click(deleteBtn);
-      expect(window.confirm).toHaveBeenCalledWith('Delete this production house?');
-      expect(mockDeleteHouseMutate).toHaveBeenCalledWith('ph-1');
-    }
+    expect(deleteBtn).toBeTruthy();
+    fireEvent.click(deleteBtn!);
+    expect(window.confirm).toHaveBeenCalledWith('Delete this production house?');
+    expect(mockDeleteHouseMutate).toHaveBeenCalledWith(
+      'ph-1',
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it('alerts on delete error via onError callback', () => {
+    window.alert = vi.fn();
+    mockUseAdminProductionHouses.mockReturnValue({
+      data: makePageData([makeHouse('ph-1', 'Studio')]),
+      isLoading: false,
+      isFetching: false,
+      hasNextPage: false,
+      fetchNextPage: vi.fn(),
+      isFetchingNextPage: false,
+    });
+    render(<ProductionHousesPage />);
+    const buttons = screen.getAllByRole('button');
+    const deleteBtn = buttons.find((b) => b.classList.toString().includes('hover:text-status-red'));
+    expect(deleteBtn).toBeTruthy();
+    fireEvent.click(deleteBtn!);
+    const { onError } = mockDeleteHouseMutate.mock.calls[0][1];
+    onError(new Error('delete failed'));
+    expect(window.alert).toHaveBeenCalledWith('delete failed');
   });
 
   it('shows house count', () => {

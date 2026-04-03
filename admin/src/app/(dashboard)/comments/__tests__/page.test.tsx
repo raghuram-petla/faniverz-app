@@ -210,7 +210,44 @@ describe('CommentsPage', () => {
     render(<CommentsPage />);
     fireEvent.click(screen.getByTitle('Delete comment'));
     expect(window.confirm).toHaveBeenCalled();
-    expect(mockDeleteMutate).toHaveBeenCalledWith('c1');
+    expect(mockDeleteMutate).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it('alerts on delete error via onError callback', () => {
+    mockUseAdminComments.mockReturnValue({
+      data: [makeComment('c1', 'Delete me')],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+    render(<CommentsPage />);
+    fireEvent.click(screen.getByTitle('Delete comment'));
+    const { onError } = mockDeleteMutate.mock.calls[0][1];
+    onError(new Error('delete failed'));
+    expect(window.alert).toHaveBeenCalledWith('delete failed');
+  });
+
+  it('alerts on update error via onError callback', () => {
+    mockUseAdminComments.mockReturnValue({
+      data: [makeComment('c1', 'Edit me')],
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      error: null,
+    });
+    mockUpdateMutate.mockImplementation(
+      (_data: unknown, opts: { onError?: (err: Error) => void }) => {
+        opts.onError?.(new Error('update failed'));
+      },
+    );
+    render(<CommentsPage />);
+    fireEvent.click(screen.getByTitle('Edit comment'));
+    fireEvent.click(screen.getByTitle('Save'));
+    expect(window.alert).toHaveBeenCalledWith('update failed');
   });
 
   it('does not delete when user cancels confirm', () => {

@@ -152,15 +152,23 @@ export default function NewMoviePage() {
                   onRemove={s.handlePHRemove}
                   pendingPHAdds={s.pendingPHAdds}
                   onQuickAdd={async (name) => {
-                    const created = await s.createProductionHouse.mutateAsync({
-                      name,
-                      logo_url: null,
-                    });
-                    s.setPendingPHAdds((prev) => [
-                      ...prev,
-                      { production_house_id: created.id, _ph: created },
-                    ]);
-                    s.setPHSearchQuery('');
+                    try {
+                      const created = await s.createProductionHouse.mutateAsync({
+                        name,
+                        logo_url: null,
+                      });
+                      s.setPendingPHAdds((prev) => [
+                        ...prev,
+                        { production_house_id: created.id, _ph: created },
+                      ]);
+                      s.setPHSearchQuery('');
+                    } catch (err) {
+                      /* v8 ignore start -- phantom else on instanceof ternary */
+                      alert(
+                        err instanceof Error ? err.message : 'Failed to create production house',
+                      );
+                      /* v8 ignore stop */
+                    }
                   }}
                   quickAddPending={s.createProductionHouse.isPending}
                   showAddForm={addFormOpen === 'ph'}

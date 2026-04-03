@@ -346,7 +346,10 @@ describe('AppUsersPage', () => {
       const banButtons = screen.getAllByTitle('Ban user');
       fireEvent.click(banButtons[0]);
 
-      expect(mockBanMutate).toHaveBeenCalledWith('usr-1');
+      expect(mockBanMutate).toHaveBeenCalledWith(
+        'usr-1',
+        expect.objectContaining({ onError: expect.any(Function) }),
+      );
     });
 
     it('does not call banUser.mutate when confirm returns false', () => {

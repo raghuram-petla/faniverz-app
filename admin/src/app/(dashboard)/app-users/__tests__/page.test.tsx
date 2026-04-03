@@ -262,7 +262,43 @@ describe('AppUsersPage', () => {
     fireEvent.click(banBtn);
 
     expect(window.confirm).toHaveBeenCalledWith('Ban John Doe? They will not be able to log in.');
-    expect(mockBanUserMutate).toHaveBeenCalledWith('user-1');
+    expect(mockBanUserMutate).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it('alerts on ban error via onError callback', () => {
+    window.alert = vi.fn();
+    mockUseAdminEndUsers.mockReturnValue({
+      data: { users: [makeUser()], totalCount: 1 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    fireEvent.click(screen.getByTitle('Ban user'));
+    const { onError } = mockBanUserMutate.mock.calls[0][1];
+    onError(new Error('ban failed'));
+    expect(window.alert).toHaveBeenCalledWith('ban failed');
+  });
+
+  it('alerts on update profile error via onError callback', () => {
+    window.alert = vi.fn();
+    mockUseAdminEndUsers.mockReturnValue({
+      data: { users: [makeUser()], totalCount: 1 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      isFetching: false,
+    });
+    render(<AppUsersPage />);
+    fireEvent.click(screen.getByTitle('Edit profile'));
+    fireEvent.click(screen.getByTitle('Save'));
+    const { onError } = mockUpdateProfileMutate.mock.calls[0][1];
+    onError(new Error('update failed'));
+    expect(window.alert).toHaveBeenCalledWith('update failed');
   });
 
   it('does not call ban mutate when user cancels confirm', () => {

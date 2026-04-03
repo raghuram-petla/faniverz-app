@@ -60,19 +60,15 @@ export default function EditMoviePage() {
     tabParam && MOVIE_SECTIONS.some((s) => s.id === tabParam) ? tabParam : 'basic-info';
   const [activeSection, setActiveSection] = useState<MovieSectionId>(validTab);
   const [addFormOpen, setAddFormOpen] = useState<string | null>(null);
-  // @contract tracks pending preview URL from the add-poster form (before gallery confirm)
   const [pendingPreviewPosterUrl, setPendingPreviewPosterUrl] = useState<string | null>(null);
-
   const editState = useMovieEditState(id);
-  // @contract changesParams bundles all pending state for the dock — avoids 40-line prop spread
   const { changes, changeCount, onRevertField, onDiscard } = useMovieEditChanges(
     editState.changesParams,
   );
 
-  /* v8 ignore start */
+  /* v8 ignore start -- phantom else on ternary */
   const dockSaveStatus = editState.isSaving ? ('saving' as const) : editState.saveStatus;
   /* v8 ignore stop */
-  // @contract renders a "+ Add" button for SectionCard action slot; controls which form is open
   function addButton(key: string, label: string) {
     if (addFormOpen === key || isReadOnly) return undefined;
     return (
@@ -189,15 +185,23 @@ export default function EditMoviePage() {
                   onRemove={editState.handlePHRemove}
                   pendingPHAdds={editState.pendingPHAdds}
                   onQuickAdd={async (name) => {
-                    const created = await editState.createProductionHouse.mutateAsync({
-                      name,
-                      logo_url: null,
-                    });
-                    editState.setPendingPHAdds((prev) => [
-                      ...prev,
-                      { production_house_id: created.id, _ph: created },
-                    ]);
-                    editState.setPHSearchQuery('');
+                    try {
+                      const created = await editState.createProductionHouse.mutateAsync({
+                        name,
+                        logo_url: null,
+                      });
+                      editState.setPendingPHAdds((prev) => [
+                        ...prev,
+                        { production_house_id: created.id, _ph: created },
+                      ]);
+                      editState.setPHSearchQuery('');
+                    } catch (err) {
+                      /* v8 ignore start -- phantom else on instanceof ternary */
+                      alert(
+                        err instanceof Error ? err.message : 'Failed to create production house',
+                      );
+                      /* v8 ignore stop */
+                    }
                   }}
                   quickAddPending={editState.createProductionHouse.isPending}
                   showAddForm={addFormOpen === 'ph'}

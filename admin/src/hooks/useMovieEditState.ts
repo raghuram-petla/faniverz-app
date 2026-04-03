@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
@@ -8,6 +8,7 @@ import { useMovieEditDerived } from '@/hooks/useMovieEditDerived';
 import { useMovieEditPendingState } from '@/hooks/useMovieEditPendingState';
 import { useMovieEditData } from '@/hooks/useMovieEditData';
 import { useMovieEditPendingIds } from '@/hooks/useMovieEditPendingIds';
+import { useMovieEditFormSync } from '@/hooks/useMovieEditFormSync';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
 
 export type { MovieForm };
@@ -71,76 +72,23 @@ export function useMovieEditState(id: string) {
   const [uploadingPoster, setUploadingPoster] = useState(false);
   const [uploadingBackdrop, setUploadingBackdrop] = useState(false);
 
-  // Form state
-  const [form, setForm] = useState<MovieForm>({
-    title: '',
-    poster_url: '',
-    backdrop_url: '',
-    release_date: '',
-    runtime: '',
-    genres: [] as string[],
-    certification: '' as string,
-    synopsis: '',
-    in_theaters: false,
-    premiere_date: '',
-    original_language: '',
-    is_featured: false,
-    tmdb_id: '',
-    tagline: '',
-    backdrop_focus_x: null,
-    backdrop_focus_y: null,
-    poster_focus_x: null,
-    poster_focus_y: null,
-  });
+  // Form state — hydrated from server data by useMovieEditFormSync
+  const { form, setForm, initialForm, setInitialForm, patchFormFields } = useMovieEditFormSync(
+    id,
+    movie,
+  );
 
   // Pending changes (deferred to Save)
   const pending = useMovieEditPendingState();
-
-  const [initialForm, setInitialForm] = useState<MovieForm | null>(null);
-  const isFirstLoadRef = useRef(true); // @edge prevents background refetches from overwriting unsaved edits
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
 
   useEffect(() => {
     pending.resetPendingState();
-    isFirstLoadRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // @sideeffect Hydrates form from server data on first load
-  useEffect(() => {
-    if (movie) {
-      const loaded: MovieForm = {
-        title: movie.title,
-        poster_url: movie.poster_url ?? '',
-        backdrop_url: movie.backdrop_url ?? '',
-        release_date: movie.release_date ?? '',
-        runtime: movie.runtime?.toString() ?? '',
-        genres: movie.genres ?? [],
-        certification: movie.certification ?? '',
-        synopsis: movie.synopsis ?? '',
-        in_theaters: movie.in_theaters,
-        premiere_date: movie.premiere_date ?? '',
-        original_language: movie.original_language ?? '',
-        is_featured: movie.is_featured,
-        tmdb_id: movie.tmdb_id?.toString() ?? '',
-        tagline: movie.tagline ?? '',
-        backdrop_focus_x: movie.backdrop_focus_x ?? null,
-        backdrop_focus_y: movie.backdrop_focus_y ?? null,
-        poster_focus_x: movie.poster_focus_x ?? null,
-        poster_focus_y: movie.poster_focus_y ?? null,
-      };
-      // Only overwrite form on first load; background refetches update initialForm only
-      /* v8 ignore start */
-      if (isFirstLoadRef.current) {
-        /* v8 ignore stop */
-        setForm(loaded);
-        isFirstLoadRef.current = false;
-      }
-      setInitialForm(loaded);
-    }
-  }, [movie]);
   useEffect(() => {
     /* v8 ignore start -- saveStatus is set by mocked handlers; timer cleanup is standard React */
     if (saveStatus === 'success') {
@@ -163,15 +111,6 @@ export function useMovieEditState(id: string) {
     initialForm,
     ...pending,
   });
-
-  // @contract Patches form + initialForm immediately, AND sets isFirstLoadRef so the
-  // subsequent cache-invalidation refetch also overwrites both (keeping references in sync
-  // for the isDirty shallow-equality check on array fields like genres).
-  const patchFormFields = (patch: Partial<MovieForm>) => {
-    setForm((f) => ({ ...f, ...patch }));
-    setInitialForm((f) => (f ? { ...f, ...patch } : f));
-    isFirstLoadRef.current = true;
-  };
 
   useUnsavedChangesWarning(derived.isDirty);
 

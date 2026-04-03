@@ -22,7 +22,7 @@ vi.mock('@/components/providers/AuthProvider', () => ({
     isAccessDenied: false,
     blockedReason: null,
     signInWithGoogle: vi.fn(),
-    signInWithEmail: vi.fn(),
+
     signOut: vi.fn(),
     refreshUser: mockRefreshUser,
   })),
@@ -103,7 +103,7 @@ describe('ProfilePage', () => {
       isAccessDenied: false,
       blockedReason: null,
       signInWithGoogle: vi.fn(),
-      signInWithEmail: vi.fn(),
+
       signOut: vi.fn(),
       refreshUser: mockRefreshUser,
     });

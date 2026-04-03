@@ -28,7 +28,7 @@ vi.mock('@/components/providers/AuthProvider', () => ({
     isLoading: false,
     isAccessDenied: false,
     signInWithGoogle: vi.fn(),
-    signInWithEmail: vi.fn(),
+
     signOut: vi.fn(),
   }),
 }));

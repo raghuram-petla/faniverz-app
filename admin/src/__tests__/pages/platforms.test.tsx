@@ -243,7 +243,35 @@ describe('PlatformsPage', () => {
     });
     renderWithProviders(<PlatformsPage />);
     fireEvent.click(screen.getByTitle('Delete platform'));
-    expect(mockDeleteMutate).toHaveBeenCalledWith('netflix');
+    expect(mockDeleteMutate).toHaveBeenCalledWith(
+      'netflix',
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
+  });
+
+  it('alerts on delete error via onError callback', () => {
+    window.confirm = vi.fn().mockReturnValue(true);
+    window.alert = vi.fn();
+    mockUseAdminPlatforms.mockReturnValue({
+      data: [
+        {
+          id: 'netflix',
+          name: 'Netflix',
+          logo: 'N',
+          logo_url: null,
+          color: '#E50914',
+          display_order: 1,
+          tmdb_provider_id: 8,
+          regions: ['IN'],
+        },
+      ],
+      isLoading: false,
+    });
+    renderWithProviders(<PlatformsPage />);
+    fireEvent.click(screen.getByTitle('Delete platform'));
+    const { onError } = mockDeleteMutate.mock.calls[0][1];
+    onError(new Error('delete failed'));
+    expect(window.alert).toHaveBeenCalledWith('delete failed');
   });
 
   it('does not delete when confirm is cancelled', () => {

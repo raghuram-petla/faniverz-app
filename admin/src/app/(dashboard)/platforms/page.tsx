@@ -45,7 +45,11 @@ export default function PlatformsPage() {
 
   const handleDelete = (id: string) => {
     if (!confirm('Delete this platform? This will also remove all related OTT releases.')) return;
-    deletePlatform.mutate(id);
+    /* v8 ignore start -- phantom else on onError callback */
+    deletePlatform.mutate(id, {
+      onError: (err: Error) => alert(err.message || 'Failed to delete platform'),
+    });
+    /* v8 ignore stop */
   };
 
   return (

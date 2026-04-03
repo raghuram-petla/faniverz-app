@@ -190,7 +190,7 @@ describe('FeedActionBar', () => {
     expect(screen.getByLabelText('Remove bookmark')).toBeTruthy();
     const json = JSON.stringify(toJSON());
     expect(json).toContain('"bookmark"');
-    expect(json.toLowerCase()).toContain('#facc15');
+    expect(json.toLowerCase()).toContain('#ef4444');
   });
 
   it('calls onBookmark when bookmark button pressed', () => {

@@ -8,7 +8,7 @@ vi.mock('@/components/providers/AuthProvider', () => ({
     user: null,
     isLoading: false,
     signInWithGoogle: vi.fn(),
-    signInWithEmail: vi.fn(),
+
     signOut: mockSignOut,
     refreshUser: vi.fn(),
   })),
@@ -65,7 +65,7 @@ function setUser(user: AdminUser | null) {
     isAccessDenied: false,
     blockedReason: null,
     signInWithGoogle: vi.fn(),
-    signInWithEmail: vi.fn(),
+
     signOut: mockSignOut,
     refreshUser: vi.fn(),
   });

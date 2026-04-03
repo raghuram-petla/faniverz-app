@@ -370,10 +370,12 @@ describe('ProductionHousesPage', () => {
       const parent = btn.closest('.bg-surface-card');
       return parent && btn.querySelector('svg');
     });
-    if (deleteButtons.length > 0) {
-      fireEvent.click(deleteButtons[0]);
-      expect(mockDeleteMutate).toHaveBeenCalledWith('h1');
-    }
+    expect(deleteButtons.length).toBeGreaterThan(0);
+    fireEvent.click(deleteButtons[0]);
+    expect(mockDeleteMutate).toHaveBeenCalledWith(
+      'h1',
+      expect.objectContaining({ onError: expect.any(Function) }),
+    );
   });
 
   it('does not delete when confirm is cancelled', () => {
