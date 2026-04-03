@@ -1,5 +1,29 @@
 # Faniverz Codebase Rules
 
+## Worktree-First Workflow
+
+**At the very start of every conversation, before doing any work, create a new git worktree and perform all work there.** This keeps the main working directory clean and prevents uncommitted changes from colliding across sessions.
+
+### Steps
+
+1. **Create a worktree** at the start of the conversation:
+   ```bash
+   git worktree add .claude/worktrees/<branch-name> -b <branch-name>
+   ```
+   Use a short, descriptive branch name based on the task (e.g., `fix-avatar-size`, `add-search-filter`, `refactor-comments`).
+
+2. **Change into the worktree directory** and do ALL work there — edits, tests, quality gates, commits.
+
+3. **Run quality gates inside the worktree**, not the main directory.
+
+4. **When finished**, inform the user that the work is on branch `<branch-name>` in `.claude/worktrees/<branch-name>` so they can review, merge, or discard.
+
+### Rules
+
+- Never modify files in the main working directory — always use the worktree.
+- If the user explicitly says to work in the main directory, skip this rule.
+- Skills (`/review-and-fix`, `/bug-hunt`, etc.) must also run against the worktree, not the main directory.
+
 ## Protected Files — DO NOT MODIFY
 
 The following files contain carefully tuned animation logic with 14+ failed approaches documented. **Do not refactor, deduplicate, reorganize, or "improve" these files** unless the user explicitly asks to change image viewer behavior. This includes skills like `/deduplicate`, `/simplify`, `/refactor-check`, `/dead-code-scan`, and `/test-coverage` — skip these files entirely.
