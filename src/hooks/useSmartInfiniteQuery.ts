@@ -143,31 +143,36 @@ export function useSmartInfiniteQuery<TData extends { id: string }>({
   // @edge Uses refs for queryFn/queryKey to avoid stale closures in the async chain.
   // @sync Captures serializedKey at call time and compares against serializedKeyRef.current
   // after each await to bail out if the queryKey changed mid-flight (e.g., filter switch).
-  const refetch = useCallback(async () => {
+  // @contract Returns { hasNewData } — true when page 0 item IDs differ from the cached version.
+  // @edge setQueryData is deferred to the END of the function so the UI doesn't flash new
+  // content while the Refreshing pill is still visible.
+  const refetch = useCallback(async (): Promise<{ hasNewData: boolean }> => {
     hasExpandedRef.current = false;
     const capturedKey = serializedKey;
     const totalPages = query.data?.pages?.length ?? 0;
+    const oldIds = query.data?.pages?.[0]?.map((i) => i.id).join(',') ?? '';
 
-    // Phase 1: foreground — fetch page 0 and update cache
+    // Phase 1: foreground — fetch page 0 (data applied at end, not here)
     setIsRefreshingFirstPage(true);
+    let freshPage0: TData[] | null = null;
     try {
-      const freshPage0 = await queryFnRef.current(0, config.initialPageSize);
-      // @edge Bail if queryKey changed during fetch (user switched filter)
-      if (serializedKeyRef.current !== capturedKey) return;
-      queryClient.setQueryData<InfiniteData<TData[]>>(
-        queryKeyRef.current as readonly unknown[],
-        (old) => {
-          if (!old?.pages) return { pages: [freshPage0], pageParams: [0] };
-          return { ...old, pages: [freshPage0, ...old.pages.slice(1)] };
-        },
-      );
+      freshPage0 = await queryFnRef.current(0, config.initialPageSize);
+      if (serializedKeyRef.current !== capturedKey) return { hasNewData: false };
     } finally {
       setIsRefreshingFirstPage(false);
     }
 
+    // @edge Apply data at the end so React 18 batches with caller's setRefreshing(false)
+    const hasNewData = freshPage0.map((i) => i.id).join(',') !== oldIds;
+    queryClient.setQueryData<InfiniteData<TData[]>>(
+      queryKeyRef.current as readonly unknown[],
+      (old) => {
+        if (!old?.pages) return { pages: [freshPage0!], pageParams: [0] };
+        return { ...old, pages: [freshPage0!, ...old.pages.slice(1)] };
+      },
+    );
+
     // Phase 2: background — silently refresh remaining cached pages one-by-one
-    // @edge Does NOT await — callers (useRefresh) resolve after phase 1 so
-    // the Refreshing pill hides immediately after the first page is fresh.
     if (totalPages > 1) {
       void (async () => {
         for (let i = 1; i < totalPages; i++) {
@@ -192,7 +197,9 @@ export function useSmartInfiniteQuery<TData extends { id: string }>({
         }
       })();
     }
-  }, [serializedKey, config, queryClient, query.data?.pages?.length]);
+
+    return { hasNewData };
+  }, [serializedKey, config, queryClient, query.data?.pages?.length, query.data?.pages]);
 
   // @sideeffect Auto-trigger phased refresh when cache-restored data is detected.
   // _layout.tsx calls markCacheRestored() after PersistQueryClientProvider finishes.

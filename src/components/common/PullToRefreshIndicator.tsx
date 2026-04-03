@@ -26,21 +26,29 @@ export const INDICATOR_HEIGHT = INDICATOR_PILL_HEIGHT + INDICATOR_BOTTOM_GAP;
  * FlashList on Android can measure the header height correctly (animated styles are invisible
  * to FlashList's layout system).
  */
+const CAUGHT_UP_DURATION_MS = 500;
+
 export interface PullToRefreshIndicatorProps {
   pullDistance: SharedValue<number>;
   isRefreshing: SharedValue<boolean>;
   refreshing: boolean;
+  /** @contract When true after a refresh ends, shows "You're all caught up" briefly before hiding */
+  noNewData?: boolean;
 }
 
 export function PullToRefreshIndicator({
   pullDistance,
   isRefreshing,
   refreshing,
+  noNewData = false,
 }: PullToRefreshIndicatorProps) {
   const { theme } = useTheme();
   const refreshingRef = useRef(refreshing);
   refreshingRef.current = refreshing;
   const [showRefreshing, setShowRefreshing] = useState(refreshing || isRefreshing.value);
+  const [caughtUp, setCaughtUp] = useState(false);
+  const caughtUpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevRefreshing = useRef(refreshing);
   const indicatorHeight = INDICATOR_HEIGHT;
   const syncRefreshingVisual = useCallback(
     (nextIsRefreshing: boolean) => {
@@ -64,9 +72,51 @@ export function PullToRefreshIndicator({
     },
   );
 
+  // @sideeffect Detect refresh ending with no new data → show "caught up" briefly.
+  // @edge noNewData is read via ref so cleanup doesn't kill the timer when it resets.
+  const noNewDataRef = useRef(noNewData);
+  noNewDataRef.current = noNewData;
+  useEffect(() => {
+    if (prevRefreshing.current && !refreshing && noNewDataRef.current) {
+      setCaughtUp(true);
+      caughtUpTimer.current = setTimeout(() => setCaughtUp(false), CAUGHT_UP_DURATION_MS);
+    }
+    prevRefreshing.current = refreshing;
+  }, [refreshing]);
+  useEffect(
+    () => () => {
+      if (caughtUpTimer.current) clearTimeout(caughtUpTimer.current);
+    },
+    [],
+  );
+
   // @edge Use refreshing prop directly alongside showRefreshing state so the spinner
   // appears in the same render frame that the container expands — avoids a blank frame.
   const isSpinnerVisible = refreshing || showRefreshing;
+
+  // @edge "You're all caught up" pill after refresh with no new data
+  if (!isSpinnerVisible && caughtUp) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { height: indicatorHeight, opacity: 1, paddingBottom: INDICATOR_BOTTOM_GAP },
+        ]}
+        testID="refresh-container"
+      >
+        <View
+          style={[
+            styles.pill,
+            { backgroundColor: theme.surfaceElevated, borderColor: theme.input },
+          ]}
+          testID="caught-up-pill"
+        >
+          <Feather name="check" size={16} color={theme.textPrimary} />
+          <Text style={[styles.text, { color: theme.textPrimary }]}>You're all caught up</Text>
+        </View>
+      </View>
+    );
+  }
 
   // @edge When spinner is active, render a plain View so FlashList can measure the header.
   // Animated.View height changes are invisible to FlashList's layout on Android.

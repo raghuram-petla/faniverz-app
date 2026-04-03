@@ -23,7 +23,7 @@ export interface SmartInfiniteQueryResult<TData> {
   fetchNextPage: (
     options?: FetchNextPageOptions,
   ) => Promise<InfiniteQueryObserverResult<InfiniteData<TData[]>, Error>>;
-  refetch: () => Promise<unknown>;
+  refetch: () => Promise<{ hasNewData: boolean }>;
   isRefetching: boolean;
   /** Whether the foreground phase of a phased refetch is in progress (page 0 only) */
   isRefreshingFirstPage: boolean;

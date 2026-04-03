@@ -35,6 +35,7 @@ import {
 } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useFeedRefreshBuffer } from '@/hooks/useFeedRefreshBuffer';
 import { useFeedActions } from '@/hooks/useFeedActions';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { createFeedStyles } from '@/styles/tabs/feed.styles';
@@ -69,7 +70,7 @@ export default function FeedScreen() {
   const bookmarkMutation = useBookmarkFeedItem();
   const unbookmarkMutation = useUnbookmarkFeedItem();
   const { activeVideoId, mountedVideoIds, registerVideoLayout, handleScrollForVideo } =
-    useActiveVideo(); // @sync one auto-playing video, but multiple nearby cards can stay mounted for single-tap playback
+    useActiveVideo();
   const { followSet } = useEntityFollows();
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
   const [showProgrammaticRefreshIndicator, setShowProgrammaticRefreshIndicator] = useState(false);
@@ -100,7 +101,16 @@ export default function FeedScreen() {
   /* istanbul ignore next */
   const { data: userBookmarks = new Set<string>(), refetch: refetchBookmarks } =
     useUserBookmarks(feedItemIds);
-  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchBookmarks);
+  const { refreshing, onRefresh: baseOnRefresh } = useRefresh(
+    refetch,
+    refetchVotes,
+    refetchBookmarks,
+  );
+  // @sideeffect Scroll to top at the start of any refresh so new content is visible
+  const onRefresh = useCallback(
+    () => (listRef.current?.scrollToOffset({ offset: 0, animated: true }), baseOnRefresh()),
+    [baseOnRefresh],
+  );
   const {
     pullDistance,
     isRefreshing,
@@ -119,7 +129,6 @@ export default function FeedScreen() {
     () => ({ filter, refreshing, showProgrammaticRefreshIndicator, isRefreshingFirstPage }),
     [filter, refreshing, showProgrammaticRefreshIndicator, isRefreshingFirstPage],
   );
-  const listTopPadding = totalHeaderHeight;
   const runProgrammaticRefresh = useCallback(() => {
     if (refreshing || showProgrammaticRefreshIndicator) return;
     showRefreshIndicator();
@@ -146,14 +155,13 @@ export default function FeedScreen() {
     showRefreshIndicator,
   ]);
 
-  useEffect(() => {
-    return () => {
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
+  useEffect(
+    () => () => {
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
       hideRefreshIndicator();
-    };
-  }, [hideRefreshIndicator]);
+    },
+    [hideRefreshIndicator],
+  );
 
   // @contract Active-tab presses come through useScrollToTop; at top we refresh, otherwise we reuse the standard scroll-to-top behavior.
   homeTabActionRef.current.scrollToTop = () => {
@@ -165,7 +173,6 @@ export default function FeedScreen() {
   };
   useScrollToTop(homeTabActionRef);
 
-  // @coupling useFeedActions owns all user-initiated action handlers; component owns data + scroll + layout
   const {
     handleShare,
     handleEntityPress,
@@ -178,14 +185,11 @@ export default function FeedScreen() {
   } = useFeedActions({ allItems, userVotes, setCommentSheetItemId });
 
   const { gate } = useAuthGate();
-  // @contract Toggle: if already bookmarked, removes; otherwise bookmarks
   const handleBookmark = useCallback(
     (itemId: string) => {
-      if (userBookmarks.has(itemId)) {
-        unbookmarkMutation.mutate({ feedItemId: itemId });
-      } else {
-        bookmarkMutation.mutate({ feedItemId: itemId });
-      }
+      (userBookmarks.has(itemId) ? unbookmarkMutation : bookmarkMutation).mutate({
+        feedItemId: itemId,
+      });
     },
     [userBookmarks, bookmarkMutation, unbookmarkMutation],
   );
@@ -200,14 +204,9 @@ export default function FeedScreen() {
     }),
     [getCurrentHeaderTranslateY, insets.top],
   );
-  const homeFeedPills = (
-    <View testID="home-feed-pills-wrap">
-      <FeedFilterPills filter={filter} setFilter={setFilter} />
-    </View>
-  );
-  // @sideeffect pill shows for foreground phase (page 0) only — background page refreshes are silent
-  const refreshSlotRefreshing =
-    refreshing || showProgrammaticRefreshIndicator || isRefreshingFirstPage;
+  // @sideeffect pill shows only for user-initiated refreshes (pull-to-refresh + tab-tap)
+  const refreshSlotRefreshing = refreshing || showProgrammaticRefreshIndicator;
+  const { displayItems, noNewData } = useFeedRefreshBuffer(allItems, refreshSlotRefreshing);
 
   return (
     <View style={styles.screen}>
@@ -219,24 +218,27 @@ export default function FeedScreen() {
       />
 
       {isLoading || isRestoring ? (
-        <View style={[styles.scroll, { paddingTop: listTopPadding }]}>
-          {homeFeedPills}
+        <View style={[styles.scroll, { paddingTop: totalHeaderHeight }]}>
+          <View testID="home-feed-pills-wrap">
+            <FeedFilterPills filter={filter} setFilter={setFilter} />
+          </View>
           <FeedContentSkeleton />
         </View>
       ) : (
         <View style={styles.scroll}>
           {/* @edge Android: FlashList doesn't re-measure ListHeaderComponent in production builds */}
           {isAndroid && (
-            <RefreshingPillOverlay visible={refreshSlotRefreshing} topOffset={listTopPadding} />
+            <RefreshingPillOverlay visible={refreshSlotRefreshing} topOffset={totalHeaderHeight} />
           )}
           <FlashList
             ref={listRef}
-            data={allItems}
+            data={displayItems}
             extraData={listExtraData}
             keyExtractor={(item) => item.id}
             drawDistance={500}
+            maintainVisibleContentPosition={{ disabled: true }}
             overScrollMode={isAndroid ? 'always' : 'never'}
-            contentContainerStyle={{ paddingTop: listTopPadding }}
+            contentContainerStyle={{ paddingTop: totalHeaderHeight }}
             showsVerticalScrollIndicator={false}
             refreshControl={
               isAndroid ? (
@@ -272,8 +274,11 @@ export default function FeedScreen() {
                   pullDistance={pullDistance}
                   isRefreshing={isRefreshing}
                   refreshing={refreshSlotRefreshing}
+                  noNewData={noNewData}
                 />
-                {homeFeedPills}
+                <View testID="home-feed-pills-wrap">
+                  <FeedFilterPills filter={filter} setFilter={setFilter} />
+                </View>
               </>
             }
             ListEmptyComponent={

@@ -25,6 +25,7 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useFeedRefreshBuffer } from '@/hooks/useFeedRefreshBuffer';
 import { useFeedActions } from '@/hooks/useFeedActions';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { useTranslation } from 'react-i18next';
@@ -93,7 +94,15 @@ export default function FeedScreen() {
   /* istanbul ignore next */
   const { data: userBookmarks = new Set<string>(), refetch: refetchBookmarks } =
     useUserBookmarks(feedItemIds);
-  const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchBookmarks);
+  const { refreshing, onRefresh: baseOnRefresh } = useRefresh(
+    refetch,
+    refetchVotes,
+    refetchBookmarks,
+  );
+  const onRefresh = useCallback(async () => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    return baseOnRefresh();
+  }, [baseOnRefresh]);
   const {
     pullDistance,
     isRefreshing,
@@ -102,6 +111,7 @@ export default function FeedScreen() {
     handleScrollEndDrag,
     androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
+  const { displayItems, noNewData } = useFeedRefreshBuffer(allItems, refreshing);
 
   // @coupling useFeedActions owns all user-initiated action handlers; component owns data + scroll + layout
   const {
@@ -161,7 +171,7 @@ export default function FeedScreen() {
               programmatic scroll to top. This feed is not a chat; disable anchoring entirely. */}
           <FlashList
             ref={listRef}
-            data={allItems}
+            data={displayItems}
             keyExtractor={(item) => item.id}
             drawDistance={500}
             maintainVisibleContentPosition={{ disabled: true }}
@@ -181,6 +191,7 @@ export default function FeedScreen() {
                 pullDistance={pullDistance}
                 isRefreshing={isRefreshing}
                 refreshing={refreshing}
+                noNewData={noNewData}
               />
             }
             ListEmptyComponent={
