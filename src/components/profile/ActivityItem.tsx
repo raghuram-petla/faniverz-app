@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { useTranslation } from 'react-i18next';
-import { formatRelativeTime } from '@/utils/formatDate';
+import { useRelativeTime } from '@/hooks/useRelativeTime';
 import type { UserActivity } from '@/features/profile';
 import type { SemanticTheme } from '@shared/themes';
 
@@ -34,6 +34,7 @@ export function ActivityItem({ activity, onPress }: ActivityItemProps) {
   const styles = createStyles(theme);
   /** @edge unknown action_type defaults to vote config to prevent crash */
   const config = ACTION_CONFIG[activity.action_type] ?? ACTION_CONFIG.vote;
+  const relativeTime = useRelativeTime(activity.created_at);
 
   /** @contract follow/unfollow labels include the entity type suffix; other actions use label alone */
   const label =
@@ -54,7 +55,7 @@ export function ActivityItem({ activity, onPress }: ActivityItemProps) {
         <Text style={styles.label} numberOfLines={2}>
           {label}
         </Text>
-        <Text style={styles.time}>{formatRelativeTime(activity.created_at)}</Text>
+        <Text style={styles.time}>{relativeTime}</Text>
       </View>
       <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
     </TouchableOpacity>

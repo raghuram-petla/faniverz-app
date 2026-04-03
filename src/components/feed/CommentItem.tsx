@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
-import { formatRelativeTime } from '@/utils/formatDate';
+import { useRelativeTime } from '@/hooks/useRelativeTime';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import type { FeedComment } from '@shared/types';
 
@@ -20,6 +20,7 @@ export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
   const styles = createPostDetailStyles(theme);
   /** @nullable profile may be null for deleted users; falls back to 'anonymous' */
   const displayName = comment.profile?.display_name ?? t('feed.anonymous');
+  const relativeTime = useRelativeTime(comment.created_at);
 
   return (
     <View style={styles.commentItem}>
@@ -31,7 +32,7 @@ export function CommentItem({ comment, isOwn, onDelete }: CommentItemProps) {
           <Text style={styles.commentName} numberOfLines={1}>
             {displayName}
           </Text>
-          <Text style={styles.commentTime}>{formatRelativeTime(comment.created_at)}</Text>
+          <Text style={styles.commentTime}>{relativeTime}</Text>
         </View>
         {/* @edge User-generated comment text; cap to prevent unbounded expansion */}
         <Text style={styles.commentBody} numberOfLines={8}>
