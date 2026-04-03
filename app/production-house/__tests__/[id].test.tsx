@@ -296,7 +296,7 @@ describe('ProductionHouseDetailScreen', () => {
     expect(screen.queryByText('0')).toBeNull();
   });
 
-  it('does not call follow/unfollow when mutation is pending', () => {
+  it('calls follow even when mutation is pending (idempotent upsert)', () => {
     jest.spyOn(require('@/features/feed'), 'useFollowEntity').mockReturnValue({
       mutate: mockFollowMutate,
       isPending: true,
@@ -305,7 +305,7 @@ describe('ProductionHouseDetailScreen', () => {
     mockFollowSet = new Set();
     render(<ProductionHouseDetailScreen />);
     fireEvent.press(screen.getByTestId('follow-btn'));
-    expect(mockFollowMutate).not.toHaveBeenCalled();
+    expect(mockFollowMutate).toHaveBeenCalled();
 
     jest.restoreAllMocks();
   });
@@ -335,7 +335,7 @@ describe('ProductionHouseDetailScreen', () => {
     expect(screen.getByText('Mythri Entertainments')).toBeTruthy();
   });
 
-  it('does not call unfollow/follow when unfollowMutation is pending', () => {
+  it('calls unfollow even when unfollowMutation is pending (idempotent delete)', () => {
     jest.spyOn(require('@/features/feed'), 'useUnfollowEntity').mockReturnValue({
       mutate: mockUnfollowMutate,
       isPending: true,
@@ -343,7 +343,8 @@ describe('ProductionHouseDetailScreen', () => {
 
     render(<ProductionHouseDetailScreen />);
     fireEvent.press(screen.getByTestId('follow-btn'));
-    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+    // Mutations are idempotent — no isPending guard needed
+    expect(mockUnfollowMutate).toHaveBeenCalled();
 
     jest.restoreAllMocks();
   });
@@ -405,7 +406,7 @@ describe('ProductionHouseDetailScreen', () => {
     expect(screen.queryByText('null')).toBeNull();
   });
 
-  it('does not follow/unfollow when mutation is pending (isPending guard)', () => {
+  it('calls follow even when both mutations are pending (idempotent)', () => {
     const feed = require('@/features/feed');
     const origFollow = feed.useFollowEntity;
     const origUnfollow = feed.useUnfollowEntity;
@@ -416,9 +417,8 @@ describe('ProductionHouseDetailScreen', () => {
 
     render(<ProductionHouseDetailScreen />);
     fireEvent.press(screen.getByTestId('follow-btn'));
-    // Should NOT call mutate because isPending is true
-    expect(mockFollowMutate).not.toHaveBeenCalled();
-    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+    // Mutations are idempotent (upsert + delete) — no isPending guard needed
+    expect(mockFollowMutate).toHaveBeenCalled();
 
     feed.useFollowEntity = origFollow;
     feed.useUnfollowEntity = origUnfollow;

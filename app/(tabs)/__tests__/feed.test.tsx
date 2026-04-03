@@ -510,7 +510,7 @@ describe('FeedScreen', () => {
     expect(mockUnfollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-123' });
   });
 
-  it('follow is guarded when follow mutation is pending', () => {
+  it('follow still fires when mutation is pending (idempotent upsert)', () => {
     const mockFollowMutate = jest.fn();
     const { useFollowEntity, useUnfollowEntity } = require('@/features/feed');
     useFollowEntity.mockReturnValue({ mutate: mockFollowMutate, isPending: true });
@@ -518,10 +518,10 @@ describe('FeedScreen', () => {
     setupMocks();
     render(<FeedScreen />);
     fireEvent.press(screen.getByLabelText('Follow Test Trailer'));
-    expect(mockFollowMutate).not.toHaveBeenCalled();
+    expect(mockFollowMutate).toHaveBeenCalled();
   });
 
-  it('unfollow is guarded when unfollow mutation is pending', () => {
+  it('unfollow still fires when mutation is pending (idempotent delete)', () => {
     const mockUnfollowMutate = jest.fn();
     const { useFollowEntity, useUnfollowEntity } = require('@/features/feed');
     useFollowEntity.mockReturnValue({ mutate: jest.fn(), isPending: false });
@@ -529,7 +529,7 @@ describe('FeedScreen', () => {
     setupMocks();
     render(<FeedScreen />);
     fireEvent.press(screen.getByLabelText('Unfollow Test Trailer'));
-    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+    expect(mockUnfollowMutate).toHaveBeenCalled();
   });
 
   it('loadMore is called when hasNextPage is true and not fetching', () => {

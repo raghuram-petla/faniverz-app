@@ -636,7 +636,7 @@ describe('FeedScreen', () => {
     expect(mockFollowMutate).toHaveBeenCalledWith({ entityType: 'movie', entityId: 'movie-1' });
   });
 
-  it('does not call followMutation when follow is already pending', () => {
+  it('calls followMutation even when pending (idempotent upsert)', () => {
     const item = makeItem({ id: 'item-1', title: 'AlreadyFollowing', movie_id: 'movie-1' });
     setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
     // Override after setupMocks to set isPending=true
@@ -645,7 +645,7 @@ describe('FeedScreen', () => {
     render(<FeedScreen />);
 
     fireEvent.press(screen.getByLabelText('Follow AlreadyFollowing'));
-    expect(mockFollowMutate).not.toHaveBeenCalled();
+    expect(mockFollowMutate).toHaveBeenCalled();
   });
 
   it('calls unfollowMutation when unfollow button is pressed (not pending)', () => {
@@ -726,7 +726,7 @@ describe('FeedScreen', () => {
     });
   });
 
-  it('does not call unfollowMutation when follow is pending', () => {
+  it('calls unfollowMutation even when follow is pending (idempotent)', () => {
     const item = makeItem({ id: 'item-1', title: 'Guarded Unfollow', movie_id: 'movie-1' });
     setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
     // Override AFTER setupMocks so they aren't reset
@@ -735,7 +735,7 @@ describe('FeedScreen', () => {
     render(<FeedScreen />);
 
     fireEvent.press(screen.getByLabelText('Unfollow Guarded Unfollow'));
-    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+    expect(mockUnfollowMutate).toHaveBeenCalled();
   });
 
   it('shows filter-specific empty message when filter is not all and no items', () => {
@@ -787,7 +787,7 @@ describe('FeedScreen', () => {
     expect(screen.getByText('No YouTube')).toBeTruthy();
   });
 
-  it('does not call unfollowMutation when unfollow mutation is pending', () => {
+  it('calls unfollowMutation even when unfollow is pending (idempotent delete)', () => {
     const item = makeItem({ id: 'item-1', title: 'Unfollow Guarded2', movie_id: 'movie-1' });
     setupMocks({ feed: { data: { pages: [[item]], pageParams: [0] }, isLoading: false } });
     mockUseFollowEntity.mockReturnValue({ mutate: mockFollowMutate, isPending: false } as any);
@@ -795,7 +795,7 @@ describe('FeedScreen', () => {
     render(<FeedScreen />);
 
     fireEvent.press(screen.getByLabelText('Unfollow Unfollow Guarded2'));
-    expect(mockUnfollowMutate).not.toHaveBeenCalled();
+    expect(mockUnfollowMutate).toHaveBeenCalled();
   });
 
   it('handles data=null gracefully (allItems ?? [] fallback)', () => {

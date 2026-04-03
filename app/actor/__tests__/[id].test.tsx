@@ -650,7 +650,7 @@ describe('ActorDetailScreen', () => {
     jest.restoreAllMocks();
   });
 
-  it('does not call follow/unfollow while mutations are pending', () => {
+  it('calls follow even while mutation is pending (idempotent upsert)', () => {
     const mockFollowMutate = jest.fn();
     jest.spyOn(require('@/features/feed'), 'useFollowEntity').mockReturnValue({
       mutate: mockFollowMutate,
@@ -664,7 +664,7 @@ describe('ActorDetailScreen', () => {
     render(<ActorDetailScreen />);
     const followBtn = screen.getByLabelText('Follow Nagarjuna Akkineni');
     fireEvent.press(followBtn);
-    expect(mockFollowMutate).not.toHaveBeenCalled();
+    expect(mockFollowMutate).toHaveBeenCalled();
 
     jest.restoreAllMocks();
   });
