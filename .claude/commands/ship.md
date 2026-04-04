@@ -8,7 +8,19 @@ If the current working directory is inside a worktree (path contains `.claude/wo
 
 ## Critical: Scope Control
 
-**NEVER stage all uncommitted changes.** The user works with multiple Claude sessions on a single branch, so there may be uncommitted changes from other sessions that do NOT belong in this commit.
+**Scope rules depend on whether you are in a worktree or on the main branch.**
+
+### In a worktree (path contains `.claude/worktrees/`)
+
+A worktree is an isolated workspace owned entirely by this session. **ALL uncommitted changes in a worktree belong to this session** — there are no other sessions sharing a worktree. Therefore:
+
+- Use `git add -A` to stage everything
+- Do NOT selectively pick files — commit ALL changes
+- If `git status` shows modified files, they are yours — commit them
+
+### On the main branch (master / not in a worktree)
+
+The user works with multiple Claude sessions on the main branch, so there may be uncommitted changes from other sessions that do NOT belong in this commit.
 
 You MUST:
 
@@ -39,7 +51,15 @@ You MUST:
    - Add a blank line then bullet points for multi-area changes
    - Focus on the "why" not the "what"
 
-7. Stage ONLY your files by name and create the commit:
+7. Stage files and create the commit:
+
+**If in a worktree:** stage everything — all changes are yours.
+
+```bash
+git add -A
+```
+
+**If on the main branch:** stage ONLY your files by name.
 
 ```bash
 git add path/to/file1 path/to/file2 ...
@@ -109,21 +129,24 @@ When work was done in a worktree (via `isolation: "worktree"` Agent), the change
 1. **Identify the worktree branch and directory** from the conversation history (look for `worktreeBranch:` and `worktreePath:` in agent results).
 
 2. **Navigate to the worktree directory** and check status:
+
    ```bash
    cd <worktree-path>
    git status
    ```
 
 3. **Fast-forward the worktree branch** if it's behind the main branch:
+
    ```bash
    git pull --ff-only
    ```
 
 4. **Check for migration or file conflicts** introduced by the fast-forward (e.g., duplicate migration numbers). Renumber if needed.
 
-5. **Stage, commit, and verify** in the worktree — follow steps 3-8 from the normal flow above, running from within the worktree directory.
+5. **Stage ALL changes, commit, and verify** in the worktree. Since the worktree is owned entirely by this session, use `git add -A` to stage everything — do NOT selectively pick files. Then follow steps 5-8 from the normal flow above.
 
 6. **Switch back to the main branch directory** and merge:
+
    ```bash
    cd <original-repo-path>
    git merge <worktree-branch> --no-edit
@@ -140,8 +163,8 @@ When work was done in a worktree (via `isolation: "worktree"` Agent), the change
 
 ## Rules
 
-- NEVER stage files you didn't touch in this conversation
-- NEVER use `git add -A`, `git add .`, or `git add --all`
+- In a worktree: commit ALL changes (`git add -A`) — the worktree is yours alone
+- On the main branch: NEVER stage files you didn't touch — NEVER use `git add -A` or `git add .`
 - NEVER amend a previous commit unless explicitly asked
 - NEVER skip pre-commit hooks (no `--no-verify`)
 - NEVER force push (`--force`) unless explicitly asked
