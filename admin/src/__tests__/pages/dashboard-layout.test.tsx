@@ -255,6 +255,108 @@ describe('DashboardLayout', () => {
     expect(screen.getByText('home content')).toBeInTheDocument();
   });
 
+  it('shows Page Not Accessible for /reviews when user lacks permission', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'admin' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: (page: string) => page !== 'reviews',
+      isReadOnly: false,
+    });
+    mockPathname = '/reviews';
+
+    render(
+      <DashboardLayout>
+        <div>reviews content</div>
+      </DashboardLayout>,
+    );
+    expect(screen.getByText('Page Not Accessible')).toBeInTheDocument();
+    expect(screen.queryByText('reviews content')).not.toBeInTheDocument();
+  });
+
+  it('shows Page Not Accessible for /comments when user lacks permission', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'admin' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: (page: string) => page !== 'comments',
+      isReadOnly: false,
+    });
+    mockPathname = '/comments';
+
+    render(
+      <DashboardLayout>
+        <div>comments content</div>
+      </DashboardLayout>,
+    );
+    expect(screen.getByText('Page Not Accessible')).toBeInTheDocument();
+    expect(screen.queryByText('comments content')).not.toBeInTheDocument();
+  });
+
+  it('renders /reviews content when user has reviews permission', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'admin' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: () => true,
+      isReadOnly: false,
+    });
+    mockPathname = '/reviews';
+
+    render(
+      <DashboardLayout>
+        <div>reviews content</div>
+      </DashboardLayout>,
+    );
+    expect(screen.getByText('reviews content')).toBeInTheDocument();
+  });
+
+  it('renders /comments content when user has comments permission', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'admin' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: () => true,
+      isReadOnly: false,
+    });
+    mockPathname = '/comments';
+
+    render(
+      <DashboardLayout>
+        <div>comments content</div>
+      </DashboardLayout>,
+    );
+    expect(screen.getByText('comments content')).toBeInTheDocument();
+  });
+
+  it('checks permission for /reviews/some-id sub-route', () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: 'u1', role: 'admin' },
+      isLoading: false,
+      isAccessDenied: false,
+    });
+    mockUsePermissions.mockReturnValue({
+      canViewPage: (page: string) => page !== 'reviews',
+      isReadOnly: false,
+    });
+    mockPathname = '/reviews/some-review-id';
+
+    render(
+      <DashboardLayout>
+        <div>review detail</div>
+      </DashboardLayout>,
+    );
+    expect(screen.getByText('Page Not Accessible')).toBeInTheDocument();
+  });
+
   it('allows viewer to access non-create pages', () => {
     mockUseAuth.mockReturnValue({
       user: { id: 'u1', role: 'viewer' },

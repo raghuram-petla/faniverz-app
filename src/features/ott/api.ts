@@ -31,8 +31,11 @@ export async function fetchMovieAvailability(
     ads: [],
     free: [],
   };
+  // @edge: skip rows with availability_type not in the known enum — prevents crash if DB adds new types before mobile code updates
   for (const r of (data ?? []) as MoviePlatformAvailability[]) {
-    result[r.availability_type].push(r);
+    if (result[r.availability_type]) {
+      result[r.availability_type].push(r);
+    }
   }
   return result;
 }

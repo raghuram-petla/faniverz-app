@@ -28,6 +28,7 @@ export function useBookmarkedFeed() {
   const { user } = useAuth();
   const userId = user?.id ?? /* istanbul ignore next */ null;
 
+  // @edge: enabled: !!userId prevents query from running for anonymous users — avoids unnecessary cache entries
   return useSmartInfiniteQuery<NewsFeedItem>({
     queryKey: ['bookmarked-feed', userId],
     queryFn: (offset, limit) =>
@@ -36,6 +37,7 @@ export function useBookmarkedFeed() {
         : /* istanbul ignore next */ Promise.resolve([]),
     config: FEED_PAGINATION,
     staleTime: STALE_5M,
+    enabled: !!userId,
   });
 }
 

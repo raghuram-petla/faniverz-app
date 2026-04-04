@@ -97,6 +97,14 @@ describe('useBookmarkedFeed', () => {
     const { result } = renderHook(() => useBookmarkedFeed(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it('is disabled when userId is null (anonymous user)', async () => {
+    mockUseAuth.mockReturnValue({ user: null } as ReturnType<typeof useAuth>);
+    const { result } = renderHook(() => useBookmarkedFeed(), { wrapper: createWrapper() });
+    // Query should not fire — fetchStatus stays idle
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(mockFetchBookmarkedFeed).not.toHaveBeenCalled();
+  });
 });
 
 describe('useBookmarkFeedItem', () => {

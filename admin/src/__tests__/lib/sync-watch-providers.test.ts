@@ -311,6 +311,96 @@ describe('syncWatchProvidersMultiCountry', () => {
     expect(count).toBe(0);
   });
 
+  it('logs console.warn when upsert fails for availability row', async () => {
+    mockGetAllWatchProviders.mockResolvedValue({
+      results: {
+        US: {
+          flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/n.png' }],
+        },
+      },
+    });
+    mockGetWatchRegions.mockResolvedValue({ US: 'United States' });
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { syncWatchProvidersMultiCountry } = await import('@/lib/sync-watch-providers');
+    const supabase = makeSupabaseMock();
+    supabase._upsertFn.mockResolvedValue({ error: { message: 'conflict on unique' } });
+
+    await syncWatchProvidersMultiCountry('m1', 12345, 'api-key', supabase as any);
+
+    // @regression: previously upsert errors were silently ignored, losing data without trace
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[sync-watch-providers] upsert failed'),
+      'conflict on unique',
+    );
+    warnSpy.mockRestore();
+  });
+
+  it('logs console.warn when region update fails for a platform', async () => {
+    mockGetAllWatchProviders.mockResolvedValue({
+      results: {
+        IN: {
+          flatrate: [{ provider_id: 8, provider_name: 'Netflix', logo_path: '/n.png' }],
+        },
+      },
+    });
+    mockGetWatchRegions.mockResolvedValue({ IN: 'India' });
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { syncWatchProvidersMultiCountry } = await import('@/lib/sync-watch-providers');
+
+    // Build a supabase mock where the region update fails
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === 'platforms') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'netflix-8' } }),
+                single: vi.fn().mockResolvedValue({ data: { regions: [] }, error: null }),
+              }),
+            }),
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: { message: 'region update failed' } }),
+            }),
+            upsert: vi.fn().mockResolvedValue({ error: null }),
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { id: 'auto-plat' }, error: null }),
+              }),
+            }),
+          };
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'netflix-8' } }),
+              single: vi.fn().mockResolvedValue({ data: { regions: [] }, error: null }),
+            }),
+          }),
+          upsert: vi.fn().mockResolvedValue({ error: null }),
+          insert: vi.fn().mockReturnValue({
+            select: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: 'auto-plat' }, error: null }),
+            }),
+          }),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        };
+      }),
+    };
+
+    await syncWatchProvidersMultiCountry('m1', 12345, 'api-key', supabase as any);
+
+    // @regression: previously region update errors were silently ignored
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[sync-watch-providers] region update failed'),
+      'region update failed',
+    );
+    warnSpy.mockRestore();
+  });
+
   it('creates platform with null logo_url when logo_path is null', async () => {
     mockGetAllWatchProviders.mockResolvedValue({
       results: {

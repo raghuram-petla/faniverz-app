@@ -177,6 +177,30 @@ describe('ott api', () => {
 
       await expect(fetchMovieAvailability('movie-1')).rejects.toThrow('Availability query failed');
     });
+
+    it('skips rows with unknown availability_type without crashing', async () => {
+      const mockEq2 = jest.fn();
+      const mockEq3 = jest.fn();
+      const mockData = [
+        { availability_type: 'flatrate', platform: { id: 'netflix' }, movie_id: 'movie-1' },
+        { availability_type: 'unknown_future_type', platform: { id: 'foo' }, movie_id: 'movie-1' },
+        { availability_type: 'rent', platform: { id: 'prime' }, movie_id: 'movie-1' },
+      ];
+      mockSelect.mockReturnValue({ eq: mockEq });
+      mockEq.mockReturnValue({ eq: mockEq2 });
+      mockEq2.mockReturnValue({ order: mockEq3 });
+      mockEq3.mockResolvedValue({ data: mockData, error: null });
+
+      const result = await fetchMovieAvailability('movie-1');
+
+      // Known types are grouped correctly
+      expect(result.flatrate).toHaveLength(1);
+      expect(result.rent).toHaveLength(1);
+      // Unknown type is silently skipped — no crash, no extra entries
+      expect(result.buy).toHaveLength(0);
+      expect(result.ads).toHaveLength(0);
+      expect(result.free).toHaveLength(0);
+    });
   });
 
   describe('fetchMoviePlatformMap', () => {

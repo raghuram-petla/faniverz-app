@@ -132,7 +132,12 @@ export async function syncWatchProvidersMultiCountry(
             ignoreDuplicates: true,
           },
         );
-        if (!error) count++;
+        // @sideeffect: log upsert failures so silent data loss is surfaced in browser console
+        if (error) {
+          console.warn(`[sync-watch-providers] upsert failed for movie=${movieId} platform=${platformId} country=${countryCode}:`, error.message);
+        } else {
+          count++;
+        }
 
         // @sideeffect: also write to legacy movie_platforms for backward compat (IN flatrate only)
         if (countryCode === 'IN' && availType === 'flatrate') {
@@ -159,10 +164,14 @@ export async function syncWatchProvidersMultiCountry(
     /* v8 ignore stop */
 
     for (const r of newRegions) existing.add(r);
-    await supabase
+    // @sideeffect: log region update failures so stale regions are surfaced
+    const { error: regionErr } = await supabase
       .from('platforms')
       .update({ regions: [...existing].sort() })
       .eq('id', platformId);
+    if (regionErr) {
+      console.warn(`[sync-watch-providers] region update failed for platform=${platformId}:`, regionErr.message);
+    }
   }
 
   return count;

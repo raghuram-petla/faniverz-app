@@ -236,4 +236,36 @@ describe('intersectIdSets', () => {
   it('intersects three sets correctly', () => {
     expect(intersectIdSets(['a', 'b', 'c'], ['b', 'c', 'd'], ['b', 'e'])).toEqual(['b']);
   });
+
+  it('handles empty arrays correctly', () => {
+    expect(intersectIdSets([])).toEqual([]);
+    expect(intersectIdSets([], ['a', 'b'])).toEqual([]);
+    expect(intersectIdSets(['a', 'b'], [])).toEqual([]);
+  });
+
+  it('returns all items when single non-null set is provided', () => {
+    expect(intersectIdSets(['x', 'y', 'z'])).toEqual(['x', 'y', 'z']);
+  });
+
+  it('returns all items when sets fully overlap', () => {
+    expect(intersectIdSets(['a', 'b'], ['a', 'b'])).toEqual(['a', 'b']);
+  });
+
+  it('handles large arrays correctly with Set-based intersection', () => {
+    const setA = Array.from({ length: 1000 }, (_, i) => `id-${i}`);
+    const setB = Array.from({ length: 1000 }, (_, i) => `id-${i + 500}`);
+    const result = intersectIdSets(setA, setB);
+    // Intersection should be id-500 through id-999 (500 items)
+    expect(result).toHaveLength(500);
+    expect(result).toContain('id-500');
+    expect(result).toContain('id-999');
+    expect(result).not.toContain('id-0');
+    expect(result).not.toContain('id-1500');
+  });
+
+  it('returns empty when large arrays have no overlap', () => {
+    const setA = Array.from({ length: 500 }, (_, i) => `a-${i}`);
+    const setB = Array.from({ length: 500 }, (_, i) => `b-${i}`);
+    expect(intersectIdSets(setA, setB)).toEqual([]);
+  });
 });

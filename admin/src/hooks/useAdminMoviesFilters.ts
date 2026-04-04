@@ -94,8 +94,12 @@ export function applyColumnFilters(query: any, filters: AdvancedFilters | undefi
 
 // @invariant All ID-based include filters must be intersected in JS before a single .in('id', ...)
 // PostgREST overwrites duplicate column filters — multiple .in('id', ...) breaks silently
+// @edge: uses Set for O(n+m) intersection instead of O(n*m) array.includes
 export function intersectIdSets(...sets: (string[] | null)[]): string[] | null {
   const defined = sets.filter((s): s is string[] => s !== null);
   if (defined.length === 0) return null;
-  return defined.reduce((acc, set) => acc.filter((id) => set.includes(id)));
+  return defined.reduce((acc, set) => {
+    const lookup = new Set(set);
+    return acc.filter((id) => lookup.has(id));
+  });
 }

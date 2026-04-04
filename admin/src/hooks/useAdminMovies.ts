@@ -224,6 +224,7 @@ export function useAdminMovies(
 
 /** Fetch all movies (no pagination) — for dropdowns / selectors */
 // @edge limit(5000) on non-PH path — could be slow if movie count exceeds threshold
+// @boundary: selects only id + title to minimize payload — callers needing full Movie should use paginated hooks
 export function useAllMovies(productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
 
@@ -241,24 +242,24 @@ export function useAllMovies(productionHouseIds?: string[]) {
         const movieIds = [...new Set((junctionData ?? []).map((r) => r.movie_id))];
         /* v8 ignore stop */
 
-        if (movieIds.length === 0) return [] as Movie[];
+        if (movieIds.length === 0) return [] as Pick<Movie, 'id' | 'title'>[];
 
         const { data, error } = await supabase
           .from('movies')
-          .select('*')
+          .select('id, title')
           .in('id', movieIds)
           .order('release_date', { ascending: false });
         if (error) throw error;
-        return data as Movie[];
+        return data as Pick<Movie, 'id' | 'title'>[];
       }
 
       const { data, error } = await supabase
         .from('movies')
-        .select('*')
+        .select('id, title')
         .order('release_date', { ascending: false })
         .limit(5000);
       if (error) throw error;
-      return data as Movie[];
+      return data as Pick<Movie, 'id' | 'title'>[];
     },
   });
 }

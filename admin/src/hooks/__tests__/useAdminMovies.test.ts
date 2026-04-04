@@ -557,6 +557,54 @@ describe('useAllMovies', () => {
     expect(chain.limit).toHaveBeenCalledWith(5000);
   });
 
+  it('selects only id and title columns (not *) for non-PH path', async () => {
+    const chain = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    mockFrom.mockReturnValue(chain as unknown as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAllMovies(), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // @regression: previously used .select('*') which fetched all columns unnecessarily
+    expect(chain.select).toHaveBeenCalledWith('id, title');
+  });
+
+  it('selects only id and title columns for PH-scoped path', async () => {
+    const phChain = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockResolvedValue({ data: [{ movie_id: 'm1' }], error: null }),
+    };
+    const moviesResolve = { data: [{ id: 'm1', title: 'Movie A' }], error: null };
+    const moviesChain: Record<string, unknown> = {
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+    };
+    moviesChain.then = (resolve: (v: unknown) => void, reject: (e: unknown) => void) =>
+      Promise.resolve(moviesResolve).then(resolve, reject);
+
+    mockFrom
+      .mockReturnValueOnce(phChain as unknown as ReturnType<typeof supabase.from>)
+      .mockReturnValueOnce(moviesChain as unknown as ReturnType<typeof supabase.from>);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAllMovies(['ph-1']), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // @regression: previously used .select('*') which fetched all columns unnecessarily
+    expect(moviesChain.select).toHaveBeenCalledWith('id, title');
+  });
+
   it('fetches movies scoped to PH IDs', async () => {
     const phMovieIds = [{ movie_id: 'm1' }, { movie_id: 'm2' }];
     const movies = [{ id: 'm1' }, { id: 'm2' }];
