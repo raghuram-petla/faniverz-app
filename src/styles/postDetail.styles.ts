@@ -86,7 +86,7 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
     },
     commentBody: {
       fontSize: 14,
-      color: t.textSecondary,
+      color: t.textPrimary,
       marginTop: 2,
       lineHeight: 20,
     },
@@ -113,9 +113,10 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       color: t.textTertiary,
     },
     commentLikeButton: {
-      flexDirection: 'row',
+      flexDirection: 'column',
       alignItems: 'center',
-      gap: 4,
+      paddingTop: 2,
+      gap: 2,
     },
     commentLikeCount: {
       fontSize: 12,
@@ -156,6 +157,36 @@ export const createPostDetailStyles = (t: SemanticTheme) =>
       fontSize: 14,
       color: t.textTertiary,
       marginTop: 8,
+    },
+    // --- Emoji quick-pick row (Instagram-style, edge-to-edge) ---
+    emojiRow: {
+      flexDirection: 'row',
+      paddingVertical: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: t.border,
+      backgroundColor: t.background,
+    },
+    emojiButton: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emojiText: {
+      fontSize: 24,
+    },
+    // --- Input avatar ---
+    inputAvatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    inputAvatarImage: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
     },
     // --- Input bar (NO absolute positioning — flex layout for keyboard avoidance) ---
     inputBar: {

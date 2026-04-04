@@ -22,6 +22,7 @@ import {
   useLikeComment,
   useUnlikeComment,
 } from '@/features/feed';
+import { useProfile } from '@/features/auth/hooks/useProfile';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { FeedCard } from '@/components/feed/FeedCard';
 import { CommentsList } from '@/components/feed/CommentsList';
@@ -43,6 +44,7 @@ export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { data: profile } = useProfile();
   const userId = user?.id ?? null;
 
   const { data: post, isLoading: feedLoading, refetch } = useFeedItem(id ?? '');
@@ -57,16 +59,23 @@ export default function PostDetailScreen() {
   const { gate } = useAuthGate();
 
   const {
-    data: commentsData, isLoading: commentsLoading,
-    hasNextPage, fetchNextPage, refetch: refetchComments,
+    data: commentsData,
+    isLoading: commentsLoading,
+    hasNextPage,
+    fetchNextPage,
+    refetch: refetchComments,
   } = useComments(id ?? '');
   const addMutation = useAddComment(id ?? '');
   const deleteMutation = useDeleteComment(id ?? '');
 
   const { refreshing, onRefresh } = useRefresh(refetch, refetchVotes, refetchComments);
   const {
-    pullDistance, isRefreshing, handleScrollBeginDrag,
-    handlePullScroll, handleScrollEndDrag, androidPullProps,
+    pullDistance,
+    isRefreshing,
+    handleScrollBeginDrag,
+    handlePullScroll,
+    handleScrollEndDrag,
+    androidPullProps,
   } = usePullToRefresh(onRefresh, refreshing);
 
   const comments = useMemo(() => commentsData?.pages.flatMap((p) => p) ?? [], [commentsData]);
@@ -82,14 +91,17 @@ export default function PostDetailScreen() {
 
   /** @contract Resolve parentCommentId: nested replies always go under the top-level parent.
    *  @invariant Max nesting depth is 1 — a reply to a reply still points to the root comment. */
-  const handleReply = useCallback((comment: FeedComment) => {
-    const parentId = comment.parent_comment_id ?? comment.id;
-    setReplyTarget({
-      commentId: comment.id,
-      parentCommentId: parentId,
-      displayName: comment.profile?.display_name ?? t('feed.anonymous'),
-    });
-  }, [t]);
+  const handleReply = useCallback(
+    (comment: FeedComment) => {
+      const parentId = comment.parent_comment_id ?? comment.id;
+      setReplyTarget({
+        commentId: comment.id,
+        parentCommentId: parentId,
+        displayName: comment.profile?.display_name ?? t('feed.anonymous'),
+      });
+    },
+    [t],
+  );
 
   /* istanbul ignore next -- no-op handler body is intentionally empty */
   const handleNoOp = (_item: NewsFeedItem) => {};
@@ -145,7 +157,8 @@ export default function PostDetailScreen() {
       return;
     }
     const routes: Record<string, string> = {
-      movie: `/movie/${entityId}`, actor: `/actor/${entityId}`,
+      movie: `/movie/${entityId}`,
+      actor: `/actor/${entityId}`,
       production_house: `/production-house/${entityId}`,
     };
     router.push(routes[entityType] as Parameters<typeof router.push>[0]);
@@ -160,7 +173,11 @@ export default function PostDetailScreen() {
       <SafeAreaCover />
 
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()} accessibilityLabel="Go back">
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+          accessibilityLabel="Go back"
+        >
           <Ionicons name="arrow-back" size={20} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('postDetail.title')}</Text>
@@ -180,7 +197,11 @@ export default function PostDetailScreen() {
         scrollEventThrottle={16}
         {...androidPullProps}
       >
-        <PullToRefreshIndicator pullDistance={pullDistance} isRefreshing={isRefreshing} refreshing={refreshing} />
+        <PullToRefreshIndicator
+          pullDistance={pullDistance}
+          isRefreshing={isRefreshing}
+          refreshing={refreshing}
+        />
         {feedLoading ? (
           <PostContentSkeleton />
         ) : post ? (
@@ -210,7 +231,10 @@ export default function PostDetailScreen() {
                 onDelete={(commentId, parentCommentId) =>
                   deleteMutation.mutate(
                     { commentId, parentCommentId },
-                    { onError: () => Alert.alert(t('common.error'), t('common.failedToDeleteComment')) },
+                    {
+                      onError: () =>
+                        Alert.alert(t('common.error'), t('common.failedToDeleteComment')),
+                    },
                   )
                 }
                 onReply={gate(handleReply)}
@@ -239,6 +263,7 @@ export default function PostDetailScreen() {
         bottomInset={insets.bottom}
         replyTarget={replyTarget}
         onCancelReply={() => setReplyTarget(null)}
+        avatarUrl={profile?.avatar_url}
       />
     </KeyboardAvoidingView>
   );

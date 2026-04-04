@@ -72,9 +72,10 @@ export function useAddComment(feedItemId: string) {
           return { ...old, pages };
         });
       }
-      // @sideeffect: invalidate feed caches so comment_count refreshes on feed cards
+      // @sideeffect: invalidate feed caches so comment_count refreshes on feed cards and post detail
       queryClient.invalidateQueries({ queryKey: ['news-feed'] });
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['feed-item', feedItemId] });
     },
   });
 }
@@ -125,6 +126,7 @@ export function useDeleteComment(feedItemId: string) {
       }
       queryClient.invalidateQueries({ queryKey: ['news-feed'] });
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['feed-item', feedItemId] });
     },
   });
 }

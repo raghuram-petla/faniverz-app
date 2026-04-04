@@ -84,12 +84,28 @@ jest.mock('@/features/feed', () => ({
   useUnlikeComment: jest.fn(() => ({ mutate: mockUnlikeMutate })),
 }));
 
+jest.mock('@/hooks/useKeyboardHeight', () => ({
+  useKeyboardHeight: jest.fn(() => 0),
+}));
+
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: () => ({ user: { id: 'user-1' } }),
 }));
 
+jest.mock('@/features/auth/hooks/useProfile', () => ({
+  useProfile: () => ({ data: { avatar_url: null } }),
+}));
+
 jest.mock('../CommentsList', () => ({
-  CommentsList: ({ comments, onDelete, onReply, onLoadMore, hasNextPage, onLike, onUnlike }: any) => {
+  CommentsList: ({
+    comments,
+    onDelete,
+    onReply,
+    onLoadMore,
+    hasNextPage,
+    onLike,
+    onUnlike,
+  }: any) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
@@ -106,18 +122,12 @@ jest.mock('../CommentsList', () => ({
               </TouchableOpacity>
             )}
             {onReply && (
-              <TouchableOpacity
-                onPress={() => onReply(c)}
-                accessibilityLabel={`Reply ${c.id}`}
-              >
+              <TouchableOpacity onPress={() => onReply(c)} accessibilityLabel={`Reply ${c.id}`}>
                 <Text>Reply</Text>
               </TouchableOpacity>
             )}
             {onLike && (
-              <TouchableOpacity
-                onPress={() => onLike(c.id)}
-                accessibilityLabel={`Like ${c.id}`}
-              >
+              <TouchableOpacity onPress={() => onLike(c.id)} accessibilityLabel={`Like ${c.id}`}>
                 <Text>Like</Text>
               </TouchableOpacity>
             )}
@@ -156,14 +166,9 @@ jest.mock('../CommentInput', () => ({
         ) : (
           <Text>Sign in to comment</Text>
         )}
-        {replyTarget && (
-          <Text testID="reply-target-indicator">{replyTarget.displayName}</Text>
-        )}
+        {replyTarget && <Text testID="reply-target-indicator">{replyTarget.displayName}</Text>}
         {onCancelReply && (
-          <TouchableOpacity
-            onPress={onCancelReply}
-            accessibilityLabel="Cancel reply"
-          >
+          <TouchableOpacity onPress={onCancelReply} accessibilityLabel="Cancel reply">
             <Text>Cancel</Text>
           </TouchableOpacity>
         )}
@@ -364,7 +369,10 @@ describe('CommentsBottomSheet', () => {
     const onError = mockDeleteMutate.mock.calls[0][1].onError;
     onError();
 
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to delete comment. Please try again.');
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'Error',
+      'Failed to delete comment. Please try again.',
+    );
   });
 
   it('shows Alert on submit (add) error', () => {

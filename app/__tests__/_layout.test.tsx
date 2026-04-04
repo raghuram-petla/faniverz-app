@@ -1,3 +1,9 @@
+jest.mock('react-native-reanimated', () => ({
+  ...jest.requireActual('react-native-reanimated/mock'),
+  configureReanimatedLogger: jest.fn(),
+  ReanimatedLogLevel: { warn: 1, error: 2 },
+}));
+
 jest.mock('@/i18n', () => ({
   languageReady: Promise.resolve(),
 }));

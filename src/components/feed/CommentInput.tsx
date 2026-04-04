@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +16,10 @@ export interface ReplyTarget {
   displayName: string;
 }
 
-/** @contract Shows text input with optional reply indicator banner. */
+// @contract Emoji quick-picks shown above the input bar (matches Instagram's comment UX)
+const EMOJI_QUICK_PICKS = ['❤️', '🙌', '🔥', '👏', '😢', '😍', '😮', '😂'];
+
+/** @contract Shows emoji quick-picks, user avatar, and text input with optional reply indicator. */
 export interface CommentInputProps {
   isAuthenticated: boolean;
   onSubmit: (body: string, parentCommentId?: string) => void;
@@ -24,6 +28,8 @@ export interface CommentInputProps {
   bottomInset?: number;
   replyTarget?: ReplyTarget | null;
   onCancelReply?: () => void;
+  /** @nullable Current user's avatar URL — shows placeholder icon when absent */
+  avatarUrl?: string | null;
 }
 
 export function CommentInput({
@@ -33,6 +39,7 @@ export function CommentInput({
   bottomInset = 0,
   replyTarget,
   onCancelReply,
+  avatarUrl,
 }: CommentInputProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -57,12 +64,17 @@ export function CommentInput({
     /* istanbul ignore next -- send button is disabled={!trimmed}, so this guard is unreachable via UI */
     if (!trimmed) return;
     // @contract: wrap mention in brackets to handle display names with spaces
-    const body = replyTarget
-      ? `@[${replyTarget.displayName}] ${trimmed}`
-      : trimmed;
+    const body = replyTarget ? `@[${replyTarget.displayName}] ${trimmed}` : trimmed;
     onSubmit(body, replyTarget?.parentCommentId);
     setText('');
     onCancelReply?.();
+  };
+
+  /** @sideeffect Appends emoji to current text */
+  const handleEmojiPress = (emoji: string) => {
+    if (text.length + emoji.length <= maxBodyLength) {
+      setText((prev) => prev + emoji);
+    }
   };
 
   return (
@@ -83,9 +95,34 @@ export function CommentInput({
         </View>
       ) : null}
 
+      {/* @contract Emoji quick-pick row — Instagram-style shortcuts above input */}
+      {isAuthenticated ? (
+        <View style={styles.emojiRow}>
+          {EMOJI_QUICK_PICKS.map((emoji) => (
+            <TouchableOpacity
+              key={emoji}
+              onPress={() => handleEmojiPress(emoji)}
+              style={styles.emojiButton}
+              accessibilityLabel={`Add ${emoji}`}
+            >
+              <Text style={styles.emojiText}>{emoji}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
+
       <View style={[styles.inputBar, { paddingBottom: 8 + bottomInset }]}>
         {isAuthenticated ? (
           <>
+            {/* @contract User avatar next to input — Instagram-style */}
+            <View style={styles.inputAvatar}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.inputAvatarImage} />
+              ) : (
+                <Ionicons name="person-circle" size={28} color={colors.gray500} />
+              )}
+            </View>
+
             <TextInput
               ref={inputRef}
               style={styles.inputField}

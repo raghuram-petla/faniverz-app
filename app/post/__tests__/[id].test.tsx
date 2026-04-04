@@ -35,6 +35,10 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
   useAuth: () => ({ user: mockUser }),
 }));
 
+jest.mock('@/features/auth/hooks/useProfile', () => ({
+  useProfile: () => ({ data: { avatar_url: null } }),
+}));
+
 jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
 }));
@@ -174,9 +178,17 @@ jest.mock('@/components/feed/CommentsList', () => ({
     onLike,
     onUnlike,
   }: {
-    comments: { id: string; profile?: { display_name?: string }; parent_comment_id?: string | null }[];
+    comments: {
+      id: string;
+      profile?: { display_name?: string };
+      parent_comment_id?: string | null;
+    }[];
     onDelete?: (commentId: string, parentCommentId?: string | null) => void;
-    onReply?: (comment: { id: string; parent_comment_id?: string | null; profile?: { display_name?: string } }) => void;
+    onReply?: (comment: {
+      id: string;
+      parent_comment_id?: string | null;
+      profile?: { display_name?: string };
+    }) => void;
     onLike?: (commentId: string) => void;
     onUnlike?: (commentId: string) => void;
   }) => {
@@ -192,7 +204,9 @@ jest.mock('@/components/feed/CommentsList', () => ({
         {onReply && (
           <TouchableOpacity
             testID="reply-comment-btn"
-            onPress={() => onReply({ id: 'c1', parent_comment_id: null, profile: { display_name: 'User2' } })}
+            onPress={() =>
+              onReply({ id: 'c1', parent_comment_id: null, profile: { display_name: 'User2' } })
+            }
           >
             <Text>Reply</Text>
           </TouchableOpacity>
@@ -238,9 +252,7 @@ jest.mock('@/components/feed/CommentInput', () => ({
             <Text>Login</Text>
           </TouchableOpacity>
         )}
-        {replyTarget && (
-          <Text testID="reply-target-name">{replyTarget.displayName}</Text>
-        )}
+        {replyTarget && <Text testID="reply-target-name">{replyTarget.displayName}</Text>}
         {onCancelReply && (
           <TouchableOpacity testID="cancel-reply-btn" onPress={onCancelReply}>
             <Text>Cancel Reply</Text>
@@ -727,7 +739,11 @@ describe('PostDetailScreen', () => {
     mockFeedModule.CommentsList = ({
       onReply,
     }: {
-      onReply?: (comment: { id: string; parent_comment_id?: string | null; profile?: { display_name?: string | null } | null }) => void;
+      onReply?: (comment: {
+        id: string;
+        parent_comment_id?: string | null;
+        profile?: { display_name?: string | null } | null;
+      }) => void;
     }) => {
       const { TouchableOpacity, Text } = require('react-native');
       return (

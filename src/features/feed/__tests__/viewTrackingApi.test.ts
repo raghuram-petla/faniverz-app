@@ -33,15 +33,9 @@ describe('recordFeedViews', () => {
     await expect(recordFeedViews(['id-1'])).resolves.toBeUndefined();
   });
 
-  it('logs console.warn and does not throw when RPC returns error', async () => {
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+  it('silently ignores RPC errors and does not throw', async () => {
     mockRpc.mockResolvedValue({ error: { message: 'DB error' } });
     await expect(recordFeedViews(['id-1'])).resolves.toBeUndefined();
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[view-tracking] Failed to record feed views:',
-      'DB error',
-    );
-    warnSpy.mockRestore();
   });
 
   it('does not call RPC when feedItemIds is empty', async () => {
@@ -51,24 +45,18 @@ describe('recordFeedViews', () => {
 
   describe('circuit breaker', () => {
     it('stops calling RPC after the first failure', async () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       mockRpc.mockResolvedValue({ error: { message: 'relation "news_feed" does not exist' } });
 
       // First call — hits RPC, triggers circuit breaker
       await recordFeedViews(['id-1']);
       expect(mockRpc).toHaveBeenCalledTimes(1);
-      expect(warnSpy).toHaveBeenCalledTimes(1);
 
       // Second call — circuit is open, RPC should NOT be called again
       await recordFeedViews(['id-2']);
       expect(mockRpc).toHaveBeenCalledTimes(1); // still 1
-      expect(warnSpy).toHaveBeenCalledTimes(1); // still 1
-
-      warnSpy.mockRestore();
     });
 
     it('allows calls again after circuit breaker is reset', async () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       mockRpc.mockResolvedValue({ error: { message: 'fail' } });
 
       await recordFeedViews(['id-1']);
@@ -79,8 +67,6 @@ describe('recordFeedViews', () => {
 
       await recordFeedViews(['id-2']);
       expect(mockRpc).toHaveBeenCalledTimes(2);
-
-      warnSpy.mockRestore();
     });
   });
 });

@@ -51,6 +51,17 @@ const mockFetchBookmarkedFeed = fetchBookmarkedFeed as jest.MockedFunction<
 >;
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
+// @invariant Restore useAuth default before every test — mockReturnValue persists through
+// clearAllMocks, so tests that override it (e.g. "disabled when userId is null") would
+// poison subsequent tests if not explicitly restored.
+beforeEach(() => {
+  mockUseAuth.mockReturnValue({
+    user: { id: 'user-123' },
+    session: {},
+    isLoading: false,
+  } as ReturnType<typeof useAuth>);
+});
+
 const mockItem = {
   id: 'item-1',
   feed_type: 'video' as const,

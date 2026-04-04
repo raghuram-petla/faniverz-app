@@ -43,9 +43,7 @@ export function CommentItem({
   // @coupling This regex must match the format produced by CommentInput.handleSend: `@[${displayName}] ${body}`
   const mentionMatch = isNested ? comment.body.match(/^@\[([^\]]+)\]\s?/) : null;
   const mentionName = mentionMatch ? mentionMatch[1] : null;
-  const bodyAfterMention = mentionName
-    ? comment.body.slice(mentionMatch![0].length)
-    : comment.body;
+  const bodyAfterMention = mentionName ? comment.body.slice(mentionMatch![0].length) : comment.body;
 
   return (
     <View style={isNested ? styles.commentItemNested : styles.commentItem}>
@@ -76,7 +74,7 @@ export function CommentItem({
           )}
         </Text>
 
-        {/* Actions row: Reply, Like, Delete */}
+        {/* Actions row: Reply, Delete */}
         <View style={styles.commentActionsRow}>
           {onReply ? (
             <TouchableOpacity
@@ -87,21 +85,6 @@ export function CommentItem({
               <Text style={styles.commentReplyText}>{t('feed.reply')}</Text>
             </TouchableOpacity>
           ) : null}
-
-          <TouchableOpacity
-            style={styles.commentLikeButton}
-            onPress={isLiked ? onUnlike : onLike}
-            accessibilityLabel={isLiked ? 'Unlike comment' : 'Like comment'}
-          >
-            <Ionicons
-              name={isLiked ? 'heart' : 'heart-outline'}
-              size={14}
-              color={isLiked ? colors.red600 : colors.gray500}
-            />
-            {comment.like_count > 0 ? (
-              <Text style={styles.commentLikeCount}>{comment.like_count}</Text>
-            ) : null}
-          </TouchableOpacity>
 
           {isOwn && onDelete ? (
             <TouchableOpacity
@@ -114,6 +97,22 @@ export function CommentItem({
           ) : null}
         </View>
       </View>
+
+      {/* @contract Like button pinned to the right edge of the comment row */}
+      <TouchableOpacity
+        style={styles.commentLikeButton}
+        onPress={isLiked ? onUnlike : onLike}
+        accessibilityLabel={isLiked ? 'Unlike comment' : 'Like comment'}
+      >
+        <Ionicons
+          name={isLiked ? 'heart' : 'heart-outline'}
+          size={14}
+          color={isLiked ? colors.red600 : colors.gray500}
+        />
+        {comment.like_count > 0 ? (
+          <Text style={styles.commentLikeCount}>{comment.like_count}</Text>
+        ) : null}
+      </TouchableOpacity>
     </View>
   );
 }

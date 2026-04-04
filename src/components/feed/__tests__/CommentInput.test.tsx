@@ -174,4 +174,43 @@ describe('CommentInput', () => {
     fireEvent.press(screen.getByLabelText('Send comment'));
     expect(onCancelReply).toHaveBeenCalled();
   });
+
+  // --- Emoji quick-picks ---
+
+  it('renders emoji quick-pick buttons when authenticated', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    expect(screen.getByLabelText('Add ❤️')).toBeTruthy();
+    expect(screen.getByLabelText('Add 😂')).toBeTruthy();
+  });
+
+  it('does not render emoji row when not authenticated', () => {
+    render(<CommentInput isAuthenticated={false} onSubmit={jest.fn()} />);
+    expect(screen.queryByLabelText('Add ❤️')).toBeNull();
+  });
+
+  it('appends emoji to input text when emoji button pressed', () => {
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const input = screen.getByLabelText('Comment input');
+    fireEvent.changeText(input, 'nice ');
+    fireEvent.press(screen.getByLabelText('Add 🔥'));
+    expect(input.props.value).toBe('nice 🔥');
+  });
+
+  // --- User avatar ---
+
+  it('renders placeholder icon when avatarUrl is not provided', () => {
+    const { toJSON } = render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    expect(toJSON()).toBeTruthy();
+  });
+
+  it('renders avatar image when avatarUrl is provided', () => {
+    const { toJSON } = render(
+      <CommentInput
+        isAuthenticated={true}
+        onSubmit={jest.fn()}
+        avatarUrl="https://example.com/avatar.jpg"
+      />,
+    );
+    expect(toJSON()).toBeTruthy();
+  });
 });
