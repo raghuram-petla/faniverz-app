@@ -129,6 +129,11 @@ export default function PostDetailScreen() {
     [userBookmarks, bookmarkMutation, unbookmarkMutation],
   );
 
+  // @edge: gate() wrappers memoized to avoid creating new function refs every render — prevents FeedCard re-renders
+  const gatedUpvote = useMemo(() => gate(handleUpvote), [gate, handleUpvote]);
+  const gatedDownvote = useMemo(() => gate(handleDownvote), [gate, handleDownvote]);
+  const gatedBookmark = useMemo(() => gate(handleBookmark), [gate, handleBookmark]);
+
   // @contract: own user ID routes to /profile (tab), other users route to /user/:id (standalone)
   const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
     if (entityType === 'user') {
@@ -186,9 +191,9 @@ export default function PostDetailScreen() {
               onEntityPress={handleEntityPress}
               userVote={userVotes[post.id] ?? null}
               isBookmarked={!!userBookmarks[post.id]}
-              onUpvote={gate(handleUpvote)}
-              onDownvote={gate(handleDownvote)}
-              onBookmark={gate(handleBookmark)}
+              onUpvote={gatedUpvote}
+              onDownvote={gatedDownvote}
+              onBookmark={gatedBookmark}
               showFullTimestamp
             />
             <View style={styles.commentsList}>

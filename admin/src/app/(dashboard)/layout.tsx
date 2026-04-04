@@ -34,6 +34,8 @@ const ROUTE_PAGE_MAP: Record<string, AdminPage> = {
   '/app-users': 'app-users',
   '/validations': 'validations',
   '/users': 'users',
+  '/reviews': 'reviews',
+  '/comments': 'comments',
 };
 
 function getPageForRoute(pathname: string): AdminPage | null {

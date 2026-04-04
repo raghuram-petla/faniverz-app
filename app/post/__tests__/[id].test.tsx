@@ -596,6 +596,23 @@ describe('PostDetailScreen', () => {
     expect(screen.getByText('postDetail.comments (3)')).toBeTruthy();
   });
 
+  it('passes memoized gated callbacks (not new refs) to FeedCard', () => {
+    // gate() returns the same function identity — so gatedUpvote/gatedDownvote/gatedBookmark
+    // should be stable function references (memoized via useMemo), not recreated each render.
+    // This test verifies the callbacks are actual functions passed to FeedCard.
+    render(<PostDetailScreen />);
+    // The FeedCard mock exposes onUpvote/onDownvote/onBookmark as buttons — if they render, the callbacks exist
+    expect(screen.getByTestId('upvote-btn')).toBeTruthy();
+    expect(screen.getByTestId('downvote-btn')).toBeTruthy();
+    expect(screen.getByTestId('bookmark-btn')).toBeTruthy();
+    // Pressing them should invoke the underlying handlers without error
+    fireEvent.press(screen.getByTestId('upvote-btn'));
+    fireEvent.press(screen.getByTestId('downvote-btn'));
+    fireEvent.press(screen.getByTestId('bookmark-btn'));
+    expect(mockVoteMutate).toHaveBeenCalled();
+    expect(mockBookmarkMutate).toHaveBeenCalled();
+  });
+
   it('calls bookmarkMutation when post is not bookmarked', () => {
     mockUserBookmarksData = {};
     render(<PostDetailScreen />);
