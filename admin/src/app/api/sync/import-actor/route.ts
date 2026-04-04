@@ -71,6 +71,6 @@ export const POST = withSyncAdmin('Import actor', async ({ req, supabase, apiKey
       status: 'failed',
       errors: [{ tmdbPersonId, message }],
     });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Actor import failed' }, { status: 500 });
   }
 });

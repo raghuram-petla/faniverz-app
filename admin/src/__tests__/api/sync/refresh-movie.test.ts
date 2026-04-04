@@ -133,7 +133,7 @@ describe('POST /api/sync/refresh-movie', () => {
     const res = await POST(makeRequest({ movieId: 'movie-1' }));
     expect(res.status).toBe(500);
     const data = await res.json();
-    expect(data.error).toBe('TMDB API timeout');
+    expect(data.error).toBe('Movie refresh failed');
     expect(mockCompleteSyncLog).toHaveBeenCalledWith(
       expect.anything(),
       'sync-log-1',
@@ -151,7 +151,7 @@ describe('POST /api/sync/refresh-movie', () => {
     const res = await POST(makeRequest({ movieId: 'movie-1' }));
     expect(res.status).toBe(500);
     const data = await res.json();
-    expect(data.error).toBe('Unknown error');
+    expect(data.error).toBe('Movie refresh failed');
   });
 
   it('returns 500 via errorResponse when outer try/catch fires', async () => {

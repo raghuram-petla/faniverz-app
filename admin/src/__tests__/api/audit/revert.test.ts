@@ -76,7 +76,7 @@ describe('POST /api/audit/revert', () => {
     const res = await POST(makeRequest({ auditEntryId: 'entry-1' }));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBe('DB error');
+    expect(json.error).toBe('Revert failed');
   });
 
   it('returns 500 on unexpected exception', async () => {

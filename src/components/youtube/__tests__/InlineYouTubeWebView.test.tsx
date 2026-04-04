@@ -162,4 +162,11 @@ describe('InlineYouTubeWebView', () => {
       });
     });
   });
+
+  it('SECURITY: restricts originWhitelist to HTTPS only, not wildcard', () => {
+    render(<InlineYouTubeWebView videoId="abc123" thumbnailUrl="https://example.com/thumb.jpg" />);
+    const webView = screen.getByTestId('youtube-inline-webview');
+    // Must NOT use ['*'] which allows any origin including http:// and custom schemes
+    expect(webView.props.originWhitelist).toEqual(['https://*']);
+  });
 });

@@ -45,8 +45,8 @@ vi.mock('@/lib/sync-helpers', () => ({
     }
     return { ok: true, auth, apiKey: tmdb.apiKey };
   },
-  errorResponse: (label: string, err: unknown) => ({
-    body: { error: err instanceof Error ? err.message : `${label} failed` },
+  errorResponse: (label: string) => ({
+    body: { error: `${label} failed` },
     status: 500,
     async json() {
       return this.body;
@@ -185,7 +185,7 @@ describe('POST /api/sync/import-actor', () => {
     const res = await POST(makeRequest({ tmdbPersonId: 999 }));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBe('TMDB down');
+    expect(json.error).toBe('Actor import failed');
   });
 
   it('handles non-Error thrown in inner catch (fallback to Unknown error)', async () => {
@@ -193,7 +193,7 @@ describe('POST /api/sync/import-actor', () => {
     const res = await POST(makeRequest({ tmdbPersonId: 999 }));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBe('Unknown error');
+    expect(json.error).toBe('Actor import failed');
   });
 
   it('returns 500 via errorResponse when outer try/catch fires', async () => {

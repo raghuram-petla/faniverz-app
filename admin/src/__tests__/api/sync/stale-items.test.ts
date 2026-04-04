@@ -297,7 +297,7 @@ describe('GET /api/sync/stale-items', () => {
     const res = await GET(makeRequest('?type=movies'));
     expect(res.status).toBe(500);
     const data = await res.json();
-    expect(data.error).toBe('Query failed');
+    expect(data.error).toBe('Stale items query failed');
   });
 
   it('returns empty items array when data is null for movies', async () => {

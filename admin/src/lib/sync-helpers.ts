@@ -208,12 +208,11 @@ export async function ensureAdminMutateAuth(
  * @edge: exposes err.message to the client — if the error contains sensitive info
  * (e.g. Supabase connection string in a connection error), it leaks to the admin UI.
  */
+// @boundary: Never expose raw error messages to clients — they may contain DB connection strings,
+// internal paths, or infrastructure details. Log full error server-side, return generic message.
 export function errorResponse(label: string, err: unknown, status = 500): NextResponse {
   console.error(`${label} failed:`, err);
-  return NextResponse.json(
-    { error: err instanceof Error ? err.message : `${label} failed` },
-    { status },
-  );
+  return NextResponse.json({ error: `${label} failed` }, { status });
 }
 
 /** @contract Standard 401 response for unauthenticated/blocked admin requests */

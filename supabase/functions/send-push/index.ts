@@ -41,10 +41,12 @@ Deno.serve(async (req) => {
       if (authErr || !user) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
       }
+      // @boundary: Check both role existence AND active status — blocked admins must not send push
       const { data: role } = await supabaseAuth
         .from('admin_user_roles')
         .select('role_id')
         .eq('user_id', user.id)
+        .eq('status', 'active')
         .maybeSingle();
       if (!role) {
         return new Response(JSON.stringify({ error: 'Forbidden: admin role required' }), {
@@ -145,6 +147,8 @@ Deno.serve(async (req) => {
       { status: 200 },
     );
   } catch (error) {
-    return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500 });
+    // @boundary: Never expose raw error messages — may contain infrastructure details
+    console.error('send-push failed:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
 });

@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     // @edge: multiple pending invitations for same email — takes most recent via order+limit
     const { data: invitation, error: inviteErr } = await supabaseAdmin
       .from('admin_invitations')
-      .select('*')
+      .select('id, role_id, invited_by, production_house_ids, language_ids')
       .eq('email', email.toLowerCase())
       .eq('status', 'pending')
       .gte('expires_at', new Date().toISOString())

@@ -34,7 +34,8 @@ export async function GET(req: NextRequest) {
       .eq('user_id', userId);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('user-languages fetch error:', error);
+      return NextResponse.json({ error: 'Failed to fetch language assignments' }, { status: 500 });
     }
     return NextResponse.json(data);
   } catch {

@@ -58,6 +58,6 @@ export const POST = withSyncAdmin('Refresh movie', async ({ req, supabase, apiKe
       errors: [{ movieId, tmdbId: movie.tmdb_id, message }],
     });
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Movie refresh failed' }, { status: 500 });
   }
 });
