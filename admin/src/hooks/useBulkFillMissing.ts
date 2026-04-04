@@ -109,6 +109,11 @@ export function useBulkFillMissing() {
     qc.invalidateQueries({ queryKey: ['admin', 'actors'] });
     qc.invalidateQueries({ queryKey: ['admin', 'actor'] });
     qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+    // @sideeffect: fill-fields can update release_date/in_theaters — theater views become stale
+    qc.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'upcoming-movies'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'upcoming-rereleases'] });
+    qc.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
   };
 
   const reset = () => setState(INITIAL_STATE);

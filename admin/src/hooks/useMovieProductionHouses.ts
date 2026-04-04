@@ -48,6 +48,8 @@ export function useAddMovieProductionHouse() {
       // @sideeffect: PH-scoped movie/OTT lists depend on junction table
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+      // @sideeffect: PH-scoped dashboard totalMovies counts via junction table
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
@@ -79,6 +81,8 @@ export function useRemoveMovieProductionHouse() {
       // @sideeffect: PH-scoped movie/OTT lists depend on junction table
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
+      // @sideeffect: PH-scoped dashboard totalMovies counts via junction table
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (err) => {
       window.alert(err instanceof Error ? err.message : 'Operation failed');
