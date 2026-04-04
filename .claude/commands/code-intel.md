@@ -6,10 +6,10 @@ Add structured comments to source files that give future bug-hunting agents rich
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/code-intel-$(date +%s) -b code-intel-$(date +%s)
+   git worktree add ~/faniverz-worktrees/code-intel-$(date +%s) -b code-intel-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 

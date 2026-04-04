@@ -6,10 +6,10 @@ Audit all TanStack Query mutations and queries in the admin panel to find cache 
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/cache-audit-$(date +%s) -b cache-audit-$(date +%s)
+   git worktree add ~/faniverz-worktrees/cache-audit-$(date +%s) -b cache-audit-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 

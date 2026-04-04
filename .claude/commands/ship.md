@@ -4,13 +4,13 @@ Smart commit-and-push that handles all scenarios: uncommitted changes, already-c
 
 ## Worktree Awareness
 
-If the current working directory is inside a worktree (path contains `.claude/worktrees/`), run all commands from that worktree directory. After committing, the branch must be merged into master (see step 9).
+If the current working directory is inside a worktree (path contains `~/faniverz-worktrees/`), run all commands from that worktree directory. After committing, the branch must be merged into master (see step 9).
 
 ## Critical: Scope Control
 
 **Scope rules depend on whether you are in a worktree or on the main branch.**
 
-### In a worktree (path contains `.claude/worktrees/`)
+### In a worktree (path contains `~/faniverz-worktrees/`)
 
 A worktree is an isolated workspace owned entirely by this session. **ALL uncommitted changes in a worktree belong to this session** — there are no other sessions sharing a worktree. Therefore:
 
@@ -89,7 +89,7 @@ EOF
 
 9. **Squash-merge into master and push:**
 
-   **If in a worktree** (path contains `.claude/worktrees/`):
+   **If in a worktree** (path contains `~/faniverz-worktrees/`):
 
    Worktree branches are squash-merged into master so the history stays linear and clean. All worktree commits collapse into a single commit on master.
 
@@ -98,7 +98,7 @@ EOF
    BRANCH=$(git branch --show-current)
 
    # Switch to master in the MAIN repo (not the worktree)
-   cd <main-repo-root>   # the parent of .claude/worktrees/
+   cd <main-repo-root>   # the parent of ~/faniverz-worktrees/
    git checkout master
    git merge --squash "$BRANCH"
    git commit -m "$(cat <<'EOF'
@@ -137,7 +137,7 @@ EOF
 
 ## Worktree Ship Flow
 
-When work was done in a worktree (via `isolation: "worktree"` Agent), the changes live on a separate branch with uncommitted files in a worktree directory. You must commit there, then merge into the main branch.
+When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live on a separate branch with uncommitted files in a worktree directory. You must commit there, then merge into the main branch.
 
 1. **Identify the worktree branch and directory** from the conversation history (look for `worktreeBranch:` and `worktreePath:` in agent results).
 

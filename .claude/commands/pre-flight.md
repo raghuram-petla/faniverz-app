@@ -4,7 +4,7 @@ Run this automated checklist before committing any changes. This catches the mos
 
 ## Worktree Awareness
 
-If the current working directory is inside a worktree (path contains `.claude/worktrees/`), run all commands and quality gates from that worktree directory. Do not switch to the main working directory.
+If the current working directory is inside a worktree (path contains `~/faniverz-worktrees/`), run all commands and quality gates from that worktree directory. Do not switch to the main working directory.
 
 ## Critical: Scope Control
 

@@ -9,8 +9,10 @@
 Use `isolation: "worktree"` when launching Agents. This automatically creates a worktree branch, runs all work there, and returns the branch name. For direct (non-Agent) work, create manually:
 
 ```bash
-git worktree add .claude/worktrees/<branch-name> -b <branch-name>
+git worktree add ~/faniverz-worktrees/<branch-name> -b <branch-name>
 ```
+
+**Important:** Worktrees must live OUTSIDE the main repo (in `~/faniverz-worktrees/`) so that Metro bundler works correctly in both the main repo and worktrees. Never create worktrees inside the project directory. After creating a worktree, run `yarn install` before starting the dev server.
 
 ### Rules
 

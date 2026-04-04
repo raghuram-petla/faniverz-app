@@ -4,7 +4,7 @@ Build the iOS production app and submit it to TestFlight in one shot.
 
 ## Worktree Awareness
 
-If the current working directory is inside a worktree (path contains `.claude/worktrees/`), run all commands (quality gates, eas build, fastlane) from that worktree directory. Do not switch to the main working directory.
+If the current working directory is inside a worktree (path contains `~/faniverz-worktrees/`), run all commands (quality gates, eas build, fastlane) from that worktree directory. Do not switch to the main working directory.
 
 ## Steps
 

@@ -6,10 +6,10 @@ Audit the codebase for files exceeding 300 lines and enforce decomposition stand
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/refactor-check-$(date +%s) -b refactor-check-$(date +%s)
+   git worktree add ~/faniverz-worktrees/refactor-check-$(date +%s) -b refactor-check-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 

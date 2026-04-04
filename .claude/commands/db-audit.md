@@ -6,10 +6,10 @@ Ensure every database table that holds admin-managed or user-facing data has a c
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/db-audit-$(date +%s) -b db-audit-$(date +%s)
+   git worktree add ~/faniverz-worktrees/db-audit-$(date +%s) -b db-audit-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 

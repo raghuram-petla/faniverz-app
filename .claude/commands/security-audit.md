@@ -6,10 +6,10 @@ Deep-scan the entire codebase for security vulnerabilities, insecure patterns, a
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/security-audit-$(date +%s) -b security-audit-$(date +%s)
+   git worktree add ~/faniverz-worktrees/security-audit-$(date +%s) -b security-audit-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 
@@ -36,6 +36,7 @@ Run 1 -> found 9 vulns -> fix -> Run 2 -> found 2 vulns -> fix -> Run 3 -> found
 Search the entire codebase -- mobile (`app/`, `src/`), admin (`admin/src/`), shared (`shared/`), API routes (`admin/src/app/api/`), and infrastructure (`supabase/`) -- for each category below. For each finding, record: **file path**, **line number(s)**, **what's wrong**, **severity** (Critical/High/Medium), **CVSS-like impact**, and **exploit scenario**. Do NOT modify any files during this phase.
 
 **Agent strategy**: Launch **at least 4 parallel agents**, each assigned a distinct scanning area:
+
 - Agent 1: `app/` + `src/` (mobile app)
 - Agent 2: `admin/src/` (admin panel)
 - Agent 3: `supabase/` (migrations, RLS policies, edge functions)
@@ -86,7 +87,7 @@ Code that constructs queries or commands from unsanitized user input:
 - **SSRF (Server-Side Request Forgery)**: User-controlled URLs used in server-side `fetch()` calls -- can access internal services. Only flag if attacker controls host/protocol, not just path.
 - **Template injection**: User input embedded in template strings that get evaluated (server-side template engines)
 
-**Approach**: Grep for `dangerouslySetInnerHTML`, `innerHTML`, `eval(`, `new Function(`, `exec(`, `spawn(`, `child_process`. Grep for raw SQL string construction (`\`.*\$\{.*\}.*\`` near SQL keywords). Read Supabase RPC calls for parameterization. Check any `fetch()` in API routes where the URL comes from request params.
+**Approach**: Grep for `dangerouslySetInnerHTML`, `innerHTML`, `eval(`, `new Function(`, `exec(`, `spawn(`, `child_process`. Grep for raw SQL string construction (`\`._\$\{._\}.\*\``near SQL keywords). Read Supabase RPC calls for parameterization. Check any`fetch()` in API routes where the URL comes from request params.
 
 ### Category 4: Secrets & Credential Management (High)
 

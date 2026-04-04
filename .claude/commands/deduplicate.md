@@ -6,10 +6,10 @@ Systematically find and eliminate duplicate code and repeated behavioral pattern
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/deduplicate-$(date +%s) -b deduplicate-$(date +%s)
+   git worktree add ~/faniverz-worktrees/deduplicate-$(date +%s) -b deduplicate-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 

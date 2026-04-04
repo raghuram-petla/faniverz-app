@@ -6,10 +6,10 @@ Systematically detect and remove dead code across the mobile app (`app/`, `src/`
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/dead-code-$(date +%s) -b dead-code-$(date +%s)
+   git worktree add ~/faniverz-worktrees/dead-code-$(date +%s) -b dead-code-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 

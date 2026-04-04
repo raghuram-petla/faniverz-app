@@ -6,10 +6,10 @@ Deep-scan the entire codebase for runtime bugs, logic errors, performance proble
 
 Before starting any work, ensure you are operating in a git worktree:
 
-1. **If already in a worktree** (current directory path contains `.claude/worktrees/`): proceed in the current directory.
+1. **If already in a worktree** (current directory path contains `~/faniverz-worktrees/`): proceed in the current directory.
 2. **If NOT in a worktree**: Create one:
    ```bash
-   git worktree add .claude/worktrees/bug-hunt-$(date +%s) -b bug-hunt-$(date +%s)
+   git worktree add ~/faniverz-worktrees/bug-hunt-$(date +%s) -b bug-hunt-$(date +%s)
    ```
    Then `cd` into the worktree directory before proceeding.
 
