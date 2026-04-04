@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabase.from('languages').select('id, code, name').order('name');
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('languages fetch error:', error);
+      return NextResponse.json({ error: 'Failed to fetch languages' }, { status: 500 });
     }
     return NextResponse.json(data);
   } catch {

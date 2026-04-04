@@ -160,7 +160,10 @@ export async function PATCH(req: NextRequest) {
         id ?? null,
         filters ?? null,
       );
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error('admin-crud error:', error);
+        return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
+      }
       return NextResponse.json(row);
     }
 
@@ -180,7 +183,10 @@ export async function PATCH(req: NextRequest) {
 
       filters ?? null,
     );
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('admin-crud error:', error);
+      return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
+    }
     return NextResponse.json(row);
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -219,7 +225,10 @@ export async function POST(req: NextRequest) {
       } /* v8 ignore stop */
 
       const { data: row, error } = await execRpc(auth.user.id, table, 'insert', data, null, null);
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error('admin-crud error:', error);
+        return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
+      }
       return NextResponse.json(row);
     }
 
@@ -229,7 +238,10 @@ export async function POST(req: NextRequest) {
     if (!auth) return unauthorizedResponse();
 
     const { data: row, error } = await execRpc(auth.user.id, table, 'insert', data, null, null);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('admin-crud error:', error);
+      return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
+    }
     return NextResponse.json(row);
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -287,7 +299,10 @@ export async function DELETE(req: NextRequest) {
       id ?? null,
       filters ?? null,
     );
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('admin-crud error:', error);
+      return NextResponse.json({ error: 'Operation failed' }, { status: 500 });
+    }
     return NextResponse.json(result ?? { success: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

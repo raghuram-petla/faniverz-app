@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error('[validations/scan] DB error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Validation scan failed' }, { status: 500 });
   }
 
   const results: ScanResult[] = [];

@@ -108,7 +108,7 @@ describe('GET /api/user-languages', () => {
     const res = await GET(makeGetRequest('user-1'));
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBe('Query failed');
+    expect(json.error).toBe('Failed to fetch language assignments');
   });
 
   it('returns 500 on unexpected exception', async () => {

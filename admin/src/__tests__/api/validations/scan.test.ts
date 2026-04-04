@@ -216,7 +216,7 @@ describe('POST /api/validations/scan', () => {
     const res = await POST(makeRequest({ entity: 'movies' }));
     expect(res.status).toBe(500);
     const data = await res.json();
-    expect(data.error).toBe('Connection failed');
+    expect(data.error).toBe('Validation scan failed');
   });
 
   it('classifies full R2 URLs correctly', async () => {

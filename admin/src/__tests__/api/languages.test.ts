@@ -67,7 +67,7 @@ describe('GET /api/languages', () => {
     const res = await GET(makeRequest());
     expect(res.status).toBe(500);
     const json = await res.json();
-    expect(json.error).toBe('DB error');
+    expect(json.error).toBe('Failed to fetch languages');
   });
 
   it('returns 500 on unexpected exception', async () => {
