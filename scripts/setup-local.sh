@@ -177,8 +177,8 @@ info "MinIO credentials injected into admin/.env.local"
 echo ""
 echo "Applying database migrations..."
 
-DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-TABLE_COUNT=$(psql "$DB_URL" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null || echo "0")
+DB_CONTAINER=$(docker ps --format '{{.Names}}' | grep 'supabase_db_' | head -1)
+TABLE_COUNT=$(docker exec "$DB_CONTAINER" psql -U postgres -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'" 2>/dev/null || echo "0")
 
 if [ "$FORCE_DB_RESET" = true ]; then
   supabase db reset

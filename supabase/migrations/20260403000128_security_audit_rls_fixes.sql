@@ -74,7 +74,10 @@ $$;
 -- ============================================================
 -- 5. FIX get_personalized_feed: enforce user ownership check
 -- Previously: p_user_id accepted any UUID, leaking preferences
+-- Must DROP first because the return type changed in a prior migration
+-- (movie_poster_image_type was added in 000124)
 -- ============================================================
+DROP FUNCTION IF EXISTS get_personalized_feed(uuid, text, integer, integer);
 CREATE OR REPLACE FUNCTION get_personalized_feed(
   p_user_id uuid DEFAULT NULL,
   p_filter text DEFAULT 'all',
@@ -102,6 +105,7 @@ RETURNS TABLE (
   downvote_count integer,
   movie_title text,
   movie_poster_url text,
+  movie_poster_image_type text,
   movie_release_date date,
   score numeric
 )
@@ -147,6 +151,7 @@ BEGIN
     nf.upvote_count, nf.downvote_count,
     m.title AS movie_title,
     m.poster_url AS movie_poster_url,
+    m.poster_image_type::text AS movie_poster_image_type,
     m.release_date AS movie_release_date,
     (
       (100.0 * EXP(-0.693 * EXTRACT(EPOCH FROM (now() - nf.published_at)) / 259200.0)) * 0.30
