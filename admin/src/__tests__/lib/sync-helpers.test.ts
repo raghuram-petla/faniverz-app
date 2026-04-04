@@ -359,14 +359,15 @@ describe('verifyAdminWithLanguages', () => {
 });
 
 describe('errorResponse', () => {
-  it('returns NextResponse with correct status and message', () => {
+  it('returns generic label-based message, never raw error details', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const err = new Error('Something broke');
+    const err = new Error('Connection refused: postgres://admin:secret@db.internal:5432');
 
     const response = errorResponse('sync', err, 500);
+    // Security: must NOT contain the raw error message (could leak DB credentials)
     expect(response).toEqual(
       expect.objectContaining({
-        body: { error: 'Something broke' },
+        body: { error: 'sync failed' },
         status: 500,
       }),
     );
@@ -388,16 +389,39 @@ describe('errorResponse', () => {
     consoleSpy.mockRestore();
   });
 
-  it('uses custom status code', () => {
+  it('uses custom status code with generic message', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const response = errorResponse('validation', new Error('bad input'), 400);
+    // Security: still uses generic label, not raw error
     expect(response).toEqual(
       expect.objectContaining({
-        body: { error: 'bad input' },
+        body: { error: 'validation failed' },
         status: 400,
       }),
     );
+
+    consoleSpy.mockRestore();
+  });
+
+  it('SECURITY: never exposes raw error messages with sensitive data', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const sensitiveErrors = [
+      new Error('FATAL: password authentication failed for user "postgres"'),
+      new Error('connect ECONNREFUSED 10.0.0.5:5432'),
+      new Error('Missing column "secret_key" in table "api_keys"'),
+    ];
+
+    for (const err of sensitiveErrors) {
+      const response = errorResponse('operation', err);
+      expect(response).toEqual(
+        expect.objectContaining({
+          body: { error: 'operation failed' },
+          status: 500,
+        }),
+      );
+    }
 
     consoleSpy.mockRestore();
   });

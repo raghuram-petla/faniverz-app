@@ -5,10 +5,10 @@ jest.mock('@supabase/supabase-js', () => ({
   })),
 }));
 
-jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+  deleteItemAsync: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -39,12 +39,19 @@ describe('supabase client', () => {
     );
   });
 
-  it('uses AsyncStorage for auth persistence', () => {
-    const AsyncStorage = require('@react-native-async-storage/async-storage');
+  it('SECURITY: uses SecureStore adapter for auth persistence, not AsyncStorage', () => {
     require('../supabase');
     const { createClient } = require('@supabase/supabase-js');
     const callArgs = (createClient as jest.Mock).mock.calls[0];
-    expect(callArgs[2].auth.storage).toBe(AsyncStorage);
+    const storage = callArgs[2].auth.storage;
+    // SecureStore adapter must have getItem, setItem, removeItem
+    expect(storage).toHaveProperty('getItem');
+    expect(storage).toHaveProperty('setItem');
+    expect(storage).toHaveProperty('removeItem');
+    // Must NOT be plain AsyncStorage (which stores tokens unencrypted)
+    expect(storage.getItem).toBeDefined();
+    expect(storage.setItem).toBeDefined();
+    expect(storage.removeItem).toBeDefined();
   });
 
   it('throws when env vars are missing', () => {

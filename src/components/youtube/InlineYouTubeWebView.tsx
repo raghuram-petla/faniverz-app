@@ -280,7 +280,7 @@ export function InlineYouTubeWebView({
       ref={webViewRef}
       testID="youtube-inline-webview"
       source={{ html, baseUrl: WEBVIEW_BASE_URL }}
-      originWhitelist={['*']}
+      originWhitelist={['https://*']}
       onMessage={handleMessage}
       allowsInlineMediaPlayback
       mediaPlaybackRequiresUserAction={false}
