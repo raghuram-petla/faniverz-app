@@ -58,6 +58,6 @@ export const POST = withSyncAdmin('Refresh actor', async ({ req, supabase, apiKe
       errors: [{ actorId, tmdbPersonId: actor.tmdb_person_id, message }],
     });
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Actor refresh failed' }, { status: 500 });
   }
 });

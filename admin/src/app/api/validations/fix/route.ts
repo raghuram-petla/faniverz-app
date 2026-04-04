@@ -88,7 +88,12 @@ export const POST = withMutationAdmin('Validations fix', async ({ req, supabase 
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       console.error(`[validations/fix] Error fixing ${item.id}.${item.field}:`, msg);
-      results.push({ id: item.id, field: item.field, status: 'failed', error: msg });
+      results.push({
+        id: item.id,
+        field: item.field,
+        status: 'failed',
+        error: 'Fix operation failed',
+      });
     }
   }
 

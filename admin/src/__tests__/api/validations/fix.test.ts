@@ -258,7 +258,7 @@ describe('POST /api/validations/fix', () => {
 
     const data = await res.json();
     expect(data.results[0].status).toBe('failed');
-    expect(data.results[0].error).toContain('Upload failed');
+    expect(data.results[0].error).toContain('Fix operation failed');
   });
 
   it('returns failed for unknown fixType', async () => {
@@ -300,7 +300,7 @@ describe('POST /api/validations/fix', () => {
 
     const data = await res.json();
     expect(data.results[0].status).toBe('failed');
-    expect(data.results[0].error).toContain('Cannot extract TMDB path');
+    expect(data.results[0].error).toContain('Fix operation failed');
   });
 
   it('handles DB update error on migrate_external', async () => {
@@ -340,7 +340,7 @@ describe('POST /api/validations/fix', () => {
 
     const data = await res.json();
     expect(data.results[0].status).toBe('failed');
-    expect(data.results[0].error).toContain('DB update failed');
+    expect(data.results[0].error).toContain('Fix operation failed');
   });
 
   it('handles regenerate_variants with HTTP URL (extracts key from URL)', async () => {
@@ -438,7 +438,7 @@ describe('POST /api/validations/fix', () => {
 
     const data = await res.json();
     expect(data.results[0].status).toBe('failed');
-    expect(data.results[0].error).toContain('Original image not found');
+    expect(data.results[0].error).toContain('Fix operation failed');
   });
 
   it('handles regenerate_variants for backdrop entity', async () => {
@@ -541,7 +541,7 @@ describe('POST /api/validations/fix', () => {
 
     const data = await res.json();
     expect(data.results[0].status).toBe('failed');
-    expect(data.results[0].error).toBe('Unknown error');
+    expect(data.results[0].error).toBe('Fix operation failed');
     consoleError.mockRestore();
   });
 

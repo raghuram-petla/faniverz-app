@@ -81,9 +81,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (err) {
     console.error('Stale items query failed:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Query failed' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Stale items query failed' }, { status: 500 });
   }
 }

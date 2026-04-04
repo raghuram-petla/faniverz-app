@@ -142,7 +142,7 @@ describe('POST /api/sync/refresh-actor', () => {
     const res = await POST(makeRequest({ actorId: 'actor-1' }));
     expect(res.status).toBe(500);
     const data = await res.json();
-    expect(data.error).toBe('TMDB fetch failed');
+    expect(data.error).toBe('Actor refresh failed');
     expect(mockCompleteSyncLog).toHaveBeenCalledWith(
       expect.anything(),
       'sync-log-1',
@@ -163,7 +163,7 @@ describe('POST /api/sync/refresh-actor', () => {
     const res = await POST(makeRequest({ actorId: 'actor-1' }));
     expect(res.status).toBe(500);
     const data = await res.json();
-    expect(data.error).toBe('Unknown error');
+    expect(data.error).toBe('Actor refresh failed');
   });
 
   it('returns 500 via errorResponse when outer try/catch fires', async () => {
