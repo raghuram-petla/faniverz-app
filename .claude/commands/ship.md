@@ -115,7 +115,7 @@ EOF
 
    The commit message should summarize the entire worktree's work (not repeat "Merge branch"). Use the same conventional commit format as step 6.
 
-   After merging, inform the user the worktree branch has been squash-merged into master and pushed. The worktree can now be cleaned up with `git worktree remove .claude/worktrees/<name>`.
+   After merging, inform the user the worktree branch has been squash-merged into master and pushed. **Do NOT delete the worktree** — leave it intact so the user can verify nothing was missed. The user will clean it up manually or via a separate command.
 
    **If NOT in a worktree** (working directly on master or a branch):
 
@@ -179,14 +179,7 @@ When work was done in a worktree (via `isolation: "worktree"` Agent), the change
    )"
    ```
 
-8. **Push master** and report the commit hash.
-
-9. **Clean up**: Remove the worktree and delete the branch after merge:
-   ```bash
-   git worktree remove <worktree-path>
-   git branch -D <worktree-branch>
-   git push origin --delete <worktree-branch> 2>/dev/null || true
-   ```
+8. **Push master** and report the commit hash. Inform the user the worktree is still intact for verification. They can clean it up with `git worktree remove <path> && git branch -D <branch>` when ready.
 
 ## Rules
 
