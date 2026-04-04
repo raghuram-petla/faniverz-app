@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
+// @edge: 'review' action_type exists in this union but is NOT covered by any ActivityFilter in FILTER_MAP below — review activities only appear under the 'all' filter tab, never under a dedicated tab.
 export type ActivityActionType = 'vote' | 'follow' | 'unfollow' | 'comment' | 'review';
 export type ActivityEntityType = 'movie' | 'actor' | 'production_house' | 'feed_item' | 'comment';
 export type ActivityFilter = 'all' | 'votes' | 'follows' | 'comments';

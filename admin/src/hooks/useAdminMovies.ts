@@ -223,7 +223,9 @@ export function useAdminMovies(
 }
 
 /** Fetch all movies (no pagination) — for dropdowns / selectors */
-// @edge limit(5000) on non-PH path — could be slow if movie count exceeds threshold
+// @edge limit(5000) on non-PH path — could be slow if movie count exceeds threshold.
+// @edge: no search parameter — returns ALL movies up to 5000. Used by sync page dropdowns;
+// if the DB exceeds 5000 movies, older movies silently disappear from the selector.
 // @boundary: selects only id + title to minimize payload — callers needing full Movie should use paginated hooks
 export function useAllMovies(productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;

@@ -112,6 +112,10 @@ export function useMovieEditFormSync(
     }
   }, [movie]);
 
+  // @contract: patches BOTH form and initialForm so the dock shows no changes for patched fields.
+  // Resets isFirstLoadRef so the next server refetch (triggered by cache invalidation after
+  // fill-fields) also overwrites the form — without this, the stale form values from before
+  // the fill would persist until a full page reload.
   const patchFormFields = (patch: Partial<MovieForm>) => {
     setForm((f) => ({ ...f, ...patch }));
     setInitialForm((f) => (f ? { ...f, ...patch } : f));

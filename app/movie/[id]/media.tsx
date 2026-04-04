@@ -54,6 +54,8 @@ export default function MediaScreen() {
   const titleWidth = useSharedValue(200);
   const titleHeight = useSharedValue(24);
   const navLeftWidth = useSharedValue(0);
+  // @coupling: useSnapScroll creates a binary snap — scroll past HERO_HEIGHT collapses the hero fully,
+  // scroll back expands it. This interacts with useMediaScrollAnimations for the poster/title morph.
   const {
     scrollRef,
     contentMinHeight,

@@ -10,7 +10,10 @@ import { ADMIN_STALE_5M } from '@/lib/query-config';
  */
 // @nullable: productionHouseIds — omit for super-admin (all stats); provide for PH-scoped stats
 // @contract: PH admins get totalUsers=0 because user count is not scoped to production houses
-// @boundary: uses estimated counts (head:true) for performance; not exact row counts
+// @boundary: uses estimated counts (head:true) for performance; not exact row counts.
+// @edge: estimated counts can be off by 10-20% on tables with recent bulk inserts/deletes
+// (Postgres ANALYZE hasn't run yet). Dashboard numbers may briefly show stale counts after
+// a large import operation.
 export function useDashboardStats(productionHouseIds?: string[]) {
   const hasPHScope = productionHouseIds && productionHouseIds.length > 0;
 

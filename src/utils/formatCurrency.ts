@@ -4,6 +4,7 @@
  */
 // @contract returns "$0" for zero/negative values; never returns undefined
 // @edge values between 1B and 999B display as "B", above 999B as "T"
+// @edge Infinity input produces "$InfinityB" — callers should guard against non-finite values
 export function formatCompactCurrency(amount: number): string {
   if (amount <= 0) return '$0';
 

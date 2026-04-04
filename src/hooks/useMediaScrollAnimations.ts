@@ -49,6 +49,7 @@ export function useMediaScrollAnimations({
    * @contract Computes the left edge of the available area for the collapsed group.
    * Centers the poster+title group between the nav buttons and the right screen edge.
    */
+  // @sync runs on UI thread ('worklet') — must not access React state or JS-side refs
   const getCollapsedGroupLeft = (titleVisualW: number, navW: number) => {
     'worklet';
     const groupW = POSTER_COLLAPSED_W + COLLAPSED_GAP + titleVisualW;
@@ -59,6 +60,7 @@ export function useMediaScrollAnimations({
   };
 
   // @boundary: p interpolates [0,1] over HERO_HEIGHT; clamped so over-scroll has no effect
+  // @assumes heroPosterCX/CY are measured after layout — stale values produce a jump on first scroll
   const animatedPosterStyle = useAnimatedStyle(() => {
     const s = scrollOffset.value;
     const p = interpolate(s, [0, HERO_HEIGHT], [0, 1], Extrapolation.CLAMP);

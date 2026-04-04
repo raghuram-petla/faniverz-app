@@ -37,6 +37,9 @@ const MOVIE_CHILD_TABLES = new Set([
 const forbiddenResponse = (msg: string) => NextResponse.json({ error: msg }, { status: 403 });
 
 /** @boundary Executes admin_crud RPC with audit attribution */
+// @edge: `table` is a raw string from the client — table whitelist validation happens inside
+// the admin_crud DB function (RPC), NOT in this route. If the RPC doesn't validate, any
+// table name is accepted. Check the admin_crud function definition in migrations for the whitelist.
 function execRpc(
   adminId: string,
   table: string,

@@ -26,6 +26,8 @@ const URL_TYPE_LABELS: Record<string, string> = {
 };
 
 // @contract: renders a single scan result row with variant status dots and fix action
+// @coupling: hasIssue() from useValidations determines whether checkbox + fix button render
+// @boundary: fix sends POST /api/validations/fix with the item's entity/field/id — server re-uploads to R2
 export function ValidationRow({
   item,
   isSelected,

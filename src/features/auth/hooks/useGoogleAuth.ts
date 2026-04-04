@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 export function useGoogleAuth() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // @edge: GoogleSignin.configure() is called once per app session (guarded by ref). If the env var changes during a hot reload in dev, the stale config persists until full app restart. In production this is harmless since env vars are baked at build time.
   const configured = useRef(false);
 
   const signInWithGoogle = async () => {

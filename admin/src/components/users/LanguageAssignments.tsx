@@ -34,6 +34,7 @@ export function LanguageAssignments({ userId, roleId }: LanguageAssignmentsProps
   const [selected, setSelected] = useState<string[]>([]);
 
   // @contract Fetch current assignments for this user
+  // @coupling: /api/user-languages GET returns user_languages rows; POST replaces all assignments (delete + insert)
   const { data: assignments, isLoading } = useQuery({
     queryKey: ['user-languages', userId],
     queryFn: async () => {

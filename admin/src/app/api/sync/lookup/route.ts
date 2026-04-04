@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       // @nullable: director may be null if TMDB has no crew data or no Director job entry
       const director = detail.credits.crew.find((c) => c.job === 'Director')?.name ?? null;
 
-      // @boundary: fetch images + providers + DB counts in parallel
+      // @sync: fetch images + providers + DB counts in parallel — 8 concurrent operations
       const movieId = existing?.id as string | undefined;
       const [images, providers, ...dbCounts] = await Promise.all([
         getMovieImages(tmdbId, tmdb.apiKey),

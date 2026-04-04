@@ -50,6 +50,8 @@ export function useSmartInfiniteQuery<TData extends { id: string }>({
   const [isRefreshingFirstPage, setIsRefreshingFirstPage] = useState(false);
   const hasExpandedRef = useRef(false);
   const hasTriggeredCacheRefreshRef = useRef(false);
+  // @edge JSON.stringify for key comparison means object key order matters —
+  // queryKey arrays with reordered elements will be treated as different keys
   const serializedKey = JSON.stringify(queryKey);
 
   // @sync Refs for values used inside async callbacks to avoid stale closures.

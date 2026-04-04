@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabaseAdmin();
   const entities: SummaryEntry[] = [];
 
-  // @sideeffect: runs one query per config entry (7 queries total)
+  // @sideeffect: runs one query per config entry (7 queries total) — sequential, not parallel
+  // @edge: each query selects the FULL column for every row; no pagination or count-only optimization.
+  // Profiles table with 100k+ users would return 100k rows just to count null vs external URLs.
   for (const config of SCAN_CONFIGS) {
     const { data, error } = await supabase.from(config.table).select(config.field);
 

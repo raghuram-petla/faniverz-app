@@ -44,7 +44,9 @@ export function useAdminReviews(search = '', ratingFilter = 0) {
 
       // Also match on joined movie title and profile display_name client-side
       // (PostgREST cannot OR across foreign table columns)
-      // @edge: applied after the server-side ID filter to catch cross-table matches not in tsvector
+      // @edge: applied after the server-side ID filter to catch cross-table matches not in tsvector.
+      // Same LIMIT issue as useAdminComments — client-side filter runs after .limit(200),
+      // so movie title or profile matches beyond the first 200 server-side results are invisible.
       if (search) {
         const lower = search.toLowerCase();
         return reviews.filter(

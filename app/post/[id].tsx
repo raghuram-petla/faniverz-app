@@ -80,7 +80,8 @@ export default function PostDetailScreen() {
   // --- Reply state ---
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
 
-  /** @contract Resolve parentCommentId: nested replies go under top-level parent */
+  /** @contract Resolve parentCommentId: nested replies always go under the top-level parent.
+   *  @invariant Max nesting depth is 1 — a reply to a reply still points to the root comment. */
   const handleReply = useCallback((comment: FeedComment) => {
     const parentId = comment.parent_comment_id ?? comment.id;
     setReplyTarget({
@@ -133,6 +134,7 @@ export default function PostDetailScreen() {
   const gatedDownvote = useMemo(() => gate(handleDownvote), [gate, handleDownvote]);
   const gatedBookmark = useMemo(() => gate(handleBookmark), [gate, handleBookmark]);
 
+  // @contract: own user ID routes to /profile (tab), other users route to /user/:id (standalone)
   const handleEntityPress = (entityType: FeedEntityType, entityId: string) => {
     if (entityType === 'user') {
       if (entityId === user?.id) {

@@ -123,7 +123,9 @@ export async function POST(request: NextRequest) {
     ...(entity === 'movies' ? ['backdrop_url'] : []),
   ].join(',');
 
-  // @sideeffect: queries all rows with non-null image URL
+  // @sideeffect: queries all rows with non-null image URL — no pagination, loads entire table
+  // @edge: Supabase default row limit is 1000; tables with 1000+ image rows will be silently truncated
+  // unless the server has a higher `PGRST_MAX_ROWS` setting
   const { data, error, count } = await supabase
     .from(config.table)
     .select(selectFields, { count: 'exact' })
@@ -229,7 +231,9 @@ async function objectExists(
   }
 }
 
-// @contract: simple concurrency limiter for HeadObject calls
+// @contract: simple concurrency limiter for HeadObject calls — max `limit` inflight at any time
+// @edge: shared mutable `idx` counter incremented without lock — safe in single-threaded JS event loop
+// but would race in a multi-threaded runtime
 async function withConcurrency<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
   const results: T[] = [];
   let idx = 0;

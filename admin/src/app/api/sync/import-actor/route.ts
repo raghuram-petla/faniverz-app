@@ -32,7 +32,9 @@ export const POST = withSyncAdmin('Import actor', async ({ req, supabase, apiKey
       TMDB_IMAGE.profile,
     );
 
-    // @sideeffect Upsert actor — creates new or updates existing
+    // @sideeffect Upsert actor — creates new or updates existing based on tmdb_person_id
+    // @edge: upsert overwrites ALL fields (name, bio, photo) — manual edits to an existing actor
+    // are silently overwritten on re-import. No merge strategy; TMDB data wins unconditionally.
     const { data: actor, error: upsertErr } = await supabase
       .from('actors')
       .upsert(

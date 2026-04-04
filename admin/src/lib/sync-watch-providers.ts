@@ -95,6 +95,9 @@ export async function syncWatchProvidersMultiCountry(
   // @contract: track which countries each platform serves for regions update
   const platformRegions = new Map<string, Set<string>>();
 
+  // @sync: iterates countries sequentially with nested sequential provider loops — O(countries * types * providers) DB writes.
+  // For a movie available in 50+ countries with 5+ providers each, this can exceed 1000 sequential upserts.
+  // No batching or bulk insert — each upsert is a separate round-trip to Supabase.
   let count = 0;
   for (const [countryCode, countryData] of Object.entries(results)) {
     let countryHasData = false;
@@ -153,6 +156,8 @@ export async function syncWatchProvidersMultiCountry(
   }
 
   // @sideeffect: merge new regions into each platform's regions array
+  // @sync: read-modify-write without locking — concurrent syncs for different movies can
+  // clobber each other's region updates if they read the same platform between writes.
   for (const [platformId, newRegions] of platformRegions) {
     const { data: plat } = await supabase
       .from('platforms')

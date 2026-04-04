@@ -23,6 +23,7 @@ type WatchlistEntryWithPlatformCount = WatchlistEntry & { _platformCount?: numbe
 
 // @contract: shared filter logic for watchlist entries — uses _platformCount from API response
 // to correctly classify streaming movies via deriveMovieStatus.
+// @edge: movies with status 'released' (not in theaters, not streaming) fall through both available and upcoming filters — they appear in neither category. A user who adds a released-but-not-streaming movie sees it vanish from all tabs until it gets a streaming platform entry.
 function categorizeEntries(entries: WatchlistEntryWithPlatformCount[]) {
   const available = entries.filter((e) => {
     if (e.status !== 'watchlist' || !e.movie) return false;
@@ -173,6 +174,7 @@ export function useWatchlistMutations() {
     },
   });
 
+  // @edge: no optimistic update for markWatched — the UI stays showing the movie as 'watchlist' status until the server roundtrip completes and invalidateAll refetches. For slow connections, the "Mark Watched" button can be tapped multiple times (no isPending guard shown in consumer UI).
   const markWatched = useMutation({
     mutationFn: ({ userId, movieId }: { userId: string; movieId: string }) =>
       markAsWatched(userId, movieId),
@@ -200,6 +202,7 @@ export function useWatchlistMutations() {
 
 // @coupling: used by useMovieAction and HeroCarousel to check if a movie is watchlisted.
 // @invariant: shares query key ['watchlist', userId] with useWatchlist — they read from the same cache.
+// @edge: watchlistSet only includes entries with status='watchlist', not 'watched'. A movie marked as watched is NOT in the set, so the "Add to Watchlist" button reappears for already-watched movies. This is intentional (re-watch support) but can confuse users who expect "watched" to imply "in watchlist".
 export function useWatchlistSet() {
   const { user } = useAuth();
   /* istanbul ignore next -- userId defaults to '' but query is disabled when empty */

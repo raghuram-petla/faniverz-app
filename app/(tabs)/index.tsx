@@ -45,6 +45,7 @@ import { deriveEntityType, getEntityId, FEED_PILLS } from '@/constants/feedHelpe
 import type { NewsFeedItem } from '@shared/types';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
+// @boundary Home feed tab — infinite-scroll feed with collapsible header, voting, bookmarks, comments
 export default function FeedScreen() {
   const isAndroid = Platform.OS === 'android';
   const { theme, colors } = useTheme();

@@ -51,7 +51,9 @@ export default function AccountScreen() {
     ]);
   };
 
-  // @sideeffect: irreversible — deletes the user's account and all associated data from Supabase
+  // @sideeffect: irreversible — deletes the user's account and all associated data from Supabase.
+  // @coupling: deleteAccount is a Supabase edge function (not a simple DELETE) — it cascades
+  // through reviews, watchlist, follows, notifications, and storage objects.
   // @edge: on success, navigates to profile tab where the user will see the logged-out state
   const handleDeleteAccount = () => {
     Alert.alert(t('profile.deleteAccount'), t('profile.deleteAccountConfirm'), [

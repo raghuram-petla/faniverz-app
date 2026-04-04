@@ -39,6 +39,7 @@ const TYPE_ICON: Record<string, NotificationIconConfig> = {
   reminder: { name: 'star-outline', bg: palette.yellow400 },
 };
 
+// @coupling: item.movie is a joined relation — null when the linked movie has been deleted from the DB
 function NotificationItem({
   item,
   onPress,

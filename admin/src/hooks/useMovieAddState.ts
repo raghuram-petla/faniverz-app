@@ -107,8 +107,11 @@ export function useMovieAddState() {
   // ── Shared handlers (updateField, toggleGenre, handleImageUpload, 6 remove handlers) ──
   const common = createCommonFormHandlers({ setForm, ...pending });
 
-  // @sideeffect Two-phase submit: Phase 1 creates movie, Phase 2 adds all child relations
-  // @edge If Phase 1 succeeds but Phase 2 fails, movie exists without its relations
+  // @sideeffect Two-phase submit: Phase 1 creates movie, Phase 2 adds all child relations.
+  // @edge If Phase 1 succeeds but Phase 2 fails, movie exists without its relations.
+  // The admin is redirected to the movie edit page where they can re-add the missing
+  // relations — but if the redirect also fails (unlikely), the movie is orphaned in the list
+  // with no cast/videos/posters. The admin can find it via search and manually add relations.
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     const validationErrors = validateMovieForm(form);

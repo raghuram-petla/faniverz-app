@@ -95,7 +95,9 @@ export const POST = withMutationAdmin('Validations fix', async ({ req, supabase 
   return NextResponse.json({ results });
 });
 
-// @sideeffect: downloads from TMDB, uploads to R2, updates DB
+// @sideeffect: downloads from TMDB, uploads to R2, updates DB — three sequential steps
+// @edge: not transactional — if R2 upload succeeds but DB update fails, the R2 object is orphaned.
+// Conversely, if upload fails, nothing is written (safe).
 async function handleMigrateExternal(
   r2: NonNullable<ReturnType<typeof getR2Client>>,
   supabase: SupabaseClient,

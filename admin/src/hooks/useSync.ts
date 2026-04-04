@@ -31,7 +31,9 @@ import type {
   TmdbSearchAllResult,
 } from '@/hooks/useSyncTypes';
 
-// @boundary Proxy to /api/sync/* routes — server handles TMDB API key securely
+// @boundary Proxy to /api/sync/* routes — server handles TMDB API key securely.
+// @coupling: all sync mutations share the same syncApi helper — a change to error handling
+// or auth here affects every sync operation (import, refresh, fill-fields, discover, search).
 async function syncApi<T>(path: string, body?: unknown): Promise<T> {
   const {
     data: { session },

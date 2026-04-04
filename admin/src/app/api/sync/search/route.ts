@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { data: supportedLangs } = await supabase.from('languages').select('code');
     const supportedCodes = new Set((supportedLangs ?? []).map((l) => l.code as string));
 
-    // @sideeffect parallel TMDB API calls for movies + persons
+    // @sync: parallel TMDB API calls for movies + persons — two independent external fetches
     // @nullable language — when provided, filters movies by original_language
     const [allMovieResults, personResults] = await Promise.all([
       searchMovies(query, tmdb.apiKey, language || undefined),
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
           )
         : allMovieResults;
 
-    // @sideeffect parallel DB lookups to mark existing items
+    // @sync: parallel DB lookups to mark existing items — two independent Supabase queries
     const movieTmdbIds = movieResults.map((m) => m.id);
     const personTmdbIds = personResults.map((p) => p.id);
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         : { data: [] },
     ]);
 
-    // @sideeffect check for potential title-based duplicates — movies in DB with matching
+    // @edge: check for potential title-based duplicates — movies in DB with matching
     // titles but no tmdb_id (manually added). Only check for TMDB movies not already matched.
     const existingTmdbIds = (movieExisting.data ?? []).map((r) => r.tmdb_id as number);
     // @contract Map tmdb_id → local movie id for "Edit" links on existing movies

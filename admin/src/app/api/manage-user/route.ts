@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
 
     if (action === 'ban') {
       // @assumes: 87600h = 10 years; effectively a permanent ban — Supabase Auth rejects all login attempts
+      // @edge: existing active sessions are NOT revoked — banned user stays logged in until their JWT expires
+      // (default 1 hour). Only new sign-in attempts are blocked.
       const { error } = await supabase.auth.admin.updateUserById(userId, {
         ban_duration: '87600h',
       });

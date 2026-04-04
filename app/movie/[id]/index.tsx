@@ -77,6 +77,8 @@ export default function MovieDetailScreen() {
   const [reviewBody, setReviewBody] = useState('');
   const [containsSpoiler, setContainsSpoiler] = useState(false);
 
+  // @invariant: tab order must match the UI layout — overview, media, cast, reviews
+  // @coupling: AnimatedTabBar renders these in order; the 'media' tab is handled specially (navigates to separate route)
   const tabs: DisplayTab[] = ['overview', 'media', 'cast', 'reviews'];
 
   if (movieLoading || !movie) {

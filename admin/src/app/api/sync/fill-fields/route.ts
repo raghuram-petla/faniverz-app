@@ -210,6 +210,7 @@ export const POST = withSyncAdmin('Fill fields', async ({ req, supabase, apiKey 
     return NextResponse.json({ movieId, updatedFields });
   } catch (err) {
     // @edge: surface TMDB rate-limit errors as 429 to the frontend
+    // @assumes: TMDB rate-limit errors contain literal '→ 429' string — set by tmdb.ts fetch wrapper
     if (err instanceof Error && err.message.includes('→ 429')) {
       return NextResponse.json({ error: err.message }, { status: 429 });
     }

@@ -134,6 +134,7 @@ export function PendingChangesDock({
 
 // @contract Compact pending change row for the bottom dock
 // @edge When inTheaters=true and date < releaseDate, shows date impact radio group
+// @coupling DateAction flow: 'premiere' sets movie.premiere_date, 'release_changed' updates movie.release_date, 'none' skips date update
 function DockRow({
   change,
   onDateChange,

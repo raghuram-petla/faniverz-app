@@ -56,8 +56,9 @@ export default function UsersPage() {
     users?.filter((u) => u.role_id === 'super_admin' && u.status === 'active').length ?? 0;
 
   // Each role only sees users at their own level and below
-  // @boundary Role hierarchy enforced client-side — higher-ranked users are hidden.
+  // @boundary Role hierarchy enforced client-side ONLY — higher-ranked users are hidden.
   // Server-side does NOT duplicate this filter, so the API returns all users regardless of caller role.
+  // @edge: a compromised admin client could see all users by bypassing this filter — server trusts the client
   const ROLE_RANK: Record<string, number> = {
     root: 4,
     super_admin: 3,

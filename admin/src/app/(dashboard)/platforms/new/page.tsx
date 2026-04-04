@@ -62,6 +62,8 @@ export default function NewPlatformPage() {
   // @contract Platform ID is client-generated (slug + 4-char random suffix) — NOT a UUID.
   // @edge Collision risk is low but nonzero; DB has a unique constraint on platforms.id that
   // will reject duplicates, surfacing as a mutation error.
+  // @coupling: display_order hardcoded to 0 — all new platforms sort to the top unless manually reordered.
+  // color defaults to zinc900 from shared colors palette.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;

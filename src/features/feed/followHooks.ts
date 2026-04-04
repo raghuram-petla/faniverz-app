@@ -99,6 +99,7 @@ export function useEnrichedFollows() {
 }
 
 /** @contract Paginated version of useEnrichedFollows using smart infinite query */
+// @coupling: invalidated by useFollowEntity/useUnfollowEntity via ['enriched-follows'] prefix, but this uses key ['enriched-follows-paginated'] which does NOT match that prefix. Follow/unfollow mutations won't refresh the paginated list — it only updates on staleTime expiry or manual refetch.
 export function useEnrichedFollowsPaginated() {
   const { user } = useAuth();
   const userId = user?.id;

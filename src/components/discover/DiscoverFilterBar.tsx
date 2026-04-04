@@ -47,6 +47,7 @@ export function DiscoverFilterBar({
         )}
       </TouchableOpacity>
       <TouchableOpacity style={styles.sortButton} onPress={onToggleSortDropdown}>
+        {/** @nullable find may return undefined if sortBy doesn't match any SORT_OPTIONS value — renders empty text */}
         <Text style={styles.filterBarText}>
           {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
         </Text>

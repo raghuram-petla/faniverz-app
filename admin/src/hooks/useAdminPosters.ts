@@ -56,6 +56,9 @@ export function useSetMainPoster() {
       // @sideeffect: theater views display poster images
       qc.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
       qc.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
+      // @sideeffect: upcoming views also display poster_url
+      qc.invalidateQueries({ queryKey: ['admin', 'upcoming-movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'upcoming-rereleases'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Failed to set main poster');
@@ -101,6 +104,9 @@ export function useSetMainBackdrop() {
       qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
       qc.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
       qc.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
+      // @sideeffect: upcoming views also display backdrop_url
+      qc.invalidateQueries({ queryKey: ['admin', 'upcoming-movies'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'upcoming-rereleases'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Failed to set main backdrop');

@@ -33,6 +33,7 @@ export const useFilterStore = create<FilterState>((set) => ({
   setFilter: (filter) => set({ selectedFilter: filter }),
 
   // @contract toggles genre in/out of selection — idempotent for same value
+  // @edge uses .includes() for lookup — O(n) per call; acceptable for small filter lists (<50 items)
   toggleGenre: (genre) =>
     set((state) => ({
       selectedGenres: state.selectedGenres.includes(genre)

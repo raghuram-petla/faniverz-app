@@ -54,6 +54,7 @@ export function ExistingMovieSync({
       if (!token || cancelled) return;
 
       // @edge sequential fetches to avoid TMDB rate limits (40 req/10s); no parallelism
+      // @sideeffect each fetch calls /api/sync/lookup which itself calls TMDB API — one HTTP roundtrip per movie
       for (const m of moviesToFetch) {
         /* v8 ignore start */
         if (cancelled) break;

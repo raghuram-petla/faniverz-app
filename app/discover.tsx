@@ -84,7 +84,9 @@ export default function DiscoverScreen() {
     }
   }, [params.filter, params.platform, setFilter, togglePlatform]);
 
-  // @contract: only movieStatus and sortBy are sent to the API; genre/platform/PH filtering is client-side
+  // @contract: only movieStatus and sortBy are sent to the API; genre/platform/PH filtering is client-side.
+  // @edge: this means totalItems for pagination is the server count, but displayed items may be fewer
+  // after client-side filters. The user can hit "load more" and see no new visible results.
   const filters = useMemo(
     () => ({
       ...(selectedFilter !== 'all' && { movieStatus: selectedFilter }),

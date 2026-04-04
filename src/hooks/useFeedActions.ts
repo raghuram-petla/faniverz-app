@@ -124,6 +124,8 @@ export function useFeedActions({
     [setCommentSheetItemId],
   );
 
+  // @sync gate() wraps at useMemo time — if auth state changes (login/logout),
+  // the gate dep updates and all gated callbacks are re-wrapped in the same render
   const gatedUpvote = useMemo(() => gate(handleUpvote), [gate, handleUpvote]);
   const gatedDownvote = useMemo(() => gate(handleDownvote), [gate, handleDownvote]);
   const gatedFollow = useMemo(() => gate(handleFollow), [gate, handleFollow]);

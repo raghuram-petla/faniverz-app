@@ -67,6 +67,10 @@ export function useAddCast() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] });
+      // @sideeffect: movie list actor filter depends on movie_cast junction
+      qc.invalidateQueries({ queryKey: ['admin', 'actor-movie-ids'] });
+      // @sideeffect: PH-scoped dashboard totalActors counts unique actors via movie_cast
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -84,6 +88,10 @@ export function useRemoveCast() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movieId] });
+      // @sideeffect: movie list actor filter depends on movie_cast junction
+      qc.invalidateQueries({ queryKey: ['admin', 'actor-movie-ids'] });
+      // @sideeffect: PH-scoped dashboard totalActors counts unique actors via movie_cast
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -92,7 +100,11 @@ export function useRemoveCast() {
 }
 
 // @sideeffect: updates display_order for each cast item via /api/admin-crud
-// @edge: partial failure — some items may update before the first error is detected
+// @edge: partial failure — some items may update before the first error is detected.
+// Promise.all rejects on first failure, leaving remaining updates unattempted while
+// earlier ones are already persisted. The admin sees "Operation failed" but some
+// display_order values are already changed — a retry re-sends ALL items, overwriting
+// the partial state. Safe but wasteful.
 // @sync: all updates run in parallel via Promise.all; no transaction wrapping
 export function useUpdateCastOrder() {
   const qc = useQueryClient();

@@ -92,6 +92,7 @@ export async function fetchEnrichedFollows(userId: string): Promise<EnrichedFoll
 
 // @contract: Paginated version of fetchEnrichedFollows — fetches a page of follows then enriches them.
 // `offset` is absolute row offset, `limit` is number of follows to fetch.
+// @edge: enrichment queries (movies, actors, houses, profiles) have no .limit() — if a single page of follows references 100+ unique entities of one type, the .in() call fetches all of them in one query. For typical page sizes (10 follows) this is fine, but edge cases with broad follows could produce large payloads.
 export async function fetchEnrichedFollowsPaginated(
   userId: string,
   offset: number,

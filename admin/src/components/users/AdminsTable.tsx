@@ -30,7 +30,9 @@ export interface AdminsTableProps {
   isRevokePending: boolean;
 }
 
-/** All non-root roles for dropdown (filtered per-user by canManageAdmin) */
+/** All non-root roles for dropdown (filtered per-user by canManageAdmin)
+ *  @sync must match AdminRoleId union in @/lib/types (minus 'root' and 'viewer' which are not assignable)
+ *  @coupling canManageAdmin from usePermissions enforces hierarchy — never shows roles at or above caller's level */
 const ALL_CHANGEABLE_ROLES: { value: AdminRoleId; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin' },
   { value: 'admin', label: 'Faniverz Admin' },

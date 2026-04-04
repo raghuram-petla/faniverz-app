@@ -31,6 +31,7 @@ export const useCalendarStore = create<CalendarState>((set) => ({
   // @edge wraps month overflow/underflow across year boundaries (Dec->Jan, Jan->Dec)
   // @sideeffect clears selectedDay on month navigation to prevent invalid day selection
   // @contract: uses fresh Date() on each call to avoid stale midnight crossing
+  // @assumes direction is always exactly 1 or -1 — larger jumps (e.g., +-12) are not supported
   navigateMonth: (direction) =>
     set((state) => {
       const fresh = new Date();

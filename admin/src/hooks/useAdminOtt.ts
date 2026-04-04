@@ -39,6 +39,8 @@ export function useAddMoviePlatform() {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', data.movie_id] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
       qc.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
+      // @sideeffect: movie list platform filter depends on movie_platforms junction
+      qc.invalidateQueries({ queryKey: ['admin', 'platform-filter-ids'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -61,6 +63,8 @@ export function useRemoveMoviePlatform() {
       qc.invalidateQueries({ queryKey: ['admin', 'movie_platforms', variables.movieId] });
       qc.invalidateQueries({ queryKey: ['admin', 'ott'] });
       qc.invalidateQueries({ queryKey: ['admin', 'platform-movie-ids'] });
+      // @sideeffect: movie list platform filter depends on movie_platforms junction
+      qc.invalidateQueries({ queryKey: ['admin', 'platform-filter-ids'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');

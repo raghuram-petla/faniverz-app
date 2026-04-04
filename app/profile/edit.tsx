@@ -48,7 +48,9 @@ export default function EditProfileScreen() {
   const [location, setLocation] = useState('');
   const [bio, setBio] = useState('');
 
-  // @contract: only populates form on initial load to avoid overwriting user's unsaved edits
+  // @contract: only populates form on initial load to avoid overwriting user's unsaved edits.
+  // @edge: if the user navigates away and back, initializedRef stays true (component remounts)
+  // so the form will be re-populated from the fresh profile query, which is correct.
   const initializedRef = useRef(false);
   useEffect(() => {
     if (profile && !initializedRef.current) {

@@ -24,6 +24,7 @@ type BookmarkMap = Record<string, true>;
 const BOOKMARK_FEED_QUERY_KEYS = ['news-feed', 'personalized-feed', 'bookmarked-feed'] as const;
 
 // @coupling: fetchBookmarkedFeed is only called when userId is defined — resolves empty when anonymous
+// @edge: query key includes userId, but BOOKMARK_FEED_QUERY_KEYS only lists 'bookmarked-feed' (no userId segment). The invalidation in useBookmarkFeedItem.onSettled uses prefix match on ['bookmarked-feed'] which covers all userId variants — correct behavior, but if someone changes the key to not include 'bookmarked-feed' as first segment, invalidation breaks.
 export function useBookmarkedFeed() {
   const { user } = useAuth();
   const userId = user?.id ?? /* istanbul ignore next */ null;

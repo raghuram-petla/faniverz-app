@@ -81,6 +81,8 @@ async function buildTargetUser(targetUserId: string): Promise<AdminUser | null> 
   };
 }
 
+// @sideeffect: uses browser Supabase client (anon key + RLS) — the update succeeds because
+// admin_impersonation_sessions has a policy allowing users to update their own rows.
 // @sideeffect: sets is_active=false and ended_at on ALL active sessions for this user,
 // not just the current one. If the user has stale 'running' sessions from browser crashes,
 // they're all cleaned up here. This is safe because a user can only have one active

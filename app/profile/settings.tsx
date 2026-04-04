@@ -63,6 +63,8 @@ export default function SettingsScreen() {
     AsyncStorage.setItem(key, String(!cur));
   };
   // @coupling: toggle keys must match the 'key' field in section row definitions below
+  // @contract: toggleMap keys must match 'key' fields in section row definitions below.
+  // @sync: push/email prefs persist to AsyncStorage only (no backend sync); animations/filmStrip persist via Zustand + AsyncStorage.
   const toggleMap: Record<string, { value: boolean; setter: () => void }> = {
     push: {
       value: pushEnabled,

@@ -24,6 +24,7 @@ interface DiscoverFilterModalProps {
   styles: Record<string, any>;
 }
 
+/** @coupling SortDropdown component imports SORT_OPTIONS for its dropdown menu items */
 export const SORT_OPTIONS = [
   { value: 'popular' as const, label: 'Popular' },
   { value: 'top_rated' as const, label: 'Rating' },
