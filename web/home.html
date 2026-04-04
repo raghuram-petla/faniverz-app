@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Faniverz — Global Movie Discovery</title>
+    <meta name="description" content="Track theatrical releases, streaming availability across platforms worldwide, manage your watchlist, write reviews, and discover surprise content — all in one place."/>
+    <link rel="icon" type="image/x-icon" href="sources/favicon.ico"/>
+    <link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400;700;800;900&amp;family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config" src="tailwind.config.js"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="styles.css" rel="stylesheet"/>
+</head>
+<body class="selection:bg-primary-container selection:text-white">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-transparent backdrop-blur-xl bg-gradient-to-b from-black/80 to-transparent">
+    <div class="flex justify-between items-center w-full px-8 py-4 max-w-7xl mx-auto">
+        <div class="flex items-center gap-2">
+            <img alt="FANIVERZ" class="h-8 w-auto" src="sources/faniverz%20logo.png"/>
+        </div>
+        <div class="hidden md:flex items-center gap-8">
+            <a class="font-['Epilogue'] tracking-tight text-red-500 font-bold border-b-2 border-red-600 pb-1" href="#">Movies</a>
+            <a class="font-['Epilogue'] tracking-tight text-gray-300 hover:text-white transition-colors" href="#">Series</a>
+            <a class="font-['Epilogue'] tracking-tight text-gray-300 hover:text-white transition-colors" href="#">Originals</a>
+        </div>
+        <div class="flex items-center gap-4">
+            <button class="material-symbols-outlined text-gray-300 hover:text-red-400 transition-all duration-300 cursor-pointer">search</button>
+            <button class="bg-primary-container text-on-primary-container px-6 py-2 rounded-lg font-bold hover:scale-95 transition-transform">Sign In</button>
+        </div>
+    </div>
+</nav>
+<!-- Hero Section -->
+<header class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+    <!-- Background Imagery -->
+    <div class="absolute inset-0 z-0">
+        <div class="absolute inset-0 bg-gradient-to-r from-surface via-surface/60 to-transparent z-10"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent z-10"></div>
+        <!-- <img alt="Cinematic Hero" class="w-full h-full object-cover" src="sources/actor_prabhas.jpeg"/> -->
+    </div>
+    <div class="relative z-20 max-w-7xl mx-auto px-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7 space-y-8">
+            <div class="inline-flex items-center px-3 py-1 rounded-full bg-surface-container-high border border-outline-variant/20 text-tertiary text-xs font-bold uppercase tracking-widest">
+                <span class="mr-2 flex h-2 w-2 rounded-full bg-red-600 animate-pulse"></span>
+                Now Streaming Everywhere
+            </div>
+            <h1 class="font-headline text-5xl md:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter text-white">
+                Discover Your Next <br/> <span class="text-red-600 text-glow">Favorite Movie</span>, <br/> Anywhere.
+            </h1>
+            <p class="font-body text-lg md:text-xl text-on-surface-variant max-w-xl leading-relaxed">
+                Track theatrical releases, streaming availability, manage your watchlist, and write reviews — all in one place. Your ultimate companion for global cinema.
+            </p>
+            <div class="flex flex-wrap gap-4 pt-4">
+                <a class="flex items-center gap-3 bg-white text-black px-8 py-4 rounded-xl font-bold hover:bg-gray-200 transition-all transform hover:-translate-y-1" href="#">
+                    <img alt="App Store" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_na1s4L6mm-IQkpHR-SG5UW-CUvMijh_0h4zbXNo051Y6WlJ0BNhFXbRr0OFmUUUcbDYGbaIpeTp4QStnA0j5jEPEvF-42cZsL18VFEGfwh2FV5EyFC4jdYfCWE50bwTxC2vl6gwA3MVVr9KBpXqe6VjNfLO46_-95qJ56hHscs1V1Vi6twOZWxqI5poEcEINgo6K8jRMSZKvd-UZ1qp-Rv5d4J35xNo7fv0cyHDPZ6vwrp7yLeyBRy7xm5Igc_8nLT_DnafQZ-Gl"/>
+                    <div class="flex flex-col items-start leading-none">
+                        <span class="text-[10px] uppercase font-medium">Download on the</span>
+                        <span class="text-lg">App Store</span>
+                    </div>
+                </a>
+                <a class="flex items-center gap-3 bg-surface-bright text-white px-8 py-4 rounded-xl font-bold hover:bg-surface-container-highest transition-all transform hover:-translate-y-1 border border-outline-variant/10" href="#">
+                    <img alt="Google Play" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6Qry-6b_iqtIncqmUyxn6x3EncYQRI8-t82m3fVXxIUnnuaGJBuEDBaF_HekdmLzt5dxNq5DjeO37Y3mdaoqqUM2UTcLUDu03zeU1xqDdlM8jhW9QVRiUQIncBPPXFhc7V3vfjkE5TYvM1FYdoxa_wW_OD6Malwog7y6hwziE0oDvwT6CsgTSwmlxbpE4lXWQASDgMQgCLUWRI15XJXvnXgwRT9J75zXMWVyxpzLwiPOxcYeaitNdkZ1Ct5SIgbkZOIc9zagUpMGe"/>
+                    <div class="flex flex-col items-start leading-none">
+                        <span class="text-[10px] uppercase font-medium">Get it on</span>
+                        <span class="text-lg">Google Play</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+<!-- Key Features Section (Bento Grid) -->
+<section class="py-32 px-8 bg-surface-container-low">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-20">
+            <h2 class="font-headline text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">The Future of Movie Discovery</h2>
+            <p class="font-body text-on-surface-variant text-lg">Curated features designed for the modern cinephile.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Global Discovery -->
+            <div class="group bg-surface-container-high p-8 rounded-xl border border-outline-variant/5 hover:border-red-600/30 transition-all duration-500">
+                <div class="w-14 h-14 bg-primary-container/10 rounded-lg flex items-center justify-center mb-6 text-red-500 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">public</span>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4">Global Discovery</h3>
+                <p class="font-body text-on-surface-variant leading-relaxed">
+                    Find movies across 100+ countries and every major streaming platform. Never wonder "where can I watch this" again.
+                </p>
+            </div>
+            <!-- Smart Watchlist -->
+            <div class="group bg-surface-container-high p-8 rounded-xl border border-outline-variant/5 hover:border-red-600/30 transition-all duration-500">
+                <div class="w-14 h-14 bg-tertiary-container/10 rounded-lg flex items-center justify-center mb-6 text-tertiary group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">bookmarks</span>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4">Smart Watchlist</h3>
+                <p class="font-body text-on-surface-variant leading-relaxed">
+                    Organize by mood, genre, or platform. Receive notifications when a theatrical release hits your favorite streaming service.
+                </p>
+            </div>
+            <!-- Real Reviews -->
+            <div class="group bg-surface-container-high p-8 rounded-xl border border-outline-variant/5 hover:border-red-600/30 transition-all duration-500">
+                <div class="w-14 h-14 bg-primary-container/10 rounded-lg flex items-center justify-center mb-6 text-red-500 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-3xl">rate_review</span>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4">Real Reviews</h3>
+                <p class="font-body text-on-surface-variant leading-relaxed">
+                    Join a global community of critics and enthusiasts. Share your voice and get recommendations from people, not just algorithms.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- App Showcase -->
+<section class="py-32 overflow-hidden bg-surface relative">
+    <div class="max-w-7xl mx-auto px-8 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div class="relative order-2 lg:order-1">
+            <div class="absolute -inset-10 bg-red-600/20 blur-[100px] rounded-full z-0"></div>
+            <div class="relative z-10 mx-auto max-w-[320px] bg-black rounded-[3rem] p-4 border-8 border-surface-container-highest shadow-2xl">
+                <div class="rounded-[2.5rem] overflow-hidden">
+                    <img alt="Faniverz Mobile Interface" class="w-full aspect-[9/19.5] object-cover" src="sources/mobile_interface.png"/>
+                </div>
+            </div>
+        </div>
+        <div class="order-1 lg:order-2 space-y-8">
+            <h2 class="font-headline text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">Your Cinema Universe, <br/> <span class="text-red-500">In Your Pocket.</span></h2>
+            <div class="space-y-6">
+                <div class="flex items-start gap-4">
+                    <span class="material-symbols-outlined text-red-500 bg-red-500/10 p-2 rounded-lg">speed</span>
+                    <div>
+                        <h4 class="text-xl font-bold mb-1">Blazing Fast Search</h4>
+                        <p class="text-on-surface-variant">Find any title in seconds with our optimized global database.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4">
+                    <span class="material-symbols-outlined text-red-500 bg-red-500/10 p-2 rounded-lg">notifications_active</span>
+                    <div>
+                        <h4 class="text-xl font-bold mb-1">Price Drop Alerts</h4>
+                        <p class="text-on-surface-variant">Get notified when a movie you want is on sale or free on OTT.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-4">
+                    <span class="material-symbols-outlined text-red-500 bg-red-500/10 p-2 rounded-lg">offline_pin</span>
+                    <div>
+                        <h4 class="text-xl font-bold mb-1">Offline Access</h4>
+                        <p class="text-on-surface-variant">Manage your watchlist and read cached reviews even without internet.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Download CTA Reinforcement -->
+<section class="py-24 px-8 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-red-600/20 to-transparent z-0"></div>
+    <div class="max-w-5xl mx-auto bg-surface-container-high rounded-3xl p-12 md:p-20 relative z-10 border border-outline-variant/10 text-center">
+        <h2 class="font-headline text-4xl md:text-6xl font-black mb-8 leading-none">Ready to start your <br/> next journey?</h2>
+        <p class="font-body text-on-surface-variant text-lg md:text-xl mb-12 max-w-2xl mx-auto">Join over ________ movie lovers exploring the best of global cinema every single day.</p>
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-6">
+            <a class="w-full sm:w-auto flex items-center justify-center gap-4 bg-white text-black px-10 py-5 rounded-2xl font-bold hover:bg-gray-100 transition-all shadow-xl hover:shadow-white/5 group" href="#">
+                <img alt="App Store" class="w-8 h-8 group-hover:scale-110 transition-transform" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC54tUsyyi3jHNbNLvseYwKJIpZWk7C935RnvtBHgvCbhFVXoiKtSjYhAUnlwttCeJqLDieUhyYGWIu50zvbpoDirBdJYfbl8MukC61UC_E9tLb9MzXO5X6Gwi7mBNnXCo1swum34UI5jj9oj6CVjPLmHLRi_dCbFgFgKJ3LhchtUolam2lNpVJ_XV2MqXfWbBTqSRY1G0JMDQdHUPOItJXlZFDk1RYOJwDsIhk4vUPN5HEgxXQa84bPN-h_egVrjAZdJWAd36LlBZk"/>
+                <div class="flex flex-col items-start leading-none">
+                    <span class="text-xs uppercase font-semibold text-black/60">App Store</span>
+                    <span class="text-2xl">Download</span>
+                </div>
+            </a>
+            <a class="w-full sm:w-auto flex items-center justify-center gap-4 bg-primary-container text-white px-10 py-5 rounded-2xl font-bold hover:bg-red-700 transition-all shadow-xl hover:shadow-red-600/20 group" href="#">
+                <img alt="Google Play" class="w-8 h-8 group-hover:scale-110 transition-transform" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOohLf4MU6D-0yJvbpAepsCYaweXXygdtILHG4rGgslAcjKRsy3gU1rOL8pHquptWxdDSov3HrzPwJtjuGP5cpMX3EOx7HVfpTFMjyANRjr9m1nbCq_Bpc7nTzC66pRELfEMs5u6TPUFKZLEwz36hhF4nQ9MSPg3QYG9fFpZo2oYGoxmWFWL4NE3rkhpLbOk15eXMFz5RzeKjBhVkZqfhyrkab6UuYPn8qnyX4Mllah7vps4cO8vUobvhZRm1gEvX0ef-2CrJOLShv"/>
+                <div class="flex flex-col items-start leading-none">
+                    <span class="text-xs uppercase font-semibold text-white/60">Google Play</span>
+                    <span class="text-2xl">Get it on</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+<!-- Footer -->
+<footer class="bg-[#0e0e0e] w-full py-12 px-8">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+        <div class="flex flex-col items-center md:items-start gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-lg font-bold text-red-600 font-['Epilogue'] tracking-tighter">FANIVERZ</span>
+            </div>
+            <p class="font-['Manrope'] text-sm uppercase tracking-widest text-gray-500">© 2026 FANIVERZ. ALL RIGHTS RESERVED.</p>
+        </div>
+        <div class="flex flex-wrap justify-center gap-8">
+            <a class="font-['Manrope'] text-sm uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+            <a class="font-['Manrope'] text-sm uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+            <a class="font-['Manrope'] text-sm uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors opacity-80 hover:opacity-100" href="#">Help Center</a>
+            <a class="font-['Manrope'] text-sm uppercase tracking-widest text-gray-500 hover:text-red-500 transition-colors opacity-80 hover:opacity-100" href="#">Cookie Preferences</a>
+        </div>
+        <div class="flex gap-4">
+            <a class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-gray-500 hover:text-red-500 transition-all border border-outline-variant/10" href="#">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"></path></svg>
+            </a>
+            <a class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-gray-500 hover:text-red-500 transition-all border border-outline-variant/10" href="#">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path></svg>
+            </a>
+        </div>
+    </div>
+</footer>
+</body></html>
+
+<!--claude &#45;resume 27ffe390-f0ee-4a37-a480-80121b25081a-->
