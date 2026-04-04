@@ -16,7 +16,9 @@ function invalidateAll(queryClient: ReturnType<typeof useQueryClient>) {
   INVALIDATE_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
 }
 
-// @contract Fetches all movies currently marked as in_theaters, ordered by release_date desc
+// @contract Fetches all movies currently marked as in_theaters, ordered by release_date desc.
+// @edge: no limit — if in_theaters is accidentally set to true for many movies (e.g. bulk update bug),
+// this returns all of them in a single query. The Theaters page has no pagination.
 export function useTheaterMovies() {
   return useQuery({
     queryKey: ['admin', 'theater-movies'],

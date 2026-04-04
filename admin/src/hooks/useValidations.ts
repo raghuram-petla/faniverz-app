@@ -84,8 +84,11 @@ export function useValidations() {
     abortRef.current = true;
   }, []);
 
-  // @sideeffect: sends selected items to fix endpoint in batches of 10
-  // @edge: partial failure — earlier batches persist even if a later batch fails
+  // @sideeffect: sends selected items to fix endpoint in batches of 10.
+  // @edge: partial failure — earlier batches persist even if a later batch fails.
+  // Fixed items are marked as 'ok' in the UI immediately; failed items stay selected.
+  // @sync: no abort mechanism for fixSelected — once started, all batches run to completion.
+  // The stopScan abort only affects the scan loop, not the fix loop.
   const fixSelected = useCallback(async () => {
     const items = getSelectedFixItems(scanResults, selectedItems);
     if (items.length === 0) return;

@@ -98,6 +98,9 @@ export function useActiveVideo(): UseActiveVideoReturn {
     // @edge avoids unnecessary re-renders by skipping setState when activeVideoId hasn't changed
     setActiveVideoId((prev) => (prev === bestActiveId ? prev : bestActiveId));
     setPreloadedVideoId((prev) => (prev === bestPreloadedId ? prev : bestPreloadedId));
+    // @edge shallow array comparison is order-sensitive — if the same set of IDs appears in
+    // different order (e.g., due to Map iteration order changing after delete+set), this
+    // will trigger a re-render even though the mounted set is logically identical
     setMountedVideoIds((prev) =>
       prev.length === nextMountedVideoIds.length &&
       prev.every((id, index) => id === nextMountedVideoIds[index])

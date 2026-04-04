@@ -54,6 +54,8 @@ export default function SearchScreen() {
   /* istanbul ignore next */
   const { data: allMovies = [], refetch: refetchMovies } = useMovies();
   // @assumes: "trending" is approximated by highest rating; no dedicated trending API
+  // @edge: sorts the entire allMovies array on every render cycle when allMovies changes;
+  // allMovies is the same full catalog used by SpotlightScreen (not paginated)
   const trendingMovies = useMemo(
     () => [...allMovies].sort((a, b) => b.rating - a.rating).slice(0, 5),
     [allMovies],

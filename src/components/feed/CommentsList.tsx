@@ -69,6 +69,7 @@ export function CommentsList({
             onLike={onLike ? () => onLike(comment.id) : undefined}
             onUnlike={onUnlike ? () => onUnlike(comment.id) : undefined}
           />
+          {/** @edge reply_count is denormalized on the comment row — may drift if a reply was deleted without updating the parent count */}
           {comment.reply_count > 0 ? (
             <CommentReplies
               parentComment={comment}

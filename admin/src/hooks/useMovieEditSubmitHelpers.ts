@@ -94,7 +94,10 @@ export async function buildChildMutationPromises(deps: MovieEditHandlerDeps) {
   const willInsertMain = pendingPostersToAdd.some((p) => p.is_main_poster);
 
   // @edge if a pending poster will be main, unset is_main_poster on existing DB posters first
-  // (must be sequential — DB unique constraint rejects two is_main_poster=true rows)
+  // (must be sequential — DB partial unique index rejects two is_main_poster=true rows).
+  // @sync: this await creates a sequential dependency within the otherwise-parallel Promise.allSettled
+  // in handleSubmit — the unset MUST complete before addPoster fires, or the insert violates the
+  // partial unique index. If the unset fails silently (.catch(() => {})), the add will also fail.
   if (willInsertMain) {
     const { crudFetch } = await import('@/lib/admin-crud-client');
     await crudFetch('PATCH', {

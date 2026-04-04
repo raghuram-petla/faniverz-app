@@ -111,6 +111,8 @@ export default function InviteAdminPage() {
   const isAdminRole = roleId === 'admin';
 
   // @sideeffect: creates admin_invitations row with 7-day token, then displays invite link
+  // @coupling: invite link format `?invite=<token>` must match login page's token detection.
+  // The token is auto-accepted on Google OAuth sign-in via accept-invitation route.
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim() || !user?.id) return;

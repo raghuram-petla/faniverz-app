@@ -260,6 +260,7 @@ export function InlineYouTubeWebView({
     if (pauseToken > 0) injectCommand('pause');
   }, [injectCommand, pauseToken]);
 
+  // @edge empty catch swallows malformed messages from WebView (e.g., third-party scripts posting non-JSON strings)
   const handleMessage = useCallback(
     (event: WebViewMessageEvent) => {
       try {
@@ -272,6 +273,8 @@ export function InlineYouTubeWebView({
     [onPlayPress, onStateChange],
   );
 
+  // @assumes WEBVIEW_BASE_URL must match the origin in the embedded HTML's playerVars — YouTube API rejects mismatched origins silently.
+  // @coupling allowsInlineMediaPlayback + mediaPlaybackRequiresUserAction=false are iOS-only props; on Android these are no-ops.
   return (
     <WebView
       ref={webViewRef}

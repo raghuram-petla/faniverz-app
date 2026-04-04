@@ -48,6 +48,7 @@ export function useCollapsibleHeader(insetTop: number): CollapsibleHeaderState {
   );
 
   // @contract Feed cards read this snapshot at tap time so the image viewer can mask under the same header offset.
+  // @coupling ImageViewerOverlay uses the returned value as topChrome.translateY to align its close animation with the header position.
   const getCurrentHeaderTranslateY = useCallback(() => -headerOffset.current, []);
 
   return { headerTranslateY, totalHeaderHeight, handleScroll, getCurrentHeaderTranslateY };

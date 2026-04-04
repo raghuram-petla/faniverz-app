@@ -44,6 +44,8 @@ const INITIAL_FORM: SurpriseForm = {
   views: 0,
 };
 
+// @boundary Converts raw API data to form shape; unsafe cast from unknown
+// @assumes data is a valid SurpriseContent — no runtime validation
 function dataToForm(data: unknown): SurpriseForm {
   const item = data as SurpriseContent;
   return {
@@ -55,6 +57,7 @@ function dataToForm(data: unknown): SurpriseForm {
   };
 }
 
+// @edge: empty title/youtube_id allowed through — no client-side validation before save
 function formToPayload(form: SurpriseForm, id: string) {
   return {
     id,

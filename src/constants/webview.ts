@@ -1,5 +1,7 @@
 import Constants from 'expo-constants';
 
+// @nullable expoConfig can be null in bare workflow or certain test environments — falls back to hardcoded app ID
+// @edge .toLowerCase() ensures consistent referer regardless of app.json casing
 const getWebViewAppId = () =>
   (
     Constants.expoConfig?.ios?.bundleIdentifier ??

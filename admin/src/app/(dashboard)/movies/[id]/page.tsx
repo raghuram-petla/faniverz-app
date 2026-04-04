@@ -38,6 +38,8 @@ import {
 import type { MovieSectionId, SyncSectionProps } from '@/components/movie-edit';
 
 /** @contract resolve R2 bucket from the selected image's type in the gallery */
+// @edge: if image_url not found in images array, falls back to `fallback` param — can
+// mis-route the R2 URL resolution for images added after the gallery was loaded
 function getBucketForUrl(
   images: Array<{ image_url: string; image_type?: string }>,
   url: string,

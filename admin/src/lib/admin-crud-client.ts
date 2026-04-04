@@ -13,8 +13,10 @@ async function getAccessToken(): Promise<string> {
   return session.access_token;
 }
 
-// @boundary: sends an authenticated request to /api/admin-crud; throws on non-2xx
-// @coupling: must stay in sync with the ALLOWED_TABLES whitelist in /api/admin-crud/route.ts
+// @boundary: sends an authenticated request to /api/admin-crud; throws on non-2xx.
+// @coupling: must stay in sync with the ALLOWED_TABLES whitelist in /api/admin-crud/route.ts.
+// Adding a new table to createCrudHooks/createMovieChildHooks without adding it to
+// ALLOWED_TABLES causes a 403 "Table not allowed" error at runtime — no compile-time check.
 // @edge: 401 means JWT expired mid-session — sign out to trigger redirect to /login
 export async function crudFetch<R>(method: string, body: Record<string, unknown>): Promise<R> {
   const token = await getAccessToken();

@@ -8,7 +8,9 @@ import { sanitizeSearchTerm } from '@/lib/sanitizeSearchTerm';
 
 // @boundary: joins feed_comments with news_feed and profiles via PostgREST foreign-key selects
 // @edge: body is filtered server-side via ILIKE (backed by pg_trgm GIN index for performance);
-//        profile.display_name is matched client-side — PostgREST cannot OR across foreign tables
+//        profile.display_name is matched client-side — PostgREST cannot OR across foreign tables.
+// @edge: the client-side display_name filter runs AFTER the 200-row LIMIT, so if 200 rows match
+//        by body but the display_name match is on row 201+, it's missed entirely.
 // @contract: returns max 200 comments, newest first; query disabled for 1-char searches
 export function useAdminComments(search = '') {
   return useQuery({

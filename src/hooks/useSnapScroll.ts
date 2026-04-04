@@ -53,6 +53,8 @@ export function useSnapScroll({ scrollOffset, snapThreshold }: SnapScrollProps):
     [scrollOffset],
   );
 
+  // @edge only snaps on drag-end when velocity is near zero; fast flicks defer to handleMomentumEnd
+  // @nullable velocity?.y is undefined on some Android devices — falls back to 0 (triggers snap)
   const handleScrollEndDrag = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const vy = e.nativeEvent.velocity?.y ?? 0;

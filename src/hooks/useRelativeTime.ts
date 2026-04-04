@@ -24,6 +24,9 @@ export function useRelativeTime(dateStr: string | null | undefined): string {
     if (next !== text) setText(next);
   }
 
+  // @edge interval is computed once per dateStr change — if the post ages past a boundary
+  // (e.g., from <1min to 1min) between re-renders, the interval won't adapt until the
+  // next dateStr prop change or component remount. Acceptable since the text still updates.
   useEffect(() => {
     if (!dateStr) return;
 

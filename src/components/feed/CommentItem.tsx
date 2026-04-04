@@ -39,6 +39,7 @@ export function CommentItem({
   const avatarUrl = comment.profile?.avatar_url;
 
   // @edge: parse @[Name] mention at start of body for replies (brackets handle spaces in names)
+  // @coupling This regex must match the format produced by CommentInput.handleSend: `@[${displayName}] ${body}`
   const mentionMatch = isNested ? comment.body.match(/^@\[([^\]]+)\]\s?/) : null;
   const mentionName = mentionMatch ? mentionMatch[1] : null;
   const bodyAfterMention = mentionName

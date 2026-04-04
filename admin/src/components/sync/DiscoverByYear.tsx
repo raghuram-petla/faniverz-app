@@ -27,6 +27,7 @@ export function DiscoverByYear({ data, onImportingChange, isReadOnly }: Discover
   const [importedMovieData, setImportedMovieData] = useState<ExistingMovieData[]>([]);
   const [linkingTmdbId, setLinkingTmdbId] = useState<number | null>(null);
   // @contract: cancel ref checked between movies — when true, pending movies are skipped
+  // @invariant cancelledRef is reset to false at the start of each runBatchImport call
   const cancelledRef = useRef(false);
 
   const existingMovies = useMemo(

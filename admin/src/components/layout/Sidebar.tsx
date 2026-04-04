@@ -81,6 +81,7 @@ const navSections: NavSection[] = [
 ];
 
 // @boundary filters nav items by role-based permissions; unauthorized pages never render
+// @coupling NavItem.page values must match AdminPage union in usePermissions; adding a new page requires both
 export function Sidebar() {
   const pathname = usePathname();
   const { canViewPage } = usePermissions();

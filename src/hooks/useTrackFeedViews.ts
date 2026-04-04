@@ -36,6 +36,8 @@ export function useTrackFeedViews(): UseTrackFeedViewsResult {
   const rafRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // @edge flush is called both on interval AND on unmount; the clear() before RPC
+  // means a crash between clear and RPC completion loses that batch (acceptable trade-off)
   const flush = useCallback(() => {
     if (pendingBatchRef.current.size === 0 || !userIdRef.current) return;
     const ids = [...pendingBatchRef.current];

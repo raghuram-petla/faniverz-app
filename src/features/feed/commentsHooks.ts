@@ -34,6 +34,7 @@ export function useReplies(parentCommentId: string) {
 // @sideeffect: addComment fires trg_feed_comment_count. If parentCommentId set, also fires
 // trg_comment_reply_count and trg_notify_comment_reply.
 // @edge: onSuccess appends to comments cache (top-level) or invalidates replies cache (reply).
+// @edge: no onError handler — if the insert fails (e.g., RLS violation, network error), the mutation throws but no Alert is shown. The comment simply doesn't appear. Compare with useLikeComment which shows an Alert on error.
 export function useAddComment(feedItemId: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -81,6 +82,7 @@ export function useAddComment(feedItemId: string) {
 // @contract: deleteComment filters by BOTH id AND user_id.
 // @sideeffect: If deleting a reply, invalidates replies cache and decrements parent's reply_count.
 // If deleting a top-level comment, removes from comments cache (CASCADE handles its replies).
+// @edge: no optimistic rollback on error — if the delete API fails, the comment is already removed from cache. The onSettled invalidation (absent here) would normally self-heal, but this mutation has no onSettled. The only recovery path is manual pull-to-refresh by the user.
 export function useDeleteComment(feedItemId: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();

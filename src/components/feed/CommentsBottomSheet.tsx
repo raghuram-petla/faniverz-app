@@ -51,7 +51,7 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
   const SNAP_MEDIUM = SCREEN_H * 0.65;
   const SNAP_LARGE = useMemo(() => SCREEN_H - insets.top, [insets.top]);
 
-  // --- Data hooks ---
+  // @coupling These hooks share the same ['comments', feedItemId] query key — addMutation/deleteMutation invalidate it after success.
   const { data: commentsData, isLoading, hasNextPage, fetchNextPage } = useComments(feedItemId);
   const addMutation = useAddComment(feedItemId);
   const deleteMutation = useDeleteComment(feedItemId);
@@ -110,11 +110,13 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
     [sheetHeight, dismiss, SNAP_SMALL, SNAP_MEDIUM, SNAP_LARGE],
   );
 
+  // @sync scrollOffset drives the pan gesture's "is scrolled" check — when > 1, downward drag is swallowed by the inner ScrollView instead of moving the sheet.
   const scrollOffset = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: /* istanbul ignore next */ (e) => { scrollOffset.value = e.contentOffset.y; },
   });
 
+  // @invariant If velocity exceeds FLING_VELOCITY downward while scroll is at top, sheet dismisses immediately instead of snapping.
   const FLING_VELOCITY = 1500;
   const panGesture = Gesture.Pan()
     .onStart(/* istanbul ignore next */ () => { startHeight.value = sheetHeight.value; })

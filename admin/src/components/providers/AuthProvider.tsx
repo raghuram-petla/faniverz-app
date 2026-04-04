@@ -186,6 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     /**
      * @boundary reads Supabase auth token directly from localStorage for fast session restore
      * @assumes localStorage key format: sb-{projectRef}-auth-token
+     * @edge token may be expired — onAuthStateChange fires shortly after with a refreshed session,
+     * overwriting any stale data from restoreSession. The double-fetch is intentional.
      */
     async function restoreSession(): Promise<boolean> {
       try {

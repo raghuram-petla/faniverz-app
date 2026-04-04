@@ -25,6 +25,8 @@ export interface CustomYouTubePlayerProps {
 
 type PlayingPlayerListener = (instanceId: number | null) => void;
 
+// @invariant Module-level singleton ensures only one YouTube player produces audio at a time across the entire app.
+// @edge These globals persist across React navigation — if the component tree unmounts without cleanup, activePlayingInstanceId may reference a dead instance.
 const playingPlayerListeners = new Set<PlayingPlayerListener>();
 let activePlayingInstanceId: number | null = null;
 let nextPlayingInstanceId = 0;

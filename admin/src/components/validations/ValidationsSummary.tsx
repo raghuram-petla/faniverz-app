@@ -13,7 +13,8 @@ export interface ValidationsSummaryProps {
   activeScanEntity: ScanEntity | null;
 }
 
-// @coupling: entity→label mapping must stay in sync with summary API SCAN_CONFIGS
+// @coupling: entity→label mapping must stay in sync with summary API SCAN_CONFIGS in /api/validations/summary
+// @coupling: ENTITY_MAP must stay in sync with /api/validations/scan endpoint's accepted entity values
 const ENTITY_LABELS: Record<string, string> = {
   'movies:poster_url': 'Movie Posters',
   'movies:backdrop_url': 'Movie Backdrops',

@@ -32,8 +32,9 @@ export default function LanguageScreen() {
   const { theme } = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
-  // @sideeffect: persists language choice to AsyncStorage then triggers i18n re-render
-  // @sync: local state, AsyncStorage, and i18n language must all stay in sync
+  // @sideeffect: persists language choice to AsyncStorage then triggers i18n re-render.
+  // @sync: three sources must stay in sync: local state (selected), AsyncStorage (PREFERRED_LANG), and i18n.language.
+  // @edge: if AsyncStorage write fails, the language changes for this session but reverts on next app start.
   const handleSelect = async (code: string) => {
     setSelected(code);
     await AsyncStorage.setItem(LANG_STORAGE_KEY, code);

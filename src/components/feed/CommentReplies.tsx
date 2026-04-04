@@ -31,9 +31,11 @@ export function CommentReplies({
   const [expanded, setExpanded] = useState(false);
 
   // @contract: only fetch when expanded — avoids unnecessary requests for collapsed threads
+  // @coupling useReplies passes empty string as parentId when collapsed; the hook must treat '' as disabled query.
   const { data: replies, isLoading } = useReplies(expanded ? parentComment.id : '');
 
   // @contract: fetch like status for reply IDs independently (top-level likes query doesn't include replies)
+  // @edge replyIds updates after replies load, which triggers a second render with the likes query — brief "unliked" flash is possible
   const replyIds = useMemo(() => (replies ?? []).map((r) => r.id), [replies]);
   const { data: replyLikes = {} } = useUserCommentLikes(replyIds);
 

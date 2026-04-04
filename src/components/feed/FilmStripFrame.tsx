@@ -22,6 +22,7 @@ export interface FilmStripFrameProps {
  */
 function FilmStripFrameInner({ children }: FilmStripFrameProps) {
   const { theme } = useTheme();
+  // @coupling Zustand store — toggled in settings; persisted to AsyncStorage via MMKV
   const enabled = useFilmStripStore((s) => s.filmStripEnabled);
   const filmColor = getFilmColor(theme);
   const [height, setHeight] = useState(0);

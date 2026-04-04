@@ -38,6 +38,7 @@ export async function fetchMovieAvailability(
 }
 
 // @sync: legacy endpoint — used by older components that haven't migrated to fetchMovieAvailability. Both query different tables (movie_platforms vs movie_platform_availability). movie_platforms has no country_code filter, so it returns global results. Callers should migrate to fetchMovieAvailability for region-aware data.
+// @coupling: movie_platforms table is also queried by fetchMoviesByPlatform (movies/api.ts) and the 'streaming' filter in applyMovieFilters. If movie_platforms is deprecated in favor of movie_platform_availability, all three callsites must migrate.
 export async function fetchOttReleases(movieId: string): Promise<MoviePlatform[]> {
   return unwrapList(
     await supabase

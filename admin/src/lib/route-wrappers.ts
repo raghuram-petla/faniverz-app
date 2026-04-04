@@ -13,6 +13,9 @@ import {
 // @contract: shared context provided to every admin mutation route handler.
 // The supabase client has the x-admin-user-id header set so the audit trigger
 // attributes all DB changes to the authenticated admin.
+// @coupling: every API route that modifies data MUST use one of the wrappers
+// (withSyncAdmin or withMutationAdmin) to get audit attribution. Routes that
+// use getSupabaseAdmin() directly skip audit logging.
 export interface AdminRouteContext {
   req: NextRequest;
   supabase: SupabaseClient;

@@ -92,8 +92,10 @@ export function applyColumnFilters(query: any, filters: AdvancedFilters | undefi
   return query;
 }
 
-// @invariant All ID-based include filters must be intersected in JS before a single .in('id', ...)
-// PostgREST overwrites duplicate column filters — multiple .in('id', ...) breaks silently
+// @invariant All ID-based include filters must be intersected in JS before a single .in('id', ...).
+// PostgREST overwrites duplicate column filters — multiple .in('id', ...) on the same column
+// silently uses only the LAST one, discarding earlier filters. This is a PostgREST design
+// decision (not a bug) that caused invisible data leaks before this intersection approach.
 export function intersectIdSets(...sets: (string[] | null)[]): string[] | null {
   const defined = sets.filter((s): s is string[] => s !== null);
   if (defined.length === 0) return null;

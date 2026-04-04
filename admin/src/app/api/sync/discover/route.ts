@@ -139,7 +139,8 @@ export async function POST(request: NextRequest) {
           : row.backdrop_url,
     }));
 
-    // @sideeffect check for title-based duplicates — movies in DB with matching titles but no tmdb_id
+    // @edge: check for title-based duplicates — movies in DB with matching titles but no tmdb_id
+    // @assumes: case-insensitive match via .toLowerCase() — non-Latin titles may not normalize correctly
     const existingTmdbIds = new Set(existingMovies.map((m) => m.tmdb_id));
     const unmatchedTitles = results.filter((m) => !existingTmdbIds.has(m.id)).map((m) => m.title);
     let duplicateSuspects: Record<number, { id: string; title: string }> = {};

@@ -9,6 +9,7 @@ import { useRef } from 'react';
  * PullToRefreshIndicator receives the correct value in the SAME render that
  * refreshing transitions to false — avoids one-render-late timing bugs.
  */
+// @assumes items have stable id ordering — top-10 ID comparison relies on server-consistent sort
 export function useFeedRefreshBuffer<T extends { id: string }>(
   items: T[],
   isRefreshActive: boolean,

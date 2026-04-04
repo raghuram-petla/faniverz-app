@@ -95,7 +95,11 @@ export function createMovieEditHandlers(deps: MovieEditHandlerDeps) {
         ...childPromises,
       ];
 
-      // @contract: allSettled so partial failures don't prevent other operations from completing
+      // @contract: allSettled so partial failures don't prevent other operations from completing.
+      // @edge: if updateMovie fails but child operations succeed, the movie row has stale data
+      // but cast/videos/posters are updated. The admin sees "1 operation(s) failed" and can retry,
+      // but the retry re-sends ALL child ops too (idempotent due to upsert semantics on most, but
+      // cast/poster adds create duplicates if the previous attempt's add succeeded).
       const results = await Promise.allSettled(promises);
       const failures = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failures.length > 0) {

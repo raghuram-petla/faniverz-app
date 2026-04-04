@@ -135,7 +135,9 @@ export const useRevokeInvitation = createSimpleMutation<string>({
 
 /** Revoke admin access (delete role + PH assignments) */
 // @sideeffect Deletes PH assignments first (FK constraint), then role — ordering matters
-// @edge No transaction — if role delete fails after PH delete, user has no role but also no PH links
+// @edge No transaction — if role delete fails after PH delete, user has no role but also no PH links.
+// The user is effectively locked out of the admin panel (no role row = verifyAdmin returns null)
+// but still has dangling user_languages rows. Re-inviting requires a new invitation flow.
 export const useRevokeAdmin = createSimpleMutation<string>({
   mutationFn: async (userId) => {
     // Delete PH assignments first (FK constraint)

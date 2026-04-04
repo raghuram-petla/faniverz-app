@@ -39,6 +39,8 @@ const INITIAL_FORM: ProductionHouseForm = {
   origin_country: '',
 };
 
+// @boundary Converts raw API data to form shape; unsafe cast from unknown
+// @assumes data is a valid ProductionHouse — no runtime validation
 function dataToForm(data: unknown): ProductionHouseForm {
   const house = data as ProductionHouse;
   return {

@@ -55,6 +55,10 @@ export function useBulkFillMissing() {
 
     setState({ total: gapped.length, done: 0, failed: 0, isRunning: true, error: null });
 
+    // @sync: sequential processing — each movie waits for the previous to complete.
+    // No parallelism to avoid TMDB rate limits (40 req/10s). A batch of 50 movies
+    // takes ~2-3 minutes. If the browser tab is closed mid-loop, completed movies
+    // persist but remaining movies are skipped with no cleanup or resume mechanism.
     for (const movie of gapped) {
       const tmdb = tmdbMap?.get(movie.tmdb_id);
       /* v8 ignore start */

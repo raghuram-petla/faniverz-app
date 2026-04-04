@@ -101,8 +101,9 @@ export function useAdminEndUsers({
   });
 }
 
-// @boundary Calls Next.js /api/manage-user route instead of Supabase directly — needs auth token
-// @assumes Session exists; will fail silently with undefined token if not authenticated
+// @boundary Calls Next.js /api/manage-user route instead of Supabase directly — needs auth token.
+// @coupling: /api/manage-user uses service role to modify auth.users (ban/unban) which is
+// NOT accessible via the browser Supabase client (anon key). This indirection is required.
 async function callManageUser(action: string, userId: string, extra?: Record<string, unknown>) {
   const {
     data: { session },

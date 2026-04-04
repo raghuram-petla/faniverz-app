@@ -73,7 +73,9 @@ export function useCreateNotification() {
   });
 }
 
-// @sideeffect Sets status to 'cancelled' — does NOT send cancellation to already-delivered push notifications
+// @sideeffect Sets status to 'cancelled' — does NOT send cancellation to already-delivered push notifications.
+// @edge: if a scheduled notification is cancelled AFTER the edge function picks it up for delivery,
+// the push still goes out. The cancellation window closes once send-push starts processing.
 export const useCancelNotification = createSimpleMutation<string, string>({
   mutationFn: async (id) => {
     const { error } = await supabase

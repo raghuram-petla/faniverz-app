@@ -94,6 +94,7 @@ export function PHAssignments({ userId, roleId, assignedPHs }: PHAssignmentsProp
   });
 
   // @contract Same toggle pattern as invite flow — tracks both IDs and item data
+  // @coupling: /api/user-ph-assignments POST replaces all assignments (delete + insert), not incremental
   const toggle = useCallback(
     (phId: string) => {
       setSelectedIds((prev) =>

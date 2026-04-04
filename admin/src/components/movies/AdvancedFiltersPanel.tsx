@@ -39,6 +39,7 @@ const RATING_OPTIONS = [
 ];
 
 // @edge Year range: 2020 to current year + 2 (for announced movies with future dates)
+// @assumes current year computed at module load time — stale after midnight Dec 31 until tab reload
 function getYearOptions() {
   const currentYear = new Date().getFullYear();
   const years: { value: string; label: string }[] = [];

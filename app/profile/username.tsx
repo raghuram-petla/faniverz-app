@@ -37,7 +37,8 @@ export default function UsernameScreen() {
   useEffect(() => {
     if (profile?.username && !hasEdited) setUsername(profile.username);
   }, [profile?.username, hasEdited]);
-  // @boundary: useCheckUsername debounces and queries the DB for availability
+  // @boundary: useCheckUsername debounces (~300ms) and queries the DB for availability
+  // @edge: isAvailable is null before first check completes — save button stays disabled
   const { isAvailable, isChecking, error: checkError } = useCheckUsername(username);
   const setUsernameMutation = useSetUsername();
 

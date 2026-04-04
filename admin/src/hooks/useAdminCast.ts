@@ -92,7 +92,11 @@ export function useRemoveCast() {
 }
 
 // @sideeffect: updates display_order for each cast item via /api/admin-crud
-// @edge: partial failure — some items may update before the first error is detected
+// @edge: partial failure — some items may update before the first error is detected.
+// Promise.all rejects on first failure, leaving remaining updates unattempted while
+// earlier ones are already persisted. The admin sees "Operation failed" but some
+// display_order values are already changed — a retry re-sends ALL items, overwriting
+// the partial state. Safe but wasteful.
 // @sync: all updates run in parallel via Promise.all; no transaction wrapping
 export function useUpdateCastOrder() {
   const qc = useQueryClient();

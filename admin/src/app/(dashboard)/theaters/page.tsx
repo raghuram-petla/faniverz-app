@@ -101,7 +101,9 @@ export default function TheatersPage() {
     });
   }, []);
 
-  // @sideeffect Commits all pending changes
+  // @sideeffect Commits all pending changes — adds and removals run in parallel via Promise.all
+  // @edge: partial failure — if one add succeeds but another removal fails, the Map is NOT rolled back.
+  // Already-committed changes persist in DB; user sees an error but some changes were applied.
   async function handleSave() {
     setSaveStatus('saving');
     const entries = Array.from(pendingChanges.entries());

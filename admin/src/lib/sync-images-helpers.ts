@@ -34,7 +34,11 @@ export async function getExistingPaths(
   return new Set((data ?? []).map((r) => r.tmdb_file_path as string));
 }
 
-/** @sideeffect: delete stale TMDB-synced images not in the current TMDB list */
+/** @sideeffect: delete stale TMDB-synced images not in the current TMDB list.
+ * @edge: only deletes rows with non-null tmdb_file_path — manually uploaded images
+ * (which have null tmdb_file_path) are preserved. However, R2 objects for deleted
+ * rows are NOT cleaned up — orphaned images accumulate in R2 storage indefinitely.
+ */
 export async function cleanupStaleImages(
   supabase: SupabaseClient,
   movieId: string,

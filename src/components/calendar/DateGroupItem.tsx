@@ -21,6 +21,7 @@ export function DateGroupItem({ item, today, platformMap }: DateGroupItemProps) 
   const { t } = useTranslation();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  // @edge isPast check uses Date < comparison which compares timestamps — a movie releasing at midnight today will show as "past" after 00:00
   const isPast = item.movieDate < today;
   const isToday = item.movieDate.toDateString() === today.toDateString();
 

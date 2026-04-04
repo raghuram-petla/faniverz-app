@@ -47,7 +47,8 @@ export function SortableFeedList({
     );
   }
 
-  // @coupling onDragEnd handler in parent must call reorder mutation to persist new sort_order
+  // @coupling onDragEnd handler in parent must call reorder mutation to persist new sort_order to news_feed table
+  // @edge dnd-kit IDs are news_feed.id UUIDs — parent's arrayMove must use these, not array indices
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>

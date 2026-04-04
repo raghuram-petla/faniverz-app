@@ -81,7 +81,8 @@ export function ImpersonateModal({ targetUser, onClose }: ImpersonateModalProps)
     setSelectedPhIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
   }
 
-  /** @invariant PH admin requires at least one production house selected; other roles are self-sufficient */
+  /** @invariant PH admin requires at least one production house selected; other roles are self-sufficient
+   *  @edge viewer role impersonation is synthetic — no admin_user_roles row needed, just sets effective role */
   const canStart =
     targetUser ||
     role === 'super_admin' ||

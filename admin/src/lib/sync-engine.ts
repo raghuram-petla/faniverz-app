@@ -57,6 +57,8 @@ export async function processMovieFromTmdb(
   supabase: SupabaseClient,
   options?: ProcessMovieOptions,
 ): Promise<ImportMovieResult> {
+  // @boundary: single TMDB API call that returns credits+videos+translations+keywords+release_dates
+  // via append_to_response. If TMDB is down or returns 429, this throws and the entire import fails.
   const detail = await getMovieDetails(tmdbId, apiKey, options?.originalLanguage);
 
   // @edge: picks the FIRST Director credit — movies with co-directors (e.g. Russo Brothers)
@@ -138,6 +140,10 @@ export async function processMovieFromTmdb(
     .single();
 
   if (movieErr) throw new Error(`Movie upsert failed: ${movieErr.message}`);
+  // @invariant: movieId is always a UUID from the upserted row. For new movies, it's auto-generated.
+  // For existing movies (matched by tmdb_id), it's the pre-existing UUID. All subsequent child
+  // inserts (cast, images, videos) use this as their FK — if the upsert returned the wrong ID
+  // (theoretically impossible with Supabase), all child data would be orphaned or attached to the wrong movie.
   const movieId = movie.id as string;
 
   if (options?.resumable) {

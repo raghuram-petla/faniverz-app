@@ -16,6 +16,7 @@ import type { UserProfile } from '@/types';
 
 // @boundary: fetches public-facing profile fields only — no private data (email, phone) exposed
 // @edge: returns null on any Supabase error (e.g., invalid UUID, deleted user)
+// @coupling: direct Supabase call instead of a shared hook — this is the only screen that queries another user's profile
 async function fetchPublicProfile(userId: string): Promise<UserProfile | null> {
   const { data, error } = await supabase
     .from('profiles')
@@ -26,6 +27,8 @@ async function fetchPublicProfile(userId: string): Promise<UserProfile | null> {
   return data as UserProfile;
 }
 
+// @boundary: Public user profile view — read-only, no edit/follow capabilities
+// @assumes: id is a valid UUID from the profiles table; invalid IDs show empty state
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();

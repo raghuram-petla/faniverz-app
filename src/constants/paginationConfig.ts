@@ -51,6 +51,8 @@ export const FEED_PAGINATION: SmartPaginationConfigWithPrefetch = {
   },
 };
 
+// @coupling spread from FEED_PAGINATION — inherits prefetchRelated config (comment prefetch)
+// @edge changing FEED_PAGINATION's prefetchRelated will silently affect news feed too
 /** News feed — same as home feed */
 export const NEWS_FEED_PAGINATION: SmartPaginationConfigWithPrefetch = {
   ...FEED_PAGINATION,

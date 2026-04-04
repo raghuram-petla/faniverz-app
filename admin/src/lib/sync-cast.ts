@@ -7,6 +7,9 @@ import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { upsertActorPreserveType } from '@/lib/sync-actor';
 
 // @sideeffect: mirrors poster_url into movie_images so admin gallery stays in sync
+// @coupling: movie_images.image_url must match movies.poster_url for the admin gallery
+// to show the correct "Main Poster" badge. If this function is not called after a
+// poster_url change, the gallery and movie detail show different images.
 // @coupling: called from refresh-movie API route after poster_url changes — if the route
 // forgets to call this, movie_images table gets out of sync with movies.poster_url.
 export async function mirrorMainPoster(
@@ -53,6 +56,9 @@ export async function syncCastCrew(
     .eq('movie_id', movieId);
 
   // @sideeffect: delete existing cast before re-insert when force-resyncing
+  // @edge: delete + sequential re-inserts is NOT transactional — if the function crashes mid-loop,
+  // the movie has partial cast (some entries deleted, not all re-inserted). The movie edit page
+  // shows incomplete cast until the next successful resync.
   /* v8 ignore start */
   if (forceResync && (count ?? 0) > 0) {
     /* v8 ignore stop */

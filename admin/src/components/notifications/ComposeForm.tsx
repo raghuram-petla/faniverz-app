@@ -90,9 +90,10 @@ export function ComposeForm({ movies, createNotification, onSuccess }: ComposeFo
     debounceRef.current = setTimeout(() => doLookup(email), 400);
   };
 
-  // @sideeffect: inserts into notifications table
-  // @boundary: BROADCAST_USER_ID is a sentinel UUID expanded by edge function
+  // @sideeffect: inserts into notifications table via createNotification.mutate
+  // @boundary: BROADCAST_USER_ID is a sentinel UUID; Supabase edge function expands it to all users at delivery time
   // @invariant: submit blocked when targetMode is 'user' but no user was resolved
+  // @coupling: scheduled_for is passed as ISO string — the edge function compares against UTC, not local time
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (targetMode === 'user' && !resolvedUserId) return;

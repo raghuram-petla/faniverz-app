@@ -7,6 +7,8 @@ import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import type { Movie } from '@/lib/types';
 
 // @contract Right-column panel: search for a movie, then fill in start date + label to add to theaters
+// @coupling onAdd callback in parent creates a PendingChange and a theatrical_runs row on save
+// @sideeffect selecting a movie and clicking Add queues an in_theaters=true + theatrical_run insert
 export interface ManualAddPanelProps {
   search: string;
   setSearch: (v: string) => void;

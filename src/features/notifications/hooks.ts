@@ -18,6 +18,7 @@ export function useNotifications(userId: string) {
 // for users with hundreds of notifications, the entire list is downloaded just to compute a badge number.
 // No server-side COUNT query exists — if notification volume grows, this becomes a performance bottleneck.
 // @assumes: shares the same query cache as useNotifications(userId), so it doesn't trigger a separate fetch.
+// @edge: fetchNotifications caps at 200 rows — users with >200 notifications get an undercount of unread. The badge may show fewer unread than actually exist in the DB.
 export function useUnreadCount(userId: string) {
   const { data } = useNotifications(userId);
   return data?.filter((n) => !n.read).length ?? 0;
@@ -37,6 +38,7 @@ export function useNotificationsPaginated(userId: string) {
 export function useNotificationMutations() {
   const queryClient = useQueryClient();
 
+  // @coupling: invalidates ['notifications'] prefix which covers both useNotifications and useNotificationsPaginated caches (different key prefixes: 'notifications' vs 'notifications-paginated'). The paginated cache is NOT invalidated by this prefix match — 'notifications-paginated' does NOT start with 'notifications' as a TanStack Query key segment. The paginated list will show stale read status until its staleTime expires.
   // @contract: invalidates the broad ['notifications'] key prefix on success, which refetches for ALL users
   // if multiple user notification queries are cached. In practice only the current user's query exists,
   // but if the app ever caches another user's notifications (e.g., admin view), both would refetch.

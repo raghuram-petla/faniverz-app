@@ -4,7 +4,9 @@ import { FlatList } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
-// @edge Android requires explicit opt-in for LayoutAnimation; iOS supports it by default
+// @edge Android requires explicit opt-in for LayoutAnimation; iOS supports it by default.
+// @sideeffect: module-scope side effect — runs once when this module is first imported.
+// Must be before any component that calls LayoutAnimation.configureNext().
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }

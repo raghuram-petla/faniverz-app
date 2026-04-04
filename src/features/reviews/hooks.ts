@@ -38,6 +38,7 @@ export function useUserReviews(userId: string) {
 // --- Paginated review hooks ---
 
 /** @contract Uses smart pagination for movie reviews */
+// @coupling: query key ['reviews-paginated', movieId] is NOT invalidated by create.onSuccess which only invalidates ['reviews', movieId] (exact match). New reviews won't appear in the paginated list until staleTime expires. update/remove.onSuccess invalidates ['reviews'] prefix which DOES cover ['reviews-paginated'] — so edits/deletes propagate but creates don't.
 export function useMovieReviewsPaginated(movieId: string) {
   return useSmartInfiniteQuery<Review>({
     queryKey: ['reviews-paginated', movieId],

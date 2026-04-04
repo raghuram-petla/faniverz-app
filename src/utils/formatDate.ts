@@ -52,6 +52,7 @@ export function formatFullTimestamp(dateStr: string | null | undefined): string 
 /**
  * Format a date string as "Mon DD, YYYY" (e.g., "Mar 15, 2025").
  */
+// @edge no null guard — caller must ensure dateStr is valid; invalid input produces "Invalid Date"
 export function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
