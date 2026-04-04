@@ -2,6 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+
+// @sideeffect: must run at module scope before any Reanimated component mounts.
+// Disables strict-mode warnings that flood the console in dev (reading .value during render).
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Exo2_800ExtraBold_Italic } from '@expo-google-fonts/exo-2';
@@ -43,7 +51,7 @@ function ThemedStack() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="movie/[id]" />
+        <Stack.Screen name="movie" />
         <Stack.Screen name="actor/[id]" />
         <Stack.Screen name="discover" />
         <Stack.Screen name="search" />

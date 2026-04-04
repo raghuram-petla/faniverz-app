@@ -24,7 +24,7 @@ import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import { createStyles } from './notifications.styles';
+import { createStyles } from './_notifications.styles';
 
 type NotificationIconConfig = {
   name: React.ComponentProps<typeof Ionicons>['name'];

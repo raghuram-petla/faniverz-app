@@ -34,7 +34,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 import { ActorDetailSkeleton } from '@/components/actor/ActorDetailSkeleton';
 import ScreenHeader from '@/components/common/ScreenHeader';
-import { ActorPhotoModal } from './components/ActorPhotoModal';
+import { ActorPhotoModal } from '@/components/actor/ActorPhotoModal';
 
 // @coupling: gender codes match the TMDB gender enum values stored in the actors table
 const GENDER_LABEL_KEYS: Record<number, string> = {

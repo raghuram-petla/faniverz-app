@@ -31,6 +31,8 @@ export const languageReady: Promise<void> = AsyncStorage.getItem(STORAGE_KEYS.PR
       interpolation: {
         escapeValue: false,
       },
+      // @sideeffect: suppresses the Locize sponsorship info banner on init
+      showSupportNotice: false,
     });
   });
 
