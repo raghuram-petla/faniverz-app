@@ -54,6 +54,7 @@ export function CommentInput({
 
   /** @sideeffect clears input after submit; prepends @mention for replies */
   const handleSend = () => {
+    /* istanbul ignore next -- send button is disabled={!trimmed}, so this guard is unreachable via UI */
     if (!trimmed) return;
     // @contract: wrap mention in brackets to handle display names with spaces
     const body = replyTarget

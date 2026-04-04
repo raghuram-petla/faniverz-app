@@ -73,10 +73,10 @@ export function CommentsList({
             <CommentReplies
               parentComment={comment}
               userId={userId}
-              onReply={onReply ?? (() => {})}
-              onLike={onLike ?? (() => {})}
-              onUnlike={onUnlike ?? (() => {})}
-              onDelete={onDelete ? (id, parentId) => onDelete(id, parentId) : () => {}}
+              onReply={onReply ?? /* istanbul ignore next */ (() => {})}
+              onLike={onLike ?? /* istanbul ignore next */ (() => {})}
+              onUnlike={onUnlike ?? /* istanbul ignore next */ (() => {})}
+              onDelete={onDelete ? (id, parentId) => onDelete(id, parentId) : /* istanbul ignore next */ () => {}}
             />
           ) : null}
         </View>

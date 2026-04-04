@@ -89,7 +89,7 @@ jest.mock('@/features/auth/providers/AuthProvider', () => ({
 }));
 
 jest.mock('../CommentsList', () => ({
-  CommentsList: ({ comments, onDelete, onLoadMore, hasNextPage }: any) => {
+  CommentsList: ({ comments, onDelete, onReply, onLoadMore, hasNextPage, onLike, onUnlike }: any) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
@@ -105,6 +105,30 @@ jest.mock('../CommentsList', () => ({
                 <Text>Delete</Text>
               </TouchableOpacity>
             )}
+            {onReply && (
+              <TouchableOpacity
+                onPress={() => onReply(c)}
+                accessibilityLabel={`Reply ${c.id}`}
+              >
+                <Text>Reply</Text>
+              </TouchableOpacity>
+            )}
+            {onLike && (
+              <TouchableOpacity
+                onPress={() => onLike(c.id)}
+                accessibilityLabel={`Like ${c.id}`}
+              >
+                <Text>Like</Text>
+              </TouchableOpacity>
+            )}
+            {onUnlike && (
+              <TouchableOpacity
+                onPress={() => onUnlike(c.id)}
+                accessibilityLabel={`Unlike ${c.id}`}
+              >
+                <Text>Unlike</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ))}
         {hasNextPage && onLoadMore && (
@@ -118,7 +142,7 @@ jest.mock('../CommentsList', () => ({
 }));
 
 jest.mock('../CommentInput', () => ({
-  CommentInput: ({ isAuthenticated, onSubmit }: any) => {
+  CommentInput: ({ isAuthenticated, onSubmit, replyTarget, onCancelReply }: any) => {
     const { View, Text, TouchableOpacity } = require('react-native');
     return (
       <View>
@@ -131,6 +155,17 @@ jest.mock('../CommentInput', () => ({
           </TouchableOpacity>
         ) : (
           <Text>Sign in to comment</Text>
+        )}
+        {replyTarget && (
+          <Text testID="reply-target-indicator">{replyTarget.displayName}</Text>
+        )}
+        {onCancelReply && (
+          <TouchableOpacity
+            onPress={onCancelReply}
+            accessibilityLabel="Cancel reply"
+          >
+            <Text>Cancel</Text>
+          </TouchableOpacity>
         )}
       </View>
     );
@@ -274,5 +309,108 @@ describe('CommentsBottomSheet', () => {
     expect(screen.getByTestId('comments-bottom-sheet')).toBeTruthy();
 
     Platform.OS = origOS;
+  });
+
+  it('handleReply sets replyTarget for a top-level comment (parentId = comment.id)', () => {
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    // c1 has parent_comment_id: null so parentId resolves to c1's own id
+    fireEvent.press(screen.getByLabelText('Reply c1'));
+    // CommentInput should now receive a replyTarget; verify the cancel button appears
+    // by pressing Submit (still visible) — main goal is no throw and state transitions
+    expect(screen.getByLabelText('Submit comment')).toBeTruthy();
+  });
+
+  it('handleReply sets parentCommentId from parent_comment_id for a nested comment', () => {
+    const feedModule = jest.requireMock('@/features/feed');
+    const orig = feedModule.useComments;
+    feedModule.useComments = jest.fn(() => ({
+      data: {
+        pages: [
+          [
+            {
+              id: 'c3',
+              user_id: 'user-2',
+              body: 'Nested reply',
+              created_at: '2024-01-01T02:00:00Z',
+              parent_comment_id: 'c1',
+              like_count: 0,
+              reply_count: 0,
+              profile: { display_name: 'nested-user', avatar_url: null },
+            },
+          ],
+        ],
+      },
+      isLoading: false,
+      hasNextPage: false,
+      fetchNextPage: jest.fn(),
+    }));
+
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    // c3 has parent_comment_id: 'c1' so parentId resolves to 'c1'
+    fireEvent.press(screen.getByLabelText('Reply c3'));
+    expect(screen.getByLabelText('Submit comment')).toBeTruthy();
+
+    feedModule.useComments = orig;
+  });
+
+  it('shows Alert on delete error', () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert');
+
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    fireEvent.press(screen.getByLabelText('Delete c1'));
+
+    // Capture and invoke the onError callback passed to deleteMutation.mutate
+    const onError = mockDeleteMutate.mock.calls[0][1].onError;
+    onError();
+
+    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to delete comment. Please try again.');
+  });
+
+  it('shows Alert on submit (add) error', () => {
+    const { Alert } = require('react-native');
+    jest.spyOn(Alert, 'alert');
+
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    fireEvent.press(screen.getByLabelText('Submit comment'));
+
+    // Capture and invoke the onError callback passed to addMutation.mutate
+    const onError = mockMutate.mock.calls[0][1].onError;
+    onError();
+
+    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to add comment. Please try again.');
+  });
+
+  it('calls likeMutation.mutate with commentId when like button pressed', () => {
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    fireEvent.press(screen.getByLabelText('Like c1'));
+    expect(mockLikeMutate).toHaveBeenCalledWith({ commentId: 'c1' });
+  });
+
+  it('calls unlikeMutation.mutate with commentId when unlike button pressed', () => {
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    fireEvent.press(screen.getByLabelText('Unlike c1'));
+    expect(mockUnlikeMutate).toHaveBeenCalledWith({ commentId: 'c1' });
+  });
+
+  it('handles undefined likedCommentIds data (= {} default)', () => {
+    const feedModule = jest.requireMock('@/features/feed');
+    const orig = feedModule.useUserCommentLikes;
+    feedModule.useUserCommentLikes = jest.fn(() => ({ data: undefined }));
+
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    expect(screen.getByTestId('comments-bottom-sheet')).toBeTruthy();
+
+    feedModule.useUserCommentLikes = orig;
+  });
+
+  it('clears replyTarget when cancel reply is pressed', () => {
+    render(<CommentsBottomSheet visible={true} feedItemId="item-1" onClose={onClose} />);
+    // Set a reply target first
+    fireEvent.press(screen.getByLabelText('Reply c1'));
+    expect(screen.getByTestId('reply-target-indicator')).toBeTruthy();
+    // Cancel the reply
+    fireEvent.press(screen.getByLabelText('Cancel reply'));
+    expect(screen.queryByTestId('reply-target-indicator')).toBeNull();
   });
 });

@@ -817,4 +817,18 @@ describe('FeedCard', () => {
     render(<FeedCard item={item} onPress={jest.fn()} />);
     expect(screen.getByTestId('feed-avatar')).toBeTruthy();
   });
+
+  it('renders full timestamp row when showFullTimestamp is true', () => {
+    const item = makeItem({ published_at: '2026-01-15T10:30:00Z' });
+    render(<FeedCard item={item} onPress={jest.fn()} showFullTimestamp />);
+    // The fullTimestampRow contains an Ionicons time-outline icon and a formatted timestamp text
+    const { toJSON } = render(<FeedCard item={item} onPress={jest.fn()} showFullTimestamp />);
+    expect(JSON.stringify(toJSON())).toContain('time-outline');
+  });
+
+  it('does not render full timestamp row when showFullTimestamp is false', () => {
+    const item = makeItem({ published_at: '2026-01-15T10:30:00Z' });
+    const { toJSON } = render(<FeedCard item={item} onPress={jest.fn()} showFullTimestamp={false} />);
+    expect(JSON.stringify(toJSON())).not.toContain('time-outline');
+  });
 });

@@ -278,6 +278,156 @@ describe('useDeleteComment', () => {
     await act(async () => { result.current.mutate({ commentId: 'c1' }); });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
+
+  it('handles null comments cache gracefully when deleting a reply', async () => {
+    // @edge: covers lines 99-111 — comments cache absent, setQueryData null-guard returns early
+    mockDeleteComment.mockResolvedValue(undefined);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    // Seed the replies cache but NOT the comments cache
+    client.setQueryData(['comment-replies', 'c1'], [
+      { ...baseComment, id: 'r1', parent_comment_id: 'c1' },
+    ]);
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useDeleteComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ commentId: 'r1', parentCommentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Comments cache was absent — setQueryData null-guard returns undefined, so it stays undefined
+    const cached = client.getQueryData(['feed-comments', 'f1']);
+    expect(cached).toBeUndefined();
+    // Replies cache was present and should have reply filtered out
+    const replies = client.getQueryData<FeedComment[]>(['comment-replies', 'c1']);
+    expect(replies).toEqual([]);
+  });
+
+  it('handles null replies cache gracefully when deleting a reply', async () => {
+    // @edge: covers line 97 — replies cache absent, ternary returns undefined (old is falsy)
+    mockDeleteComment.mockResolvedValue(undefined);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    // Seed the comments cache but NOT the replies cache
+    client.setQueryData(['feed-comments', 'f1'], {
+      pages: [[baseComment]],
+      pageParams: [0],
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useDeleteComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ commentId: 'r1', parentCommentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Replies cache was absent — setQueryData returns undefined (falsy branch of ternary)
+    const replies = client.getQueryData(['comment-replies', 'c1']);
+    expect(replies).toBeUndefined();
+    // Comments cache should still have reply_count decremented
+    const cached = client.getQueryData<{ pages: FeedComment[][] }>(['feed-comments', 'f1']);
+    expect(cached?.pages[0][0].reply_count).toBe(1); // 2 - 1
+  });
+});
+
+describe('useAddComment — reply with null comments cache', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('handles null comments cache gracefully when adding a reply', async () => {
+    // @edge: covers lines 51-59 — comments cache absent, setQueryData null-guard returns early
+    const reply = { ...newComment, parent_comment_id: 'c1' };
+    mockAddComment.mockResolvedValue(reply);
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    // No comments cache seeded — old will be undefined inside setQueryData callback
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useAddComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ body: '@User1 reply', parentCommentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Comments cache was absent — setQueryData null-guard returns undefined, so it stays undefined
+    const cached = client.getQueryData(['feed-comments', 'f1']);
+    expect(cached).toBeUndefined();
+  });
+
+  it('leaves non-parent comments unchanged when adding a reply', async () => {
+    // @edge: covers line 56 — the `:c` branch where c.id !== parentCommentId
+    const otherComment = { ...baseComment, id: 'c9', reply_count: 5 };
+    const reply = { ...newComment, parent_comment_id: 'c1' };
+    mockAddComment.mockResolvedValue(reply);
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    client.setQueryData(['feed-comments', 'f1'], {
+      pages: [[baseComment, otherComment]],
+      pageParams: [0],
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useAddComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ body: '@User1 reply', parentCommentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const cached = client.getQueryData<{ pages: FeedComment[][] }>(['feed-comments', 'f1']);
+    // Parent comment reply_count incremented
+    expect(cached?.pages[0].find((c) => c.id === 'c1')?.reply_count).toBe(3);
+    // Non-parent comment reply_count untouched
+    expect(cached?.pages[0].find((c) => c.id === 'c9')?.reply_count).toBe(5);
+  });
+});
+
+describe('useDeleteComment — non-parent comment survives reply deletion', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('leaves non-parent comments unchanged when decrementing reply_count', async () => {
+    // @edge: covers line 105 — the `:c` branch where c.id !== parentCommentId
+    const otherComment = { ...baseComment, id: 'c9', reply_count: 7 };
+    mockDeleteComment.mockResolvedValue(undefined);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    client.setQueryData(['feed-comments', 'f1'], {
+      pages: [[baseComment, otherComment]],
+      pageParams: [0],
+    });
+    client.setQueryData(['comment-replies', 'c1'], [
+      { ...baseComment, id: 'r1', parent_comment_id: 'c1' },
+    ]);
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useDeleteComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ commentId: 'r1', parentCommentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const cached = client.getQueryData<{ pages: FeedComment[][] }>(['feed-comments', 'f1']);
+    // Parent comment reply_count decremented
+    expect(cached?.pages[0].find((c) => c.id === 'c1')?.reply_count).toBe(1);
+    // Non-parent comment reply_count untouched
+    expect(cached?.pages[0].find((c) => c.id === 'c9')?.reply_count).toBe(7);
+  });
 });
 
 describe('useComments — error handling', () => {

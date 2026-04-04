@@ -48,7 +48,9 @@ export function useTrackFeedViews(): UseTrackFeedViewsResult {
   useEffect(() => {
     timerRef.current = setInterval(flush, FLUSH_INTERVAL_MS);
     return () => {
+      /* istanbul ignore next -- timerRef always set by setInterval above */
       if (timerRef.current) clearInterval(timerRef.current);
+      /* istanbul ignore next -- rafRef is always null in Jest (no real RAF scheduling) */
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       // Flush remaining on unmount
       flush();

@@ -21,12 +21,14 @@ jest.mock('@/hooks/useRelativeTime', () => ({
 }));
 
 const mockFetchReplies = jest.fn();
+const mockFetchLikes = jest.fn(() => ({}));
+let mockIsRepliesLoading = false;
 jest.mock('@/features/feed', () => ({
   useReplies: (parentId: string) => {
     if (!parentId) return { data: undefined, isLoading: false };
-    return { data: mockFetchReplies(), isLoading: false };
+    return { data: mockFetchReplies(), isLoading: mockIsRepliesLoading };
   },
-  useUserCommentLikes: () => ({ data: {} }),
+  useUserCommentLikes: () => ({ data: mockFetchLikes() }),
 }));
 
 import React from 'react';
@@ -60,7 +62,10 @@ const makeReply = (id: string): FeedComment => ({
 });
 
 describe('CommentReplies', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIsRepliesLoading = false;
+  });
 
   it('returns null when reply_count is 0', () => {
     const { toJSON } = render(
@@ -145,6 +150,50 @@ describe('CommentReplies', () => {
     expect(onReply).toHaveBeenCalledWith(replies[0]);
   });
 
+  it('calls onLike with reply id when like button pressed on a reply', () => {
+    const replies = [makeReply('r1')];
+    mockFetchReplies.mockReturnValue(replies);
+    mockFetchLikes.mockReturnValue({});
+    const onLike = jest.fn();
+
+    render(
+      <CommentReplies
+        parentComment={makeComment()}
+        userId="u1"
+        onReply={jest.fn()}
+        onLike={onLike}
+        onUnlike={jest.fn()}
+        onDelete={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('feed.viewReplies'));
+    fireEvent.press(screen.getByLabelText('Like comment'));
+    expect(onLike).toHaveBeenCalledWith('r1');
+  });
+
+  it('calls onUnlike with reply id when unlike button pressed on a liked reply', () => {
+    const replies = [makeReply('r1')];
+    mockFetchReplies.mockReturnValue(replies);
+    mockFetchLikes.mockReturnValue({ r1: true });
+    const onUnlike = jest.fn();
+
+    render(
+      <CommentReplies
+        parentComment={makeComment()}
+        userId="u1"
+        onReply={jest.fn()}
+        onLike={jest.fn()}
+        onUnlike={onUnlike}
+        onDelete={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('feed.viewReplies'));
+    fireEvent.press(screen.getByLabelText('Unlike comment'));
+    expect(onUnlike).toHaveBeenCalledWith('r1');
+  });
+
   it('calls onDelete with reply id and parent id', () => {
     const replies = [{ ...makeReply('r1'), user_id: 'u1' }];
     mockFetchReplies.mockReturnValue(replies);
@@ -164,5 +213,48 @@ describe('CommentReplies', () => {
     fireEvent.press(screen.getByText('feed.viewReplies'));
     fireEvent.press(screen.getByLabelText('Delete comment'));
     expect(onDelete).toHaveBeenCalledWith('r1', 'c1');
+  });
+
+  it('uses {} default when useUserCommentLikes returns undefined data', () => {
+    const replies = [makeReply('r1')];
+    mockFetchReplies.mockReturnValue(replies);
+    // Return undefined so the = {} destructuring default kicks in
+    mockFetchLikes.mockReturnValue(undefined as unknown as Record<string, true>);
+
+    render(
+      <CommentReplies
+        parentComment={makeComment()}
+        userId="u1"
+        onReply={jest.fn()}
+        onLike={jest.fn()}
+        onUnlike={jest.fn()}
+        onDelete={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('feed.viewReplies'));
+    // Should render replies without crashing (replyLikes defaults to {})
+    expect(screen.getByText('@User1 reply r1')).toBeTruthy();
+  });
+
+  it('shows ActivityIndicator while replies are loading', () => {
+    const { ActivityIndicator } = require('react-native');
+    mockFetchReplies.mockReturnValue(undefined);
+    mockIsRepliesLoading = true;
+
+    render(
+      <CommentReplies
+        parentComment={makeComment()}
+        userId="u1"
+        onReply={jest.fn()}
+        onLike={jest.fn()}
+        onUnlike={jest.fn()}
+        onDelete={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByText('feed.viewReplies'));
+    // ActivityIndicator renders when isLoading is true
+    expect(screen.UNSAFE_getAllByType(ActivityIndicator)).toHaveLength(1);
   });
 });

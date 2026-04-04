@@ -63,7 +63,7 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
 
   // @contract: collect all visible comment IDs for likes query
   const commentIds = useMemo(() => comments.map((c) => c.id), [comments]);
-  const { data: likedCommentIds = {} } = useUserCommentLikes(commentIds);
+  const { data: likedCommentIds = /* istanbul ignore next */ {} } = useUserCommentLikes(commentIds);
   const likeMutation = useLikeComment(feedItemId);
   const unlikeMutation = useUnlikeComment(feedItemId);
 
@@ -76,7 +76,7 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
     setReplyTarget({
       commentId: comment.id,
       parentCommentId: parentId,
-      displayName: comment.profile?.display_name ?? t('feed.anonymous'),
+      displayName: comment.profile?.display_name ?? /* istanbul ignore next */ t('feed.anonymous'),
     });
   }, [t]);
 

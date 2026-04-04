@@ -107,8 +107,8 @@ jest.mock('@/features/feed', () => ({
   useUnbookmarkFeedItem: () => ({ mutate: mockUnbookmarkMutate }),
   useUserBookmarks: () => ({ data: mockUserBookmarksData }),
   useUserCommentLikes: () => ({ data: {} }),
-  useLikeComment: () => ({ mutate: jest.fn() }),
-  useUnlikeComment: () => ({ mutate: jest.fn() }),
+  useLikeComment: () => ({ mutate: mockLikeMutate }),
+  useUnlikeComment: () => ({ mutate: mockUnlikeMutate }),
 }));
 
 jest.mock('@/components/feed/FeedCard', () => ({
@@ -163,13 +163,22 @@ jest.mock('@/components/feed/FeedCard', () => ({
   },
 }));
 
+const mockLikeMutate = jest.fn();
+const mockUnlikeMutate = jest.fn();
+
 jest.mock('@/components/feed/CommentsList', () => ({
   CommentsList: ({
     comments,
     onDelete,
+    onReply,
+    onLike,
+    onUnlike,
   }: {
-    comments: { id: string }[];
+    comments: { id: string; profile?: { display_name?: string }; parent_comment_id?: string | null }[];
     onDelete?: (commentId: string, parentCommentId?: string | null) => void;
+    onReply?: (comment: { id: string; parent_comment_id?: string | null; profile?: { display_name?: string } }) => void;
+    onLike?: (commentId: string) => void;
+    onUnlike?: (commentId: string) => void;
   }) => {
     const { Text, TouchableOpacity } = require('react-native');
     return (
@@ -178,6 +187,24 @@ jest.mock('@/components/feed/CommentsList', () => ({
         {onDelete && (
           <TouchableOpacity testID="delete-comment-btn" onPress={() => onDelete('c1', null)}>
             <Text>Delete</Text>
+          </TouchableOpacity>
+        )}
+        {onReply && (
+          <TouchableOpacity
+            testID="reply-comment-btn"
+            onPress={() => onReply({ id: 'c1', parent_comment_id: null, profile: { display_name: 'User2' } })}
+          >
+            <Text>Reply</Text>
+          </TouchableOpacity>
+        )}
+        {onLike && (
+          <TouchableOpacity testID="like-comment-btn" onPress={() => onLike('c1')}>
+            <Text>Like</Text>
+          </TouchableOpacity>
+        )}
+        {onUnlike && (
+          <TouchableOpacity testID="unlike-comment-btn" onPress={() => onUnlike('c1')}>
+            <Text>Unlike</Text>
           </TouchableOpacity>
         )}
       </>
@@ -190,10 +217,14 @@ jest.mock('@/components/feed/CommentInput', () => ({
     isAuthenticated,
     onSubmit,
     onLoginPress,
+    replyTarget,
+    onCancelReply,
   }: {
     isAuthenticated: boolean;
     onSubmit: (b: string, parentCommentId?: string) => void;
     onLoginPress?: () => void;
+    replyTarget?: { commentId: string; parentCommentId: string; displayName: string } | null;
+    onCancelReply?: () => void;
   }) => {
     const { TouchableOpacity, Text } = require('react-native');
     return (
@@ -205,6 +236,14 @@ jest.mock('@/components/feed/CommentInput', () => ({
         {onLoginPress && (
           <TouchableOpacity testID="login-btn" onPress={onLoginPress}>
             <Text>Login</Text>
+          </TouchableOpacity>
+        )}
+        {replyTarget && (
+          <Text testID="reply-target-name">{replyTarget.displayName}</Text>
+        )}
+        {onCancelReply && (
+          <TouchableOpacity testID="cancel-reply-btn" onPress={onCancelReply}>
+            <Text>Cancel Reply</Text>
           </TouchableOpacity>
         )}
       </>
@@ -610,5 +649,85 @@ describe('PostDetailScreen', () => {
     fireEvent.press(screen.getByTestId('bookmark-btn'));
     expect(mockUnbookmarkMutate).toHaveBeenCalledWith({ feedItemId: 'post-1' });
     expect(mockBookmarkMutate).not.toHaveBeenCalled();
+  });
+
+  it('handleReply sets replyTarget when onReply is triggered on a comment', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('reply-comment-btn'));
+    // After reply, the reply target display name should appear in CommentInput mock
+    expect(screen.getByTestId('reply-target-name')).toBeTruthy();
+    expect(screen.getByText('User2')).toBeTruthy();
+  });
+
+  it('handleReply uses comment.id as parentCommentId when parent_comment_id is null', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('reply-comment-btn'));
+    // The comment has parent_comment_id: null, so parentCommentId = comment.id ('c1')
+    const replyTargetEl = screen.getByTestId('reply-target-name');
+    expect(replyTargetEl.props.children).toBe('User2');
+  });
+
+  it('onLike callback calls likeMutation.mutate with commentId', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('like-comment-btn'));
+    expect(mockLikeMutate).toHaveBeenCalledWith({ commentId: 'c1' });
+  });
+
+  it('onUnlike callback calls unlikeMutation.mutate with commentId', () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('unlike-comment-btn'));
+    expect(mockUnlikeMutate).toHaveBeenCalledWith({ commentId: 'c1' });
+  });
+
+  it('onCancelReply resets replyTarget to null', () => {
+    render(<PostDetailScreen />);
+    // First set a reply target
+    fireEvent.press(screen.getByTestId('reply-comment-btn'));
+    expect(screen.getByTestId('reply-target-name')).toBeTruthy();
+    // Then cancel it
+    fireEvent.press(screen.getByTestId('cancel-reply-btn'));
+    expect(screen.queryByTestId('reply-target-name')).toBeNull();
+  });
+
+  it('uses {} default when useUserCommentLikes returns undefined (covers = {} branch)', () => {
+    const mockFeedModule = jest.requireMock('@/features/feed');
+    const origUseUserCommentLikes = mockFeedModule.useUserCommentLikes;
+    // Return undefined so the destructuring default = {} is used
+    mockFeedModule.useUserCommentLikes = () => ({ data: undefined });
+
+    render(<PostDetailScreen />);
+    // Should render without crash; likedCommentIds defaults to {}
+    expect(screen.getByTestId('comments-list')).toBeTruthy();
+
+    mockFeedModule.useUserCommentLikes = origUseUserCommentLikes;
+  });
+
+  it('handleReply uses anonymous fallback when profile display_name is null', () => {
+    const mockFeedModule = jest.requireMock('@/components/feed/CommentsList');
+    const origCommentsList = mockFeedModule.CommentsList;
+
+    // Override CommentsList to trigger onReply with a comment that has no display_name
+    mockFeedModule.CommentsList = ({
+      onReply,
+    }: {
+      onReply?: (comment: { id: string; parent_comment_id?: string | null; profile?: { display_name?: string | null } | null }) => void;
+    }) => {
+      const { TouchableOpacity, Text } = require('react-native');
+      return (
+        <TouchableOpacity
+          testID="reply-null-profile"
+          onPress={() => onReply && onReply({ id: 'c2', parent_comment_id: null, profile: null })}
+        >
+          <Text>Reply Null Profile</Text>
+        </TouchableOpacity>
+      );
+    };
+
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByTestId('reply-null-profile'));
+    // replyTarget.displayName falls back to t('feed.anonymous') = 'feed.anonymous'
+    expect(screen.getByText('feed.anonymous')).toBeTruthy();
+
+    mockFeedModule.CommentsList = origCommentsList;
   });
 });

@@ -216,4 +216,33 @@ describe('useNotificationHandler', () => {
 
     expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
+
+  it('navigates to post detail when notification has feed_item_id', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ feed_item_id: 'fi-1' }));
+
+    expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['notifications'] });
+    expect(mockPush).toHaveBeenCalledWith('/post/fi-1');
+  });
+
+  it('ignores feed_item_id when it is a non-string', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ feed_item_id: 999 }));
+
+    // Falls through to /notifications since feed_item_id is not a string
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('prioritizes feed_item_id over movie_id when both present', () => {
+    const callback = captureResponseCallback();
+    renderHook(() => useNotificationHandler());
+
+    callback(buildResponse({ feed_item_id: 'fi-1', movie_id: 'movie-1' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/post/fi-1');
+  });
 });
