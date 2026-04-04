@@ -6,7 +6,7 @@ import { useImageUpload } from '@/hooks/useImageUpload';
 import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { FormChangesDock } from '@/components/common/FormChangesDock';
-import { DEVICES } from '@shared/constants';
+import { DEVICES, GENDER_LABELS } from '@shared/constants';
 import type { Actor } from '@/lib/types';
 import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
@@ -31,7 +31,12 @@ const FIELD_CONFIG: FieldConfig[] = [
     key: 'gender',
     label: 'Gender',
     type: 'select',
-    options: { '0': 'Not set', '1': 'Female', '2': 'Male', '3': 'Non-binary' },
+    // @contract: gender options derived from GENDER_LABELS (shared/constants) + '0' sentinel for "Not set"
+    // @assumes: GENDER_LABELS keys 1-3 map to Female/Male/Non-binary (TMDB encoding)
+    options: {
+      '0': 'Not set',
+      ...Object.fromEntries(Object.entries(GENDER_LABELS).map(([k, v]) => [String(k), v])),
+    },
   },
   { key: 'biography', label: 'Biography', type: 'text' },
   { key: 'place_of_birth', label: 'Place of Birth', type: 'text' },

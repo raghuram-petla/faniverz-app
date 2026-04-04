@@ -349,9 +349,11 @@ describe('useMovieAddState', () => {
     vi.mocked(await import('@/hooks/useAdminVideos')).useAddVideo = vi.fn(() => ({
       mutateAsync: mockAddVideo,
     })) as never;
-    vi.mocked(await import('@/hooks/useAdminOtt')).useAddMoviePlatform = vi.fn(() => ({
+    (
+      vi.mocked(await import('@/hooks/useAdminOtt')) as Record<string, unknown>
+    ).useAddMoviePlatform = vi.fn(() => ({
       mutateAsync: mockAddPlatform,
-    })) as never;
+    }));
     vi.mocked(await import('@/hooks/useMovieProductionHouses')).useAddMovieProductionHouse = vi.fn(
       () => ({ mutateAsync: mockAddPH }),
     ) as never;

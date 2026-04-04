@@ -6,6 +6,7 @@ import { colors as palette } from '@/theme/colors';
 import { PLACEHOLDER_POSTER, PLACEHOLDER_PHOTO } from '@/constants/placeholders';
 import { getImageUrl, entityTypeToBucket } from '@shared/imageUrl';
 import { useTranslation } from 'react-i18next';
+import { ENTITY_FOLLOWING_LABEL_KEYS } from '@/constants/entityLabels';
 import type { EnrichedFollow, FeedEntityType } from '@shared/types';
 import type { SemanticTheme } from '@shared/themes';
 
@@ -15,12 +16,7 @@ export interface FollowingSectionProps {
   onViewAll: () => void;
 }
 
-const ENTITY_LABEL_KEYS: Record<FeedEntityType, string> = {
-  movie: 'profile.followingMovies',
-  actor: 'profile.followingActors',
-  production_house: 'profile.followingStudios',
-  user: 'profile.followingUsers',
-};
+// @contract imported from @/constants/entityLabels — do not redefine locally
 
 /** @invariant shows at most 6 items in the preview grid; overflow triggers "See more" link */
 const MAX_PREVIEW = 6;
@@ -54,7 +50,7 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
         {Array.from(grouped.entries()).map(([type, count]) => (
           <View key={type} style={styles.chip}>
             <Text style={styles.chipText}>
-              {count} {t(ENTITY_LABEL_KEYS[type])}
+              {count} {t(ENTITY_FOLLOWING_LABEL_KEYS[type] ?? '')}
             </Text>
           </View>
         ))}

@@ -224,3 +224,18 @@ export function unauthorizedResponse(): NextResponse {
 export function viewerReadonlyResponse(): NextResponse {
   return NextResponse.json({ error: 'Viewer role is read-only' }, { status: 403 });
 }
+
+/** @contract Standard 400 response for missing or invalid request parameters */
+export function badRequest(message: string): NextResponse {
+  return NextResponse.json({ error: message }, { status: 400 });
+}
+
+/** @contract Standard 404 response when a requested resource is not found */
+export function notFound(message: string): NextResponse {
+  return NextResponse.json({ error: message }, { status: 404 });
+}
+
+/** @contract Standard 403 response for permission/access denied errors (non-viewer cases) */
+export function forbiddenResponse(message: string): NextResponse {
+  return NextResponse.json({ error: message }, { status: 403 });
+}

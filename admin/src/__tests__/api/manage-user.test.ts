@@ -1,30 +1,72 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { makeRequest, nextResponseMock } from './test-utils';
 
-const mockVerifyAdmin = vi.fn();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockFrom: any = vi.fn();
 const mockUpdateUserById = vi.fn();
 
+// @contract: withMutationAdmin is mocked to pass-through the handler with a mock auth context,
+// allowing manage-user route logic to be tested without a real Supabase auth roundtrip.
+// Viewer/unauthorized cases are tested by configuring mockWithMutationAdminBehavior.
+let mockWithMutationAdminBehavior: 'authenticated' | 'unauthorized' | 'viewer_readonly' =
+  'authenticated';
+
+vi.mock('@/lib/route-wrappers', () => ({
+  withMutationAdmin: (
+    label: string,
+    handler: (ctx: { req: unknown; supabase: unknown; auth: unknown }) => Promise<unknown>,
+  ) => {
+    return async (req: unknown) => {
+      if (mockWithMutationAdminBehavior === 'unauthorized') {
+        return {
+          body: { error: 'Unauthorized' },
+          status: 401,
+          async json() {
+            return this.body;
+          },
+        };
+      }
+      if (mockWithMutationAdminBehavior === 'viewer_readonly') {
+        return {
+          body: { error: 'Viewer role is read-only' },
+          status: 403,
+          async json() {
+            return this.body;
+          },
+        };
+      }
+      // @contract: mirror the real withMutationAdmin error handling — caught errors become 500 responses
+      try {
+        return await handler({
+          req,
+          supabase: null,
+          auth: { user: { id: 'admin-1', email: 'admin@test.com' }, role: 'admin' },
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : `${label} failed`;
+        return {
+          body: { error: message },
+          status: 500,
+          async json() {
+            return this.body;
+          },
+        };
+      }
+    };
+  },
+}));
+
 vi.mock('@/lib/sync-helpers', () => ({
-  verifyAdminCanMutate: (...args: unknown[]) => mockVerifyAdmin(...args),
-  errorResponse: (_label: string, err: unknown) => ({
+  badRequest: (message: string) => ({
+    body: { error: message },
+    status: 400,
+    async json() {
+      return this.body;
+    },
+  }),
+  errorResponse: (_label: string, err: unknown, status = 500) => ({
     body: { error: err instanceof Error ? err.message : 'manage-user failed' },
-    status: 500,
-    async json() {
-      return this.body;
-    },
-  }),
-  unauthorizedResponse: () => ({
-    body: { error: 'Unauthorized' },
-    status: 401,
-    async json() {
-      return this.body;
-    },
-  }),
-  viewerReadonlyResponse: () => ({
-    body: { error: 'Viewer role is read-only' },
-    status: 403,
+    status,
     async json() {
       return this.body;
     },
@@ -47,26 +89,30 @@ vi.mock('next/server', () => nextResponseMock);
 import { POST } from '@/app/api/manage-user/route';
 
 beforeEach(() => {
-  mockVerifyAdmin.mockReset();
   mockFrom.mockReset();
   mockUpdateUserById.mockReset();
-
-  // Default: admin is authenticated
-  mockVerifyAdmin.mockResolvedValue({
-    user: { id: 'admin-1', email: 'admin@test.com' },
-    role: 'admin',
-  });
+  mockWithMutationAdminBehavior = 'authenticated';
 });
 
 describe('POST /api/manage-user', () => {
-  it('returns 401 when verifyAdmin returns null', async () => {
-    mockVerifyAdmin.mockResolvedValueOnce(null);
+  it('returns 401 when withMutationAdmin rejects unauthenticated request', async () => {
+    mockWithMutationAdminBehavior = 'unauthorized';
 
     const res = await POST(makeRequest({ action: 'ban', userId: 'user-1' }));
     expect(res.status).toBe(401);
 
     const json = await res.json();
     expect(json).toEqual({ error: 'Unauthorized' });
+  });
+
+  it('returns 403 when withMutationAdmin rejects viewer role', async () => {
+    mockWithMutationAdminBehavior = 'viewer_readonly';
+
+    const res = await POST(makeRequest({ action: 'ban', userId: 'user-1' }));
+    expect(res.status).toBe(403);
+
+    const json = await res.json();
+    expect(json).toEqual({ error: 'Viewer role is read-only' });
   });
 
   it('returns 400 when action is missing', async () => {

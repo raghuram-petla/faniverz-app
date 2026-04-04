@@ -258,10 +258,10 @@ describe('NewFeedItemPage', () => {
     renderWithProviders(<NewFeedItemPage />);
     const feedTypeSelect = screen.getAllByRole('combobox')[0];
 
-    // Switch to video — content type should reset to 'trailer' (first video option)
+    // Switch to video — content type should reset to 'teaser' (first video option per VIDEO_TYPES ordering)
     fireEvent.change(feedTypeSelect, { target: { value: 'video' } });
     const contentTypeSelect = screen.getAllByRole('combobox')[1];
-    expect(contentTypeSelect).toHaveValue('trailer');
+    expect(contentTypeSelect).toHaveValue('teaser');
   });
 
   it('updates content type when content type select is changed', () => {

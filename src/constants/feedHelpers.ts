@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
+import { FEED_CONTENT_TYPE_COLORS, FEED_CONTENT_TYPE_LABELS } from '@shared/constants';
 import type { FeedPillConfig } from '@/types';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
@@ -15,83 +16,17 @@ export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'Updates', value: 'updates', activeColor: colors.red600 },
 ];
 
+// @contract delegates to FEED_CONTENT_TYPE_COLORS in shared/constants — single source of truth
 // @sync must cover all content_type values from news_feed_items table
 // @edge default returns red600 — safe for any new content types added to the backend
 export function getFeedTypeColor(contentType: string): string {
-  switch (contentType) {
-    case 'trailer':
-    case 'teaser':
-    case 'glimpse':
-    case 'promo':
-      return colors.blue600;
-    case 'song':
-      return colors.purple600;
-    case 'poster':
-    case 'backdrop':
-      return colors.green500;
-    case 'bts':
-    case 'interview':
-    case 'event':
-    case 'making':
-      return colors.orange500;
-    case 'short-film':
-      return colors.pink600;
-    case 'update':
-      return colors.gray500;
-    case 'new_movie':
-      return colors.red600;
-    case 'theatrical_release':
-      return colors.red600;
-    case 'ott_release':
-      return colors.purple600;
-    case 'rating_milestone':
-      return colors.yellow400;
-    default:
-      return colors.red600;
-  }
+  return FEED_CONTENT_TYPE_COLORS[contentType] ?? colors.red600;
 }
 
-// @contract maps backend content_type to human-readable label for UI display
-// @edge default case returns raw contentType string — new backend types render as-is until code is updated
+// @contract delegates to FEED_CONTENT_TYPE_LABELS in shared/constants — single source of truth
+// @edge default returns raw contentType string — new backend types render as-is until labels map is updated
 export function getFeedTypeLabel(contentType: string): string {
-  switch (contentType) {
-    case 'trailer':
-      return 'Trailer';
-    case 'teaser':
-      return 'Teaser';
-    case 'glimpse':
-      return 'Glimpse';
-    case 'promo':
-      return 'Promo';
-    case 'song':
-      return 'Song';
-    case 'poster':
-      return 'Poster';
-    case 'backdrop':
-      return 'Backdrop';
-    case 'bts':
-      return 'BTS';
-    case 'interview':
-      return 'Interview';
-    case 'event':
-      return 'Event';
-    case 'making':
-      return 'Making';
-    case 'short-film':
-      return 'Short Film';
-    case 'update':
-      return 'Update';
-    case 'new_movie':
-      return 'New Movie';
-    case 'theatrical_release':
-      return 'In Theaters';
-    case 'ott_release':
-      return 'Now Streaming';
-    case 'rating_milestone':
-      return 'Milestone';
-    default:
-      return contentType;
-  }
+  return FEED_CONTENT_TYPE_LABELS[contentType] ?? contentType;
 }
 
 export function getFeedTypeIconName(

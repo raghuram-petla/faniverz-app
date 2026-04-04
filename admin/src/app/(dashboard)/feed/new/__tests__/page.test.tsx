@@ -6,6 +6,36 @@ const mockPush = vi.fn();
 const mockMutateAsync = vi.fn();
 const mockIsPending = { value: false };
 
+// @contract: mirrors VIDEO_TYPES and FEED_CONTENT_TYPE_LABELS from shared/constants
+// @assumes: 'other' is excluded from video content types (filtered in page.tsx)
+vi.mock('@shared/constants', () => ({
+  VIDEO_TYPES: [
+    { value: 'teaser', label: 'Teaser' },
+    { value: 'trailer', label: 'Trailer' },
+    { value: 'glimpse', label: 'Glimpse' },
+    { value: 'song', label: 'Song' },
+    { value: 'interview', label: 'Interview' },
+    { value: 'bts', label: 'Behind the Scenes' },
+    { value: 'event', label: 'Event' },
+    { value: 'promo', label: 'Promo' },
+    { value: 'making', label: 'Making' },
+    { value: 'other', label: 'Other' },
+  ],
+  FEED_CONTENT_TYPE_LABELS: {
+    trailer: 'Trailer',
+    teaser: 'Teaser',
+    glimpse: 'Glimpse',
+    song: 'Song',
+    bts: 'BTS',
+    interview: 'Interview',
+    event: 'Event',
+    promo: 'Promo',
+    making: 'Making',
+    'short-film': 'Short Film',
+    update: 'Update',
+  },
+}));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
@@ -212,8 +242,8 @@ describe('NewFeedItemPage', () => {
     // Switch to video
     fireEvent.change(feedTypeSelect, { target: { value: 'video' } });
     const selects = screen.getAllByRole('combobox');
-    // content type select should default to 'trailer' (first for video)
-    expect(selects[1]).toHaveValue('trailer');
+    // content type select should default to 'teaser' (first for video per VIDEO_TYPES ordering)
+    expect(selects[1]).toHaveValue('teaser');
     // Switch back to update
     fireEvent.change(feedTypeSelect, { target: { value: 'update' } });
     // content type select disappears (single option)

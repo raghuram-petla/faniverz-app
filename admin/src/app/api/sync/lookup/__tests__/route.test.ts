@@ -40,14 +40,11 @@ import { POST } from '@/app/api/sync/lookup/route';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getMovieDetails, getPersonDetails, getMovieImages, getWatchProviders } from '@/lib/tmdb';
 import { ensureTmdbApiKey, verifyAdmin } from '@/lib/sync-helpers';
-import { NextRequest } from 'next/server';
+import { makeNextRequest } from '@/__tests__/helpers/request-builders';
 
+// @coupling Uses shared makeNextRequest helper to build real NextRequest objects.
 function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/sync/lookup', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+  return makeNextRequest('http://localhost/api/sync/lookup', body);
 }
 
 const makeMovieDetail = (overrides: Record<string, unknown> = {}) => ({

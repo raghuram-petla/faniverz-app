@@ -24,18 +24,16 @@ vi.mock('@/lib/variant-config', () => ({
 }));
 
 import { POST } from '@/app/api/validations/fix/route';
-import { NextRequest } from 'next/server';
+import { makeRouteWrapperCtx } from '@/__tests__/helpers/request-builders';
 
+// @coupling Uses shared makeRouteWrapperCtx helper to build route-wrapper context objects.
+// @edge includeApiKey=false because validations/fix handler does not receive apiKey in context.
 function makeCtx(body: Record<string, unknown>) {
-  return {
-    req: new NextRequest('http://localhost/api/validations/fix', {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' },
-    }),
-    supabase: mockSupabase,
-    auth: { user: { id: 'admin-11' } as never, role: 'super_admin' },
-  };
+  return makeRouteWrapperCtx('http://localhost/api/validations/fix', body, mockSupabase as never, {
+    userId: 'admin-11',
+    role: 'super_admin',
+    includeApiKey: false,
+  });
 }
 
 describe('POST /api/validations/fix', () => {

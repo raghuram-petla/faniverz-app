@@ -7,37 +7,36 @@ import { useCreateFeedItem } from '@/hooks/useAdminFeed';
 import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import type { FeedType } from '@/lib/types';
 import { getYouTubeThumbnail } from '@/lib/youtube';
+import { VIDEO_TYPES, FEED_CONTENT_TYPE_LABELS } from '@shared/constants';
 
 // @contract: FEED_TYPES must match feed_items.feed_type CHECK constraint in the database
+// @assumes: only 'update', 'video', and 'poster' are creatable via admin; backdrop/surprise omitted
 const FEED_TYPES: { label: string; value: FeedType }[] = [
   { label: 'Update (text announcement)', value: 'update' },
   { label: 'Video', value: 'video' },
   { label: 'Poster', value: 'poster' },
 ];
 
-// @coupling: CONTENT_TYPES is a superset — includes 'surprise' key even though it's not in FEED_TYPES dropdown
 // @contract: content_type values must match feed_items.content_type CHECK constraint in the database
+// @coupling: video content types sourced from VIDEO_TYPES (shared) filtered to exclude 'other';
+//   labels resolved via FEED_CONTENT_TYPE_LABELS so 'bts' renders as 'BTS' (not 'Behind the Scenes')
+// @assumes: CONTENT_TYPES covers backdrop/surprise for completeness even though FEED_TYPES dropdown omits them
+const VIDEO_CONTENT_TYPES = VIDEO_TYPES.filter((v) => v.value !== 'other').map((v) => ({
+  value: v.value,
+  label: FEED_CONTENT_TYPE_LABELS[v.value] ?? v.label,
+}));
+
 const CONTENT_TYPES: Record<FeedType, { label: string; value: string }[]> = {
   update: [{ label: 'Update', value: 'update' }],
-  video: [
-    { label: 'Trailer', value: 'trailer' },
-    { label: 'Teaser', value: 'teaser' },
-    { label: 'Glimpse', value: 'glimpse' },
-    { label: 'Song', value: 'song' },
-    { label: 'BTS', value: 'bts' },
-    { label: 'Interview', value: 'interview' },
-    { label: 'Event', value: 'event' },
-    { label: 'Promo', value: 'promo' },
-    { label: 'Making', value: 'making' },
-  ],
+  video: VIDEO_CONTENT_TYPES,
   poster: [{ label: 'Poster', value: 'poster' }],
   backdrop: [{ label: 'Backdrop', value: 'backdrop' }],
   surprise: [
-    { label: 'Song', value: 'song' },
-    { label: 'Short Film', value: 'short-film' },
-    { label: 'BTS', value: 'bts' },
-    { label: 'Interview', value: 'interview' },
-    { label: 'Trailer', value: 'trailer' },
+    { label: FEED_CONTENT_TYPE_LABELS['song'] ?? 'Song', value: 'song' },
+    { label: FEED_CONTENT_TYPE_LABELS['short-film'] ?? 'Short Film', value: 'short-film' },
+    { label: FEED_CONTENT_TYPE_LABELS['bts'] ?? 'BTS', value: 'bts' },
+    { label: FEED_CONTENT_TYPE_LABELS['interview'] ?? 'Interview', value: 'interview' },
+    { label: FEED_CONTENT_TYPE_LABELS['trailer'] ?? 'Trailer', value: 'trailer' },
   ],
 };
 

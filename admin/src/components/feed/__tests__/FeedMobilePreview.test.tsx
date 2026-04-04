@@ -31,6 +31,8 @@ vi.mock('@shared/constants', () => ({
     update: 'Update',
     song: 'Song',
   },
+  // @contract: FEED_TAB_LABELS sourced from shared/constants; mock mirrors production values
+  FEED_TAB_LABELS: ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'],
 }));
 
 vi.mock('@shared/colors', () => ({

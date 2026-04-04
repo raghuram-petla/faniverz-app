@@ -85,6 +85,8 @@ export const DEVICES: readonly DeviceConfig[] = [
 ] as const;
 
 // Feed content type colors — hex values used in admin preview and can derive Tailwind classes
+// @contract single source of truth for content-type badge colors shared across mobile + admin
+// @sync must stay aligned with getFeedTypeColor in src/constants/feedHelpers.ts (which uses this map)
 export const FEED_CONTENT_TYPE_COLORS: Record<string, string> = {
   trailer: '#2563EB',
   teaser: '#3B82F6',
@@ -92,6 +94,7 @@ export const FEED_CONTENT_TYPE_COLORS: Record<string, string> = {
   promo: '#60A5FA',
   song: '#9333EA',
   poster: '#22C55E',
+  backdrop: '#22C55E',
   bts: '#F97316',
   interview: '#F97316',
   event: '#EA580C',
@@ -105,6 +108,8 @@ export const FEED_CONTENT_TYPE_COLORS: Record<string, string> = {
 };
 
 // Feed content type labels
+// @contract single source of truth for content-type display labels shared across mobile + admin
+// @sync must stay aligned with getFeedTypeLabel in src/constants/feedHelpers.ts (which uses this map)
 export const FEED_CONTENT_TYPE_LABELS: Record<string, string> = {
   trailer: 'Trailer',
   teaser: 'Teaser',
@@ -112,6 +117,7 @@ export const FEED_CONTENT_TYPE_LABELS: Record<string, string> = {
   promo: 'Promo',
   song: 'Song',
   poster: 'Poster',
+  backdrop: 'Backdrop',
   bts: 'BTS',
   interview: 'Interview',
   event: 'Event',
@@ -123,6 +129,10 @@ export const FEED_CONTENT_TYPE_LABELS: Record<string, string> = {
   ott_release: 'Now Streaming',
   rating_milestone: 'Milestone',
 };
+
+// @contract Feed tab labels for the mobile preview pill row — 'All' is a sentinel for no filter
+// @assumes tab order matches the mobile app HomeFeed filter pill order
+export const FEED_TAB_LABELS: string[] = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'];
 
 // Gradient stops used in mobile screens (shared so admin preview can replicate exactly)
 export const SPOTLIGHT_GRADIENT = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,1)'];

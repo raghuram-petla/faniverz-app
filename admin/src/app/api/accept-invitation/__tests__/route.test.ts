@@ -15,19 +15,25 @@ vi.mock('@/lib/sync-helpers', () => ({
     const { NextResponse } = require('next/server');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }),
+  // @contract: shared error response helpers used by the route
+  badRequest: vi.fn((message: string) => {
+    const { NextResponse } = require('next/server');
+    return NextResponse.json({ error: message }, { status: 400 });
+  }),
+  notFound: vi.fn((message: string) => {
+    const { NextResponse } = require('next/server');
+    return NextResponse.json({ error: message }, { status: 404 });
+  }),
 }));
 
 import { POST } from '@/app/api/accept-invitation/route';
 import { getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
 import { verifyBearer } from '@/lib/sync-helpers';
-import { NextRequest } from 'next/server';
+import { makeNextRequest } from '@/__tests__/helpers/request-builders';
 
+// @coupling Uses shared makeNextRequest helper to build real NextRequest objects.
 function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/accept-invitation', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+  return makeNextRequest('http://localhost/api/accept-invitation', body);
 }
 
 describe('POST /api/accept-invitation', () => {

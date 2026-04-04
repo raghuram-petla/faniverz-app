@@ -15,6 +15,7 @@ import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { createOptimisticMutation } from './optimisticMutationFactory';
 import type { FeedFilterOption } from '@/types';
 import type { NewsFeedItem } from '@shared/types';
 
@@ -72,188 +73,130 @@ export function useFeedItem(id: string) {
 // @sideeffect: vote counts are maintained BOTH optimistically in the client cache AND by a DB trigger (trg_feed_vote_count in personalized_feed migration). The upsert in voteFeedItem fires the trigger which increments/decrements news_feed.upvote_count. After onSettled invalidation, the server value overwrites the optimistic one. Between optimistic update and server response (~1-2s), counts may be off by 1 if another user votes simultaneously.
 // @assumes: previousVote is passed by the caller from useUserVotes data — if the caller passes the wrong previousVote (e.g., cache was stale), the optimistic count adjustment will be wrong (e.g., decrementing upvote when user hadn't upvoted). The onSettled invalidation self-heals this.
 // @edge: the optimistic update iterates ALL cached feed pages across BOTH 'news-feed' and 'personalized-feed' queries. For large caches (many filter variations x many pages), this is O(n*m) synchronous work on the JS thread during onMutate.
+// @coupling: uses createOptimisticMutation for the standard cancel/snapshot/update/rollback/invalidate lifecycle. The secondaryQueryKey 'feed-votes' is handled separately via a second factory call because it has a different data shape (Record vs paginated pages).
 export function useVoteFeedItem() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  type FeedVars = {
+    feedItemId: string;
+    voteType: 'up' | 'down';
+    previousVote?: 'up' | 'down' | null;
+  };
+  type FeedPages = { pages: NewsFeedItem[][] };
+  type VoteMap = Record<string, 'up' | 'down'>;
+
+  // @sync: primary lifecycle handles feed page caches; secondary handles flat vote-map cache
+  const feedHandlers = createOptimisticMutation<FeedVars, FeedPages>(queryClient, {
+    queryKeys: FEED_QUERY_KEYS,
+    primaryUpdater: (old, { feedItemId, voteType, previousVote }) => {
+      return {
+        ...old,
+        pages: old.pages.map((page) =>
+          page.map((item) => {
+            if (item.id !== feedItemId) return item;
+            let { upvote_count, downvote_count } = item;
+            if (previousVote === 'up') upvote_count--;
+            if (previousVote === 'down') downvote_count--;
+            if (voteType === 'up') upvote_count++;
+            if (voteType === 'down') downvote_count++;
+            return {
+              ...item,
+              upvote_count: Math.max(0, upvote_count),
+              downvote_count: Math.max(0, downvote_count),
+            };
+          }),
+        ),
+      };
+    },
+  });
+
+  // @sync: also optimistically update feed-votes cache so vote icon state changes instantly
+  const voteHandlers = createOptimisticMutation<FeedVars, VoteMap>(queryClient, {
+    queryKeys: ['feed-votes'] as const,
+    primaryUpdater: (old, { feedItemId, voteType }) => ({ ...old, [feedItemId]: voteType }),
+    onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote')),
+  });
+
   return useMutation({
-    mutationFn: ({
-      feedItemId,
-      voteType,
-    }: {
-      feedItemId: string;
-      voteType: 'up' | 'down';
-      previousVote?: 'up' | 'down' | null;
-    }) => {
+    mutationFn: ({ feedItemId, voteType }: FeedVars) => {
       if (!user?.id) throw new Error('Must be logged in to vote');
       return voteFeedItem(feedItemId, user.id, voteType);
     },
-    onMutate: async ({ feedItemId, voteType, previousVote }) => {
-      // @sync: capture ALL rollback snapshots BEFORE any setQueriesData calls to avoid partial snapshots
-      const previousFeedData: {
-        queryKey: readonly unknown[];
-        data: { pages: NewsFeedItem[][] };
-      }[] = [];
-      for (const key of FEED_QUERY_KEYS) {
-        await queryClient.cancelQueries({ queryKey: [key] });
-        queryClient
-          .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
-          .forEach(([queryKey, data]) => {
-            if (data) previousFeedData.push({ queryKey, data });
-          });
-      }
-      for (const key of FEED_QUERY_KEYS) {
-        queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) =>
-              page.map((item) => {
-                if (item.id !== feedItemId) return item;
-                let { upvote_count, downvote_count } = item;
-                if (previousVote === 'up') upvote_count--;
-                if (previousVote === 'down') downvote_count--;
-                if (voteType === 'up') upvote_count++;
-                if (voteType === 'down') downvote_count++;
-                return {
-                  ...item,
-                  upvote_count: Math.max(0, upvote_count),
-                  downvote_count: Math.max(0, downvote_count),
-                };
-              }),
-            ),
-          };
-        });
-      }
-      // @sync: also optimistically update feed-votes cache so vote icon state changes instantly
-      await queryClient.cancelQueries({ queryKey: ['feed-votes'] });
-      const previousVoteData: {
-        queryKey: readonly unknown[];
-        data: Record<string, 'up' | 'down'>;
-      }[] = [];
-      queryClient
-        .getQueriesData<Record<string, 'up' | 'down'>>({ queryKey: ['feed-votes'] })
-        .forEach(([queryKey, data]) => {
-          if (data) previousVoteData.push({ queryKey, data });
-        });
-      queryClient.setQueriesData<Record<string, 'up' | 'down'>>(
-        { queryKey: ['feed-votes'] },
-        (old) => {
-          if (!old) return old;
-          return { ...old, [feedItemId]: voteType };
-        },
-      );
-      return { previousFeedData, previousVoteData };
+    onMutate: async (variables) => {
+      const feedCtx = await feedHandlers.onMutate!(variables);
+      const voteCtx = await voteHandlers.onMutate!(variables);
+      return { feedCtx, voteCtx };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previousFeedData) {
-        for (const { queryKey, data } of context.previousFeedData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      if (context?.previousVoteData) {
-        for (const { queryKey, data } of context.previousVoteData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote'));
+    onError: (err, vars, context) => {
+      feedHandlers.onError!(err as Error, vars, context?.feedCtx);
+      voteHandlers.onError!(err as Error, vars, context?.voteCtx);
     },
     onSettled: () => {
-      for (const key of FEED_QUERY_KEYS) {
-        queryClient.invalidateQueries({ queryKey: [key] });
-      }
-      queryClient.invalidateQueries({ queryKey: ['feed-votes'] });
+      feedHandlers.onSettled!();
+      voteHandlers.onSettled!();
     },
   });
 }
 
 // @sync: mirrors the same optimistic update pattern as useVoteFeedItem above. Both must iterate the same FEED_QUERY_KEYS and use the same cache structure assumption ({ pages: NewsFeedItem[][] }). If one is updated to handle a new cache shape (e.g., adding cursors), the other must match.
 // @edge: if the delete fails (e.g., RLS violation because user_id doesn't match auth.uid()), the rollback restores old data and an error Alert is shown.
+// @coupling: uses createOptimisticMutation — see useVoteFeedItem for the dual-factory pattern rationale.
 export function useRemoveFeedVote() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  type FeedVars = { feedItemId: string; previousVote?: 'up' | 'down' | null };
+  type FeedPages = { pages: NewsFeedItem[][] };
+  type VoteMap = Record<string, 'up' | 'down'>;
+
+  const feedHandlers = createOptimisticMutation<FeedVars, FeedPages>(queryClient, {
+    queryKeys: FEED_QUERY_KEYS,
+    primaryUpdater: (old, { feedItemId, previousVote }) => ({
+      ...old,
+      pages: old.pages.map((page) =>
+        page.map((item) => {
+          if (item.id !== feedItemId) return item;
+          return {
+            ...item,
+            upvote_count:
+              previousVote === 'up' ? Math.max(0, item.upvote_count - 1) : item.upvote_count,
+            downvote_count:
+              previousVote === 'down' ? Math.max(0, item.downvote_count - 1) : item.downvote_count,
+          };
+        }),
+      ),
+    }),
+  });
+
+  // @sync: also optimistically remove from feed-votes cache so vote icon state changes instantly
+  const voteHandlers = createOptimisticMutation<FeedVars, VoteMap>(queryClient, {
+    queryKeys: ['feed-votes'] as const,
+    primaryUpdater: (old, { feedItemId }) => {
+      const updated = { ...old };
+      delete updated[feedItemId];
+      return updated;
+    },
+    onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote')),
+  });
+
   return useMutation({
-    mutationFn: ({ feedItemId }: { feedItemId: string; previousVote?: 'up' | 'down' | null }) => {
+    mutationFn: ({ feedItemId }: FeedVars) => {
       if (!user?.id) throw new Error('Must be logged in');
       return removeFeedVote(feedItemId, user.id);
     },
-    onMutate: async ({ feedItemId, previousVote }) => {
-      // @sync: capture ALL rollback snapshots BEFORE any setQueriesData calls to avoid partial snapshots
-      const previousFeedData: {
-        queryKey: readonly unknown[];
-        data: { pages: NewsFeedItem[][] };
-      }[] = [];
-      for (const key of FEED_QUERY_KEYS) {
-        await queryClient.cancelQueries({ queryKey: [key] });
-        queryClient
-          .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
-          .forEach(([queryKey, data]) => {
-            if (data) previousFeedData.push({ queryKey, data });
-          });
-      }
-      for (const key of FEED_QUERY_KEYS) {
-        queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) =>
-              page.map((item) => {
-                if (item.id !== feedItemId) return item;
-                return {
-                  ...item,
-                  upvote_count:
-                    previousVote === 'up' ? Math.max(0, item.upvote_count - 1) : item.upvote_count,
-                  downvote_count:
-                    previousVote === 'down'
-                      ? Math.max(0, item.downvote_count - 1)
-                      : item.downvote_count,
-                };
-              }),
-            ),
-          };
-        });
-      }
-      // @sync: also optimistically remove from feed-votes cache so vote icon state changes instantly
-      await queryClient.cancelQueries({ queryKey: ['feed-votes'] });
-      const previousVoteData: {
-        queryKey: readonly unknown[];
-        data: Record<string, 'up' | 'down'>;
-      }[] = [];
-      queryClient
-        .getQueriesData<Record<string, 'up' | 'down'>>({ queryKey: ['feed-votes'] })
-        .forEach(([queryKey, data]) => {
-          if (data) previousVoteData.push({ queryKey, data });
-        });
-      queryClient.setQueriesData<Record<string, 'up' | 'down'>>(
-        { queryKey: ['feed-votes'] },
-        (old) => {
-          if (!old) return old;
-          const updated = { ...old };
-          delete updated[feedItemId];
-          return updated;
-        },
-      );
-      return { previousFeedData, previousVoteData };
+    onMutate: async (variables) => {
+      const feedCtx = await feedHandlers.onMutate!(variables);
+      const voteCtx = await voteHandlers.onMutate!(variables);
+      return { feedCtx, voteCtx };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previousFeedData) {
-        for (const { queryKey, data } of context.previousFeedData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      if (context?.previousVoteData) {
-        for (const { queryKey, data } of context.previousVoteData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote'));
+    onError: (err, vars, context) => {
+      feedHandlers.onError!(err as Error, vars, context?.feedCtx);
+      voteHandlers.onError!(err as Error, vars, context?.voteCtx);
     },
     onSettled: () => {
-      for (const key of FEED_QUERY_KEYS) {
-        queryClient.invalidateQueries({ queryKey: [key] });
-      }
-      queryClient.invalidateQueries({ queryKey: ['feed-votes'] });
+      feedHandlers.onSettled!();
+      voteHandlers.onSettled!();
     },
   });
 }

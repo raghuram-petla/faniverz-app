@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdminWithRole, errorResponse, unauthorizedResponse } from '@/lib/sync-helpers';
+import {
+  verifyAdminWithRole,
+  errorResponse,
+  unauthorizedResponse,
+  badRequest,
+  notFound,
+  forbiddenResponse,
+} from '@/lib/sync-helpers';
 
 /**
  * GET /api/user-ph-assignments?userId=<uuid>
@@ -23,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     const userId = req.nextUrl.searchParams.get('userId');
     if (!userId) {
-      return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
+      return badRequest('Missing userId parameter');
     }
 
     const supabase = getSupabaseAdmin();
@@ -51,18 +58,12 @@ export async function POST(req: NextRequest) {
 
     // @boundary Only root/super_admin can assign production houses
     if (auth.role !== 'root' && auth.role !== 'super_admin') {
-      return NextResponse.json(
-        { error: 'Only super admins can assign production houses' },
-        { status: 403 },
-      );
+      return forbiddenResponse('Only super admins can assign production houses');
     }
 
     const { userId, productionHouseIds } = await req.json();
     if (!userId || !Array.isArray(productionHouseIds)) {
-      return NextResponse.json(
-        { error: 'Missing userId or productionHouseIds array' },
-        { status: 400 },
-      );
+      return badRequest('Missing userId or productionHouseIds array');
     }
 
     const supabase = getSupabaseAdmin();
@@ -75,13 +76,10 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (roleError || !targetRole) {
-      return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
+      return notFound('Target user not found');
     }
     if (targetRole.role_id !== 'production_house_admin') {
-      return NextResponse.json(
-        { error: 'PH assignments can only be set for production_house_admin role users' },
-        { status: 400 },
-      );
+      return badRequest('PH assignments can only be set for production_house_admin role users');
     }
 
     // @sideeffect Atomic delete-then-insert via RPC to prevent partial state

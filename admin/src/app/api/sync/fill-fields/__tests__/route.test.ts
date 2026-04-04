@@ -36,19 +36,14 @@ vi.mock('@/lib/sync-cast', () => ({ syncCastCrewAdditive: vi.fn() }));
 
 import { POST } from '@/app/api/sync/fill-fields/route';
 import { getMovieDetails } from '@/lib/tmdb';
-import { NextRequest } from 'next/server';
+import { makeRouteWrapperCtx } from '@/__tests__/helpers/request-builders';
 
+// @coupling Uses shared makeRouteWrapperCtx helper to build route-wrapper context objects.
 function makeCtx(body: Record<string, unknown>) {
-  return {
-    req: new NextRequest('http://localhost/api/sync/fill-fields', {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' },
-    }),
-    supabase: mockSupabase,
-    auth: { user: { id: 'admin-42' } as never, role: 'super_admin' },
-    apiKey: 'tmdb-key',
-  };
+  return makeRouteWrapperCtx('http://localhost/api/sync/fill-fields', body, mockSupabase as never, {
+    userId: 'admin-42',
+    role: 'super_admin',
+  });
 }
 
 describe('POST /api/sync/fill-fields', () => {

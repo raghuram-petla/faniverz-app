@@ -5,6 +5,8 @@ import {
   verifyAdminWithLanguages,
   unauthorizedResponse,
   viewerReadonlyResponse,
+  forbiddenResponse,
+  badRequest,
 } from '@/lib/sync-helpers';
 import { hasLanguageAccess } from '@/lib/language-access';
 
@@ -33,8 +35,6 @@ const MOVIE_CHILD_TABLES = new Set([
   'movie_production_houses',
   'movie_theatrical_runs',
 ]);
-
-const forbiddenResponse = (msg: string) => NextResponse.json({ error: msg }, { status: 403 });
 
 /** @boundary Executes admin_crud RPC with audit attribution */
 // @edge: `table` is a raw string from the client — table whitelist validation happens inside
@@ -122,10 +122,7 @@ export async function PATCH(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
     const { table, id, filters, data } = await req.json();
     if (!table || (!id && !filters) || !data) {
-      return NextResponse.json(
-        { error: 'Missing table, data, and either id or filters' },
-        { status: 400 },
-      );
+      return badRequest('Missing table, data, and either id or filters');
     }
 
     // @boundary Movie and movie child table updates require language-scoped authorization
@@ -199,7 +196,7 @@ export async function POST(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
     const { table, data } = await req.json();
     if (!table || !data) {
-      return NextResponse.json({ error: 'Missing table or data' }, { status: 400 });
+      return badRequest('Missing table or data');
     }
 
     // @boundary Movie and movie child table inserts require language-scoped authorization
@@ -257,10 +254,7 @@ export async function DELETE(req: NextRequest) {
 
     const { table, id, filters } = await req.json();
     if (!table || (!id && !filters)) {
-      return NextResponse.json(
-        { error: 'Missing table, and either id or filters' },
-        { status: 400 },
-      );
+      return badRequest('Missing table, and either id or filters');
     }
 
     const role = auth.role;

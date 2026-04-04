@@ -6,6 +6,7 @@ import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { Trash2, Pencil, Loader2, X, Check } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { EmptyState } from '@/components/common/EmptyState';
 
 // @contract Inline editing uses local state (editingId/editBody) — only one comment editable at a time.
 // @boundary No pagination — all matching comments loaded in a single query.
@@ -97,7 +98,7 @@ export default function CommentsPage() {
           <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : !comments?.length ? (
-        <div className="text-center py-20 text-on-surface-subtle">No comments found.</div>
+        <EmptyState message="No comments found." />
       ) : (
         <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <table className="w-full">

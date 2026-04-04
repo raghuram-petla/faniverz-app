@@ -115,6 +115,8 @@ vi.mock('@shared/constants', () => ({
     { id: 'iphone-14', label: 'iPhone 14', width: 390, height: 844 },
     { id: 'iphone-15', label: 'iPhone 15', width: 393, height: 852 },
   ],
+  // @contract: mirrors GENDER_LABELS from shared/constants (TMDB encoding: 1=Female, 2=Male, 3=Non-binary)
+  GENDER_LABELS: { 1: 'Female', 2: 'Male', 3: 'Non-binary' },
 }));
 
 import EditActorPage from '@/app/(dashboard)/cast/[id]/page';

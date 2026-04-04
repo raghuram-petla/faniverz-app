@@ -117,4 +117,68 @@ describe('createSimpleMutation', () => {
 
     expect(window.alert).toHaveBeenCalledWith('Operation failed');
   });
+
+  // @contract getInvalidateKeys — dynamic keys derived from mutation result and variables
+  it('calls getInvalidateKeys with (data, variables) and invalidates returned keys', async () => {
+    const mutationFn = vi.fn().mockResolvedValue({ movieId: 'm1' });
+    const getInvalidateKeys = vi.fn().mockReturnValue([
+      ['admin', 'movie', 'm1'],
+      ['admin', 'movies'],
+    ]);
+    const useTestMutation = createSimpleMutation({ mutationFn, getInvalidateKeys });
+
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: qc }, children);
+
+    const { result } = renderHook(() => useTestMutation(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ id: 'p1', movieId: 'm1' });
+    });
+
+    expect(getInvalidateKeys).toHaveBeenCalledWith({ movieId: 'm1' }, { id: 'p1', movieId: 'm1' });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['admin', 'movie', 'm1'] });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['admin', 'movies'] });
+  });
+
+  it('invalidates both static invalidateKeys and dynamic getInvalidateKeys on success', async () => {
+    const mutationFn = vi.fn().mockResolvedValue({ id: 'x1' });
+    const getInvalidateKeys = vi.fn().mockReturnValue([['admin', 'dynamic']]);
+    const useTestMutation = createSimpleMutation({
+      mutationFn,
+      invalidateKeys: [['admin', 'static']],
+      getInvalidateKeys,
+    });
+
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: qc }, children);
+
+    const { result } = renderHook(() => useTestMutation(), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync('payload');
+    });
+
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['admin', 'static'] });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['admin', 'dynamic'] });
+  });
+
+  it('works with neither invalidateKeys nor getInvalidateKeys (no-op invalidation)', async () => {
+    const mutationFn = vi.fn().mockResolvedValue(undefined);
+    const useTestMutation = createSimpleMutation({ mutationFn });
+
+    const { result } = renderHook(() => useTestMutation(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await result.current.mutateAsync('payload');
+    });
+
+    // @contract mutationFn is called once with the payload (TanStack v5 may pass extra context arg)
+    expect(mutationFn).toHaveBeenCalledTimes(1);
+    expect(mutationFn.mock.calls[0][0]).toBe('payload');
+  });
 });

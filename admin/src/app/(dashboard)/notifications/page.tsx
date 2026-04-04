@@ -12,6 +12,7 @@ import { formatDateTime } from '@/lib/utils';
 import { Bell, RotateCcw, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePermissions } from '@/hooks/usePermissions';
+import { EmptyState } from '@/components/common/EmptyState';
 
 // @coupling Status/type style maps must cover all notifications.status and notifications.type DB enum values
 const statusStyles: Record<string, { bg: string; text: string }> = {
@@ -175,7 +176,7 @@ export default function NotificationsPage() {
           <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : !notifications?.length ? (
-        <div className="text-center py-20 text-on-surface-subtle">No notifications found.</div>
+        <EmptyState message="No notifications found." />
       ) : (
         <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <table className="w-full">
