@@ -4,14 +4,20 @@ set -e
 echo "🎬 Faniverz → Android Production Build"
 echo "========================================"
 
-# 1. Quality gates
+# 1. Install dependencies
+echo ""
+echo "▸ Installing dependencies..."
+npm install --silent
+echo "  ✓ Dependencies installed"
+
+# 2. Quality gates
 echo ""
 echo "▸ Running quality gates..."
 npx eslint . --quiet
 npx tsc --noEmit
 echo "  ✓ Lint & types passed"
 
-# 2. Build production (Play Store distribution)
+# 3. Build production (Play Store distribution)
 echo ""
 echo "▸ Building Android production..."
 echo "  Package:  com.faniverz.app"

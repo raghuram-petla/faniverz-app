@@ -11,6 +11,12 @@ echo "            Installs alongside Dev and Production. Use this"
 echo "            to verify production behaviour before Play Store."
 echo ""
 
+# Install dependencies
+echo "Installing dependencies..."
+npm install --silent
+echo "  Dependencies installed"
+echo ""
+
 # Quality gates
 echo "Running quality gates..."
 npx eslint . --quiet

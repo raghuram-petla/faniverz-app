@@ -4,14 +4,20 @@ set -e
 echo "🎬 Faniverz → iOS Dev Build"
 echo "============================"
 
-# 1. Quality gates
+# 1. Install dependencies
+echo ""
+echo "▸ Installing dependencies..."
+npm install --silent
+echo "  ✓ Dependencies installed"
+
+# 2. Quality gates
 echo ""
 echo "▸ Running quality gates..."
 npx eslint . --quiet
 npx tsc --noEmit
 echo "  ✓ Lint & types passed"
 
-# 2. Build dev client (internal distribution, separate bundle ID)
+# 3. Build dev client (internal distribution, separate bundle ID)
 echo ""
 echo "▸ Building iOS development client..."
 echo "  Bundle ID: com.faniverz.app.dev"

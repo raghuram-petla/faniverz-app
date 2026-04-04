@@ -4,14 +4,20 @@ set -e
 echo "🎬 Faniverz → iOS Production Build"
 echo "===================================="
 
-# 1. Quality gates
+# 1. Install dependencies
+echo ""
+echo "▸ Installing dependencies..."
+npm install --silent
+echo "  ✓ Dependencies installed"
+
+# 2. Quality gates
 echo ""
 echo "▸ Running quality gates..."
 npx eslint . --quiet
 npx tsc --noEmit
 echo "  ✓ Lint & types passed"
 
-# 2. Build production (App Store distribution)
+# 3. Build production (App Store distribution)
 echo ""
 echo "▸ Building iOS production..."
 echo "  Bundle ID: com.faniverz.app"
