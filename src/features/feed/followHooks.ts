@@ -13,6 +13,7 @@ import {
   followEntity,
   unfollowEntity,
 } from './followApi';
+import { createOptimisticMutation } from './optimisticMutationFactory';
 import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
 
 // @coupling: followSet builds keys as `${entity_type}:${entity_id}` — any consumer checking isFollowed must use this exact format. If entity_type enum in shared/types.ts adds a new value (e.g., 'director'), the set will contain it but consumers won't know to check for it.
@@ -44,41 +45,38 @@ export function useEntityFollows() {
 // @contract: entity_follows table has UNIQUE(user_id, entity_type, entity_id) — duplicate follow attempts throw a Supabase 23505 (unique_violation) error. The onError handler rolls back the optimistic add and shows an Alert.
 // @edge: optimistic update adds a temp EntityFollow with id='temp-{timestamp}'. If the user rapidly follows/unfollows before onSettled fires, there's a race window where invalidation from follow's onSettled may overwrite the unfollow's optimistic state.
 // @coupling: onSettled invalidates both ['entity-follows'] and ['enriched-follows'] to keep both caches in sync.
+// @coupling: uses createOptimisticMutation with ['entity-follows'] as the primary key; the factory's
+// primaryUpdater appends a temporary EntityFollow record to the flat array (not paginated pages).
 export function useFollowEntity() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  type FollowVars = { entityType: FeedEntityType; entityId: string };
+
+  const handlers = createOptimisticMutation<FollowVars, EntityFollow[]>(queryClient, {
+    queryKeys: ['entity-follows'] as const,
+    primaryUpdater: (old, { entityType, entityId }) => [
+      ...(old ?? []),
+      {
+        id: `temp-${Date.now()}`,
+        user_id: user?.id ?? '',
+        entity_type: entityType,
+        entity_id: entityId,
+        created_at: new Date().toISOString(),
+      },
+    ],
+    onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToFollow')),
+  });
+
   return useMutation({
-    mutationFn: ({ entityType, entityId }: { entityType: FeedEntityType; entityId: string }) => {
+    mutationFn: ({ entityType, entityId }: FollowVars) => {
       if (!user?.id) throw new Error('Must be logged in to follow');
       return followEntity(user.id, entityType, entityId);
     },
-    onMutate: async ({ entityType, entityId }) => {
-      await queryClient.cancelQueries({ queryKey: ['entity-follows'] });
-      const previousFollows = queryClient.getQueryData<EntityFollow[]>([
-        'entity-follows',
-        user?.id,
-      ]);
-      queryClient.setQueryData<EntityFollow[]>(['entity-follows', user?.id], (old) => [
-        ...(old ?? []),
-        {
-          id: `temp-${Date.now()}`,
-          user_id: user?.id ?? '',
-          entity_type: entityType,
-          entity_id: entityId,
-          created_at: new Date().toISOString(),
-        },
-      ]);
-      return { previousFollows };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousFollows) {
-        queryClient.setQueryData(['entity-follows', user?.id], context.previousFollows);
-      }
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToFollow'));
-    },
+    ...handlers,
+    // @sync: additionally invalidate enriched-follows on settled so the UI stays in sync
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['entity-follows'] });
+      handlers.onSettled!();
       queryClient.invalidateQueries({ queryKey: ['enriched-follows'] });
     },
   });
@@ -114,34 +112,29 @@ export function useEnrichedFollowsPaginated() {
 }
 
 // @edge: delete uses triple filter (user_id + entity_type + entity_id). If entity_id is wrong (e.g., passed a movie title instead of UUID), the delete succeeds with 0 affected rows — no error, no feedback, follow stays. The optimistic update already removed it from cache, so the UI briefly shows unfollowed, then re-follows on invalidation.
+// @coupling: uses createOptimisticMutation — see useFollowEntity for the pattern.
 export function useUnfollowEntity() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  type FollowVars = { entityType: FeedEntityType; entityId: string };
+
+  const handlers = createOptimisticMutation<FollowVars, EntityFollow[]>(queryClient, {
+    queryKeys: ['entity-follows'] as const,
+    primaryUpdater: (old, { entityType, entityId }) =>
+      (old ?? []).filter((f) => !(f.entity_type === entityType && f.entity_id === entityId)),
+    onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToUnfollow')),
+  });
+
   return useMutation({
-    mutationFn: ({ entityType, entityId }: { entityType: FeedEntityType; entityId: string }) => {
+    mutationFn: ({ entityType, entityId }: FollowVars) => {
       if (!user?.id) throw new Error('Must be logged in to unfollow');
       return unfollowEntity(user.id, entityType, entityId);
     },
-    onMutate: async ({ entityType, entityId }) => {
-      await queryClient.cancelQueries({ queryKey: ['entity-follows'] });
-      const previousFollows = queryClient.getQueryData<EntityFollow[]>([
-        'entity-follows',
-        user?.id,
-      ]);
-      queryClient.setQueryData<EntityFollow[]>(['entity-follows', user?.id], (old) =>
-        (old ?? []).filter((f) => !(f.entity_type === entityType && f.entity_id === entityId)),
-      );
-      return { previousFollows };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousFollows) {
-        queryClient.setQueryData(['entity-follows', user?.id], context.previousFollows);
-      }
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToUnfollow'));
-    },
+    ...handlers,
+    // @sync: additionally invalidate enriched-follows on settled so the UI stays in sync
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['entity-follows'] });
+      handlers.onSettled!();
       queryClient.invalidateQueries({ queryKey: ['enriched-follows'] });
     },
   });

@@ -29,14 +29,11 @@ import { POST } from '@/app/api/sync/discover/route';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { discoverMoviesByLanguage, discoverMoviesByLanguageAndMonth } from '@/lib/tmdb';
 import { ensureTmdbApiKey, verifyAdmin } from '@/lib/sync-helpers';
-import { NextRequest } from 'next/server';
+import { makeNextRequest } from '@/__tests__/helpers/request-builders';
 
+// @coupling Uses shared makeNextRequest helper to build real NextRequest objects.
 function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost/api/sync/discover', {
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' },
-  });
+  return makeNextRequest('http://localhost/api/sync/discover', body);
 }
 
 describe('POST /api/sync/discover', () => {

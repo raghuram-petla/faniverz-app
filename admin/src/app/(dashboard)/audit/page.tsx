@@ -14,6 +14,7 @@ import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { SearchInput } from '@/components/common/SearchInput';
 import { LoadMoreButton } from '@/components/common/LoadMoreButton';
+import { EmptyState } from '@/components/common/EmptyState';
 
 export default function AuditLogPage() {
   // @coupling useEffectiveUser returns impersonated user if active, real user otherwise
@@ -159,7 +160,7 @@ export default function AuditLogPage() {
           <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : entries.length === 0 ? (
-        <div className="text-center py-20 text-on-surface-subtle">No audit log entries found.</div>
+        <EmptyState message="No audit log entries found." />
       ) : (
         <div className="bg-surface-card border border-outline rounded-xl overflow-hidden">
           <table className="w-full table-fixed">

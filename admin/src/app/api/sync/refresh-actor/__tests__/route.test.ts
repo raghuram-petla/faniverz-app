@@ -15,19 +15,16 @@ vi.mock('@/lib/sync-engine', () => ({
 
 import { POST } from '@/app/api/sync/refresh-actor/route';
 import { processActorRefresh, completeSyncLog } from '@/lib/sync-engine';
-import { NextRequest } from 'next/server';
+import { makeRouteWrapperCtx } from '@/__tests__/helpers/request-builders';
 
+// @coupling Uses shared makeRouteWrapperCtx helper to build route-wrapper context objects.
 function makeCtx(body: Record<string, unknown>) {
-  return {
-    req: new NextRequest('http://localhost/api/sync/refresh-actor', {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: { 'Content-Type': 'application/json' },
-    }),
-    supabase: mockSupabase,
-    auth: { user: { id: 'admin-9' } as never, role: 'admin' },
-    apiKey: 'tmdb-key',
-  };
+  return makeRouteWrapperCtx(
+    'http://localhost/api/sync/refresh-actor',
+    body,
+    mockSupabase as never,
+    { userId: 'admin-9', role: 'admin' },
+  );
 }
 
 describe('POST /api/sync/refresh-actor', () => {

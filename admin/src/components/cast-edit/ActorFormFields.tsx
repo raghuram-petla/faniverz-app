@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { Loader2, Upload, X } from 'lucide-react';
 import { PosterVariantStatus } from '@/components/movie-edit/PosterGalleryCard';
 import { getImageUrl } from '@shared/imageUrl';
+import { GENDER_LABELS } from '@shared/constants';
 
 /** @contract all fields are strings for controlled inputs; parent converts on save */
 export interface ActorFormState {
@@ -145,16 +146,17 @@ export function ActorFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs text-on-surface-subtle mb-1">Gender</label>
-          {/** @sync gender values (0-3) must match TMDB API gender enum and GENDER_LABELS in constants */}
+          {/** @sync gender values (0-3) must match TMDB API gender enum and GENDER_LABELS in shared/constants */}
+          {/** @contract option list derived from GENDER_LABELS; '0' sentinel for "Not set" prepended */}
           <select
             value={form.gender}
             onChange={(e) => onFieldChange('gender', e.target.value)}
             className="w-full bg-input rounded-lg px-4 py-2 text-on-surface outline-none focus:ring-2 focus:ring-red-600 text-sm"
           >
             <option value="0">Not set</option>
-            <option value="1">Female</option>
-            <option value="2">Male</option>
-            <option value="3">Non-binary</option>
+            {Object.entries(GENDER_LABELS).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
           </select>
         </div>
         <div>

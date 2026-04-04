@@ -75,6 +75,8 @@ vi.mock('@shared/constants', () => ({
     { name: 'iPhone', width: 375, height: 812, scale: 3 },
     { name: 'iPad', width: 768, height: 1024, scale: 2 },
   ],
+  // @contract: mirrors GENDER_LABELS from shared/constants (TMDB encoding: 1=Female, 2=Male, 3=Non-binary)
+  GENDER_LABELS: { 1: 'Female', 2: 'Male', 3: 'Non-binary' },
 }));
 
 vi.mock('@/components/preview/DeviceFrame', () => ({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, getAuditableSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyBearer, unauthorizedResponse } from '@/lib/sync-helpers';
+import { verifyBearer, unauthorizedResponse, badRequest, notFound } from '@/lib/sync-helpers';
 
 /**
  * POST /api/accept-invitation
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const { email, userId } = await req.json();
     if (!email || !userId) {
-      return NextResponse.json({ error: 'Missing email or userId' }, { status: 400 });
+      return badRequest('Missing email or userId');
     }
 
     // Ensure the caller matches the claimed userId and email
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (inviteErr || !invitation) {
-      return NextResponse.json({ error: 'No valid invitation found' }, { status: 404 });
+      return notFound('No valid invitation found');
     }
 
     // Check if user already has a role (shouldn't happen, but guard against duplicates)

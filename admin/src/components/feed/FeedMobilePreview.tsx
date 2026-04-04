@@ -4,6 +4,7 @@ import {
   DEVICES,
   FEED_CONTENT_TYPE_COLORS,
   FEED_CONTENT_TYPE_LABELS,
+  FEED_TAB_LABELS,
   type DeviceConfig,
 } from '@shared/constants';
 import { colors } from '@shared/colors';
@@ -11,7 +12,7 @@ import { DeviceFrame } from '@/components/preview/DeviceFrame';
 import { DeviceSelector } from '@/components/preview/DeviceSelector';
 import type { NewsFeedItem } from '@/lib/types';
 
-const FEED_TABS = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'];
+// @assumes FEED_TAB_LABELS from shared/constants is the canonical source for preview pill labels
 const MUTED_TEXT = colors.gray500;
 const ZINC_700 = colors.zinc700;
 
@@ -52,7 +53,7 @@ export function FeedMobilePreview({ items }: FeedMobilePreviewProps) {
 
           {/* Pills */}
           <div style={previewStyles.pillRow}>
-            {FEED_TABS.map((tab, i) => (
+            {FEED_TAB_LABELS.map((tab, i) => (
               <div
                 key={tab}
                 style={{

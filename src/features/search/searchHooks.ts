@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { STALE_5M } from '@/constants/queryConfig';
 import { SEARCH_PAGINATION } from '@/constants/paginationConfig';
 import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   searchAll,
   searchMoviesPaginated,
@@ -12,17 +12,11 @@ import {
 } from './searchApi';
 import type { Movie, Actor, ProductionHouse } from '@shared/types';
 
-// @sync: 300ms debounce matches useMovieSearch — prevents 3 parallel Supabase queries on every keystroke.
-// Without debounce, each character typed creates a new cache key and immediately fires all 3 queries.
 // @coupling: searchAll in searchApi.ts runs 3 parallel Supabase queries (movies, actors, production houses) via Promise.allSettled — partial results are preserved if any single query fails.
+// @sync: 300ms debounce (via useDebounce) matches useMovieSearch — prevents 3 parallel Supabase queries on every keystroke. Without debounce, each character typed creates a new cache key and immediately fires all 3 queries.
 export function useUniversalSearch(query: string) {
-  const [debouncedQuery, setDebouncedQuery] = useState(query);
-
   // @sideeffect: debounces query state so the TanStack Query key only changes after 300ms of inactivity
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(timer);
-  }, [query]);
+  const debouncedQuery = useDebounce(query, 300);
 
   return useQuery<UniversalSearchResult>({
     queryKey: ['universal-search', debouncedQuery],
@@ -36,11 +30,7 @@ export function useUniversalSearch(query: string) {
 
 /** @contract Debounces query then uses smart infinite query for paginated movie search */
 export function useSearchMoviesPaginated(query: string) {
-  const [debouncedQuery, setDebouncedQuery] = useState(query);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(timer);
-  }, [query]);
+  const debouncedQuery = useDebounce(query, 300);
 
   return useSmartInfiniteQuery<Movie>({
     queryKey: ['search-movies', debouncedQuery],
@@ -53,11 +43,7 @@ export function useSearchMoviesPaginated(query: string) {
 
 /** @contract Debounces query then uses smart infinite query for paginated actor search */
 export function useSearchActorsPaginated(query: string) {
-  const [debouncedQuery, setDebouncedQuery] = useState(query);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(timer);
-  }, [query]);
+  const debouncedQuery = useDebounce(query, 300);
 
   return useSmartInfiniteQuery<Actor>({
     queryKey: ['search-actors', debouncedQuery],
@@ -70,11 +56,7 @@ export function useSearchActorsPaginated(query: string) {
 
 /** @contract Debounces query then uses smart infinite query for paginated production house search */
 export function useSearchProductionHousesPaginated(query: string) {
-  const [debouncedQuery, setDebouncedQuery] = useState(query);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 300);
-    return () => clearTimeout(timer);
-  }, [query]);
+  const debouncedQuery = useDebounce(query, 300);
 
   return useSmartInfiniteQuery<ProductionHouse>({
     queryKey: ['search-production-houses', debouncedQuery],

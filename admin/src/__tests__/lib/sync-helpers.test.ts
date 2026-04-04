@@ -36,6 +36,9 @@ import {
   errorResponse,
   unauthorizedResponse,
   viewerReadonlyResponse,
+  badRequest,
+  notFound,
+  forbiddenResponse,
 } from '@/lib/sync-helpers';
 
 beforeEach(() => {
@@ -427,6 +430,42 @@ describe('viewerReadonlyResponse', () => {
   });
 });
 
+describe('badRequest', () => {
+  it('returns 400 with the provided message', () => {
+    const response = badRequest('Missing userId parameter');
+    expect(response).toEqual(
+      expect.objectContaining({
+        body: { error: 'Missing userId parameter' },
+        status: 400,
+      }),
+    );
+  });
+});
+
+describe('notFound', () => {
+  it('returns 404 with the provided message', () => {
+    const response = notFound('Target user not found');
+    expect(response).toEqual(
+      expect.objectContaining({
+        body: { error: 'Target user not found' },
+        status: 404,
+      }),
+    );
+  });
+});
+
+describe('forbiddenResponse', () => {
+  it('returns 403 with the provided message', () => {
+    const response = forbiddenResponse('Only super admins can assign languages');
+    expect(response).toEqual(
+      expect.objectContaining({
+        body: { error: 'Only super admins can assign languages' },
+        status: 403,
+      }),
+    );
+  });
+});
+
 describe('verifyAdmin - null adminRole', () => {
   it('returns null when admin_user_roles returns null data (no row)', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'u1' } }, error: null });
@@ -617,5 +656,41 @@ describe('ensureAdminMutateAuth', () => {
     }
 
     process.env.TMDB_API_KEY = original;
+  });
+});
+
+describe('badRequest', () => {
+  it('returns 400 with the provided message', () => {
+    const response = badRequest('Missing userId parameter');
+    expect(response).toEqual(
+      expect.objectContaining({
+        body: { error: 'Missing userId parameter' },
+        status: 400,
+      }),
+    );
+  });
+});
+
+describe('notFound', () => {
+  it('returns 404 with the provided message', () => {
+    const response = notFound('Target user not found');
+    expect(response).toEqual(
+      expect.objectContaining({
+        body: { error: 'Target user not found' },
+        status: 404,
+      }),
+    );
+  });
+});
+
+describe('forbiddenResponse', () => {
+  it('returns 403 with the provided message', () => {
+    const response = forbiddenResponse('Only super admins can assign languages');
+    expect(response).toEqual(
+      expect.objectContaining({
+        body: { error: 'Only super admins can assign languages' },
+        status: 403,
+      }),
+    );
   });
 });

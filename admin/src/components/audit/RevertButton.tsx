@@ -5,6 +5,7 @@ import { Undo2, Check } from 'lucide-react';
 import { useRevertAuditEntry } from '@/hooks/useAdminAudit';
 import { getRevertDescription } from '@/components/audit/auditUtils';
 import { formatDateTime } from '@/lib/utils';
+import { Button } from '@/components/common/Button';
 
 export interface RevertButtonProps {
   entryId: string;
@@ -35,8 +36,10 @@ export function RevertButton({ entryId, action, revertedAt, revertedByName }: Re
     return (
       <div className="flex items-center gap-3">
         <span className="text-xs text-status-amber">{getRevertDescription(action)}?</span>
-        <button
-          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+        {/* @contract primary sm = bg-red-600 text-white px-3 py-1 text-xs rounded */}
+        <Button
+          variant="primary"
+          size="sm"
           disabled={revertMutation.isPending}
           onClick={(e) => {
             e.stopPropagation();
@@ -46,32 +49,37 @@ export function RevertButton({ entryId, action, revertedAt, revertedByName }: Re
           }}
         >
           {revertMutation.isPending ? 'Reverting...' : 'Confirm'}
-        </button>
-        <button
-          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-elevated text-on-surface-muted hover:text-on-surface"
+        </Button>
+        {/* @contract secondary sm = bg-surface-elevated text-on-surface-muted px-3 py-1 text-xs rounded */}
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={(e) => {
             e.stopPropagation();
             setConfirming(false);
           }}
         >
           Cancel
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="flex items-center gap-3">
-      <button
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-elevated text-on-surface-muted hover:text-status-amber transition-colors"
+      {/* @contract secondary sm with amber hover — uses Button base + override class */}
+      <Button
+        variant="secondary"
+        size="sm"
+        icon={<Undo2 className="w-3.5 h-3.5" />}
+        className="hover:text-status-amber"
         onClick={(e) => {
           e.stopPropagation();
           setConfirming(true);
         }}
       >
-        <Undo2 className="w-3.5 h-3.5" />
         Revert
-      </button>
+      </Button>
       {revertMutation.isError && (
         <span className="text-xs text-status-red">{revertMutation.error.message}</span>
       )}

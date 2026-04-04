@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Ban, X } from 'lucide-react';
 import type { AdminUserWithDetails } from '@/lib/types';
+import { Button } from '@/components/common/Button';
 
 /** @sideeffect onConfirm triggers admin_user_roles status update to 'blocked' with reason */
 export interface BlockAdminModalProps {
@@ -46,20 +47,20 @@ export function BlockAdminModal({ target, onConfirm, onClose, isPending }: Block
         />
 
         <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-on-surface-muted hover:text-on-surface transition-colors"
-          >
+          {/* @contract ghost md = text-on-surface-muted hover:text-on-surface px-4 py-2 text-sm */}
+          <Button variant="ghost" size="md" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          {/* @contract primary md = bg-red-600 text-white px-4 py-2 text-sm rounded-lg */}
+          <Button
+            variant="primary"
+            size="md"
+            icon={<Ban className="w-4 h-4" />}
             onClick={() => onConfirm(reason)}
             disabled={!reason.trim() || isPending}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
           >
-            <Ban className="w-4 h-4" />
             {isPending ? 'Blocking…' : 'Block Admin'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

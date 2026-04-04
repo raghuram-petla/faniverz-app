@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
 import { createCrudHooks } from '@/hooks/createCrudHooks';
+import { createSimpleMutation } from '@/hooks/createSimpleMutation';
 import type { Actor, MovieCast } from '@/lib/types';
 
 // @coupling: createCrudHooks — paginated list/single/create/update/delete for actors table
@@ -57,39 +58,29 @@ export function useMovieCast(movieId: string) {
   });
 }
 
+// @contract createSimpleMutation — scopes cache invalidation to the affected movie via variables
 // @sideeffect: inserts into movie_cast via /api/admin-crud and invalidates cache
 // @assumes: cast partial must include movie_id, actor_id, credit_type at minimum
-export function useAddCast() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (cast: Partial<MovieCast>) => {
-      return crudFetch<MovieCast>('POST', { table: 'movie_cast', data: cast });
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useAddCast = createSimpleMutation<Partial<MovieCast>, MovieCast>({
+  mutationFn: (cast) => crudFetch<MovieCast>('POST', { table: 'movie_cast', data: cast }),
+  // @contract getInvalidateKeys uses variables.movie_id to scope invalidation to the affected movie
+  getInvalidateKeys: (_data, variables) => [
+    ['admin', 'cast', variables.movie_id],
+  ],
+});
 
+// @contract createSimpleMutation — returns movieId from mutationFn to scope cache invalidation
 // @sideeffect: hard-deletes movie_cast row via /api/admin-crud
-export function useRemoveCast() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
-      await crudFetch<{ success: true }>('DELETE', { table: 'movie_cast', id });
-      return movieId;
-    },
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movieId] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Operation failed');
-    },
-  });
-}
+export const useRemoveCast = createSimpleMutation<{ id: string; movieId: string }, string>({
+  mutationFn: async ({ id, movieId }) => {
+    await crudFetch<{ success: true }>('DELETE', { table: 'movie_cast', id });
+    return movieId;
+  },
+  // @contract getInvalidateKeys uses returned movieId (passed through mutationFn) to scope invalidation
+  getInvalidateKeys: (movieId) => [
+    ['admin', 'cast', movieId],
+  ],
+});
 
 // @sideeffect: updates display_order for each cast item via /api/admin-crud
 // @edge: partial failure — some items may update before the first error is detected

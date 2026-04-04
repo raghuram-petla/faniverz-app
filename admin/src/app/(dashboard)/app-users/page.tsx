@@ -8,6 +8,7 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { PaginationControls } from '@/components/common/PaginationControls';
 import { Loader2, Ban, Pencil, X, Check } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { EmptyState } from '@/components/common/EmptyState';
 
 // @contract PAGE_SIZE=50 is sent as a query param to /api/manage-user; changing this value
 // here also requires the API route to accept the new size (currently hardcoded to match)
@@ -116,9 +117,7 @@ export default function AppUsersPage() {
           <Loader2 className="w-6 h-6 text-on-surface-subtle animate-spin" />
         </div>
       ) : !users.length ? (
-        <div className="text-center py-20 text-on-surface-subtle">
-          {debouncedSearch ? 'No users match your search.' : 'No users found.'}
-        </div>
+        <EmptyState message={debouncedSearch ? 'No users match your search.' : 'No users found.'} />
       ) : (
         <>
           <UserTable

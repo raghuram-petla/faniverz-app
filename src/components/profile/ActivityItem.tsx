@@ -4,6 +4,7 @@ import { useTheme } from '@/theme';
 import { colors as palette } from '@/theme/colors';
 import { useTranslation } from 'react-i18next';
 import { useRelativeTime } from '@/hooks/useRelativeTime';
+import { ENTITY_ACTION_LABEL_KEYS } from '@/constants/entityLabels';
 import type { UserActivity } from '@/features/profile';
 import type { SemanticTheme } from '@shared/themes';
 
@@ -21,12 +22,7 @@ const ACTION_CONFIG: Record<string, { icon: string; labelKey: string; color: str
   review: { icon: 'star', labelKey: 'profile.wroteReview', color: palette.amber500 },
 };
 
-const ENTITY_LABEL_KEYS: Record<string, string> = {
-  movie: 'profile.entityMovie',
-  actor: 'profile.entityActor',
-  production_house: 'profile.entityStudio',
-  feed_item: 'profile.entityPost',
-};
+// @contract imported from @/constants/entityLabels — do not redefine locally
 
 export function ActivityItem({ activity, onPress }: ActivityItemProps) {
   const { t } = useTranslation();
@@ -39,7 +35,7 @@ export function ActivityItem({ activity, onPress }: ActivityItemProps) {
   /** @contract follow/unfollow labels include the entity type suffix; other actions use label alone */
   const label =
     activity.action_type === 'follow' || activity.action_type === 'unfollow'
-      ? `${t(config.labelKey)} ${t(ENTITY_LABEL_KEYS[activity.entity_type] ?? '')}`
+      ? `${t(config.labelKey)} ${t(ENTITY_ACTION_LABEL_KEYS[activity.entity_type] ?? '')}`
       : t(config.labelKey);
 
   return (

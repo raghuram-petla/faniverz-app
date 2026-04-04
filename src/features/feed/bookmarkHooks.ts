@@ -12,6 +12,7 @@ import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
+import { createOptimisticMutation } from './optimisticMutationFactory';
 import type { NewsFeedItem } from '@shared/types';
 
 // @coupling: bookmark data uses Record<string, true> instead of Set because TanStack Query's
@@ -44,162 +45,83 @@ export function useBookmarkedFeed() {
 // DB trigger (trg_feed_bookmark_count) mirrors the INCREMENT on INSERT.
 // @assumes: the trigger fires only on the INSERT path of upsert — if a row already exists (user
 // already bookmarked), the upsert is a no-op and the trigger does NOT fire a second time.
+// @coupling: uses createOptimisticMutation with secondaryQueryKey 'feed-bookmarks-set' for the
+// standard cancel/snapshot/update/rollback/invalidate lifecycle across both cache shapes.
 export function useBookmarkFeedItem() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  type BookmarkVars = { feedItemId: string };
+  type FeedPages = { pages: NewsFeedItem[][] };
+
+  const handlers = createOptimisticMutation<BookmarkVars, FeedPages, BookmarkMap>(queryClient, {
+    queryKeys: BOOKMARK_FEED_QUERY_KEYS,
+    secondaryQueryKey: 'feed-bookmarks-set',
+    primaryUpdater: (old, { feedItemId }) => ({
+      ...old,
+      pages: old.pages.map((page) =>
+        page.map((item) =>
+          item.id !== feedItemId
+            ? item
+            : { ...item, bookmark_count: item.bookmark_count + 1 },
+        ),
+      ),
+    }),
+    // @sync: optimistically update feed-bookmarks-set so icon state changes instantly
+    secondaryUpdater: (old, { feedItemId }) => ({
+      ...(old ?? /* istanbul ignore next */ {}),
+      [feedItemId]: true as const,
+    }),
+    onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToBookmark')),
+  });
+
   return useMutation({
-    mutationFn: ({ feedItemId }: { feedItemId: string }) => {
+    mutationFn: ({ feedItemId }: BookmarkVars) => {
       if (!user?.id) throw new Error('Must be logged in to bookmark');
       return bookmarkFeedItem(feedItemId, user.id);
     },
-    onMutate: async ({ feedItemId }) => {
-      // @sync: capture ALL rollback snapshots BEFORE any setQueriesData calls
-      const previousFeedData: {
-        queryKey: readonly unknown[];
-        data: { pages: NewsFeedItem[][] };
-      }[] = [];
-      for (const key of BOOKMARK_FEED_QUERY_KEYS) {
-        await queryClient.cancelQueries({ queryKey: [key] });
-        queryClient
-          .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
-          .forEach(([queryKey, data]) => {
-            /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
-            if (data) previousFeedData.push({ queryKey, data });
-          });
-      }
-      for (const key of BOOKMARK_FEED_QUERY_KEYS) {
-        queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
-          /* istanbul ignore next -- defensive: setQueriesData updater receives undefined for empty cache */
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) =>
-              page.map((item) =>
-                item.id !== feedItemId
-                  ? item
-                  : { ...item, bookmark_count: item.bookmark_count + 1 },
-              ),
-            ),
-          };
-        });
-      }
-      // @sync: optimistically update feed-bookmarks-set so icon state changes instantly
-      await queryClient.cancelQueries({ queryKey: ['feed-bookmarks-set'] });
-      const previousBookmarkData: { queryKey: readonly unknown[]; data: BookmarkMap }[] = [];
-      queryClient
-        .getQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] })
-        .forEach(([queryKey, data]) => {
-          /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
-          if (data) previousBookmarkData.push({ queryKey, data });
-        });
-      queryClient.setQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
-        return { ...(old ?? /* istanbul ignore next */ {}), [feedItemId]: true as const };
-      });
-      return { previousFeedData, previousBookmarkData };
-    },
-    onError: (_err, _vars, context) => {
-      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
-      if (context?.previousFeedData) {
-        for (const { queryKey, data } of context.previousFeedData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
-      if (context?.previousBookmarkData) {
-        for (const { queryKey, data } of context.previousBookmarkData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToBookmark'));
-    },
-    onSettled: () => {
-      for (const key of BOOKMARK_FEED_QUERY_KEYS) {
-        queryClient.invalidateQueries({ queryKey: [key] });
-      }
-      queryClient.invalidateQueries({ queryKey: ['feed-bookmarks-set'] });
-    },
+    ...handlers,
   });
 }
 
 // @sync: mirrors the same optimistic update pattern as useBookmarkFeedItem above.
 // Decrements bookmark_count (matching DB trigger on DELETE) and removes feedItemId from record.
+// @coupling: uses createOptimisticMutation — see useBookmarkFeedItem for details.
 export function useUnbookmarkFeedItem() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  type BookmarkVars = { feedItemId: string };
+  type FeedPages = { pages: NewsFeedItem[][] };
+
+  const handlers = createOptimisticMutation<BookmarkVars, FeedPages, BookmarkMap>(queryClient, {
+    queryKeys: BOOKMARK_FEED_QUERY_KEYS,
+    secondaryQueryKey: 'feed-bookmarks-set',
+    primaryUpdater: (old, { feedItemId }) => ({
+      ...old,
+      pages: old.pages.map((page) =>
+        page.map((item) =>
+          item.id !== feedItemId
+            ? item
+            : { ...item, bookmark_count: Math.max(0, item.bookmark_count - 1) },
+        ),
+      ),
+    }),
+    secondaryUpdater: (old, { feedItemId }) => {
+      /* istanbul ignore next -- defensive: old is undefined when no bookmark cache exists */
+      if (!old) return {};
+      const { [feedItemId]: _, ...rest } = old;
+      return rest;
+    },
+    onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToBookmark')),
+  });
+
   return useMutation({
-    mutationFn: ({ feedItemId }: { feedItemId: string }) => {
+    mutationFn: ({ feedItemId }: BookmarkVars) => {
       if (!user?.id) throw new Error('Must be logged in');
       return unbookmarkFeedItem(feedItemId, user.id);
     },
-    onMutate: async ({ feedItemId }) => {
-      const previousFeedData: {
-        queryKey: readonly unknown[];
-        data: { pages: NewsFeedItem[][] };
-      }[] = [];
-      for (const key of BOOKMARK_FEED_QUERY_KEYS) {
-        await queryClient.cancelQueries({ queryKey: [key] });
-        queryClient
-          .getQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] })
-          .forEach(([queryKey, data]) => {
-            /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
-            if (data) previousFeedData.push({ queryKey, data });
-          });
-      }
-      for (const key of BOOKMARK_FEED_QUERY_KEYS) {
-        queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
-          /* istanbul ignore next -- defensive: setQueriesData updater receives undefined for empty cache */
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) =>
-              page.map((item) =>
-                item.id !== feedItemId
-                  ? item
-                  : { ...item, bookmark_count: Math.max(0, item.bookmark_count - 1) },
-              ),
-            ),
-          };
-        });
-      }
-      await queryClient.cancelQueries({ queryKey: ['feed-bookmarks-set'] });
-      const previousBookmarkData: { queryKey: readonly unknown[]; data: BookmarkMap }[] = [];
-      queryClient
-        .getQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] })
-        .forEach(([queryKey, data]) => {
-          /* istanbul ignore next -- defensive: getQueriesData returns undefined when no cache */
-          if (data) previousBookmarkData.push({ queryKey, data });
-        });
-      queryClient.setQueriesData<BookmarkMap>({ queryKey: ['feed-bookmarks-set'] }, (old) => {
-        /* istanbul ignore next -- defensive: old is undefined when no bookmark cache exists */
-        if (!old) return {};
-        const { [feedItemId]: _, ...rest } = old;
-        return rest;
-      });
-      return { previousFeedData, previousBookmarkData };
-    },
-    onError: (_err, _vars, context) => {
-      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
-      if (context?.previousFeedData) {
-        for (const { queryKey, data } of context.previousFeedData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      /* istanbul ignore next -- context is always defined when onMutate returns successfully */
-      if (context?.previousBookmarkData) {
-        for (const { queryKey, data } of context.previousBookmarkData) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToBookmark'));
-    },
-    onSettled: () => {
-      for (const key of BOOKMARK_FEED_QUERY_KEYS) {
-        queryClient.invalidateQueries({ queryKey: [key] });
-      }
-      queryClient.invalidateQueries({ queryKey: ['feed-bookmarks-set'] });
-    },
+    ...handlers,
   });
 }
 

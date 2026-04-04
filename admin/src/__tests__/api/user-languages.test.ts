@@ -23,6 +23,28 @@ vi.mock('@/lib/sync-helpers', () => ({
       return this.body;
     },
   }),
+  // @contract: shared error response helpers used by the route
+  badRequest: (message: string) => ({
+    body: { error: message },
+    status: 400,
+    async json() {
+      return this.body;
+    },
+  }),
+  notFound: (message: string) => ({
+    body: { error: message },
+    status: 404,
+    async json() {
+      return this.body;
+    },
+  }),
+  forbiddenResponse: (message: string) => ({
+    body: { error: message },
+    status: 403,
+    async json() {
+      return this.body;
+    },
+  }),
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({

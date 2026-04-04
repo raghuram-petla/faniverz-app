@@ -1,4 +1,5 @@
 import { colors } from '@/theme/colors';
+import { FEED_CONTENT_TYPE_COLORS } from '@shared/constants';
 import {
   FEED_PILLS,
   getFeedTypeColor,
@@ -59,53 +60,28 @@ describe('FEED_PILLS', () => {
 });
 
 describe('getFeedTypeColor', () => {
-  it('returns blue for trailer types', () => {
-    expect(getFeedTypeColor('trailer')).toBe(colors.blue600);
-    expect(getFeedTypeColor('teaser')).toBe(colors.blue600);
-    expect(getFeedTypeColor('glimpse')).toBe(colors.blue600);
-    expect(getFeedTypeColor('promo')).toBe(colors.blue600);
+  it('delegates to FEED_CONTENT_TYPE_COLORS for known content types', () => {
+    // Each known type should return the value from the shared map
+    expect(getFeedTypeColor('trailer')).toBe(FEED_CONTENT_TYPE_COLORS['trailer']);
+    expect(getFeedTypeColor('teaser')).toBe(FEED_CONTENT_TYPE_COLORS['teaser']);
+    expect(getFeedTypeColor('glimpse')).toBe(FEED_CONTENT_TYPE_COLORS['glimpse']);
+    expect(getFeedTypeColor('promo')).toBe(FEED_CONTENT_TYPE_COLORS['promo']);
+    expect(getFeedTypeColor('song')).toBe(FEED_CONTENT_TYPE_COLORS['song']);
+    expect(getFeedTypeColor('poster')).toBe(FEED_CONTENT_TYPE_COLORS['poster']);
+    expect(getFeedTypeColor('backdrop')).toBe(FEED_CONTENT_TYPE_COLORS['backdrop']);
+    expect(getFeedTypeColor('bts')).toBe(FEED_CONTENT_TYPE_COLORS['bts']);
+    expect(getFeedTypeColor('interview')).toBe(FEED_CONTENT_TYPE_COLORS['interview']);
+    expect(getFeedTypeColor('event')).toBe(FEED_CONTENT_TYPE_COLORS['event']);
+    expect(getFeedTypeColor('making')).toBe(FEED_CONTENT_TYPE_COLORS['making']);
+    expect(getFeedTypeColor('short-film')).toBe(FEED_CONTENT_TYPE_COLORS['short-film']);
+    expect(getFeedTypeColor('update')).toBe(FEED_CONTENT_TYPE_COLORS['update']);
+    expect(getFeedTypeColor('new_movie')).toBe(FEED_CONTENT_TYPE_COLORS['new_movie']);
+    expect(getFeedTypeColor('theatrical_release')).toBe(FEED_CONTENT_TYPE_COLORS['theatrical_release']);
+    expect(getFeedTypeColor('ott_release')).toBe(FEED_CONTENT_TYPE_COLORS['ott_release']);
+    expect(getFeedTypeColor('rating_milestone')).toBe(FEED_CONTENT_TYPE_COLORS['rating_milestone']);
   });
 
-  it('returns purple for songs', () => {
-    expect(getFeedTypeColor('song')).toBe(colors.purple600);
-  });
-
-  it('returns green for posters', () => {
-    expect(getFeedTypeColor('poster')).toBe(colors.green500);
-  });
-
-  it('returns orange for BTS types', () => {
-    expect(getFeedTypeColor('bts')).toBe(colors.orange500);
-    expect(getFeedTypeColor('interview')).toBe(colors.orange500);
-    expect(getFeedTypeColor('event')).toBe(colors.orange500);
-    expect(getFeedTypeColor('making')).toBe(colors.orange500);
-  });
-
-  it('returns pink for short films', () => {
-    expect(getFeedTypeColor('short-film')).toBe(colors.pink600);
-  });
-
-  it('returns gray for updates', () => {
-    expect(getFeedTypeColor('update')).toBe(colors.gray500);
-  });
-
-  it('returns red for new_movie', () => {
-    expect(getFeedTypeColor('new_movie')).toBe(colors.red600);
-  });
-
-  it('returns red for theatrical_release', () => {
-    expect(getFeedTypeColor('theatrical_release')).toBe(colors.red600);
-  });
-
-  it('returns purple for ott_release', () => {
-    expect(getFeedTypeColor('ott_release')).toBe(colors.purple600);
-  });
-
-  it('returns yellow for rating_milestone', () => {
-    expect(getFeedTypeColor('rating_milestone')).toBe(colors.yellow400);
-  });
-
-  it('returns red as fallback', () => {
+  it('returns red600 as fallback for unknown content types', () => {
     expect(getFeedTypeColor('unknown')).toBe(colors.red600);
   });
 });

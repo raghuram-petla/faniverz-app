@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { verifyAdmin, unauthorizedResponse } from '@/lib/sync-helpers';
+import { verifyAdmin, unauthorizedResponse, badRequest } from '@/lib/sync-helpers';
 
 // @invariant: whitelist-only — PATCH accepts only these two fields, all others are silently dropped
 const ALLOWED_FIELDS = ['avatar_url', 'display_name'] as const;
@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+      return badRequest('No valid fields to update');
     }
 
     updates.updated_at = new Date().toISOString();

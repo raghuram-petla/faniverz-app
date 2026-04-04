@@ -19,6 +19,7 @@ import {
   useUpdatePoster,
   useRemovePoster,
   useSetMainPoster,
+  useSetMainBackdrop,
 } from '@/hooks/useAdminPosters';
 
 function createWrapper() {
@@ -272,5 +273,128 @@ describe('useSetMainPoster', () => {
     );
 
     fetchSpy.mockRestore();
+  });
+
+  it('shows alert with "Failed to set main poster" on error', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useSetMainPoster(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'p1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
+  });
+});
+
+// @contract useSetMainBackdrop — mirrors useSetMainPoster but for backdrop_url
+describe('useSetMainBackdrop', () => {
+  it('unsets existing main backdrop, sets new main, and syncs backdrop_url', async () => {
+    let callCount = 0;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      callCount++;
+      if (callCount === 1) {
+        // Unset old main backdrop
+        return { ok: true, status: 200, json: async () => ({}) } as Response;
+      }
+      if (callCount === 2) {
+        // Set new main backdrop — returns image with image_url
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'b2',
+            movie_id: 'm1',
+            image_url: 'https://r2.dev/backdrop.jpg',
+            image_type: 'backdrop',
+            is_main_backdrop: true,
+          }),
+        } as Response;
+      }
+      // Sync movies.backdrop_url
+      return { ok: true, status: 200, json: async () => ({}) } as Response;
+    });
+
+    const { result } = renderHook(() => useSetMainBackdrop(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'b2', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+    // Verify unset call (1st)
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movie_images',
+          filters: { movie_id: 'm1', is_main_backdrop: true },
+          data: { is_main_backdrop: false },
+          returnOne: false,
+        }),
+      }),
+    );
+
+    // Verify set main backdrop call (2nd)
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movie_images',
+          id: 'b2',
+          data: { is_main_backdrop: true },
+        }),
+      }),
+    );
+
+    // Verify backdrop_url sync call (3rd) — includes backdrop_image_type from image record
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      3,
+      '/api/admin-crud',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({
+          table: 'movies',
+          id: 'm1',
+          data: { backdrop_url: 'https://r2.dev/backdrop.jpg', backdrop_image_type: 'backdrop' },
+        }),
+      }),
+    );
+
+    fetchSpy.mockRestore();
+  });
+
+  it('shows alert with "Failed to set main backdrop" on error', async () => {
+    const fetchSpy = mockCrudApi(null, 500);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    const { result } = renderHook(() => useSetMainBackdrop(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      result.current.mutate({ id: 'b1', movieId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(alertSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    alertSpy.mockRestore();
   });
 });

@@ -5,6 +5,7 @@ import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { STALE_2M } from '@/constants/queryConfig';
 import { likeComment, unlikeComment, fetchUserCommentLikes } from './commentLikesApi';
+import { createOptimisticMutation } from './optimisticMutationFactory';
 import type { FeedComment } from '@shared/types';
 
 const COMMENT_LIKES_KEY = 'comment-likes-set';
@@ -14,107 +15,9 @@ const REPLIES_KEY = 'comment-replies';
 type LikesMap = Record<string, true>;
 type CommentsCache = { pages: FeedComment[][]; pageParams: number[] };
 
-// @sideeffect: optimistically increments like_count in comments/replies cache and adds to likes-set.
-// DB trigger (trg_comment_like_count) mirrors the INCREMENT on INSERT.
-export function useLikeComment(feedItemId: string) {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  return useMutation({
-    mutationFn: ({ commentId }: { commentId: string }) => {
-      if (!user?.id) throw new Error('Must be logged in');
-      return likeComment(commentId, user.id);
-    },
-    onMutate: async ({ commentId }) => {
-      await queryClient.cancelQueries({ queryKey: [COMMENT_LIKES_KEY] });
-      // Snapshot likes-set for rollback
-      const prevLikes: { queryKey: readonly unknown[]; data: LikesMap }[] = [];
-      queryClient
-        .getQueriesData<LikesMap>({ queryKey: [COMMENT_LIKES_KEY] })
-        .forEach(([qk, d]) => { if (d) prevLikes.push({ queryKey: qk, data: d }); });
-      queryClient.setQueriesData<LikesMap>({ queryKey: [COMMENT_LIKES_KEY] }, (old) => ({
-        ...(old ?? {}),
-        [commentId]: true as const,
-      }));
-
-      // Increment like_count in comments cache
-      incrementLikeCount(queryClient, feedItemId, commentId, 1);
-      return { prevLikes };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.prevLikes) {
-        for (const { queryKey, data } of context.prevLikes) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      // Rollback count
-      incrementLikeCount(queryClient, feedItemId, _vars.commentId, -1);
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToLikeComment'));
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [COMMENT_LIKES_KEY] });
-      queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, feedItemId] });
-    },
-  });
-}
-
-// @sideeffect: optimistically decrements like_count and removes from likes-set.
-export function useUnlikeComment(feedItemId: string) {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  return useMutation({
-    mutationFn: ({ commentId }: { commentId: string }) => {
-      if (!user?.id) throw new Error('Must be logged in');
-      return unlikeComment(commentId, user.id);
-    },
-    onMutate: async ({ commentId }) => {
-      await queryClient.cancelQueries({ queryKey: [COMMENT_LIKES_KEY] });
-      const prevLikes: { queryKey: readonly unknown[]; data: LikesMap }[] = [];
-      queryClient
-        .getQueriesData<LikesMap>({ queryKey: [COMMENT_LIKES_KEY] })
-        .forEach(([qk, d]) => { if (d) prevLikes.push({ queryKey: qk, data: d }); });
-      queryClient.setQueriesData<LikesMap>({ queryKey: [COMMENT_LIKES_KEY] }, (old) => {
-        if (!old) return {};
-        const { [commentId]: _, ...rest } = old;
-        return rest;
-      });
-
-      incrementLikeCount(queryClient, feedItemId, commentId, -1);
-      return { prevLikes };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.prevLikes) {
-        for (const { queryKey, data } of context.prevLikes) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      }
-      incrementLikeCount(queryClient, feedItemId, _vars.commentId, 1);
-      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToLikeComment'));
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [COMMENT_LIKES_KEY] });
-      queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, feedItemId] });
-    },
-  });
-}
-
-// @contract: returns Record<commentId, true> for liked comments. Query key uses sorted IDs.
-export function useUserCommentLikes(commentIds: string[]) {
-  const { user } = useAuth();
-  const userId = user?.id;
-  const idsKey = [...commentIds].sort().join(',');
-  const sortedIds = useMemo(() => (idsKey ? idsKey.split(',') : []), [idsKey]);
-
-  return useQuery({
-    queryKey: [COMMENT_LIKES_KEY, userId, sortedIds],
-    queryFn: () => fetchUserCommentLikes(userId ?? '', sortedIds),
-    enabled: !!userId && sortedIds.length > 0,
-    staleTime: STALE_2M,
-  });
-}
-
 // @edge: helper that adjusts like_count in both top-level comments cache AND replies caches.
+// @coupling: called by both useLikeComment and useUnlikeComment. Not managed by the factory
+// because it touches two distinct query keys with different data shapes in a single operation.
 function incrementLikeCount(
   queryClient: ReturnType<typeof useQueryClient>,
   feedItemId: string,
@@ -139,5 +42,102 @@ function incrementLikeCount(
     return old.map((c) =>
       c.id === commentId ? { ...c, like_count: Math.max(0, c.like_count + delta) } : c,
     );
+  });
+}
+
+// @sideeffect: optimistically increments like_count in comments/replies cache and adds to likes-set.
+// DB trigger (trg_comment_like_count) mirrors the INCREMENT on INSERT.
+// @coupling: uses createOptimisticMutation for the likes-set cancel/snapshot/update/rollback/invalidate
+// lifecycle; incrementLikeCount handles the separate comment-count and reply caches directly.
+export function useLikeComment(feedItemId: string) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  type LikeVars = { commentId: string };
+
+  const likesHandlers = createOptimisticMutation<LikeVars, LikesMap>(queryClient, {
+    queryKeys: [COMMENT_LIKES_KEY] as const,
+    primaryUpdater: (old, { commentId }) => ({
+      ...(old ?? {}),
+      [commentId]: true as const,
+    }),
+    onError: (_err, vars) => {
+      // Rollback count change that was applied in onMutate
+      incrementLikeCount(queryClient, feedItemId, vars.commentId, -1);
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToLikeComment'));
+    },
+  });
+
+  return useMutation({
+    mutationFn: ({ commentId }: LikeVars) => {
+      if (!user?.id) throw new Error('Must be logged in');
+      return likeComment(commentId, user.id);
+    },
+    onMutate: async (variables) => {
+      const ctx = await likesHandlers.onMutate!(variables);
+      // Increment like_count in comments/replies cache
+      incrementLikeCount(queryClient, feedItemId, variables.commentId, 1);
+      return ctx;
+    },
+    onError: likesHandlers.onError,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [COMMENT_LIKES_KEY] });
+      queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, feedItemId] });
+    },
+  });
+}
+
+// @sideeffect: optimistically decrements like_count and removes from likes-set.
+// @coupling: uses createOptimisticMutation for the likes-set lifecycle — see useLikeComment.
+export function useUnlikeComment(feedItemId: string) {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  type LikeVars = { commentId: string };
+
+  const likesHandlers = createOptimisticMutation<LikeVars, LikesMap>(queryClient, {
+    queryKeys: [COMMENT_LIKES_KEY] as const,
+    primaryUpdater: (old, { commentId }) => {
+      if (!old) return {};
+      const { [commentId]: _, ...rest } = old;
+      return rest;
+    },
+    onError: (_err, vars) => {
+      // Rollback count change that was applied in onMutate
+      incrementLikeCount(queryClient, feedItemId, vars.commentId, 1);
+      Alert.alert(i18n.t('common.error'), i18n.t('common.failedToLikeComment'));
+    },
+  });
+
+  return useMutation({
+    mutationFn: ({ commentId }: LikeVars) => {
+      if (!user?.id) throw new Error('Must be logged in');
+      return unlikeComment(commentId, user.id);
+    },
+    onMutate: async (variables) => {
+      const ctx = await likesHandlers.onMutate!(variables);
+      incrementLikeCount(queryClient, feedItemId, variables.commentId, -1);
+      return ctx;
+    },
+    onError: likesHandlers.onError,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [COMMENT_LIKES_KEY] });
+      queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, feedItemId] });
+    },
+  });
+}
+
+// @contract: returns Record<commentId, true> for liked comments. Query key uses sorted IDs.
+export function useUserCommentLikes(commentIds: string[]) {
+  const { user } = useAuth();
+  const userId = user?.id;
+  const idsKey = [...commentIds].sort().join(',');
+  const sortedIds = useMemo(() => (idsKey ? idsKey.split(',') : []), [idsKey]);
+
+  return useQuery({
+    queryKey: [COMMENT_LIKES_KEY, userId, sortedIds],
+    queryFn: () => fetchUserCommentLikes(userId ?? '', sortedIds),
+    enabled: !!userId && sortedIds.length > 0,
+    staleTime: STALE_2M,
   });
 }

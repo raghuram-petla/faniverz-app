@@ -1,7 +1,7 @@
 'use client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { crudFetch } from '@/lib/admin-crud-client';
 import { createMovieChildHooks } from './createMovieChildHooks';
+import { createSimpleMutation } from '@/hooks/createSimpleMutation';
 import type { MoviePoster } from '@/lib/types';
 
 // @coupling: createMovieChildHooks — movie-scoped CRUD via generic child factory
@@ -18,92 +18,92 @@ const {
 
 export { useMoviePosters, useAddPoster, useUpdatePoster, useRemovePoster };
 
+// @contract createSimpleMutation — 3-step mutationFn: unset old, set new, sync movie row
 // @sideeffect: mutates movie_images (unset old, set new) AND movies.poster_url
 // @invariant: at most one image per movie can have is_main_poster=true (DB partial unique index)
 // @edge: first unset may silently match zero rows if no main poster exists yet
-export function useSetMainPoster() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
-      // Unset existing main poster (partial unique index enforces at most one)
-      await crudFetch('PATCH', {
-        table: 'movie_images',
-        filters: { movie_id: movieId, is_main_poster: true },
-        data: { is_main_poster: false },
-        returnOne: false,
-      });
+export const useSetMainPoster = createSimpleMutation<
+  { id: string; movieId: string },
+  MoviePoster & { movieId: string }
+>({
+  mutationFn: async ({ id, movieId }) => {
+    // Unset existing main poster (partial unique index enforces at most one)
+    await crudFetch('PATCH', {
+      table: 'movie_images',
+      filters: { movie_id: movieId, is_main_poster: true },
+      data: { is_main_poster: false },
+      returnOne: false,
+    });
 
-      // Set new main poster
-      const data = await crudFetch<MoviePoster>('PATCH', {
-        table: 'movie_images',
-        id,
-        data: { is_main_poster: true },
-      });
+    // Set new main poster
+    const data = await crudFetch<MoviePoster>('PATCH', {
+      table: 'movie_images',
+      id,
+      data: { is_main_poster: true },
+    });
 
-      // @coupling: keeps movies.poster_url + poster_image_type in sync
-      await crudFetch('PATCH', {
-        table: 'movies',
-        id: movieId,
-        data: { poster_url: data.image_url, poster_image_type: data.image_type },
-      });
+    // @coupling: keeps movies.poster_url + poster_image_type in sync
+    await crudFetch('PATCH', {
+      table: 'movies',
+      id: movieId,
+      data: { poster_url: data.image_url, poster_image_type: data.image_type },
+    });
 
-      return { ...data, movieId } as MoviePoster & { movieId: string };
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'images', data.movieId] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movie', data.movieId] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
-      // @sideeffect: theater views display poster images
-      qc.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to set main poster');
-    },
-  });
-}
+    return { ...data, movieId } as MoviePoster & { movieId: string };
+  },
+  // @contract getInvalidateKeys uses data.movieId to scope movie-specific keys
+  // @sideeffect: theater views display poster images
+  getInvalidateKeys: (data) => [
+    ['admin', 'images', data.movieId],
+    ['admin', 'movie', data.movieId],
+    ['admin', 'movies'],
+    ['admin', 'theater-movies'],
+    ['admin', 'theater-search'],
+  ],
+  errorMessage: 'Failed to set main poster',
+});
 
+// @contract createSimpleMutation — 3-step mutationFn: unset old, set new, sync movie row
 // @sideeffect: mutates movie_images (unset old, set new) AND movies.backdrop_url
 // @invariant: at most one image per movie can have is_main_backdrop=true (DB partial unique index)
 // @edge: first unset may silently match zero rows if no main backdrop exists yet
-export function useSetMainBackdrop() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, movieId }: { id: string; movieId: string }) => {
-      // Unset existing main backdrop (partial unique index enforces at most one)
-      await crudFetch('PATCH', {
-        table: 'movie_images',
-        filters: { movie_id: movieId, is_main_backdrop: true },
-        data: { is_main_backdrop: false },
-        returnOne: false,
-      });
+export const useSetMainBackdrop = createSimpleMutation<
+  { id: string; movieId: string },
+  MoviePoster & { movieId: string }
+>({
+  mutationFn: async ({ id, movieId }) => {
+    // Unset existing main backdrop (partial unique index enforces at most one)
+    await crudFetch('PATCH', {
+      table: 'movie_images',
+      filters: { movie_id: movieId, is_main_backdrop: true },
+      data: { is_main_backdrop: false },
+      returnOne: false,
+    });
 
-      // Set new main backdrop
-      const data = await crudFetch<MoviePoster>('PATCH', {
-        table: 'movie_images',
-        id,
-        data: { is_main_backdrop: true },
-      });
+    // Set new main backdrop
+    const data = await crudFetch<MoviePoster>('PATCH', {
+      table: 'movie_images',
+      id,
+      data: { is_main_backdrop: true },
+    });
 
-      // @coupling: keeps movies.backdrop_url in sync with the main backdrop's image_url
-      await crudFetch('PATCH', {
-        table: 'movies',
-        id: movieId,
-        data: { backdrop_url: data.image_url, backdrop_image_type: data.image_type },
-      });
+    // @coupling: keeps movies.backdrop_url in sync with the main backdrop's image_url
+    await crudFetch('PATCH', {
+      table: 'movies',
+      id: movieId,
+      data: { backdrop_url: data.image_url, backdrop_image_type: data.image_type },
+    });
 
-      return { ...data, movieId } as MoviePoster & { movieId: string };
-    },
-    onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'images', data.movieId] });
-      qc.invalidateQueries({ queryKey: ['admin', 'movie', data.movieId] });
-      // @sideeffect: backdrop_url is displayed in movie detail and theater views
-      qc.invalidateQueries({ queryKey: ['admin', 'movies'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'theater-movies'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'theater-search'] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to set main backdrop');
-    },
-  });
-}
+    return { ...data, movieId } as MoviePoster & { movieId: string };
+  },
+  // @contract getInvalidateKeys uses data.movieId to scope movie-specific keys
+  // @sideeffect: backdrop_url is displayed in movie detail and theater views
+  getInvalidateKeys: (data) => [
+    ['admin', 'images', data.movieId],
+    ['admin', 'movie', data.movieId],
+    ['admin', 'movies'],
+    ['admin', 'theater-movies'],
+    ['admin', 'theater-search'],
+  ],
+  errorMessage: 'Failed to set main backdrop',
+});
