@@ -25,7 +25,7 @@ Run 1 → found 8 items → fix → Run 2 → found 2 items → fix → Run 3 �
 
 **Rules for loop mode:**
 
-- Each run is a full Phase 1–4 cycle (scan, report, fix all, verify)
+- Each run is a full Phase 1–3.5 cycle (scan, report, fix, independent review, verify)
 - A "clean run" means Phase 1 found exactly 0 dead code items across all 7 categories
 - The 3-clean-run counter resets to 0 if any dead code is found
 - Between runs, print: `### Run N complete — {X items found | clean} (consecutive clean: M/3)`
@@ -186,7 +186,42 @@ Remove in safest-first order:
 4. **If any check fails**: Read the error, revert the specific removal that caused it, note as false positive, re-run gates
 5. **Check 300-line limit** on all modified files (removals should shrink files)
 
-After cleanup, loop back to Phase 1 with a new scan.
+After cleanup, proceed to Phase 3.5 (Independent Review) before looping back.
+
+## Phase 3.5 — Independent Review
+
+**Purpose**: An independent AI agent audits every removal from Phase 3 to catch false positives that passed quality gates but are still wrong (e.g., symbols used via dynamic access, framework conventions, or cross-boundary references that grep missed).
+
+This review agent has **no knowledge of Phase 1–3's reasoning** — it starts fresh and independently verifies each removal.
+
+### How to run
+
+Launch a **separate Agent** (`subagent_type: "general-purpose"`) with the following instructions:
+
+1. **Get the diff**: Run `git diff` (unstaged) and `git diff --cached` (staged) to see everything removed in this run
+2. **For each removed symbol/file/dependency**, independently verify it is truly unused:
+   - **Removed exports**: Search the entire codebase (including tests, configs, and barrel files) for any reference to the symbol. Check both `@/` alias and relative import paths. Check for dynamic access patterns (`obj[key]`, `require()`, string interpolation)
+   - **Removed files**: Verify no file imports it (alias and relative paths). Check for dynamic `require()` or `import()` calls that might reference it
+   - **Removed dependencies**: Search all source files AND config files for any reference. Check for sub-path imports (`pkg/submodule`)
+   - **Removed style keys**: Check for dynamic style access (`styles[variable]`) in the component
+   - **Removed re-exports**: Verify no consumer uses the re-export path
+3. **Flag any removal that looks wrong** — where the symbol/file/dependency IS still referenced somewhere
+4. **Return a structured report**: list of removals to revert with file path, symbol, and reason
+
+**The review agent must actually read files and search — not just reason from the diff.** It must use Grep, Glob, and Read tools to verify.
+
+### After review
+
+- **If the review agent flags removals to revert**: Revert those specific removals (restore the deleted code), note them as false positives in the final report, and re-run quality gates
+- **If the review agent finds no issues**: Proceed to the next scan loop
+
+### Rules for the review agent
+
+- It must NOT rely on or reference any findings from Phase 1–3 — it works only from the git diff
+- It must search broadly: both mobile (`app/`, `src/`) and admin (`admin/src/`) codebases, plus `shared/`, tests, and configs
+- It must resolve path aliases (`@/*` → `src/*`, `@shared/*` → `shared/*`)
+- It should flag conservatively — better to restore a "maybe used" symbol than to let a false positive through
+- Dynamic access patterns (`styles[key]`, `hooks[name]`, computed property access) are strong signals to revert
 
 ## Phase 4 — Final Report (after 3 consecutive clean runs)
 
